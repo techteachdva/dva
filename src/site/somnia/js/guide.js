@@ -477,7 +477,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 23.1 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 24.0 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -499,6 +499,7 @@ export function rulesRemHtml() {
           <ul>
             <li><strong>Setup:</strong> every Landscape is shuffled. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten</li>
             <li><strong>Reveal budget</strong> = that 1 card's value + Lucidity bonuses (Dreamer, Objects, Acquired Archetypes) → click that many Wasteland hexes to flip Landscapes face-up</li>
+            <li><strong>Map fully Revealed:</strong> leftover Lucidity Reveals flip the next facedown card of a Mindstream (click the card back). Flipped cards stay face-up on that pile</li>
             <li>Draw the Dream and spend Lucidity in either order during Reveal</li>
             <li><strong>Round 1:</strong> each Dreamer already has 5 Psyche — no round-start draw</li>
             <li><strong>Round 2+:</strong> each alive Dreamer draws <strong>2 Psyche</strong> at the start of Reveal</li>
@@ -647,7 +648,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 23.1</p>
+          <p class="info-hub-kicker">Somnia v 24.0</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>
@@ -670,7 +671,7 @@ export function infoHubHtml(options = {}) {
           <div class="info-hub-rule info-hub-rem">
             <h3>R.E.M. — Every Round</h3>
             <ul>
-              <li class="suit-lucidity"><strong>Reveal</strong> — Head (★) draws a Dream. Spend Lucidity to flip Wastelands into Landscapes.</li>
+              <li class="suit-lucidity"><strong>Reveal</strong> — Head (★) draws a Dream. Spend Lucidity to flip Wastelands, or Mindstream tops once the map is fully Revealed.</li>
               <li class="suit-elasticity"><strong>Explore</strong> — Spend Elasticity for shared moves. Entering Wasteland discards 1 Psyche.</li>
               <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Start of Meet: Repress 1 Psyche and Forget 1 Landscape per active Dreambeast. Draw Mindstream is repeatable; unique Landscape actions and Archetype Powers cost 1 action.</li>
             </ul>

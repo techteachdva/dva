@@ -19,6 +19,7 @@ import {
   drawPsycheForPlayer,
   drawMindstream,
   consumeRevealedTop,
+  allLandscapesRevealed,
 } from "./state.js";
 import {
   revealBudget,
@@ -100,7 +101,7 @@ import {
   discardToMindstream,
 } from "./mindstream-supply.js";
 import { beginTransformationPick } from "./dream-choices.js";
-import { beginRevealPicking, handleLandscapeTilePick, cancelLandscapePick, requestChooseTile } from "./landscapes.js";
+import { beginRevealPicking, handleLandscapeTilePick, cancelLandscapePick, requestChooseTile, spendRevealOnMindstreamTop } from "./landscapes.js";
 import { narrate, logMoment } from "./narrator.js";
 import { flashPhaseEntryMoments } from "./moment-overlay.js";
 import { playSfx } from "./audio.js";
@@ -361,20 +362,37 @@ export function getPhaseActions(state, handlers) {
     const budget = contributor ? revealBudget(state, contributor) : 0;
     const best = bestPhaseContributor(state);
     const stat = statForPhaseBudget("Reveal", state);
+    const mapOpen = allLandscapesRevealed(state);
+    const deckTopPick = state.landscapePick?.mode === "reveal-deck-tops";
     actions.push({
-      label: budget >= 1
-        ? `Reveal Landscapes (${budget} for team)`
-        : "Reveal Landscapes (select Lucidity)",
+      label: deckTopPick
+        ? `Reveal Deck Tops (${state.landscapePick.remaining} left)`
+        : mapOpen
+          ? (budget >= 1 ? `Reveal Deck Tops (${budget})` : "Reveal Deck Tops (select Lucidity)")
+          : (budget >= 1 ? `Reveal Landscapes (${budget} for team)` : "Reveal Landscapes (select Lucidity)"),
       kind: "revealLandscape",
       hint: !state.dreamDrawn
-        ? "Draw & Resolve the Dream first, then spend Lucidity to reveal Landscapes."
-        : best
-          ? `One Dreamer spends 1 Lucidity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
-          : "One Dreamer spends Lucidity to set everyone's reveal budget.",
+        ? "Draw & Resolve the Dream first, then spend Lucidity."
+        : deckTopPick
+          ? "Click a Mindstream card back to flip its next facedown card, or open Reveal Deck Top."
+          : mapOpen
+            ? "The map is fully Revealed. Lucidity now flips Mindstream tops — click a card back or this action."
+            : best
+              ? `One Dreamer spends 1 Lucidity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus). Leftover Reveals flip Mindstream tops once the map is finished.`
+              : "One Dreamer spends Lucidity to set everyone's reveal budget.",
       section: "main",
-      disabled: !state.dreamDrawn || state.revealLandscapeUsed || budget < 1,
+      disabled: !state.dreamDrawn || state.revealLandscapeUsed || (budget < 1 && !deckTopPick),
       onClick: handlers.revealLandscape,
     });
+    if (deckTopPick) {
+      actions.push({
+        label: "Choose Mindstream to flip",
+        kind: "revealDeckTop",
+        section: "main",
+        hint: "Open the three Mindstream backs and flip the next facedown card of one suit.",
+        onClick: handlers.revealDeckTop,
+      });
+    }
     if (state.dreamDrawn && !state.revealLandscapeUsed) actions.push(phaseTokenAction("Lucidity"));
     actions.push(dreamerPowerAction());
     actions.push(...questActions());
@@ -562,7 +580,7 @@ export function getPhaseActions(state, handlers) {
 }
 
 function phaseAdvanceBlockReason(state) {
-  if (state.landscapePick) return "Finish map selection (or reveal/forget all valid tiles) before advancing.";
+  if (state.landscapePick) return "Finish map selection, leftover Reveals, or skip leftovers before advancing.";
   if (state.pendingRepress) return "Complete Repress selection before advancing.";
   if (state.pendingReturn) return "Complete Return selection before advancing.";
   if (state.pendingDeathChoice) return "Resolve the death choice before advancing.";
@@ -1378,6 +1396,33 @@ export function finishLandscapeMindstreamPick(state, tile, player, actionId, sui
 
 export function finishLandscapeDeckFlip(state, deckKey) {
   return flipTopThreeOfDeck(state, deckKey);
+}
+
+export function spendLucidityRevealOnDeck(state, suit) {
+  return spendRevealOnMindstreamTop(state, suit);
+}
+
+export function tryDrawMindstreamFromDeck(state, suit, helpers = {}) {
+  if (getPhase(state) !== "Meet") return { ok: false, reason: "meet" };
+  const player = activePlayer(state);
+  if (!player?.alive) return { ok: false, reason: "dreamer" };
+  const tile = landscapeById(state, player.landscapeId);
+  if (!tile?.revealed || tile.wasteland) {
+    return { ok: false, reason: "landscape" };
+  }
+  if (tile.suit === suit && canDrawMindstreamOnLandscape(tile)) {
+    const result = performLandscapeAction(state, "draw-mindstream", helpers);
+    return result || { ok: false, reason: "meet", tile, player };
+  }
+  const anyDraw = getLandscapeActionChoices(tile).some((choice) => choice.id === "draw-any-mindstream");
+  if (anyDraw) {
+    const started = performLandscapeAction(state, "draw-any-mindstream", helpers);
+    if (started?.pending === "pick-mindstream-suit") {
+      return finishLandscapeMindstreamPick(state, tile, player, "draw-any-mindstream", suit, helpers.onResult);
+    }
+    return started || { ok: false, reason: "suit", tile, player };
+  }
+  return { ok: false, reason: "suit", tile, player };
 }
 
 export function drawMindstreamCard(state, suit) {

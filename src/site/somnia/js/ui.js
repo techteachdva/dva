@@ -73,6 +73,7 @@ import { revealCompactTarget } from "./compact-chrome.js";
 import { getMomentHistory, flashMoment } from "./moment-overlay.js";
 import { isBeastTokenHidden, isDreamerTokenHidden } from "./board-fx.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
+import { cardBackForDeckId, CARD_BACKS } from "./card-backs.js";
 import {
   eventLandscapeIds,
   describeEventResolution,
@@ -2111,12 +2112,12 @@ export function showRevealedTopsModal(state, deckId, onCardClick) {
   const pile = state.revealedDeckTops?.[deckId] || [];
   body.innerHTML = `
     <h2>${label} — Revealed top</h2>
-    <p class="graveyard-total">${pile.length} card${pile.length === 1 ? "" : "s"} currently revealed by a power</p>
+    <p class="graveyard-total">${pile.length} card${pile.length === 1 ? "" : "s"} face-up on this draw pile</p>
     <div id="peek-browse" class="mini-card-row"></div>
   `;
   const container = body.querySelector("#peek-browse");
   if (!pile.length) {
-    container.innerHTML = "<p>No revealed top cards. Draw or flip a power to peek.</p>";
+    container.innerHTML = "<p>No revealed top cards. Peek effects and Lucidity deck-flips stay face-up here.</p>";
   } else {
     pile.forEach((card) => {
       container.appendChild(renderCard(card, {
@@ -2125,6 +2126,33 @@ export function showRevealedTopsModal(state, deckId, onCardClick) {
       }));
     });
   }
+  modal.classList.remove("hidden");
+}
+
+export function showRevealDeckTopModal(onPickSuit) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  body.innerHTML = `
+    <h2>Reveal a Mindstream top</h2>
+    <p class="graveyard-total">Spend 1 Lucidity Reveal to flip the next facedown card of one Mindstream. Flipped cards stay face-up on that pile.</p>
+    <div class="reveal-deck-top-grid" id="reveal-deck-top-grid"></div>
+  `;
+  const grid = body.querySelector("#reveal-deck-top-grid");
+  [
+    { suit: "lucidity", label: "Lucidity" },
+    { suit: "elasticity", label: "Elasticity" },
+    { suit: "willpower", label: "Willpower" },
+  ].forEach((entry) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `reveal-deck-top-choice suit-${entry.suit}`;
+    btn.innerHTML = `
+      <img src="${CARD_BACKS[entry.suit]}" alt="${entry.label} Mindstream back" />
+      <span>${entry.label}</span>
+    `;
+    btn.addEventListener("click", () => onPickSuit(entry.suit));
+    grid.appendChild(btn);
+  });
   modal.classList.remove("hidden");
 }
 
@@ -2161,6 +2189,23 @@ function drawPileForDeck(state, deckId) {
     case "mindstream-willpower": return state.mindstreamDecks?.willpower || [];
     default: return [];
   }
+}
+
+function deckBackCard(deckId, { onClick, title } = {}) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "deck-discard-top-card deck-draw-back";
+  btn.dataset.deckId = deckId;
+  btn.title = title || "Draw pile";
+  const img = document.createElement("img");
+  img.src = cardBackForDeckId(deckId);
+  img.alt = `${DECK_LABELS[deckId] || "Deck"} back`;
+  btn.appendChild(img);
+  if (onClick) btn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onClick(deckId);
+  });
+  return btn;
 }
 
 function deckFaceCard(card, { onClick } = {}) {
@@ -2264,7 +2309,7 @@ function deckColumnSignature(state) {
   return parts.join("|");
 }
 
-export function renderDecks(state, onViewDiscard, onViewPeek = null) {
+export function renderDecks(state, onViewDiscard, onViewPeek = null, onDrawPile = null) {
   const column = document.getElementById("deck-column");
   if (!column) return;
 
@@ -2309,12 +2354,24 @@ export function renderDecks(state, onViewDiscard, onViewPeek = null) {
     const drawZone = document.createElement("div");
     drawZone.className = "deck-rail-draw";
     drawZone.dataset.deckId = deck.id;
-    drawZone.title = `${drawCount} card${drawCount === 1 ? "" : "s"} in draw pile`;
+    drawZone.title = `${drawCount} card${drawCount === 1 ? "" : "s"} in draw pile — click the card back`;
     const drawRects = document.createElement("div");
     drawRects.className = "deck-rect-stack deck-rect-stack-draw";
     fillRectStack(drawRects, drawCount, "draw");
     drawZone.appendChild(drawRects);
+    if (drawCount) {
+      drawZone.appendChild(deckBackCard(deck.id, {
+        onClick: () => (onDrawPile || onViewPeek)?.(deck.id),
+        title: peeked.length
+          ? `${drawCount} in deck · ${peeked.length} face-up on top`
+          : `${drawCount} facedown — click to draw, peek, or flip`,
+      }));
+    }
     appendPeekCards(drawZone, peeked, onViewPeek, deck.id);
+    drawZone.addEventListener("click", (event) => {
+      if (event.target.closest(".deck-peek-card, .deck-draw-back")) return;
+      (onDrawPile || onViewPeek)?.(deck.id);
+    });
     piles.appendChild(drawZone);
 
     const sep = document.createElement("span");
@@ -2326,8 +2383,13 @@ export function renderDecks(state, onViewDiscard, onViewPeek = null) {
     const discardZone = document.createElement("div");
     discardZone.className = "deck-rail-discard";
     discardZone.title = discardCount
-      ? (blockDiscard ? "Discard hidden during trade" : "Click top card to browse discard pile")
+      ? (blockDiscard ? "Discard hidden during trade" : "Click discard to browse")
       : "Discard pile is empty";
+    discardZone.addEventListener("click", (event) => {
+      if (blockDiscard) return;
+      if (event.target.closest(".deck-discard-top-card") && event.target.closest(".deck-discard-top-card") !== discardZone) return;
+      if (discardCount) onViewDiscard(deck.id);
+    });
     const discardRects = document.createElement("div");
     discardRects.className = "deck-rect-stack deck-rect-stack-discard";
     const discardUnder = Math.max(0, discardCount - (topDiscard ? 1 : 0));
@@ -2495,6 +2557,9 @@ function phaseBudgetChipLabel(state) {
     if (state.landscapePick?.mode === "choose") return "Choose a hex";
     if (state.landscapePick?.mode === "reveal" && state.landscapePick.remaining > 0) {
       return `${state.landscapePick.remaining} reveal${state.landscapePick.remaining === 1 ? "" : "s"}`;
+    }
+    if (state.landscapePick?.mode === "reveal-deck-tops" && state.landscapePick.remaining > 0) {
+      return `${state.landscapePick.remaining} deck flip${state.landscapePick.remaining === 1 ? "" : "s"}`;
     }
     if (phaseOpeningActive(state)) return "Spend Lucidity";
     return null;

@@ -73,6 +73,8 @@ import {
   uniqueLandscapeAction,
   finishLandscapeMindstreamPick,
   finishLandscapeDeckFlip,
+  spendLucidityRevealOnDeck,
+  tryDrawMindstreamFromDeck,
   tradeAction,
   selectTradePartner,
   confirmTrade,
@@ -199,6 +201,7 @@ import {
   showSubconsciousBrowse,
   showDiscardPileModal,
   showRevealedTopsModal,
+  showRevealDeckTopModal,
   showRepressPicker,
   renderSubconsciousButton,
   showRulesModal,
@@ -1059,7 +1062,24 @@ function buildPhaseHandlers() {
       if (card) notifyTutorialDreamDrawn(state);
       renderAll();
     },
-    revealLandscape: () => { revealLandscape(state); renderAll(); },
+    revealLandscape: () => {
+      revealLandscape(state);
+      if (state.landscapePick?.mode === "reveal-deck-tops") {
+        showRevealDeckTopModal((suit) => {
+          hideUtilityModal(true);
+          spendLucidityRevealOnDeck(state, suit);
+          renderAll();
+        });
+      }
+      renderAll();
+    },
+    revealDeckTop: () => {
+      showRevealDeckTopModal((suit) => {
+        hideUtilityModal(true);
+        spendLucidityRevealOnDeck(state, suit);
+        renderAll();
+      });
+    },
     activateExplore: () => { activateExplore(state); renderAll(); },
     gainMeetActions: () => { gainMeetActions(state); renderAll(); },
     meetEncounter: (mode) => { meetEncounter(state, mode); renderAll(); },
@@ -1663,6 +1683,59 @@ function renderBoardArea() {
   syncBoardZoomAfterRender();
 }
 
+function handleDrawPileClick(deckId) {
+  if (!state || !deckId) return;
+  if (state.tradeMode && deckId.startsWith("mindstream-")) return;
+
+  if (state.landscapePick?.mode === "reveal-deck-tops" && deckId.startsWith("mindstream-")) {
+    const suit = deckId.replace("mindstream-", "");
+    const flipped = spendLucidityRevealOnDeck(state, suit);
+    if (!flipped) {
+      showRevealDeckTopModal((nextSuit) => {
+        hideUtilityModal(true);
+        spendLucidityRevealOnDeck(state, nextSuit);
+        renderAll();
+      });
+    }
+    renderAll();
+    return;
+  }
+
+  if (deckId.startsWith("mindstream-")) {
+    const suit = deckId.replace("mindstream-", "");
+    const result = tryDrawMindstreamFromDeck(state, suit, {
+      onResult: (card) => showModal(card),
+    });
+    if (result?.ok) {
+      renderAll();
+      return;
+    }
+    if (result?.reason === "meet") {
+      narrate(state, "Meet first", "Open the Meet phase, then click a Mindstream card back from a matching Landscape.");
+      return;
+    }
+    if (result?.reason === "suit" || result?.reason === "landscape") {
+      const tile = result.tile;
+      narrate(
+        state,
+        "Stand on the matching Landscape",
+        tile
+          ? `${state.players[state.activePlayerIndex]?.name || "That Dreamer"} is on ${tile.name}. Draw ${suit} Mindstream from a matching Landscape, or Forest's Draw Any Mindstream.`
+          : "Select a Dreamer standing on a revealed Landscape, then click that Mindstream's card back.",
+      );
+    }
+  }
+
+  const peeked = state.revealedDeckTops?.[deckId] || [];
+  if (peeked.length) {
+    showRevealedTopsModal(state, deckId, (card) => showModal(card));
+    return;
+  }
+  if (deckId === "dream" || deckId === "psyche") {
+    showRevealedTopsModal(state, deckId, (card) => showModal(card));
+  }
+}
+
 function renderAll() {
   if (!state) return;
   bindUiRenderState(state);
@@ -1810,6 +1883,8 @@ function renderAll() {
     showDiscardPileModal(state, deckId, (card) => showModal(card));
   }, (deckId) => {
     showRevealedTopsModal(state, deckId, (card) => showModal(card));
+  }, (deckId) => {
+    handleDrawPileClick(deckId);
   });
   renderActiveSlots(state, (card) => showModal(card));
   renderSubconsciousButton(state);

@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-23.1";
-const RUNTIME_CACHE = "somnia-runtime-23.1";
+const CACHE_NAME = "somnia-24.0";
+const RUNTIME_CACHE = "somnia-runtime-24.0";
 
 const PRECACHE = [
   "./",
@@ -35,6 +35,12 @@ const PRECACHE = [
   "./data/card-manifest.json",
   "./data/landscape-sfx.json",
   "./images/somnia-box-art.jpg",
+  "./images/somnia-logo.png",
+  "./images/backs/psyche.webp",
+  "./images/backs/archetype.webp",
+  "./images/backs/mindstream-lucidity.webp",
+  "./images/backs/mindstream-elasticity.webp",
+  "./images/backs/mindstream-willpower.webp",
   "./images/icons/somnia-192.png",
   "./images/icons/somnia-512.png",
 ];

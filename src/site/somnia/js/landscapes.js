@@ -11,6 +11,8 @@ import {
   tileHasEncounters,
   clearEncountersOnLandscape,
   maybeMapRevealForgetThresholds,
+  allLandscapesRevealed,
+  revealNextDeckCard,
 } from "./state.js";
 import { shuffle } from "./data.js";
 import { repressCard } from "./subconscious.js";
@@ -39,13 +41,32 @@ export function revealableTiles(state) {
   return state.board.filter((t) => !t.center && (!t.revealed || t.wasteland));
 }
 
+function beginDeckTopRevealPicking(state, budget, extra = {}) {
+  state.landscapePick = {
+    mode: "reveal-deck-tops",
+    remaining: budget,
+    picked: extra.picked || [],
+    flipped: extra.flipped || [],
+  };
+  narrate(
+    state,
+    `Reveal budget: ${budget} — flip Mindstream tops.`,
+    `Every Landscape is already face-up. Spend leftover Lucidity Reveals to flip the next facedown card of a Mindstream. Click a Mindstream card back, or use Reveal Deck Top.`,
+    [`${budget} deck flip(s) left`, "Click a Mindstream draw pile"],
+  );
+  return true;
+}
+
 export function beginRevealPicking(state, budget) {
   if (budget <= 0) return false;
+  if (revealableTiles(state).length === 0 && allLandscapesRevealed(state)) {
+    return beginDeckTopRevealPicking(state, budget);
+  }
   state.landscapePick = { mode: "reveal", remaining: budget, picked: [] };
   narrate(
     state,
     `Reveal budget: ${budget} — click map tiles.`,
-    `You spent Lucidity Psyche. Click up to ${budget} hex tiles on the map that show the Wasteland back to flip them to active Landscapes.`,
+    `You spent Lucidity Psyche. Click up to ${budget} hex tiles on the map that show the Wasteland back to flip them to active Landscapes. If the map finishes first, leftover Reveals flip Mindstream tops.`,
     [`${budget} tile(s) to reveal`, "Click the hex map in the center table"],
   );
   return true;
@@ -325,6 +346,8 @@ export function handleLandscapeTilePick(state, tileId) {
       if (!pick.freeReveal) state.revealLandscapeUsed = true;
       recordQuestEvent(state, "reveal_landscape", { count: pick.picked.length });
       if (pick.followup) state.pendingObjectFollowup = pick.followup;
+    } else if (revealableTiles(state).length === 0 && !pick.freeReveal && allLandscapesRevealed(state)) {
+      beginDeckTopRevealPicking(state, pick.remaining, { picked: pick.picked });
     }
     return true;
   }
@@ -365,7 +388,8 @@ export function handleLandscapeTilePick(state, tileId) {
 export function cancelLandscapePick(state) {
   if (!state.landscapePick) return;
   // Paid Lucidity spend is complete even if the team reveals 0 tiles.
-  if (state.landscapePick.mode === "reveal" && !state.landscapePick.freeReveal) {
+  if ((state.landscapePick.mode === "reveal" || state.landscapePick.mode === "reveal-deck-tops")
+    && !state.landscapePick.freeReveal) {
     state.revealLandscapeUsed = true;
   }
   state.landscapePick = null;
@@ -378,6 +402,10 @@ export function resolveStaleLandscapePick(state) {
   if (!pick) return;
 
   if (pick.mode === "reveal" && pick.remaining > 0 && revealableTiles(state).length === 0) {
+    if (!pick.freeReveal && allLandscapesRevealed(state)) {
+      beginDeckTopRevealPicking(state, pick.remaining, { picked: pick.picked });
+      return;
+    }
     if (pick.picked.length > 0 && !pick.freeReveal) state.revealLandscapeUsed = true;
     if (pick.followup) state.pendingObjectFollowup = pick.followup;
     state.landscapePick = null;
@@ -484,6 +512,34 @@ export function forgetEdgeLandscapes(state, count) {
     requestForgetLandscapes(state, count - picks.length);
   }
   return picks.length;
+}
+
+export function spendRevealOnMindstreamTop(state, suit) {
+  const pick = state.landscapePick;
+  if (pick?.mode !== "reveal-deck-tops") return null;
+  if (pick.remaining <= 0) return null;
+  const deckKey = `mindstream-${suit}`;
+  const card = revealNextDeckCard(state, deckKey);
+  if (!card) {
+    addLog(state, `No facedown ${suit} Mindstream cards left to flip.`);
+    return null;
+  }
+  pick.remaining -= 1;
+  pick.flipped = pick.flipped || [];
+  pick.flipped.push({ suit, name: card.name });
+  narrate(
+    state,
+    `Flipped ${card.name}.`,
+    `${card.name} is now face-up on the ${suit} Mindstream.${pick.remaining > 0 ? ` ${pick.remaining} Reveal(s) left — click another Mindstream back.` : " Lucidity Reveals are spent."}`,
+    pick.remaining > 0 ? [`${pick.remaining} deck flip(s) left`] : ["Reveal action complete"],
+  );
+  addLog(state, `Lucidity Reveal flips ${card.name} on the ${suit} Mindstream.`);
+  if (pick.remaining <= 0) {
+    state.landscapePick = null;
+    state.revealLandscapeUsed = true;
+    recordQuestEvent(state, "reveal_landscape", { count: (pick.picked || []).length });
+  }
+  return card;
 }
 
 function assembleFinalRecurrenceDeck(state) {

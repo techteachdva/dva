@@ -1,6 +1,7 @@
 /** Card flow animations — draws, discards, spends, and life (hand size) feedback. */
 
 import { burstSparkles } from "./fx.js";
+import { cardBackForCard } from "./card-backs.js";
 
 const queue = [];
 const queuedDiscardIds = new Set();
@@ -22,6 +23,8 @@ function cardSnapshot(card) {
     name: card.name,
     isWild: wild,
     isDreambeast: card.type === "psyche-dreambeast" || card.isDreambeastPsyche,
+    image: card.image || "",
+    back: cardBackForCard(card),
   };
 }
 
@@ -133,13 +136,24 @@ function ghostCard(card, kind) {
   const el = document.createElement("div");
   const suit = card.isWild ? "wild" : (card.suit || "lucidity");
   el.className = `fx-flying-card fx-flying-${kind} suit-${suit}`;
-  if (card.isDreambeast) {
-    el.innerHTML = `<span class="fx-card-value">3</span><span class="fx-card-suit">⚔</span>`;
-  } else if (card.isWild) {
-    el.innerHTML = `<span class="fx-card-value">★</span>`;
-  } else {
-    el.innerHTML = `<span class="fx-card-value">${card.value ?? ""}</span>`;
+  const face = card.isDreambeast
+    ? `<span class="fx-card-value">3</span><span class="fx-card-suit">⚔</span>`
+    : card.isWild
+      ? `<span class="fx-card-value">★</span>`
+      : `<span class="fx-card-value">${card.value ?? ""}</span>`;
+  if (kind === "draw") {
+    el.classList.add("fx-flip-card");
+    const back = card.back || cardBackForCard(card);
+    const art = card.image ? ` style="background-image:url('${card.image}')"` : "";
+    el.innerHTML = `
+      <div class="fx-flip-inner">
+        <div class="fx-flip-face fx-flip-back" style="background-image:url('${back}')"></div>
+        <div class="fx-flip-face fx-flip-front"${art}>${art ? "" : face}</div>
+      </div>
+    `;
+    return el;
   }
+  el.innerHTML = face;
   return el;
 }
 

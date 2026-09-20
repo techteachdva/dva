@@ -151,9 +151,15 @@ body.menu-window .top-bar {
   border-bottom: 1px solid rgba(180, 160, 255, 0.12);
 }
 
-body.menu-window .brand h1 {
-  font-size: 1.35rem;
+body.menu-window .brand h1,
+body.menu-window .brand-wordmark {
   margin: 0;
+}
+
+body.menu-window .brand-wordmark {
+  height: 2.9rem;
+  width: 12.75rem;
+  max-width: 14rem;
 }
 
 .brand-logo-btn {
@@ -681,6 +687,13 @@ body.in-game .brand h1 {
   font-size: 1.25rem;
 }
 
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
 .brand h1 {
   margin: 0;
   font-family: var(--font-logo);
@@ -690,6 +703,16 @@ body.in-game .brand h1 {
   font-variation-settings: "wdth" 100;
   font-size: 1.6rem;
   letter-spacing: 0.04em;
+}
+
+.brand-wordmark {
+  display: block;
+  height: 2.45rem;
+  width: 10.75rem;
+  max-width: 12rem;
+  object-fit: cover;
+  object-position: center 46%;
+  flex-shrink: 0;
 }
 
 .tagline { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.9rem; }
@@ -1175,6 +1198,55 @@ body.in-game main {
 .deck-discard-top-card:hover {
   transform: translateX(-50%) translateY(-2px);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.48);
+}
+
+.deck-draw-back {
+  padding: 0;
+  border: 0;
+  background: #120f22;
+  overflow: hidden;
+}
+
+.deck-draw-back img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.reveal-deck-top-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.6rem;
+}
+
+.reveal-deck-top-choice {
+  appearance: none;
+  border: 1px solid rgba(201, 160, 255, 0.28);
+  background: rgba(12, 10, 22, 0.72);
+  color: inherit;
+  border-radius: 10px;
+  padding: 0.45rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.reveal-deck-top-choice img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #120f22;
+}
+
+.reveal-deck-top-choice:hover,
+.reveal-deck-top-choice:focus-visible {
+  border-color: rgba(201, 160, 255, 0.7);
+  box-shadow: 0 0 0 1px rgba(201, 160, 255, 0.25);
 }
 
 .deck-discard-top-card .body,
@@ -7649,6 +7721,41 @@ body.panel-resizing {
 .fx-flying-card.suit-willpower { background: linear-gradient(160deg, #8a2020, #4a1010); color: #ffe0e0; }
 .fx-flying-card.suit-wild { background: linear-gradient(160deg, #5a3a8a, #2a1848); color: #f0e8ff; }
 
+.fx-flip-card {
+  perspective: 480px;
+  background: #120f22;
+  overflow: hidden;
+}
+
+.fx-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: fx-card-flip 0.55s ease forwards;
+}
+
+.fx-flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #120f22;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fx-flip-front { transform: rotateY(180deg); }
+
+@keyframes fx-card-flip {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(180deg); }
+}
+
 .fx-flying-draw { box-shadow: 0 0 18px rgba(109, 255, 176, 0.55); }
 .fx-flying-discard { box-shadow: 0 0 16px rgba(255, 120, 120, 0.45); }
 .fx-flying-spend { box-shadow: 0 0 20px rgba(201, 160, 255, 0.65); border-color: var(--accent); }
@@ -8945,6 +9052,12 @@ body.play-window .brand h1 {
   line-height: 1;
 }
 
+body.play-window .brand-wordmark {
+  height: 2.15rem;
+  width: 9.4rem;
+  max-width: 9.6rem;
+}
+
 body.play-window .version-label {
   font-size: 0.58rem;
   letter-spacing: 0.1em;
@@ -9543,7 +9656,8 @@ body.menu-window .setup-panel-left.menu-glass-panel { animation-delay: 0s; }
 body.menu-window .setup-panel-center.menu-glass-panel { animation-delay: -2.5s; }
 body.menu-window .setup-panel-right.menu-glass-panel { animation-delay: -5s; }
 
-body.menu-window .brand h1 {
+body.menu-window .brand h1,
+body.menu-window .brand-wordmark {
   animation: menu-title-glow 6s ease-in-out infinite;
 }
 
@@ -9553,8 +9667,14 @@ body.menu-window .brand h1 {
 }
 
 @keyframes menu-title-glow {
-  0%, 100% { text-shadow: 0 0 12px rgba(201, 160, 255, 0.25); }
-  50% { text-shadow: 0 0 22px rgba(201, 160, 255, 0.45); }
+  0%, 100% {
+    text-shadow: 0 0 12px rgba(201, 160, 255, 0.25);
+    filter: drop-shadow(0 0 8px rgba(240, 201, 106, 0.28));
+  }
+  50% {
+    text-shadow: 0 0 22px rgba(201, 160, 255, 0.45);
+    filter: drop-shadow(0 0 16px rgba(240, 201, 106, 0.5));
+  }
 }
 
 .moment-toast.moment-toast-boss {
@@ -9587,6 +9707,7 @@ body.menu-window .brand h1 {
   .game-card.psyche-card .psyche-quanta,
   body.menu-window .menu-glass-panel,
   body.menu-window .brand h1,
+  body.menu-window .brand-wordmark,
   .victory-aurora {
     animation: none !important;
   }
@@ -9851,6 +9972,11 @@ html[data-form="tablet"] .top-bar {
 /* ── Somnia 21.3 table chrome: taller HUD, 6-dreamer bottom row ── */
 body.play-window .top-bar.play-top-bar .brand h1 {
   font-size: 1.7rem;
+}
+
+body.play-window .top-bar.play-top-bar .brand-wordmark {
+  height: 2.25rem;
+  width: 9.8rem;
 }
 
 body.play-window .phase-stepper.top-bar-stepper {

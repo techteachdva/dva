@@ -5,10 +5,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "23.1";
+export const SOMNIA_VERSION = "24.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "24.0",
+    title: "Card backs, deck flips, and Lucidity Reveals",
+    notes: [
+      "Official Somnia wordmark in the top-left. Psyche, Archetype, and three Mindstream card backs are in the game and on the print tray.",
+      "Draw piles show those backs. Drawing a card flips from back to face. Discard piles stay clickable; deck tops stay peekable.",
+      "In Meet, a Dreamer on a matching Landscape (or Forest) can Draw Mindstream by clicking that Mindstream's card back.",
+      "When every Landscape is Revealed, leftover Lucidity Reveals flip the next facedown card of a Mindstream. Flipped cards stay face-up; a pile can show ten or more.",
+    ],
+  },
   {
     version: "23.1",
     title: "Tutorial window, why-copy, and rules",

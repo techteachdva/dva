@@ -281,11 +281,55 @@ function peekCardSummary(card) {
   };
 }
 
+export function pileForDeckKey(state, deckKey) {
+  if (deckKey === "psyche") return state.psycheDeck || [];
+  if (deckKey === "dream") return state.dreamDeck || [];
+  if (deckKey === "archetype") return state.archetypeDeck || [];
+  if (deckKey?.startsWith("mindstream-")) {
+    const suit = deckKey.replace("mindstream-", "");
+    return state.mindstreamDecks?.[suit] || [];
+  }
+  return [];
+}
+
+export function allLandscapesRevealed(state) {
+  const outer = (state.board || []).filter((t) => !t.center && t.id !== "bed");
+  return outer.length > 0 && outer.every((t) => t.revealed && !t.wasteland);
+}
+
+export function syncRevealedTopsFromDeck(state, deckKey) {
+  if (!state.revealedDeckTops) state.revealedDeckTops = {};
+  const deck = pileForDeckKey(state, deckKey);
+  const n = Math.min(state.revealedDeckTops[deckKey]?.length || 0, deck.length);
+  if (!n) {
+    delete state.revealedDeckTops[deckKey];
+    return;
+  }
+  state.revealedDeckTops[deckKey] = deck.slice(0, n).map(peekCardSummary);
+}
+
 export function rememberRevealedTops(state, deckKey, cards) {
   if (!state.revealedDeckTops) state.revealedDeckTops = {};
-  const list = (Array.isArray(cards) ? cards : [cards]).filter(Boolean).map(peekCardSummary);
-  if (!list.length) return;
-  state.revealedDeckTops[deckKey] = list;
+  const incoming = (Array.isArray(cards) ? cards : [cards]).filter(Boolean);
+  const deck = pileForDeckKey(state, deckKey);
+  const want = Math.max(incoming.length, state.revealedDeckTops[deckKey]?.length || 0);
+  const n = Math.min(want, deck.length);
+  if (!n) {
+    delete state.revealedDeckTops[deckKey];
+    return;
+  }
+  state.revealedDeckTops[deckKey] = deck.slice(0, n).map(peekCardSummary);
+}
+
+export function revealNextDeckCard(state, deckKey) {
+  const deck = pileForDeckKey(state, deckKey);
+  if (!deck.length) return null;
+  if (!state.revealedDeckTops) state.revealedDeckTops = {};
+  const current = state.revealedDeckTops[deckKey] || [];
+  if (current.length >= deck.length) return null;
+  const card = deck[current.length];
+  state.revealedDeckTops[deckKey] = [...current, peekCardSummary(card)];
+  return card;
 }
 
 export function consumeRevealedTop(state, deckKey, count = 1) {
@@ -359,7 +403,11 @@ export function drawMindstream(state, suit, count = 1) {
     drawn.push(deck.shift());
     consumeRevealedTop(state, `mindstream-${suit}`);
   }
-  if (drawn.length) playSfx("draw", { count: drawn.length });
+  if (drawn.length) {
+    const actor = activePlayer(state);
+    if (actor) queueCardDraw(actor.id, drawn, `mindstream-${suit}`);
+    playSfx("draw", { count: drawn.length });
+  }
   return drawn;
 }
 

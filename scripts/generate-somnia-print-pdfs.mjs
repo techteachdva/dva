@@ -16,7 +16,7 @@ const SOMNIA = path.join(REPO, "src/site/somnia");
 const DATA = path.join(SOMNIA, "data");
 const PRINT = path.join(REPO, "print");
 const HTML_DIR = path.join(PRINT, "_html");
-const VERSION = "23.1";
+const VERSION = "24.0";
 
 const SUIT_LABELS = {
   lucidity: "Lucidity",
@@ -101,7 +101,7 @@ from pathlib import Path
 from PIL import Image
 src_root = Path(${JSON.stringify(srcRoot)})
 dst_root = Path(${JSON.stringify(destRoot)})
-MAX = 560
+MAX = 900
 count = 0
 for p in src_root.rglob("*"):
     if p.suffix.lower() not in {".webp", ".png", ".jpg", ".jpeg"}:
@@ -109,13 +109,13 @@ for p in src_root.rglob("*"):
     rel = p.relative_to(src_root)
     out = (dst_root / rel).with_suffix(".jpg")
     out.parent.mkdir(parents=True, exist_ok=True)
-    if out.exists() and out.stat().st_mtime >= p.stat().st_mtime:
+    if out.exists() and out.stat().st_mtime >= p.stat().st_mtime and out.stat().st_size > 8000:
         continue
     im = Image.open(p)
     if im.mode != "RGB":
         im = im.convert("RGB")
     im.thumbnail((MAX, MAX))
-    im.save(out, "JPEG", quality=70, optimize=True)
+    im.save(out, "JPEG", quality=82, optimize=True)
     count += 1
 print(count)
 `;
@@ -207,17 +207,19 @@ const SHARED_CSS = `
     background: white;
     color: var(--ink);
     font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
-  @page { size: letter; margin: 0.42in 0.48in; }
+  @page { size: letter; margin: 0.36in; }
   h1, h2, h3 { font-family: Palatino, Georgia, serif; page-break-after: avoid; }
-  h1 { font-size: 26pt; margin: 0 0 0.35em; letter-spacing: 0.04em; }
+  h1 { font-size: 20pt; margin: 0 0 0.2em; letter-spacing: 0.04em; }
   h2 { font-size: 16pt; margin: 1.1em 0 0.35em; border-bottom: 1.5px solid var(--ink); padding-bottom: 0.12em; }
   h3 { font-size: 12.5pt; margin: 0.9em 0 0.25em; }
   p, li { font-size: 10.5pt; line-height: 1.38; }
   .kicker { text-transform: uppercase; letter-spacing: 0.16em; font-size: 9pt; color: var(--muted); margin: 0 0 0.4em; }
   .lead { font-size: 12pt; }
   .cover {
-    min-height: 9.6in;
+    min-height: 7.6in;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -226,7 +228,7 @@ const SHARED_CSS = `
   .cover-art {
     width: 100%;
     max-height: 6.4in;
-    object-fit: cover;
+    object-fit: contain;
     border: 2px solid var(--ink);
   }
   .meta { color: var(--muted); font-size: 10pt; }
@@ -238,7 +240,9 @@ const SHARED_CSS = `
     background: #efe8ff;
     margin: 0.7em 0;
   }
-  .page-break { page-break-before: always; }
+  .page-break { page-break-before: always; break-before: page; }
+  h2, h3, table, .callout { page-break-inside: avoid; break-inside: avoid; }
+  .meta { page-break-before: avoid; break-before: avoid; }
   table { width: 100%; border-collapse: collapse; font-size: 10pt; margin: 0.4em 0 0.8em; }
   th, td { border: 1px solid #c9c0d8; padding: 0.28em 0.4em; text-align: left; vertical-align: top; }
   th { background: #eee8f8; }
@@ -267,72 +271,101 @@ const SHARED_CSS = `
   .map-hex.ring1 { background: #c9deff; }
   .sheet-label {
     page-break-before: always;
+    break-before: page;
     font-size: 11pt;
     font-weight: 700;
-    margin: 0 0 0.25in;
+    margin: 0 0 0.18in;
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
-  .sheet-label:first-child { page-break-before: auto; }
+  .sheet-label-first { page-break-before: auto; break-before: auto; }
   .card-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 2.48in);
-    grid-auto-rows: 3.47in;
-    gap: 0.08in;
-    justify-content: center;
+    font-size: 0;
+    text-align: center;
   }
   .pnpcard {
+    display: inline-block;
+    vertical-align: top;
+    font-size: 10pt;
     width: 2.48in;
     height: 3.47in;
+    margin: 0 0.04in 0.08in;
     border: 0.7pt dashed #222;
     overflow: hidden;
     position: relative;
-    background: var(--panel);
-    display: flex;
-    flex-direction: column;
-  }
-  .pnpcard .banner {
-    font-size: 6.2pt;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 0.07in 0.08in 0.04in;
-    font-weight: 700;
-    display: flex;
-    justify-content: space-between;
-    gap: 0.08in;
+    background: #120f22;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   .pnpcard .art {
-    height: 1.42in;
-    background: #1a1730 center/cover no-repeat;
-    border-top: 0.5pt solid #222;
-    border-bottom: 0.5pt solid #222;
-    flex: 0 0 1.42in;
+    position: absolute;
+    inset: 0;
+    background: #120f22;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .pnpcard .art.missing {
+  .pnpcard .art img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+  }
+  .pnpcard .art-fallback {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 14pt;
+    font-size: 16pt;
     font-weight: 700;
+    text-align: center;
+    padding: 0.12in;
+  }
+  .pnpcard .banner {
+    position: relative;
+    z-index: 2;
+    font-size: 6.2pt;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.06in 0.08in 0.04in;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.08in;
+    background: rgba(247, 242, 232, 0.94);
+  }
+  .pnpcard .text {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    max-height: 46%;
+    overflow: hidden;
+    padding: 0.16in 0.08in 0.05in;
+    background: linear-gradient(180deg, rgba(255,253,248,0) 0%, rgba(255,253,248,0.94) 0.16in, rgba(255,253,248,0.97) 28%);
   }
   .pnpcard h4 {
-    margin: 0.06in 0.08in 0.02in;
-    font-size: 9.4pt;
+    margin: 0 0 0.04em;
+    font-size: 9pt;
     line-height: 1.15;
   }
-  .pnpcard .body {
-    margin: 0 0.08in;
-    font-size: 6.6pt;
-    line-height: 1.25;
-    flex: 1;
+  .pnpcard .body,
+  .pnpcard .body p {
+    margin: 0 0 0.12em;
+    font-size: 6.4pt;
+    line-height: 1.22;
   }
   .pnpcard .foot {
     font-size: 6pt;
-    padding: 0.04in 0.08in 0.06in;
+    padding: 0.02in 0 0;
     color: #444;
     display: flex;
     justify-content: space-between;
+    gap: 0.08in;
   }
   .chip {
     display: inline-block;
@@ -343,53 +376,85 @@ const SHARED_CSS = `
     font-weight: 700;
   }
   .hex-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 3.45in);
-    grid-auto-rows: 3.28in;
-    gap: 0.12in 0.18in;
-    justify-content: center;
+    font-size: 0;
+    text-align: center;
   }
   .hex-tile {
-    width: 3.2in;
-    height: 3.2in;
-    margin: 0 auto;
-    position: relative;
+    display: inline-block;
+    vertical-align: top;
+    font-size: 10pt;
+    width: 3.28in;
+    margin: 0 0.08in 0.1in;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    text-align: left;
   }
-  .hex-shape {
-    width: 3.2in;
-    height: 2.78in;
-    margin: 0.2in auto 0;
-    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-    background: #222 center/cover no-repeat;
+  .hex-art {
     position: relative;
+    width: 3.28in;
+    height: 3.28in;
+    background: #1a1408;
   }
-  .hex-outline {
-    position: absolute;
-    inset: 0.12in 0.02in 0.12in;
-    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-    box-shadow: inset 0 0 0 1.2pt #111;
-    pointer-events: none;
+  .hex-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
   }
   .hex-cut {
     position: absolute;
-    inset: 0.08in 0;
+    top: 8.5%;
+    bottom: 8.5%;
+    left: 13.5%;
+    right: 13.5%;
     clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
     outline: 0.8pt dashed #111;
     outline-offset: -1px;
     pointer-events: none;
   }
   .hex-caption {
-    position: absolute;
-    left: 0.42in;
-    right: 0.42in;
-    bottom: 0.38in;
-    background: rgba(255,252,245,0.92);
-    padding: 0.08in 0.1in;
+    margin-top: 0.06in;
+    background: rgba(255,252,245,0.96);
+    border: 0.4pt solid #d8d0c4;
+    padding: 0.07in 0.1in;
     font-size: 7pt;
     line-height: 1.2;
   }
   .hex-caption strong { display: block; font-size: 9pt; }
   .print-note { font-size: 8.5pt; color: var(--muted); margin: 0 0 0.2in; }
+  .card-tray {
+    page-break-before: always;
+    break-before: page;
+  }
+  .card-tray-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 2.35in);
+    gap: 0.18in 0.2in;
+    justify-content: center;
+    margin-top: 0.2in;
+  }
+  .card-tray-slot {
+    border: 0.8pt dashed #222;
+    padding: 0.08in;
+    background: #fffdf8;
+  }
+  .card-tray-slot img {
+    width: 2.15in;
+    height: 3.01in;
+    object-fit: contain;
+    display: block;
+    background: #120f22;
+  }
+  .card-tray-slot strong {
+    display: block;
+    font-size: 9pt;
+    margin: 0.06in 0 0.02in;
+  }
+  .card-tray-slot span {
+    font-size: 7pt;
+    color: #444;
+  }
 `;
 
 function cardHtml({
@@ -405,22 +470,24 @@ function cardHtml({
   artColor = "",
 }) {
   const url = artUrl(art);
-  const artStyle = url
-    ? `style="background-image:url('${url}')"`
-    : `style="background:${artColor || "#2a2438"}"`;
-  return `
-  <article class="pnpcard">
+  const artInner = url
+    ? `<img src="${url}" alt="${esc(name)}" />`
+    : `<div class="art-fallback" style="background:${artColor || "#2a2438"}">${esc(name)}</div>`;
+  return `<article class="pnpcard">
+    <div class="art ${artClass}">${artInner}</div>
     <div class="banner"><span>${esc(bannerLeft || kind)}</span><span>${bannerRight || ""}</span></div>
-    <div class="art ${url ? "" : "missing"} ${artClass}" ${artStyle}>${url ? "" : esc(name)}</div>
-    <h4>${esc(name)}</h4>
-    <div class="body">${body || ""}</div>
-    <div class="foot"><span>${footLeft || ""}</span><span>${footRight || ""}</span></div>
+    <div class="text">
+      <h4>${esc(name)}</h4>
+      <div class="body">${body || ""}</div>
+      <div class="foot"><span>${footLeft || ""}</span><span>${footRight || ""}</span></div>
+    </div>
   </article>`;
 }
 
-function section(title, cards) {
+function section(title, cards, { first = false } = {}) {
   if (!cards.length) return "";
-  return `<div class="sheet-label">${esc(title)} — ${cards.length} cutouts</div><div class="card-grid">${cards.join("")}</div>`;
+  const labelClass = first ? "sheet-label sheet-label-first" : "sheet-label";
+  return `<div class="${labelClass}">${esc(title)} — ${cards.length} cutouts</div><div class="card-grid">${cards.join("")}</div>`;
 }
 
 function hexHtml(tile, { back = false } = {}) {
@@ -434,10 +501,11 @@ function hexHtml(tile, { back = false } = {}) {
   const caption = back
     ? `<strong>Wasteland</strong>Back of ${esc(tile.name)}. Forgotten / unrevealed.`
     : `<strong>${esc(tile.name)}</strong>${suitChip(tile.suit)}${actionA ? `<br>${esc(actionA)}` : ""}${actionB ? `<br>${esc(actionB)}` : ""}`;
-  return `
-  <div class="hex-tile">
-    <div class="hex-shape" style="${url ? `background-image:url('${url}')` : "background:#333"}"></div>
-    <div class="hex-cut"></div>
+  return `<div class="hex-tile">
+    <div class="hex-art">
+      ${url ? `<img src="${url}" alt="${esc(back ? "Wasteland" : tile.name)}" />` : ""}
+      <div class="hex-cut"></div>
+    </div>
     <div class="hex-caption">${caption}</div>
   </div>`;
 }
@@ -575,13 +643,13 @@ function rulesHtml(data) {
   </ol>
   ${mapDiagram(playable)}
 
-  <h2 class="page-break">R.E.M. — every round</h2>
+  <h2>R.E.M. — every round</h2>
   <p>There is no turn order inside a phase. Talk, then act. One Dreamer spends <strong>1 suited Psyche</strong> (or 1 quarter as 1 suited Psyche) to open the phase. Budget = that card’s value + that Dreamer’s matching stat, including Object and Acquired Archetype bonuses.</p>
   <h3>Reveal — Lucidity</h3>
   <ul>
     <li>Head Dreamer draws and resolves 1 Dream. Round 2+: each living Dreamer also draws 2 Psyche at the start of Reveal.</li>
     <li>One Dreamer spends 1 Lucidity. Click/flip that many Wasteland hexes face-up.</li>
-    <li>When every Landscape is Revealed, Return Dreamers+3 from the Subconscious.</li>
+    <li>When every Landscape is Revealed, leftover Lucidity Reveals flip the next facedown card of a Mindstream. Flipped cards stay face-up on that pile. Return Dreamers+3 from the Subconscious when the map first completes.</li>
   </ul>
   <h3>Explore — Elasticity</h3>
   <ul>
@@ -630,8 +698,33 @@ function rulesHtml(data) {
   </table>
 
   <p class="meta">Somnia v ${VERSION} physical prototype. Companion file: Card and Landscape cutouts. Artwork and mechanics from the digital game.</p>
+
+  ${cardTrayHtml()}
 </body>
 </html>`;
+}
+
+function cardTrayHtml() {
+  const slots = [
+    { label: "Psyche", note: "Stack the Psyche deck on this back.", art: "images/backs/psyche.webp" },
+    { label: "Archetypes", note: "Stack unused Archetypes here.", art: "images/backs/archetype.webp" },
+    { label: "Dreams", note: "Dream deck — official wordmark.", art: "images/somnia-logo.png" },
+    { label: "Lucidity Mindstream", note: "Blue. Place that 70-card pile here.", art: "images/backs/mindstream-lucidity.webp" },
+    { label: "Elasticity Mindstream", note: "Yellow. Place that 70-card pile here.", art: "images/backs/mindstream-elasticity.webp" },
+    { label: "Willpower Mindstream", note: "Red. Place that 70-card pile here.", art: "images/backs/mindstream-willpower.webp" },
+  ].map((slot) => {
+    const src = artUrl(slot.art);
+    return `<div class="card-tray-slot">
+      ${src ? `<img src="${src}" alt="${esc(slot.label)} back" />` : ""}
+      <strong>${esc(slot.label)}</strong>
+      <span>${esc(slot.note)}</span>
+    </div>`;
+  }).join("");
+  return `<section class="card-tray">
+    <h2>Card tray — deck backs</h2>
+    <p class="print-note">Print this page as a table mat. Set each finished deck on its back so stacks stay together. These are the same backs used in digital Somnia ${VERSION}.</p>
+    <div class="card-tray-grid">${slots}</div>
+  </section>`;
 }
 
 function cutoutsHtml(data) {
@@ -813,7 +906,7 @@ function cutoutsHtml(data) {
 <body>
   <p class="kicker">Somnia v ${VERSION} · print on US Letter cardstock · actual size · cut on dashed lines</p>
   <h1>${esc(title)}</h1>
-  <p class="print-note">Poker-ish cards are 2.48" × 3.47". Hexes are ~3" flat-to-flat. Power Tokens are US quarters — not printed here. Sleeve or glue Wasteland backs to the 24 outer Landscapes. The Bed has no forgotten back.</p>
+  <p class="print-note">Poker-ish cards are 2.48" × 3.47". Artwork prints in full (nothing cropped). Hex art is the full square; cut the inner dashed hex. Power Tokens are US quarters — not printed here. Sleeve or glue Wasteland backs to the 24 outer Landscapes. The Bed has no forgotten back.</p>
   ${inner}
 </body>
 </html>`;
@@ -822,7 +915,7 @@ function cutoutsHtml(data) {
     {
       slug: "Cutouts-Identity-Psyche-Dreams",
       html: wrap("Dreamers, Archetypes, Psyche & Dreams", [
-        section("Dreamers", dreamerCards),
+        section("Dreamers", dreamerCards, { first: true }),
         section("Archetypes", archCards),
         section("Psyche", psycheCards),
         section("Dreams & Final Recurrence", dreamCards),
@@ -831,14 +924,14 @@ function cutoutsHtml(data) {
     {
       slug: "Cutouts-Beasts-Objects",
       html: wrap("Dreambeasts & Objects", [
-        section("Dreambeasts", beastCards),
+        section("Dreambeasts", beastCards, { first: true }),
         section("Objects", objectCards),
       ].join("\n")),
     },
     {
       slug: "Cutouts-Mindstream",
       html: wrap("Mindstream Events, Power & Draw Dream", [
-        section("Mindstream Events", eventCards),
+        section("Mindstream Events", eventCards, { first: true }),
         section("Mindstream Power Token cards (grant a quarter)", tokenGrantCards),
         section("Mindstream Draw Dream cards", drawDreamCards),
       ].join("\n")),
@@ -846,8 +939,7 @@ function cutoutsHtml(data) {
     {
       slug: "Cutouts-Landscapes",
       html: wrap("Landscape hexes", `
-  <div class="sheet-label">Landscape hex faces — ${hexFaces.length} tiles</div>
-  <p class="print-note">Cut the outer dashed hex. Action A is Draw Mindstream (repeatable). Action B is the unique once-per-Dreamer Meet action.</p>
+  <div class="sheet-label sheet-label-first">Landscape hex faces — ${hexFaces.length} tiles</div>
   <div class="hex-grid">${hexFaces.join("")}</div>
   <div class="sheet-label">Wasteland backs — ${hexBacks.length} (glue to outer tiles)</div>
   <div class="hex-grid">${hexBacks.join("")}</div>`),
@@ -872,7 +964,7 @@ async function htmlToPdf(chromium, htmlPath, pdfPath) {
   const browser = await launchBrowser(chromium);
   try {
     const page = await browser.newPage();
-    await page.goto(pathToFileURL(htmlPath).href, { waitUntil: "load", timeout: 120000 });
+    await page.goto(pathToFileURL(htmlPath).href, { waitUntil: "load", timeout: 180000 });
     await page.evaluate(async () => {
       const imgs = [...document.images];
       await Promise.all(imgs.map((img) => {
