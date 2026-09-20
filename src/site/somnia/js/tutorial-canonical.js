@@ -230,13 +230,13 @@ function acceptHouseEncounter(state) {
   }
 }
 
-function acceptBasementEncounter(state) {
+function rejectBasementEncounter(state) {
   placePlayerOnLandscape(state, 1, "the-basement");
   state.activePlayerIndex = 1;
   state.selectedLandscapeId = "the-basement";
   ensureMeetBudget(state, 1);
   selectExactCards(state, 1, ["elasticity-2-i-e2", "lucidity-2-i-l2", "willpower-1-i-w1"]);
-  meetEncounter(state, "accept");
+  meetEncounter(state, "reject");
   if (!state.questTracker) state.questTracker = { mindstreamOnLandscape: {}, meetOnLandscape: {}, landscapeActions: {} };
   if (!state.questTracker.meetOnLandscape) state.questTracker.meetOnLandscape = {};
   if (!(state.questTracker.meetOnLandscape["the-basement"] > 0)) {
@@ -347,7 +347,7 @@ export function applyCanonicalTutorialStep(state, step) {
       gainMeetActions(state);
       if (state.meetActionBudget <= 0) state.meetActionBudget = 5;
       drawMindstreamOn(state, 0, "the-attic");
-      acceptBasementEncounter(state);
+      rejectBasementEncounter(state);
       return;
 
     case "r2-acquire":

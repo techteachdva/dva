@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "24.0";
+export const SOMNIA_VERSION = "24.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "24.1",
+    title: "Dreamer radial hotfix",
+    notes: [
+      "Clicking a Dreamer on the board opens the action radial again. It no longer hides behind the table or gets eaten by a second tap.",
+      "Tutorial starts with one Mandrake on House. Goofus Bird arrives on The Basement in Round 2, and that Meet must be Rejected.",
+    ],
+  },
   {
     version: "24.0",
     title: "Card backs, deck flips, and Lucidity Reveals",

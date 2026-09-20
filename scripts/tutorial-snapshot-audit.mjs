@@ -102,6 +102,7 @@ function summarizeStep(state, stepIndex) {
     hands: state.players.map((p) => p.hand.map((c) => `${c.type || "psyche"}:${c.suit || "-"}:${c.value ?? 0}`)),
     powerTokens: state.players.map((p) => p.powerTokens || 0),
     houseEncounter: houseEnc,
+    basementEncounter: encounterOnLandscape(state, "the-basement")?.name || null,
     bedEncounter: bedEnc,
     encounterResolved: state.tutorialFlags?.encounterResolved || false,
     atticMindstream: !!state.questTracker?.mindstreamOnLandscape?.["the-attic"],
@@ -210,6 +211,8 @@ const STEP_ENTRY_CHECKS = {
     if (getPhase(s) !== "Meet") return `Expected Meet, got ${getPhase(s)}`;
     if (!s.players.some((p) => p.landscapeId === "the-attic")) return "No Dreamer on Attic";
     if (!s.players.some((p) => p.landscapeId === "the-basement")) return "No Dreamer on Basement";
+    const enc = encounterOnLandscape(s, "the-basement");
+    if (!enc || enc.id !== "goofus-bird") return "Goofus Bird missing on Basement";
     return true;
   },
   "r2-acquire": (s) => {
@@ -233,8 +236,8 @@ const STEP_EFFECT_CHECKS = {
     && s.players.some((p) => p.landscapeId === "the-attic")
     && s.players.some((p) => p.landscapeId === "the-basement"),
   "r2-meet": (s) => !!s.questTracker?.mindstreamOnLandscape?.["the-attic"]
-    && ((s.questTracker?.meetOnLandscape?.["the-basement"] || 0) > 0
-      || (s.questTracker?.meetOnLandscape?.["the-attic"] || 0) > 0),
+    && ((s.questTracker?.meetOnLandscape?.["the-basement"] || 0) > 0)
+    && !encounterOnLandscape(s, "the-basement"),
   "r2-acquire": (s) => s.tutorialFlags?.archetypeAcquired
     || s.players.some((p) => (p.acquiredArchetypes || []).some((a) => a.id === "innocent")),
 };

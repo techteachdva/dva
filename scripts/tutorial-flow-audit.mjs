@@ -200,7 +200,13 @@ function simulate() {
       state.activePlayerIndex = 1;
       setPlayerOn(state, 1, "the-basement");
       state.selectedLandscapeId = "the-basement";
-      gameMod.performLandscapeAction(state, "draw-mindstream");
+      state.selectedHand = [];
+      const immovable = state.players[1];
+      ["elasticity-2-i-e2", "lucidity-2-i-l2", "willpower-1-i-w1"].forEach((cardId) => {
+        const card = immovable.hand.find((c) => c.id === cardId);
+        if (card) state.selectedHand.push(card.instanceId);
+      });
+      meetEncounter(state, "reject");
     },
   ];
 

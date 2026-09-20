@@ -40,6 +40,9 @@ function performBeat(step, beat) {
         return;
       }
       state.activePlayerIndex = beat.playerIndex;
+      if (state.players[beat.playerIndex]?.landscapeId) {
+        state.selectedLandscapeId = state.players[beat.playerIndex].landscapeId;
+      }
       break;
     case "handToggle": {
       const player = state.players[beat.playerIndex ?? 0];
@@ -91,8 +94,25 @@ function performBeat(step, beat) {
     case "meetAccept":
       if (!tm.isTutorialActionAllowed(state, "meetAccept")) fail(`${step.id}: meet accept blocked`);
       else {
+        if (beat.tileId) {
+          state.selectedLandscapeId = beat.tileId;
+          const occupantIndex = state.players.findIndex((p) => p.alive && p.landscapeId === beat.tileId);
+          if (occupantIndex >= 0) state.activePlayerIndex = occupantIndex;
+        }
         gm.meetEncounter(state, "accept");
-        tm.notifyTutorialEncounterResolved(state, "house");
+        tm.notifyTutorialEncounterResolved(state, beat.tileId || "house");
+      }
+      break;
+    case "meetReject":
+      if (!tm.isTutorialActionAllowed(state, "meetReject")) fail(`${step.id}: meet reject blocked`);
+      else {
+        if (beat.tileId) {
+          state.selectedLandscapeId = beat.tileId;
+          const occupantIndex = state.players.findIndex((p) => p.alive && p.landscapeId === beat.tileId);
+          if (occupantIndex >= 0) state.activePlayerIndex = occupantIndex;
+        }
+        gm.meetEncounter(state, "reject");
+        tm.notifyTutorialEncounterResolved(state, beat.tileId || "the-basement");
       }
       break;
     case "advancePhase":

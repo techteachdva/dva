@@ -108,7 +108,7 @@ import { playSfx } from "./audio.js";
 import { markPhasePulse, markDreamFeedNudge } from "./fx.js";
 import { recordQuestEvent } from "./quests.js";
 import { COOP_PLAY_TIP } from "./guide.js";
-import { notifyTutorialEncounterResolved } from "./tutorial-mode.js";
+import { notifyTutorialEncounterResolved, classifyPhaseAction } from "./tutorial-mode.js";
 import {
   resolveCardEffect,
   createEffectHelpers,

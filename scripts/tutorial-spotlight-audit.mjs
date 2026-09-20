@@ -100,6 +100,11 @@ function validateSpotlight(beat, spotlight, step, sync) {
         fail("meetAccept needs Accept button selector", { step: step.id, spotlight });
       }
       break;
+    case "meetReject":
+      if (!spotlight?.includes("meetReject")) {
+        fail("meetReject needs Reject button selector", { step: step.id, spotlight });
+      }
+      break;
     case "boardClick":
     case "exploreMove":
       if (!spotlight?.includes(`data-tile-id="${beat.tileId}"`)) {
@@ -178,6 +183,15 @@ function performBeat(step, beat) {
       }
       gm.meetEncounter(state, "accept");
       tm.notifyTutorialEncounterResolved(state, beat.tileId || "house");
+      break;
+    case "meetReject":
+      if (beat.tileId) {
+        state.selectedLandscapeId = beat.tileId;
+        const occupantIndex = state.players.findIndex((p) => p.alive && p.landscapeId === beat.tileId);
+        if (occupantIndex >= 0) state.activePlayerIndex = occupantIndex;
+      }
+      gm.meetEncounter(state, "reject");
+      tm.notifyTutorialEncounterResolved(state, beat.tileId || "the-basement");
       break;
     case "advancePhase":
       gm.endPhase(state);

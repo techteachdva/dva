@@ -4298,13 +4298,12 @@ html[data-pointer="coarse"] .board-camera-controls button {
 .power-token-radial-layer {
   position: fixed;
   inset: 0;
-  z-index: 8500;
+  z-index: 10120;
   pointer-events: none;
   visibility: hidden;
 }
 
 .power-token-radial-layer.open {
-  pointer-events: auto;
   visibility: visible;
 }
 
@@ -4315,8 +4314,8 @@ html[data-pointer="coarse"] .board-camera-controls button {
   border: 0;
   padding: 0;
   margin: 0;
-  background: rgba(6, 4, 14, 0.35);
-  cursor: pointer;
+  background: rgba(6, 4, 14, 0.22);
+  pointer-events: none;
 }
 
 .power-token-radial-menu {
@@ -4373,7 +4372,7 @@ html[data-pointer="coarse"] .board-camera-controls button {
 
 body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   pointer-events: auto;
-  z-index: 8601;
+  z-index: 10121;
 }
 
 .power-tokens-empty {

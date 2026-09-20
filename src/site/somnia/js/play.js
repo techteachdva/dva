@@ -1271,7 +1271,9 @@ function showDreamerBoardRadialMenu(playerId, tileId, player) {
     onPick: () => {},
   });
 
-  showRadialMenu(null, options, (opt) => {
+  const liveToken = document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`)
+    || document.querySelector(`.hex-tile[data-tile-id="${tileId}"]`);
+  showRadialMenu(liveToken, options, (opt) => {
     if (opt.kind && !isTutorialActionAllowed(state, opt.kind, { action: opt.action, tileId })) {
       tutorialActionBlocked(state);
       renderAll();
@@ -1295,13 +1297,22 @@ function openDreamerBoardRadial(anchorEl, playerId, tileId) {
   clearDockSelectTimer();
   pendingDreamerFocusId = null;
   hideUtilityModal(true);
+  const player = state.players[playerIndex];
+  const sameDreamer = state.activePlayerIndex === playerIndex;
+  const sameMeetTile = getPhase(state) !== "Meet" || state.selectedLandscapeId === tileId;
   state.activePlayerIndex = playerIndex;
   if (getPhase(state) === "Meet") state.selectedLandscapeId = tileId;
   playLandscapeSfx(tileId);
+  const liveToken = document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`);
+  if (sameDreamer && sameMeetTile && liveToken?.isConnected) {
+    showDreamerBoardRadialMenu(playerId, tileId, player);
+    requestAnimationFrame(() => repositionRadialMenu());
+    return;
+  }
   pendingDreamerRadial = {
     playerId,
     tileId,
-    player: state.players[playerIndex],
+    player,
   };
   renderAll();
 }
@@ -1325,7 +1336,7 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
       id: "accept",
       label: `Accept ${encounter.accept}`,
       hint: `${encounterPayHint(encounter, true)} ${encounterAcceptSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
-      disabled: !canMeet,
+      disabled: !canMeet || (isInteractiveTutorialActive(state) && !isTutorialActionAllowed(state, "meetAccept", { tileId })),
       primary: true,
       kind: "meetAccept",
       onPick: () => handlers.meetEncounter("accept"),
@@ -1334,7 +1345,7 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
       id: "reject",
       label: `Reject ${rejectCost}`,
       hint: `${encounterPayHint(encounter, false)} ${encounterRejectSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
-      disabled: !canMeet,
+      disabled: !canMeet || (isInteractiveTutorialActive(state) && !isTutorialActionAllowed(state, "meetReject", { tileId })),
       kind: "meetReject",
       onPick: () => handlers.meetEncounter("reject"),
     },
@@ -1646,34 +1657,14 @@ function renderBoardArea() {
       if (playerIndex < 0) return;
       if (!isTutorialActionAllowed(state, "dreamerSelect", { playerIndex })) {
         tutorialActionBlocked(state);
-        renderAll();
         return;
       }
-      const now = Date.now();
-      if (
-        event?.detail >= 2
-        || (lastDreamerTokenTap.id === playerId && now - lastDreamerTokenTap.time < 400)
-      ) {
+      if (event?.detail >= 2) {
         lastDreamerTokenTap = { id: null, time: 0 };
         zoomMaxOnDreamer(playerId, tileId);
         return;
       }
-      lastDreamerTokenTap = { id: playerId, time: now };
-      const beat = currentRailBeat(state);
-      if (
-        isInteractiveTutorialActive(state)
-        && beat?.kind === "dreamerSelect"
-        && beat.playerIndex === playerIndex
-      ) {
-        state.activePlayerIndex = playerIndex;
-        if (getPhase(state) === "Meet" && state.players[playerIndex]?.landscapeId) {
-          state.selectedLandscapeId = state.players[playerIndex].landscapeId;
-        }
-        queueDreamerBoardFocus(tileId);
-        playLandscapeSfx(tileId);
-        renderAll();
-        return;
-      }
+      lastDreamerTokenTap = { id: playerId, time: Date.now() };
       openDreamerBoardRadial(anchorEl, playerId, tileId);
     },
     onBeastTokenClick: (encounter, tileId, anchorEl) => {

@@ -623,6 +623,7 @@ export function playDreamerHandSparkle(fromPlayerId, toPlayerId) {
 }
 
 let radialMenuRoot = null;
+let radialDismissHook = null;
 
 function onRadialMenuKey(event) {
   if (event.key === "Escape") hideRadialMenu();
@@ -631,6 +632,10 @@ function onRadialMenuKey(event) {
 let radialResolveAnchor = null;
 
 export function hideRadialMenu() {
+  if (radialDismissHook) {
+    document.removeEventListener("pointerdown", radialDismissHook, true);
+    radialDismissHook = null;
+  }
   if (!radialMenuRoot) return;
   document.removeEventListener("keydown", onRadialMenuKey, true);
   radialMenuRoot.remove();
@@ -641,12 +646,26 @@ export function hideRadialMenu() {
 export const hidePowerTokenRadial = hideRadialMenu;
 
 function radialAnchorPoint(anchorEl) {
-  if (!anchorEl?.isConnected) return null;
-  const rect = anchorEl.getBoundingClientRect();
-  if (!rect.width && !rect.height && rect.left === 0 && rect.top === 0) return null;
+  if (anchorEl?.isConnected) {
+    const rect = anchorEl.getBoundingClientRect();
+    if (rect.width || rect.height || rect.left || rect.top) {
+      return {
+        cx: rect.left + rect.width / 2,
+        cy: rect.top + rect.height / 2,
+      };
+    }
+  }
+  const board = document.getElementById("board-viewport");
+  if (board) {
+    const rect = board.getBoundingClientRect();
+    return {
+      cx: rect.left + rect.width / 2,
+      cy: rect.top + rect.height / 2,
+    };
+  }
   return {
-    cx: rect.left + rect.width / 2,
-    cy: rect.top + rect.height / 2,
+    cx: window.innerWidth / 2,
+    cy: window.innerHeight * 0.42,
   };
 }
 
@@ -691,20 +710,16 @@ export function repositionRadialMenu() {
 }
 
 function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = {}) {
-  if (!anchorEl?.isConnected || !options?.length) return;
-  if (!radialAnchorPoint(anchorEl)) return;
+  if (!options?.length) return;
 
   const layer = document.createElement("div");
   layer.className = "power-token-radial-layer radial-menu-layer";
   layer.setAttribute("role", "menu");
   layer.setAttribute("aria-label", ariaLabel);
 
-  const scrim = document.createElement("button");
-  scrim.type = "button";
+  const scrim = document.createElement("div");
   scrim.className = "power-token-radial-scrim radial-menu-scrim";
-  scrim.setAttribute("aria-label", "Close menu");
-  scrim.tabIndex = -1;
-  scrim.addEventListener("click", hideRadialMenu);
+  scrim.setAttribute("aria-hidden", "true");
   layer.appendChild(scrim);
 
   const menu = document.createElement("div");
@@ -734,6 +749,11 @@ function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = 
   radialMenuRoot = layer;
   layer.classList.add("open");
   document.addEventListener("keydown", onRadialMenuKey, true);
+  radialDismissHook = (event) => {
+    if (event.target.closest(".radial-menu-item, .power-token-radial-menu")) return;
+    hideRadialMenu();
+  };
+  document.addEventListener("pointerdown", radialDismissHook, true);
   if (document.body.classList.contains("tutorial-mode-active")) {
     refreshTutorialSpotlight();
   }
@@ -750,7 +770,7 @@ export function showRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions
     paintRadialMenu(el, options, onPick, { ariaLabel });
   };
 
-  if (resolveAnchor) {
+  if (resolveAnchor && !anchorEl?.isConnected) {
     requestAnimationFrame(() => requestAnimationFrame(open));
     return;
   }
@@ -4399,11 +4419,12 @@ function resolvePrimarySpotlightElement(step) {
       || document.querySelector(`.player-chip[data-player-id="${beat.playerId}"]`);
   }
 
-  if (beat?.kind === "meetAccept") {
-    const tileId = beat.tileId || "house";
-    return document.querySelector('.radial-menu-item.ready[data-tutorial-action="meetAccept"]')
-      || document.querySelector(`${tutorialPhaseActionSelector("meetAccept")}:not(:disabled)`)
-      || document.querySelector(tutorialPhaseActionSelector("meetAccept"))
+  if (beat?.kind === "meetAccept" || beat?.kind === "meetReject") {
+    const tileId = beat.tileId || (beat.kind === "meetReject" ? "the-basement" : "house");
+    const kind = beat.kind;
+    return document.querySelector(`.radial-menu-item.ready[data-tutorial-action="${kind}"]`)
+      || document.querySelector(`${tutorialPhaseActionSelector(kind)}:not(:disabled)`)
+      || document.querySelector(tutorialPhaseActionSelector(kind))
       || document.querySelector(tutorialDreamerTokenSelector(beat.playerId))
       || document.querySelector(`.hex-tile[data-tile-id="${tileId}"] .hex-occupant-beast`);
   }

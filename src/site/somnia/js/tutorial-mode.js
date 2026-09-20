@@ -13,6 +13,7 @@ import { meetPsycheActor } from "./rules.js";
 import { hexNeighbors, getLegalMoveTargets } from "./hex.js";
 import { precomputeTutorialSnapshots } from "./tutorial-canonical.js";
 import { resetBoardMotion } from "./board-fx.js";
+import { listSubconsciousCards, pickReturnCard } from "./subconscious.js";
 
 export const TUTORIAL_DREAMER_IDS = ["the-visionary", "the-immovable"];
 export const RECOMMENDED_STARTER_IDS = TUTORIAL_DREAMER_IDS;
@@ -122,7 +123,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
 ];
 
 export const TUTORIAL_REVEAL_TILE = "candy-mountain";
-const TUTORIAL_SNAPSHOT_VERSION = 23;
+const TUTORIAL_SNAPSHOT_VERSION = 25;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -204,12 +205,14 @@ export function createTutorialBaseState(data) {
       type: "dreambeast",
       instanceId: tutorialUid("enc-mandrake"),
     });
-    setEncounterOnLandscape(state, "the-basement", {
-      ...mandrake,
-      name: "Mandrake",
+  }
+  const goofus = data.dreambeasts.find((b) => b.id === "goofus-bird");
+  if (goofus) {
+    state.tutorialFlags.basementBeast = {
+      ...goofus,
+      name: "Goofus Bird",
       type: "dreambeast",
-      instanceId: tutorialUid("enc-mandrake-basement"),
-    });
+    };
   }
 
   stabilizeTutorialDecks(state);
@@ -390,7 +393,8 @@ function isRailBeatComplete(state, beat) {
       return exploreMoveBeatComplete(state, beat);
     case "gainMeetActions":
       return state.meetActionBudget > 0;
-    case "meetAccept": {
+    case "meetAccept":
+    case "meetReject": {
       const tileId = beat.tileId || "house";
       const tile = landscapeById(state, tileId);
       if (tile && tileEncounters(tile).length === 0) return true;
@@ -460,7 +464,10 @@ function railBeatAllows(state, beat, kind, detail = {}) {
       return kind === "gainMeetActions" || kind === "dreamerSelect";
     case "meetAccept":
       if (kind === "meetAccept" || kind === "beastRadial" || kind === "dreamerSelect") return true;
-      return kind === "boardClick" && detail.tileId === "house";
+      return kind === "boardClick" && detail.tileId === (beat.tileId || "house");
+    case "meetReject":
+      if (kind === "meetReject" || kind === "beastRadial" || kind === "dreamerSelect") return true;
+      return kind === "boardClick" && detail.tileId === (beat.tileId || "the-basement");
     case "advancePhase":
       return kind === "advancePhase" || kind === "dreamerSelect";
     case "landscapeActionA":
@@ -475,9 +482,29 @@ function railBeatAllows(state, beat, kind, detail = {}) {
   }
 }
 
+function ensureTutorialBasementBeast(state) {
+  if (state.round < 2) return;
+  if (!state.tutorialFlags) state.tutorialFlags = {};
+  if (state.tutorialFlags.basementBeastPlaced) return;
+  const tile = landscapeById(state, "the-basement");
+  const existing = tile ? tileEncounters(tile) : [];
+  if (existing.length) {
+    state.tutorialFlags.basementBeastPlaced = true;
+    return;
+  }
+  const template = state.tutorialFlags?.basementBeast;
+  if (!template || !tile) return;
+  setEncounterOnLandscape(state, "the-basement", {
+    ...template,
+    instanceId: tutorialUid("enc-goofus-basement"),
+  });
+  state.tutorialFlags.basementBeastPlaced = true;
+}
+
 function settleTutorialRail(state) {
   const step = getTutorialStep(state);
   if (!step) return;
+  ensureTutorialBasementBeast(state);
 
   if (step.id === "r2-acquire" && !innocentAcquired(state)) {
     if (!state.tutorialFlags.acquirePowerPrimed) {
@@ -658,9 +685,10 @@ function railHighlight(state, step, beat) {
     case "spendElasticity":
     case "gainMeetActions":
       return radialOrDreamerHighlight(state, beat, beat.kind);
-    case "meetAccept": {
-      const highlight = radialOrDreamerHighlight(state, beat, "meetAccept");
-      const tileId = beat.tileId || player?.landscapeId || "house";
+    case "meetAccept":
+    case "meetReject": {
+      const highlight = radialOrDreamerHighlight(state, beat, beat.kind);
+      const tileId = beat.tileId || player?.landscapeId || (beat.kind === "meetReject" ? "the-basement" : "house");
       highlight.targets.push(`.hex-tile[data-tile-id="${tileId}"] .hex-occupant-beast`);
       return highlight;
     }
@@ -1139,7 +1167,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-meet",
     round: 2,
     title: "Round 2 - Quest Landscapes",
-    why: "Open a shared Meet budget first. Draw Mindstream on The Attic for Innocent quest 1 — it is repeatable. Accepting the beast on The Basement marks quest 2. Unique Landscape actions are once per Dreamer.",
+    why: "Open a shared Meet budget first. Draw Mindstream on The Attic for Innocent quest 1 — it is repeatable. Rejecting Goofus Bird on The Basement marks quest 2. Unique Landscape actions are once per Dreamer.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Basement." },
@@ -1158,13 +1186,14 @@ export const TUTORIAL_SCRIPT = [
         kind: "handToggle",
         playerIndex: 1,
         cardIds: ["elasticity-2-i-e2", "lucidity-2-i-l2", "willpower-1-i-w1"],
-        prompt: "Select Elasticity 2, Lucidity 2, and Willpower 1 for Accept.",
+        prompt: "Select Elasticity 2, Lucidity 2, and Willpower 1 for Reject.",
       },
       {
-        kind: "meetAccept",
+        kind: "meetReject",
+        playerIndex: 1,
         tileId: "the-basement",
         done: (s) => innocentMeetQuestDone(s),
-        prompt: "Click The Immovable or the Dreambeast on The Basement, then Accept.",
+        prompt: "Click The Immovable or Goofus Bird on The Basement, then Reject.",
       },
     ],
     until: (s) => atRound(s, 2) && innocentAtticDone(s) && innocentMeetQuestDone(s),
@@ -1282,11 +1311,24 @@ export function notifyTutorialDreamDrawn(state) {
   state.tutorialFlags.dreamsDrawn = (state.tutorialFlags.dreamsDrawn || 0) + 1;
 }
 
+function autoCompleteTutorialReturn(state) {
+  if (!state?.tutorialMode || !state.pendingReturn) return;
+  const pending = state.pendingReturn;
+  const unused = (card) => !pending.picked.some((picked) => picked.instanceId === card.instanceId);
+  const all = listSubconsciousCards(state).filter(unused);
+  const prefer = all.filter((card) => card.type !== "dreambeast" && card.id !== "goofus-bird");
+  const pool = prefer.length ? prefer : all;
+  for (const card of pool) {
+    if (!state.pendingReturn) break;
+    pickReturnCard(state, card.instanceId);
+  }
+  state.pendingReturn = null;
+}
+
 export function notifyTutorialEncounterResolved(state, landscapeId) {
   if (!state?.tutorialMode) return;
-  if (landscapeId === "house" || landscapeId === "the-basement") {
-    if (landscapeId === "house") state.tutorialFlags.encounterResolved = true;
-  }
+  if (landscapeId === "house") state.tutorialFlags.encounterResolved = true;
+  autoCompleteTutorialReturn(state);
 }
 
 export function notifyTutorialArchetypeAcquired(state) {
