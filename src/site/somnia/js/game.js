@@ -82,13 +82,13 @@ import {
   recordCancellableMove,
 } from "./dreamer-powers.js";
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
+import { spawnBossEncounterOnBed, isBossDreamCard } from "./dream-deck.js";
 import { resumeObjectEffect } from "./object-effects.js";
 import { psycheHandCount, hasPsycheHealth, canAddAllyToHand, allyHandLimitForPlayer, allyHandCount } from "./psyche.js";
-import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueBossStingerFx } from "./board-fx.js";
+import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx } from "./board-fx.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "./archetypes.js";
 import { getActivatableArchetypePowers } from "./archetype-stats.js";
 import { isQuestConditionMet } from "./quests.js";
-import { shuffle, uid } from "./data.js";
 import {
   getLandscapeActionChoices,
   getUniqueLandscapeActionChoices,
@@ -758,12 +758,8 @@ export function drawAdditionalDream(state, onShowModal) {
     ["Resolve this Dream effect before continuing"],
   );
 
-  if (card.type === "boss-dream" || card.boss) {
-    const encounter = { ...card, type: "dreambeast", instanceId: uid("enc") };
-    setEncounterOnLandscape(state, "bed", encounter);
-    logMoment(state, `${card.name} awakens on The Bed!`, { boss: true });
-    markDreamFeedNudge();
-    queueBossStingerFx(card.id, "bed");
+  if (isBossDreamCard(card)) {
+    spawnBossEncounterOnBed(state, card);
   } else if (card.type === "final" && card.id === "you-never-wake") {
     resolveCardEffect(state, card, head, getEffectHelpers());
   } else if (card.type === "final" && card.id === "final-recurrence") {
@@ -812,13 +808,9 @@ export function drawDreamCard(state, onShowModal) {
       : ["Resolve the Dream effect before continuing"],
   );
 
-  if (card.type === "boss-dream" || card.boss) {
-    const encounter = { ...card, type: "dreambeast", instanceId: uid("enc") };
-    setEncounterOnLandscape(state, "bed", encounter);
-    logMoment(state, `${card.name} awakens on The Bed!`, { boss: true });
+  if (isBossDreamCard(card)) {
+    spawnBossEncounterOnBed(state, card);
     recordQuestEvent(state, "meet_boss", { bossId: card.id });
-    markDreamFeedNudge();
-    queueBossStingerFx(card.id, "bed");
   } else {
     resolveCardEffect(state, card, head, getEffectHelpers());
   }

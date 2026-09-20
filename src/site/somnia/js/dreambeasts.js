@@ -211,9 +211,15 @@ export function flipLeviathan(state, helpers = {}) {
     return null;
   }
 
-  const encounter = { ...card, type: "dreambeast", boss: true, awake: true, id: card.refId || card.id || "leviathan" };
+  const encounter = {
+    ...card,
+    type: "dreambeast",
+    boss: true,
+    awake: true,
+    id: card.refId || card.id || "leviathan",
+  };
   const dest = landscapeById(state, "endless-ocean")?.revealed ? "endless-ocean" : "bed";
-  if (helpers.spawnEncounter) helpers.spawnEncounter(state, dest);
+  if (helpers.spawnEncounterWithCard) helpers.spawnEncounterWithCard(state, dest, encounter);
   else setEncounterOnLandscape(state, dest, encounter);
   const spawned = encountersOnLandscape(state, dest).find((e) => e.id === "leviathan" || e.refId === "leviathan") || encounter;
   spawned.awake = true;

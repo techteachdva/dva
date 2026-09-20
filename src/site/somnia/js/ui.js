@@ -906,6 +906,12 @@ function suitGradient(card) {
 }
 
 export function renderCard(card, options = {}) {
+  if (!card) {
+    const empty = document.createElement("div");
+    empty.className = "game-card is-missing";
+    empty.hidden = true;
+    return empty;
+  }
   const {
     portrait = false,
     mini = false,
@@ -2208,7 +2214,7 @@ export function showDiscardPileModal(state, deckId, onCardClick) {
   const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
   const label = DECK_LABELS[deckId] || deckId;
-  const pile = [...discardPileForDeck(state, deckId)].reverse();
+  const pile = [...discardPileForDeck(state, deckId)].filter(Boolean).reverse();
   body.innerHTML = `
     <h2>${label} — Discard</h2>
     <p class="graveyard-total">${pile.length} card${pile.length === 1 ? "" : "s"} face-up in discard</p>
@@ -3226,7 +3232,7 @@ export function showDreamerPowerChoice(ui, onPick) {
 
 export function showObjectCardPicker(ui, onPick) {
   const body = document.getElementById("utility-modal-body");
-  const cards = ui.cards || [];
+  const cards = (ui.cards || []).filter(Boolean);
   let selectedId = null;
 
   body.innerHTML = cardChoiceShellHtml({
@@ -3274,7 +3280,7 @@ export function showObjectCardPicker(ui, onPick) {
 
 export function showObjectReorderPicker(ui, onPick) {
   const body = document.getElementById("utility-modal-body");
-  const cards = ui.top || [];
+  const cards = (ui.top || ui.cards || []).filter(Boolean);
   const order = ui.order || [];
   const picked = new Set(order.map((c) => cardChoiceKey(c)));
   const total = cards.length;
@@ -3328,7 +3334,7 @@ export function showObjectReorderPicker(ui, onPick) {
 
 export function showObjectSpendPicker(ui, onToggle, onConfirm) {
   const body = document.getElementById("utility-modal-body");
-  const cards = ui.cards || [];
+  const cards = (ui.cards || []).filter(Boolean);
 
   body.innerHTML = cardChoiceShellHtml({
     title: ui.title || "Spend Psyche",

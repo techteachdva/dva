@@ -37,6 +37,13 @@ export function reattachGameRuntime(state) {
   state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
   delete state.onResolutionIdle;
   repairMisplacedBossDreams(state);
+  if (Array.isArray(state.pendingObjectChoice?.cards)) {
+    state.pendingObjectChoice.cards = state.pendingObjectChoice.cards.filter(Boolean);
+  }
+  (state.players || []).forEach((player) => {
+    if (Array.isArray(player.hand)) player.hand = player.hand.filter(Boolean);
+    if (Array.isArray(player.objects)) player.objects = player.objects.filter(Boolean);
+  });
   return state;
 }
 

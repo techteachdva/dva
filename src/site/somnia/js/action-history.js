@@ -14,15 +14,14 @@ let undoStack = [];
 let lastCheckpoint = null;
 
 function clonePlayState(state) {
-  const seen = new WeakSet();
-  return JSON.parse(JSON.stringify(state, (key, value) => {
-    if (SKIP_KEYS.has(key) || typeof value === "function") return undefined;
-    if (value && typeof value === "object") {
-      if (seen.has(value)) return undefined;
-      seen.add(value);
-    }
-    return value;
-  }));
+  const plain = {};
+  Object.keys(state).forEach((key) => {
+    if (SKIP_KEYS.has(key)) return;
+    const value = state[key];
+    if (typeof value === "function") return;
+    plain[key] = value;
+  });
+  return structuredClone(plain);
 }
 
 function historyKey(state) {
@@ -95,7 +94,7 @@ export function restorePlayState(state, snapshot) {
     if (key === "checkPsycheDeath" || key === "onResolutionIdle" || key === "tutorialSnapshots") continue;
     delete state[key];
   }
-  Object.assign(state, JSON.parse(JSON.stringify(snapshot)));
+  Object.assign(state, structuredClone(snapshot));
   if (tutorialSnapshots) state.tutorialSnapshots = tutorialSnapshots;
   return state;
 }

@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "27.0";
+export const SOMNIA_VERSION = "27.0.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "27.0.1",
+    title: "Undo and Leviathan",
+    notes: [
+      "Back no longer crashes the table after undoing a card picker, and opening a discard pile ignores missing cards.",
+      "Judgement no longer stacks extra Leviathans onto The Bed. If Leviathan is already in play, Judgement moves that one. Reloading a save collapses duplicate bosses.",
+    ],
+  },
   {
     version: "27.0",
     title: "Underpay Dice Battles",

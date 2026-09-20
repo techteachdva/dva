@@ -16,7 +16,7 @@ const SOMNIA = path.join(REPO, "src/site/somnia");
 const DATA = path.join(SOMNIA, "data");
 const PRINT = path.join(REPO, "print");
 const HTML_DIR = path.join(PRINT, "_html");
-const VERSION = "27.0";
+const VERSION = "27.0.1";
 
 const SUIT_LABELS = {
   lucidity: "Lucidity",

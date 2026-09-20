@@ -4,14 +4,17 @@ import {
   landscapeById,
   acquireArchetype,
   setEncounterOnLandscape,
+  allEncountersOnBoard,
+  moveEncounterBetweenLandscapes,
 } from "./state.js";
 import { recordQuestEvent } from "./quests.js";
 import { logMoment } from "./narrator.js";
 import { repressCard } from "./subconscious.js";
 import { discardToMindstream, encounterFromDreambeastCard } from "./mindstream-supply.js";
-import { adjacentTiles, hexDistance, edgeLandscapes } from "./hex.js";
+import { adjacentTiles, edgeLandscapes } from "./hex.js";
 import { uid } from "./data.js";
 import { recordCancellableDiscard } from "./dreamer-powers.js";
+import { collapseDuplicateBosses } from "./dream-deck.js";
 
 let lastHelpers = null;
 
@@ -493,6 +496,20 @@ export function beginJudgementChoice(state, spawnHelpers) {
 function awakenLeviathan(state, tileId) {
   const spawnTile = landscapeById(state, tileId);
   if (!spawnTile) return;
+  collapseDuplicateBosses(state);
+  const existing = allEncountersOnBoard(state).find(
+    ({ encounter }) => encounter.id === "leviathan" || encounter.refId === "leviathan",
+  );
+  if (existing?.encounter) {
+    existing.encounter.awake = true;
+    if (existing.tile.id !== spawnTile.id) {
+      moveEncounterBetweenLandscapes(state, existing.tile.id, spawnTile.id, existing.encounter);
+      addLog(state, `Judgement moves Leviathan to ${spawnTile.name}!`);
+    } else {
+      addLog(state, `Judgement finds Leviathan already on ${spawnTile.name}.`);
+    }
+    return;
+  }
   const leviathan = {
     id: "leviathan",
     name: "Leviathan",
@@ -501,19 +518,11 @@ function awakenLeviathan(state, tileId) {
     suit: "willpower",
     accept: 12,
     repress: 10,
+    awake: true,
     instanceId: uid("enc"),
   };
   setEncounterOnLandscape(state, spawnTile.id, leviathan);
-  const occupied = state.board
-    .filter((t) => t.revealed && alive(state).some((p) => p.landscapeId === t.id))
-    .sort((a, b) => hexDistance(a, spawnTile) - hexDistance(b, spawnTile))[0];
-  if (occupied && occupied.id !== spawnTile.id) {
-    spawnTile.encounter = null;
-    setEncounterOnLandscape(state, occupied.id, leviathan);
-    addLog(state, `Judgement awakens Leviathan on ${occupied.name}!`);
-  } else {
-    addLog(state, `Judgement awakens Leviathan on ${spawnTile.name}!`);
-  }
+  addLog(state, `Judgement awakens Leviathan on ${spawnTile.name}!`);
 }
 
 export function beginPowerlessnessChoices(state, spawnHelpers) {

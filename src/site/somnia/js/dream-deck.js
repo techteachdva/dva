@@ -6,6 +6,7 @@ import {
   allEncountersOnBoard,
   checkDefeat,
   consumeRevealedTop,
+  removeEncounterFromLandscape,
   setEncounterOnLandscape,
 } from "./state.js";
 import { logMoment } from "./narrator.js";
@@ -40,10 +41,29 @@ export function bossAlreadyOnBoard(state, card) {
   ));
 }
 
+/** Keep one token per boss id. Judgement used to stack extras onto Bed. */
+export function collapseDuplicateBosses(state) {
+  const seen = new Set();
+  allEncountersOnBoard(state).forEach(({ tile, encounter }) => {
+    const id = encounter?.refId || encounter?.id;
+    if (!BOSS_IDS.has(id)) return;
+    if (seen.has(id)) {
+      removeEncounterFromLandscape(state, tile.id, encounter);
+      return;
+    }
+    seen.add(id);
+  });
+}
+
 export function spawnBossEncounterOnBed(state, card) {
   if (!isBossDreamCard(card)) return false;
-  if (bossAlreadyOnBoard(state, card)) {
-    addLog(state, `${card.name} is already in the Dreamscape.`);
+  const existing = allEncountersOnBoard(state).find(({ encounter }) => (
+    encounter.id === card.id || encounter.refId === card.id
+  ));
+  if (existing?.encounter) {
+    existing.encounter.awake = true;
+    const where = existing.tile?.name || "the Dreamscape";
+    addLog(state, `${card.name} is already on ${where}.`);
     return true;
   }
   const encounter = {
@@ -101,7 +121,8 @@ export function discardDreamsFromDeck(state, count) {
 export function repairMisplacedBossDreams(state) {
   if (!state) return [];
   state.subconscious = normalizeSubconscious(state.subconscious);
-  const pile = state.dreamDiscard || [];
+  collapseDuplicateBosses(state);
+  const pile = (state.dreamDiscard || []).filter(Boolean);
   const kept = [];
   const moved = [];
   pile.forEach((card) => {
