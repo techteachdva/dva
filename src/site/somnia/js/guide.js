@@ -467,7 +467,7 @@ export function rulesIntroHtml() {
             <li><strong>Round 1:</strong> each Dreamer starts with <strong>5 Psyche</strong></li>
             <li><strong>Round 2+:</strong> alive Dreamers draw <strong>2 Psyche</strong> at round start</li>
             <li><strong>One Dreamer per phase</strong> spends 1 suited card to set the team budget</li>
-            <li>Unresolved Encounters fail at end of Meet; roaming Dreambeasts hunger for the Timeline (see Encounters)</li>
+            <li>Unresolved Dreambeasts stay on the map. At Meet end the table Forgets 1 random Landscape per remaining beast, then each beast's Fail cost resolves in spawn order</li>
           </ul>
         </div>
       </section>
@@ -477,7 +477,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 25.0 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 26.0 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -521,13 +521,13 @@ export function rulesRemHtml() {
           <div class="overview-phase-head">${suitIconHtml("willpower", { size: 16 })} <strong>Meet</strong> — ${SUIT_LABELS.willpower}</div>
           <p><strong>One Dreamer</strong> spends 1 Willpower card to gain <strong>shared Meet actions</strong> for the team.</p>
           <ul>
-            <li><strong>Action budget</strong> = that 1 card's value + Willpower bonuses → spend on Encounters, Landscapes, Trade, Dreamer Powers, or Archetype Powers</li>
-            <li><strong>Meet tax:</strong> at the start of every Meet, each Dreamer Represses 1 Psyche from hand and the table Forgets 1 Landscape per active Dreambeast on the board</li>
+            <li><strong>Start:</strong> each Dreamer Represses 1 Psyche from hand per roaming Dreambeast. Beasts stay on their Landscapes</li>
+            <li><strong>Middle:</strong> action budget = that 1 card's value + Willpower bonuses. Spend on Encounters, Landscapes, Trade, Dreamer Powers, or Archetype Powers. Accept and Reject are <strong>dice battles</strong> (your played Psyche vs the beast's cost, d6s, 5–6 succeed)</li>
+            <li><strong>End:</strong> if beasts remain, Forget 1 random Landscape per remaining beast, then each remaining beast's Fail cost resolves in the order they spawned. Beasts are not removed until Accepted or Rejected</li>
             <li><strong>Once per action</strong> for each Dreamer this Meet, except Draw Mindstream which may be repeated. Unique Landscape actions are once. Dreamer Powers and Archetype Powers each cost 1 Meet action + 1 Power Token</li>
             <li>Each Landscape offers <strong>Draw Mindstream</strong> (repeatable) and one <strong>unique action</strong> (once per Dreamer this Meet). <strong>The Bed</strong> has two unique actions: Draw 3 Psyche, or Play 3 Psyche Points then Draw 3 Psyche Cards — each once per Dreamer this Meet</li>
             <li><strong>Free during Meet:</strong> place a Power Token for +1 on a Psyche spread, activate an Object (Persistent costs 1 token), or mark a completed Quest (1 token). These do not spend the action budget</li>
             <li>Using an Instant Object Represses it</li>
-            <li>At Meet end, unresolved Encounters <strong>fail</strong> — Dreamers on those tiles lose Psyche to the Subconscious</li>
             <li><strong>Paradox Dream:</strong> Meet uses Elasticity stat instead</li>
           </ul>
         </div>
@@ -573,10 +573,12 @@ export function rulesDetailsHtml() {
       <h3>Encounters (Dreambeasts)</h3>
       <ul>
         <li>Only the Dreamer <strong>standing on the Landscape</strong> may Meet the Encounter and pool Psyche (up to <strong>3</strong> cards; allies do not count toward the 3-card spread)</li>
-        <li><strong>Accept</strong> — meet or exceed Accept threshold; beast joins hand as a 3-value ally. Accept ≥ 10: draw 1 Object</li>
-        <li><strong>Repress</strong> — meet Reject threshold; beast goes to Subconscious; resolve the Reject reward (draw Psyche, Power, Object, Return, etc.)</li>
-        <li><strong>Fail</strong> — end of Meet with no resolution: lose Psyche to Subconscious per the Encounter's fail count</li>
-        <li><strong>Timeline hunger</strong> — at end of Meet, each Dreambeast still on the map costs <strong>1 Power Token</strong> (team-wide). If you cannot pay, <strong>1 Dream card is discarded</strong> from the deck per unpaid beast ("The Timeline frays")</li>
+        <li><strong>Dice battle</strong> — play at least the Accept or Reject cost. You roll that many d6; the beast rolls dice equal to its cost. A 5 or 6 is a success. Most successes wins (ties favor the beast). White dice (Dreamer) vs black dice (Dreambeast) on the table</li>
+        <li><strong>Accept</strong> (win) — beast joins hand as a 3-value ally. Accept ≥ 10: draw 1 Object</li>
+        <li><strong>Reject</strong> (win) — same point cost as Accept, other suit; beast goes to Subconscious; resolve the Reject reward</li>
+        <li><strong>Lose the battle</strong> — Psyche and Power Tokens in the play are spent. The beast stays. Its Fail cost still hits at the end of Meet</li>
+        <li><strong>Meet start</strong> — each Dreamer Represses 1 Psyche from hand per roaming Dreambeast</li>
+        <li><strong>Meet end</strong> — Forget 1 random Landscape per remaining Dreambeast, then Fail costs in spawn order. Default Fail Represses about half the Accept value to the Subconscious; many beasts also Forget Landscapes. Beasts remain until Accepted or Rejected</li>
         <li>Meet bonuses: +1 if fantasy/nightmare affinity matches; +1 if primary suit matches Encounter suit; jewelry/stick Objects +1 each; body tag doubles highest card</li>
         <li>Spent allies are Repressed to the Subconscious; spent Psyche goes to discard or Subconscious</li>
       </ul>
@@ -597,7 +599,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Power Tokens</h3>
-      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Spend on quest marks (1 each, any phase, free of Meet actions), Dreamer Powers (1, plus 1 Meet action during Meet), Archetype Powers (1 Meet action + 1 Token), Persistent Object activation (1, free of Meet actions), <strong>1 as a suited Psyche</strong> for a Reveal / Explore / Meet opener (max 1 per opener), stacking <strong>+1 per token</strong> on a Psyche spread (free of Meet actions), Timeline hunger (1 per roaming Dreambeast at end of Meet), and avoiding death.</p>
+      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Spend on quest marks (1 each, any phase, free of Meet actions), Dreamer Powers (1, plus 1 Meet action during Meet), Archetype Powers (1 Meet action + 1 Token), Persistent Object activation (1, free of Meet actions), <strong>1 as a suited Psyche</strong> for a Reveal / Explore / Meet opener (max 1 per opener), stacking <strong>+1 per token</strong> on a Psyche spread (free of Meet actions), and avoiding death.</p>
 
       <h3>Dreamer Powers</h3>
       <p>Each costs <strong>1 Power Token</strong> and can be used in any phase. During Meet, using a Dreamer Power also spends <strong>1 Meet action</strong>. Lucidity Dreamers help Reveal, Elasticity Dreamers help Explore, Willpower Dreamers help Meet.</p>
@@ -649,7 +651,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 25.0</p>
+          <p class="info-hub-kicker">Somnia v 26.0</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>
@@ -674,12 +676,12 @@ export function infoHubHtml(options = {}) {
             <ul>
               <li class="suit-lucidity"><strong>Reveal</strong> — Head (★) draws a Dream. Spend Lucidity to flip Wastelands, or Mindstream tops once the map is fully Revealed.</li>
               <li class="suit-elasticity"><strong>Explore</strong> — Spend Elasticity for shared moves. Entering Wasteland discards 1 Psyche.</li>
-              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Start of Meet: Repress 1 Psyche and Forget 1 Landscape per active Dreambeast. Draw Mindstream is repeatable. Unique Landscape actions, Dreamer Powers, and Archetype Powers each cost 1 action. The Bed: Draw 3 Psyche, or Play 3 Psyche Points then Draw 3. +1 spread, Object activation, and quest marks are free.</li>
+              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Start: Repress 1 Psyche per roaming Dreambeast. Dice battle to Accept or Reject. End: Forget 1 random Landscape per remaining beast, then Fail in spawn order. Beasts stay until won. Draw Mindstream is repeatable. Unique Landscape actions, Dreamer Powers, and Archetype Powers each cost 1 action.</li>
             </ul>
           </div>
           <div class="info-hub-rule">
             <h3>Encounters</h3>
-            <p>Only the Dreamer on the tile may Meet and pool up to <strong>3 Psyche</strong>. <strong>Accept</strong> meets the threshold and the beast joins as a 3-value ally (Accept ≥ 10 draws an Object). <strong>Repress</strong> meets Reject and pays that reward. Fail at Meet end: lose Psyche. Each beast still on the map costs <strong>1 Power Token</strong> at round end — or a Dream card frays.</p>
+            <p>Only the Dreamer on the tile may Meet and pool up to <strong>3 Psyche</strong>. Play at least the cost, then roll dice: your pool vs the beast's cost, 5–6 succeed. Win to <strong>Accept</strong> (ally) or <strong>Reject</strong> (Subconscious + reward). Lose and the play is spent; the beast stays. Meet end Forgets 1 random Landscape per remaining beast, then Fail costs in spawn order.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Hands, Tokens &amp; Objects</h3>

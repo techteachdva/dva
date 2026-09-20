@@ -16,7 +16,7 @@ const SOMNIA = path.join(REPO, "src/site/somnia");
 const DATA = path.join(SOMNIA, "data");
 const PRINT = path.join(REPO, "print");
 const HTML_DIR = path.join(PRINT, "_html");
-const VERSION = "24.0";
+const VERSION = "26.0";
 
 const SUIT_LABELS = {
   lucidity: "Lucidity",
@@ -658,11 +658,11 @@ function rulesHtml(data) {
   </ul>
   <h3>Meet — Willpower</h3>
   <ul>
-    <li><strong>Meet tax:</strong> at the start of Meet, for every Dreambeast on the board, each Dreamer Represses 1 Psyche and the table Forgets 1 Landscape.</li>
-    <li>One Dreamer spends 1 Willpower for shared Meet actions.</li>
+    <li><strong>Start:</strong> each Dreamer Represses 1 Psyche from hand per roaming Dreambeast. Beasts stay on the map.</li>
+    <li>One Dreamer spends 1 Willpower for shared Meet actions. Accept and Reject are dice battles (your played Psyche vs the beast cost; 5–6 succeed).</li>
     <li><strong>Draw Mindstream</strong> is repeatable. Each unique Landscape action is once per Dreamer this Meet. Archetype Powers cost 1 Meet action + 1 quarter.</li>
-    <li>Only the Dreamer standing on a hex may Meet its Encounter (up to 3 Psyche). Accept keeps the beast as a 3-value ally (Accept ≥ 10 draws an Object). Repress sends it to the Subconscious and pays the Reject reward. Instant Objects Repress when used. Spent allies Repress.</li>
-    <li>Unresolved Encounters fail at Meet end. Each beast still on the map then costs 1 quarter (Timeline hunger) or discards 1 Dream if unpaid.</li>
+    <li>Only the Dreamer standing on a hex may Meet its Encounter (up to 3 Psyche). Win the dice battle to Accept (ally) or Reject (Subconscious + reward). Lose and the play is spent; the beast stays.</li>
+    <li><strong>End:</strong> Forget 1 random Landscape per remaining beast, then Fail costs in spawn order. Beasts remain until Accepted or Rejected.</li>
   </ul>
   <p>When a phase budget is spent — or you agree to skip leftovers — advance with a <strong>Next Phase</strong> marker (the digital game uses a circular button at the top-right of the map). Dreamer action menus do not change phase.</p>
 

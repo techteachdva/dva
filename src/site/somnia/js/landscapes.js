@@ -470,17 +470,43 @@ export function requestForgetLandscapes(state, count) {
   beginForgetPicking(state, count);
 }
 
+function forgettableUnoccupied(state) {
+  return forgettableTiles(state).filter((t) => !tileHasEncounters(t));
+}
+
+/** Forget `count` random revealed Landscapes. Never The Bed. Optionally skip hexes that still host Dreambeasts. */
+export function forgetRandomLandscapes(state, count, { skipOccupied = true } = {}) {
+  const n = Math.max(0, Math.floor(count || 0));
+  if (n <= 0) return [];
+  const pool = shuffle(skipOccupied ? forgettableUnoccupied(state) : forgettableTiles(state));
+  const picked = pool.slice(0, n);
+  picked.forEach((t) => forgetTile(state, t));
+  if (picked.length) {
+    recordQuestEvent(state, "forget_landscape", { count: picked.length });
+  }
+  return picked;
+}
+
 /** Forget specific revealed Landscapes by id (Bed cannot be forgotten). */
-export function forgetNamedLandscapes(state, ids) {
+export function forgetNamedLandscapes(state, ids, { preserveBeasts = false } = {}) {
   const forgotten = [];
+  let missed = 0;
   (ids || []).forEach((id) => {
     const tile = landscapeById(state, id);
     if (!tile || tile.center || tile.id === "bed" || !tile.revealed || tile.wasteland) return;
+    if (preserveBeasts && tileHasEncounters(tile)) {
+      missed += 1;
+      return;
+    }
     forgetTile(state, tile);
     forgotten.push(tile);
   });
-  if (forgotten.length) {
-    recordQuestEvent(state, "forget_landscape", { count: forgotten.length });
+  const namedCount = forgotten.length;
+  if (preserveBeasts && missed > 0) {
+    forgetRandomLandscapes(state, missed, { skipOccupied: true }).forEach((t) => forgotten.push(t));
+  }
+  if (namedCount) {
+    recordQuestEvent(state, "forget_landscape", { count: namedCount });
   }
   return forgotten.length;
 }

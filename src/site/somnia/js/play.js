@@ -1117,7 +1117,10 @@ function buildPhaseHandlers() {
     },
     activateExplore: () => { activateExplore(state); renderAll(); },
     gainMeetActions: () => { gainMeetActions(state); renderAll(); },
-    meetEncounter: (mode) => { meetEncounter(state, mode); renderAll(); },
+    meetEncounter: (mode) => {
+      meetEncounter(state, mode, { onDone: () => renderAll() });
+      renderAll();
+    },
     drawMindstream: () => {
       drawMindstreamOnLandscape(state, {
         onResult: (card) => showModal(card),

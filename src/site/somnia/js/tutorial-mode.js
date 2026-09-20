@@ -212,6 +212,9 @@ export function createTutorialBaseState(data) {
       ...goofus,
       name: "Goofus Bird",
       type: "dreambeast",
+      accept: 7,
+      reject: 7,
+      repress: 7,
     };
   }
 
@@ -1123,7 +1126,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-r1",
     round: 1,
     title: "Meet: Dreambeasts and Luck",
-    why: "Willpower opens a shared action budget. Accepting a Dreambeast, Landscape actions, Trade, Dreamer Powers, and Archetype Powers each spend 1 action. Marking a quest, adding +1 to a spread, and activating an Object stay free.",
+    why: "Willpower opens a shared action budget. Accept and Reject are dice battles — your Psyche pool versus the beast. Winning removes it; losing spends the play and leaves it to Fail at round end. Roaming beasts stay until you beat them.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
@@ -1239,7 +1242,7 @@ export const TUTORIAL_SCRIPT = [
     id: "graduate",
     round: 2,
     title: "Go Play",
-    why: "You now know the R.E.M. loop: Reveal, Explore, Meet. Draw Dream sits left of Next Phase. Select 1 Psyche, then press the button beside it to open that phase. Next Phase stays on the map (skip leftover budget; Back undoes). Playing a Wild Represses the top 5 Psyche of the deck. If the Psyche Deck and discard both empty, you lose. The Bed offers Draw 3 Psyche or Play 3 Psyche Points then Draw 3, each once per Dreamer. A real Daydream uses shuffled Landscapes and the full Meet tax.",
+    why: "You now know the R.E.M. loop: Reveal, Explore, Meet. Draw Dream sits left of Next Phase. Select 1 Psyche, then press the button beside it to open that phase. Next Phase stays on the map (skip leftover budget; Back undoes). Playing a Wild Represses the top 5 Psyche of the deck. If the Psyche Deck and discard both empty, you lose. The Bed offers Draw 3 Psyche or Play 3 Psyche Points then Draw 3, each once per Dreamer. A real Daydream uses shuffled Landscapes, dice battles, and the full Meet start/end tax.",
     objective: "Click Finish, then play a Daydream. Rules stay in ? and !.",
     target: "#phase-stepper",
   },

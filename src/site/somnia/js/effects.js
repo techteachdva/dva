@@ -1,6 +1,5 @@
 import {
   addLog,
-  checkDefeat,
   drawPsycheForPlayer,
   forgetLandscapes,
   revealLandscapeTile,
@@ -15,8 +14,8 @@ import {
 } from "./state.js";
 import { forgetEdgeLandscapes, triggerBedFinalRecurrence } from "./landscapes.js";
 import { recordQuestEvent } from "./quests.js";
-import { grantPowerTokens, spendPowerTokensCollectively } from "./power-tokens.js";
-import { countBoardDreambeasts } from "./phase-skip.js";
+import { grantPowerTokens } from "./power-tokens.js";
+import { applyMeetEndConsequences } from "./meet-phase.js";
 import { opposingSuit } from "./rules.js";
 import { adjacentTiles, hexDistance } from "./hex.js";
 import {
@@ -27,9 +26,7 @@ import {
   enqueueRepressFromHand,
 } from "./subconscious.js";
 import { MINDSTREAM_EFFECTS } from "./mindstream.js";
-import { markDreamFeedNudge } from "./fx.js";
 import { FINAL_RECURRENCE_PSYCHE_REQUIRED } from "./final-recurrence-rules.js";
-import { discardDreamsFromDeck } from "./dream-deck.js";
 import { logMoment } from "./narrator.js";
 import { onObjectDrawn } from "./objects.js";
 import {
@@ -172,37 +169,8 @@ export function onExplorePhaseEnd(state) {
   state.wanderlustMoves = 0;
 }
 
-function discardDreamCardsFromDeck(state, count) {
-  return discardDreamsFromDeck(state, count);
-}
-
-function applyDreambeastTimelineHunger(state) {
-  const beastCount = countBoardDreambeasts(state);
-  if (beastCount <= 0) return;
-
-  const paid = spendPowerTokensCollectively(state, beastCount);
-  if (paid > 0) {
-    logMoment(
-      state,
-      `${beastCount} roaming Dreambeast${beastCount === 1 ? "" : "s"} — the team spends ${paid} Power Token${paid === 1 ? "" : "s"} to steady the Timeline.`,
-    );
-  }
-  const unpaid = beastCount - paid;
-  if (unpaid <= 0) return;
-
-  const discarded = discardDreamCardsFromDeck(state, unpaid);
-  if (discarded > 0) {
-    logMoment(
-      state,
-      `The Timeline frays — ${discarded} Dream card${discarded === 1 ? "" : "s"} discarded (${unpaid} Dreambeast${unpaid === 1 ? "" : "s"} still hunger; not enough Power).`,
-    );
-    markDreamFeedNudge();
-    checkDefeat(state);
-  }
-}
-
 export function onMeetPhaseEnd(state) {
-  applyDreambeastTimelineHunger(state);
+  applyMeetEndConsequences(state);
 
   if (state.rivalryLeftover > 0) {
     let cost = state.rivalryLeftover;

@@ -10404,3 +10404,197 @@ body.play-window #screen-game.active .hand-bar {
     max-width: 220px;
   }
 }
+
+/* ── Dreambeast dice battle (Somnia 26) ── */
+.dice-battle-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  perspective: 900px;
+}
+.dice-battle-stage[hidden] { display: none; }
+.dice-battle-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(12, 8, 24, 0.35), rgba(6, 4, 14, 0.78));
+  backdrop-filter: blur(2px);
+}
+.dice-battle-table {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1.2rem;
+  align-items: center;
+  width: min(96%, 980px);
+  padding: 1.2rem 1.4rem 1.4rem;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(48, 32, 18, 0.55), rgba(22, 14, 10, 0.72)),
+    repeating-linear-gradient(90deg, rgba(90, 50, 20, 0.18) 0 12px, rgba(40, 22, 10, 0.12) 12px 24px);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 220, 160, 0.18);
+  border: 1px solid rgba(240, 201, 106, 0.28);
+}
+.dice-battle-pool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.dice-battle-label {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.dreamer-pool .dice-battle-label { color: #f4f0e6; }
+.beast-pool .dice-battle-label { color: #d8d0e8; }
+.dice-battle-count {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+.dice-battle-count span[data-score] {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  color: var(--gold);
+  margin-right: 0.2rem;
+}
+.dice-battle-pool-size {
+  opacity: 0.7;
+  font-size: 0.78rem;
+}
+.dice-battle-tray {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.6rem 0.2rem;
+  min-height: calc(var(--die-size, 52px) + 12px);
+  perspective: 600px;
+}
+.dice-battle-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 5.5rem;
+}
+.dice-battle-vs {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--gold);
+}
+.dice-battle-compare {
+  margin: 0;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.dice-battle-banner {
+  position: relative;
+  z-index: 1;
+  margin: 0.9rem 0 0;
+  padding: 0.45rem 1.2rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  background: rgba(12, 8, 20, 0.85);
+  border: 1px solid rgba(240, 201, 106, 0.45);
+}
+.dice-battle-stage.winner-dreamer .dice-battle-banner {
+  color: #6dffb0;
+  box-shadow: 0 0 28px rgba(109, 255, 176, 0.35);
+  animation: dice-fanfare 0.7s ease-out;
+}
+.dice-battle-stage.winner-beast .dice-battle-banner {
+  color: #ff8a9a;
+  box-shadow: 0 0 28px rgba(255, 93, 122, 0.35);
+}
+.dice-battle-stage.winner-dreamer .dreamer-pool {
+  filter: drop-shadow(0 0 16px rgba(255, 240, 180, 0.55));
+}
+.dice-battle-stage.winner-beast .beast-pool {
+  filter: drop-shadow(0 0 16px rgba(180, 80, 255, 0.45));
+}
+
+.battle-die {
+  width: var(--die-size, 52px);
+  height: var(--die-size, 52px);
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(-18deg) rotateY(24deg);
+  transition: transform 0.9s cubic-bezier(0.18, 0.7, 0.22, 1);
+}
+.battle-die.settled {
+  transition: transform 0.55s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+.battle-die.success {
+  filter: drop-shadow(0 0 8px rgba(240, 201, 106, 0.7));
+}
+.die-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 14%;
+  border-radius: 12%;
+  backface-visibility: hidden;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.25);
+}
+.dreamer-die .die-face {
+  background: linear-gradient(145deg, #fffaf0, #d9d2c4);
+  border: 1px solid #c9c0b0;
+}
+.beast-die .die-face {
+  background: linear-gradient(145deg, #2a2438, #0c0a12);
+  border: 1px solid #4a4258;
+}
+.die-pip {
+  width: 28%;
+  height: 28%;
+  margin: auto;
+  border-radius: 50%;
+  opacity: 0;
+}
+.die-pip.on { opacity: 1; }
+.dreamer-die .die-pip.on { background: #1a1410; box-shadow: inset 0 1px 1px rgba(0,0,0,0.45); }
+.beast-die .die-pip.on { background: #f4f0e6; box-shadow: inset 0 1px 1px rgba(255,255,255,0.35); }
+
+.face-1 { transform: rotateY(0deg) translateZ(calc(var(--die-size) / 2)); }
+.face-2 { transform: rotateY(90deg) translateZ(calc(var(--die-size) / 2)); }
+.face-3 { transform: rotateX(90deg) translateZ(calc(var(--die-size) / 2)); }
+.face-4 { transform: rotateX(-90deg) translateZ(calc(var(--die-size) / 2)); }
+.face-5 { transform: rotateY(-90deg) translateZ(calc(var(--die-size) / 2)); }
+.face-6 { transform: rotateY(180deg) translateZ(calc(var(--die-size) / 2)); }
+
+@keyframes dice-fanfare {
+  0% { transform: scale(0.86); opacity: 0; }
+  55% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 720px) {
+  .dice-battle-table {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+  .dice-battle-center { flex-direction: row; gap: 0.8rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battle-die { transition: none; }
+  .dice-battle-stage.winner-dreamer .dice-battle-banner { animation: none; }
+}

@@ -440,6 +440,22 @@ export function playSfx(name, opts = {}) {
     case "sparkle":
       tone({ freq: 880 + Math.random() * 360, dur: 0.09, type: "sine", vol: 0.04, echo: 0.1 });
       break;
+    case "dice-roll":
+      for (let i = 0; i < 5; i += 1) {
+        tone({ freq: 180 + i * 40, dur: 0.05, type: "triangle", vol: 0.045, delay: i * 0.05, echo: 0.08 });
+      }
+      break;
+    case "dice-win":
+      [392, 523, 659, 784].forEach((freq, i) => {
+        organ({ freq, dur: 0.18, vol: 0.07, delay: i * 0.09 });
+      });
+      tone({ freq: 880, dur: 0.4, type: "triangle", vol: 0.07, delay: 0.38, echo: 0.18 });
+      break;
+    case "dice-lose":
+      organ({ freq: 196, dur: 0.28, vol: 0.07 });
+      tone({ freq: 220, dur: 0.45, type: "sawtooth", vol: 0.05, slide: -90, delay: 0.08, echo: 0.16 });
+      tone({ freq: 98, dur: 0.55, type: "sine", vol: 0.07, delay: 0.12, echo: 0.2 });
+      break;
     case "boss-stinger":
       organ({ freq: 110, dur: 0.35, vol: 0.09 });
       organ({ freq: 146, dur: 0.32, vol: 0.08, delay: 0.08 });

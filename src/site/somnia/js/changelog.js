@@ -5,10 +5,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "25.0";
+export const SOMNIA_VERSION = "26.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "26.0",
+    title: "The Dreambeast Dice Battle Update",
+    notes: [
+      "Meet Phase is now three beats. Start: each Dreamer Represses 1 Psyche from hand per roaming Dreambeast. Middle: spend Willpower for shared Actions. End: Forget 1 random Landscape per remaining beast, then each remaining beast's Fail cost resolves in spawn order. Roaming beasts stay on the map until you Accept or Reject them.",
+      "Accept and Reject are dice battles. Your pool is Nd6 equal to the Psyche you played; the beast rolls dice equal to its Accept or Reject cost. 5s and 6s succeed. Most successes wins. Win to resolve the Meet. Lose and the play is spent — the beast stays and will Fail at the end of Meet. White dice on the left, black dice on the right, rolling on the table.",
+      "Reject costs now match Accept point values (different suit). Fail costs are harsher: about half the Accept value in Repressed cards, plus Forget where the creature's theme calls for it.",
+    ],
+  },
   {
     version: "25.0",
     title: "Map chrome, spread spend, and Wild cost",

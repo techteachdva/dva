@@ -1,6 +1,7 @@
 import { getPhase, addLog, countEncountersOnBoard } from "./state.js";
 import { logMoment } from "./narrator.js";
 import { endPhase } from "./game.js";
+import { meetEndPreview } from "./meet-phase.js";
 
 export function countBoardDreambeasts(state) {
   return countEncountersOnBoard(
@@ -9,16 +10,14 @@ export function countBoardDreambeasts(state) {
   );
 }
 
-/** Read-only preview of Timeline hunger at end of Meet (no state mutation). */
+/** Read-only preview of Meet-end Forget + Fail (no state mutation). */
+export function meetEndTollPreview(state) {
+  return meetEndPreview(state);
+}
+
+/** @deprecated Timeline hunger was removed in 26.0. */
 export function timelineTollPreview(state) {
-  const beastCount = countBoardDreambeasts(state);
-  if (beastCount <= 0) return null;
-  const available = state.players
-    .filter((p) => p.alive)
-    .reduce((sum, p) => sum + (p.powerTokens || 0), 0);
-  const paid = Math.min(beastCount, available);
-  const unpaid = beastCount - paid;
-  return { beastCount, paid, unpaid };
+  return meetEndPreview(state);
 }
 
 function finishPhaseAdvance(state, onComplete) {

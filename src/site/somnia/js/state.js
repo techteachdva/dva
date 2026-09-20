@@ -23,7 +23,6 @@ import {
   extraPsycheDrawAtRoundStart,
   drawObjects,
 } from "./objects.js";
-import { applyFailEffect } from "./dreambeasts.js";
 import {
   LENGTHS,
   PHASES,
@@ -43,7 +42,7 @@ import {
   resolvePowerCardsInHand,
   resolveAllPowerCardsInHands,
 } from "./power-tokens.js";
-import { applyMeetPhaseDreambeastTax } from "./meet-phase-tax.js";
+import { applyMeetStartTax } from "./meet-phase.js";
 
 function pinFirstById(list, id) {
   const index = list.findIndex((item) => item.id === id);
@@ -225,6 +224,7 @@ export function createInitialState(data, options) {
     pendingEffectChoice: null,
     skipNextDreamDraw: false,
     revealedDeckTops: {},
+    encounterSpawnSeq: 0,
   };
 
   resetPhaseFlags(state);
@@ -500,6 +500,10 @@ export function addEncounterOnLandscape(state, landscapeId, encounter) {
   if (!tile || !encounter) return null;
   const card = { ...encounter };
   if (!card.instanceId) card.instanceId = uid("enc");
+  if (card.spawnOrder == null) {
+    state.encounterSpawnSeq = (state.encounterSpawnSeq || 0) + 1;
+    card.spawnOrder = state.encounterSpawnSeq;
+  }
   tileEncounters(tile).push(card);
   state.activeEncounter = card;
   state.activeEncounterLandscapeId = landscapeId;
@@ -823,7 +827,6 @@ export function advancePhase(state) {
   const phase = getPhase(state);
 
   if (phase === "Meet") {
-    resolveEncounterFails(state);
     passHeadDreamer(state);
     state.anchorMeetSpreadBonus = 0;
     state.round += 1;
@@ -839,7 +842,7 @@ export function advancePhase(state) {
   if (getPhase(state) === "Explore") {
     addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");
   } else if (getPhase(state) === "Meet") {
-    applyMeetPhaseDreambeastTax(state);
+    applyMeetStartTax(state);
     if (state.anchorMeetSpreadPending) {
       state.anchorMeetSpreadBonus = state.anchorMeetSpreadPending;
       state.anchorMeetSpreadPending = 0;
@@ -848,7 +851,7 @@ export function advancePhase(state) {
       t.revealed && tileHasEncounters(t) && state.players.some((p) => p.alive && p.landscapeId === t.id),
     );
     if (meetHere) state.selectedLandscapeId = meetHere.id;
-    addLog(state, "Meet Phase — one Dreamer spends Willpower for shared Actions. Each active Dreambeast taxes 1 Psyche (Repress from each hand) and 1 Forgotten Landscape.");
+    addLog(state, "Meet Phase — spend Willpower for shared Actions. Roaming Dreambeasts stay until Accepted or Rejected.");
   }
 }
 
@@ -861,24 +864,6 @@ function passHeadDreamer(state) {
   });
   state.players[nextHead].isHead = true;
   state.activePlayerIndex = nextHead;
-}
-
-function resolveEncounterFails(state) {
-  state.players.forEach((player) => {
-    if (!player.alive) return;
-    const tile = landscapeById(state, player.landscapeId);
-    const encounters = [...encountersOnLandscape(state, player.landscapeId)];
-    if (!encounters.length) return;
-    encounters.forEach((enc) => {
-      addLog(state, `${player.name} failed to Meet ${enc.name} on ${tile?.name}.`);
-      applyEncounterFail(state, player, enc);
-      removeEncounterFromLandscape(state, player.landscapeId, enc);
-    });
-  });
-}
-
-function applyEncounterFail(state, player, encounter) {
-  applyFailEffect(state, player, encounter);
 }
 
 export function allDreamersOnBed(state) {

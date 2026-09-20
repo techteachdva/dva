@@ -2936,13 +2936,11 @@ export function renderPhaseActions(_actions, _advanceAction = null, state = null
     const parts = [];
     const beastCount = countBoardDreambeasts(state);
     if (beastCount > 0) {
-      parts.push(`Meet tax: each Dreamer Represses 1 Psyche per active Dreambeast (${beastCount}) and the table Forgets 1 Landscape per Dreambeast (${beastCount}).`);
+      parts.push(`Meet start: each Dreamer Represses 1 Psyche per roaming Dreambeast (${beastCount}). End of Meet: Forget ${beastCount} random Landscape${beastCount === 1 ? "" : "s"}, then each remaining beast Fails in spawn order. Beasts stay until you win a dice battle.`);
     }
     const toll = timelineTollPreview(state);
-    if (toll) {
-      parts.push(toll.unpaid > 0
-        ? `Timeline toll: ${toll.beastCount} beast${toll.beastCount === 1 ? "" : "s"} — up to ${toll.paid} token${toll.paid === 1 ? "" : "s"}, else ${toll.unpaid} Dream${toll.unpaid === 1 ? "" : "s"} fray at round end`
-        : `Timeline toll: ${toll.beastCount} beast${toll.beastCount === 1 ? "" : "s"} — covered by Power Tokens`);
+    if (toll && !beastCount) {
+      parts.push(`Meet end: Forget ${toll.forgetCount} Landscape${toll.forgetCount === 1 ? "" : "s"}, then Fail costs.`);
     }
     if (parts.length) {
       cue.hidden = false;

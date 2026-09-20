@@ -119,6 +119,7 @@ import {
   onExplorePhaseEnd,
   onMeetPhaseEnd,
 } from "./effects.js";
+import { playDiceBattle, isDiceBattleOpen } from "./dice-battle.js";
 
 const effectHelpers = { spawnEncounter: null, beginFinalRecurrence: null };
 
@@ -595,6 +596,7 @@ export function getPhaseActions(state, handlers) {
 }
 
 function phaseAdvanceBlockReason(state) {
+  if (isDiceBattleOpen() || state.diceBattle) return "Finish the dice battle before advancing.";
   if (state.pendingRepress) return "Complete Repress selection before advancing.";
   if (state.pendingReturn) return "Complete Return selection before advancing.";
   if (state.pendingDeathChoice) return "Resolve the death choice before advancing.";
@@ -1232,7 +1234,11 @@ export function getPowerTokenRadialOptions(state) {
   return options;
 }
 
-export function meetEncounter(state, mode = "accept") {
+export function meetEncounter(state, mode = "accept", { instant = false, onDone } = {}) {
+  if (isDiceBattleOpen() || state.diceBattle) {
+    addLog(state, "Finish the dice battle first.");
+    return;
+  }
   if (state.forcedAccept) {
     state.selectedLandscapeId = state.forcedAccept.tileId;
     if (mode !== "accept") {
@@ -1292,10 +1298,47 @@ export function meetEncounter(state, mode = "accept") {
     return;
   }
 
+  const ctx = { mode, isReject, encounter, tile, actor, selected, played, needed };
+
+  const finish = (dreamerWins) => {
+    state.diceBattle = null;
+    resolveDiceMeet(state, ctx, dreamerWins);
+    onDone?.();
+  };
+
+  if (instant) {
+    finish(true);
+    return;
+  }
+
+  state.diceBattle = { encounterId: encounter.id, tileId: tile.id };
+  playDiceBattle({
+    dreamerName: actor.name,
+    beastName: encounter.name,
+    dreamerDice: played,
+    beastDice: needed,
+    forceWinner: state.tutorialMode ? "dreamer" : null,
+    instant: typeof document === "undefined",
+    onComplete: ({ dreamerWins }) => finish(dreamerWins),
+  });
+}
+
+function resolveDiceMeet(state, ctx, dreamerWins) {
+  const { isReject, encounter, tile, actor, selected } = ctx;
+
   queuePsycheSwirlFx(selected, tile.id);
   queueMeetFlashFx(isReject ? "reject" : "accept", tile.id, selected);
   const discarded = discardSelected(state, actor);
   trackPsycheDiscard(state, actor, discarded);
+
+  if (!dreamerWins) {
+    addLog(
+      state,
+      `${actor.name} loses the dice battle with ${encounter.name}. The play is spent. ${encounter.name} remains on ${tile.name} and will Fail at the end of Meet.`,
+    );
+    logMoment(state, `${encounter.name} wins the clash — it stays on ${tile.name}.`);
+    return;
+  }
 
   if (!isReject) {
     addLog(state, `${actor.name} Accepts ${encounter.name}. ${encounter.effect || ""}`);
@@ -1872,6 +1915,10 @@ export function handleBoardTileClick(state, tileId) {
 }
 
 export function endPhase(state) {
+  if (isDiceBattleOpen() || state.diceBattle) {
+    addLog(state, "Finish the dice battle before ending the phase.");
+    return;
+  }
   cancelLandscapePick(state);
   cancelDreamerPower(state);
   const leaving = getPhase(state);
@@ -1906,7 +1953,7 @@ export function endPhase(state) {
       ? `${COOP_PLAY_TIP} Head Dreamer (★) draws the Dream once. One Dreamer spends Lucidity to set team reveals.`
       : phase === "Explore"
         ? `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves — then move any Dreamer.`
-        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. At the start of Meet, each Dreamer Represses 1 Psyche and the table Forgets 1 Landscape per active Dreambeast.`,
+        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. Start: Repress 1 Psyche per roaming Dreambeast. End: Forget 1 random Landscape per remaining beast, then Fail costs in spawn order. Beasts stay until you win a dice battle.`,
     [],
     { moment: `${phase} Phase begins.` },
   );

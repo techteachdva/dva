@@ -7,10 +7,10 @@
     "boss": true,
     "flavor": "Whom do you seek beyond my gate?",
     "accept": 12,
-    "reject": 8,
-    "repress": 8,
+    "reject": 12,
+    "repress": 12,
     "rejectSuit": "lucidity",
-    "fail": "Repress top 4 Psyche",
+    "fail": "Repress top 6 Psyche from the deck.",
     "effect": "Repress top 3 Psyche. Must play a Set (3 same # or suit).",
     "rejectReward": "Draw 3 Psyche.",
     "rejectEffect": {
@@ -18,7 +18,11 @@
       "count": 3
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/cerberus.webp"
+    "image": "images/dreambeasts/cerberus.webp",
+    "failEffect": {
+      "type": "repress-top-psyche",
+      "count": 6
+    }
   },
   {
     "id": "double",
@@ -28,10 +32,10 @@
     "boss": true,
     "flavor": "I'm just like you. But better.",
     "accept": 12,
-    "reject": 7,
-    "repress": 7,
+    "reject": 12,
+    "repress": 12,
     "rejectSuit": "lucidity",
-    "fail": "Repress top 4 Psyche",
+    "fail": "Forget 2 Landscapes. Repress 4 Psyche from hand.",
     "effect": "Forget Day in the Life & Naked Classroom. Must play a Pair.",
     "rejectReward": "Reveal 2 Landscapes.",
     "rejectEffect": {
@@ -39,7 +43,20 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/double.webp"
+    "image": "images/dreambeasts/double.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-random",
+          "count": 2
+        },
+        {
+          "type": "repress-hand",
+          "count": 4
+        }
+      ]
+    }
   },
   {
     "id": "leviathan",
@@ -49,10 +66,10 @@
     "boss": true,
     "flavor": "A terrible foe rises from the depths.",
     "accept": 12,
-    "reject": 10,
-    "repress": 10,
+    "reject": 12,
+    "repress": 12,
     "rejectSuit": "willpower",
-    "fail": "Repress top 4 Psyche",
+    "fail": "Forget 2 Landscapes. Repress top 4 Psyche.",
     "effect": "Forget 1 Landscape, Repress top 3 Psyche. Must play one of each suit (Balance).",
     "rejectReward": "Return 6 Psyche (Slumber).",
     "rejectEffect": {
@@ -60,7 +77,20 @@
       "count": 6
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/leviathan.webp"
+    "image": "images/dreambeasts/leviathan.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-random",
+          "count": 2
+        },
+        {
+          "type": "repress-top-psyche",
+          "count": 4
+        }
+      ]
+    }
   },
   {
     "id": "werewolf",
@@ -69,10 +99,10 @@
     "beastKind": "nightmare",
     "flavor": "You always were their favorite!!!",
     "accept": 10,
-    "reject": 7,
-    "repress": 7,
+    "reject": 10,
+    "repress": 10,
     "rejectSuit": "lucidity",
-    "fail": "Repress 3 Psyche from hand",
+    "fail": "Forget House and Suburbia. Repress 3 Psyche from hand.",
     "effect": "Forget House & Suburbia.",
     "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
@@ -80,7 +110,23 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/werewolf.webp"
+    "image": "images/dreambeasts/werewolf.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-named",
+          "ids": [
+            "house",
+            "suburbia"
+          ]
+        },
+        {
+          "type": "repress-hand",
+          "count": 3
+        }
+      ]
+    }
   },
   {
     "id": "bogey",
@@ -89,10 +135,10 @@
     "beastKind": "nightmare",
     "flavor": "You're mine now!",
     "accept": 10,
-    "reject": 6,
-    "repress": 6,
+    "reject": 10,
+    "repress": 10,
     "rejectSuit": "lucidity",
-    "fail": "Discard 1 Psyche, Repress 1 Psyche",
+    "fail": "Repress 5 Psyche from hand.",
     "effect": "Repress top Psyche & 1 Elasticity Mindstream.",
     "rejectReward": "Draw 2 Objects.",
     "rejectEffect": {
@@ -100,7 +146,11 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/bogey.webp"
+    "image": "images/dreambeasts/bogey.webp",
+    "failEffect": {
+      "type": "repress-hand",
+      "count": 5
+    }
   },
   {
     "id": "mindless",
@@ -109,10 +159,10 @@
     "beastKind": "nightmare",
     "flavor": "Arghhhh!",
     "accept": 11,
-    "reject": 9,
-    "repress": 9,
+    "reject": 11,
+    "repress": 11,
     "rejectSuit": "lucidity",
-    "fail": "Forget 1 Landscape per Dreamer, Repress 1 Psyche per Dreamer",
+    "fail": "Forget 1 Landscape per Dreamer. Each Dreamer Represses 5 Psyche.",
     "effect": "Each Dreamer Repress 1 Psyche from Hand.",
     "rejectReward": "Return 1 Card.",
     "rejectEffect": {
@@ -120,7 +170,20 @@
       "count": 1
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/mindless.webp"
+    "image": "images/dreambeasts/mindless.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-per-dreamer",
+          "count": 1
+        },
+        {
+          "type": "all-repress-hand",
+          "count": 5
+        }
+      ]
+    }
   },
   {
     "id": "automaton",
@@ -129,10 +192,10 @@
     "beastKind": "nightmare",
     "flavor": "Where are you going? Where am I?",
     "accept": 8,
-    "reject": 6,
-    "repress": 6,
+    "reject": 8,
+    "repress": 8,
     "rejectSuit": "lucidity",
-    "fail": "Discard a Power Token",
+    "fail": "Forget 1 Landscape. Repress 3 Psyche from hand.",
     "effect": "Move a Dreamer or Dreambeast 1 space.",
     "rejectReward": "Draw 1 Psyche.",
     "rejectEffect": {
@@ -140,7 +203,20 @@
       "count": 1
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/automaton.webp"
+    "image": "images/dreambeasts/automaton.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-random",
+          "count": 1
+        },
+        {
+          "type": "repress-hand",
+          "count": 3
+        }
+      ]
+    }
   },
   {
     "id": "guardian",
@@ -149,10 +225,10 @@
     "beastKind": "nightmare",
     "flavor": "I command you advance no further.",
     "accept": 10,
-    "reject": 7,
-    "repress": 7,
+    "reject": 10,
+    "repress": 10,
     "rejectSuit": "lucidity",
-    "fail": "Repress 2 Psyche from Hand",
+    "fail": "Repress 5 Psyche from hand.",
     "effect": "Move all Dreamers 2 away from Bed.",
     "rejectReward": "Draw 4 Psyche.",
     "rejectEffect": {
@@ -160,7 +236,11 @@
       "count": 4
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/guardian.webp"
+    "image": "images/dreambeasts/guardian.webp",
+    "failEffect": {
+      "type": "repress-hand",
+      "count": 5
+    }
   },
   {
     "id": "merperson",
@@ -172,7 +252,7 @@
     "reject": 7,
     "repress": 7,
     "rejectSuit": "willpower",
-    "fail": "Discard 3 Psyche",
+    "fail": "Forget Endless Ocean. Repress 3 Psyche from hand.",
     "effect": "Flip Leviathan. If Awake, move Leviathan to Endless Ocean.",
     "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
@@ -180,7 +260,22 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/merperson.webp"
+    "image": "images/dreambeasts/merperson.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-named",
+          "ids": [
+            "endless-ocean"
+          ]
+        },
+        {
+          "type": "repress-hand",
+          "count": 3
+        }
+      ]
+    }
   },
   {
     "id": "trash-gremlin",
@@ -189,10 +284,10 @@
     "beastKind": "fantasy",
     "flavor": "This is my trash! MINE!!!",
     "accept": 10,
-    "reject": 6,
-    "repress": 6,
+    "reject": 10,
+    "repress": 10,
     "rejectSuit": "lucidity",
-    "fail": "Discard 2 Psyche",
+    "fail": "Repress 5 Psyche from hand.",
     "effect": "Repress 1 Object from Hand.",
     "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
@@ -200,7 +295,11 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/trash-gremlin.webp"
+    "image": "images/dreambeasts/trash-gremlin.webp",
+    "failEffect": {
+      "type": "repress-hand",
+      "count": 5
+    }
   },
   {
     "id": "nixie",
@@ -209,10 +308,10 @@
     "beastKind": "fantasy",
     "flavor": "I can show you the way! Trust us.",
     "accept": 8,
-    "reject": 6,
-    "repress": 6,
+    "reject": 8,
+    "repress": 8,
     "rejectSuit": "willpower",
-    "fail": "Discard 2 Psyche",
+    "fail": "Forget Endless Ocean and Sea of Teeth. Repress 2 Psyche from hand.",
     "effect": "Forget Endless Ocean & Sea of Teeth.",
     "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
@@ -220,7 +319,23 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/nixie.webp"
+    "image": "images/dreambeasts/nixie.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-named",
+          "ids": [
+            "endless-ocean",
+            "sea-of-teeth"
+          ]
+        },
+        {
+          "type": "repress-hand",
+          "count": 2
+        }
+      ]
+    }
   },
   {
     "id": "jackalope",
@@ -229,10 +344,10 @@
     "beastKind": "fantasy",
     "flavor": "You trampled my flowers! Make more!",
     "accept": 8,
-    "reject": 6,
-    "repress": 6,
+    "reject": 8,
+    "repress": 8,
     "rejectSuit": "lucidity",
-    "fail": "Discard 1 Psyche",
+    "fail": "Repress top 4 Elasticity Mindstream cards.",
     "effect": "Repress top 3 Elasticity Mindstream.",
     "rejectReward": "Return 2 Repressed.",
     "rejectEffect": {
@@ -240,7 +355,12 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/jackalope.webp"
+    "image": "images/dreambeasts/jackalope.webp",
+    "failEffect": {
+      "type": "repress-mindstream",
+      "suit": "elasticity",
+      "count": 4
+    }
   },
   {
     "id": "unicorn",
@@ -249,10 +369,10 @@
     "beastKind": "fantasy",
     "flavor": "Child of Light, join me on the path.",
     "accept": 7,
-    "reject": 5,
-    "repress": 5,
+    "reject": 7,
+    "repress": 7,
     "rejectSuit": "willpower",
-    "fail": "Discard 3 Psyche",
+    "fail": "Forget 1 Landscape. Repress 3 Psyche from hand.",
     "effect": "Move Unicorn & Dreamer to any Landscape.",
     "rejectReward": "Return 2 Cards.",
     "rejectEffect": {
@@ -260,7 +380,20 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/unicorn.webp"
+    "image": "images/dreambeasts/unicorn.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-random",
+          "count": 1
+        },
+        {
+          "type": "repress-hand",
+          "count": 3
+        }
+      ]
+    }
   },
   {
     "id": "black-dog",
@@ -269,10 +402,10 @@
     "beastKind": "nightmare",
     "flavor": "Ahooo!",
     "accept": 9,
-    "reject": 7,
-    "repress": 7,
+    "reject": 9,
+    "repress": 9,
     "rejectSuit": "willpower",
-    "fail": "Repress 3 Psyche",
+    "fail": "Repress 5 Psyche from hand.",
     "effect": "Lucidity 2: Draw 1 Psyche Card.",
     "rejectReward": "Draw 1 Object.",
     "rejectEffect": {
@@ -280,7 +413,11 @@
       "count": 1
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/black-dog.webp"
+    "image": "images/dreambeasts/black-dog.webp",
+    "failEffect": {
+      "type": "repress-hand",
+      "count": 5
+    }
   },
   {
     "id": "basilisk",
@@ -289,10 +426,10 @@
     "beastKind": "nightmare",
     "flavor": "Your friend is stone. You're next.",
     "accept": 9,
-    "reject": 8,
-    "repress": 8,
+    "reject": 9,
+    "repress": 9,
     "rejectSuit": "willpower",
-    "fail": "Repress 3 Psyche",
+    "fail": "Forget 1 Landscape. Repress 4 Psyche from hand.",
     "effect": "Lucidity 1: Discard 2 Psyche Cards.",
     "rejectReward": "Draw 5 Psyche.",
     "rejectEffect": {
@@ -300,7 +437,20 @@
       "count": 5
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/basilisk.webp"
+    "image": "images/dreambeasts/basilisk.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-random",
+          "count": 1
+        },
+        {
+          "type": "repress-hand",
+          "count": 4
+        }
+      ]
+    }
   },
   {
     "id": "baku",
@@ -309,10 +459,10 @@
     "beastKind": "nightmare",
     "flavor": "Nom Nom Nom",
     "accept": 10,
-    "reject": 8,
-    "repress": 8,
+    "reject": 10,
+    "repress": 10,
     "rejectSuit": "willpower",
-    "fail": "Repress 2 Psyche",
+    "fail": "Forget Tranquil Grove and Awards. Repress 3 Psyche from hand.",
     "effect": "Forget Tranquil Grove and Awards.",
     "rejectReward": "Draw 1 Psyche, Return 1.",
     "rejectEffect": {
@@ -321,7 +471,23 @@
       "alsoReturn": 1
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/baku.webp"
+    "image": "images/dreambeasts/baku.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-named",
+          "ids": [
+            "tranquil-grove",
+            "awards"
+          ]
+        },
+        {
+          "type": "repress-hand",
+          "count": 3
+        }
+      ]
+    }
   },
   {
     "id": "chimera",
@@ -330,10 +496,10 @@
     "beastKind": "nightmare",
     "flavor": "No one escapes my wrath.",
     "accept": 9,
-    "reject": 6,
-    "repress": 6,
-    "rejectSuit": "lucidity",
-    "fail": "Repress top 3 Lucidity Mindstream",
+    "reject": 9,
+    "repress": 9,
+    "rejectSuit": "willpower",
+    "fail": "Repress top 5 Lucidity Mindstream cards.",
     "effect": "Must use one Declared Card.",
     "rejectReward": "Return 1 Psyche.",
     "rejectEffect": {
@@ -341,7 +507,12 @@
       "count": 1
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/chimera.webp"
+    "image": "images/dreambeasts/chimera.webp",
+    "failEffect": {
+      "type": "repress-mindstream",
+      "suit": "lucidity",
+      "count": 5
+    }
   },
   {
     "id": "gorgon",
@@ -353,7 +524,7 @@
     "reject": 6,
     "repress": 6,
     "rejectSuit": "willpower",
-    "fail": "Discard 1 Psyche",
+    "fail": "Forget 1 Landscape. Repress 3 Psyche from hand.",
     "effect": "Discard highest Psyche.",
     "rejectReward": "Draw 2 Power Tokens.",
     "rejectEffect": {
@@ -361,7 +532,20 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/gorgon.webp"
+    "image": "images/dreambeasts/gorgon.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-random",
+          "count": 1
+        },
+        {
+          "type": "repress-hand",
+          "count": 3
+        }
+      ]
+    }
   },
   {
     "id": "sandman",
@@ -370,17 +554,33 @@
     "beastKind": "fantasy",
     "flavor": "Aren't you sleepy? Here, I'll help you.",
     "accept": 9,
-    "reject": 8,
-    "repress": 8,
+    "reject": 9,
+    "repress": 9,
     "rejectSuit": "willpower",
-    "fail": "Each Dreamer Discard 2 Psyche",
+    "fail": "Forget House and Road. Each Dreamer Represses 2 Psyche.",
     "effect": "Forget House & Road.",
     "rejectReward": "Cancel a Dream Draw, then Repress this card.",
     "rejectEffect": {
       "type": "cancel-dream-draw"
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/sandman.webp"
+    "image": "images/dreambeasts/sandman.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-named",
+          "ids": [
+            "house",
+            "road"
+          ]
+        },
+        {
+          "type": "all-repress-hand",
+          "count": 2
+        }
+      ]
+    }
   },
   {
     "id": "sincubus",
@@ -389,10 +589,10 @@
     "beastKind": "fantasy",
     "flavor": "Come here and give us a kiss.",
     "accept": 10,
-    "reject": 5,
-    "repress": 5,
-    "rejectSuit": "lucidity",
-    "fail": "Discard 4 Psyche",
+    "reject": 10,
+    "repress": 10,
+    "rejectSuit": "willpower",
+    "fail": "Repress 5 Psyche from hand.",
     "effect": "Willpower 2 or less, Discard 2 Psyche Cards.",
     "rejectReward": "Draw 3 Psyche.",
     "rejectEffect": {
@@ -400,7 +600,11 @@
       "count": 3
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/sincubus.webp"
+    "image": "images/dreambeasts/sincubus.webp",
+    "failEffect": {
+      "type": "repress-hand",
+      "count": 5
+    }
   },
   {
     "id": "mandrake",
@@ -412,7 +616,7 @@
     "reject": 6,
     "repress": 6,
     "rejectSuit": "willpower",
-    "fail": "Discard 1 Psyche",
+    "fail": "Forget 1 Landscape. Repress 3 Psyche from hand.",
     "effect": "If Hand is 4 or less Repress 1 Psyche & 1 Object.",
     "rejectReward": "Draw 3 Psyche.",
     "rejectEffect": {
@@ -420,7 +624,20 @@
       "count": 3
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/mandrake.webp"
+    "image": "images/dreambeasts/mandrake.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-random",
+          "count": 1
+        },
+        {
+          "type": "repress-hand",
+          "count": 3
+        }
+      ]
+    }
   },
   {
     "id": "goofus-bird",
@@ -429,10 +646,10 @@
     "beastKind": "fantasy",
     "flavor": "This strange bird flies backwards.",
     "accept": 10,
-    "reject": 6,
-    "repress": 6,
+    "reject": 10,
+    "repress": 10,
     "rejectSuit": "willpower",
-    "fail": "Discard 2 Psyche",
+    "fail": "Repress top 5 Lucidity Mindstream cards.",
     "effect": "Repress 1 Lucidity Mindstream, Discard 1 Object.",
     "rejectReward": "Return 2 Repressed.",
     "rejectEffect": {
@@ -440,7 +657,12 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/goofus-bird.webp"
+    "image": "images/dreambeasts/goofus-bird.webp",
+    "failEffect": {
+      "type": "repress-mindstream",
+      "suit": "lucidity",
+      "count": 5
+    }
   },
   {
     "id": "watcher",
@@ -449,10 +671,10 @@
     "beastKind": "fantasy",
     "flavor": "I have witnessed your waking world.",
     "accept": 9,
-    "reject": 6,
-    "repress": 6,
+    "reject": 9,
+    "repress": 9,
     "rejectSuit": "willpower",
-    "fail": "Discard 2 Psyche",
+    "fail": "Forget 1 Landscape. Repress 4 Psyche from hand.",
     "effect": "Discard 1 Psyche Card per 2 Wastelands.",
     "rejectReward": "Reveal 2 Landscapes.",
     "rejectEffect": {
@@ -460,7 +682,20 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/watcher.webp"
+    "image": "images/dreambeasts/watcher.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-random",
+          "count": 1
+        },
+        {
+          "type": "repress-hand",
+          "count": 4
+        }
+      ]
+    }
   },
   {
     "id": "oni",
@@ -469,10 +704,10 @@
     "beastKind": "nightmare",
     "flavor": "You killed my brother, prepare to die!",
     "accept": 10,
-    "reject": 7,
-    "repress": 7,
+    "reject": 10,
+    "repress": 10,
     "rejectSuit": "lucidity",
-    "fail": "Repress 2 Psyche",
+    "fail": "Repress top 3 Psyche and top 2 Willpower Mindstream.",
     "effect": "Repress top Willpower Mindstream & top 2 Psyche.",
     "rejectReward": "Draw 1 Object.",
     "rejectEffect": {
@@ -480,7 +715,21 @@
       "count": 1
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/oni.webp"
+    "image": "images/dreambeasts/oni.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "repress-top-psyche",
+          "count": 3
+        },
+        {
+          "type": "repress-mindstream",
+          "suit": "willpower",
+          "count": 2
+        }
+      ]
+    }
   },
   {
     "id": "wendigo",
@@ -489,10 +738,10 @@
     "beastKind": "nightmare",
     "flavor": "I'll eat you piece by piece!",
     "accept": 10,
-    "reject": 7,
-    "repress": 7,
+    "reject": 10,
+    "repress": 10,
     "rejectSuit": "lucidity",
-    "fail": "Repress 2 Psyche",
+    "fail": "Repress 5 Psyche from hand.",
     "effect": "Repress a Psyche card at least value 3 or else Repress 3.",
     "rejectReward": "Draw 2 Psyche or Objects.",
     "rejectEffect": {
@@ -500,7 +749,11 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/wendigo.webp"
+    "image": "images/dreambeasts/wendigo.webp",
+    "failEffect": {
+      "type": "repress-hand",
+      "count": 5
+    }
   },
   {
     "id": "minotaur",
@@ -512,14 +765,30 @@
     "reject": 10,
     "repress": 10,
     "rejectSuit": "lucidity",
-    "fail": "Repress 3 Psyche",
+    "fail": "Forget Endless Hallway and Silver Mist. Repress 3 Psyche from hand.",
     "effect": "Forget Endless Hallway and Silver Mist.",
     "rejectReward": "Keep as if 1 Object of a set.",
     "rejectEffect": {
       "type": "set-wildcard"
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/minotaur.webp"
+    "image": "images/dreambeasts/minotaur.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-named",
+          "ids": [
+            "endless-hallway",
+            "silver-mist"
+          ]
+        },
+        {
+          "type": "repress-hand",
+          "count": 3
+        }
+      ]
+    }
   },
   {
     "id": "ghost-light",
@@ -528,10 +797,10 @@
     "beastKind": "nightmare",
     "flavor": "Why didn't you save me?",
     "accept": 10,
-    "reject": 8,
-    "repress": 8,
-    "rejectSuit": "willpower",
-    "fail": "Repress 3 Psyche",
+    "reject": 10,
+    "repress": 10,
+    "rejectSuit": "lucidity",
+    "fail": "Repress 5 Psyche from hand.",
     "effect": "Repress top Willpower Mindstream.",
     "rejectReward": "Draw 1 Object & 1 Psyche.",
     "rejectEffect": {
@@ -540,7 +809,11 @@
       "alsoPsyche": 1
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/ghost-light.webp"
+    "image": "images/dreambeasts/ghost-light.webp",
+    "failEffect": {
+      "type": "repress-hand",
+      "count": 5
+    }
   },
   {
     "id": "vampyre",
@@ -549,10 +822,10 @@
     "beastKind": "nightmare",
     "flavor": "Come to me, let me embrace you.",
     "accept": 10,
-    "reject": 8,
-    "repress": 8,
+    "reject": 10,
+    "repress": 10,
     "rejectSuit": "lucidity",
-    "fail": "Discard 3 Psyche",
+    "fail": "Each Dreamer Represses 2 Psyche. Forget 1 Landscape.",
     "effect": "Discard Psyche Cards = half Dreamers.",
     "rejectReward": "Draw 1 Set Object.",
     "rejectEffect": {
@@ -560,7 +833,20 @@
       "count": 1
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/vampyre.webp"
+    "image": "images/dreambeasts/vampyre.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "all-repress-hand",
+          "count": 2
+        },
+        {
+          "type": "forget-random",
+          "count": 1
+        }
+      ]
+    }
   },
   {
     "id": "pooka",
@@ -569,10 +855,10 @@
     "beastKind": "fantasy",
     "flavor": "What have you got to trade?",
     "accept": 8,
-    "reject": 6,
-    "repress": 6,
-    "rejectSuit": "willpower",
-    "fail": "Discard 2 Psyche",
+    "reject": 8,
+    "repress": 8,
+    "rejectSuit": "lucidity",
+    "fail": "Repress 4 Psyche from hand.",
     "effect": "Repress top Willpower Mindstream.",
     "rejectReward": "Draw 2 Objects.",
     "rejectEffect": {
@@ -580,7 +866,11 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/pooka.webp"
+    "image": "images/dreambeasts/pooka.webp",
+    "failEffect": {
+      "type": "repress-hand",
+      "count": 4
+    }
   },
   {
     "id": "shadows",
@@ -589,10 +879,10 @@
     "beastKind": "fantasy",
     "flavor": "We've been following. Now we lead.",
     "accept": 7,
-    "reject": 5,
-    "repress": 5,
+    "reject": 7,
+    "repress": 7,
     "rejectSuit": "lucidity",
-    "fail": "Discard 1 Psyche",
+    "fail": "Forget City and Forest. Repress 2 Psyche from hand.",
     "effect": "Forget City and Forest.",
     "rejectReward": "Reveal 3 Landscapes.",
     "rejectEffect": {
@@ -600,7 +890,23 @@
       "count": 3
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/shadows.webp"
+    "image": "images/dreambeasts/shadows.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-named",
+          "ids": [
+            "city",
+            "forest"
+          ]
+        },
+        {
+          "type": "repress-hand",
+          "count": 2
+        }
+      ]
+    }
   },
   {
     "id": "cheshire-cat",
@@ -609,10 +915,10 @@
     "beastKind": "fantasy",
     "flavor": "We're all mad here.",
     "accept": 9,
-    "reject": 7,
-    "repress": 7,
-    "rejectSuit": "willpower",
-    "fail": "Discard 2 Psyche",
+    "reject": 9,
+    "repress": 9,
+    "rejectSuit": "lucidity",
+    "fail": "Forget 1 Landscape. Repress 4 Psyche from hand.",
     "effect": "Repress top 2 Psyche Cards.",
     "rejectReward": "Reveal 3 Landscapes.",
     "rejectEffect": {
@@ -620,7 +926,20 @@
       "count": 3
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/cheshire-cat.webp"
+    "image": "images/dreambeasts/cheshire-cat.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-random",
+          "count": 1
+        },
+        {
+          "type": "repress-hand",
+          "count": 4
+        }
+      ]
+    }
   },
   {
     "id": "masked-figure",
@@ -629,10 +948,10 @@
     "beastKind": "fantasy",
     "flavor": "Lose yourself to find your Self.",
     "accept": 10,
-    "reject": 6,
-    "repress": 6,
+    "reject": 10,
+    "repress": 10,
     "rejectSuit": "lucidity",
-    "fail": "Discard 3 Psyche",
+    "fail": "Forget Inner Sanctum and The Party. Repress 3 Psyche from hand.",
     "effect": "Forget Inner Sanctum and The Party.",
     "rejectReward": "Draw 2 Objects.",
     "rejectEffect": {
@@ -640,7 +959,23 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/masked-figure.webp"
+    "image": "images/dreambeasts/masked-figure.webp",
+    "failEffect": {
+      "type": "compound",
+      "steps": [
+        {
+          "type": "forget-named",
+          "ids": [
+            "inner-sanctum",
+            "the-party"
+          ]
+        },
+        {
+          "type": "repress-hand",
+          "count": 3
+        }
+      ]
+    }
   },
   {
     "id": "winged-turtle",
@@ -649,10 +984,10 @@
     "beastKind": "fantasy",
     "flavor": "Where there's wings, there's a way.",
     "accept": 9,
-    "reject": 7,
-    "repress": 7,
-    "rejectSuit": "willpower",
-    "fail": "Discard 2 Psyche",
+    "reject": 9,
+    "repress": 9,
+    "rejectSuit": "lucidity",
+    "fail": "Repress 5 Psyche from hand.",
     "effect": "Repress 3 - Willpower Psyche Cards.",
     "rejectReward": "Reveal 3 Landscapes.",
     "rejectEffect": {
@@ -660,6 +995,10 @@
       "count": 3
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/winged-turtle.webp"
+    "image": "images/dreambeasts/winged-turtle.webp",
+    "failEffect": {
+      "type": "repress-hand",
+      "count": 5
+    }
   }
 ]

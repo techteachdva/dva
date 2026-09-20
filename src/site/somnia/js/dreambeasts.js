@@ -20,7 +20,7 @@ import { grantPowerTokens, spendPowerTokens } from "./power-tokens.js";
 import { repressCard, requestReturnCards, enqueueRepressFromHand, isDreambeastPsycheCard } from "./subconscious.js";
 import { applyBossAcceptEffect } from "./bosses.js";
 import { adjacentTiles, hexDistance } from "./hex.js";
-import { requestChooseTile, requestForgetLandscapes, forgetNamedLandscapes } from "./landscapes.js";
+import { requestChooseTile, requestForgetLandscapes, forgetNamedLandscapes, forgetRandomLandscapes } from "./landscapes.js";
 import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
 import { discardToMindstream } from "./mindstream-supply.js";
 import { scaleFailCount } from "./psyche-pressure.js";
@@ -557,34 +557,70 @@ export function applyAcceptEffect(state, encounter, actor, helpers = {}) {
   delete actor._encounter;
 }
 
-export function applyFailEffect(state, player, encounter) {
-  const id = encounter.refId || encounter.id;
-  const spec = FAIL_EFFECTS[id] || { type: "repress-hand", count: 2 };
-  let count = encounter.failDoubled && spec.count ? spec.count * 2 : spec.count;
-  if (count) count = scaleFailCount(count);
-  const effect = { ...spec, count };
+function defaultFailSpec(encounter) {
+  const n = Math.max(1, Math.ceil((encounter?.accept || encounter?.reject || 6) / 2));
+  return { type: "repress-hand", count: n };
+}
 
+function scaleStep(step, doubled) {
+  if (!step || typeof step !== "object") return step;
+  const copy = { ...step };
+  if (copy.count) {
+    if (doubled) copy.count *= 2;
+    copy.count = scaleFailCount(copy.count);
+  }
+  if (copy.repress) {
+    if (doubled) copy.repress *= 2;
+    copy.repress = scaleFailCount(copy.repress);
+  }
+  return copy;
+}
+
+function runFailStep(state, player, encounter, step) {
+  const effect = scaleStep(step, encounter.failDoubled);
   switch (effect.type) {
+    case "compound":
+      (effect.steps || []).forEach((child) => runFailStep(state, player, encounter, child));
+      break;
     case "repress-top-psyche":
       repressTopPsycheDeck(state, effect.count || 1);
       break;
     case "repress-hand":
       enqueueRepressFromHand(state, player, effect.count || 1, {
-        reason: `${player.name}: Fail — ${encounter.fail}`,
+        reason: `${player.name}: Fail — ${encounter.fail || encounter.name}`,
+      });
+      break;
+    case "all-repress-hand":
+      state.players.filter((p) => p.alive).forEach((p) => {
+        enqueueRepressFromHand(state, p, effect.count || 1, {
+          reason: `${p.name}: Fail — ${encounter.fail || encounter.name}`,
+        });
       });
       break;
     case "discard-hand":
       discardPsycheCards(state, player, effect.count || 1);
+      addLog(state, `${player.name} discards ${effect.count || 1} Psyche.`);
       break;
     case "discard-and-repress":
       discardPsycheCards(state, player, effect.discard || 1);
       enqueueRepressFromHand(state, player, effect.repress || 1, { reason: `${player.name}: Fail — Repress 1.` });
       break;
+    case "forget-random":
+      forgetRandomLandscapes(state, effect.count || 1, { skipOccupied: true });
+      break;
+    case "forget-named":
+      forgetNamedLandscapes(state, effect.ids || [], { preserveBeasts: true });
+      break;
+    case "forget-per-dreamer": {
+      const n = state.players.filter((p) => p.alive).length * (effect.count || 1);
+      forgetRandomLandscapes(state, n, { skipOccupied: true });
+      break;
+    }
     case "forget-and-repress-per-dreamer": {
       const n = state.players.filter((p) => p.alive).length;
       requestForgetLandscapes(state, n);
       state.players.filter((p) => p.alive).forEach((p) => {
-        enqueueRepressFromHand(state, p, 1, { reason: `${p.name}: Mindless Fail — Repress 1.` });
+        enqueueRepressFromHand(state, p, effect.repress || 1, { reason: `${p.name}: Fail — Repress.` });
       });
       break;
     }
@@ -607,6 +643,12 @@ export function applyFailEffect(state, player, encounter) {
     default:
       enqueueRepressFromHand(state, player, 1, { reason: encounter.fail || "Encounter Fail." });
   }
+}
+
+export function applyFailEffect(state, player, encounter) {
+  const id = encounter.refId || encounter.id;
+  const spec = encounter.failEffect || FAIL_EFFECTS[id] || defaultFailSpec(encounter);
+  runFailStep(state, player, encounter, spec);
   addLog(state, encounter.fail || "Encounter Fail resolved.");
 }
 

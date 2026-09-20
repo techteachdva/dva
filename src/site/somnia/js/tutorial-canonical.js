@@ -224,7 +224,7 @@ function acceptHouseEncounter(state) {
   state.activePlayerIndex = 0;
   state.selectedLandscapeId = "house";
   selectExactCards(state, 0, ["lucidity-3-v-l3", "lucidity-2-v-l2"]);
-  meetEncounter(state, "accept");
+  meetEncounter(state, "accept", { instant: true });
   if (!encounterOnLandscape(state, "house")) {
     state.tutorialFlags.encounterResolved = true;
   }
@@ -236,7 +236,7 @@ function rejectBasementEncounter(state) {
   state.selectedLandscapeId = "the-basement";
   ensureMeetBudget(state, 1);
   selectExactCards(state, 1, ["elasticity-2-i-e2", "lucidity-2-i-l2", "willpower-1-i-w1"]);
-  meetEncounter(state, "reject");
+  meetEncounter(state, "reject", { instant: true });
   if (!state.questTracker) state.questTracker = { mindstreamOnLandscape: {}, meetOnLandscape: {}, landscapeActions: {} };
   if (!state.questTracker.meetOnLandscape) state.questTracker.meetOnLandscape = {};
   if (!(state.questTracker.meetOnLandscape["the-basement"] > 0)) {
