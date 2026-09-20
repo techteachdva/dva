@@ -28,7 +28,6 @@ import {
 } from "./subconscious.js";
 import { MINDSTREAM_EFFECTS } from "./mindstream.js";
 import { markDreamFeedNudge } from "./fx.js";
-import { maybeSpawnAfterEvent } from "./event-spawn-pressure.js";
 import { FINAL_RECURRENCE_PSYCHE_REQUIRED } from "./final-recurrence-rules.js";
 import { discardDreamsFromDeck } from "./dream-deck.js";
 import { logMoment } from "./narrator.js";
@@ -604,14 +603,10 @@ export function resolveCardEffect(state, card, player, helpers) {
     if (!beginEventOrWaste(state, card)) return;
     if (MINDSTREAM_EFFECTS[id]) {
       MINDSTREAM_EFFECTS[id](state, player, helpers, card);
-      maybeSpawnAfterEvent(state, player, helpers, card);
       return;
     }
   }
-  const matched = matchTextEffect(card, state, player, helpers);
-  if (card.type === "event" && matched) {
-    maybeSpawnAfterEvent(state, player, helpers, card);
-  }
+  matchTextEffect(card, state, player, helpers);
 }
 
 export function createEffectHelpers(spawnFn) {
