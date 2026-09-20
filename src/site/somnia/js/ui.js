@@ -2623,9 +2623,7 @@ export function renderActiveSlots(state, onCardClick, onQuestClick = null) {
   });
 }
 
-function dreamsUrgencyClass(count) {
-  if (count <= 4) return "hud-urgent-critical";
-  if (count <= 8) return "hud-urgent-warn";
+function dreamsUrgencyClass(_count) {
   return "";
 }
 

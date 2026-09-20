@@ -42,23 +42,28 @@ function tileEncounterList(tile) {
   return tile.encounter ? [tile.encounter] : [];
 }
 
-/** True when this suit still has cards in decks, discard, or in play (not only Subconscious). */
-export function mindstreamSuitHasCirculation(state, suit) {
-  if (state.mindstreamDecks?.[suit]?.length) return true;
-  if (state.mindstreamDiscard?.[suit]?.length) return true;
+/** Cards of this suit still in decks, discard, or in play (not only Subconscious). */
+export function countMindstreamCirculation(state, suit) {
+  let n = (state.mindstreamDecks?.[suit]?.length || 0)
+    + (state.mindstreamDiscard?.[suit]?.length || 0);
+  if (cardIsMindstreamSuit(state.landscapePick?.encounter, suit)) n += 1;
   for (const tile of state.board || []) {
-    if (tileEncounterList(tile).some((enc) => cardIsMindstreamSuit(enc, suit))) return true;
+    n += tileEncounterList(tile).filter((enc) => cardIsMindstreamSuit(enc, suit)).length;
   }
-  if (cardIsMindstreamSuit(state.landscapePick?.encounter, suit)) return true;
   for (const player of state.players || []) {
     const piles = [
       ...(player.objects || []),
       ...(player.persistent || []),
       ...(player.hand || []),
     ];
-    if (piles.some((card) => cardIsMindstreamSuit(card, suit))) return true;
+    n += piles.filter((card) => cardIsMindstreamSuit(card, suit)).length;
   }
-  return false;
+  return n;
+}
+
+/** True when this suit still has cards in decks, discard, or in play (not only Subconscious). */
+export function mindstreamSuitHasCirculation(state, suit) {
+  return countMindstreamCirculation(state, suit) > 0;
 }
 
 export function isMindstreamSuitGone(state, suit) {

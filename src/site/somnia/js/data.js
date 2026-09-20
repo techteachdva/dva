@@ -113,6 +113,7 @@ export const MINDSTREAM_COMPOSITION = {
   powerToken: 6,
   drawDream: 3,
 };
+export const MINDSTREAM_DECK_SIZE = Object.values(MINDSTREAM_COMPOSITION).reduce((sum, n) => sum + n, 0);
 
 export function shuffle(array) {
   const copy = [...array];
@@ -134,6 +135,10 @@ export const PSYCHE_POWER_TOKEN_COUNT = 6;
 export const PSYCHE_POWER_GRANT = 1;
 export const PSYCHE_STARTING_HAND = 5;
 export const PSYCHE_HAND_LIMIT = 10;
+export const PSYCHE_DECK_SIZE =
+  (Object.values(PSYCHE_DISTRIBUTION).reduce((sum, n) => sum + n, 0) * 3)
+  + PSYCHE_WILD_COUNT
+  + PSYCHE_POWER_TOKEN_COUNT;
 
 export function buildPsycheDeck(psycheConfig = {}) {
   const suits = psycheConfig.suits || ["lucidity", "elasticity", "willpower"];

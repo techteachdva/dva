@@ -1,5 +1,5 @@
 /**
- * Dreambeast dice battle — Accept/Reject resolution (Somnia 27.0).
+ * Dreambeast dice battle — Accept/Reject resolution (Somnia 28.0).
  * Each side rolls Nd6; 5–6 is a success. Most successes wins. Ties favor the beast.
  * Dreamer Power can underpay beast Power; pools up to 22d6.
  */
@@ -57,25 +57,25 @@ function faceHtml(value) {
 
 function dieHtml(side, index) {
   const faces = [1, 2, 3, 4, 5, 6].map((v) => faceHtml(v)).join("");
-  return `<div class="battle-die ${side}-die" data-die-index="${index}" aria-hidden="true">${faces}</div>`;
+  return `<div class="battle-die-slot"><div class="battle-die-scene"><div class="battle-die ${side}-die" data-die-index="${index}" aria-hidden="true">${faces}</div></div></div>`;
 }
 
 function settleTransform(value) {
   switch (value) {
-    case 1: return "rotateX(0deg) rotateY(0deg)";
-    case 2: return "rotateY(-90deg)";
-    case 3: return "rotateX(-90deg)";
-    case 4: return "rotateX(90deg)";
-    case 5: return "rotateY(90deg)";
-    case 6: return "rotateY(180deg)";
-    default: return "rotateX(0deg) rotateY(0deg)";
+    case 1: return "rotateX(-18deg) rotateY(22deg)";
+    case 2: return "rotateX(-18deg) rotateY(-68deg)";
+    case 3: return "rotateX(-108deg) rotateY(22deg)";
+    case 4: return "rotateX(72deg) rotateY(22deg)";
+    case 5: return "rotateX(-18deg) rotateY(112deg)";
+    case 6: return "rotateX(-18deg) rotateY(202deg)";
+    default: return "rotateX(-18deg) rotateY(22deg)";
   }
 }
 
 function randomTumble() {
-  const x = 180 + Math.floor(Math.random() * 4) * 90;
-  const y = 180 + Math.floor(Math.random() * 4) * 90;
-  const z = Math.floor(Math.random() * 3) * 90;
+  const x = 360 + Math.floor(Math.random() * 3) * 360;
+  const y = 360 + Math.floor(Math.random() * 3) * 360;
+  const z = 12 + Math.floor(Math.random() * 18);
   return `rotateX(${x}deg) rotateY(${y}deg) rotateZ(${z}deg)`;
 }
 
@@ -171,11 +171,12 @@ export function playDiceBattle(opts) {
   const shownD = Math.min(dCount, MAX_SHOWN);
   const shownB = Math.min(bCount, MAX_SHOWN);
   const totalDice = shownD + shownB;
-  const size = totalDice >= 30 ? 26 : totalDice >= 22 ? 30 : totalDice > 14 ? 40 : 52;
+  const size = totalDice >= 30 ? 32 : totalDice >= 22 ? 38 : totalDice > 14 ? 46 : 56;
 
   stage.hidden = false;
   stage.style.setProperty("--die-size", `${size}px`);
-  stage.style.setProperty("--die-gap", totalDice > 18 ? "0.22rem" : "0.45rem");
+  stage.style.setProperty("--die-half", `${size / 2}px`);
+  stage.style.setProperty("--die-gap", totalDice > 18 ? "0.32rem" : "0.55rem");
   stage.innerHTML = `
     <div class="dice-battle-veil"></div>
     <div class="dice-battle-table">
@@ -214,9 +215,7 @@ export function playDiceBattle(opts) {
   const tumbleMs = quiet ? 80 : TUMBLE_MS;
 
   const landDie = (el, face, delay, onLand) => {
-    window.setTimeout(() => {
-      el.style.transform = randomTumble();
-    }, 16);
+    el.style.transform = randomTumble();
     window.setTimeout(() => {
       el.classList.add("settled");
       el.style.transform = settleTransform(face);

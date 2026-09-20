@@ -733,6 +733,10 @@ const DREAMER_RADIAL_ORDER = [
 
 export function resolvePendingDeathDream(state, onShowModal) {
   if (!state.pendingDeathAdditionalDream) return null;
+  if (state.status !== "playing") {
+    state.pendingDeathAdditionalDream = false;
+    return null;
+  }
   state.pendingDeathAdditionalDream = false;
   addLog(state, "A new Dream begins for the fallen Dreamer…");
   return drawAdditionalDream(state, onShowModal);

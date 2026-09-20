@@ -5,10 +5,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "27.0.1";
+export const SOMNIA_VERSION = "28.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "28.0",
+    title: "Unstable Dreamscape",
+    notes: [
+      "A Dreamer with no Psyche cards and no allies dies immediately. Objects go to Mindstream discards, Power Tokens return to the pool, and they respawn on The Bed with 1 fewer starting Psyche (5→4→3→2→1). Respawn does not grant Power Tokens — only the opening 1 per Dreamer. The fifth death of any Dreamer ends the game at once.",
+      "Mindstream suits, the Psyche Deck, and the Dream Deck warn before they can end the game: a fading banner at 10% remaining, a flashing persistent banner at 5%, and a severe unstable-table warning at 1%.",
+      "Combat dice keep their cube shape instead of flattening after they land. Dev console: pressure, warn, unstable, and dice.",
+    ],
+  },
   {
     version: "27.0.1",
     title: "Undo and Leviathan",

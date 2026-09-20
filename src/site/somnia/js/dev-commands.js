@@ -39,6 +39,16 @@ import {
   revealableTiles,
   cancelLandscapePick,
 } from "./landscapes.js";
+import { playDiceBattle } from "./dice-battle.js";
+import {
+  pressureStatusLines,
+  parsePressureSource,
+  setSourceRemainingRatio,
+  forceDeckPressure,
+  clearForcedDeckPressure,
+  forcedReadingsForTier,
+  syncDeckPressure,
+} from "./deck-pressure.js";
 
 const DEV_KEY = "somnia.dev";
 
@@ -114,6 +124,14 @@ function fail(message) {
   return { ok: false, message };
 }
 
+function parsePressureArg(token) {
+  const raw = String(token || "").toLowerCase().replace("%", "");
+  if (raw === "10" || raw === "soft") return { tier: "soft", ratio: 0.10, label: "10%" };
+  if (raw === "5" || raw === "critical" || raw === "crit") return { tier: "critical", ratio: 0.05, label: "5%" };
+  if (raw === "1" || raw === "severe" || raw === "unstable") return { tier: "severe", ratio: 0.01, label: "1%" };
+  return null;
+}
+
 function statusLines(state) {
   const p = activePlayer(state);
   return [
@@ -124,6 +142,7 @@ function statusLines(state) {
     `Meet: ${state.meetActionsUsed}/${state.meetActionBudget} · Explore moves: ${state.exploreMovesLeft}`,
     `Encounter: ${state.activeEncounter?.name || "none"} @ ${state.activeEncounterLandscapeId || "—"}`,
     `Dream drawn: ${state.dreamDrawn} · Decks: dream ${state.dreamDeck.length}, psyche ${state.psycheDeck.length}, mindstream beasts ${countMindstreamDreambeasts(state)}`,
+    ...pressureStatusLines(state),
     `Subconscious: ${subconsciousCount(state.subconscious)} cards`,
     `Pickers: repress=${!!state.pendingRepress} return=${!!state.pendingReturn} map=${state.landscapePick?.mode || "none"}`,
     `Final recurrence: ${state.finalRecurrence}`,
@@ -148,6 +167,8 @@ const COMMANDS = {
         Encounter: ["spawn", "beasts", "meet-budget", "explore-moves", "encounter-clear"],
         Map: ["reveal", "forget", "tile", "landscapes", "reveal-all", "wasteland-all", "bed-final", "final"],
         Subconscious: ["return", "repress"],
+        Warnings: ["pressure", "warn", "unstable"],
+        Dice: ["dice"],
         Player: ["player", "head", "move", "power", "points", "kill"],
         Progress: ["quest", "acquire", "archetype", "win", "lose"],
         Scenarios: ["scenario", "scenarios"],
@@ -610,7 +631,7 @@ const COMMANDS = {
       const player = playerAt(state, args[0]);
       player.hand = [];
       handleDreamerDeath(state, player);
-      return ok(`${player.name} lost to the Dreamscape — respawn flow triggered if dreamers remain.`);
+      return ok(`${player.name} died — respawned on The Bed with fewer Psyche, no new Power.`);
     },
   },
 
@@ -685,6 +706,82 @@ const COMMANDS = {
     run: (state) => {
       state.status = "lost";
       return ok("Defeat triggered.");
+    },
+  },
+
+  pressure: {
+    usage: "pressure 10|5|1 [all|dream|psyche|lucidity|elasticity|willpower]",
+    desc: "Trim lose-condition decks to 10%, 5%, or 1% remaining.",
+    aliases: ["decks"],
+    run: (state, args) => {
+      const parsed = parsePressureArg(args[0]);
+      if (!parsed) return fail("Use: pressure 10|5|1 [source]");
+      const ids = parsePressureSource(args[1]);
+      if (!ids.length) return fail("Unknown source. Try all, dream, psyche, lucidity, elasticity, willpower.");
+      const lines = ids.map((id) => {
+        const left = setSourceRemainingRatio(state, id, parsed.ratio);
+        return `${id} → ${left} remaining (${parsed.tier})`;
+      });
+      syncDeckPressure(state);
+      return ok(`Set deck pressure to ${parsed.label}.`, lines);
+    },
+  },
+
+  warn: {
+    usage: "warn 10|5|1|clear [all|dream|psyche|lucidity|elasticity|willpower]",
+    desc: "Force the top-of-screen deck warning without changing decks.",
+    run: (state, args) => {
+      const token = (args[0] || "").toLowerCase();
+      if (token === "clear" || token === "off") {
+        clearForcedDeckPressure();
+        syncDeckPressure(state);
+        return ok("Cleared forced deck warning.");
+      }
+      const parsed = parsePressureArg(token);
+      if (!parsed) return fail("Use: warn 10|5|1|clear [source]");
+      const ids = parsePressureSource(args[1]);
+      if (!ids.length) return fail("Unknown source.");
+      forceDeckPressure(forcedReadingsForTier(parsed.tier, ids));
+      syncDeckPressure(state);
+      return ok(`Forced ${parsed.label} warning for ${ids.join(", ")}.`);
+    },
+  },
+
+  unstable: {
+    usage: "unstable on|off",
+    desc: "Toggle the 1% dreamscape-unstable parallax overlay.",
+    run: (state, args) => {
+      const token = (args[0] || "on").toLowerCase();
+      if (token === "off" || token === "clear") {
+        clearForcedDeckPressure();
+        document.body.classList.remove("dreamscape-unstable", "deck-pressure-severe");
+        syncDeckPressure(state);
+        return ok("Unstable overlay off.");
+      }
+      forceDeckPressure(forcedReadingsForTier("severe", ["dream"]));
+      syncDeckPressure(state);
+      return ok("Dreamscape unstable (1% Dream Deck warning).");
+    },
+  },
+
+  dice: {
+    usage: "dice [dreamerN] [beastN] [hold|win|lose|quick]",
+    desc: "Play a test dice battle. Example: dice 8 5 hold",
+    aliases: ["dice-battle"],
+    run: (state, args) => {
+      const d = Math.max(1, parseInt(args[0] || "6", 10) || 6);
+      const b = Math.max(1, parseInt(args[1] || "4", 10) || 4);
+      const flag = (args[2] || "hold").toLowerCase();
+      playDiceBattle({
+        dreamerName: activePlayer(state)?.name || "Dreamer",
+        beastName: "Test Beast",
+        dreamerDice: d,
+        beastDice: b,
+        forceWinner: flag === "win" ? "dreamer" : flag === "lose" ? "beast" : null,
+        hold: flag !== "quick",
+        onComplete: () => {},
+      });
+      return ok(`Dice battle ${d} vs ${b} (${flag}). Click the overlay to dismiss.`);
     },
   },
 

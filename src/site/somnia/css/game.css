@@ -10415,7 +10415,6 @@ body.play-window #screen-game.active .hand-bar {
   align-items: center;
   justify-content: center;
   pointer-events: auto;
-  perspective: 900px;
 }
 .dice-battle-stage[hidden] { display: none; }
 .dice-battle-veil {
@@ -10433,6 +10432,7 @@ body.play-window #screen-game.active .hand-bar {
   align-items: center;
   width: min(96%, 980px);
   padding: 1.2rem 1.4rem 1.4rem;
+  overflow: visible;
   border-radius: 22px;
   background:
     linear-gradient(180deg, rgba(48, 32, 18, 0.55), rgba(22, 14, 10, 0.72)),
@@ -10447,7 +10447,8 @@ body.play-window #screen-game.active .hand-bar {
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
-  min-width: 0;
+  min-width: min-content;
+  overflow: visible;
 }
 .dice-battle-label {
   margin: 0;
@@ -10477,10 +10478,11 @@ body.play-window #screen-game.active .hand-bar {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--die-gap, 0.45rem);
-  padding: 0.6rem 0.2rem;
-  min-height: calc(var(--die-size, 52px) + 12px);
-  perspective: 600px;
+  align-content: center;
+  gap: var(--die-gap, 0.55rem);
+  padding: 0.85rem 0.35rem 1.1rem;
+  min-height: calc(var(--die-size, 56px) + 18px);
+  overflow: visible;
 }
 .dice-battle-center {
   display: flex;
@@ -10522,45 +10524,84 @@ body.play-window #screen-game.active .hand-bar {
   color: #ff8a9a;
   box-shadow: 0 0 28px rgba(255, 93, 122, 0.35);
 }
-.dice-battle-stage.winner-dreamer .dreamer-pool {
-  filter: drop-shadow(0 0 16px rgba(255, 240, 180, 0.55));
+.dice-battle-stage.winner-dreamer .dreamer-pool .dice-battle-label {
+  text-shadow: 0 0 16px rgba(255, 240, 180, 0.7);
 }
-.dice-battle-stage.winner-beast .beast-pool {
-  filter: drop-shadow(0 0 16px rgba(180, 80, 255, 0.45));
+.dice-battle-stage.winner-beast .beast-pool .dice-battle-label {
+  text-shadow: 0 0 16px rgba(180, 80, 255, 0.65);
+}
+
+.battle-die-slot {
+  flex: 0 0 var(--die-size, 56px);
+  width: var(--die-size, 56px);
+  height: var(--die-size, 56px);
+  min-width: var(--die-size, 56px);
+  min-height: var(--die-size, 56px);
+  max-width: var(--die-size, 56px);
+  max-height: var(--die-size, 56px);
+  position: relative;
+  overflow: visible;
+}
+.battle-die-scene {
+  width: var(--die-size, 56px);
+  height: var(--die-size, 56px);
+  perspective: 180px;
+  perspective-origin: 50% 42%;
+}
+.dice-battle-stage.winner-dreamer .dreamer-pool .battle-die-slot {
+  box-shadow: 0 0 18px rgba(255, 236, 170, 0.45);
+  border-radius: 18%;
+}
+.dice-battle-stage.winner-beast .beast-pool .battle-die-slot {
+  box-shadow: 0 0 18px rgba(170, 90, 255, 0.4);
+  border-radius: 18%;
 }
 
 .battle-die {
-  width: var(--die-size, 52px);
-  height: var(--die-size, 52px);
+  width: var(--die-size, 56px);
+  height: var(--die-size, 56px);
   position: relative;
   transform-style: preserve-3d;
-  transform: rotateX(-18deg) rotateY(24deg);
+  transform-origin: 50% 50%;
+  transform: rotateX(-22deg) rotateY(28deg);
   transition: transform 0.9s cubic-bezier(0.18, 0.7, 0.22, 1);
 }
 .battle-die.settled {
-  transition: transform 0.55s cubic-bezier(0.2, 0.85, 0.25, 1);
+  transition: transform 0.7s cubic-bezier(0.2, 0.85, 0.25, 1);
 }
-.battle-die.success {
-  filter: drop-shadow(0 0 8px rgba(240, 201, 106, 0.7));
+.battle-die.success .die-face {
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.28),
+    0 0 10px rgba(240, 201, 106, 0.55);
 }
 .die-face {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: var(--die-size, 56px);
+  height: var(--die-size, 56px);
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
   padding: 14%;
-  border-radius: 12%;
+  border-radius: 14%;
   backface-visibility: hidden;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.25);
+  -webkit-backface-visibility: hidden;
 }
 .dreamer-die .die-face {
-  background: linear-gradient(145deg, #fffaf0, #d9d2c4);
-  border: 1px solid #c9c0b0;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.55), transparent 42%),
+    linear-gradient(145deg, #fffaf0, #cfc6b4);
+  border: 1px solid #d8cfc0;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.45), inset 0 -2px 4px rgba(40, 24, 8, 0.18);
 }
 .beast-die .die-face {
-  background: linear-gradient(145deg, #2a2438, #0c0a12);
-  border: 1px solid #4a4258;
+  background:
+    linear-gradient(160deg, rgba(120, 110, 160, 0.35), transparent 46%),
+    linear-gradient(145deg, #2e283c, #09070e);
+  border: 1px solid #5a5268;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.12), inset 0 -2px 5px rgba(0, 0, 0, 0.55);
 }
 .die-pip {
   width: 28%;
@@ -10573,12 +10614,12 @@ body.play-window #screen-game.active .hand-bar {
 .dreamer-die .die-pip.on { background: #1a1410; box-shadow: inset 0 1px 1px rgba(0,0,0,0.45); }
 .beast-die .die-pip.on { background: #f4f0e6; box-shadow: inset 0 1px 1px rgba(255,255,255,0.35); }
 
-.face-1 { transform: rotateY(0deg) translateZ(calc(var(--die-size) / 2)); }
-.face-2 { transform: rotateY(90deg) translateZ(calc(var(--die-size) / 2)); }
-.face-3 { transform: rotateX(90deg) translateZ(calc(var(--die-size) / 2)); }
-.face-4 { transform: rotateX(-90deg) translateZ(calc(var(--die-size) / 2)); }
-.face-5 { transform: rotateY(-90deg) translateZ(calc(var(--die-size) / 2)); }
-.face-6 { transform: rotateY(180deg) translateZ(calc(var(--die-size) / 2)); }
+.face-1 { transform: rotateY(0deg) translateZ(var(--die-half, 28px)); }
+.face-2 { transform: rotateY(90deg) translateZ(var(--die-half, 28px)); }
+.face-3 { transform: rotateX(90deg) translateZ(var(--die-half, 28px)); }
+.face-4 { transform: rotateX(-90deg) translateZ(var(--die-half, 28px)); }
+.face-5 { transform: rotateY(-90deg) translateZ(var(--die-half, 28px)); }
+.face-6 { transform: rotateY(180deg) translateZ(var(--die-half, 28px)); }
 
 @keyframes dice-fanfare {
   0% { transform: scale(0.86); opacity: 0; }
@@ -10597,4 +10638,107 @@ body.play-window #screen-game.active .hand-bar {
 @media (prefers-reduced-motion: reduce) {
   .battle-die { transition: none; }
   .dice-battle-stage.winner-dreamer .dice-battle-banner { animation: none; }
+  .deck-pressure-banner.tier-critical,
+  .deck-pressure-banner.tier-severe,
+  .deck-pressure-banner.tier-soft { animation: none; }
+  body.dreamscape-unstable #screen-game .table-surface,
+  body.dreamscape-unstable #screen-game .table-surface::before { animation: none; }
+}
+
+/* ── Deck remaining warnings (Somnia 28.0) ── */
+.deck-pressure-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
+  padding: 0.42rem 1.4rem;
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.deck-pressure-banner.hidden {
+  display: none;
+}
+body.deck-pressure-active {
+  --deck-pressure-h: 2.45rem;
+}
+body.deck-pressure-active .top-bar.play-top-bar {
+  margin-top: var(--deck-pressure-h);
+}
+
+.deck-pressure-banner.tier-soft {
+  color: #f4ead0;
+  background: linear-gradient(90deg, rgba(42, 32, 18, 0.92), rgba(70, 48, 16, 0.9));
+  border-bottom: 1px solid rgba(240, 201, 106, 0.45);
+  animation: deck-pressure-soft-fade 8s ease-in-out forwards;
+}
+.deck-pressure-banner.tier-critical {
+  color: #ffe0d4;
+  background: linear-gradient(90deg, rgba(90, 12, 24, 0.94), rgba(120, 36, 8, 0.92));
+  border-bottom: 2px solid rgba(255, 120, 90, 0.88);
+  animation: deck-pressure-flash 0.9s ease-in-out infinite;
+}
+.deck-pressure-banner.tier-severe {
+  color: #ffe9a8;
+  background: linear-gradient(90deg, rgba(48, 0, 58, 0.96), rgba(120, 0, 28, 0.95), rgba(8, 16, 70, 0.96));
+  border-bottom: 2px solid rgba(255, 170, 90, 0.95);
+  text-shadow: 0 0 14px rgba(255, 90, 160, 0.7);
+  animation: deck-pressure-flash 0.42s ease-in-out infinite;
+}
+
+@keyframes deck-pressure-flash {
+  0%, 100% { filter: brightness(1); opacity: 1; }
+  50% { filter: brightness(1.22); opacity: 0.78; }
+}
+@keyframes deck-pressure-soft-fade {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  72% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+body.dreamscape-unstable #screen-game .table-surface {
+  animation:
+    dream-breathe 10s ease-in-out infinite,
+    dreamscape-unstable-shift 4.6s ease-in-out infinite;
+}
+body.dreamscape-unstable #screen-game .table-surface::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  z-index: 26;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 28% 38%, rgba(170, 70, 255, 0.2), transparent 52%),
+    radial-gradient(ellipse at 74% 62%, rgba(70, 190, 255, 0.16), transparent 56%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 11px);
+  mix-blend-mode: screen;
+  animation: dreamscape-unstable-veil 2.5s ease-in-out infinite;
+}
+body.dreamscape-unstable #hex-board {
+  animation: dreamscape-unstable-board 5.4s ease-in-out infinite;
+}
+
+@keyframes dreamscape-unstable-shift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  22% { transform: translate3d(7px, -5px, 0) rotate(0.22deg); }
+  48% { transform: translate3d(-6px, 4px, 0) rotate(-0.18deg); }
+  74% { transform: translate3d(4px, 6px, 0) rotate(0.12deg); }
+}
+@keyframes dreamscape-unstable-veil {
+  0%, 100% { opacity: 0.45; transform: translate3d(0, 0, 0) scale(1); }
+  50% { opacity: 0.9; transform: translate3d(-2.4%, 1.8%, 0) scale(1.05); }
+}
+@keyframes dreamscape-unstable-board {
+  0%, 100% { filter: hue-rotate(0deg) saturate(1); }
+  40% { filter: hue-rotate(12deg) saturate(1.18); }
+  70% { filter: hue-rotate(-10deg) saturate(1.08); }
 }

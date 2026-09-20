@@ -43,6 +43,7 @@ import {
   resolveAllPowerCardsInHands,
 } from "./power-tokens.js";
 import { applyMeetStartTax } from "./meet-phase.js";
+import { snapshotDeckCaps } from "./deck-pressure.js";
 
 function pinFirstById(list, id) {
   const index = list.findIndex((item) => item.id === id);
@@ -227,6 +228,7 @@ export function createInitialState(data, options) {
     encounterSpawnSeq: 0,
   };
 
+  snapshotDeckCaps(state);
   resetPhaseFlags(state);
   state.phaseIndex = 0;
   addLog(state, `Round ${state.round}: Reveal Phase — each Dreamer begins with ${PSYCHE_STARTING_HAND} Psyche.`);
@@ -635,8 +637,7 @@ export function beginRoundReveal(state) {
   addLog(state, `Round ${state.round}: Reveal — each Dreamer draws 2 Psyche.`);
 }
 
-const MAX_DREAMER_DEATHS = 5;
-const RESPAWN_PSYCHE_BY_DEATH = [4, 3, 2, 1];
+export const MAX_DREAMER_DEATHS = 5;
 
 export function deathAvoidTokenCost(state) {
   const alive = state.players.filter((p) => p.alive).length;
@@ -644,7 +645,21 @@ export function deathAvoidTokenCost(state) {
 }
 
 function respawnPsycheTarget(deathCount) {
-  return RESPAWN_PSYCHE_BY_DEATH[deathCount - 1] ?? 0;
+  return Math.max(0, PSYCHE_STARTING_HAND - deathCount);
+}
+
+function seatDreamerOnBed(state, player) {
+  player.landscapeId = "bed";
+  state.selectedLandscapeId = "bed";
+  const idx = state.players.findIndex((p) => p.id === player.id);
+  if (idx >= 0) state.activePlayerIndex = idx;
+}
+
+function loseOnFifthDeath(state, player) {
+  if (state.tutorialMode) return;
+  if (state.status !== "playing") return;
+  state.status = "lost";
+  addLog(state, `${player.name} died a fifth time — no Psyche left to return with. The table never wakes.`);
 }
 
 function clearPlayerHandOnDeath(state, player) {
@@ -674,50 +689,34 @@ export function applyDreamerDeath(state, player) {
 
   repressTopMindstreamFromEachDeck(state);
   discardPlayerObjects(state, player);
+  if (player.powerTokens) {
+    spendPowerTokens(state, player, player.powerTokens, {
+      reason: `${player.name}'s Power Tokens return to the pool.`,
+    });
+  }
   player.powerTokens = 0;
   clearPlayerHandOnDeath(state, player);
-  player.landscapeId = "bed";
+  seatDreamerOnBed(state, player);
 
   if (deaths >= MAX_DREAMER_DEATHS) {
     player.alive = false;
-    addLog(state, `${player.name} is lost to the Dreamscape forever (${MAX_DREAMER_DEATHS} deaths).`);
-    if (state.availableDreamers?.length) {
-      state.pendingRespawn = player.id;
-      addLog(state, "Choose a new Dreamer to continue.");
-    }
+    addLog(state, `${player.name} cannot respawn (${deaths}/${MAX_DREAMER_DEATHS}) — starting hand would be 0.`);
+    loseOnFifthDeath(state, player);
     return;
   }
 
   const target = respawnPsycheTarget(deaths);
   drawPsycheForPlayer(state, player, target);
   if (state.tutorialMode) resolvePowerCardsInHand(state, player);
-  grantPowerTokens(state, player, 2, {
-    reason: `${player.name} returns with 2 Power Tokens.`,
-    logQuest: false,
-    animate: false,
-  });
 
-  state.pendingDeathAdditionalDream = true;
   addLog(
     state,
-    `${player.name} dies (${deaths}/${MAX_DREAMER_DEATHS}) — Repressed top of each Mindstream deck; objects and Power lost. Returns to The Bed with ${target} Psyche and 2 Power. An Additional Dream resolves.`,
+    `${player.name} dies (${deaths}/${MAX_DREAMER_DEATHS}) — Mindstream tops Repressed; Objects discarded; Power returned to the pool. Returns to The Bed with ${target} Psyche and no new Power. Restock on The Bed if Meet actions remain.`,
   );
 }
 
 export function offerDreamerDeathChoice(state, player) {
   if (!player?.alive || hasPsycheHealth(player)) return false;
-  if (state.pendingDeathChoice?.playerId === player.id) return true;
-
-  const cost = deathAvoidTokenCost(state);
-  if ((player.powerTokens || 0) >= cost) {
-    state.pendingDeathChoice = { playerId: player.id, cost };
-    addLog(
-      state,
-      `${player.name} has no Psyche! Spend ${cost} Power Token${cost === 1 ? "" : "s"} to draw 1 Psyche and survive, or accept death.`,
-    );
-    return true;
-  }
-
   applyDreamerDeath(state, player);
   return true;
 }
@@ -762,11 +761,12 @@ export function acceptDreamerDeath(state) {
 
 export function checkDreamerPsycheDeath(state, player) {
   if (!player?.alive || hasPsycheHealth(player)) return false;
-  return offerDreamerDeathChoice(state, player);
+  applyDreamerDeath(state, player);
+  return true;
 }
 
 export function handleDreamerDeath(state, player) {
-  offerDreamerDeathChoice(state, player);
+  checkDreamerPsycheDeath(state, player);
 }
 
 export function respawnDreamer(state, playerId, dreamerId) {
@@ -782,12 +782,13 @@ export function respawnDreamer(state, playerId, dreamerId) {
   player.deathCount = 0;
   player.powerTokens = 0;
   player.hand = [];
-  grantPowerTokens(state, player, 2, { reason: `${dreamer.name} returns with 2 Power Tokens.`, logQuest: false, animate: false });
+  grantPowerTokens(state, player, 1, { reason: `${dreamer.name} begins with 1 Power Token.`, logQuest: false, animate: false });
   drawPsycheForPlayer(state, player, PSYCHE_STARTING_HAND);
   if (state.tutorialMode) resolvePowerCardsInHand(state, player);
   player.pendingRespawn = false;
   state.pendingRespawn = null;
-  addLog(state, `${dreamer.name} enters the Dreamscape on The Bed with ${PSYCHE_STARTING_HAND} Psyche and 2 Power.`);
+  seatDreamerOnBed(state, player);
+  addLog(state, `${dreamer.name} enters the Dreamscape on The Bed with ${PSYCHE_STARTING_HAND} Psyche and 1 Power.`);
   return true;
 }
 
@@ -893,7 +894,18 @@ export function checkVictory(state) {
 
 export function checkDefeat(state) {
   if (state.tutorialMode) return;
-  if (state.status === "playing" && !(state.psycheDeck?.length) && !(state.psycheDiscard?.length)) {
+  if (state.status !== "playing") return;
+  const fifthDeath = (state.players || []).find((p) => (p.deathCount || 0) >= MAX_DREAMER_DEATHS);
+  if (fifthDeath) {
+    loseOnFifthDeath(state, fifthDeath);
+    return;
+  }
+  if (!(state.players || []).some((p) => p.alive)) {
+    state.status = "lost";
+    addLog(state, "No Dreamers remain in the Dreamscape. You never wake up.");
+    return;
+  }
+  if (!(state.psycheDeck?.length) && !(state.psycheDiscard?.length)) {
     state.status = "lost";
     addLog(state, "The Psyche Deck is exhausted — nothing left to draw or shuffle. You never wake up.");
     return;

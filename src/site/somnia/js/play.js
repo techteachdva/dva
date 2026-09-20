@@ -51,6 +51,7 @@ import {
 } from "./action-history.js";
 import { recoverLegacySilver } from "./event-choices.js";
 import { updateFinalRecurrenceAtmosphere } from "./final-recurrence-atmosphere.js";
+import { syncDeckPressure } from "./deck-pressure.js";
 import { startVictoryCelebration, stopVictoryCelebration } from "./victory-celebration.js";
 import { LENGTHS, loadGameData } from "./data.js";
 import {
@@ -1777,6 +1778,7 @@ function renderAll() {
   }
 
   if (state.status === "won") {
+    syncDeckPressure(state);
     clearAutosave();
     if (state.tutorialVictory) {
       showTutorialGraduation();
@@ -1806,6 +1808,7 @@ function renderAll() {
     if (state.tutorialMode && !state.tutorialComplete) {
       state.status = "playing";
     } else {
+      syncDeckPressure(state);
       clearAutosave();
       stopVictoryCelebration();
       showEndScreen(false, state.log[0] || "The Dreamscape collapses.");
@@ -1818,6 +1821,7 @@ function renderAll() {
   syncHandRemovals(state);
 
   renderHud(state, getPhaseHint(state));
+  syncDeckPressure(state);
   renderPhaseStepper(state);
 
   const handlers = buildPhaseHandlers();

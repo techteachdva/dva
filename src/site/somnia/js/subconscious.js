@@ -514,6 +514,10 @@ export function pickRepressCard(state, instanceId) {
       state.checkPsycheDeath(player);
     }
     advanceResolutionQueue(state);
+  } else if (pending.source === "hand" && !(player.hand || []).length) {
+    state.pendingRepress = null;
+    if (state.checkPsycheDeath) state.checkPsycheDeath(player);
+    advanceResolutionQueue(state);
   }
   return true;
 }
@@ -535,6 +539,9 @@ export function confirmRepressStep(state) {
   }
 
   state.pendingRepress = null;
+  if (player && pending.source === "hand" && state.checkPsycheDeath) {
+    state.checkPsycheDeath(player);
+  }
   advanceResolutionQueue(state);
 }
 

@@ -1,13 +1,14 @@
 /**
  * Serialize, compress, and restore in-progress Somnia games.
  */
-import { getPhase, checkDreamerPsycheDeath } from "./state.js";
+import { getPhase, checkDreamerPsycheDeath, checkDefeat } from "./state.js";
 import { LENGTHS } from "./data.js";
 import { validateScoreName, splitNameHint } from "./highscores.js";
 import * as localSaveStore from "./local-save-store.js";
 import * as remoteSaveStore from "./remote-save-store.js";
 import { isStandaloneMode } from "./standalone.js";
 import { repairMisplacedBossDreams } from "./dream-deck.js";
+import { ensureDeckCaps } from "./deck-pressure.js";
 
 export const SAVE_VERSION = 1;
 const MAX_STATE_CHARS = 48000;
@@ -36,6 +37,7 @@ function stripRuntime(state) {
 export function reattachGameRuntime(state) {
   state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
   delete state.onResolutionIdle;
+  ensureDeckCaps(state);
   repairMisplacedBossDreams(state);
   if (Array.isArray(state.pendingObjectChoice?.cards)) {
     state.pendingObjectChoice.cards = state.pendingObjectChoice.cards.filter(Boolean);
@@ -44,6 +46,7 @@ export function reattachGameRuntime(state) {
     if (Array.isArray(player.hand)) player.hand = player.hand.filter(Boolean);
     if (Array.isArray(player.objects)) player.objects = player.objects.filter(Boolean);
   });
+  checkDefeat(state);
   return state;
 }
 
