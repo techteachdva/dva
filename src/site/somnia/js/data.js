@@ -166,6 +166,7 @@ export function buildPsycheDeck(psycheConfig = {}) {
       suit: null,
       value: 5,
       name: "Wild Psyche",
+      text: "Counts as 5 of any suit. When played, Repress the top 5 cards of the Psyche Deck.",
       instanceId: uid("psyche"),
     });
   }

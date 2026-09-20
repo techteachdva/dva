@@ -5,10 +5,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "24.3";
+export const SOMNIA_VERSION = "25.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "25.0",
+    title: "Map chrome, spread spend, and Wild cost",
+    notes: [
+      "Draw Dream sits left of Next Phase during Reveal. Back is visible at the top-left of the map, just right of the deck rail. Select 1 Psyche and press the button beside it to open Reveal, Explore, or Meet — the table then flashes blue, yellow, or red.",
+      "Dreamer radials are View, Dreamer Power, and landscape or Meet actions only. Quests, Token as Psyche, and Persistent Object activation live on the Power Token radial. Click a ready quest on the Active Archetype to spend a token. Click an occupied Landscape for its options. Drawing a Dream blinks the table to black.",
+      "Playing a Wild Psyche Represses the top 5 cards of the Psyche Deck. If the Psyche draw pile and discard are both empty, the table loses immediately. The guided tutorial follows these controls.",
+    ],
+  },
   {
     version: "24.3",
     title: "Bed restock and Meet action costs",

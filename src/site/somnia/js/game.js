@@ -105,7 +105,7 @@ import { beginRevealPicking, handleLandscapeTilePick, cancelLandscapePick, reque
 import { narrate, logMoment } from "./narrator.js";
 import { flashPhaseEntryMoments } from "./moment-overlay.js";
 import { playSfx } from "./audio.js";
-import { markPhasePulse, markDreamFeedNudge } from "./fx.js";
+import { markPhasePulse, markDreamFeedNudge, playPhaseSpendFlash } from "./fx.js";
 import { recordQuestEvent } from "./quests.js";
 import { COOP_PLAY_TIP } from "./guide.js";
 import { notifyTutorialEncounterResolved, classifyPhaseAction } from "./tutorial-mode.js";
@@ -350,6 +350,7 @@ export function getPhaseActions(state, handlers) {
     label: state.phaseTokenAsPsyche === player.id
       ? `Power Token as 1 ${suitLabel} (on)`
       : `Power Token as 1 ${suitLabel}`,
+    kind: "phasePowerToken",
     section: "main",
     hint: "Spend 1 Power Token in place of 1 suited Psyche for this phase opener (max 1).",
     disabled: !canUsePhasePowerToken(state, player) && state.phaseTokenAsPsyche !== player.id,
@@ -665,6 +666,66 @@ export function getPhaseAdvanceAction(state, handlers) {
   return action;
 }
 
+/** Spread-tray button: spend the selected Psyche to unlock this phase. */
+export function getPhaseOpenerAction(state, handlers) {
+  if (!handlers) return null;
+  const phase = getPhase(state);
+  if (phase === "Reveal") {
+    if (!state.dreamDrawn || state.revealLandscapeUsed) return null;
+  } else if (phase === "Explore") {
+    if (state.exploreActivated) return null;
+  } else if (phase === "Meet") {
+    if ((state.meetActionBudget || 0) > 0) return null;
+  } else {
+    return null;
+  }
+  const kind = phase === "Reveal"
+    ? "revealLandscape"
+    : phase === "Explore"
+      ? "spendElasticity"
+      : "gainMeetActions";
+  const action = getPhaseActions(state, handlers).find((item) => item.kind === kind);
+  if (!action) return null;
+  const shortLabel = phase === "Reveal"
+    ? (/Deck Tops/i.test(action.label) ? "Reveal Deck Tops" : "Reveal Landscapes")
+    : phase === "Explore"
+      ? "Spend Elasticity"
+      : "Gain Actions";
+  return {
+    ...action,
+    label: shortLabel,
+    tint: phase === "Reveal" ? "reveal" : phase === "Explore" ? "explore" : "meet",
+  };
+}
+
+const DREAMER_RADIAL_KINDS = new Set([
+  "dreamerPower",
+  "landscapeActionA",
+  "landscapeActionB",
+  "meetAccept",
+  "meetReject",
+  "playObject",
+  "trade",
+  "archetypePower",
+  "drawMindstream",
+  "defeatFinalArchetype",
+  "sacrificeForFinal",
+]);
+
+const DREAMER_RADIAL_ORDER = [
+  "dreamerPower",
+  "landscapeActionA",
+  "landscapeActionB",
+  "meetAccept",
+  "meetReject",
+  "playObject",
+  "trade",
+  "archetypePower",
+  "drawMindstream",
+  "defeatFinalArchetype",
+  "sacrificeForFinal",
+];
+
 export function resolvePendingDeathDream(state, onShowModal) {
   if (!state.pendingDeathAdditionalDream) return null;
   state.pendingDeathAdditionalDream = false;
@@ -811,6 +872,7 @@ export function revealLandscape(state) {
   beginRevealPicking(state, budget);
   addLog(state, `${player.name} spends Lucidity — the team may reveal up to ${budget} Landscapes.`);
   recordQuestEvent(state, "reveal_landscape", { count: 0 });
+  playPhaseSpendFlash("lucidity");
 }
 
 export function activateExplore(state) {
@@ -856,6 +918,7 @@ export function activateExplore(state) {
     addLog(state, `Insulation grants +${insulationBonus} Explore move${insulationBonus === 1 ? "" : "s"}, then is discarded.`);
   }
   addLog(state, `${player?.name || "The team"} unlocks ${state.exploreMovesLeft} shared Explore moves. Click Dreamer chips to choose who moves.`);
+  playPhaseSpendFlash("elasticity");
 }
 
 function consumeInsulationMoves(state) {
@@ -971,6 +1034,7 @@ export function gainMeetActions(state) {
   state.meetActionsUsed = 0;
   clearAllUsedMeetActions(state);
   addLog(state, `${player.name} spends Willpower — the team gains ${budget} shared Meet Actions.`);
+  playPhaseSpendFlash("willpower");
 }
 
 export function togglePhasePowerToken(state) {
@@ -1055,15 +1119,17 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
   }
   for (const action of getPhaseActions(state, handlers)) {
     if (action.advance) continue;
+    const kind = action.kind || classifyPhaseAction({ label: action.label });
+    if (!DREAMER_RADIAL_KINDS.has(kind)) continue;
     const label = action.label || "";
     if (action.disabled && (/move\(s\)/.test(label) || /^Actions \d/.test(label))) continue;
     options.push({
       id: action.id || label,
       label,
-      kind: action.kind || classifyPhaseAction({ label }),
+      kind,
       hint: action.hint || label,
       disabled: !!action.disabled,
-      primary: !!action.primary,
+      primary: kind === "dreamerPower" || !!action.primary,
       onPick: action.onClick,
     });
   }
@@ -1072,7 +1138,7 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
   if (getPhase(state) === "Meet" && tile && player?.landscapeId === tileId) {
     getLandscapeActionChoices(tile).forEach((choice, index) => {
       const label = choice.label || "";
-      if (options.some((opt) => opt.label === label)) return;
+      if (options.some((opt) => opt.label === label || opt.id === choice.id)) return;
       options.push({
         id: choice.id,
         kind: index === 0 ? "landscapeActionA" : "landscapeActionB",
@@ -1083,6 +1149,12 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
       });
     });
   }
+
+  options.sort((a, b) => {
+    const ia = DREAMER_RADIAL_ORDER.indexOf(a.kind);
+    const ib = DREAMER_RADIAL_ORDER.indexOf(b.kind);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
 
   return options;
 }
@@ -1149,6 +1221,13 @@ export function getPowerTokenRadialOptions(state) {
       ? "Stop using a Power Token as 1 suited Psyche for this phase opener."
       : "Spend 1 Power Token in place of 1 suited Psyche for this phase opener (max 1).",
     disabled: !phaseOn && !canUsePhasePowerToken(state, player),
+  });
+  options.push({
+    id: "activatePersistent",
+    kind: "activateObject",
+    label: "Activate Object",
+    hint: "Free action — spend 1 Power Token to activate a Persistent Object. Does not cost a Meet action.",
+    disabled: !(player.persistent?.length) || held < 1,
   });
   return options;
 }
@@ -1773,7 +1852,22 @@ export function handleBoardTileClick(state, tileId) {
     return ok;
   }
   if (canAutoActivateExplore(state)) activateExplore(state);
+
+  const phase = getPhase(state);
+  if (phase === "Explore" && state.exploreActivated) {
+    const player = activePlayer(state);
+    if (player && player.landscapeId !== tileId && canMoveTo(state, player, tileId)) {
+      moveDreamer(state, tileId);
+      return true;
+    }
+  }
+
   moveDreamer(state, tileId);
+  const occupant = actorOnLandscape(state, tileId)
+    || state.players.find((p) => p.alive && p.landscapeId === tileId);
+  if (occupant) {
+    return { openRadial: true, playerId: occupant.id, tileId };
+  }
   return false;
 }
 

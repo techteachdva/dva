@@ -3,7 +3,6 @@
 import {
   repressCard,
   isDreambeastPsycheCard,
-  repressTopMindstreamFromEachDeck,
 } from "./subconscious.js";
 import { dreamerMeetBonuses, encounterRejectCost } from "./dreambeasts.js";
 import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
@@ -13,6 +12,7 @@ import { PHASES } from "./data.js";
 import { isWildPsyche, psycheCardValue } from "./psyche.js";
 import { playSfx } from "./audio.js";
 import { queueCardDiscard, queueHandDelta } from "./card-fx.js";
+import { repressTopPsycheFromDeck } from "./state.js";
 
 export { isWildPsyche, psycheCardValue };
 
@@ -486,7 +486,7 @@ function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {
 
   if (wild) {
     repressCard(state, card);
-    repressTopMindstreamFromEachDeck(state);
+    repressTopPsycheFromDeck(state, 5);
     playSfx("repress");
     return;
   }

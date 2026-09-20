@@ -499,6 +499,31 @@ body.play-window #screen-end.active {
   flex-wrap: wrap;
 }
 
+.quest-progress-list li.quest-clickable {
+  cursor: pointer;
+  padding: 0.38rem 0.45rem;
+  margin: 0.12rem 0;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.quest-progress-list li.quest-clickable:hover,
+.quest-progress-list li.quest-clickable:focus-visible {
+  border-color: rgba(240, 201, 106, 0.55);
+  background: rgba(240, 201, 106, 0.1);
+}
+
+.quest-progress-list li.quest-clickable.ready {
+  border-color: rgba(240, 201, 106, 0.45);
+  background: rgba(240, 201, 106, 0.08);
+}
+
+.quest-progress-list li.quest-clickable:disabled,
+.quest-progress-list li.quest-locked {
+  cursor: default;
+  opacity: 0.72;
+}
+
 .quest-progress-list .quest-text {
   flex: 1 1 8rem;
   min-width: 0;
@@ -998,7 +1023,8 @@ body.in-game main {
 }
 
 #screen-game .board-viewport {
-  padding-left: clamp(156px, 15vw, 212px);
+  --map-chrome-left: clamp(156px, 15vw, 212px);
+  padding-left: var(--map-chrome-left);
   min-height: clamp(320px, 44vh, 720px);
 }
 
@@ -3810,10 +3836,11 @@ html[data-pointer="hybrid"] .board-viewport::after {
 }
 
 .btn-next-phase,
-.btn-map-back {
+.btn-map-back,
+.btn-draw-dream {
   position: absolute;
   top: max(0.55rem, env(safe-area-inset-top));
-  z-index: 8;
+  z-index: 32;
   width: 4.75rem;
   height: 4.75rem;
   padding: 0.35rem;
@@ -3864,33 +3891,48 @@ html[data-pointer="hybrid"] .board-viewport::after {
 }
 
 .btn-map-back {
-  left: max(0.55rem, env(safe-area-inset-left));
-  border: 2px solid rgba(201, 160, 255, 0.85);
+  left: calc(var(--map-chrome-left, 0px) + 0.4rem);
+  border: 2px solid rgba(230, 210, 255, 0.95);
   background:
-    radial-gradient(circle at 30% 25%, rgba(230, 210, 255, 0.28), transparent 42%),
-    linear-gradient(160deg, #4a3478, #1a1028);
-  color: #efe4ff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(201, 160, 255, 0.32);
+    radial-gradient(circle at 30% 25%, rgba(245, 230, 255, 0.45), transparent 42%),
+    linear-gradient(160deg, #6a4aa0, #2a1848);
+  color: #fff8ff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 18px rgba(201, 160, 255, 0.55);
+}
+
+.btn-draw-dream {
+  right: calc(max(0.55rem, env(safe-area-inset-right)) + 5.4rem);
+  border: 2px solid var(--lucidity);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(210, 235, 255, 0.45), transparent 44%),
+    linear-gradient(160deg, #2a62b8, #0c2048);
+  color: #e8f4ff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 18px rgba(74, 158, 255, 0.5);
 }
 
 .btn-next-phase:hover:not(:disabled),
 .btn-next-phase:focus-visible:not(:disabled),
 .btn-map-back:hover:not(:disabled),
-.btn-map-back:focus-visible:not(:disabled) {
+.btn-map-back:focus-visible:not(:disabled),
+.btn-draw-dream:hover:not(:disabled),
+.btn-draw-dream:focus-visible:not(:disabled) {
   transform: scale(1.06);
   outline: 2px solid rgba(240, 201, 106, 0.9);
   outline-offset: 2px;
 }
 
 .btn-next-phase:disabled,
-.btn-map-back:disabled {
-  opacity: 0.45;
+.btn-map-back:disabled,
+.btn-draw-dream:disabled {
+  opacity: 0.72;
   cursor: default;
   transform: none;
 }
 
 .btn-next-phase.hidden,
-.btn-next-phase[hidden] {
+.btn-next-phase[hidden],
+.btn-draw-dream.hidden,
+.btn-draw-dream[hidden] {
   display: none !important;
 }
 
@@ -5697,15 +5739,15 @@ body.card-detail-open .tutorial-card {
 .spread-tray {
   position: absolute;
   left: 50%;
-  bottom: 0.55rem;
+  bottom: 0.45rem;
   z-index: 22;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0.28rem;
   transform: translateX(-50%);
   pointer-events: none;
-  padding: 0.35rem 0.9rem 0.45rem;
+  padding: 0.4rem 1rem 0.55rem;
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(10, 8, 24, 0.08), rgba(8, 6, 18, 0.72));
   border: 1px solid rgba(180, 255, 255, 0.18);
@@ -5726,19 +5768,29 @@ body.card-detail-open .tutorial-card {
   text-shadow: 0 0 10px rgba(120, 220, 255, 0.45);
 }
 
+.spread-tray-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.85rem;
+}
+
 .spread-tray-fan {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  min-height: 7.2rem;
-  padding: 0.35rem 0.4rem 0.15rem;
+  min-height: 12.4rem;
+  padding: 0.2rem 0.2rem 0.1rem;
+  gap: 0.85rem;
 }
 
 .spread-tray .game-card {
   pointer-events: auto;
   flex: 0 0 auto;
-  width: 96px;
-  min-width: 80px;
+  width: 118px;
+  min-width: 108px;
+  height: 176px;
+  min-height: 176px;
   margin-left: var(--fan-overlap, 0px);
   z-index: var(--fan-z, 1);
   transform-origin: 50% 100%;
@@ -5752,6 +5804,56 @@ body.card-detail-open .tutorial-card {
 
 .spread-tray .game-card.selected {
   outline-color: rgba(180, 255, 255, 0.85);
+}
+
+.btn-spread-opener {
+  pointer-events: auto;
+  flex: 0 0 auto;
+  min-width: 5.6rem;
+  min-height: 8.4rem;
+  max-width: 6.4rem;
+  padding: 0.55rem 0.45rem;
+  border-radius: 14px;
+  border: 2px solid rgba(180, 255, 255, 0.55);
+  background:
+    linear-gradient(180deg, rgba(40, 32, 72, 0.95), rgba(12, 8, 28, 0.95));
+  color: #f4ebff;
+  font: 700 0.78rem/1.2 var(--font-display, inherit);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+  touch-action: manipulation;
+}
+
+.btn-spread-opener.tint-reveal {
+  border-color: var(--lucidity);
+  color: #dceeff;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4), 0 0 16px rgba(74, 158, 255, 0.4);
+}
+
+.btn-spread-opener.tint-explore {
+  border-color: var(--elasticity);
+  color: #fff8c8;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4), 0 0 16px rgba(240, 200, 48, 0.4);
+}
+
+.btn-spread-opener.tint-meet {
+  border-color: var(--willpower);
+  color: #ffd4d4;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4), 0 0 16px rgba(232, 72, 72, 0.4);
+}
+
+.btn-spread-opener:hover:not(:disabled),
+.btn-spread-opener:focus-visible:not(:disabled) {
+  transform: translateY(-2px);
+  outline: 2px solid rgba(240, 201, 106, 0.85);
+  outline-offset: 2px;
+}
+
+.btn-spread-opener:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .psyche-modal-face {
@@ -6594,7 +6696,8 @@ body.card-detail-open .tutorial-card {
   }
 
   #screen-game .board-viewport {
-    padding-left: clamp(132px, 34vw, 168px);
+    --map-chrome-left: clamp(132px, 34vw, 168px);
+    padding-left: var(--map-chrome-left);
   }
 
   .deck-column {
@@ -6839,12 +6942,14 @@ html[data-form="tablet"][data-orientation="landscape"] body.sidebar-collapsed #s
 
 html[data-form="phone"] #screen-game .board-viewport,
 html[data-form="tablet"] #screen-game .board-viewport {
-  padding-left: 3.6rem;
+  --map-chrome-left: 3.6rem;
+  padding-left: var(--map-chrome-left);
 }
 
 html[data-form="phone"] body.deck-expanded #screen-game .board-viewport,
 html[data-form="tablet"] body.deck-expanded #screen-game .board-viewport {
-  padding-left: clamp(72px, 16vw, 132px);
+  --map-chrome-left: clamp(72px, 16vw, 132px);
+  padding-left: var(--map-chrome-left);
 }
 
 html[data-form="phone"] .deck-column,
@@ -7833,10 +7938,27 @@ body.panel-resizing {
 }
 
 .fx-dream-ripple.is-playing {
-  animation: fx-dream-ripple 0.72s ease-out forwards;
+  animation: fx-dream-blink 0.64s ease-in-out forwards;
+  background: #05030c;
+}
+
+.fx-phase-spend.is-playing {
+  animation: fx-phase-spend 0.88s ease-out forwards;
+}
+
+.fx-phase-spend.lucidity.is-playing {
   background:
-    radial-gradient(circle at 50% 42%, rgba(201, 160, 255, 0.28) 0%, transparent 42%),
-    radial-gradient(circle at 50% 42%, rgba(240, 201, 106, 0.12) 0%, transparent 62%);
+    radial-gradient(ellipse at 50% 42%, rgba(74, 158, 255, 0.46), rgba(20, 48, 110, 0.18) 52%, transparent 76%);
+}
+
+.fx-phase-spend.elasticity.is-playing {
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(240, 201, 106, 0.44), rgba(110, 80, 12, 0.16) 52%, transparent 76%);
+}
+
+.fx-phase-spend.willpower.is-playing {
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(232, 72, 72, 0.44), rgba(90, 16, 24, 0.18) 52%, transparent 76%);
 }
 
 .fx-dream-warble.is-playing {
@@ -8039,10 +8161,23 @@ body.panel-resizing {
   box-shadow: 0 0 18px rgba(240, 201, 106, 0.55);
 }
 
+@keyframes fx-dream-blink {
+  0% { opacity: 0; }
+  16% { opacity: 1; }
+  42% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 @keyframes fx-dream-ripple {
   0% { opacity: 0; transform: scale(0.86); }
   28% { opacity: 1; }
   100% { opacity: 0; transform: scale(1.18); }
+}
+
+@keyframes fx-phase-spend {
+  0% { opacity: 0; }
+  22% { opacity: 0.92; }
+  100% { opacity: 0; }
 }
 
 @keyframes fx-dream-warble {

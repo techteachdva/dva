@@ -87,7 +87,11 @@ function validateSpotlight(beat, spotlight, step, sync) {
     case "gainMeetActions":
     case "completeQuest0":
     case "completeQuest1":
-      if (!spotlight?.includes(`data-tutorial-action="${beat.kind}"`)) {
+      if (
+        !spotlight?.includes(`data-tutorial-action="${beat.kind}"`)
+        && !(beat.kind === "drawDream" && spotlight?.includes("btn-draw-dream"))
+        && !((beat.kind === "revealLandscape" || beat.kind === "spendElasticity" || beat.kind === "gainMeetActions") && spotlight?.includes("btn-spread-opener"))
+      ) {
         fail("phase beat needs exact action button selector", {
           step: step.id,
           beat: beat.kind,

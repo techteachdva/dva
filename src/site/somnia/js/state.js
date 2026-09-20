@@ -343,15 +343,38 @@ export function clearRevealedTops(state, deckKey) {
   if (state.revealedDeckTops) delete state.revealedDeckTops[deckKey];
 }
 
+export function refillPsycheDeckFromDiscard(state) {
+  if (state.psycheDeck?.length) return false;
+  if (!state.psycheDiscard?.length) return false;
+  state.psycheDeck = shuffle(state.psycheDiscard);
+  state.psycheDiscard = [];
+  clearRevealedTops(state, "psyche");
+  addLog(state, "Psyche discard pile shuffled into a new deck.");
+  return true;
+}
+
+/** Wild Psyche cost: Repress the top of the Psyche Deck, reshuffling discard if needed. */
+export function repressTopPsycheFromDeck(state, count = 5) {
+  let taken = 0;
+  for (let i = 0; i < count; i += 1) {
+    refillPsycheDeckFromDiscard(state);
+    if (!state.psycheDeck.length) break;
+    const card = state.psycheDeck.shift();
+    consumeRevealedTop(state, "psyche");
+    repressCard(state, card);
+    taken += 1;
+  }
+  if (taken) {
+    addLog(state, `Wild Psyche Represses the top ${taken} card${taken === 1 ? "" : "s"} of the Psyche Deck.`);
+  }
+  checkDefeat(state);
+  return taken;
+}
+
 export function drawPsycheForPlayer(state, player, count = 1) {
   const drawn = [];
   for (let i = 0; i < count; i += 1) {
-    if (!state.psycheDeck.length && state.psycheDiscard.length) {
-      state.psycheDeck = shuffle(state.psycheDiscard);
-      state.psycheDiscard = [];
-      clearRevealedTops(state, "psyche");
-      addLog(state, "Psyche discard pile shuffled into a new deck.");
-    }
+    refillPsycheDeckFromDiscard(state);
     if (!state.psycheDeck.length) break;
     const card = state.psycheDeck.shift();
     consumeRevealedTop(state, "psyche");
@@ -380,6 +403,7 @@ export function drawPsycheForPlayer(state, player, count = 1) {
     queueHandDelta(player.id, drawn.length);
     playSfx("draw", { count: drawn.length });
   }
+  checkDefeat(state);
   return drawn;
 }
 
@@ -884,6 +908,11 @@ export function checkVictory(state) {
 
 export function checkDefeat(state) {
   if (state.tutorialMode) return;
+  if (state.status === "playing" && !(state.psycheDeck?.length) && !(state.psycheDiscard?.length)) {
+    state.status = "lost";
+    addLog(state, "The Psyche Deck is exhausted — nothing left to draw or shuffle. You never wake up.");
+    return;
+  }
   const collapsed = goneMindstreamSuit(state);
   if (collapsed) {
     state.status = "lost";

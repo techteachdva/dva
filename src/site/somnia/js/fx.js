@@ -138,9 +138,15 @@ function playOverlay(id, className, ms) {
   }, ms);
 }
 
-/** Brief full-screen ripple when a Dream is drawn and resolved. */
+/** Brief full-screen blink when a Dream is drawn — eyelids closing between dreams. */
 export function playDreamRipple() {
-  playOverlay("fx-dream-ripple", "fx-screen-overlay fx-dream-ripple", 720);
+  playOverlay("fx-dream-ripple", "fx-screen-overlay fx-dream-ripple", 640);
+}
+
+/** Gentle Blue / Yellow / Red wash after spending Psyche to unlock a phase. */
+export function playPhaseSpendFlash(suit = "lucidity") {
+  const tone = suit === "elasticity" || suit === "willpower" ? suit : "lucidity";
+  playOverlay(`fx-phase-spend-${tone}`, `fx-screen-overlay fx-phase-spend ${tone}`, 880);
 }
 
 /** Accept: bluish-gold speckled purple. Reject: red-orange cracked with void lightning. */

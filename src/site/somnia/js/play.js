@@ -69,6 +69,7 @@ import {
 import {
   getPhaseActions,
   getPhaseAdvanceAction,
+  getPhaseOpenerAction,
   drawDreamCard,
   revealLandscape,
   activateExplore,
@@ -419,6 +420,11 @@ function applyPowerTokenUse(id) {
   }
   if (id === "phasePsyche") {
     togglePhasePowerToken(state);
+    renderAll();
+    return;
+  }
+  if (id === "activatePersistent") {
+    activateObject(state);
     renderAll();
   }
 }
@@ -1291,7 +1297,7 @@ function showDreamerBoardRadialMenu(playerId, tileId, player) {
       };
     });
 
-  options.push({
+  options.unshift({
     id: "view",
     label: "View",
     hint: "Zoomed character details and hand",
@@ -1669,8 +1675,11 @@ function renderBoardArea() {
     if (isInteractiveTutorialActive(state) && beat?.kind === "exploreMove" && beat.playerIndex != null) {
       state.activePlayerIndex = beat.playerIndex;
     }
-    handleBoardTileClick(state, id);
+    const result = handleBoardTileClick(state, id);
     renderAll();
+    if (result && typeof result === "object" && result.openRadial) {
+      openDreamerBoardRadial(null, result.playerId, result.tileId);
+    }
   }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id, {
     onDreamerClick: (playerId, tileId) => {
       hideUtilityModal(true);
@@ -1834,6 +1843,21 @@ function renderAll() {
     canUndo: canUndoAction(),
     stackSize: undoStackSize(),
     onUndo: undoLastTableAction,
+  }, {
+    visible: getPhase(state) === "Reveal",
+    disabled: !!state.dreamDrawn || !isTutorialActionAllowed(state, "drawDream"),
+    label: "Draw Dream",
+    hint: state.dreamDrawn
+      ? "This round's Dream is already drawn."
+      : "Head Dreamer (★) draws and resolves this round's Dream.",
+    onClick: () => {
+      if (!isTutorialActionAllowed(state, "drawDream")) {
+        tutorialActionBlocked(state);
+        renderAll();
+        return;
+      }
+      handlers.drawDream();
+    },
   });
   renderPhaseActions(phaseActions, advanceAction, state);
 
@@ -1898,7 +1922,23 @@ function renderAll() {
     renderMeetPoolGuide(state);
     renderHand(state, onHandCardClick, getNewHandCardIds(state));
   }
-  renderSpreadTray(state, onHandCardClick);
+  renderSpreadTray(state, onHandCardClick, (() => {
+    const opener = getPhaseOpenerAction(state, handlers);
+    if (!opener) return null;
+    const kind = opener.kind || "revealLandscape";
+    return {
+      ...opener,
+      disabled: opener.disabled || !isTutorialActionAllowed(state, kind),
+      onClick: () => {
+        if (!isTutorialActionAllowed(state, kind)) {
+          tutorialActionBlocked(state);
+          renderAll();
+          return;
+        }
+        opener.onClick?.();
+      },
+    };
+  })());
   renderPowerTokens(state, {
     onTokenClick: (el) => openPowerTokenRadial(el),
   });
@@ -1912,7 +1952,21 @@ function renderAll() {
   }, (deckId) => {
     handleDrawPileClick(deckId);
   });
-  renderActiveSlots(state, (card) => showModal(card));
+  renderActiveSlots(state, (card) => showModal(card), (questIndex) => {
+    const kind = questIndex === 0 ? "completeQuest0" : "completeQuest1";
+    if (!isTutorialActionAllowed(state, kind)) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    const result = handleQuestComplete(state, questIndex);
+    if (result === "acquired") {
+      notifyTutorialArchetypeAcquired(state);
+      playSfx("acquire");
+      requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
+    }
+    renderAll();
+  });
   renderSubconsciousButton(state);
   renderLog(state);
 

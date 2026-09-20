@@ -42,21 +42,21 @@ export const TUTORIAL_STEPS = [
   {
     id: "reveal",
     title: "Reveal Phase",
-    body: "Discuss, then draw the Dream and/or set reveal budget in any order. Click a Dreamer on the board and choose Draw & Resolve Dream for the Head Dreamer (★). One Dreamer spends Lucidity for team reveals. Finish the map: all Landscapes Revealed Returns Dreamers+3 from the Subconscious.",
+    body: "Discuss, then draw the Dream and/or set reveal budget in any order. Click **Draw Dream** left of Next Phase for the Head Dreamer (★). Select 1 Lucidity, then press **Reveal Landscapes** beside that Psyche. Finish the map: all Landscapes Revealed Returns Dreamers+3 from the Subconscious.",
     target: "#board-viewport",
     phase: "Reveal",
   },
   {
     id: "explore",
     title: "Explore Phase",
-    body: "Discuss who should spend Elasticity, then unlock shared moves. Click Dreamer chips in the bottom-left dock and green hexes in any order until moves run out.",
+    body: "Discuss who should spend Elasticity, then select 1 Elasticity and press **Spend Elasticity** beside that Psyche. Click Dreamer chips in the bottom-left dock and green hexes in any order until moves run out.",
     target: "#board-viewport",
     phase: "Explore",
   },
   {
     id: "meet",
     title: "Meet Phase",
-    body: "Discuss who spends Willpower, then click a Dreamer on the board for Meet actions. Encounters, Landscape actions, Trade, Dreamer Powers, and Archetype Powers each spend 1 action. Marking a quest, +1 on a spread, and activating an Object are free. For Encounters, only the Dreamer on that Landscape may spend Psyche (up to 3).",
+    body: "Discuss who spends Willpower, then select 1 Willpower and press **Gain Actions** beside that Psyche. Click a Dreamer or occupied Landscape for Meet actions. Encounters, Landscape actions, Trade, Dreamer Powers, and Archetype Powers each spend 1 action. Marking a quest (click it on the Active Archetype, or use a Power Token), +1 on a spread, and activating an Object are free. For Encounters, only the Dreamer on that Landscape may spend Psyche (up to 3).",
     target: "#board-viewport",
     phase: "Meet",
   },
@@ -219,7 +219,7 @@ export function getCurrentObjective(state) {
         COOP_PLAY_TIP,
       ];
       if (!state.dreamDrawn) {
-        steps.push(`When the group agrees, click a Dreamer on the board and choose **Draw & Resolve Dream** (${head.name} is Head ★).`);
+        steps.push(`When the group agrees, click **Draw Dream** to the left of Next Phase (${head.name} is Head ★).`);
       }
       if (state.dreamDrawn && !state.revealLandscapeUsed) {
         steps.push(
@@ -229,7 +229,7 @@ export function getCurrentObjective(state) {
             : "Pick the Dreamer with the highest Lucidity stat.",
         );
         if (budget >= 1) {
-          steps.push(`Open that Dreamer's radial and click **Reveal Landscapes** (${budget} reveals), then click hex tiles in any order.`);
+          steps.push(`Select 1 Lucidity, then click **Reveal Landscapes** beside that Psyche (${budget} reveals). Click hex tiles in any order.`);
         }
       }
       return {
@@ -239,7 +239,7 @@ export function getCurrentObjective(state) {
         steps,
         tip: state.dreamDrawn
           ? "After the Dream is resolved, one Dreamer spends Lucidity for team reveals."
-          : "Draw & Resolve the Dream first — Lucidity reveals unlock afterward.",
+          : "Click **Draw Dream** first — Lucidity reveals unlock afterward.",
       };
     }
     if (state.landscapePick?.mode === "reveal" && !state.revealLandscapeUsed) {
@@ -279,8 +279,8 @@ export function getCurrentObjective(state) {
             ? `**${best.name}** has the best Elasticity bonus (+${totalStat(best, stat, state)}).`
             : "Pick the Dreamer with the highest Elasticity stat.",
           budget >= 1
-            ? `Click that Dreamer on the board, then **Spend Elasticity** (${budget} moves for everyone).`
-            : "Then open that Dreamer's radial and click Spend Elasticity to unlock moves.",
+            ? `Select 1 Elasticity, then click **Spend Elasticity** beside that Psyche (${budget} moves for everyone).`
+            : "Select 1 Elasticity, then click Spend Elasticity beside that Psyche to unlock moves.",
         ],
         tip: "After unlocking, move any Dreamer in any order.",
       };
@@ -323,7 +323,7 @@ export function getCurrentObjective(state) {
             : "Pick the Dreamer with the highest Willpower stat.",
           budget >= 1 ? `Budget will be: **${budget}** team actions.` : "Cards played + Willpower stat = action count.",
         ],
-        tip: "Click that Dreamer on the board, then Gain Actions. Spend Meet actions from the same radial.",
+        tip: "Select 1 Willpower, then click Gain Actions beside that Psyche. Spend Meet actions from the Dreamer's radial or by clicking an occupied Landscape.",
       };
     }
     const pool = coopMeetPlayTotal(state);
@@ -441,7 +441,7 @@ export function rulesIntroHtml() {
 
       <section class="overview-block">
         <h3>How You Lose</h3>
-        <p>The <strong>Dream Deck</strong> empties before you reach your goal (<strong>11 / 14 / 18</strong> regular Dreams for Daydream, Nap, or Deep Sleep, plus Final Recurrence cards and three boss Dreams). In <strong>Final Recurrence</strong>, you lose if Dreams run out while Remaining Archetypes still stand on the map, or if any Mindstream suit is entirely Repressed.</p>
+        <p>The <strong>Dream Deck</strong> empties before you reach your goal (<strong>11 / 14 / 18</strong> regular Dreams for Daydream, Nap, or Deep Sleep, plus Final Recurrence cards and three boss Dreams). The table also loses if the <strong>Psyche Deck</strong> and its discard are both empty, or if any Mindstream suit is entirely Repressed. In <strong>Final Recurrence</strong>, you lose if Dreams run out while Remaining Archetypes still stand on the map.</p>
       </section>
 
       <section class="overview-block">
@@ -477,7 +477,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 24.3 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 25.0 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -495,7 +495,7 @@ export function rulesRemHtml() {
       <section class="overview-block overview-phases">
         <div class="overview-phase suit-lucidity">
           <div class="overview-phase-head">${suitIconHtml("lucidity", { size: 16 })} <strong>Reveal</strong> — ${SUIT_LABELS.lucidity}</div>
-          <p><strong>Head Dreamer (★)</strong> draws and resolves one <strong>Dream</strong> card each round (anyone may click Draw once the group agrees). Then <strong>one Dreamer</strong> spends 1 Lucidity card.</p>
+          <p><strong>Head Dreamer (★)</strong> draws and resolves one <strong>Dream</strong> card each round — click <strong>Draw Dream</strong> left of Next Phase once the group agrees. Then <strong>one Dreamer</strong> spends 1 Lucidity card from the spread.</p>
           <ul>
             <li><strong>Setup:</strong> every Landscape is shuffled. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten</li>
             <li><strong>Reveal budget</strong> = that 1 card's value + Lucidity bonuses (Dreamer, Objects, Acquired Archetypes) → click that many Wasteland hexes to flip Landscapes face-up</li>
@@ -540,7 +540,7 @@ export function rulesRemHtml() {
 
       <section class="overview-block">
         <h3>Round End</h3>
-        <p>A circular <strong>Next Phase</strong> button stays in the top-right of the map. You may press it after the budget is spent, or early to skip leftover Reveals, moves, or Meet actions without spending Psyche. It is tinted the color of the phase you are about to enter (yellow Explore, red Meet, blue Reveal). <strong>Back</strong> in the top-left undoes the last action. Head Dreamer rotates clockwise at round end. Dreamer radials do not advance the phase.</p>
+        <p>A circular <strong>Next Phase</strong> button stays in the top-right of the map, with <strong>Draw Dream</strong> to its left during Reveal. You may press Next after the budget is spent, or early to skip leftover Reveals, moves, or Meet actions without spending Psyche. It is tinted the color of the phase you are about to enter (yellow Explore, red Meet, blue Reveal). <strong>Back</strong> sits in the top-left of the map, just right of the deck rail, and undoes the last action. Head Dreamer rotates clockwise at round end. Dreamer radials do not advance the phase.</p>
       </section>
     </div>
   `;
@@ -556,7 +556,7 @@ export function rulesDetailsHtml() {
       <h3>Guided Tutorial</h3>
       <ul>
         <li>The in-game tutorial is two scripted rounds. The guide window docks on the map at a readable size; drag the header or resize the corner if you want it elsewhere.</li>
-        <li>Follow the sparkle: click the highlighted <strong>Dreamer on the board</strong>, then the highlighted <strong>radial button</strong>. Every required click is highlighted, including hand cards, hexes, and the circular <strong>Next Phase</strong> control at the top-right of the map. <strong>Back</strong> sits opposite Next if you need to undo.</li>
+        <li>Follow the sparkle: <strong>Draw Dream</strong> is left of Next Phase. Select 1 Psyche, then press the button beside it to open Reveal, Explore, or Meet. Click a Dreamer or an occupied Landscape for landscape options. Mark a ready quest on the Active Archetype, or spend a Power Token. Every required click is highlighted, including hand cards, hexes, and Next Phase. <strong>Back</strong> sits at the top-left of the map if you need to undo.</li>
         <li>Each step shows a punchy Objective plus one or two sentences of why that action matters. <strong>?</strong> and Pause → Help stay available after you graduate.</li>
       </ul>
 
@@ -565,7 +565,7 @@ export function rulesDetailsHtml() {
         <li>Tap or click to select · double-tap, long-press, or right-click to inspect · play 1 suited card per phase opener</li>
         <li>Max <strong>10 Psyche cards</strong> in hand (+2 with Persistent Severed Torso); overflow discards to the Psyche discard pile</li>
         <li>Max <strong>10 accepted allies</strong> (Dreambeasts) — separate from the Psyche limit</li>
-        <li><strong>Wild Psyche</strong> (value 5) counts as any suit; also Represses the top card of each Mindstream deck when spent</li>
+        <li><strong>Wild Psyche</strong> (value 5) counts as any suit; when spent, Repress the top <strong>5 cards</strong> of the Psyche Deck (shuffle discard into a new draw pile if needed)</li>
         <li><strong>Power Psyche</strong> (Power Surge, yellowish-purple) stays in hand — click it anytime, any phase, for 1 Power Token</li>
         <li>Effective health = regular Psyche + allies; at 0 you face death</li>
       </ul>
@@ -631,7 +631,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Mindstream &amp; Dreams</h3>
-      <p>Three 70-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, Power cards, Draw-Dream cards. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Dreams are drawn once per round by the Head Dreamer.</p>
+      <p>Three 70-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, Power cards, Draw-Dream cards. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Dreams are drawn once per round by the Head Dreamer.</p>
 
       <h3>Death</h3>
       <p>At 0 Psyche, spend Power Tokens (cost = max(1, floor(alive/2))) to draw 1 Psyche and survive, or accept death: Repress top of each Mindstream deck, lose all Objects/Persistent/Power, return to The Bed with 4/3/2/1 Psyche (by death #), gain 2 Power, resolve an Additional Dream. Fifth death removes the Dreamer permanently.</p>
@@ -649,7 +649,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 24.3</p>
+          <p class="info-hub-kicker">Somnia v 25.0</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>
@@ -663,7 +663,7 @@ export function infoHubHtml(options = {}) {
           <div class="info-hub-rule">
             <h3>Win &amp; Lose</h3>
             <p><strong>Win:</strong> finish both Active Archetype quests (1 Power Token each), <strong>Acquire</strong> for 1–3 points, and repeat to your goal (<strong>8 / 12 / 24</strong>). When you reach the goal, a banner reminds the table: every living Dreamer must stand on <strong>The Bed</strong> to wake up.</p>
-            <p><strong>Lose:</strong> the Dream Deck empties first, or any Mindstream suit is entirely Repressed in the Subconscious. In Final Recurrence you lose if Dreams run out while remaining Archetypes still stand.</p>
+            <p><strong>Lose:</strong> the Dream Deck empties first, the Psyche Deck and discard are both empty, or any Mindstream suit is entirely Repressed in the Subconscious. In Final Recurrence you lose if Dreams run out while remaining Archetypes still stand.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Play Together</h3>
@@ -683,13 +683,13 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Hands, Tokens &amp; Objects</h3>
-            <p>Max <strong>10 Psyche</strong>. Wild (5) is any suit. Power Surge is yellowish-purple — click anytime for 1 Power Token. Instant Objects Repress when used. Persistent Objects activate for 1 token as a free Meet action. Spent allies Repress to the Subconscious.</p>
+            <p>Max <strong>10 Psyche</strong>. Wild (5) is any suit — playing it Represses the top 5 cards of the Psyche Deck. Power Surge is yellowish-purple — click anytime for 1 Power Token. Instant Objects Repress when used. Persistent Objects activate for 1 token as a free Meet action. Spent allies Repress to the Subconscious.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Death &amp; Final Recurrence</h3>
             <p>At 0 Psyche, spend Power Tokens to draw 1 and live, or die: return to The Bed with 4/3/2/1 Psyche. Fifth death is permanent. Forget every outer Landscape — or draw <strong>The Final Recurrence</strong> — to start the endgame. Defeat remaining Archetypes with <strong>≥ 15</strong> pooled Psyche including the opposing suit, or sacrifice acquired Archetypes 1:1. Last card: <strong>You Never Wake Up</strong>.</p>
           </div>
-          <p class="info-hub-footer">Next Phase stays in the top-right of the map — skip leftover budget without spending Psyche. Back in the top-left undoes the last action. The guided tutorial highlights the next required click. Landscapes are named in their suit color. Draw Mindstream is repeatable; unique tile actions, Dreamer Powers, and Archetype Powers each cost 1 Meet action and are once per Dreamer.</p>
+          <p class="info-hub-footer">Draw Dream sits left of Next Phase during Reveal. Select 1 Psyche, then press the button beside it to open that phase. Back in the top-left undoes the last action. Click a ready quest on the Active Archetype, or spend a Power Token. Landscapes are named in their suit color. Draw Mindstream is repeatable; unique tile actions, Dreamer Powers, and Archetype Powers each cost 1 Meet action and are once per Dreamer.</p>
         </section>
       </div>
     </div>

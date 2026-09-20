@@ -553,7 +553,7 @@ export function repressFromMindstreamSetup(state, suit, playerCount) {
   }
 }
 
-/** Wild Psyche cost: repress top card of each Mindstream deck. */
+/** Wild Psyche used to mill Mindstream tops; 25.0 mills the Psyche Deck instead. */
 export function repressTopMindstreamFromEachDeck(state) {
   ["lucidity", "elasticity", "willpower"].forEach((suit) => {
     const deck = state.mindstreamDecks?.[suit];

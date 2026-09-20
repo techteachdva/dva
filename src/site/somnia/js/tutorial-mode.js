@@ -451,18 +451,18 @@ function railBeatAllows(state, beat, kind, detail = {}) {
       return requiredCardIds(beat).includes(card.id);
     }
     case "drawDream":
-      return kind === "drawDream" || kind === "dreamerSelect";
+      return kind === "drawDream";
     case "revealLandscape":
-      return kind === "revealLandscape" || kind === "dreamerSelect";
+      return kind === "revealLandscape";
     case "boardClick":
       return (kind === "boardClick" || kind === "exploreMove") && detail.tileId === beat.tileId;
     case "spendElasticity":
-      return kind === "spendElasticity" || kind === "dreamerSelect";
+      return kind === "spendElasticity";
     case "exploreMove":
       if (kind !== "exploreMove" && kind !== "boardClick") return false;
       return exploreMoveAllowed(state, detail.tileId, [beat.tileId], beat.playerIndex);
     case "gainMeetActions":
-      return kind === "gainMeetActions" || kind === "dreamerSelect";
+      return kind === "gainMeetActions";
     case "meetAccept":
       if (kind === "meetAccept" || kind === "beastRadial" || kind === "dreamerSelect") return true;
       return kind === "boardClick" && detail.tileId === (beat.tileId || "house");
@@ -477,8 +477,10 @@ function railBeatAllows(state, beat, kind, detail = {}) {
       return kind === "boardClick" && detail.tileId === beat.landscapeId;
     case "completeQuest0":
     case "completeQuest1":
-      return (kind === beat.kind || kind === "dreamerSelect")
-        && (kind === "dreamerSelect" || state.activePlayerIndex === (beat.playerIndex ?? 0));
+      if (kind === "dreamerSelect") {
+        return detail.playerIndex == null || detail.playerIndex === (beat.playerIndex ?? 0);
+      }
+      return kind === beat.kind;
     default:
       return false;
   }
@@ -683,10 +685,22 @@ function railHighlight(state, step, beat) {
       };
     }
     case "drawDream":
+      return {
+        targets: ["#btn-draw-dream[data-tutorial-action=\"drawDream\"]", "#btn-draw-dream", "#board-viewport"],
+        spotlight: "#btn-draw-dream[data-tutorial-action=\"drawDream\"]",
+      };
     case "revealLandscape":
     case "spendElasticity":
     case "gainMeetActions":
-      return radialOrDreamerHighlight(state, beat, beat.kind);
+      return {
+        targets: [
+          `#btn-spread-opener[data-tutorial-action="${beat.kind}"]`,
+          "#btn-spread-opener",
+          "#spread-tray",
+          "#hand-bar",
+        ],
+        spotlight: `#btn-spread-opener[data-tutorial-action="${beat.kind}"]`,
+      };
     case "meetAccept":
     case "meetReject": {
       const highlight = radialOrDreamerHighlight(state, beat, beat.kind);
@@ -724,9 +738,11 @@ function railHighlight(state, step, beat) {
     }
     case "completeQuest0":
     case "completeQuest1": {
-      const highlight = radialOrDreamerHighlight(state, beat, beat.kind);
-      highlight.targets.push("#active-archetype");
-      return highlight;
+      const questSel = `#active-archetype [data-tutorial-action="${beat.kind}"]`;
+      return {
+        targets: [questSel, "#active-archetype"],
+        spotlight: questSel,
+      };
     }
     default:
       return {
@@ -756,7 +772,7 @@ function decorateTutorialStep(state, step, objective) {
 export function classifyPhaseAction(action) {
   if (action?.kind) return action.kind;
   const label = action?.label || "";
-  if (label.startsWith("Draw & Resolve")) return "drawDream";
+  if (label.startsWith("Draw Dream") || label.startsWith("Draw & Resolve")) return "drawDream";
   if (label.startsWith("Reveal Landscapes")) return "revealLandscape";
   if (label.startsWith("Spend Elasticity")) return "spendElasticity";
   if (label.startsWith("Power Token as 1")) return "phasePowerToken";
@@ -1067,9 +1083,9 @@ export const TUTORIAL_SCRIPT = [
     round: 1,
     title: "Reveal: Draw the Dream",
     why: "Every round the Head Dreamer draws one Dream that twists the table. Resolve it first so you know what the map is doing this round.",
-    targets: ["#board-viewport"],
+    targets: ["#btn-draw-dream", "#board-viewport"],
     rail: [
-      { kind: "drawDream", prompt: "Click The Visionary on the board, then Draw & Resolve Dream." },
+      { kind: "drawDream", prompt: "Click Draw Dream to the left of Next Phase." },
     ],
     until: (s) => s.dreamDrawn,
   },
@@ -1082,7 +1098,7 @@ export const TUTORIAL_SCRIPT = [
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "handToggle", playerIndex: 0, cardId: "lucidity-1-v-l1", prompt: "Select Lucidity 1 in The Visionary's hand." },
-      { kind: "revealLandscape", prompt: "Click The Visionary on the board, then Reveal Landscapes." },
+      { kind: "revealLandscape", prompt: "Click Reveal Landscapes to the right of the selected Psyche." },
       { kind: "boardClick", tileId: "candy-mountain", reveal: true, prompt: "Click the glowing wasteland hex — that is Candy Mountain's hidden side." },
       { kind: "advancePhase", toPhase: "Explore", prompt: "Click Next: Explore in the top-right of the map." },
     ],
@@ -1097,7 +1113,7 @@ export const TUTORIAL_SCRIPT = [
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "handToggle", playerIndex: 0, cardId: "elasticity-2-v-e2", prompt: "Select Elasticity 2." },
-      { kind: "spendElasticity", prompt: "Click The Visionary on the board, then Spend Elasticity." },
+      { kind: "spendElasticity", prompt: "Click Spend Elasticity to the right of the selected Psyche." },
       { kind: "exploreMove", playerIndex: 0, tileId: "house", prompt: "Click House to move The Visionary there." },
       { kind: "advancePhase", toPhase: "Meet", prompt: "Click Next: Meet in the top-right of the map." },
     ],
@@ -1112,7 +1128,7 @@ export const TUTORIAL_SCRIPT = [
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "handToggle", playerIndex: 0, cardId: "willpower-2-v-w2", prompt: "Select Willpower 2." },
-      { kind: "gainMeetActions", prompt: "Click The Visionary on the board, then Gain Actions." },
+      { kind: "gainMeetActions", prompt: "Click Gain Actions to the right of the selected Psyche." },
       {
         kind: "handToggle",
         playerIndex: 0,
@@ -1141,10 +1157,10 @@ export const TUTORIAL_SCRIPT = [
     closeRevealPick: true,
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
-      { kind: "drawDream", prompt: "Click The Visionary on the board, then Draw & Resolve Dream." },
+      { kind: "drawDream", prompt: "Click Draw Dream to the left of Next Phase." },
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "handToggle", playerIndex: 0, cardId: "lucidity-2-r2-a", prompt: "Select Lucidity 2." },
-      { kind: "revealLandscape", prompt: "Click The Visionary on the board, then Reveal Landscapes." },
+      { kind: "revealLandscape", prompt: "Click Reveal Landscapes to the right of the selected Psyche." },
       { kind: "advancePhase", toPhase: "Explore", prompt: "Click Next: Explore in the top-right of the map." },
     ],
     until: (s) => atRound(s, 2) && getPhase(s) === "Explore",
@@ -1158,7 +1174,7 @@ export const TUTORIAL_SCRIPT = [
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on the board." },
       { kind: "handToggle", playerIndex: 1, cardId: "elasticity-3-i-e3", prompt: "Select Elasticity 3." },
-      { kind: "spendElasticity", prompt: "Click The Immovable on the board, then Spend Elasticity." },
+      { kind: "spendElasticity", prompt: "Click Spend Elasticity to the right of the selected Psyche." },
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "exploreMove", playerIndex: 0, tileId: "the-attic", prompt: "Click The Attic to move The Visionary there." },
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on the board." },
@@ -1177,14 +1193,14 @@ export const TUTORIAL_SCRIPT = [
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Basement." },
       { kind: "handToggle", playerIndex: 1, cardId: "willpower-3-i-w3", prompt: "Select Willpower 3." },
-      { kind: "gainMeetActions", prompt: "Click The Immovable on The Basement, then Gain Actions." },
+      { kind: "gainMeetActions", prompt: "Click Gain Actions to the right of the selected Psyche." },
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
       {
         kind: "landscapeActionA",
         playerIndex: 0,
         landscapeId: "the-attic",
         done: (s) => innocentAtticDone(s),
-        prompt: "Click The Visionary on The Attic, then Action A (Draw Lucidity Mindstream).",
+        prompt: "Click The Visionary or The Attic hex, then Action A (Draw Lucidity Mindstream).",
       },
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Basement." },
       {
@@ -1213,9 +1229,9 @@ export const TUTORIAL_SCRIPT = [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board — they hold Power Surge." },
       { kind: "handToggle", playerIndex: 0, cardId: "psyche-power-r2", prompt: "Click Power Surge to gain 1 Power Token (2 total on The Visionary)." },
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board to mark Quest 1." },
-      { kind: "completeQuest0", playerIndex: 0, prompt: "Click The Visionary on the board, then Quest 1, and spend 1 Power Token." },
+      { kind: "completeQuest0", playerIndex: 0, prompt: "Click Quest 1 on the Active Archetype to spend 1 Power Token." },
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board to mark Quest 2." },
-      { kind: "completeQuest1", playerIndex: 0, prompt: "Click The Visionary on the board, then Quest 2, and spend 1 Power Token to acquire The Innocent." },
+      { kind: "completeQuest1", playerIndex: 0, prompt: "Click Quest 2 on the Active Archetype to spend 1 Power Token and acquire The Innocent." },
     ],
     until: (s) => innocentAcquired(s),
   },
@@ -1223,7 +1239,7 @@ export const TUTORIAL_SCRIPT = [
     id: "graduate",
     round: 2,
     title: "Go Play",
-    why: "You now know the R.E.M. loop: Reveal, Explore, Meet. Next Phase stays on the map (skip leftover budget; Back undoes the last action). The Bed offers Draw 3 Psyche or Play 3 Psyche Points then Draw 3, each once per Dreamer. A real Daydream uses shuffled Landscapes and the full Meet tax.",
+    why: "You now know the R.E.M. loop: Reveal, Explore, Meet. Draw Dream sits left of Next Phase. Select 1 Psyche, then press the button beside it to open that phase. Next Phase stays on the map (skip leftover budget; Back undoes). Playing a Wild Represses the top 5 Psyche of the deck. If the Psyche Deck and discard both empty, you lose. The Bed offers Draw 3 Psyche or Play 3 Psyche Points then Draw 3, each once per Dreamer. A real Daydream uses shuffled Landscapes and the full Meet tax.",
     objective: "Click Finish, then play a Daydream. Rules stay in ? and !.",
     target: "#phase-stepper",
   },
@@ -1401,6 +1417,12 @@ export function getTutorialSpotlightSelector(step, { utilityModalOpen = false } 
   if (!selectors.length) return null;
   if (selectors.some((s) => s.includes("#btn-next-phase") || s.includes("data-tutorial-action=\"advancePhase\""))) {
     return "#btn-next-phase";
+  }
+  if (selectors.some((s) => s.includes("#btn-draw-dream") || s.includes("data-tutorial-action=\"drawDream\""))) {
+    return "#btn-draw-dream";
+  }
+  if (selectors.some((s) => s.includes("#btn-spread-opener"))) {
+    return "#btn-spread-opener";
   }
   if (selectors.includes("#active-encounter")) return "#active-encounter";
   const radialSel = selectors.find((s) => s.includes("radial-menu-item"));

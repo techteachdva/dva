@@ -244,18 +244,21 @@ function layoutPsycheFan(container) {
   const cards = [...container.querySelectorAll(":scope > .game-card")];
   const n = cards.length;
   if (!n) return;
-  const cardW = cards[0].offsetWidth || 64;
+  const spread = container.classList.contains("spread-tray-fan");
+  const cardW = cards[0].offsetWidth || (spread ? 118 : 64);
   const avail = Math.max(cardW, container.clientWidth || cardW);
   const mid = (n - 1) / 2;
-  const maxRot = Math.min(12, 3 + n * 0.8);
-  const pip = 18;
+  const maxRot = spread ? Math.min(5, 1.2 + n * 0.35) : Math.min(12, 3 + n * 0.8);
+  const pip = spread ? cardW + 16 : 18;
   const maxStep = n <= 1 ? cardW : (avail - cardW) / Math.max(n - 1, 1);
-  const step = Math.min(cardW * 0.42, Math.max(pip, maxStep));
+  const step = spread
+    ? Math.max(cardW + 16, pip)
+    : Math.min(cardW * 0.42, Math.max(pip, maxStep));
   cards.forEach((el, i) => {
     const t = n <= 1 ? 0 : (i - mid) / Math.max(mid, 1);
     el.style.setProperty("--fan-rot", `${(t * maxRot).toFixed(2)}deg`);
-    el.style.setProperty("--fan-y", `${(Math.abs(t) * 10).toFixed(1)}px`);
-    el.style.setProperty("--fan-overlap", i === 0 ? "0px" : `${(step - cardW).toFixed(1)}px`);
+    el.style.setProperty("--fan-y", `${(Math.abs(t) * (spread ? 6 : 10)).toFixed(1)}px`);
+    el.style.setProperty("--fan-overlap", spread ? "0px" : (i === 0 ? "0px" : `${(step - cardW).toFixed(1)}px`));
     el.style.setProperty("--fan-z", String(i + 1));
   });
 }
@@ -542,7 +545,7 @@ export function renderActiveDreamerHand(state, onCardClick, {
 }
 
 /** Selected Psyche sit on the table as a holographic spread. */
-export function renderSpreadTray(state, onCardClick) {
+export function renderSpreadTray(state, onCardClick, openerAction = null) {
   const tray = document.getElementById("spread-tray");
   if (!tray) return;
 
@@ -565,8 +568,12 @@ export function renderSpreadTray(state, onCardClick) {
   tray.appendChild(caption);
 
   const row = document.createElement("div");
-  row.className = "spread-tray-fan";
+  row.className = "spread-tray-row";
   tray.appendChild(row);
+
+  const fan = document.createElement("div");
+  fan.className = "spread-tray-fan";
+  row.appendChild(fan);
 
   cards.forEach((card) => {
     const owner = (state.players || []).find((p) => (p.hand || []).some((c) => c.instanceId === card.instanceId));
@@ -577,9 +584,27 @@ export function renderSpreadTray(state, onCardClick) {
       onInspect: () => showModal(card),
     });
     el.classList.add("spread-card");
-    row.appendChild(el);
+    fan.appendChild(el);
   });
-  schedulePsycheFan(row);
+  schedulePsycheFan(fan);
+
+  if (cards.length === 1 && openerAction) {
+    const opener = document.createElement("button");
+    opener.type = "button";
+    opener.id = "btn-spread-opener";
+    opener.className = `btn-spread-opener tint-${openerAction.tint || "reveal"}`;
+    opener.setAttribute("data-tutorial-action", openerAction.kind || "revealLandscape");
+    opener.textContent = openerAction.label || "Use Psyche";
+    opener.title = openerAction.hint || openerAction.label;
+    opener.disabled = !!openerAction.disabled;
+    opener.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (opener.disabled) return;
+      openerAction.onClick?.();
+    });
+    row.appendChild(opener);
+  }
 }
 
 /** Sparkle link when the focused Dreamer changes — chip ↔ hand panel. */
@@ -1140,7 +1165,7 @@ export function showModal(card, options = {}) {
           <span class="psyche-suit large wild-gradient">★</span>
         </div>
         <h2>Wild Psyche</h2>
-        <p>Counts as <strong>5 Psyche of any suit</strong> when played. After playing, Repress this card plus the top card of each Mindstream deck.</p>
+        <p>Counts as <strong>5 Psyche of any suit</strong> when played. After playing, Repress this card and the top <strong>5 cards</strong> of the Psyche Deck (shuffle the discard into a new draw pile if needed). If the Psyche Deck and discard are both empty, the table loses immediately.</p>
       `;
     } else if (card.type === "psyche-power") {
       detail.innerHTML = `
@@ -2471,12 +2496,19 @@ export function renderSubconsciousButton(state) {
       : "Browse The Subconscious (empty)";
 }
 
-function renderQuestProgressList(statuses) {
+function renderQuestProgressList(statuses, onQuestClick = null) {
   const ul = document.createElement("ul");
   ul.className = "quest-list compact quest-progress-list";
   statuses.forEach((q) => {
     const li = document.createElement("li");
-    li.className = [q.done ? "done" : "", q.ready ? "ready" : ""].filter(Boolean).join(" ");
+    const clickable = typeof onQuestClick === "function";
+    li.className = [
+      q.done ? "done" : "",
+      q.ready ? "ready" : "",
+      clickable ? "quest-clickable" : "",
+      clickable && !q.ready ? "quest-locked" : "",
+    ].filter(Boolean).join(" ");
+    li.setAttribute("data-tutorial-action", q.index === 0 ? "completeQuest0" : "completeQuest1");
     const bar = document.createElement("span");
     bar.className = "quest-progress";
     bar.setAttribute("aria-label", `Quest ${q.index + 1}: ${q.conditionMet ? "condition met" : "in progress"}, ${q.tokenSpent ? "marked" : "not marked"}`);
@@ -2492,12 +2524,30 @@ function renderQuestProgressList(statuses) {
       mark.textContent = " · ready";
       li.appendChild(mark);
     }
+    if (clickable) {
+      li.setAttribute("role", "button");
+      li.tabIndex = q.ready ? 0 : -1;
+      li.title = q.ready
+        ? "Click to spend 1 Power Token and mark this quest."
+        : (q.done ? "Quest already marked." : "Quest condition is not met yet, or you need a Power Token.");
+      const activate = () => onQuestClick(q.index);
+      li.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        activate();
+      });
+      li.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        activate();
+      });
+    }
     ul.appendChild(li);
   });
   return ul;
 }
 
-export function renderActiveSlots(state, onCardClick) {
+export function renderActiveSlots(state, onCardClick, onQuestClick = null) {
   const archetypeSlot = document.getElementById("active-archetype");
   const encounterSlot = document.getElementById("active-encounter");
   const acquired = document.getElementById("acquired-archetypes");
@@ -2521,7 +2571,7 @@ export function renderActiveSlots(state, onCardClick) {
       onClick: () => onCardClick(card),
     }));
     if (statuses.length) {
-      archetypeSlot.appendChild(renderQuestProgressList(statuses));
+      archetypeSlot.appendChild(renderQuestProgressList(statuses, onQuestClick));
       const tokens = document.createElement("p");
       tokens.className = "archetype-tokens";
       tokens.textContent = `${tokensOn}/2 Power Tokens on Archetype`;
@@ -2781,7 +2831,7 @@ function buildDreamFeedHtml(state) {
   `;
 }
 
-export function renderPhaseAdvanceBar(advanceAction = null, undo = null) {
+export function renderPhaseAdvanceBar(advanceAction = null, undo = null, drawDream = null) {
   const viewport = document.getElementById("board-viewport");
   if (!viewport) return;
 
@@ -2811,6 +2861,38 @@ export function renderPhaseAdvanceBar(advanceAction = null, undo = null) {
     if (!canUndo) return;
     undo.onUndo?.();
   };
+
+  let drawBtn = document.getElementById("btn-draw-dream");
+  if (!drawBtn) {
+    drawBtn = document.createElement("button");
+    drawBtn.type = "button";
+    drawBtn.id = "btn-draw-dream";
+    drawBtn.className = "btn-draw-dream";
+    drawBtn.setAttribute("data-tutorial-action", "drawDream");
+    drawBtn.textContent = "Draw Dream";
+    viewport.appendChild(drawBtn);
+  }
+  const showDraw = !!drawDream?.visible;
+  drawBtn.hidden = !showDraw;
+  drawBtn.classList.toggle("hidden", !showDraw);
+  if (showDraw) {
+    drawBtn.removeAttribute("hidden");
+    drawBtn.disabled = !!drawDream.disabled;
+    drawBtn.textContent = drawDream.label || "Draw Dream";
+    drawBtn.title = drawDream.hint || "Draw and resolve this round's Dream.";
+    drawBtn.setAttribute("aria-hidden", "false");
+    drawBtn.setAttribute("aria-label", drawDream.label || "Draw Dream");
+    drawBtn.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (drawBtn.disabled) return;
+      drawDream.onClick?.();
+    };
+  } else {
+    drawBtn.setAttribute("hidden", "");
+    drawBtn.setAttribute("aria-hidden", "true");
+    drawBtn.onclick = null;
+  }
 
   let btn = document.getElementById("btn-next-phase");
   if (!btn) {
@@ -4419,7 +4501,7 @@ function getStepTargetSelectors(step) {
 }
 
 const TUTORIAL_BOTTOM_SELECTORS = new Set([
-  "#hand-bar", "#table-footer", "#dreamer-dock", "#player-list",
+  "#hand-bar", "#table-footer", "#dreamer-dock", "#player-list", "#spread-tray", "#btn-spread-opener",
 ]);
 const TUTORIAL_TOP_SELECTORS = new Set(["#phase-stepper", "#narrator-panel"]);
 const TUTORIAL_BOARD_SELECTORS = new Set(["#board-viewport", "#hex-board", "#player-list", "#dreamer-dock"]);
@@ -4473,6 +4555,19 @@ function resolvePrimarySpotlightElement(step) {
     if (beat.kind === "advancePhase") {
       return document.querySelector("#btn-next-phase:not([hidden])")
         || document.querySelector("#btn-next-phase");
+    }
+    if (beat.kind === "drawDream") {
+      return document.querySelector("#btn-draw-dream:not([hidden])")
+        || document.querySelector("#btn-draw-dream");
+    }
+    if (beat.kind === "revealLandscape" || beat.kind === "spendElasticity" || beat.kind === "gainMeetActions") {
+      return document.querySelector("#btn-spread-opener")
+        || document.querySelector("#spread-tray")
+        || document.querySelector("#hand-bar");
+    }
+    if (beat.kind === "completeQuest0" || beat.kind === "completeQuest1") {
+      return document.querySelector(`#active-archetype [data-tutorial-action="${beat.kind}"]`)
+        || document.querySelector("#active-archetype");
     }
     const kind = beat.kind;
     return document.querySelector(`${tutorialPhaseActionSelector(kind)}:not(:disabled)`)
