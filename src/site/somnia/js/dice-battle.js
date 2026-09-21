@@ -1,15 +1,26 @@
 /**
  * Dreambeast dice battle — Accept/Reject resolution (Somnia 28.0).
  * Each side rolls Nd6; 5–6 is a success. Most successes wins. Ties favor the beast.
- * Dreamer Power can underpay beast Power; pools up to 22d6.
+ * Dice spin freely, then brake onto a face. 5s and 6s light up.
  */
 import { playSfx } from "./audio.js";
 
 const SUCCESS_MIN = 5;
 const MAX_SHOWN = 22;
-const TUMBLE_MS = 920;
-const STAGGER_MS = 42;
-const RESULT_HOLD_MS = 4800;
+const SPIN_MS = 300;
+const SETTLE_MS = 180;
+const RESULT_HOLD_MS = 4200;
+const CAM_X = -24;
+const CAM_Y = 32;
+
+const FACE_ROT = {
+  1: { x: 0, y: 0 },
+  2: { x: 0, y: -90 },
+  3: { x: -90, y: 0 },
+  4: { x: 90, y: 0 },
+  5: { x: 0, y: 90 },
+  6: { x: 0, y: 180 },
+};
 
 let activeBattle = null;
 
@@ -37,46 +48,42 @@ export function countSuccesses(faces) {
   return faces.filter((v) => v >= SUCCESS_MIN).length;
 }
 
-function pipMask(value) {
-  // 3x3 grid: TL TM TR / ML MM MR / BL BM BR
-  const map = {
-    1: [0, 0, 0, 0, 1, 0, 0, 0, 0],
-    2: [1, 0, 0, 0, 0, 0, 0, 0, 1],
-    3: [1, 0, 0, 0, 1, 0, 0, 0, 1],
-    4: [1, 0, 1, 0, 0, 0, 1, 0, 1],
-    5: [1, 0, 1, 0, 1, 0, 1, 0, 1],
-    6: [1, 0, 1, 1, 0, 1, 1, 0, 1],
-  };
-  return map[value] || map[1];
+function staggerMs(total) {
+  if (total >= 30) return 10;
+  if (total >= 16) return 14;
+  return 18;
 }
 
-function faceHtml(value) {
-  const pips = pipMask(value).map((on, i) => `<span class="die-pip ${on ? "on" : ""}" data-i="${i}"></span>`).join("");
-  return `<div class="die-face face-${value}" data-face="${value}">${pips}</div>`;
+function pose(x, y, z = 0) {
+  return `rotateX(${x}deg) rotateY(${y}deg) rotateZ(${z}deg)`;
 }
 
 function dieHtml(side, index) {
-  const faces = [1, 2, 3, 4, 5, 6].map((v) => faceHtml(v)).join("");
-  return `<div class="battle-die-slot"><div class="battle-die-scene"><div class="battle-die ${side}-die" data-die-index="${index}" aria-hidden="true">${faces}</div></div></div>`;
+  const faces = [1, 2, 3, 4, 5, 6]
+    .map((v) => `<div class="die-face face-${v}" data-face="${v}"></div>`)
+    .join("");
+  return `<div class="battle-die-slot" data-die-slot="${index}"><div class="battle-die-scene"><div class="battle-die ${side}-die" data-die-index="${index}" aria-hidden="true">${faces}</div></div></div>`;
 }
 
-function settleTransform(value) {
-  switch (value) {
-    case 1: return "rotateX(-18deg) rotateY(22deg)";
-    case 2: return "rotateX(-18deg) rotateY(-68deg)";
-    case 3: return "rotateX(-108deg) rotateY(22deg)";
-    case 4: return "rotateX(72deg) rotateY(22deg)";
-    case 5: return "rotateX(-18deg) rotateY(112deg)";
-    case 6: return "rotateX(-18deg) rotateY(202deg)";
-    default: return "rotateX(-18deg) rotateY(22deg)";
-  }
+function settlePose(face, spinX, spinY) {
+  const rot = FACE_ROT[face] || FACE_ROT[1];
+  return pose(CAM_X + rot.x + spinX, CAM_Y + rot.y + spinY, 0);
 }
 
-function randomTumble() {
-  const x = 360 + Math.floor(Math.random() * 3) * 360;
-  const y = 360 + Math.floor(Math.random() * 3) * 360;
-  const z = 12 + Math.floor(Math.random() * 18);
-  return `rotateX(${x}deg) rotateY(${y}deg) rotateZ(${z}deg)`;
+function startPose() {
+  return pose(
+    CAM_X + (Math.random() - 0.5) * 80,
+    CAM_Y + (Math.random() - 0.5) * 80,
+    (Math.random() - 0.5) * 40,
+  );
+}
+
+function cancelBattleAnims() {
+  activeBattle?.anims?.forEach((anim) => {
+    try { anim.cancel(); } catch { /* ignore */ }
+  });
+  if (activeBattle?.timer) window.clearTimeout(activeBattle.timer);
+  if (activeBattle?.raf) window.cancelAnimationFrame(activeBattle.raf);
 }
 
 function ensureStage() {
@@ -96,9 +103,87 @@ function ensureStage() {
 }
 
 function clearStage(stage) {
+  cancelBattleAnims();
+  document.body.classList.remove("dice-rolling");
   stage.className = "dice-battle-stage";
   stage.innerHTML = "";
   stage.hidden = true;
+}
+
+function markSuccess(el, face) {
+  const slot = el.closest(".battle-die-slot");
+  el.classList.add("success", "settled");
+  slot?.classList.add("success", "landing");
+  el.querySelector(`.die-face[data-face="${face}"]`)?.classList.add("hit");
+}
+
+function finishDiePose(el, end, face, onLand) {
+  el.style.transform = end;
+  el.classList.remove("rolling");
+  el.style.willChange = "";
+  if (face >= SUCCESS_MIN) markSuccess(el, face);
+  else {
+    el.classList.add("settled");
+    el.closest(".battle-die-slot")?.classList.add("landing");
+  }
+  onLand?.();
+}
+
+function rollOneDie(el, face, delay, quiet, onLand) {
+  const rot = FACE_ROT[face] || FACE_ROT[1];
+  const spinX = (2 + Math.floor(Math.random() * 2)) * 360;
+  const spinY = (3 + Math.floor(Math.random() * 2)) * 360;
+  const from = startPose();
+  const mid = pose(
+    CAM_X + rot.x + spinX * 0.7,
+    CAM_Y + rot.y + spinY * 0.7,
+    16 + Math.random() * 10,
+  );
+  const end = settlePose(face, spinX, spinY);
+
+  el.style.transform = from;
+  el.classList.add("rolling");
+  el.style.willChange = "transform";
+
+  if (quiet) {
+    finishDiePose(el, end, face, onLand);
+    return;
+  }
+
+  const spin = el.animate(
+    [{ transform: from }, { transform: mid }],
+    {
+      duration: SPIN_MS,
+      delay,
+      easing: "linear",
+      fill: "forwards",
+    },
+  );
+  activeBattle?.anims?.push(spin);
+
+  spin.finished.then(() => {
+    if (!activeBattle) return;
+    try { spin.commitStyles(); } catch { /* ignore */ }
+    try { spin.cancel(); } catch { /* ignore */ }
+    const settle = el.animate(
+      [{ transform: mid }, { transform: end }],
+      {
+        duration: SETTLE_MS,
+        easing: "cubic-bezier(0.12, 1.12, 0.18, 1)",
+        fill: "forwards",
+      },
+    );
+    activeBattle?.anims?.push(settle);
+    return settle.finished.then(() => {
+      try { settle.commitStyles(); } catch { /* ignore */ }
+      try { settle.cancel(); } catch { /* ignore */ }
+    });
+  }).then(() => {
+    if (!activeBattle) return;
+    finishDiePose(el, end, face, onLand);
+  }).catch(() => {
+    /* cancelled */
+  });
 }
 
 /**
@@ -109,6 +194,7 @@ function clearStage(stage) {
  *   beastDice: number,
  *   forceWinner?: "dreamer"|"beast"|null,
  *   instant?: boolean,
+ *   hold?: boolean,
  *   onComplete: (result: { dreamerWins: boolean, dreamerSuccesses: number, beastSuccesses: number, dreamerFaces: number[], beastFaces: number[] }) => void,
  * }} opts
  */
@@ -153,9 +239,9 @@ export function playDiceBattle(opts) {
   const result = { dreamerWins, dreamerSuccesses, beastSuccesses, dreamerFaces, beastFaces };
 
   const finish = () => {
-    activeBattle = null;
     const stage = document.getElementById("dice-battle-stage");
     if (stage) clearStage(stage);
+    activeBattle = null;
     onComplete?.(result);
   };
 
@@ -165,18 +251,19 @@ export function playDiceBattle(opts) {
   }
 
   const stage = ensureStage();
-  if (activeBattle?.timer) window.clearTimeout(activeBattle.timer);
-  activeBattle = { result, timer: null };
+  cancelBattleAnims();
+  activeBattle = { result, timer: null, anims: [] };
 
   const shownD = Math.min(dCount, MAX_SHOWN);
   const shownB = Math.min(bCount, MAX_SHOWN);
   const totalDice = shownD + shownB;
-  const size = totalDice >= 30 ? 32 : totalDice >= 22 ? 38 : totalDice > 14 ? 46 : 56;
+  const size = totalDice >= 30 ? 34 : totalDice >= 22 ? 40 : totalDice > 14 ? 48 : 58;
 
   stage.hidden = false;
   stage.style.setProperty("--die-size", `${size}px`);
   stage.style.setProperty("--die-half", `${size / 2}px`);
-  stage.style.setProperty("--die-gap", totalDice > 18 ? "0.32rem" : "0.55rem");
+  stage.style.setProperty("--die-gap", totalDice > 18 ? "0.38rem" : "0.62rem");
+  document.body.classList.add("dice-rolling");
   stage.innerHTML = `
     <div class="dice-battle-veil"></div>
     <div class="dice-battle-table">
@@ -212,17 +299,8 @@ export function playDiceBattle(opts) {
   const banner = stage.querySelector("[data-banner]");
 
   const quiet = reducedMotion();
-  const tumbleMs = quiet ? 80 : TUMBLE_MS;
-
-  const landDie = (el, face, delay, onLand) => {
-    el.style.transform = randomTumble();
-    window.setTimeout(() => {
-      el.classList.add("settled");
-      el.style.transform = settleTransform(face);
-      if (face >= SUCCESS_MIN) el.classList.add("success");
-      onLand?.();
-    }, delay + tumbleMs);
-  };
+  const tumbleMs = quiet ? 0 : SPIN_MS + SETTLE_MS;
+  const stagger = staggerMs(totalDice);
 
   let landedD = 0;
   let landedB = 0;
@@ -238,27 +316,28 @@ export function playDiceBattle(opts) {
   };
 
   dreamerDiceEls.forEach((el, i) => {
-    landDie(el, shownDreamerFaces[i], i * STAGGER_MS, () => {
+    rollOneDie(el, shownDreamerFaces[i], i * stagger, quiet, () => {
       landedD += 1;
       updateScores();
     });
   });
   beastDiceEls.forEach((el, i) => {
-    landDie(el, shownBeastFaces[i], 80 + i * STAGGER_MS, () => {
+    rollOneDie(el, shownBeastFaces[i], 28 + i * stagger, quiet, () => {
       landedB += 1;
       updateScores();
     });
   });
 
   const lastDelay = Math.max(
-    shownD * STAGGER_MS,
-    80 + shownB * STAGGER_MS,
-  ) + tumbleMs + 180;
+    Math.max(0, shownD - 1) * stagger,
+    28 + Math.max(0, shownB - 1) * stagger,
+  ) + tumbleMs + 50;
 
   activeBattle.timer = window.setTimeout(() => {
     if (scoreD) scoreD.textContent = String(dreamerSuccesses);
     if (scoreB) scoreB.textContent = String(beastSuccesses);
     if (compare) compare.textContent = `${dreamerSuccesses} – ${beastSuccesses}`;
+    document.body.classList.remove("dice-rolling");
     stage.classList.add(dreamerWins ? "winner-dreamer" : "winner-beast");
     if (banner) {
       banner.hidden = false;
@@ -269,13 +348,12 @@ export function playDiceBattle(opts) {
     playSfx(dreamerWins ? "dice-win" : "dice-lose");
     const dismiss = () => {
       if (!activeBattle) return;
-      if (activeBattle.timer) window.clearTimeout(activeBattle.timer);
       stage.removeEventListener("click", dismiss);
       finish();
     };
     stage.addEventListener("click", dismiss);
     if (!hold) {
-      activeBattle.timer = window.setTimeout(dismiss, quiet ? 900 : RESULT_HOLD_MS);
+      activeBattle.timer = window.setTimeout(dismiss, quiet ? 800 : RESULT_HOLD_MS);
     }
   }, lastDelay);
 
