@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "28.0";
+export const SOMNIA_VERSION = "28.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "28.1",
+    title: "Shared Landscape Play",
+    notes: [
+      "When two Dreamers share a Landscape, the focused Dreamer can play their own Psyche. Sharing The Bed no longer greys the second hand for the Head.",
+      "Draw Dream still belongs to the Head Dreamer. Meet actions on a tile go to whoever you have selected there.",
+    ],
+  },
   {
     version: "28.0",
     title: "Unstable Dreamscape",

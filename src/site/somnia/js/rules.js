@@ -279,19 +279,35 @@ export function allyPsycheCount(state) {
   return allSelectedCards(state).filter((c) => isDreambeastPsycheCard(c)).length;
 }
 
+/** Alive Dreamers standing on a Landscape. */
+export function occupantsOnLandscape(state, landscapeId) {
+  if (!landscapeId) return [];
+  return (state.players || []).filter((p) => p.alive && p.landscapeId === landscapeId);
+}
+
+/**
+ * Dreamer acting on a Landscape. Prefers the focused Dreamer if they occupy it,
+ * so sharing a tile (The Bed) does not lock play to the Head.
+ */
+export function actorOnLandscape(state, landscapeId) {
+  const onTile = occupantsOnLandscape(state, landscapeId);
+  if (!onTile.length) return null;
+  const active = state.players?.[state.activePlayerIndex];
+  if (active && onTile.some((p) => p.id === active.id)) return active;
+  return onTile[0];
+}
+
 export function meetEncounterActor(state) {
   const tileId = state.activeEncounterLandscapeId;
-  if (tileId) {
-    return state.players.find((p) => p.alive && p.landscapeId === tileId) || null;
-  }
+  if (tileId) return actorOnLandscape(state, tileId);
   const tile = state.board?.find((t) => {
     if (t.wasteland || !t.revealed) return false;
     const encounters = t.encounters || (t.encounter ? [t.encounter] : []);
     if (!encounters.length) return false;
-    return state.players.some((p) => p.alive && p.landscapeId === t.id);
+    return occupantsOnLandscape(state, t.id).length > 0;
   });
   if (!tile) return null;
-  return state.players.find((p) => p.alive && p.landscapeId === tile.id) || null;
+  return actorOnLandscape(state, tile.id);
 }
 
 export function currentMeetEncounter(state) {
@@ -302,10 +318,10 @@ export function currentMeetEncounter(state) {
     if (t.wasteland || !t.revealed) return false;
     const encounters = t.encounters || (t.encounter ? [t.encounter] : []);
     if (!encounters.length) return false;
-    return state.players.some((p) => p.alive && p.landscapeId === t.id);
+    return occupantsOnLandscape(state, t.id).length > 0;
   });
   if (!tile) return { encounter: null, actor: null };
-  const actor = state.players.find((p) => p.alive && p.landscapeId === tile.id) || null;
+  const actor = actorOnLandscape(state, tile.id);
   const encounters = tile.encounters || (tile.encounter ? [tile.encounter] : []);
   return { encounter: encounters[0] || null, actor };
 }
@@ -399,13 +415,13 @@ export function meetPlayTotal(state, player) {
   return base + (state.pendingPowerBonus || 0) + persistentMeetBonus(state, player);
 }
 
-/** Dreamer on the selected Landscape — only they may spend Psyche for Meet plays there. */
+/** Focused Dreamer on the selected Landscape — they may spend Psyche for Meet plays there. */
 export function meetPsycheActor(state) {
   const tileId = state.selectedLandscapeId;
   if (!tileId) return null;
   const tile = state.board?.find((t) => t.id === tileId);
   if (!tile || tile.wasteland || !tile.revealed) return null;
-  return state.players.find((p) => p.alive && p.landscapeId === tileId) || null;
+  return actorOnLandscape(state, tileId);
 }
 
 /** Suit the Accept/Reject icon demands: Accept uses the beast's suit, Reject uses rejectSuit. */

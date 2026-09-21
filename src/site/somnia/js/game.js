@@ -27,6 +27,7 @@ import {
   meetActionBudgetFromWillpower,
   coopMeetPlayTotal,
   meetPsycheActor,
+  actorOnLandscape,
   selectedCards,
   allSelectedCards,
   spreadPsycheCount,
@@ -272,13 +273,6 @@ function spendMeetAction(state, action, landscapeActionId = null) {
 function refundMeetAction(state, player, action = null, landscapeActionId = null) {
   state.meetActionsUsed = Math.max(0, state.meetActionsUsed - 1);
   if (action) unmarkUsedMeetAction(state, player, meetActionKey(action, landscapeActionId));
-}
-
-function actorOnLandscape(state, landscapeId) {
-  if (!landscapeId) return null;
-  const active = activePlayer(state);
-  if (active.alive && active.landscapeId === landscapeId) return active;
-  return state.players.find((p) => p.alive && p.landscapeId === landscapeId) || null;
 }
 
 function meetLandscapeTile(state) {
@@ -991,10 +985,11 @@ export function moveDreamer(state, targetLandscapeId) {
   state.selectedLandscapeId = targetLandscapeId;
 
   if (getPhase(state) === "Meet") {
-    const occupantIdx = state.players.findIndex(
-      (p) => p.alive && p.landscapeId === targetLandscapeId,
-    );
-    if (occupantIdx >= 0) state.activePlayerIndex = occupantIdx;
+    const occupant = actorOnLandscape(state, targetLandscapeId);
+    if (occupant) {
+      const occupantIdx = state.players.findIndex((p) => p.id === occupant.id);
+      if (occupantIdx >= 0) state.activePlayerIndex = occupantIdx;
+    }
 
     const enc = encounterOnLandscape(state, targetLandscapeId);
     if (enc) {
@@ -1919,8 +1914,7 @@ export function handleBoardTileClick(state, tileId) {
   }
 
   moveDreamer(state, tileId);
-  const occupant = actorOnLandscape(state, tileId)
-    || state.players.find((p) => p.alive && p.landscapeId === tileId);
+  const occupant = actorOnLandscape(state, tileId);
   if (occupant) {
     return { openRadial: true, playerId: occupant.id, tileId };
   }

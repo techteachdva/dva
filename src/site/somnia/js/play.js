@@ -127,7 +127,7 @@ import { resolveDreamChoice } from "./dream-choices.js";
 import { resolveEffectChoice } from "./effect-choices.js";
 import { continueDeferredEventQueues } from "./event-choices.js";
 import { continueArchetypeQueues } from "./archetypes.js";
-import { phaseOpeningActive, encounterPayHint } from "./rules.js";
+import { phaseOpeningActive, encounterPayHint, actorOnLandscape } from "./rules.js";
 import {
   TUTORIAL_STEPS,
   tutorialBriefHtml,
@@ -1357,7 +1357,7 @@ function openDreamerBoardRadial(anchorEl, playerId, tileId) {
 }
 
 function openBeastBoardRadial(anchorEl, encounter, tileId) {
-  const occupant = state.players.find((p) => p.alive && p.landscapeId === tileId) || null;
+  const occupant = actorOnLandscape(state, tileId);
   if (occupant) {
     const idx = state.players.findIndex((p) => p.id === occupant.id);
     if (idx >= 0) state.activePlayerIndex = idx;

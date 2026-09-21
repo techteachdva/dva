@@ -573,6 +573,9 @@ const COMMANDS = {
       const idx = parseInt(args[0], 10);
       if (Number.isNaN(idx) || !state.players[idx]) return fail(`Player index 0–${state.players.length - 1}`);
       state.activePlayerIndex = idx;
+      if (getPhase(state) === "Meet" && state.players[idx]?.landscapeId) {
+        state.selectedLandscapeId = state.players[idx].landscapeId;
+      }
       return ok(`Active player: ${state.players[idx].name}.`);
     },
   },
