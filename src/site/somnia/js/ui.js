@@ -840,6 +840,7 @@ export function renderPowerTokens(state, { onTokenClick } = {}) {
     const canStack = isMeet && held >= 1;
     bonusBtn.disabled = !canStack;
     bonusBtn.classList.toggle("hidden", !isMeet);
+    bonusBtn.setAttribute("data-tutorial-action", "powerBonus");
     bonusBtn.textContent = pending > 0 ? `+1 Spread (now +${pending})` : "+1 to Spread";
   }
 
@@ -4556,6 +4557,9 @@ function resolvePrimarySpotlightElement(step) {
     || beat?.kind === "completeQuest1"
     || beat?.kind === "landscapeActionA"
     || beat?.kind === "landscapeActionB"
+    || beat?.kind === "powerBonus"
+    || beat?.kind === "dreamerPower"
+    || beat?.kind === "archetypePower"
     || beat?.kind === "advancePhase") {
     if (beat.kind === "advancePhase") {
       return document.querySelector("#btn-next-phase:not([hidden])")
@@ -4569,6 +4573,10 @@ function resolvePrimarySpotlightElement(step) {
       return document.querySelector("#btn-spread-opener")
         || document.querySelector("#spread-tray")
         || document.querySelector("#hand-bar");
+    }
+    if (beat.kind === "powerBonus") {
+      return document.querySelector("#btn-power-bonus")
+        || document.querySelector("#power-tokens");
     }
     if (beat.kind === "completeQuest0" || beat.kind === "completeQuest1") {
       return document.querySelector(`#active-archetype [data-tutorial-action="${beat.kind}"]`)
@@ -5171,14 +5179,30 @@ function stopTutorialSpotlightTracker() {
   window.removeEventListener("scroll", positionTutorialSpotlight, true);
 }
 
+function liveTutorialSpotlightElements() {
+  if (activeTutorialStep) {
+    const live = resolveSpotlightElements(activeTutorialStep);
+    if (live.length) return live;
+    const fallback = resolveTutorialElements(activeTutorialStep);
+    if (fallback.length) return fallback;
+  }
+  if (tutorialSpotlightEls.length) {
+    const connected = tutorialSpotlightEls.filter((el) => el?.isConnected);
+    if (connected.length) return connected;
+  }
+  if (tutorialHighlightEls.length) {
+    const connected = tutorialHighlightEls.filter((el) => el?.isConnected);
+    if (connected.length) return connected;
+  }
+  if (tutorialHighlightEl?.isConnected) return [tutorialHighlightEl];
+  return [];
+}
+
 function positionTutorialSpotlight() {
   if (!tutorialSpotlightEl) return;
-  const elements = tutorialSpotlightEls.length
-    ? tutorialSpotlightEls
-    : (tutorialHighlightEls.length
-      ? tutorialHighlightEls
-      : (tutorialHighlightEl ? [tutorialHighlightEl] : []));
+  const elements = liveTutorialSpotlightElements();
   if (!elements.length) return;
+  tutorialSpotlightEls = elements;
 
   const union = unionElementRects(elements);
   if (!union) return;

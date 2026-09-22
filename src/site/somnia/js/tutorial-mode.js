@@ -123,7 +123,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
 ];
 
 export const TUTORIAL_REVEAL_TILE = "candy-mountain";
-const TUTORIAL_SNAPSHOT_VERSION = 26;
+const TUTORIAL_SNAPSHOT_VERSION = 27;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -144,11 +144,16 @@ export function createTutorialBaseState(data) {
   state.tutorialStepIndex = 0;
   state.tutorialCanAdvance = false;
   state.tutorialComplete = false;
+  state.goalPoints = 1;
   state.tutorialFlags = {
     dreamsDrawn: 0,
     encounterResolved: false,
+    firstBattleLost: false,
+    meetPenaltyDone: false,
     archetypeAcquired: false,
+    archetypePowerUsed: false,
     acquirePowerPrimed: false,
+    nextBattleWinner: null,
   };
 
   const innocent = data.archetypes.find((a) => a.id === "innocent");
@@ -175,6 +180,7 @@ export function createTutorialBaseState(data) {
     makePsyche("lucidity", 1, "v-l1"),
     makePsyche("elasticity", 1, "v-e1"),
     makePsyche("willpower", 1, "v-w1"),
+    makePowerSurge("heroism"),
   ];
   state.players[1].hand = [
     makePsyche("willpower", 3, "i-w3"),
@@ -182,16 +188,19 @@ export function createTutorialBaseState(data) {
     makePsyche("elasticity", 2, "i-e2"),
     makePsyche("lucidity", 2, "i-l2"),
     makePsyche("willpower", 1, "i-w1"),
+    makePowerSurge("heroism-i"),
   ];
 
+  const heroism = data.dreams.find((d) => d.id === "heroism");
+  const misunderstanding = data.dreams.find((d) => d.id === "misunderstanding");
   const quiet = data.dreams.find((d) => d.id === "quiet");
   const extraQuiets = [];
   for (let i = 0; i < 8; i += 1) {
     extraQuiets.push(mkDream(quiet));
   }
   state.dreamDeck = [
-    mkDream(quiet),
-    mkDream(quiet),
+    mkDream(heroism || quiet),
+    mkDream(misunderstanding || quiet),
     ...extraQuiets,
   ];
   state.dreamDiscard = [];
@@ -200,32 +209,24 @@ export function createTutorialBaseState(data) {
 
   const mandrake = data.dreambeasts.find((b) => b.id === "mandrake");
   if (mandrake) {
-    setEncounterOnLandscape(state, "house", {
+    setEncounterOnLandscape(state, "the-attic", {
       ...mandrake,
       type: "dreambeast",
       instanceId: tutorialUid("enc-mandrake"),
     });
   }
-  const goofus = data.dreambeasts.find((b) => b.id === "goofus-bird");
-  if (goofus) {
-    state.tutorialFlags.basementBeast = {
-      ...goofus,
-      name: "Goofus Bird",
-      type: "dreambeast",
-      accept: 7,
-      reject: 7,
-      repress: 7,
-    };
-  }
 
   stabilizeTutorialDecks(state);
   state.psycheDeck = [
-    makePowerSurge("r2"),
+    makePowerSurge("heroism"),
+    makePowerSurge("heroism-i"),
     makePsyche("lucidity", 2, "r2-a"),
-    makePsyche("lucidity", 1, "r2-b"),
+    makePsyche("willpower", 1, "r2-b"),
+    makePsyche("elasticity", 1, "r2-c"),
     ...state.psycheDeck.filter((card) => card.type !== "psyche-power"),
   ];
   reseedTutorialInstanceIds(state);
+  pinTutorialMindstreamLesson(state);
 
   const placementNote = (state.tutorialFlags.questPlacements || [])
     .map((p) => `${p.questId === "the-attic" ? "The Attic" : "The Basement"} beside ${p.starterName}`)
@@ -234,7 +235,8 @@ export function createTutorialBaseState(data) {
   state.log = [
     "Tutorial Mode: on-rails - click only the highlighted Dreamer, cards, and hexes.",
     "Round 1 begins in the Reveal Phase. Your Active Archetype is The Innocent.",
-    placementNote ? `Quest Landscapes revealed: ${placementNote}.` : "Quest Landscapes The Attic and The Basement are revealed beside House and City.",
+    "Psyche is your health and your action points — empty hands are deadly, and 1 suited card opens a phase.",
+    placementNote ? `Quest Landscapes revealed: ${placementNote}. Mandrake waits on The Attic.` : "Quest Landscapes The Attic and The Basement are revealed. Mandrake waits on The Attic.",
   ];
   return state;
 }
@@ -285,8 +287,9 @@ function restoreTutorialSnapshot(state, stepIndex) {
 
 const TUTORIAL_INFO_STEPS = new Set([
   "welcome",
+  "meet-lesson",
   "r2-intro",
-  "graduate",
+  "wake",
 ]);
 
 function allowsSuitHand(state, detail, suit) {
@@ -376,7 +379,7 @@ function isRailBeatComplete(state, beat) {
       const player = state.players[beat.playerIndex ?? 0];
       const ids = requiredCardIds(beat);
       if (!ids.length || !player) return false;
-      if (ids.includes("psyche-power-r2")) {
+      if (ids.some((id) => String(id).startsWith("psyche-power"))) {
         return powerSurgeHandToggleBeatComplete(state, beat);
       }
       return ids.every((cardId) => !player.hand.some((c) => c.id === cardId));
@@ -398,12 +401,19 @@ function isRailBeatComplete(state, beat) {
       return state.meetActionBudget > 0;
     case "meetAccept":
     case "meetReject": {
-      const tileId = beat.tileId || "house";
+      const tileId = beat.tileId || "the-attic";
       const tile = landscapeById(state, tileId);
+      if (beat.scripted === "lose") return !!state.tutorialFlags?.firstBattleLost;
       if (tile && tileEncounters(tile).length === 0) return true;
-      if (tileId === "house" && state.tutorialFlags?.encounterResolved) return true;
+      if (state.tutorialFlags?.encounterResolved) return true;
       return false;
     }
+    case "powerBonus":
+      return (state.pendingPowerBonus || 0) >= (beat.amount || 1);
+    case "dreamerPower":
+      return (state.anchorMeetSpreadPending || 0) >= 1 || (state.anchorMeetSpreadBonus || 0) >= 1;
+    case "archetypePower":
+      return !!state.tutorialFlags?.archetypePowerUsed;
     case "advancePhase":
       if (beat.toRound) return state.round >= beat.toRound;
       return getPhase(state) === beat.toPhase;
@@ -468,10 +478,16 @@ function railBeatAllows(state, beat, kind, detail = {}) {
       return kind === "gainMeetActions";
     case "meetAccept":
       if (kind === "meetAccept" || kind === "beastRadial" || kind === "dreamerSelect") return true;
-      return kind === "boardClick" && detail.tileId === (beat.tileId || "house");
+      return kind === "boardClick" && detail.tileId === (beat.tileId || "the-attic");
     case "meetReject":
       if (kind === "meetReject" || kind === "beastRadial" || kind === "dreamerSelect") return true;
-      return kind === "boardClick" && detail.tileId === (beat.tileId || "the-basement");
+      return kind === "boardClick" && detail.tileId === (beat.tileId || "the-attic");
+    case "powerBonus":
+      return kind === "powerBonus";
+    case "dreamerPower":
+      return kind === "dreamerPower" || kind === "dreamerSelect";
+    case "archetypePower":
+      return kind === "archetypePower" || kind === "dreamerSelect";
     case "advancePhase":
       return kind === "advancePhase" || kind === "dreamerSelect";
     case "landscapeActionA":
@@ -511,18 +527,22 @@ function ensureTutorialBasementBeast(state) {
 function settleTutorialRail(state) {
   const step = getTutorialStep(state);
   if (!step) return;
-  ensureTutorialBasementBeast(state);
 
-  if (step.id === "r2-acquire" && !innocentAcquired(state)) {
-    if (!state.tutorialFlags.acquirePowerPrimed) {
-      primeTutorialAcquirePower(state);
-      state.tutorialFlags.acquirePowerPrimed = true;
-    }
-  } else if (state.tutorialFlags) {
-    state.tutorialFlags.acquirePowerPrimed = false;
+  let beat = currentRailBeat(state);
+  if (beat?.scripted === "lose") state.tutorialFlags.nextBattleWinner = "beast";
+  else if (beat?.scripted === "win") state.tutorialFlags.nextBattleWinner = "dreamer";
+  else if (beat?.kind === "meetAccept" || beat?.kind === "meetReject") {
+    state.tutorialFlags.nextBattleWinner = "dreamer";
   }
 
-  const revealBeat = step.rail?.find((beat) => beat.kind === "boardClick" && beat.reveal);
+  if (step.id === "r2-acquire" && beat?.kind === "handToggle" && requiredCardIds(beat).includes("psyche-power-heroism")) {
+    const visionary = state.players[0];
+    if (visionary && !visionary.hand.some((c) => c.type === "psyche-power")) {
+      visionary.hand.push(makePowerSurge("heroism"));
+    }
+  }
+
+  const revealBeat = step.rail?.find((item) => item.kind === "boardClick" && item.reveal);
   if (revealBeat && landscapeById(state, revealBeat.tileId)?.revealed && state.landscapePick?.mode === "reveal") {
     state.revealLandscapeUsed = true;
     state.landscapePick = null;
@@ -533,12 +553,17 @@ function settleTutorialRail(state) {
     state.landscapePick = null;
   }
 
-  const beat = currentRailBeat(state);
+  beat = currentRailBeat(state);
   if (beat?.kind === "advancePhase" && state.landscapePick) {
     if (state.landscapePick.mode === "reveal" && !state.landscapePick.freeReveal) {
       state.revealLandscapeUsed = true;
     }
     state.landscapePick = null;
+  }
+
+  if (beat?.kind === "archetypePower" && state.pendingReturn) {
+    autoCompleteTutorialReturn(state);
+    state.tutorialFlags.archetypePowerUsed = true;
   }
 }
 
@@ -601,8 +626,12 @@ export function getTutorialCameraFocus(state) {
   if (step.id === "reveal-r1") {
     return { tileId: "candy-mountain", key: "reveal-r1:candy-mountain", zoom: 1.7 };
   }
-  if (step.id === "r2-intro") {
-    return { tileId: "the-attic", key: "r2-intro:the-attic", zoom: 1.5 };
+  if (step.id === "explore-r1") {
+    const tileId = beat?.tileId || "house";
+    return { tileId, key: `explore-r1:${tileId}`, zoom: 1.55 };
+  }
+  if (step.id === "r2-intro" || step.id === "meet-lesson") {
+    return { tileId: "the-attic", key: `${step.id}:the-attic`, zoom: 1.5 };
   }
 
   const tileId = beat?.tileId || beat?.landscapeId || null;
@@ -707,10 +736,19 @@ function railHighlight(state, step, beat) {
     case "meetAccept":
     case "meetReject": {
       const highlight = radialOrDreamerHighlight(state, beat, beat.kind);
-      const tileId = beat.tileId || player?.landscapeId || (beat.kind === "meetReject" ? "the-basement" : "house");
+      const tileId = beat.tileId || player?.landscapeId || "the-attic";
       highlight.targets.push(`.hex-tile[data-tile-id="${tileId}"] .hex-occupant-beast`);
       return highlight;
     }
+    case "powerBonus":
+      return {
+        targets: ["#btn-power-bonus", "#power-tokens"],
+        spotlight: "#btn-power-bonus",
+      };
+    case "dreamerPower":
+      return radialOrDreamerHighlight(state, beat, "dreamerPower");
+    case "archetypePower":
+      return radialOrDreamerHighlight(state, beat, "archetypePower");
     case "boardClick":
     case "exploreMove":
       return {
@@ -805,18 +843,16 @@ function stepAllowsAction(state, step, kind, detail = {}) {
 export function isTutorialActionAllowed(state, kind, detail = {}) {
   if (!isInteractiveTutorialActive(state)) return true;
   if (kind === "handToggle" && detail.card?.type === "psyche-power") {
-    const step = getTutorialStep(state);
-    if (step?.id !== "r2-acquire") return false;
     const beat = currentRailBeat(state);
     return beat?.kind === "handToggle" && requiredCardIds(beat).includes(detail.card?.id);
   }
-  if (kind === "phasePowerToken" || kind === "dreamerPower" || kind === "powerBonus" || kind === "refundPowerBonus") {
+  if (kind === "phasePowerToken" || kind === "refundPowerBonus") {
     return false;
   }
   if (kind === "tutorialNav") return true;
   if (kind === "powerTokenMenu") {
     const current = getTutorialStep(state);
-    return current?.id === "r2-acquire" || TUTORIAL_INFO_STEPS.has(current?.id);
+    return current?.id === "r2-acquire" || current?.id === "r2-rematch" || TUTORIAL_INFO_STEPS.has(current?.id);
   }
 
   const step = getTutorialStep(state);
@@ -946,6 +982,30 @@ function ring2SlotsBesideStarter(state, starterId) {
     .filter((t) => t && !t.center && !t.starting);
 }
 
+function pinTutorialMindstreamLesson(state) {
+  const deck = state.mindstreamDecks?.lucidity || [];
+  const pick = (type) => deck.find((c) => c.type === type);
+  const power = pick("power-token");
+  const event = pick("event");
+  const object = pick("object");
+  const beast = pick("dreambeast");
+  const chosen = [power, event, object, beast].filter(Boolean);
+  const rest = deck.filter((c) => !chosen.includes(c));
+  state.mindstreamDecks.lucidity = [...chosen, ...rest];
+
+  const fillDiscard = (suit, count) => {
+    const source = state.mindstreamDecks[suit] || [];
+    while ((state.mindstreamDiscard[suit]?.length || 0) < count && source.length > 4) {
+      const card = source.pop();
+      if (!card) break;
+      state.mindstreamDiscard[suit].push(card);
+    }
+  };
+  fillDiscard("lucidity", 2);
+  fillDiscard("elasticity", 2);
+  fillDiscard("willpower", 2);
+}
+
 function setupTutorialQuestLandscapes(state) {
   const usedCoords = new Set();
   const placements = [];
@@ -1065,19 +1125,19 @@ export const TUTORIAL_SECTIONS = [
   { id: "reveal", label: "Reveal", stepIndex: 1 },
   { id: "explore", label: "Explore", stepIndex: 3 },
   { id: "meet", label: "Meet", stepIndex: 4 },
-  { id: "round2", label: "Round 2", stepIndex: 5 },
-  { id: "quests", label: "Quests", stepIndex: 7 },
-  { id: "graduate", label: "Finish", stepIndex: 10 },
+  { id: "round2", label: "Round 2", stepIndex: 8 },
+  { id: "quests", label: "Quests", stepIndex: 12 },
+  { id: "wake", label: "Wake", stepIndex: 14 },
 ];
 
-/** Linear on-rails script — two rounds, exact clicks. */
+/** Linear on-rails story — two rounds, lose then win, then acquire and wake. */
 export const TUTORIAL_SCRIPT = [
   {
     id: "welcome",
     round: 1,
     title: "Welcome to Somnia",
-    why: "You are Dreamers trapped in a collapsing Dreamscape. Cooperate to earn Archetype points and wake up before the Dream Deck runs out.",
-    objective: "Click Continue. Rules live in ? and Pause → Help.",
+    why: "You are Dreamers trapped in a collapsing Dreamscape. Psyche cards are your health AND your action points — empty hands are deadly. Spend 1 suited Psyche to unlock a phase (Lucidity Reveal, Elasticity Explore, Willpower Meet). Skipping a phase is often the plan: save cards, hold a hex, or refuse a bad Meet tax.",
+    objective: "Click Continue. The sparkles show the next legal click.",
     targets: ["#active-archetype", "#phase-stepper"],
     spotlight: "#active-archetype",
   },
@@ -1085,7 +1145,7 @@ export const TUTORIAL_SCRIPT = [
     id: "draw-dream-r1",
     round: 1,
     title: "Reveal: Draw the Dream",
-    why: "Every round the Head Dreamer draws one Dream that twists the table. Resolve it first so you know what the map is doing this round.",
+    why: "Every round the Head Dreamer draws one Dream and resolves it before anyone spends Lucidity. This one is Heroism — not a Quiet night. Each Dreamer draws Psyche equal to Willpower. You already hold a yellowish-purple Power Surge for later.",
     targets: ["#btn-draw-dream", "#board-viewport"],
     rail: [
       { kind: "drawDream", prompt: "Click Draw Dream to the left of Next Phase." },
@@ -1096,13 +1156,13 @@ export const TUTORIAL_SCRIPT = [
     id: "reveal-r1",
     round: 1,
     title: "Reveal: Flip the Map",
-    why: "Forgotten hexes are Wasteland. Spending 1 Lucidity sets a shared reveal budget so the team can flip tiles face-up and walk them later.",
+    why: "Forgotten hexes are Wasteland. One Lucidity card opens a shared reveal budget. Flip what you will walk. Later you may skip Reveal entirely if the map is already open and you need those cards for a fight.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "handToggle", playerIndex: 0, cardId: "lucidity-1-v-l1", prompt: "Select Lucidity 1 in The Visionary's hand." },
       { kind: "revealLandscape", prompt: "Click Reveal Landscapes to the right of the selected Psyche." },
-      { kind: "boardClick", tileId: "candy-mountain", reveal: true, prompt: "Click the glowing wasteland hex — that is Candy Mountain's hidden side." },
+      { kind: "boardClick", tileId: "candy-mountain", reveal: true, prompt: "Click the glowing wasteland hex — Candy Mountain's hidden side." },
       { kind: "advancePhase", toPhase: "Explore", prompt: "Click Next: Explore in the top-right of the map." },
     ],
     until: (s) => getPhase(s) === "Explore",
@@ -1110,14 +1170,15 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "explore-r1",
     round: 1,
-    title: "Explore: Walk the Map",
-    why: "One Elasticity card unlocks shared team moves. You need to stand on a Landscape to Meet what lives there, so move The Visionary onto House.",
+    title: "Explore: Walk to Mandrake",
+    why: "One Elasticity card unlocks shared team moves. Mandrake (Fantasy, Lucidity) lurks on The Attic. The Visionary has high Lucidity and Fantasy affinity — the right Dreamer for this beast. The Immovable can stay on The Bed; not every Dreamer has to move.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "handToggle", playerIndex: 0, cardId: "elasticity-2-v-e2", prompt: "Select Elasticity 2." },
       { kind: "spendElasticity", prompt: "Click Spend Elasticity to the right of the selected Psyche." },
-      { kind: "exploreMove", playerIndex: 0, tileId: "house", prompt: "Click House to move The Visionary there." },
+      { kind: "exploreMove", playerIndex: 0, tileId: "house", prompt: "Click House — first step toward The Attic." },
+      { kind: "exploreMove", playerIndex: 0, tileId: "the-attic", prompt: "Click The Attic to stand on Mandrake." },
       { kind: "advancePhase", toPhase: "Meet", prompt: "Click Next: Meet in the top-right of the map." },
     ],
     until: (s) => getPhase(s) === "Meet",
@@ -1125,99 +1186,122 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "meet-r1",
     round: 1,
-    title: "Meet: Dreambeasts and Luck",
-    why: "Willpower opens a shared action budget. Accept and Reject are dice battles — at least 1 required-suit Psyche versus the beast's Power. Recommended is Power + 2; underpaying can still win. Winning removes it; losing spends the play and leaves it to Fail at round end. Roaming beasts stay until you beat them.",
+    title: "Meet: Underpay and Lose",
+    why: "Willpower opens a shared Meet budget. Accept uses the beast's suit; Reject uses its Reject suit (Willpower for Mandrake). Play 1 Psyche of value 1 — far under Mandrake's Power 6. You could high-roll 1 success to their 0, but the odds are cruel. Feel the stumble.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
-      { kind: "handToggle", playerIndex: 0, cardId: "willpower-2-v-w2", prompt: "Select Willpower 2." },
+      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Bed." },
+      { kind: "handToggle", playerIndex: 1, cardId: "willpower-3-i-w3", prompt: "Select Willpower 3 to open Meet." },
       { kind: "gainMeetActions", prompt: "Click Gain Actions to the right of the selected Psyche." },
-      {
-        kind: "handToggle",
-        playerIndex: 0,
-        cardIds: ["lucidity-3-v-l3", "lucidity-2-v-l2"],
-        prompt: "Select Lucidity 3 and Lucidity 2.",
-      },
-      { kind: "meetAccept", tileId: "house", prompt: "Click The Visionary or Mandrake, then Accept." },
-      { kind: "advancePhase", toRound: 2, prompt: "Click End Round in the top-right of the map to start Round 2." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
+      { kind: "handToggle", playerIndex: 0, cardId: "willpower-1-v-w1", prompt: "Select Willpower 1 — a thin Reject." },
+      { kind: "meetReject", tileId: "the-attic", scripted: "lose", prompt: "Click The Visionary or Mandrake, then Reject." },
+    ],
+    until: (s) => !!s.tutorialFlags?.firstBattleLost,
+  },
+  {
+    id: "meet-lesson",
+    round: 1,
+    title: "Play the Odds",
+    why: "The dice can always spike a miracle: 1 success to the beast's 0. Smart tables still stack Power. Next time you will play 3 Psyche, spend a Power Token, and use The Visionary's Lucidity + Fantasy match. Recommended Power is the beast's Power + 2.",
+    objective: "Click Continue — Mandrake still owns The Attic.",
+    targets: ["#board-viewport"],
+    spotlight: "#board-viewport",
+  },
+  {
+    id: "meet-hold",
+    round: 1,
+    title: "Dreamer Power: Hold the Line",
+    why: "The Immovable's Power banks +1 Psyche on every Accept or Reject during the NEXT Meet. Spend it now so Round 2's rematch is stacked. Dreamer Powers cost 1 Power Token and 1 Meet action.",
+    targets: ["#board-viewport"],
+    rail: [
+      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Bed." },
+      { kind: "dreamerPower", playerIndex: 1, prompt: "Click The Immovable, then Dreamer Power (Hold the Line)." },
+    ],
+    until: (s) => (s.anchorMeetSpreadPending || 0) >= 1,
+  },
+  {
+    id: "meet-penalty",
+    round: 1,
+    title: "End Meet: The Tax",
+    why: "Roaming Dreambeasts stay. End of Meet Forgets 1 Landscape per leftover beast, then each beast Fails. Candy Mountain — the hex you just opened — is about to slam shut. That is why you clear the map or skip Meet when you cannot.",
+    targets: ["#btn-next-phase"],
+    rail: [
+      { kind: "advancePhase", toRound: 2, prompt: "Click End Round. Watch the leftover Mandrake punish the table." },
     ],
     until: (s) => s.round >= 2,
   },
   {
     id: "r2-intro",
     round: 2,
-    title: "Now Chase the Archetype",
-    why: "Points come from completing both quests on the Active Archetype, then Acquiring it. The Innocent needs a Mindstream draw on The Attic and a Meet on The Attic or The Basement.",
-    objective: "The Innocent wants Mindstream on The Attic and a Dreambeast Met on The Attic or The Basement.",
-    targets: ["#active-archetype", "#board-viewport"],
-    spotlight: "#board-viewport",
+    title: "Skip What You Don't Need",
+    why: "You already stand on Mandrake. Spending Lucidity or Elasticity now would waste the rematch hand. Skipping Reveal keeps Psyche. Skipping Explore keeps your hex. Skipping Meet is correct when no beasts remain and you only need to walk home.",
+    objective: "Click Continue, then draw the new Dream — do not spend a phase opener unless the sparkles ask.",
+    targets: ["#active-archetype", "#phase-stepper"],
+    spotlight: "#active-archetype",
   },
   {
-    id: "r2-reveal",
+    id: "r2-dream",
     round: 2,
-    title: "Round 2 - Reveal",
-    why: "Round 2 repeats Reveal: draw the Dream, then spend one Lucidity to keep opening the map. Next Phase is always on the map — you may skip leftover Reveals without spending more Psyche.",
-    closeRevealPick: true,
-    targets: ["#hand-bar", "#board-viewport"],
+    title: "Round 2 Dream: Misunderstanding",
+    why: "Misunderstanding Represses Mindstream cards into the Subconscious. That sting fills the graveyard The Innocent can later Return. Draw it, resolve it, then skip the rest of Reveal.",
+    targets: ["#btn-draw-dream"],
     rail: [
-      { kind: "drawDream", prompt: "Click Draw Dream to the left of Next Phase." },
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
-      { kind: "handToggle", playerIndex: 0, cardId: "lucidity-2-r2-a", prompt: "Select Lucidity 2." },
-      { kind: "revealLandscape", prompt: "Click Reveal Landscapes to the right of the selected Psyche." },
-      { kind: "advancePhase", toPhase: "Explore", prompt: "Click Next: Explore in the top-right of the map." },
+      { kind: "drawDream", prompt: "Click Draw Dream." },
     ],
-    until: (s) => atRound(s, 2) && getPhase(s) === "Explore",
+    until: (s) => atRound(s, 2) && s.dreamDrawn,
   },
   {
-    id: "r2-explore",
+    id: "r2-skip",
     round: 2,
-    title: "Round 2 - Explore to Quests",
-    why: "Quest Landscapes only count if a Dreamer is standing on them. Move The Visionary to The Attic and The Immovable to The Basement before Meet.",
-    targets: ["#hand-bar", "#board-viewport"],
+    title: "Skip Reveal and Explore",
+    why: "Do not spend Lucidity — you are not flipping anything this round. Do not spend Elasticity — leaving The Attic would abandon the rematch. Next Phase on the map is how you skip.",
+    closeRevealPick: true,
+    targets: ["#btn-next-phase"],
     rail: [
-      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on the board." },
-      { kind: "handToggle", playerIndex: 1, cardId: "elasticity-3-i-e3", prompt: "Select Elasticity 3." },
-      { kind: "spendElasticity", prompt: "Click Spend Elasticity to the right of the selected Psyche." },
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
-      { kind: "exploreMove", playerIndex: 0, tileId: "the-attic", prompt: "Click The Attic to move The Visionary there." },
-      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on the board." },
-      { kind: "exploreMove", playerIndex: 1, tileId: "city", prompt: "Click City to move The Immovable there." },
-      { kind: "exploreMove", playerIndex: 1, tileId: "the-basement", prompt: "Click The Basement to move The Immovable there." },
-      { kind: "advancePhase", toPhase: "Meet", prompt: "Click Next: Meet in the top-right of the map." },
+      { kind: "advancePhase", toPhase: "Explore", prompt: "Click Next: Explore — skip leftover Reveal with no extra Psyche." },
+      { kind: "advancePhase", toPhase: "Meet", prompt: "Click Next: Meet — skip Explore so The Visionary stays on Mandrake." },
     ],
     until: (s) => atRound(s, 2) && getPhase(s) === "Meet",
   },
   {
-    id: "r2-meet",
+    id: "r2-rematch",
     round: 2,
-    title: "Round 2 - Quest Landscapes",
-    why: "Open a shared Meet budget first. Draw Mindstream on The Attic for Innocent quest 1 — it is repeatable. Rejecting Goofus Bird on The Basement marks quest 2. Unique Landscape actions are once per Dreamer. Dreamer and Archetype Powers also spend a Meet action.",
+    title: "Rematch: Stack the Dice",
+    why: "Same Mandrake. This time Accept with Lucidity (the beast's suit). The Visionary adds Lucidity stat, Fantasy affinity, and primary-suit bonus. Play 3 Psyche, spend The Immovable's Power Token for +1d6, and Hold the Line adds +1. It will look random. It is not close.",
+    targets: ["#hand-bar", "#board-viewport"],
+    rail: [
+      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable." },
+      { kind: "handToggle", playerIndex: 1, cardId: "psyche-power-heroism-i", prompt: "Click Power Surge to refill The Immovable's token after Hold the Line." },
+      { kind: "handToggle", playerIndex: 1, cardId: "willpower-1-i-w1", prompt: "Select Willpower 1 to reopen Meet." },
+      { kind: "gainMeetActions", prompt: "Click Gain Actions." },
+      { kind: "dreamerSelect", playerIndex: 1, prompt: "Keep The Immovable selected to spend their token." },
+      { kind: "powerBonus", playerIndex: 1, prompt: "Click +1 to Spread to spend 1 Power Token." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
+      {
+        kind: "handToggle",
+        playerIndex: 0,
+        cardIds: ["lucidity-3-v-l3", "lucidity-2-v-l2", "willpower-2-v-w2"],
+        prompt: "Select Lucidity 3, Lucidity 2, and Willpower 2.",
+      },
+      { kind: "meetAccept", tileId: "the-attic", scripted: "win", prompt: "Click The Visionary or Mandrake, then Accept." },
+    ],
+    until: (s) => atRound(s, 2) && (s.tutorialFlags?.encounterResolved || !encounterOnLandscape(s, "the-attic")),
+  },
+  {
+    id: "r2-mindstream",
+    round: 2,
+    title: "Mindstreams: Four Card Types",
+    why: "The Attic draws Lucidity Mindstream. Those decks mix Dreambeasts, Objects, Events, and Power Token / Surge cards. Drawing here also completes Innocent quest 1. Meeting Mandrake on The Attic already completed quest 2.",
     targets: ["#board-viewport"],
     rail: [
-      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Basement." },
-      { kind: "handToggle", playerIndex: 1, cardId: "willpower-3-i-w3", prompt: "Select Willpower 3." },
-      { kind: "gainMeetActions", prompt: "Click Gain Actions to the right of the selected Psyche." },
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
       {
         kind: "landscapeActionA",
         playerIndex: 0,
         landscapeId: "the-attic",
         done: (s) => innocentAtticDone(s),
-        prompt: "Click The Visionary or The Attic hex, then Action A (Draw Lucidity Mindstream).",
-      },
-      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Basement." },
-      {
-        kind: "handToggle",
-        playerIndex: 1,
-        cardIds: ["elasticity-2-i-e2", "lucidity-2-i-l2", "willpower-1-i-w1"],
-        prompt: "Select Elasticity 2, Lucidity 2, and Willpower 1 for Reject.",
-      },
-      {
-        kind: "meetReject",
-        playerIndex: 1,
-        tileId: "the-basement",
-        done: (s) => innocentMeetQuestDone(s),
-        prompt: "Click The Immovable or Goofus Bird on The Basement, then Reject.",
+        prompt: "Click The Visionary or The Attic, then Action A (Draw Lucidity Mindstream).",
       },
     ],
     until: (s) => atRound(s, 2) && innocentAtticDone(s) && innocentMeetQuestDone(s),
@@ -1226,25 +1310,36 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-acquire",
     round: 2,
     title: "Mark Quests and Acquire",
-    why: "Each completed quest costs 1 Power Token and is a free action — it does not spend the Meet budget. Power Surge is yellowish-purple and can be clicked any phase for a token. Mark both quests to Acquire The Innocent.",
+    why: "Each quest mark spends 1 Power Token and is free (no Meet action). Play the yellowish-purple Power Surge Heroism gave you, then mark both Innocent quests. Acquire grants Archetype points — reach the goal and stand on The Bed to wake.",
     target: "#active-archetype",
     rail: [
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board — they hold Power Surge." },
-      { kind: "handToggle", playerIndex: 0, cardId: "psyche-power-r2", prompt: "Click Power Surge to gain 1 Power Token (2 total on The Visionary)." },
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board to mark Quest 1." },
-      { kind: "completeQuest0", playerIndex: 0, prompt: "Click Quest 1 on the Active Archetype to spend 1 Power Token." },
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board to mark Quest 2." },
-      { kind: "completeQuest1", playerIndex: 0, prompt: "Click Quest 2 on the Active Archetype to spend 1 Power Token and acquire The Innocent." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary — they should hold Power Surge." },
+      { kind: "handToggle", playerIndex: 0, cardId: "psyche-power-heroism", prompt: "Click Power Surge to gain 1 Power Token." },
+      { kind: "completeQuest0", playerIndex: 0, prompt: "Click Quest 1 on the Active Archetype." },
+      { kind: "completeQuest1", playerIndex: 0, prompt: "Click Quest 2 to spend the last token and Acquire The Innocent." },
     ],
     until: (s) => innocentAcquired(s),
   },
   {
-    id: "graduate",
+    id: "r2-arch-power",
     round: 2,
-    title: "Go Play",
-    why: "You now know the R.E.M. loop: Reveal, Explore, Meet. Draw Dream sits left of Next Phase. Select 1 Psyche, then press the button beside it to open that phase. Next Phase stays on the map (skip leftover budget; Back undoes). Playing a Wild Represses the top 5 Psyche of the deck. If the Psyche Deck and discard both empty, you lose. The Bed offers Draw 3 Psyche or Play 3 Psyche Points then Draw 3, each once per Dreamer. A real Daydream uses shuffled Landscapes, dice battles, and the full Meet start/end tax.",
-    objective: "Click Finish, then play a Daydream. Rules stay in ? and !.",
-    target: "#phase-stepper",
+    title: "Archetype Power",
+    why: "Acquired Archetypes spend 1 Meet action and 1 Power Token. Innocent Returns 4 Repressed cards from the Subconscious — the Misunderstanding mill you just suffered. Use it.",
+    targets: ["#board-viewport"],
+    rail: [
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary." },
+      { kind: "archetypePower", playerIndex: 0, prompt: "Click The Visionary, then Innocent Power." },
+    ],
+    until: (s) => !!s.tutorialFlags?.archetypePowerUsed,
+  },
+  {
+    id: "wake",
+    round: 2,
+    title: "Wake Up",
+    why: "Goal reached. In a real game every living Dreamer walks back to The Bed. The Bed pulls you home now — same fanfare as beating a Daydream. You learned the R.E.M. loop, dice math, Mindstreams, quests, and powers. Go play for real.",
+    objective: "Click Finish to return to The Bed and wake.",
+    targets: ["#active-archetype"],
+    spotlight: "#active-archetype",
   },
 ];
 
@@ -1372,10 +1467,18 @@ export function jumpTutorialToStep(state, stepIndex) {
 }
 
 export function completeTutorialGame(state) {
+  state.players.forEach((player) => {
+    if (player.alive) player.landscapeId = "bed";
+  });
+  state.selectedLandscapeId = "bed";
   state.tutorialComplete = true;
   state.status = "won";
   state.tutorialVictory = true;
-  addLog(state, "Tutorial complete — start a Daydream when you are ready.");
+  state.goalPoints = Math.min(state.goalPoints || 1, Math.max(1, state.acquiredPoints || 1));
+  if ((state.acquiredPoints || 0) < (state.goalPoints || 1)) {
+    state.acquiredPoints = state.goalPoints;
+  }
+  addLog(state, "The Dreamers wake up! Tutorial complete — start a Daydream when you are ready.");
 }
 
 export function graduateTutorialToPlay(state) {

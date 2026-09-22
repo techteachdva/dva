@@ -5,7 +5,6 @@
 import {
   getPhase,
   landscapeById,
-  encounterOnLandscape,
   checkDreamerPsycheDeath,
 } from "./state.js";
 import { hexDistance } from "./hex.js";
@@ -20,6 +19,9 @@ import {
   endPhase,
   handleQuestComplete,
   getLegalExploreTargets,
+  useDreamerPower,
+  handleUseArchetypePower,
+  powerBonus,
 } from "./game.js";
 import { playPsychePowerFromHand } from "./power-tokens.js";
 
@@ -220,49 +222,40 @@ function completeRevealPick(state) {
   state.landscapePick = null;
 }
 
-function acceptHouseEncounter(state) {
+function rejectAtticEncounter(state) {
+  placePlayerOnLandscape(state, 0, "the-attic");
   state.activePlayerIndex = 0;
-  state.selectedLandscapeId = "house";
-  selectExactCards(state, 0, ["lucidity-3-v-l3", "lucidity-2-v-l2"]);
-  meetEncounter(state, "accept", { instant: true });
-  if (!encounterOnLandscape(state, "house")) {
-    state.tutorialFlags.encounterResolved = true;
-  }
-}
-
-function rejectBasementEncounter(state) {
-  placePlayerOnLandscape(state, 1, "the-basement");
-  state.activePlayerIndex = 1;
-  state.selectedLandscapeId = "the-basement";
-  ensureMeetBudget(state, 1);
-  selectExactCards(state, 1, ["elasticity-2-i-e2", "lucidity-2-i-l2", "willpower-1-i-w1"]);
+  state.selectedLandscapeId = "the-attic";
+  state.tutorialFlags.nextBattleWinner = "beast";
+  selectExactCards(state, 0, ["willpower-1-v-w1"]);
   meetEncounter(state, "reject", { instant: true });
-  if (!state.questTracker) state.questTracker = { mindstreamOnLandscape: {}, meetOnLandscape: {}, landscapeActions: {} };
-  if (!state.questTracker.meetOnLandscape) state.questTracker.meetOnLandscape = {};
-  if (!(state.questTracker.meetOnLandscape["the-basement"] > 0)) {
-    state.questTracker.meetOnLandscape["the-basement"] = 1;
-  }
+  state.tutorialFlags.firstBattleLost = true;
 }
 
-function ensureMeetBudget(state, playerIndex) {
-  if (state.meetActionBudget > 0) return;
-  spendWillpowerPhase(state, playerIndex);
+function acceptAtticRematch(state) {
+  placePlayerOnLandscape(state, 0, "the-attic");
+  state.activePlayerIndex = 1;
+  const surge = state.players[1]?.hand?.find((c) => c.type === "psyche-power");
+  if (surge) playTutorialPowerSurge(state, 1);
+  state.activePlayerIndex = 1;
+  if ((state.players[1]?.powerTokens || 0) >= 1) powerBonus(state);
+  state.activePlayerIndex = 0;
+  state.selectedLandscapeId = "the-attic";
+  state.tutorialFlags.nextBattleWinner = "dreamer";
+  selectExactCards(state, 0, ["lucidity-3-v-l3", "lucidity-2-v-l2", "willpower-2-v-w2"]);
+  meetEncounter(state, "accept", { instant: true });
+  state.tutorialFlags.encounterResolved = true;
 }
 
-function drawMindstreamOn(state, playerIndex, landscapeId) {
-  placePlayerOnLandscape(state, playerIndex, landscapeId);
-  state.selectedLandscapeId = landscapeId;
-  ensureMeetBudget(state, playerIndex);
-  performLandscapeAction(state, "draw-mindstream");
-  if (!state.questTracker) state.questTracker = { mindstreamOnLandscape: {}, landscapeActions: {} };
-  if (!state.questTracker.mindstreamOnLandscape) state.questTracker.mindstreamOnLandscape = {};
-  state.questTracker.mindstreamOnLandscape[landscapeId] = true;
+function skipToMeetRound2(state) {
+  if (getPhase(state) === "Reveal" && !state.dreamDrawn) drawDreamCard(state);
+  closeRevealPick(state);
+  advanceToPhase(state, "Meet");
 }
 
-function playTutorialPowerSurge(state, playerIndex = 0) {
-  const player = state.players[playerIndex];
-  const card = player?.hand?.find((c) => c.type === "psyche-power");
-  if (player && card) playPsychePowerFromHand(state, player, card);
+function useImmovableHold(state) {
+  state.activePlayerIndex = 1;
+  useDreamerPower(state);
 }
 
 function markInnocentQuests(state) {
@@ -270,14 +263,12 @@ function markInnocentQuests(state) {
   if (!state.questTracker.mindstreamOnLandscape) state.questTracker.mindstreamOnLandscape = {};
   if (!state.questTracker.meetOnLandscape) state.questTracker.meetOnLandscape = {};
   state.questTracker.mindstreamOnLandscape["the-attic"] = true;
-  if (!(state.questTracker.meetOnLandscape["the-basement"] > 0)
-    && !(state.questTracker.meetOnLandscape["the-attic"] > 0)) {
-    state.questTracker.meetOnLandscape["the-basement"] = 1;
+  if (!(state.questTracker.meetOnLandscape["the-attic"] > 0)) {
+    state.questTracker.meetOnLandscape["the-attic"] = 1;
   }
 
-  const visionary = state.players[0];
-  if (visionary) visionary.powerTokens = Math.max(visionary.powerTokens || 0, 2);
   playTutorialPowerSurge(state, 0);
+  const visionary = state.players[0];
   if (visionary) visionary.powerTokens = Math.max(visionary.powerTokens || 0, 2);
 
   state.activePlayerIndex = 0;
@@ -287,6 +278,15 @@ function markInnocentQuests(state) {
     handleQuestComplete(state, 1);
   }
   state.tutorialFlags.archetypeAcquired = true;
+}
+
+function useInnocentPower(state) {
+  state.activePlayerIndex = 0;
+  if ((state.players[0]?.powerTokens || 0) < 1) {
+    state.players[0].powerTokens = 1;
+  }
+  handleUseArchetypePower(state, "innocent");
+  state.tutorialFlags.archetypePowerUsed = true;
 }
 
 /** Apply the one canonical action that completes each tutorial step. */
@@ -311,52 +311,78 @@ export function applyCanonicalTutorialStep(state, step) {
         state.exploreMovesLeft = Math.max(2, state.exploreMovesLeft || 0);
       }
       placePlayerOnLandscape(state, 0, "house");
+      placePlayerOnLandscape(state, 0, "the-attic");
       advanceToPhase(state, "Meet");
       return;
 
     case "meet-r1":
-      selectExactCards(state, 0, ["willpower-2-v-w2"]);
+      selectExactCards(state, 1, ["willpower-3-i-w3"]);
       gainMeetActions(state);
-      if (state.meetActionBudget <= 0) spendWillpowerPhase(state, 0);
-      acceptHouseEncounter(state);
+      if (state.meetActionBudget <= 0) spendWillpowerPhase(state, 1);
+      rejectAtticEncounter(state);
+      return;
+
+    case "meet-hold":
+      useImmovableHold(state);
+      return;
+
+    case "meet-penalty":
       advanceToRound(state, 2);
       return;
 
-    case "r2-reveal":
+    case "r2-dream":
       drawDreamCard(state);
-      selectExactCards(state, 0, ["lucidity-2-r2-a"]);
-      revealLandscape(state);
-      closeRevealPick(state);
-      advanceToPhase(state, "Explore");
       return;
 
-    case "r2-explore":
-      selectExactCards(state, 1, ["elasticity-3-i-e3"]);
-      activateExplore(state);
-      if (!state.exploreActivated) {
-        state.exploreActivated = true;
-        state.exploreMovesLeft = Math.max(3, state.exploreMovesLeft || 0);
-      }
-      placePlayerOnLandscape(state, 0, "the-attic");
-      placePlayerOnLandscape(state, 1, "the-basement");
-      advanceToPhase(state, "Meet");
+    case "r2-skip":
+      skipToMeetRound2(state);
       return;
 
-    case "r2-meet":
-      selectExactCards(state, 1, ["willpower-3-i-w3"]);
+    case "r2-rematch":
+      if (getPhase(state) !== "Meet") skipToMeetRound2(state);
+      selectExactCards(state, 1, ["willpower-1-i-w1"]);
       gainMeetActions(state);
-      if (state.meetActionBudget <= 0) state.meetActionBudget = 5;
+      if (state.meetActionBudget <= 0) spendWillpowerPhase(state, 1);
+      acceptAtticRematch(state);
+      return;
+
+    case "r2-mindstream":
+      ensureMeetBudget(state, 0);
       drawMindstreamOn(state, 0, "the-attic");
-      rejectBasementEncounter(state);
       return;
 
     case "r2-acquire":
       markInnocentQuests(state);
       return;
 
+    case "r2-arch-power":
+      useInnocentPower(state);
+      return;
+
     default:
       break;
   }
+}
+
+function ensureMeetBudget(state, playerIndex) {
+  if (state.meetActionBudget > 0) return;
+  spendWillpowerPhase(state, playerIndex);
+}
+
+function drawMindstreamOn(state, playerIndex, landscapeId) {
+  placePlayerOnLandscape(state, playerIndex, landscapeId);
+  state.selectedLandscapeId = landscapeId;
+  ensureMeetBudget(state, playerIndex);
+  performLandscapeAction(state, "draw-mindstream");
+  if (!state.questTracker) state.questTracker = { mindstreamOnLandscape: {}, landscapeActions: {} };
+  if (!state.questTracker.mindstreamOnLandscape) state.questTracker.mindstreamOnLandscape = {};
+  state.questTracker.mindstreamOnLandscape[landscapeId] = true;
+}
+
+function playTutorialPowerSurge(state, playerIndex = 0) {
+  const player = state.players[playerIndex];
+  const card = player?.hand?.find((c) => c.type === "psyche-power");
+  if (player && card) playPsychePowerFromHand(state, player, card);
 }
 
 export function precomputeTutorialSnapshots(data, script, buildBaseState) {

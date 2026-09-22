@@ -91,6 +91,9 @@ function validateSpotlight(beat, spotlight, step, sync) {
         !spotlight?.includes(`data-tutorial-action="${beat.kind}"`)
         && !(beat.kind === "drawDream" && spotlight?.includes("btn-draw-dream"))
         && !((beat.kind === "revealLandscape" || beat.kind === "spendElasticity" || beat.kind === "gainMeetActions") && spotlight?.includes("btn-spread-opener"))
+        && !(beat.kind === "powerBonus" && spotlight?.includes("btn-power-bonus"))
+        && !(beat.kind === "dreamerPower" && (spotlight?.includes("dreamerPower") || spotlight?.includes("hex-occupant-dreamer")))
+        && !(beat.kind === "archetypePower" && (spotlight?.includes("archetypePower") || spotlight?.includes("hex-occupant-dreamer")))
       ) {
         fail("phase beat needs exact action button selector", {
           step: step.id,
@@ -127,6 +130,21 @@ function validateSpotlight(beat, spotlight, step, sync) {
           landscapeId: beat.landscapeId,
           spotlight,
         });
+      }
+      break;
+    case "powerBonus":
+      if (!spotlight?.includes("btn-power-bonus")) {
+        fail("powerBonus needs the +1 Spread button", { step: step.id, spotlight });
+      }
+      break;
+    case "dreamerPower":
+      if (!spotlight?.includes("dreamerPower") && !spotlight?.includes("hex-occupant-dreamer")) {
+        fail("dreamerPower needs radial or Dreamer token", { step: step.id, spotlight });
+      }
+      break;
+    case "archetypePower":
+      if (!spotlight?.includes("archetypePower") && !spotlight?.includes("hex-occupant-dreamer")) {
+        fail("archetypePower needs radial or Dreamer token", { step: step.id, spotlight });
       }
       break;
     default:
@@ -185,8 +203,9 @@ function performBeat(step, beat) {
         const occupantIndex = state.players.findIndex((p) => p.alive && p.landscapeId === beat.tileId);
         if (occupantIndex >= 0) state.activePlayerIndex = occupantIndex;
       }
+      if (beat.scripted) state.tutorialFlags.nextBattleWinner = beat.scripted === "lose" ? "beast" : "dreamer";
       gm.meetEncounter(state, "accept");
-      tm.notifyTutorialEncounterResolved(state, beat.tileId || "house");
+      if (beat.scripted !== "lose") tm.notifyTutorialEncounterResolved(state, beat.tileId || "the-attic");
       break;
     case "meetReject":
       if (beat.tileId) {
@@ -194,8 +213,21 @@ function performBeat(step, beat) {
         const occupantIndex = state.players.findIndex((p) => p.alive && p.landscapeId === beat.tileId);
         if (occupantIndex >= 0) state.activePlayerIndex = occupantIndex;
       }
+      if (beat.scripted) state.tutorialFlags.nextBattleWinner = beat.scripted === "lose" ? "beast" : "dreamer";
       gm.meetEncounter(state, "reject");
-      tm.notifyTutorialEncounterResolved(state, beat.tileId || "the-basement");
+      if (beat.scripted !== "lose") tm.notifyTutorialEncounterResolved(state, beat.tileId || "the-attic");
+      break;
+    case "powerBonus":
+      gm.powerBonus(state);
+      break;
+    case "dreamerPower":
+      state.activePlayerIndex = beat.playerIndex ?? 1;
+      gm.useDreamerPower(state);
+      break;
+    case "archetypePower":
+      state.activePlayerIndex = beat.playerIndex ?? 0;
+      gm.handleUseArchetypePower(state, "innocent");
+      state.tutorialFlags.archetypePowerUsed = true;
       break;
     case "advancePhase":
       gm.endPhase(state);

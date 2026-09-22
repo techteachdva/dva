@@ -473,6 +473,7 @@ export function getPhaseActions(state, handlers) {
         label: state.pendingPowerBonus
           ? `+1d6 Spread (now +${state.pendingPowerBonus})`
           : "+1d6 to Spread",
+        kind: "powerBonus",
         section: "main",
         hint: "Free action — spend up to 3 Power Tokens. Each adds +1d6 to this spread. Does not cost a Meet action.",
         disabled: player.powerTokens < 1 || (state.pendingPowerBonusTokens || 0) >= 3,
@@ -1314,8 +1315,12 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
     onDone?.();
   };
 
-  if (instant) {
-    finish(true);
+  const scriptedWinner = state.tutorialMode
+    ? (state.tutorialFlags?.nextBattleWinner || "dreamer")
+    : null;
+
+  if (instant || typeof document === "undefined") {
+    finish(scriptedWinner !== "beast");
     return;
   }
 
@@ -1325,7 +1330,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
     beastName: encounter.name,
     dreamerDice: played,
     beastDice: beastPower,
-    forceWinner: state.tutorialMode ? "dreamer" : null,
+    forceWinner: scriptedWinner,
     instant: typeof document === "undefined",
     onComplete: ({ dreamerWins }) => finish(dreamerWins),
   });
@@ -1340,6 +1345,7 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
   trackPsycheDiscard(state, actor, discarded);
 
   if (!dreamerWins) {
+    if (state.tutorialMode) state.tutorialFlags.firstBattleLost = true;
     addLog(
       state,
       `${actor.name} loses the dice battle with ${encounter.name}. The play is spent. ${encounter.name} remains on ${tile.name} and will Fail at the end of Meet.`,

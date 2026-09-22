@@ -3056,7 +3056,7 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   position: fixed;
   border-radius: calc(var(--radius) + 6px);
   pointer-events: none;
-  transition: opacity 0.35s ease, left 0.45s ease, top 0.45s ease, width 0.45s ease, height 0.45s ease;
+  transition: opacity 0.35s ease;
   --sparkle-count: 28;
 }
 

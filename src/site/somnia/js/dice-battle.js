@@ -239,7 +239,7 @@ export function playDiceBattle(opts) {
   const result = { dreamerWins, dreamerSuccesses, beastSuccesses, dreamerFaces, beastFaces };
 
   const finish = () => {
-    const stage = document.getElementById("dice-battle-stage");
+    const stage = typeof document !== "undefined" ? document.getElementById("dice-battle-stage") : null;
     if (stage) clearStage(stage);
     activeBattle = null;
     onComplete?.(result);

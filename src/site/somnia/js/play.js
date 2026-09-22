@@ -294,9 +294,11 @@ async function init() {
   setBoardZoomChangeHandler(() => {
     renderBoardArea();
     repositionRadialMenu();
+    refreshTutorialSpotlight();
   });
   setBoardCameraMoveHandler(() => {
     repositionRadialMenu();
+    refreshTutorialSpotlight();
   });
   bindFullscreenPrompt();
   bindRestart();
@@ -990,7 +992,8 @@ function handleTutorialNext() {
   const fromRect = getTutorialSpotlightRect();
   advanceTutorialStep(state);
   if (state.tutorialComplete) {
-    finishTutorialGuidance();
+    completeTutorialGame(state);
+    renderAll();
     return;
   }
   lastTutorialSyncKey = null;
@@ -1027,7 +1030,8 @@ function syncInteractiveTutorial() {
   if (!sync) return;
 
   if (sync.complete) {
-    finishTutorialGuidance();
+    completeTutorialGame(state);
+    renderAll();
     return;
   }
 
@@ -1201,6 +1205,7 @@ function buildPhaseHandlers() {
     },
     useArchetypePower: (id) => {
       handleUseArchetypePower(state, id);
+      if (state.tutorialMode) state.tutorialFlags.archetypePowerUsed = true;
       renderAll();
     },
     useDreamerPower: () => {
@@ -1780,27 +1785,32 @@ function renderAll() {
   if (state.status === "won") {
     syncDeckPressure(state);
     clearAutosave();
-    if (state.tutorialVictory) {
-      showTutorialGraduation();
-      return;
-    }
+    hideTutorial();
+    interactiveTutorialActive = false;
+    document.body.classList.remove("tutorial-mode-active");
     if (!pendingScoreResult) {
       const breakdown = calculateFinalScore(state);
-      const lengthLabel = state.lengthKey && LENGTHS[state.lengthKey]
-        ? LENGTHS[state.lengthKey].label
-        : `${state.goalPoints} pts`;
+      const lengthLabel = state.tutorialVictory
+        ? "Tutorial"
+        : (state.lengthKey && LENGTHS[state.lengthKey]
+          ? LENGTHS[state.lengthKey].label
+          : `${state.goalPoints} pts`);
       const seconds = Math.max(0, Math.round((Date.now() - (state.gameStartedAt || Date.now())) / 1000));
       pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel };
     }
-    const msg = state.finalRecurrence
-      ? "All Remaining Archetypes defeated in the Final Recurrence!"
-      : `You collected ${state.acquiredPoints} Archetype points and all Dreamers returned to the Bed!`;
-    showEndScreen(true, msg, pendingScoreResult);
+    const msg = state.tutorialVictory
+      ? `You collected ${state.acquiredPoints} Archetype point${state.acquiredPoints === 1 ? "" : "s"} and woke on The Bed — the same escape as a real Daydream.`
+      : (state.finalRecurrence
+        ? "All Remaining Archetypes defeated in the Final Recurrence!"
+        : `You collected ${state.acquiredPoints} Archetype points and all Dreamers returned to the Bed!`);
+    showEndScreen(true, msg, state.tutorialVictory ? { breakdown: pendingScoreResult.breakdown } : pendingScoreResult);
+    document.getElementById("btn-start-daydream")?.classList.toggle("hidden", !state.tutorialVictory);
+    document.getElementById("end-leaderboard")?.classList.toggle("hidden", !!state.tutorialVictory);
     if (!victoryShown) {
       victoryShown = true;
       startVictoryCelebration();
       playSfx("victory");
-      loadLeaderboardPreview();
+      if (!state.tutorialVictory) loadLeaderboardPreview();
     }
     return;
   }

@@ -5,10 +5,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "28.1";
+export const SOMNIA_VERSION = "29.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.0",
+    title: "The Tutorial Shine Update",
+    notes: [
+      "Tutorial Mode is a scripted two-round story: Heroism and Misunderstanding instead of Quiet, a stacked lose-then-win Mandrake fight, skip-phase teaching, Innocent acquire, powers, and the real wake-up fanfare.",
+      "The highlight circle tracks the board camera after zoom and pan instead of lingering on a stale hex.",
+      "Skipping Reveal no longer spends Lucidity. Leftover Dreambeasts still show the end-of-Meet Forget tax in the lesson.",
+    ],
+  },
   {
     version: "28.1",
     title: "Shared Landscape Play",

@@ -414,13 +414,13 @@ export const RULES_TAB_DETAILS = "details";
 export function tutorialBriefHtml() {
   return `
     <div class="rules-page tutorial-brief-page">
-      <p class="rules-lead">Welcome to Somnia — follow the sparkles through two guided rounds and learn the dream by playing.</p>
+      <p class="rules-lead">Welcome to Somnia — follow the sparkles through a scripted two-round story. You will stumble once, then wake like you beat the real game.</p>
       <section class="overview-block tutorial-brief-outcomes">
         <h3>You will learn</h3>
         <ul>
-          <li>The <strong>Reveal → Explore → Meet</strong> loop each round</li>
-          <li>How to open the map, move Dreamers, and resolve your first Dreambeast</li>
-          <li>How Mindstream and Archetype quests earn <strong>The Innocent</strong></li>
+          <li>Psyche as health and actions, and when to <strong>skip a phase</strong></li>
+          <li>Reveal, Explore, Meet, and dice battles (underpay lose, stacked win)</li>
+          <li>Mindstream card types, Innocent quests, Dreamer and Archetype Powers</li>
         </ul>
       </section>
     </div>
@@ -555,7 +555,7 @@ export function rulesDetailsHtml() {
 
       <h3>Guided Tutorial</h3>
       <ul>
-        <li>The in-game tutorial is two scripted rounds. The guide window docks on the map at a readable size; drag the header or resize the corner if you want it elsewhere.</li>
+        <li>The in-game tutorial is a scripted two-round story with a lose-then-win Mandrake fight. The guide window docks on the map; drag the header or resize the corner if you want it elsewhere.</li>
         <li>Follow the sparkle: <strong>Draw Dream</strong> is left of Next Phase. Select 1 Psyche, then press the button beside it to open Reveal, Explore, or Meet. Click a Dreamer or an occupied Landscape for landscape options. Mark a ready quest on the Active Archetype, or spend a Power Token. Every required click is highlighted, including hand cards, hexes, and Next Phase. <strong>Back</strong> sits at the top-left of the map if you need to undo.</li>
         <li>Each step shows a punchy Objective plus one or two sentences of why that action matters. <strong>?</strong> and Pause → Help stay available after you graduate.</li>
       </ul>

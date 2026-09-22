@@ -99,8 +99,9 @@ function performBeat(step, beat) {
           const occupantIndex = state.players.findIndex((p) => p.alive && p.landscapeId === beat.tileId);
           if (occupantIndex >= 0) state.activePlayerIndex = occupantIndex;
         }
+        if (beat.scripted) state.tutorialFlags.nextBattleWinner = beat.scripted === "lose" ? "beast" : "dreamer";
         gm.meetEncounter(state, "accept");
-        tm.notifyTutorialEncounterResolved(state, beat.tileId || "house");
+        if (beat.scripted !== "lose") tm.notifyTutorialEncounterResolved(state, beat.tileId || "the-attic");
       }
       break;
     case "meetReject":
@@ -111,8 +112,28 @@ function performBeat(step, beat) {
           const occupantIndex = state.players.findIndex((p) => p.alive && p.landscapeId === beat.tileId);
           if (occupantIndex >= 0) state.activePlayerIndex = occupantIndex;
         }
+        if (beat.scripted) state.tutorialFlags.nextBattleWinner = beat.scripted === "lose" ? "beast" : "dreamer";
         gm.meetEncounter(state, "reject");
-        tm.notifyTutorialEncounterResolved(state, beat.tileId || "the-basement");
+        if (beat.scripted !== "lose") tm.notifyTutorialEncounterResolved(state, beat.tileId || "the-attic");
+      }
+      break;
+    case "powerBonus":
+      if (!tm.isTutorialActionAllowed(state, "powerBonus")) fail(`${step.id}: power bonus blocked`);
+      else gm.powerBonus(state);
+      break;
+    case "dreamerPower":
+      if (!tm.isTutorialActionAllowed(state, "dreamerPower")) fail(`${step.id}: dreamer power blocked`);
+      else {
+        state.activePlayerIndex = beat.playerIndex ?? 1;
+        gm.useDreamerPower(state);
+      }
+      break;
+    case "archetypePower":
+      if (!tm.isTutorialActionAllowed(state, "archetypePower")) fail(`${step.id}: archetype power blocked`);
+      else {
+        state.activePlayerIndex = beat.playerIndex ?? 0;
+        gm.handleUseArchetypePower(state, "innocent");
+        state.tutorialFlags.archetypePowerUsed = true;
       }
       break;
     case "advancePhase":

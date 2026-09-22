@@ -181,45 +181,32 @@ const STEP_ENTRY_CHECKS = {
   "reveal-r1": (s) => s.dreamDrawn && getPhase(s) === "Reveal",
   "explore-r1": (s) => getPhase(s) === "Explore",
   "meet-r1": (s) => {
-    const enc = encounterOnLandscape(s, "house");
+    const enc = encounterOnLandscape(s, "the-attic");
     if (getPhase(s) !== "Meet") return `Expected Meet, got ${getPhase(s)}`;
-    if (!s.players.some((p) => p.landscapeId === "house")) return "Visionary not on House";
-    if (!enc || enc.name !== "Mandrake") return "Mandrake missing on House";
+    if (!s.players.some((p) => p.landscapeId === "the-attic")) return "Visionary not on The Attic";
+    if (!enc || enc.name !== "Mandrake") return "Mandrake missing on The Attic";
     return true;
   },
-  "r2-intro": (s) => {
-    if (s.round < 2) return "Round 2 not started";
-    if (!s.players[0].hand.some((c) => c.type === "psyche-power")) return "Visionary should have drawn Power Surge";
-    if (!s.players[0].hand.some((c) => c.type === "psyche")) return "Visionary should still hold leftover Psyche after Mandrake";
-    return true;
-  },
-  "r2-reveal": (s) => {
+  "meet-lesson": (s) => !!s.tutorialFlags?.firstBattleLost || "First battle should be lost",
+  "r2-dream": (s) => {
     if (s.round < 2) return "Round 2 not started";
     if (getPhase(s) !== "Reveal") return `Expected Reveal, got ${getPhase(s)}`;
-    if (!s.players[0].hand.some((c) => c.type === "psyche-power")) return "Visionary should have drawn Power Surge";
     return true;
   },
-  "r2-explore": (s) => {
-    if (getPhase(s) !== "Explore") return `Expected Explore, got ${getPhase(s)}`;
-    if (s.exploreActivated) return "Explore already activated at step entry";
-    if (s.players[0].landscapeId !== "house") {
-      return `Expected Visionary on House, got ${s.players[0].landscapeId}`;
-    }
-    return true;
-  },
-  "r2-meet": (s) => {
+  "r2-skip": (s) => s.round >= 2 && s.dreamDrawn,
+  "r2-rematch": (s) => {
     if (getPhase(s) !== "Meet") return `Expected Meet, got ${getPhase(s)}`;
-    if (!s.players.some((p) => p.landscapeId === "the-attic")) return "No Dreamer on Attic";
-    if (!s.players.some((p) => p.landscapeId === "the-basement")) return "No Dreamer on Basement";
-    const enc = encounterOnLandscape(s, "the-basement");
-    if (!enc || enc.id !== "goofus-bird") return "Goofus Bird missing on Basement";
+    if (s.players[0].landscapeId !== "the-attic") return `Expected Visionary on Attic, got ${s.players[0].landscapeId}`;
+    const enc = encounterOnLandscape(s, "the-attic");
+    if (!enc) return "Mandrake should still be on The Attic for the rematch";
     return true;
   },
+  "r2-mindstream": (s) => !encounterOnLandscape(s, "the-attic") || "Mandrake should be gone after the rematch",
   "r2-acquire": (s) => {
     if (!s.questTracker?.mindstreamOnLandscape?.["the-attic"]) return "Attic quest not complete in snapshot";
     const meets = s.questTracker?.meetOnLandscape || {};
     if (!((meets["the-attic"] || 0) > 0 || (meets["the-basement"] || 0) > 0)) {
-      return "Basement/Attic Meet quest not complete in snapshot";
+      return "Attic Meet quest not complete in snapshot";
     }
     return true;
   },
@@ -229,17 +216,17 @@ const STEP_ENTRY_CHECKS = {
 const STEP_EFFECT_CHECKS = {
   "draw-dream-r1": (s) => s.dreamDrawn,
   "reveal-r1": (s) => getPhase(s) === "Explore" && landscapeById(s, "candy-mountain")?.revealed,
-  "explore-r1": (s) => getPhase(s) === "Meet" && s.players[0].landscapeId === "house",
-  "meet-r1": (s) => s.round >= 2 && (!encounterOnLandscape(s, "house") || s.tutorialFlags?.encounterResolved),
-  "r2-reveal": (s) => getPhase(s) === "Explore",
-  "r2-explore": (s) => getPhase(s) === "Meet"
-    && s.players.some((p) => p.landscapeId === "the-attic")
-    && s.players.some((p) => p.landscapeId === "the-basement"),
-  "r2-meet": (s) => !!s.questTracker?.mindstreamOnLandscape?.["the-attic"]
-    && ((s.questTracker?.meetOnLandscape?.["the-basement"] || 0) > 0)
-    && !encounterOnLandscape(s, "the-basement"),
+  "explore-r1": (s) => getPhase(s) === "Meet" && s.players[0].landscapeId === "the-attic",
+  "meet-r1": (s) => !!s.tutorialFlags?.firstBattleLost && encounterOnLandscape(s, "the-attic"),
+  "meet-hold": (s) => (s.anchorMeetSpreadPending || 0) >= 1,
+  "meet-penalty": (s) => s.round >= 2,
+  "r2-dream": (s) => s.dreamDrawn,
+  "r2-skip": (s) => getPhase(s) === "Meet",
+  "r2-rematch": (s) => !encounterOnLandscape(s, "the-attic"),
+  "r2-mindstream": (s) => !!s.questTracker?.mindstreamOnLandscape?.["the-attic"],
   "r2-acquire": (s) => s.tutorialFlags?.archetypeAcquired
     || s.players.some((p) => (p.acquiredArchetypes || []).some((a) => a.id === "innocent")),
+  "r2-arch-power": (s) => !!s.tutorialFlags?.archetypePowerUsed,
 };
 
 function auditDeterminism() {
@@ -328,39 +315,32 @@ function auditStepsAndEffects() {
 
 function auditLiveCardEffects() {
   const state = createTutorialState(gameData);
-  jumpTutorialToStep(state, TUTORIAL_SCRIPT.findIndex((s) => s.id === "meet-r1"));
-  state.activePlayerIndex = 0;
-  state.selectedHand = state.players[0].hand
-    .filter((c) => c.id === "willpower-2-v-w2")
+  jumpTutorialToStep(state, TUTORIAL_SCRIPT.findIndex((s) => s.id === "r2-rematch"));
+  state.activePlayerIndex = 1;
+  state.selectedHand = state.players[1].hand
+    .filter((c) => c.id === "willpower-1-i-w1")
     .map((c) => c.instanceId);
   gainMeetActions(state);
-  state.selectedLandscapeId = "house";
+  state.tutorialFlags.nextBattleWinner = "dreamer";
+  state.activePlayerIndex = 0;
+  state.selectedLandscapeId = "the-attic";
   state.selectedHand = state.players[0].hand
-    .filter((c) => c.id === "lucidity-3-v-l3" || c.id === "lucidity-2-v-l2")
+    .filter((c) => c.id === "lucidity-3-v-l3" || c.id === "lucidity-2-v-l2" || c.id === "willpower-2-v-w2")
     .map((c) => c.instanceId);
   meetEncounter(state, "accept");
   const mandrakeInHand = state.players[0].hand.some(
     (c) => c.id === "mandrake" || c.name === "Mandrake",
   );
-  if (encounterOnLandscape(state, "house") && !state.tutorialFlags?.encounterResolved) {
-    fail("live-accept-mandrake", { reason: "encounter still on house" });
+  if (encounterOnLandscape(state, "the-attic") && !state.tutorialFlags?.encounterResolved) {
+    fail("live-accept-mandrake", { reason: "encounter still on attic" });
   }
   if (!mandrakeInHand && !state.tutorialFlags?.encounterResolved) {
     fail("live-accept-mandrake", { reason: "Mandrake not accepted into hand" });
   }
-  const leftoverPsyche = state.players[0].hand.filter((c) => c.type === "psyche");
-  if (leftoverPsyche.length < 1) {
-    fail("live-accept-mandrake", { reason: "Visionary has no leftover Psyche after Mandrake" });
-  }
 
-  jumpTutorialToStep(state, TUTORIAL_SCRIPT.findIndex((s) => s.id === "r2-meet"));
-  state.activePlayerIndex = 1;
-  state.selectedHand = state.players[1].hand
-    .filter((c) => c.id === "willpower-3-i-w3")
-    .map((c) => c.instanceId);
-  gainMeetActions(state);
-  state.selectedLandscapeId = "the-attic";
+  jumpTutorialToStep(state, TUTORIAL_SCRIPT.findIndex((s) => s.id === "r2-mindstream"));
   state.activePlayerIndex = 0;
+  state.selectedLandscapeId = "the-attic";
   performLandscapeAction(state, "draw-mindstream");
   if (!state.questTracker?.mindstreamOnLandscape?.["the-attic"]) {
     fail("live-attic-mindstream", { reason: "quest tracker not updated after draw" });

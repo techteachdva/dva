@@ -157,124 +157,43 @@ function moveActiveTo(state, tileId) {
   return player.landscapeId === tileId;
 }
 
-/** Simulate minimal progression through tutorial; report stuck steps. */
+/** Simulate progression through tutorial; report stuck steps. */
 function simulate() {
   const issues = [];
   const state = createTutorialState(gameData);
-  state.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((s) => s.id === "draw-dream-r1");
 
-  const steps = [
-    () => { drawDreamCard(state); },
-    () => { selectLucidity(state, 1); revealLandscape(state); pickHiddenTile(state); advancePhasesTo(state, "Explore"); },
-    () => { selectElasticity(state, 1); activateExplore(state); setPlayerOn(state, 0, "bed"); moveActiveTo(state, "house"); advancePhasesTo(state, "Meet"); },
-    () => {
-      selectWillpower(state, 1); gainMeetActions(state);
-      state.activePlayerIndex = 0;
-      state.selectedLandscapeId = "house";
-      state.selectedHand = [];
-      const visionary = state.players[0];
-      ["lucidity-3-v-l3", "lucidity-2-v-l2"].forEach((cardId) => {
-        const card = visionary.hand.find((c) => c.id === cardId);
-        if (card) state.selectedHand.push(card.instanceId);
+  for (let i = 0; i < TUTORIAL_SCRIPT.length; i += 1) {
+    state.tutorialStepIndex = i;
+    const step = TUTORIAL_SCRIPT[i];
+    const before = auditStep(state, i);
+    if (step.until && !step.until(state) && !step.rail?.length) {
+      issues.push({
+        step: step.id,
+        index: i,
+        problem: "info step until false at entry",
+        phase: getPhase(state),
+        round: state.round,
       });
-      meetEncounter(state, "accept");
-      while (state.round < 2) endPhase(state);
-    },
-    () => { drawDreamCard(state); selectLucidity(state, 1); revealLandscape(state); advancePhasesTo(state, "Explore", 2); },
-    () => {
-      selectElasticity(state, 1); activateExplore(state);
-      setPlayerOn(state, 0, "house");
-      moveActiveTo(state, "the-attic");
-      setPlayerOn(state, 1, "bed");
-      state.activePlayerIndex = 1;
-      moveActiveTo(state, "city") || setPlayerOn(state, 1, "city");
-      moveActiveTo(state, "the-basement") || setPlayerOn(state, 1, "the-basement");
-      advancePhasesTo(state, "Meet", 2);
-    },
-    () => {
-      selectWillpower(state, 1); gainMeetActions(state);
-      state.activePlayerIndex = 0;
-      setPlayerOn(state, 0, "the-attic");
-      state.selectedLandscapeId = "the-attic";
-      gameMod.performLandscapeAction(state, "draw-mindstream");
-      state.activePlayerIndex = 1;
-      setPlayerOn(state, 1, "the-basement");
-      state.selectedLandscapeId = "the-basement";
-      state.selectedHand = [];
-      const immovable = state.players[1];
-      ["elasticity-2-i-e2", "lucidity-2-i-l2", "willpower-1-i-w1"].forEach((cardId) => {
-        const card = immovable.hand.find((c) => c.id === cardId);
-        if (card) state.selectedHand.push(card.instanceId);
-      });
-      meetEncounter(state, "reject");
-    },
-  ];
-
-  let scriptIdx = TUTORIAL_SCRIPT.findIndex((s) => s.id === "draw-dream-r1");
-  for (const action of steps) {
-    while (scriptIdx < TUTORIAL_SCRIPT.length) {
-      const step = TUTORIAL_SCRIPT[scriptIdx];
-      const before = auditStep(state, scriptIdx);
-      if (step.until && !step.until(state)) {
-        const needed = ACTION_KINDS.filter((k) => {
-          if (k === "boardClick" || k === "exploreMove") {
-            return ["house", "the-attic", "the-basement"].some((tileId) => (
-              isTutorialActionAllowed(state, k, { tileId })
-            ));
-          }
-          return isTutorialActionAllowed(state, k);
-        });
-        if (needed.length === 0 && !["welcome", "r2-intro", "graduate"].includes(step.id)) {
-          issues.push({
-            step: step.id,
-            index: scriptIdx,
-            problem: "until not met and no action kinds allowed",
-            phase: getPhase(state),
-            round: state.round,
-          });
-        }
-        break;
-      }
-      advanceTutorialStep(state);
-      scriptIdx += 1;
     }
-    try {
-      action();
-    } catch (e) {
-      issues.push({ step: TUTORIAL_SCRIPT[scriptIdx]?.id, actionError: e.message });
+    if (i < TUTORIAL_SCRIPT.length - 1) {
+      applyCanonicalTutorialStep(state, step);
     }
+    issues.push({ walk: step.id, ...before, afterUntil: step.until ? step.until(state) : true });
   }
 
   // Scan all steps for action-lock dead ends at representative game states
   const scanStates = [
-    { label: "r2-explore, nobody on quests", fn: () => {
+    { label: "r2-skip, still in Reveal", fn: () => {
       const s = createTutorialState(gameData);
-      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-explore");
+      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-skip");
       s.round = 2;
-      s.phaseIndex = 1;
-      s.exploreActivated = true;
+      s.phaseIndex = 0;
+      s.dreamDrawn = true;
       return s;
     }},
-    { label: "r2-meet, nobody on attic", fn: () => {
+    { label: "r2-mindstream, on attic with budget", fn: () => {
       const s = createTutorialState(gameData);
-      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-meet");
-      s.round = 2;
-      s.phaseIndex = 2;
-      s.meetActionBudget = 2;
-      s.players.forEach((p) => { p.landscapeId = "bed"; });
-      return s;
-    }},
-    { label: "r2-acquire quests marked not acquired", fn: () => {
-      const s = createTutorialState(gameData);
-      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-acquire");
-      s.round = 2;
-      s.phaseIndex = 2;
-      s.activeArchetype.questProgress = [true, true];
-      return s;
-    }},
-    { label: "r2-meet, on attic with budget", fn: () => {
-      const s = createTutorialState(gameData);
-      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-meet");
+      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-mindstream");
       s.round = 2;
       s.phaseIndex = 2;
       s.meetActionBudget = 2;
@@ -291,6 +210,14 @@ function simulate() {
       });
       const drawAction = actions.find((a) => a.label?.startsWith("Draw ["));
       return { s, drawAction };
+    }},
+    { label: "r2-acquire quests marked not acquired", fn: () => {
+      const s = createTutorialState(gameData);
+      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-acquire");
+      s.round = 2;
+      s.phaseIndex = 2;
+      s.activeArchetype.questProgress = [true, true];
+      return s;
     }},
   ];
 
