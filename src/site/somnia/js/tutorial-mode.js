@@ -701,14 +701,11 @@ function railHighlight(state, step, beat) {
       const nextCard = ids
         .map((cardId) => player?.hand.find((c) => c.id === cardId))
         .find((card) => card && !selected.has(card.instanceId));
-      const focusCard = nextCard || (player && ids.length
-        ? player.hand.find((c) => ids.includes(c.id))
-        : null);
-      if (focusCard) {
-        const cardSel = `.game-card[data-instance-id="${focusCard.instanceId}"]`;
+      if (nextCard) {
+        const cardSel = `.game-card[data-instance-id="${nextCard.instanceId}"]`;
         return {
-          targets: ["#hand-bar", cardSel],
-          spotlight: cardSel,
+          targets: ["#hand-bar", `#hand-bar ${cardSel}`],
+          spotlight: `#hand-bar ${cardSel}`,
         };
       }
       return {

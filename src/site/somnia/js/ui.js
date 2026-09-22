@@ -4534,6 +4534,13 @@ function resolveTutorialElements(step) {
 function resolvePrimarySpotlightElement(step) {
   const beat = step?.spotlightBeat;
 
+  if (beat?.kind === "handToggle" && step?.spotlight?.includes("data-instance-id")) {
+    const cardSel = step.spotlight;
+    return document.querySelector(`#hand-bar ${cardSel}`)
+      || document.querySelector(`#hand ${cardSel}`)
+      || document.querySelector(cardSel);
+  }
+
   if (beat?.kind === "dreamerSelect" && beat.playerId) {
     return document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${beat.playerId}"]`)
       || document.querySelector(`.player-chip[data-player-id="${beat.playerId}"]`);
@@ -4570,9 +4577,8 @@ function resolvePrimarySpotlightElement(step) {
         || document.querySelector("#btn-draw-dream");
     }
     if (beat.kind === "revealLandscape" || beat.kind === "spendElasticity" || beat.kind === "gainMeetActions") {
-      return document.querySelector("#btn-spread-opener")
-        || document.querySelector("#spread-tray")
-        || document.querySelector("#hand-bar");
+      return document.querySelector(`#btn-spread-opener[data-tutorial-action="${beat.kind}"]`)
+        || document.querySelector("#btn-spread-opener");
     }
     if (beat.kind === "powerBonus") {
       return document.querySelector("#btn-power-bonus")
@@ -5274,6 +5280,9 @@ export function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) 
   const step = typeof stepOrTarget === "object" && stepOrTarget !== null && !stepOrTarget.nodeType
     ? stepOrTarget
     : null;
+  if (step?.id != null || step?.spotlightBeat) {
+    activeTutorialStep = step;
+  }
   const targets = step
     ? resolveTutorialElements(step)
     : (stepOrTarget ? [stepOrTarget].flat().filter(Boolean) : []);

@@ -14,8 +14,9 @@ export const CHANGELOG = [
     title: "The Tutorial Shine Update",
     notes: [
       "Tutorial Mode is a scripted two-round story: Heroism and Misunderstanding instead of Quiet, a stacked lose-then-win Mandrake fight, skip-phase teaching, Innocent acquire, powers, and the real wake-up fanfare.",
-      "The highlight circle tracks the board camera after zoom and pan instead of lingering on a stale hex.",
+      "The highlight circle tracks the board camera after zoom and pan, and follows each rail beat (Psyche in hand, then Reveal / Elasticity / Gain Actions on the spread opener).",
       "Skipping Reveal no longer spends Lucidity. Leftover Dreambeasts still show the end-of-Meet Forget tax in the lesson.",
+      "New galaxy binary favicon site-wide.",
     ],
   },
   {

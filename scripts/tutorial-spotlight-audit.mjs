@@ -77,8 +77,14 @@ function validateSpotlight(beat, spotlight, step, sync) {
       }
       break;
     case "handToggle":
-      if (!spotlight?.includes("game-card") && !spotlight?.includes("data-instance-id")) {
+      if (
+        !spotlight?.includes("game-card")
+        && !spotlight?.includes("data-instance-id")
+      ) {
         fail("handToggle needs a card selector", { step: step.id, spotlight });
+      }
+      if (spotlight?.includes("#spread-tray")) {
+        fail("handToggle must not spotlight spread-tray cards", { step: step.id, spotlight });
       }
       break;
     case "drawDream":
