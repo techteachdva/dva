@@ -123,7 +123,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
 ];
 
 export const TUTORIAL_REVEAL_TILE = "candy-mountain";
-const TUTORIAL_SNAPSHOT_VERSION = 27;
+const TUTORIAL_SNAPSHOT_VERSION = 28;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -564,6 +564,23 @@ function settleTutorialRail(state) {
   if (beat?.kind === "archetypePower" && state.pendingReturn) {
     autoCompleteTutorialReturn(state);
     state.tutorialFlags.archetypePowerUsed = true;
+  }
+
+  if (step.id === "r2-arch-power" && getPhase(state) === "Meet") {
+    ensureTutorialArchetypePowerResources(state, beat?.playerIndex ?? 0);
+  }
+}
+
+/** Innocent Power needs 1 Meet action + 1 token; quest marks often spend the whole pool first. */
+function ensureTutorialArchetypePowerResources(state, playerIndex = 0) {
+  const player = state.players[playerIndex];
+  if (player && (player.powerTokens || 0) < 1) {
+    player.powerTokens = 1;
+  }
+  const used = state.meetActionsUsed || 0;
+  const budget = state.meetActionBudget || 0;
+  if (budget <= used) {
+    state.meetActionBudget = used + 1;
   }
 }
 

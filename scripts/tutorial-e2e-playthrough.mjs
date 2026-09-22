@@ -129,10 +129,12 @@ function performBeat(step, beat) {
       }
       break;
     case "archetypePower":
+      tm.syncTutorial(state);
       if (!tm.isTutorialActionAllowed(state, "archetypePower")) fail(`${step.id}: archetype power blocked`);
       else {
         state.activePlayerIndex = beat.playerIndex ?? 0;
-        gm.handleUseArchetypePower(state, "innocent");
+        const ok = gm.handleUseArchetypePower(state, "innocent");
+        if (!ok) fail(`${step.id}: Innocent Power could not fire (Meet budget or token)`);
         state.tutorialFlags.archetypePowerUsed = true;
       }
       break;

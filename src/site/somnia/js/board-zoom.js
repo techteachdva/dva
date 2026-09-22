@@ -141,7 +141,10 @@ function applyQueuedBoardFocus() {
   const useMotion = animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (useMotion) {
     stage.classList.add("board-focus-snap");
-    window.setTimeout(() => stage.classList.remove("board-focus-snap"), 420);
+    window.setTimeout(() => {
+      stage.classList.remove("board-focus-snap");
+      cameraMoveHandler?.();
+    }, 420);
   }
   applyTransform();
   return true;

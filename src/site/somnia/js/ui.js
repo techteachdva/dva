@@ -784,6 +784,7 @@ function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = 
   document.addEventListener("pointerdown", radialDismissHook, true);
   if (document.body.classList.contains("tutorial-mode-active")) {
     refreshTutorialSpotlight();
+    trackTutorialSpotlightWithCamera(480);
   }
 }
 
@@ -4417,6 +4418,7 @@ let tutorialSpotlightEls = [];
 let tutorialSpotlightEl = null;
 let tutorialSparkleLayer = null;
 let tutorialSpotlightTracker = null;
+let tutorialSpotlightCameraTrackRaf = 0;
 let tutorialScrollBound = false;
 let activeTutorialStep = null;
 let lastUtilityModalSpotlightState = false;
@@ -4589,9 +4591,15 @@ function resolvePrimarySpotlightElement(step) {
         || document.querySelector("#active-archetype");
     }
     const kind = beat.kind;
-    return document.querySelector(`${tutorialPhaseActionSelector(kind)}:not(:disabled)`)
-      || document.querySelector(tutorialPhaseActionSelector(kind))
-      || document.querySelector(tutorialDreamerTokenSelector(beat.playerId));
+    const radialReady = document.querySelector(`.radial-menu-item.ready[data-tutorial-action="${kind}"]:not(:disabled)`);
+    if (radialReady) return radialReady;
+    const dreamerToken = document.querySelector(tutorialDreamerTokenSelector(beat.playerId));
+    if (dreamerToken && !document.querySelector(`.radial-menu-item[data-tutorial-action="${kind}"]`)) {
+      return dreamerToken;
+    }
+    return document.querySelector(`.radial-menu-item[data-tutorial-action="${kind}"]:not(:disabled)`)
+      || dreamerToken
+      || document.querySelector(tutorialPhaseActionSelector(kind));
   }
 
   const spotlightSel = getSpotlightSelector(step);
@@ -5248,6 +5256,25 @@ export function refreshTutorialSpotlight() {
     return;
   }
   positionTutorialSpotlight();
+}
+
+/** Re-measure spotlight targets while the board camera animates (CSS transform on #board-zoom-stage). */
+export function trackTutorialSpotlightWithCamera(durationMs = 480) {
+  if (tutorialSpotlightCameraTrackRaf) {
+    cancelAnimationFrame(tutorialSpotlightCameraTrackRaf);
+    tutorialSpotlightCameraTrackRaf = 0;
+  }
+  const end = performance.now() + durationMs;
+  const frame = (now) => {
+    positionTutorialSpotlight();
+    if (now < end) {
+      tutorialSpotlightCameraTrackRaf = requestAnimationFrame(frame);
+    } else {
+      tutorialSpotlightCameraTrackRaf = 0;
+      refreshTutorialSpotlight();
+    }
+  };
+  tutorialSpotlightCameraTrackRaf = requestAnimationFrame(frame);
 }
 
 export function getTutorialSpotlightRect() {

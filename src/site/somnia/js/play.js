@@ -228,6 +228,7 @@ import {
   hideTutorial,
   getTutorialSpotlightRect,
   refreshTutorialSpotlight,
+  trackTutorialSpotlightWithCamera,
   applyTutorialHighlight,
   bindUiRenderState,
   ensureTutorialStepTargetsVisible,
@@ -295,10 +296,12 @@ async function init() {
     renderBoardArea();
     repositionRadialMenu();
     refreshTutorialSpotlight();
+    trackTutorialSpotlightWithCamera(480);
   });
   setBoardCameraMoveHandler(() => {
     repositionRadialMenu();
     refreshTutorialSpotlight();
+    trackTutorialSpotlightWithCamera(480);
   });
   bindFullscreenPrompt();
   bindRestart();
@@ -1290,6 +1293,9 @@ function zoomMaxOnDreamer(playerId, tileId) {
 }
 
 function showDreamerBoardRadialMenu(playerId, tileId, player) {
+  if (isInteractiveTutorialActive(state)) {
+    syncTutorial(state);
+  }
   const handlers = buildPhaseHandlers();
   const options = getDreamerBoardRadialOptions(state, player, tileId, handlers)
     .map((opt) => {
@@ -2022,7 +2028,10 @@ function renderAll() {
     }
     requestAnimationFrame(() => {
       const active = syncTutorial(state)?.step;
-      if (active) applyTutorialHighlight(active, { animateIn: false });
+      if (active) {
+        applyTutorialHighlight(active, { animateIn: false });
+        trackTutorialSpotlightWithCamera(480);
+      }
     });
   } else {
     flushDreamerBoardFocus();

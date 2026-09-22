@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.0";
+export const SOMNIA_VERSION = "29.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.1",
+    title: "Tutorial Archetype Power & Spotlight",
+    notes: [
+      "Tutorial step 15 grants a Meet action and Power Token so Innocent Power is always clickable after quest marks.",
+      "The highlight circle re-tracks during board focus animation and when Dreamer radials open.",
+    ],
+  },
   {
     version: "29.0",
     title: "The Tutorial Shine Update",
