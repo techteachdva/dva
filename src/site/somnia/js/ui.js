@@ -1386,6 +1386,8 @@ function cardChoiceKey(card) {
 function prepareCardChoiceModal() {
   const modal = document.getElementById("utility-modal");
   const content = modal?.querySelector(".utility-content");
+  modal?.classList.remove("subconscious-binder-modal");
+  content?.classList.remove("subconscious-binder-fullscreen");
   content?.classList.remove(
     "fullscreen-browser",
     "landscape-detail-modal",
@@ -1400,6 +1402,28 @@ function prepareCardChoiceModal() {
   utilityModalMinimized = false;
   syncUtilityChoiceDock();
   wireChoiceMinimizeButton(document.getElementById("utility-modal-body"));
+}
+
+function prepareSubconsciousBinderModal() {
+  const modal = document.getElementById("utility-modal");
+  const content = modal?.querySelector(".utility-content");
+  modal?.classList.add("subconscious-binder-modal");
+  content?.classList.remove(
+    "card-choice-modal-wrap",
+    "fullscreen-browser",
+    "landscape-detail-modal",
+    "dreamer-detail-modal",
+    "phase-skip-modal",
+    "rules-reference-modal",
+    "info-hub-modal",
+  );
+  content?.classList.add("subconscious-binder-fullscreen");
+  document.body.classList.add("utility-modal-open");
+  modal?.classList.remove("hidden", "utility-modal-minimized");
+  utilityModalMinimized = false;
+  syncUtilityChoiceDock();
+  const closeBtn = modal?.querySelector(".utility-close");
+  if (closeBtn) closeBtn.hidden = true;
 }
 
 function openCardInspectCarousel(cards, startIndex = 0) {
@@ -1557,7 +1581,8 @@ function syncUtilityChoiceDock() {
 
 function ensureChoiceMinimizeChrome() {
   const body = document.getElementById("utility-modal-body");
-  if (!body || body.querySelector("#utility-minimize-btn")) return;
+  if (!body || body.querySelector(".subconscious-binder-shell")) return;
+  if (body.querySelector("#utility-minimize-btn")) return;
   const row = body.querySelector(".utility-actions, .card-choice-actions, .phase-skip-choices");
   const btn = document.createElement("button");
   btn.type = "button";
@@ -3665,19 +3690,29 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
   let detailIndex = null;
 
   body.innerHTML = `
-    <div class="card-choice-picker card-choice-picker-wide subconscious-binder-picker">
-      <h2>Return from Subconscious</h2>
-      <p class="card-choice-message">${pending?.reason || `Choose up to ${need} card(s) to Return to discard piles.`}</p>
-      <p class="card-choice-hint">${cardChoiceHint()}</p>
+    <div class="subconscious-binder-shell">
+      <header class="subconscious-binder-header">
+        <div class="subconscious-binder-header-copy">
+          <h2>Return from Subconscious</h2>
+          <p class="card-choice-message">${pending?.reason || `Choose up to ${need} card(s) to Return to discard piles.`}</p>
+          <p class="card-choice-hint">${cardChoiceHint()}</p>
+        </div>
+        <button type="button" class="btn subconscious-binder-close" id="subconscious-binder-close">Close Subconscious</button>
+      </header>
       <div id="subconscious-binder-root" class="subconscious-binder-root"></div>
-      <p class="card-choice-status">Selected 0 / ${need}</p>
-      <div class="utility-actions card-choice-actions">
-        <button type="button" class="btn" id="return-skip">Return selected &amp; skip rest</button>
-        <button type="button" class="btn primary" id="card-choice-confirm" disabled>Confirm Return</button>
-      </div>
+      <footer class="subconscious-binder-footer">
+        <p class="card-choice-status">Selected 0 / ${need}</p>
+        <div class="utility-actions card-choice-actions subconscious-binder-actions">
+          <button type="button" class="btn" id="return-skip">Return selected &amp; skip rest</button>
+          <button type="button" class="btn primary" id="card-choice-confirm" disabled>Confirm Return</button>
+        </div>
+      </footer>
     </div>
   `;
-  prepareCardChoiceModal();
+  prepareSubconsciousBinderModal();
+  body.querySelector("#subconscious-binder-close")?.addEventListener("click", () => {
+    minimizeUtilityModal();
+  });
 
   const root = body.querySelector("#subconscious-binder-root");
   const confirmBtn = body.querySelector("#card-choice-confirm");
@@ -3969,6 +4004,7 @@ export function hideUtilityModal(force = false) {
   utilityModalMinimized = false;
   hideModal();
   syncUtilityChoiceDock();
+  modal?.classList.remove("subconscious-binder-modal");
   modal?.querySelector(".utility-content")?.classList.remove(
     "landscape-detail-modal",
     "dreamer-detail-modal",
@@ -3979,6 +4015,7 @@ export function hideUtilityModal(force = false) {
     "info-hub-modal",
     "fullscreen-browser",
     "card-choice-modal-wrap",
+    "subconscious-binder-fullscreen",
     "somnia-changelog-modal-wrap",
   );
   const closeBtn = modal?.querySelector(".utility-close");

@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.2";
+export const SOMNIA_VERSION = "29.2.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.2.1",
+    title: "Full-Screen Subconscious Binder",
+    notes: [
+      "Return from Subconscious fills the viewport (thin margin) with a spaced 12-column binder grid—no squished fan overlap.",
+      "Close Subconscious returns to the board while Return is still pending; confirm and skip actions stay in the footer.",
+    ],
+  },
   {
     version: "29.2",
     title: "Objects, Subconscious Binder & Hand Fan",
