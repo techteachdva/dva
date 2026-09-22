@@ -3695,18 +3695,19 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
         <div class="subconscious-binder-header-copy">
           <h2>Return from Subconscious</h2>
           <p class="card-choice-message">${pending?.reason || `Choose up to ${need} card(s) to Return to discard piles.`}</p>
-          <p class="card-choice-hint">${cardChoiceHint()}</p>
+          <p class="card-choice-hint">${prefersTouchUi()
+    ? "Tap a card to zoom in · Tap the zoomed card to select · Swipe or use arrows to browse."
+    : "Click a card to zoom in · Click the zoomed card to select · Use ‹ › or arrow keys to browse."}</p>
         </div>
-        <button type="button" class="btn subconscious-binder-close" id="subconscious-binder-close">Close Subconscious</button>
+        <div class="subconscious-binder-header-bar">
+          <span class="subconscious-binder-tally" id="subconscious-binder-tally" aria-live="polite">0/${need}</span>
+          <button type="button" class="btn btn-sm" id="return-skip">Return selected &amp; skip rest</button>
+          <button type="button" class="btn btn-sm primary" id="card-choice-confirm" disabled>Confirm Return</button>
+          <button type="button" class="btn subconscious-binder-close" id="subconscious-binder-close">Close Subconscious</button>
+        </div>
       </header>
       <div id="subconscious-binder-root" class="subconscious-binder-root"></div>
-      <footer class="subconscious-binder-footer">
-        <p class="card-choice-status">Selected 0 / ${need}</p>
-        <div class="utility-actions card-choice-actions subconscious-binder-actions">
-          <button type="button" class="btn" id="return-skip">Return selected &amp; skip rest</button>
-          <button type="button" class="btn primary" id="card-choice-confirm" disabled>Confirm Return</button>
-        </div>
-      </footer>
+      <div class="subconscious-binder-bottom-pad" aria-hidden="true"></div>
     </div>
   `;
   prepareSubconsciousBinderModal();
@@ -3714,13 +3715,14 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
     minimizeUtilityModal();
   });
 
+  const shell = body.querySelector(".subconscious-binder-shell");
   const root = body.querySelector("#subconscious-binder-root");
   const confirmBtn = body.querySelector("#card-choice-confirm");
-  const statusEl = body.querySelector(".card-choice-status");
+  const tallyEl = body.querySelector("#subconscious-binder-tally");
 
   const refreshStatus = () => {
     const picked = pending?.picked || [];
-    statusEl.textContent = `Selected ${picked.length} / ${need}`;
+    if (tallyEl) tallyEl.textContent = `${picked.length}/${need}`;
     confirmBtn.disabled = picked.length === 0;
   };
 
@@ -3728,6 +3730,7 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
 
   const renderBinderGrid = () => {
     detailIndex = null;
+    shell?.classList.remove("is-binder-detail");
     root.innerHTML = "";
     if (!entries.length) {
       root.innerHTML = "<p class='resolution-empty'>The Subconscious is empty — nothing to Return.</p>";
@@ -3798,52 +3801,97 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
       renderBinderGrid();
       return;
     }
+    shell?.classList.add("is-binder-detail");
     const entry = entries[detailIndex];
     root.innerHTML = "";
     const detail = document.createElement("div");
     detail.className = "subconscious-binder-detail";
-    const cardHost = document.createElement("div");
+    detail.tabIndex = -1;
+
+    const backBtn = document.createElement("button");
+    backBtn.type = "button";
+    backBtn.className = "btn btn-sm subconscious-binder-detail-back";
+    backBtn.textContent = "Back to binder";
+    backBtn.addEventListener("click", () => renderBinderGrid());
+
+    const stage = document.createElement("div");
+    stage.className = "subconscious-binder-detail-stage";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "subconscious-binder-detail-arrow subconscious-binder-detail-prev";
+    prevBtn.setAttribute("aria-label", "Previous card in binder");
+    prevBtn.textContent = "‹";
+    prevBtn.disabled = detailIndex <= 0;
+
+    const cardHost = document.createElement("button");
+    cardHost.type = "button";
     cardHost.className = "subconscious-binder-detail-card";
-    cardHost.appendChild(renderCard(entry.card, {
+    cardHost.setAttribute(
+      "aria-label",
+      isSelected(entry.card) ? "Deselect for Return" : "Select for Return",
+    );
+    const cardEl = renderCard(entry.card, {
       portrait: true,
       selected: isSelected(entry.card),
-    }));
-    const selectBtn = document.createElement("button");
-    selectBtn.type = "button";
-    selectBtn.className = `btn ${isSelected(entry.card) ? "" : "primary"}`;
-    selectBtn.textContent = isSelected(entry.card) ? "Deselect for Return" : "Select for Return";
-    selectBtn.addEventListener("click", () => {
+    });
+    cardEl.classList.add("subconscious-binder-zoom-card");
+    cardHost.appendChild(cardEl);
+    cardHost.addEventListener("click", () => {
       toggleReturnPick(state, entry.card.instanceId);
       renderDetailView();
     });
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "subconscious-binder-detail-arrow subconscious-binder-detail-next";
+    nextBtn.setAttribute("aria-label", "Next card in binder");
+    nextBtn.textContent = "›";
+    nextBtn.disabled = detailIndex >= entries.length - 1;
+
     const meta = document.createElement("p");
     meta.className = "subconscious-binder-detail-meta";
-    meta.textContent = `${entry.pileIcon || ""} ${entry.pileLabel} · card ${detailIndex + 1} of ${entries.length}`;
-    const nav = document.createElement("div");
-    nav.className = "subconscious-binder-detail-nav";
-    nav.innerHTML = `
-      <button type="button" class="btn" id="binder-detail-prev" ${detailIndex <= 0 ? "disabled" : ""}>← Previous</button>
-      <button type="button" class="btn" id="binder-detail-back">Back to binder</button>
-      <button type="button" class="btn" id="binder-detail-next" ${detailIndex >= entries.length - 1 ? "disabled" : ""}>Next →</button>
-    `;
-    detail.appendChild(cardHost);
-    detail.appendChild(selectBtn);
+    meta.textContent = `${entry.pileIcon || ""} ${entry.pileLabel} · ${detailIndex + 1} / ${entries.length}`;
+
+    stage.appendChild(prevBtn);
+    stage.appendChild(cardHost);
+    stage.appendChild(nextBtn);
+    detail.appendChild(backBtn);
+    detail.appendChild(stage);
     detail.appendChild(meta);
-    detail.appendChild(nav);
     root.appendChild(detail);
-    nav.querySelector("#binder-detail-back")?.addEventListener("click", () => renderBinderGrid());
-    nav.querySelector("#binder-detail-prev")?.addEventListener("click", () => {
+
+    const goPrev = () => {
       if (detailIndex > 0) {
         detailIndex -= 1;
         renderDetailView();
       }
-    });
-    nav.querySelector("#binder-detail-next")?.addEventListener("click", () => {
+    };
+    const goNext = () => {
       if (detailIndex < entries.length - 1) {
         detailIndex += 1;
         renderDetailView();
       }
-    });
+    };
+    prevBtn.addEventListener("click", goPrev);
+    nextBtn.addEventListener("click", goNext);
+
+    const onDetailKey = (event) => {
+      if (detailIndex == null) return;
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goPrev();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goNext();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        renderBinderGrid();
+      }
+    };
+    detail.addEventListener("keydown", onDetailKey);
+    detail.focus({ preventScroll: true });
+
     refreshStatus();
   };
 

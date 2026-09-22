@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.2.1";
+export const SOMNIA_VERSION = "29.2.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.2.2",
+    title: "Subconscious Binder Zoom View",
+    notes: [
+      "Clicking a binder card opens a large zoom view in the center with ‹ › arrows (and keyboard) to walk the full Subconscious.",
+      "Selections glow on thumbnails and the zoomed card; a compact tally (e.g. 1/4) lives in the header with Confirm — the bottom third stays clear.",
+    ],
+  },
   {
     version: "29.2.1",
     title: "Full-Screen Subconscious Binder",
