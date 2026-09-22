@@ -6672,63 +6672,168 @@ body.card-detail-open .tutorial-card {
   -webkit-box-orient: vertical;
 }
 
-.subconscious-binder-shell.is-binder-detail .subconscious-binder-root {
-  align-items: center;
+#utility-modal.subconscious-binder-modal.subconscious-binder-zoom-active .utility-content.subconscious-binder-fullscreen,
+#utility-modal.subconscious-binder-modal.subconscious-binder-zoom-active #utility-modal-body {
+  overflow: visible;
+}
+
+.subconscious-binder-shell.is-binder-zoom .subconscious-binder-root {
+  overflow: visible;
+  align-items: stretch;
   justify-content: center;
 }
 
-.subconscious-binder-detail {
+.subconscious-binder-zoom {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 0.45rem;
+  flex: 1;
   width: 100%;
-  height: 100%;
-  min-height: 0;
-  padding: 0.25rem 0.5rem;
-  box-sizing: border-box;
+  min-height: min(34vh, 380px);
+  max-height: 100%;
+  overflow: visible;
+  gap: 0.65rem;
   outline: none;
 }
 
-.subconscious-binder-detail-back {
-  align-self: flex-start;
-  margin-bottom: 0.15rem;
+.subconscious-binder-zoom-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  flex-shrink: 0;
 }
 
-.subconscious-binder-detail-stage {
+.subconscious-binder-zoom-meta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.subconscious-binder-zoom-band {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: clamp(0.35rem, 2vw, 1.25rem);
+  gap: clamp(0.5rem, 1.5vw, 1rem);
   width: 100%;
   flex: 1 1 auto;
   min-height: 0;
-  max-height: 100%;
+  overflow: visible;
 }
 
-.subconscious-binder-detail-arrow {
+.subconscious-binder-zoom-arrow {
   flex-shrink: 0;
-  width: clamp(2.75rem, 5vw, 3.75rem);
-  height: clamp(3.25rem, 8vh, 5rem);
+  width: clamp(2.75rem, 4vw, 3.5rem);
+  height: clamp(3rem, 12vh, 4.5rem);
+  align-self: center;
   border-radius: 14px;
   border: 1px solid rgba(180, 140, 255, 0.45);
-  background: rgba(18, 12, 36, 0.85);
+  background: rgba(18, 12, 36, 0.9);
   color: #e8e4ff;
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
   line-height: 1;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.subconscious-binder-detail-arrow:hover:not(:disabled) {
+.subconscious-binder-zoom-arrow:hover:not(:disabled) {
   background: rgba(123, 92, 255, 0.35);
   border-color: rgba(201, 160, 255, 0.65);
 }
 
-.subconscious-binder-detail-arrow:disabled {
+.subconscious-binder-zoom-arrow:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+.subconscious-binder-zoom-strip-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 140, 255, 0.45) transparent;
+  padding: 0.75rem 0;
+}
+
+.subconscious-binder-zoom-strip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: clamp(1rem, 2.5vw, 2rem);
+  width: max-content;
+  min-width: 100%;
+  padding: 0.5rem clamp(2rem, 8vw, 6rem);
+  box-sizing: border-box;
+}
+
+.subconscious-binder-zoom-item {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 12px;
+  scroll-snap-align: center;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  overflow: visible;
+}
+
+.subconscious-binder-zoom-item:not(.is-focus) {
+  opacity: 0.78;
+  transform: scale(0.88);
+}
+
+.subconscious-binder-zoom-item.is-focus {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.subconscious-binder-zoom-item:hover {
+  opacity: 1;
+}
+
+.subconscious-binder-zoom-item .subconscious-binder-zoom-card,
+.subconscious-binder-zoom-item .game-card.portrait {
+  width: clamp(130px, 16vw, 220px) !important;
+  min-height: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  pointer-events: none;
+}
+
+.subconscious-binder-zoom-item .game-card.portrait .art {
+  max-height: none !important;
+  height: auto !important;
+  min-height: 0;
+  aspect-ratio: 5 / 7;
+}
+
+.subconscious-binder-zoom-item .game-card.psyche-card {
+  width: clamp(130px, 16vw, 220px) !important;
+  min-height: clamp(180px, 22vh, 300px) !important;
+  height: auto !important;
+}
+
+.subconscious-binder-zoom-item .game-card.selected {
+  box-shadow:
+    0 0 0 3px rgba(240, 201, 106, 0.95),
+    0 0 24px rgba(123, 92, 255, 0.55),
+    0 0 40px rgba(240, 201, 106, 0.28);
+}
+
+.subconscious-binder-zoom-deck {
+  font-size: 0.72rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--muted);
+  max-width: clamp(130px, 16vw, 220px);
 }
 
 @media (max-width: 1200px) {
@@ -6746,50 +6851,6 @@ body.card-detail-open .tutorial-card {
     flex-direction: column;
     align-items: stretch;
   }
-}
-
-.subconscious-binder-detail-card {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: min(42vw, 340px);
-  max-height: min(52vh, 520px);
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 14px;
-}
-
-.subconscious-binder-detail-card .subconscious-binder-zoom-card,
-.subconscious-binder-detail-card .game-card.portrait {
-  width: min(36vw, 300px) !important;
-  max-height: 100%;
-  pointer-events: none;
-}
-
-.subconscious-binder-detail-card .game-card.portrait .art {
-  max-height: min(30vh, 400px);
-  aspect-ratio: 5 / 7;
-}
-
-.subconscious-binder-detail-card .game-card.selected,
-.subconscious-binder-detail-card .subconscious-binder-zoom-card.selected {
-  box-shadow:
-    0 0 0 4px rgba(240, 201, 106, 0.95),
-    0 0 28px rgba(123, 92, 255, 0.55),
-    0 0 48px rgba(240, 201, 106, 0.35);
-  transform: scale(1.02);
-}
-
-.subconscious-binder-detail-meta {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--muted);
-  text-align: center;
-  flex-shrink: 0;
 }
 
 .action-moment-banner {

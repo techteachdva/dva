@@ -3687,7 +3687,7 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
   const need = pending?.remaining || 0;
   const entries = subconsciousBinderEntries(state);
   let page = 0;
-  let detailIndex = null;
+  let focusIndex = 0;
 
   body.innerHTML = `
     <div class="subconscious-binder-shell">
@@ -3696,8 +3696,8 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
           <h2>Return from Subconscious</h2>
           <p class="card-choice-message">${pending?.reason || `Choose up to ${need} card(s) to Return to discard piles.`}</p>
           <p class="card-choice-hint">${prefersTouchUi()
-    ? "Tap a card to zoom in · Tap the zoomed card to select · Swipe or use arrows to browse."
-    : "Click a card to zoom in · Click the zoomed card to select · Use ‹ › or arrow keys to browse."}</p>
+    ? "Tap a binder card to select · Zoom opens a scrollable row — double-tap there to select."
+    : "Click a binder card to select · Zoom opens a scrollable row — double-click a card there to select."}</p>
         </div>
         <div class="subconscious-binder-header-bar">
           <span class="subconscious-binder-tally" id="subconscious-binder-tally" aria-live="polite">0/${need}</span>
@@ -3717,8 +3717,16 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
 
   const shell = body.querySelector(".subconscious-binder-shell");
   const root = body.querySelector("#subconscious-binder-root");
+  const modal = document.getElementById("utility-modal");
+  const modalContent = modal?.querySelector(".utility-content");
   const confirmBtn = body.querySelector("#card-choice-confirm");
   const tallyEl = body.querySelector("#subconscious-binder-tally");
+
+  const setZoomChrome = (active) => {
+    shell?.classList.toggle("is-binder-zoom", active);
+    modal?.classList.toggle("subconscious-binder-zoom-active", active);
+    modalContent?.classList.toggle("subconscious-binder-zoom-active", active);
+  };
 
   const refreshStatus = () => {
     const picked = pending?.picked || [];
@@ -3728,9 +3736,16 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
 
   const isSelected = (card) => pending?.picked?.some((c) => c.instanceId === card.instanceId);
 
+  const renderBinderZoomCard = (card, selected) => {
+    const psycheLike = card.type === "psyche" || card.type === "psyche-power" || isDreambeastPsycheCard(card);
+    return renderCard(
+      card,
+      psycheLike ? { selected } : { portrait: true, selected },
+    );
+  };
+
   const renderBinderGrid = () => {
-    detailIndex = null;
-    shell?.classList.remove("is-binder-detail");
+    setZoomChrome(false);
     root.innerHTML = "";
     if (!entries.length) {
       root.innerHTML = "<p class='resolution-empty'>The Subconscious is empty — nothing to Return.</p>";
@@ -3747,6 +3762,7 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
     toolbar.innerHTML = `
       <span class="subconscious-binder-page-label">Page ${page + 1} / ${pageCount}</span>
       <div class="subconscious-binder-nav">
+        <button type="button" class="btn btn-sm primary" id="binder-open-zoom">Zoom</button>
         <button type="button" class="btn btn-sm" id="binder-prev-page" ${page <= 0 ? "disabled" : ""}>Previous</button>
         <button type="button" class="btn btn-sm" id="binder-next-page" ${page >= pageCount - 1 ? "disabled" : ""}>Next</button>
       </div>
@@ -3774,13 +3790,20 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
       cell.appendChild(thumb);
       cell.appendChild(deck);
       cell.addEventListener("click", () => {
-        detailIndex = globalIndex;
-        renderDetailView();
+        toggleReturnPick(state, entry.card.instanceId);
+        const nowSelected = isSelected(entry.card);
+        thumb.classList.toggle("selected", nowSelected);
+        refreshStatus();
       });
       grid.appendChild(cell);
     });
 
     root.appendChild(grid);
+    toolbar.querySelector("#binder-open-zoom")?.addEventListener("click", () => {
+      const firstSelected = entries.findIndex((e) => isSelected(e.card));
+      focusIndex = firstSelected >= 0 ? firstSelected : 0;
+      renderZoomView();
+    });
     toolbar.querySelector("#binder-prev-page")?.addEventListener("click", () => {
       if (page > 0) {
         page -= 1;
@@ -3796,88 +3819,130 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
     refreshStatus();
   };
 
-  const renderDetailView = () => {
-    if (detailIndex == null || !entries[detailIndex]) {
+  const scrollZoomToFocus = (strip, smooth = true) => {
+    const item = strip?.querySelector(`.subconscious-binder-zoom-item[data-index="${focusIndex}"]`);
+    item?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "nearest", inline: "center" });
+  };
+
+  const renderZoomView = () => {
+    if (!entries.length) {
       renderBinderGrid();
       return;
     }
-    shell?.classList.add("is-binder-detail");
-    const entry = entries[detailIndex];
+    focusIndex = Math.max(0, Math.min(focusIndex, entries.length - 1));
+    setZoomChrome(true);
     root.innerHTML = "";
-    const detail = document.createElement("div");
-    detail.className = "subconscious-binder-detail";
-    detail.tabIndex = -1;
 
+    const zoom = document.createElement("div");
+    zoom.className = "subconscious-binder-zoom";
+    zoom.tabIndex = -1;
+
+    const topRow = document.createElement("div");
+    topRow.className = "subconscious-binder-zoom-top";
     const backBtn = document.createElement("button");
     backBtn.type = "button";
-    backBtn.className = "btn btn-sm subconscious-binder-detail-back";
+    backBtn.className = "btn btn-sm";
     backBtn.textContent = "Back to binder";
     backBtn.addEventListener("click", () => renderBinderGrid());
+    const meta = document.createElement("p");
+    meta.className = "subconscious-binder-zoom-meta";
+    topRow.appendChild(backBtn);
+    topRow.appendChild(meta);
 
-    const stage = document.createElement("div");
-    stage.className = "subconscious-binder-detail-stage";
+    const band = document.createElement("div");
+    band.className = "subconscious-binder-zoom-band";
 
     const prevBtn = document.createElement("button");
     prevBtn.type = "button";
-    prevBtn.className = "subconscious-binder-detail-arrow subconscious-binder-detail-prev";
-    prevBtn.setAttribute("aria-label", "Previous card in binder");
+    prevBtn.className = "subconscious-binder-zoom-arrow";
+    prevBtn.setAttribute("aria-label", "Previous card");
     prevBtn.textContent = "‹";
-    prevBtn.disabled = detailIndex <= 0;
 
-    const cardHost = document.createElement("button");
-    cardHost.type = "button";
-    cardHost.className = "subconscious-binder-detail-card";
-    cardHost.setAttribute(
-      "aria-label",
-      isSelected(entry.card) ? "Deselect for Return" : "Select for Return",
-    );
-    const cardEl = renderCard(entry.card, {
-      portrait: true,
-      selected: isSelected(entry.card),
-    });
-    cardEl.classList.add("subconscious-binder-zoom-card");
-    cardHost.appendChild(cardEl);
-    cardHost.addEventListener("click", () => {
-      toggleReturnPick(state, entry.card.instanceId);
-      renderDetailView();
-    });
+    const stripWrap = document.createElement("div");
+    stripWrap.className = "subconscious-binder-zoom-strip-wrap";
+    const strip = document.createElement("div");
+    strip.className = "subconscious-binder-zoom-strip";
+    strip.setAttribute("role", "list");
 
     const nextBtn = document.createElement("button");
     nextBtn.type = "button";
-    nextBtn.className = "subconscious-binder-detail-arrow subconscious-binder-detail-next";
-    nextBtn.setAttribute("aria-label", "Next card in binder");
+    nextBtn.className = "subconscious-binder-zoom-arrow";
+    nextBtn.setAttribute("aria-label", "Next card");
     nextBtn.textContent = "›";
-    nextBtn.disabled = detailIndex >= entries.length - 1;
 
-    const meta = document.createElement("p");
-    meta.className = "subconscious-binder-detail-meta";
-    meta.textContent = `${entry.pileIcon || ""} ${entry.pileLabel} · ${detailIndex + 1} / ${entries.length}`;
+    const syncZoomSelectionGlow = () => {
+      strip.querySelectorAll(".subconscious-binder-zoom-item").forEach((el) => {
+        const idx = Number(el.dataset.index);
+        const card = el.querySelector(".game-card");
+        if (card) card.classList.toggle("selected", isSelected(entries[idx]?.card));
+      });
+    };
 
-    stage.appendChild(prevBtn);
-    stage.appendChild(cardHost);
-    stage.appendChild(nextBtn);
-    detail.appendChild(backBtn);
-    detail.appendChild(stage);
-    detail.appendChild(meta);
-    root.appendChild(detail);
+    const updateZoomFocus = () => {
+      focusIndex = Math.max(0, Math.min(focusIndex, entries.length - 1));
+      strip.querySelectorAll(".subconscious-binder-zoom-item").forEach((el) => {
+        el.classList.toggle("is-focus", Number(el.dataset.index) === focusIndex);
+      });
+      const entry = entries[focusIndex];
+      meta.textContent = `${entry.pileIcon || ""} ${entry.pileLabel} · ${focusIndex + 1} / ${entries.length}`;
+      prevBtn.disabled = focusIndex <= 0;
+      nextBtn.disabled = focusIndex >= entries.length - 1;
+      scrollZoomToFocus(strip);
+    };
+
+    entries.forEach((entry, index) => {
+      const slide = document.createElement("button");
+      slide.type = "button";
+      slide.className = "subconscious-binder-zoom-item";
+      slide.dataset.index = String(index);
+      slide.setAttribute("role", "listitem");
+      if (index === focusIndex) slide.classList.add("is-focus");
+      const cardEl = renderBinderZoomCard(entry.card, isSelected(entry.card));
+      cardEl.classList.add("subconscious-binder-zoom-card");
+      const deck = document.createElement("span");
+      deck.className = "subconscious-binder-zoom-deck";
+      deck.textContent = `${entry.pileIcon || ""} ${entry.pileLabel}`.trim();
+      slide.appendChild(cardEl);
+      slide.appendChild(deck);
+      slide.addEventListener("click", () => {
+        focusIndex = index;
+        updateZoomFocus();
+      });
+      slide.addEventListener("dblclick", (event) => {
+        event.preventDefault();
+        toggleReturnPick(state, entry.card.instanceId);
+        syncZoomSelectionGlow();
+        refreshStatus();
+      });
+      strip.appendChild(slide);
+    });
+
+    stripWrap.appendChild(strip);
+
+    band.appendChild(prevBtn);
+    band.appendChild(stripWrap);
+    band.appendChild(nextBtn);
+    zoom.appendChild(topRow);
+    zoom.appendChild(band);
+    root.appendChild(zoom);
 
     const goPrev = () => {
-      if (detailIndex > 0) {
-        detailIndex -= 1;
-        renderDetailView();
+      if (focusIndex > 0) {
+        focusIndex -= 1;
+        updateZoomFocus();
       }
     };
     const goNext = () => {
-      if (detailIndex < entries.length - 1) {
-        detailIndex += 1;
-        renderDetailView();
+      if (focusIndex < entries.length - 1) {
+        focusIndex += 1;
+        updateZoomFocus();
       }
     };
+
     prevBtn.addEventListener("click", goPrev);
     nextBtn.addEventListener("click", goNext);
 
-    const onDetailKey = (event) => {
-      if (detailIndex == null) return;
+    const onZoomKey = (event) => {
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         goPrev();
@@ -3889,9 +3954,10 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
         renderBinderGrid();
       }
     };
-    detail.addEventListener("keydown", onDetailKey);
-    detail.focus({ preventScroll: true });
-
+    zoom.addEventListener("keydown", onZoomKey);
+    updateZoomFocus();
+    requestAnimationFrame(() => scrollZoomToFocus(strip, false));
+    zoom.focus({ preventScroll: true });
     refreshStatus();
   };
 
@@ -4052,8 +4118,9 @@ export function hideUtilityModal(force = false) {
   utilityModalMinimized = false;
   hideModal();
   syncUtilityChoiceDock();
-  modal?.classList.remove("subconscious-binder-modal");
+  modal?.classList.remove("subconscious-binder-modal", "subconscious-binder-zoom-active");
   modal?.querySelector(".utility-content")?.classList.remove(
+    "subconscious-binder-zoom-active",
     "landscape-detail-modal",
     "dreamer-detail-modal",
     "dreamer-inspect-modal",

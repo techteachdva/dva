@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.2.2";
+export const SOMNIA_VERSION = "29.3";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.3",
+    title: "Subconscious Zoom Carousel",
+    notes: [
+      "Binder grid: click a card to select (glow). New Zoom button opens a full horizontal strip of every Subconscious card with ‹ › and arrow keys.",
+      "Zoom view centers the focused card in the middle band with no clipping; double-click a card in Zoom to toggle Return selection.",
+    ],
+  },
   {
     version: "29.2.2",
     title: "Subconscious Binder Zoom View",
