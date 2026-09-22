@@ -5,10 +5,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.1";
+export const SOMNIA_VERSION = "29.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.2",
+    title: "Objects, Subconscious Binder & Hand Fan",
+    notes: [
+      "Instant Objects are free in every phase (hand + Dreamer radial). Persistent sets count hand and play zone; Monkey Paw shows golden token chips.",
+      "Return picker uses a 12×4 paginated Subconscious binder with deck tags and a detail view with prev/next.",
+      "Object and Return steps show a sticky action banner plus moment toasts; Psyche fans spread a bit wider and read more solid.",
+    ],
+  },
   {
     version: "29.1",
     title: "Tutorial Archetype Power & Spotlight",

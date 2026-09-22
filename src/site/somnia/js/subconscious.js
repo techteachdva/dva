@@ -584,6 +584,17 @@ export function subconsciousPilesForUI(state) {
   ].filter((p) => p.cards.length);
 }
 
+/** Flat binder order: deck groups left-to-right, then cards within each pile. */
+export function subconsciousBinderEntries(state) {
+  return subconsciousPilesForUI(state).flatMap((pile) =>
+    pile.cards.map((card) => ({
+      card,
+      pileLabel: pile.label,
+      pileIcon: pile.icon,
+    })),
+  );
+}
+
 /** Convert an accepted Encounter into a hand card worth 3 Psyche in its suit. */
 export function dreambeastToHandCard(encounter) {
   const suit = encounter.suit || "willpower";

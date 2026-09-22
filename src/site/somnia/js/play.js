@@ -214,6 +214,7 @@ import {
   showRevealDeckTopModal,
   showRepressPicker,
   renderSubconsciousButton,
+  renderActionMomentBanner,
   showRulesModal,
   showDreamFeedModal,
   showMomentHistoryModal,
@@ -1990,6 +1991,7 @@ function renderAll() {
     renderAll();
   });
   renderSubconsciousButton(state);
+  renderActionMomentBanner(state);
   renderLog(state);
 
   if (state.pendingEventModal) {

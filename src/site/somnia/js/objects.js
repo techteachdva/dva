@@ -87,6 +87,13 @@ export function ensureObjectZones(player) {
   if (!player.objects) player.objects = [];
 }
 
+/** Set keyword from object tags (e.g. chess, body) — not the fraction like 3/3. */
+export function objectSetTag(card) {
+  if (!card?.tags?.length) return null;
+  const tag = card.tags.find((t) => t && !/^\d+\/\d+$/.test(t));
+  return tag || null;
+}
+
 export function handLimitForPlayer(state, player) {
   ensureObjectZones(player);
   let limit = 10;
@@ -166,7 +173,7 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
     addLog(state, `${card.name} placed in play (Persistent).`);
     playSfx("acquire");
     queueObjectPlayFx(card, { to: "persistent" });
-    const tag = card.tags?.[0]?.split("/")?.[0];
+    const tag = objectSetTag(card);
     if (tag) checkObjectTagSet(state, player, tag);
     return card;
   }
@@ -176,7 +183,7 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
     addLog(state, `${player.name} plays ${card.name}.`);
     playSfx("acquire");
     resolveObjectEffect(state, player, card, helpers);
-    const tag = card.tags?.[0]?.split("/")?.[0];
+    const tag = objectSetTag(card);
     if (tag) checkObjectTagSet(state, player, tag);
     if (objectUseFate(card) === "repress") {
       queueObjectPlayFx(card, { to: "subconscious" });

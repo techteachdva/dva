@@ -27,6 +27,7 @@ import { canAddAllyToHand, allyHandLimitForPlayer, psycheCardValue } from "./psy
 import { requestChooseTile, beginFreeRevealPicking } from "./landscapes.js";
 import { edgeLandscapes } from "./hex.js";
 import { SUIT_LABELS } from "./rules.js";
+import { logMoment } from "./narrator.js";
 import { resumeLandscapeAction } from "./landscape-actions.js";
 import { resumeArchetypeFollowup, continueArchetypeQueues } from "./archetypes.js";
 import { continueDeferredEventQueues, startSilverForcedAccept } from "./event-choices.js";
@@ -53,7 +54,10 @@ function dreamerCount(state) {
 function returnN(state, count, player = null) {
   if (count <= 0) return;
   const result = requestReturnCards(state, count, player);
-  if (result?.pending) addLog(state, `Choose ${result.count} card(s) to Return.`);
+  if (result?.pending) {
+    addLog(state, `Choose ${result.count} card(s) to Return.`);
+    logMoment(state, `Return ${result.count} card(s) from the Subconscious — open the picker.`);
+  }
 }
 
 function landscapeReady(state, id) {
@@ -97,6 +101,8 @@ function offerChoice(state, player, spec) {
     payload: spec.payload || {},
   };
   addLog(state, spec.log || `${spec.title}: choose.`);
+  const momentLine = spec.message || spec.log || spec.title;
+  if (momentLine) logMoment(state, `${spec.title}: ${momentLine}`);
 }
 
 function dreamerChoices(state, { disabledHint = "" } = {}) {
@@ -566,7 +572,7 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
     return true;
   }
   if (cardId === "the-one") {
-    if (choiceId === "chess") trackChessPlay(state, player);
+    if (choiceId === "chess") checkObjectTagSet(state, player, "chess", { extra: 1 });
     else checkObjectTagSet(state, player, choiceId, { extra: 1 });
     addLog(state, `The One counts toward the ${choiceId} set.`);
     return true;
@@ -736,7 +742,8 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
 
 export function checkObjectTagSet(state, player, tag, { extra = 0 } = {}) {
   if (!player.persistent) player.persistent = [];
-  const tagged = player.persistent.filter((o) => o.tags?.some((t) => t.startsWith(tag)));
+  const inPlay = [...player.persistent, ...(player.objects || [])];
+  const tagged = inPlay.filter((o) => o.tags?.some((t) => t.startsWith(tag)));
   const wild = (player.setWildcards || []).filter((t) => t === tag).length;
   if (tagged.length + extra + wild < setRequiredForTag(tag)) return;
   if (wild) {
@@ -1207,6 +1214,7 @@ export function finishMonkeyPaw(state, player, card) {
   card.powerSlots = (card.powerSlots || 0) + 1;
   requestReturnCards(state, 3, player);
   addLog(state, `Monkey Paw: ${card.powerSlots}/3 Power placed. Return 3 cards.`);
+  logMoment(state, `Monkey Paw ${card.powerSlots}/3 — Return 3 cards from the Subconscious.`);
   if (card.powerSlots >= 3) {
     const refund = card.powerSlots;
     card.powerSlots = 0;

@@ -322,6 +322,31 @@ export function getPhaseActions(state, handlers) {
     };
   };
 
+  const objectFreeActions = () => {
+    const list = [];
+    if (player.objects?.length) {
+      list.push({
+        label: "Play Object",
+        kind: "playObject",
+        section: "objects",
+        hint: "Free in any phase — Instant Objects stay in hand until played, then Repress.",
+        disabled: false,
+        onClick: handlers.playObject,
+      });
+    }
+    if (player.persistent?.length) {
+      list.push({
+        label: "Activate Persistent",
+        kind: "activateObject",
+        section: "objects",
+        hint: "Free in any phase — spend 1 Power Token to activate a Persistent Object.",
+        disabled: player.powerTokens < 1,
+        onClick: handlers.activateObject,
+      });
+    }
+    return list;
+  };
+
   const questActions = () => {
     const arch = state.activeArchetype;
     return [
@@ -402,6 +427,7 @@ export function getPhaseActions(state, handlers) {
       });
     }
     if (state.dreamDrawn && !state.revealLandscapeUsed) actions.push(phaseTokenAction("Lucidity"));
+    actions.push(...objectFreeActions());
     actions.push(dreamerPowerAction());
     actions.push(...questActions());
   }
@@ -434,6 +460,7 @@ export function getPhaseActions(state, handlers) {
         onClick: () => {},
       });
     }
+    actions.push(...objectFreeActions());
     actions.push(dreamerPowerAction());
     actions.push(...questActions());
   }
@@ -552,22 +579,7 @@ export function getPhaseActions(state, handlers) {
         onClick: () => handlers.landscapeAction(choice.id),
       });
     });
-    actions.push({
-      label: "Play Object",
-      kind: "playObject",
-      section: "actions",
-      hint: "Free action — Instant Objects Repress when used. Does not cost a Meet action.",
-      disabled: !player.objects?.length,
-      onClick: handlers.playObject,
-    });
-    actions.push({
-      label: "Activate Persistent",
-      kind: "activateObject",
-      section: "actions",
-      hint: "Free action — spend 1 Power Token to activate. Does not cost a Meet action.",
-      disabled: !player.persistent?.length || player.powerTokens < 1,
-      onClick: handlers.activateObject,
-    });
+    actions.push(...objectFreeActions());
     actions.push({
       label: "Trade",
       kind: "trade",

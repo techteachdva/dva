@@ -42,6 +42,7 @@ import { hexToPixel, boardPixelBounds } from "./hex.js";
 import {
   subconsciousCount,
   subconsciousPilesForUI,
+  subconsciousBinderEntries,
   isDreambeastPsycheCard,
   toggleReturnPick,
   completeReturnSelection,
@@ -252,11 +253,11 @@ function layoutPsycheFan(container) {
   const avail = Math.max(cardW, container.clientWidth || cardW);
   const mid = (n - 1) / 2;
   const maxRot = spread ? Math.min(5, 1.2 + n * 0.35) : Math.min(12, 3 + n * 0.8);
-  const pip = spread ? cardW + 16 : 18;
+  const pip = spread ? cardW + 24 : 22;
   const maxStep = n <= 1 ? cardW : (avail - cardW) / Math.max(n - 1, 1);
   const step = spread
-    ? Math.max(cardW + 16, pip)
-    : Math.min(cardW * 0.42, Math.max(pip, maxStep));
+    ? Math.max(cardW + 24, pip)
+    : Math.min(cardW * 0.58, Math.max(pip, maxStep));
   cards.forEach((el, i) => {
     const t = n <= 1 ? 0 : (i - mid) / Math.max(mid, 1);
     el.style.setProperty("--fan-rot", `${(t * maxRot).toFixed(2)}deg`);
@@ -1011,6 +1012,22 @@ export function renderCard(card, options = {}) {
   if (mini) {
     el.style.width = "72px";
     el.style.minHeight = "96px";
+  }
+
+  if (card.id === "monkey-paw" && card.type === "object") {
+    const slots = Math.min(3, Math.max(0, card.powerSlots || 0));
+    if (slots > 0) {
+      const chips = document.createElement("div");
+      chips.className = "monkey-paw-token-row";
+      chips.setAttribute("aria-label", `${slots} of 3 Power Tokens on Monkey Paw`);
+      for (let i = 0; i < slots; i += 1) {
+        const chip = document.createElement("span");
+        chip.className = "monkey-paw-token-chip";
+        chip.textContent = "★";
+        chips.appendChild(chip);
+      }
+      el.appendChild(chips);
+    }
   }
 
   attachCardActions(el, { onClick, onInspect });
@@ -2813,6 +2830,33 @@ export function renderNarratorPanel(_state) {
   // Narrator content is shown in the Dream Feed modal (v14).
 }
 
+/** Sticky instruction strip while an Object or Subconscious choice is open. */
+export function renderActionMomentBanner(state) {
+  const el = document.getElementById("action-moment-banner");
+  if (!el) return;
+  const needsBanner = state && (
+    state.pendingObjectChoice
+    || state.pendingObjectFollowup
+    || state.pendingReturn
+    || state.pendingRepress
+    || state.landscapePick
+    || state.pendingNothingChoice
+  );
+  if (!needsBanner) {
+    el.classList.add("hidden");
+    el.setAttribute("hidden", "");
+    el.innerHTML = "";
+    return;
+  }
+  const view = getNarratorView(state);
+  el.classList.remove("hidden");
+  el.removeAttribute("hidden");
+  el.innerHTML = `
+    <p class="action-moment-title">${view.title || "Action required"}</p>
+    <p class="action-moment-detail">${view.detail || ""}</p>
+  `;
+}
+
 function buildDreamFeedHtml(state) {
   if (!state) {
     return "<p class=\"dream-feed-empty\">Start a game to see the dream feed.</p>";
@@ -3608,17 +3652,24 @@ export function showRespawnPicker(dreamers, onPick) {
   });
 }
 
+const SUBCONSCIOUS_BINDER_COLS = 12;
+const SUBCONSCIOUS_BINDER_ROWS = 4;
+const SUBCONSCIOUS_BINDER_PAGE = SUBCONSCIOUS_BINDER_COLS * SUBCONSCIOUS_BINDER_ROWS;
+
 export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
   const body = document.getElementById("utility-modal-body");
   const pending = state.pendingReturn;
   const need = pending?.remaining || 0;
+  const entries = subconsciousBinderEntries(state);
+  let page = 0;
+  let detailIndex = null;
 
   body.innerHTML = `
-    <div class="card-choice-picker card-choice-picker-wide">
+    <div class="card-choice-picker card-choice-picker-wide subconscious-binder-picker">
       <h2>Return from Subconscious</h2>
       <p class="card-choice-message">${pending?.reason || `Choose up to ${need} card(s) to Return to discard piles.`}</p>
       <p class="card-choice-hint">${cardChoiceHint()}</p>
-      <div id="subconscious-piles" class="subconscious-piles card-choice-piles"></div>
+      <div id="subconscious-binder-root" class="subconscious-binder-root"></div>
       <p class="card-choice-status">Selected 0 / ${need}</p>
       <div class="utility-actions card-choice-actions">
         <button type="button" class="btn" id="return-skip">Return selected &amp; skip rest</button>
@@ -3628,50 +3679,140 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
   `;
   prepareCardChoiceModal();
 
-  const container = body.querySelector("#subconscious-piles");
+  const root = body.querySelector("#subconscious-binder-root");
   const confirmBtn = body.querySelector("#card-choice-confirm");
   const statusEl = body.querySelector(".card-choice-status");
-  const piles = subconsciousPilesForUI(state);
-  const allCards = piles.flatMap((pile) => pile.cards);
 
-  const refresh = () => {
+  const refreshStatus = () => {
     const picked = pending?.picked || [];
-    container.querySelectorAll(".card-choice-wrap").forEach((wrap) => {
-      const id = wrap.dataset.cardId;
-      wrap.querySelector(".game-card")?.classList.toggle(
-        "selected",
-        picked.some((c) => c.instanceId === id),
-      );
-    });
     statusEl.textContent = `Selected ${picked.length} / ${need}`;
     confirmBtn.disabled = picked.length === 0;
   };
 
-  if (!piles.length) {
-    container.innerHTML = "<p class='resolution-empty'>The Subconscious is empty — nothing to Return.</p>";
-    confirmBtn.disabled = true;
-  } else {
-    piles.forEach((pile) => {
-      const section = document.createElement("div");
-      section.className = "subconscious-pile";
-      section.innerHTML = `<h4>${pile.icon || ""} ${pile.label} (${pile.cards.length})</h4>`;
-      const row = document.createElement("div");
-      row.className = "card-choice-row";
-      pile.cards.forEach((card) => {
-        mountChoicePickerCard(row, card, {
-          cards: allCards,
-          selected: pending?.picked.some((c) => c.instanceId === card.instanceId),
-          onSelect: () => {
-            toggleReturnPick(state, card.instanceId);
-            refresh();
-          },
-        });
+  const isSelected = (card) => pending?.picked?.some((c) => c.instanceId === card.instanceId);
+
+  const renderBinderGrid = () => {
+    detailIndex = null;
+    root.innerHTML = "";
+    if (!entries.length) {
+      root.innerHTML = "<p class='resolution-empty'>The Subconscious is empty — nothing to Return.</p>";
+      confirmBtn.disabled = true;
+      return;
+    }
+
+    const pageCount = Math.max(1, Math.ceil(entries.length / SUBCONSCIOUS_BINDER_PAGE));
+    page = Math.min(page, pageCount - 1);
+    const slice = entries.slice(page * SUBCONSCIOUS_BINDER_PAGE, (page + 1) * SUBCONSCIOUS_BINDER_PAGE);
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "subconscious-binder-toolbar";
+    toolbar.innerHTML = `
+      <span class="subconscious-binder-page-label">Page ${page + 1} / ${pageCount}</span>
+      <div class="subconscious-binder-nav">
+        <button type="button" class="btn btn-sm" id="binder-prev-page" ${page <= 0 ? "disabled" : ""}>Previous</button>
+        <button type="button" class="btn btn-sm" id="binder-next-page" ${page >= pageCount - 1 ? "disabled" : ""}>Next</button>
+      </div>
+    `;
+    root.appendChild(toolbar);
+
+    const grid = document.createElement("div");
+    grid.className = "subconscious-binder-grid";
+    grid.style.setProperty("--binder-cols", String(SUBCONSCIOUS_BINDER_COLS));
+
+    slice.forEach((entry, localIdx) => {
+      const globalIndex = page * SUBCONSCIOUS_BINDER_PAGE + localIdx;
+      const cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "subconscious-binder-cell";
+      cell.dataset.globalIndex = String(globalIndex);
+      const thumb = renderCard(entry.card, {
+        mini: true,
+        selected: isSelected(entry.card),
       });
-      section.appendChild(row);
-      container.appendChild(section);
+      thumb.classList.add("binder-thumb");
+      const deck = document.createElement("span");
+      deck.className = "subconscious-binder-deck-tag";
+      deck.textContent = `${entry.pileIcon || ""} ${entry.pileLabel}`.trim();
+      cell.appendChild(thumb);
+      cell.appendChild(deck);
+      cell.addEventListener("click", () => {
+        detailIndex = globalIndex;
+        renderDetailView();
+      });
+      grid.appendChild(cell);
     });
-    refresh();
-  }
+
+    root.appendChild(grid);
+    toolbar.querySelector("#binder-prev-page")?.addEventListener("click", () => {
+      if (page > 0) {
+        page -= 1;
+        renderBinderGrid();
+      }
+    });
+    toolbar.querySelector("#binder-next-page")?.addEventListener("click", () => {
+      if (page < pageCount - 1) {
+        page += 1;
+        renderBinderGrid();
+      }
+    });
+    refreshStatus();
+  };
+
+  const renderDetailView = () => {
+    if (detailIndex == null || !entries[detailIndex]) {
+      renderBinderGrid();
+      return;
+    }
+    const entry = entries[detailIndex];
+    root.innerHTML = "";
+    const detail = document.createElement("div");
+    detail.className = "subconscious-binder-detail";
+    const cardHost = document.createElement("div");
+    cardHost.className = "subconscious-binder-detail-card";
+    cardHost.appendChild(renderCard(entry.card, {
+      portrait: true,
+      selected: isSelected(entry.card),
+    }));
+    const selectBtn = document.createElement("button");
+    selectBtn.type = "button";
+    selectBtn.className = `btn ${isSelected(entry.card) ? "" : "primary"}`;
+    selectBtn.textContent = isSelected(entry.card) ? "Deselect for Return" : "Select for Return";
+    selectBtn.addEventListener("click", () => {
+      toggleReturnPick(state, entry.card.instanceId);
+      renderDetailView();
+    });
+    const meta = document.createElement("p");
+    meta.className = "subconscious-binder-detail-meta";
+    meta.textContent = `${entry.pileIcon || ""} ${entry.pileLabel} · card ${detailIndex + 1} of ${entries.length}`;
+    const nav = document.createElement("div");
+    nav.className = "subconscious-binder-detail-nav";
+    nav.innerHTML = `
+      <button type="button" class="btn" id="binder-detail-prev" ${detailIndex <= 0 ? "disabled" : ""}>← Previous</button>
+      <button type="button" class="btn" id="binder-detail-back">Back to binder</button>
+      <button type="button" class="btn" id="binder-detail-next" ${detailIndex >= entries.length - 1 ? "disabled" : ""}>Next →</button>
+    `;
+    detail.appendChild(cardHost);
+    detail.appendChild(selectBtn);
+    detail.appendChild(meta);
+    detail.appendChild(nav);
+    root.appendChild(detail);
+    nav.querySelector("#binder-detail-back")?.addEventListener("click", () => renderBinderGrid());
+    nav.querySelector("#binder-detail-prev")?.addEventListener("click", () => {
+      if (detailIndex > 0) {
+        detailIndex -= 1;
+        renderDetailView();
+      }
+    });
+    nav.querySelector("#binder-detail-next")?.addEventListener("click", () => {
+      if (detailIndex < entries.length - 1) {
+        detailIndex += 1;
+        renderDetailView();
+      }
+    });
+    refreshStatus();
+  };
+
+  renderBinderGrid();
 
   confirmBtn?.addEventListener("click", () => {
     hideModal();

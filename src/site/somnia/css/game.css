@@ -6498,6 +6498,152 @@ body.card-detail-open .tutorial-card {
 .subconscious-pile { margin-bottom: 0.75rem; }
 .subconscious-pile h4 { margin: 0 0 0.35rem; font-size: 0.85rem; color: var(--muted); }
 
+.subconscious-binder-picker {
+  max-width: min(96vw, 920px);
+}
+
+.subconscious-binder-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.subconscious-binder-page-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.subconscious-binder-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--binder-cols, 12), minmax(0, 1fr));
+  gap: 0.35rem 0.4rem;
+  max-height: min(52vh, 420px);
+  overflow: auto;
+  padding: 0.35rem;
+  background: rgba(8, 6, 18, 0.55);
+  border-radius: 12px;
+  border: 1px solid rgba(180, 140, 255, 0.2);
+}
+
+.subconscious-binder-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.subconscious-binder-cell:hover {
+  background: rgba(123, 92, 255, 0.12);
+}
+
+.subconscious-binder-cell .binder-thumb {
+  width: 52px !important;
+  min-height: 72px !important;
+  pointer-events: none;
+}
+
+.subconscious-binder-deck-tag {
+  font-size: 0.55rem;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subconscious-binder-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.subconscious-binder-detail-card {
+  max-width: 220px;
+}
+
+.subconscious-binder-detail-meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.subconscious-binder-detail-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.action-moment-banner {
+  position: absolute;
+  top: 0.35rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 120;
+  max-width: min(92%, 42rem);
+  padding: 0.45rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(12, 8, 28, 0.92);
+  border: 1px solid rgba(201, 160, 255, 0.45);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.action-moment-banner.hidden {
+  display: none !important;
+}
+
+.action-moment-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f0e8ff;
+}
+
+.action-moment-detail {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: rgba(220, 210, 255, 0.88);
+}
+
+.monkey-paw-token-row {
+  position: absolute;
+  bottom: 0.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.12rem;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.monkey-paw-token-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  line-height: 1;
+  color: #2a1800;
+  background: linear-gradient(145deg, #ffe566, #f0c030 45%, #c99010);
+  box-shadow: 0 0 6px rgba(240, 201, 106, 0.75);
+}
+
 .subconscious-graveyard {
   background: rgba(20, 12, 32, 0.85);
   border: 1px solid rgba(180, 120, 220, 0.35);
@@ -10196,6 +10342,19 @@ body.play-window .phase-stepper.top-bar-stepper {
   transform-origin: 18% 100%;
   transform: rotate(var(--fan-rot, 0deg)) translateY(var(--fan-y, 0px));
   transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+  opacity: 0.97;
+}
+
+#screen-game .hand-primary .game-card.selected {
+  opacity: 1;
+}
+
+.spread-tray-fan .game-card {
+  opacity: 0.98;
+}
+
+.spread-tray-fan .game-card.selected {
+  opacity: 1;
 }
 
 #screen-game .hand-primary .game-card:last-child {
