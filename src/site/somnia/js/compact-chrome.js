@@ -99,7 +99,7 @@ function applyDrawerDefaults(form) {
     return;
   }
   if (!document.body.classList.contains("deck-user-set")) {
-    setDeckExpanded(false);
+    setDeckExpanded(form === "tablet");
   }
   if (!document.body.classList.contains("sidebar-user-set")) {
     setSidebarDrawerOpen(defaultSidebarOpen());

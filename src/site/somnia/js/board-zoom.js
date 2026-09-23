@@ -5,7 +5,9 @@ const MAX_ZOOM = 5.5;
 const ZOOM_SENSITIVITY = 0.0012;
 const BUTTON_ZOOM_FACTOR = 1.18;
 const PAN_CLICK_THRESHOLD = 5;
-const TOUCH_PAN_THRESHOLD = 10;
+/** iPad finger taps jitter well past 10px. A shorter slop turns reveal/move taps into pans. */
+export const TOUCH_TAP_SLOP = 28;
+const TOUCH_PAN_THRESHOLD = TOUCH_TAP_SLOP;
 const ARROW_PAN_FRACTION = 0.06;
 const EMPTY_DOUBLE_TAP_MS = 400;
 

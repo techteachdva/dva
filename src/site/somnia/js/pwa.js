@@ -106,7 +106,7 @@ function ensureInstallSheet() {
       <ol>
         <li>Tap <strong>Share</strong> in Safari.</li>
         <li>Choose <strong>Add to Home Screen</strong>.</li>
-        <li>Open the new Somnia icon for a full-bleed table.</li>
+        <li>Open the new Somnia icon. After this visit, that icon plays with no internet.</li>
       </ol>
       <button type="button" class="btn primary" data-pwa-sheet-close>Got it</button>
     </div>

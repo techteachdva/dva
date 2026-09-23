@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.3";
+export const SOMNIA_VERSION = "29.3.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.3.1",
+    title: "iPad taps and deck faces",
+    notes: [
+      "Landscape taps to Reveal or move register on the hex under your finger. A small finger slide no longer turns the tap into a pan.",
+      "iPad opens with the deck rail showing card backs and discard faces. The Decks button still tucks that rail away.",
+    ],
+  },
   {
     version: "29.3",
     title: "Subconscious Zoom Carousel",
