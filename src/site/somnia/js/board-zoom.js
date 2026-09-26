@@ -293,8 +293,8 @@ function beginTrackedPan(event, { capture = true } = {}) {
   panOriginX = panX;
   panOriginY = panY;
   panMoved = false;
-  lastEmptyTapAt = 0;
   if (capture) {
+    lastEmptyTapAt = 0;
     userAdjusted = true;
     setPanning(true);
     try {
@@ -386,6 +386,7 @@ function onPointerMove(event) {
     if (Math.hypot(dx, dy) > TOUCH_PAN_THRESHOLD) {
       pendingTouchPan = false;
       suppressClick = true;
+      lastEmptyTapAt = 0;
       userAdjusted = true;
       panMoved = true;
       setPanning(true);

@@ -5,10 +5,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.6";
+export const SOMNIA_VERSION = "29.7";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.7",
+    title: "The Unburied Button",
+    notes: [
+      "With the Decks drawer open, Back slides clear of the rail and still takes the tap.",
+      "Double-tap empty table felt to fit the board. The gesture finally hears the second tap.",
+      "On short windows the deck rail scrolls, and every deck stays within reach.",
+    ],
+  },
   {
     version: "29.6",
     title: "The Finger on the Map",

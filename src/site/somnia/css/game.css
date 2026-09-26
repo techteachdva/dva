@@ -1043,7 +1043,8 @@ body.in-game main {
   gap: clamp(0.18rem, 0.55vh, 0.38rem);
   width: clamp(152px, 14.5vw, 210px);
   height: auto;
-  overflow: hidden;
+  overflow: hidden auto;
+  scrollbar-width: thin;
   padding: clamp(0.32rem, 0.75vh, 0.5rem) 0.42rem;
   border-radius: 12px;
   border: 1px solid rgba(201, 160, 255, 0.24);
@@ -1057,7 +1058,7 @@ body.in-game main {
 
 .deck-rail-row {
   flex: 1 1 0;
-  min-height: 0;
+  min-height: min-content;
   display: flex;
   flex-direction: column;
   gap: 0.14rem;
@@ -1116,7 +1117,7 @@ body.in-game main {
 
 .deck-rail-piles {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: min-content;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: end;
@@ -1133,9 +1134,8 @@ body.in-game main {
 .deck-rail-draw,
 .deck-rail-discard {
   position: relative;
-  min-height: 0;
-  height: 100%;
-  max-height: 100%;
+  min-height: calc(var(--deck-face-h) + var(--deck-stack-cap) + 6px);
+  max-height: none;
 }
 
 .deck-rect-stack {
@@ -7361,7 +7361,7 @@ html[data-form="tablet"] #screen-game .board-viewport {
 
 html[data-form="phone"] body.deck-expanded #screen-game .board-viewport,
 html[data-form="tablet"] body.deck-expanded #screen-game .board-viewport {
-  --map-chrome-left: clamp(72px, 16vw, 132px);
+  --map-chrome-left: calc(min(210px, 72vw) + 0.35rem);
   padding-left: var(--map-chrome-left);
 }
 
@@ -11556,4 +11556,12 @@ html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open .
 html[data-form="phone"] body.sidebar-drawer-open .chrome-edge-toggle-side,
 html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open .chrome-edge-toggle-side {
   right: calc(min(320px, 86vw) + 0.45rem);
+}
+
+/* Short desktop windows: shrink deck faces so the rail fits without scrolling. */
+@media (max-height: 940px) {
+  html[data-form="desktop"] .deck-column {
+    --deck-face-w: 2rem;
+    --deck-face-h: 2.7rem;
+  }
 }
