@@ -2,6 +2,8 @@ import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, play
 import { initClickFeedback } from "./click-feedback.js";
 import { syncGameCursor, flashRevealOpenCursor } from "./game-cursor.js";
 import { initDeviceMode } from "./device-mode.js";
+import { initInputQuarantine } from "./input-quarantine.js";
+import { onViewportSettled, requestRender } from "./viewport-sync.js";
 import { initCompactChrome } from "./compact-chrome.js";
 import { initSomniaPwa } from "./pwa.js";
 import { writeLaunchConfig, readStoredLaunchConfig } from "./launch-store.js";
@@ -255,7 +257,6 @@ const DOCK_SELECT_DELAY_MS = 280;
 let tutorialAutoAdvanceTimer = null;
 let fullscreenReady = false;
 const lastCardClick = { id: null, time: 0 };
-let boardResizeTimer = null;
 let lastRepressPickerKey = null;
 let lastReturnPickerKey = null;
 let prevHandIds = new Set();
@@ -277,7 +278,8 @@ function getNewHandCardIds(state) {
 }
 
 async function init() {
-  initDeviceMode();
+  initDeviceMode(); // also starts viewport-sync (measure phase)
+  initInputQuarantine(); // seal overlays + Safari gesture guard before any UI mounts
   initSomniaPwa();
   initCompactChrome();
   initDialogAccessibility();
@@ -301,10 +303,14 @@ async function init() {
     refreshTutorialSpotlight();
     trackTutorialSpotlightWithCamera(480);
   });
-  setBoardCameraMoveHandler(() => {
+  // Called at most once per animation frame by board-zoom (see flushTransform).
+  // Only an animated focus snap needs the 480 ms rAF tracker; a finger pan gets
+  // one reposition per frame — the old code restarted the tracker on every
+  // pointermove, spawning overlapping rAF loops that re-measured the spotlight.
+  setBoardCameraMoveHandler((animated) => {
     repositionRadialMenu();
     refreshTutorialSpotlight();
-    trackTutorialSpotlightWithCamera(480);
+    if (animated) trackTutorialSpotlightWithCamera(480);
   });
   bindFullscreenPrompt();
   bindImageDragGuard();
@@ -710,16 +716,34 @@ function bindModal() {
   });
 }
 
+/**
+ * VIEWPORT SYNC: the board re-renders exactly once per settle. The ResizeObserver
+ * (which fires after panel-layout's CSS variables resize #board-viewport) and the
+ * settle lane's render phase both funnel into requestRender(), which coalesces to a
+ * single renderAll() in the next animation frame. Previously the observer's own
+ * 80 ms timer and board-zoom's refit each produced a full board build.
+ */
 function bindBoardResize() {
   const vp = document.getElementById("board-viewport");
   if (!vp || vp.dataset.resizeBound) return;
   vp.dataset.resizeBound = "1";
-  const observer = new ResizeObserver(() => {
+  let renderedW = -1;
+  let renderedH = -1;
+  const renderForViewport = () => {
     if (!state) return;
-    clearTimeout(boardResizeTimer);
-    boardResizeTimer = setTimeout(() => renderAll(), 80);
+    renderedW = vp.clientWidth;
+    renderedH = vp.clientHeight;
+    renderAll();
+  };
+  const observer = new ResizeObserver((entries) => {
+    if (!state) return;
+    const box = entries[0]?.contentRect;
+    // The settle render already measured this exact box — nothing new to draw.
+    if (box && Math.round(box.width) === renderedW && Math.round(box.height) === renderedH) return;
+    requestRender();
   });
   observer.observe(vp);
+  onViewportSettled("render", renderForViewport);
 }
 
 function bindDeckColumnResize() {

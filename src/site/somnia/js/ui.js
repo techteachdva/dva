@@ -38,7 +38,7 @@ import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate } from "./obje
 import { psycheHandCount, alliesInHand, psycheCardsInHand, allyHandCount, allyHandLimitForPlayer, effectivePsycheHealth, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue } from "./psyche.js";
 import { getQuestStatus, activeQuestLandscapeIds } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
-import { hexToPixel, boardPixelBounds } from "./hex.js";
+import { hexToPixel, boardPixelBounds, pixelToHex, hexKey } from "./hex.js";
 import {
   subconsciousCount,
   subconsciousPilesForUI,
@@ -70,7 +70,9 @@ import {
   tileFlipElapsedMs,
 } from "./fx.js";
 import { BOSS_DREAM_DECK_SLOTS } from "./data.js";
-import { consumeBoardClickSuppression, getBoardZoom, cancelPendingBoardGesture, suppressNextBoardClick, isBoardCameraBusy, TOUCH_TAP_SLOP } from "./board-zoom.js";
+import { consumeBoardClickSuppression, getBoardZoom, getBoardCamera, cancelPendingBoardGesture, suppressNextBoardClick, isBoardCameraBusy, TOUCH_TAP_SLOP } from "./board-zoom.js";
+import { getViewportRect } from "./frame-metrics.js";
+import { armBoardTapShield, consumeBoardTapShield } from "./input-quarantine.js";
 import { bindLongPress, bindInspectGesture } from "./pointer-gestures.js";
 import { prefersTouchUi, getCapabilityProfile } from "./device-mode.js";
 import { revealCompactTarget } from "./compact-chrome.js";
@@ -779,8 +781,24 @@ function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = 
   radialMenuRoot = layer;
   layer.classList.add("open");
   document.addEventListener("keydown", onRadialMenuKey, true);
+  /* INPUT QUARANTINE: the scrim is the dismiss surface. It has pointer-events:auto
+     (game.css "Input quarantine"), so a tap outside the ring lands *on the scrim*,
+     closes the menu, and never reaches #board-viewport's tap handlers. The old
+     document-level pointerdown hook let the same touch fall through to a hex tile. */
+  const dismissFromScrim = (event) => {
+    event.stopPropagation();
+    if (event.cancelable && event.type !== "click") event.preventDefault();
+    armBoardTapShield(undefined, event);
+    hideRadialMenu();
+  };
+  scrim.addEventListener("pointerdown", dismissFromScrim);
+  scrim.addEventListener("click", (event) => event.stopPropagation());
+  // Mouse users keep click-through (the scrim is pointer-events:none for fine
+  // pointers, so this hook still sees their pointerdown and the click proceeds).
+  // For a stray touch that somehow reaches here, shield the board tap as well.
   radialDismissHook = (event) => {
-    if (event.target.closest(".radial-menu-item, .power-token-radial-menu")) return;
+    if (event.target.closest(".radial-menu-item, .power-token-radial-menu, .radial-menu-scrim")) return;
+    if (event.pointerType === "touch" || event.pointerType === "pen") armBoardTapShield(undefined, event);
     hideRadialMenu();
   };
   document.addEventListener("pointerdown", radialDismissHook, true);
@@ -1360,6 +1378,9 @@ export function showModal(card, options = {}) {
 
 export function hideModal() {
   const modal = document.getElementById("card-modal");
+  // INPUT QUARANTINE: a backdrop tap that closes this modal must not finish as a
+  // tile tap on the board it just uncovered.
+  if (modal && !modal.classList.contains("hidden")) armBoardTapShield();
   modal?.classList.add("hidden");
   modal?.querySelector(".modal-content")?.classList.remove(
     "dreambeast-detail-modal",
@@ -1610,9 +1631,73 @@ let lastFitHexSize = 0;
 let lastBoardStructureKey = "";
 let lastBoardChromeKey = "";
 
+/* ---- Board render cache (zero-rebuild zoom) ------------------------------------
+   Zooming changes only the hex size. Previously `size` was part of the structure
+   key, so every wheel tick / pinch commit tore the board down with innerHTML = ""
+   and rebuilt 25 tiles (re-decoding every landscape image on iPad). Now the
+   structure key ignores size; a size-only change walks the cached tile elements
+   and rewrites left/top/z-index — no node creation, no string templates. The same
+   caches back the analytic hit-test below, so a tap costs one viewport rect read
+   instead of 25. */
+const boardGeom = { size: 0, offsetX: 0, offsetY: 0, width: 0, height: 0 };
+/** tileId -> <button.hex-tile> for the currently mounted board. */
+const tileEls = new Map();
+/** "q,r" -> tile for the currently mounted board. */
+const tilesByHex = new Map();
+/** Reused scratch objects for hit-testing (never allocated per tap). */
+const hitCamera = { panX: 0, panY: 0, scale: 1 };
+const hitAxial = { q: 0, r: 0 };
+const SQRT3 = Math.sqrt(3);
+
+function tileZIndex(el, y, offsetY) {
+  const raised = el.classList.contains("movable")
+    || el.classList.contains("pick-reveal")
+    || el.classList.contains("tutorial-reveal-target");
+  return (raised ? 4000 : 1000) + Math.round(y + offsetY);
+}
+
+function writeBoardGeometry(board, state, size) {
+  const scale = size / HEX_BASE;
+  const bounds = boardPixelBounds(state, size);
+  boardGeom.size = size;
+  boardGeom.offsetX = bounds.offsetX;
+  boardGeom.offsetY = bounds.offsetY;
+  boardGeom.width = bounds.width;
+  boardGeom.height = bounds.height;
+  board.style.setProperty("--hex-scale", String(scale));
+  board.style.setProperty("--hex-size", `${size}px`);
+  board.style.width = `${bounds.width}px`;
+  board.style.height = `${bounds.height}px`;
+  return bounds;
+}
+
+/** Size-only re-layout of an already-mounted board. */
+function patchBoardGeometry(board, state, size) {
+  const bounds = writeBoardGeometry(board, state, size);
+  for (let i = 0; i < state.board.length; i += 1) {
+    const tile = state.board[i];
+    const el = tileEls.get(tile.id);
+    if (!el) continue;
+    const { x, y } = hexToPixel(tile.q, tile.r, size);
+    el.style.left = `${x + bounds.offsetX}px`;
+    el.style.top = `${y + bounds.offsetY}px`;
+    el.style.zIndex = String(tileZIndex(el, y, bounds.offsetY));
+  }
+}
+
 function compactHexCap() {
   const form = getCapabilityProfile()?.form;
   return form === "phone" || form === "tablet" ? HEX_MAX_COMPACT : HEX_MAX_NATIVE;
+}
+
+/** 30.2: a 390px phone cannot show the 7-wide board at HEX_MIN 44 (534px), so
+ *  "Fit table" left tiles clipped on both edges. Phones fit down to radius 32
+ *  (≈55px tiles, still a thumb target); pinch-zoom brings them back up. */
+function minHexSize() {
+  const profile = getCapabilityProfile();
+  if (profile?.form !== "phone") return HEX_MIN;
+  // Landscape phones have ~330px of table height for 7 hex rows.
+  return profile.orientation === "landscape" ? 28 : 32;
 }
 
 function fitHexSize(state) {
@@ -1620,19 +1705,22 @@ function fitHexSize(state) {
   if (!viewport) return 100;
 
   const pad = 10;
-  const maxW = Math.max(160, viewport.clientWidth - pad);
+  const chromeLeft = parseFloat(getComputedStyle(viewport).paddingLeft) || 0;
+  const maxW = Math.max(160, viewport.clientWidth - chromeLeft - pad);
   const maxH = Math.max(160, viewport.clientHeight - pad);
   const bounds = boardPixelBounds(state, HEX_BASE);
   const fit = Math.min(maxW / bounds.width, maxH / bounds.height);
-  const base = Math.max(HEX_MIN, Math.floor(HEX_BASE * fit));
+  const hexMin = minHexSize();
+  const base = Math.max(hexMin, Math.floor(HEX_BASE * fit));
   const zoomed = Math.floor(base * getBoardZoom());
-  const next = Math.min(compactHexCap(), Math.max(HEX_MIN, zoomed));
+  const next = Math.min(compactHexCap(), Math.max(hexMin, zoomed));
   if (lastFitHexSize && Math.abs(next - lastFitHexSize) <= 2) return lastFitHexSize;
   lastFitHexSize = next;
   return next;
 }
 
-function boardStructureKey(state, size) {
+/** Everything that changes the *DOM shape* of the board — deliberately not hex size. */
+function boardStructureKey(state) {
   const tiles = state.board.map((tile) => [
     tile.id,
     tile.revealed ? 1 : 0,
@@ -1649,7 +1737,7 @@ function boardStructureKey(state, size) {
     .filter((p) => p.alive)
     .map((p) => `${p.id}:${p.landscapeId}:${p.dreamer?.image || ""}:${isDreamerTokenHidden(p.id) ? 1 : 0}`)
     .join("|");
-  return `${size}#${tiles.join("|")}#${occupants}`;
+  return `${tiles.join("|")}#${occupants}`;
 }
 
 function boardChromeKey(state, legalMoveIds, pickHighlights) {
@@ -1698,47 +1786,108 @@ function pointInPointyHex(dx, dy, radius) {
   return Math.abs(dy) + Math.abs(dx) / Math.sqrt(3) <= radius;
 }
 
-function hexTileUnderPoint(clientX, clientY) {
-  const board = document.getElementById("hex-board");
-  if (!board) return null;
-  const hits = [];
-  board.querySelectorAll(".hex-tile").forEach((tile) => {
-    const rect = tile.getBoundingClientRect();
-    if (rect.width < 2 || rect.height < 2) return;
-    const dx = clientX - (rect.left + rect.width / 2);
-    const dy = clientY - (rect.top + rect.height / 2);
-    const radius = rect.height / 2 + 10;
-    if (!pointInPointyHex(dx, dy, radius)) return;
-    hits.push({ tile, dist: dx * dx + dy * dy });
-  });
-  if (!hits.length) return null;
-  const highlighted = hits.filter(({ tile }) => (
-    tile.classList.contains("pick-reveal")
-    || tile.classList.contains("tutorial-reveal-target")
-    || tile.classList.contains("pick-forget")
-    || tile.classList.contains("pick-choose")
-  ));
-  const pool = highlighted.length ? highlighted : hits;
-  pool.sort((a, b) => a.dist - b.dist);
-  return pool[0].tile;
+function isPickHighlighted(el) {
+  return el.classList.contains("pick-reveal")
+    || el.classList.contains("tutorial-reveal-target")
+    || el.classList.contains("pick-forget")
+    || el.classList.contains("pick-choose");
 }
 
-function tokenUnderPoint(clientX, clientY) {
-  const board = document.getElementById("hex-board");
-  if (!board) return null;
+/**
+ * FRAME-AGNOSTIC HIT-TEST ("raycast" for a DOM board).
+ *
+ *   client px  -(viewport rect)->  viewport px  -(pan, pinch scale)->  board px
+ *              -(bounds offset)->  hex-local px  -(pixelToHex)->  axial (q, r)
+ *
+ * The viewport rect is read live from frame-metrics so iframe offsets, drawers and
+ * safe-area padding are accounted for automatically; DPR never enters because
+ * clientX/Y and getBoundingClientRect() share CSS-pixel space. Cost per tap: one
+ * cached rect read and ≤7 arithmetic candidates — the old version measured 25
+ * tile rects (forced layout) on every touch.
+ *
+ * Fingertip slop: the true hex plus its six neighbours are considered; a pick-
+ * highlighted neighbour within ~10px of the finger wins over a plain nearest tile,
+ * matching the previous behaviour.
+ */
+function hexTileUnderPoint(clientX, clientY) {
+  if (!boardGeom.size || !tileEls.size) return null;
+  const rect = getViewportRect();
+  getBoardCamera(hitCamera);
+  const size = boardGeom.size;
+  const scale = hitCamera.scale || 1;
+  // client -> viewport -> board (undo pan + live pinch scale) -> hex-local
+  const bx = (clientX - rect.left - hitCamera.panX) / scale - boardGeom.offsetX;
+  const by = (clientY - rect.top - hitCamera.panY) / scale - boardGeom.offsetY;
+  pixelToHex(bx, by, size, hitAxial);
+
+  const slop = size + 10 / scale; // circumradius + fingertip allowance (screen px -> board px)
   let best = null;
   let bestDist = Infinity;
-  board.querySelectorAll(".hex-occupant-token").forEach((token) => {
-    const rect = token.getBoundingClientRect();
-    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return;
-    const dx = clientX - (rect.left + rect.width / 2);
-    const dy = clientY - (rect.top + rect.height / 2);
+  let bestHighlighted = false;
+
+  const consider = (q, r) => {
+    const tile = tilesByHex.get(hexKey(q, r));
+    if (!tile) return;
+    const el = tileEls.get(tile.id);
+    if (!el) return;
+    // Inline hexToPixel (avoids a temp object per candidate).
+    const dx = bx - size * SQRT3 * (q + r / 2);
+    const dy = by - size * 1.5 * r;
+    if (!pointInPointyHex(dx, dy, slop)) return;
     const dist = dx * dx + dy * dy;
-    if (dist < bestDist) {
+    const highlighted = isPickHighlighted(el);
+    if (highlighted && !bestHighlighted) {
+      best = el;
       bestDist = dist;
-      best = token;
+      bestHighlighted = true;
+      return;
     }
-  });
+    if (highlighted === bestHighlighted && dist < bestDist) {
+      best = el;
+      bestDist = dist;
+    }
+  };
+
+  consider(hitAxial.q, hitAxial.r);
+  consider(hitAxial.q + 1, hitAxial.r);
+  consider(hitAxial.q + 1, hitAxial.r - 1);
+  consider(hitAxial.q, hitAxial.r - 1);
+  consider(hitAxial.q - 1, hitAxial.r);
+  consider(hitAxial.q - 1, hitAxial.r + 1);
+  consider(hitAxial.q, hitAxial.r + 1);
+  return best;
+}
+
+/**
+ * Dreamer / Dreambeast token under the finger. Tokens can overhang their hex, so
+ * the hex under the finger and its six neighbours are scanned (≤7 tiles, a handful
+ * of rects) instead of every token on the board.
+ */
+const TOKEN_SCAN_DIRS = [[0, 0], [1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+function tokenUnderPoint(clientX, clientY) {
+  if (!boardGeom.size || !tilesByHex.size) return null;
+  hexTileUnderPoint(clientX, clientY); // leaves the raw axial hit in hitAxial
+
+  let best = null;
+  let bestDist = Infinity;
+  for (let d = 0; d < TOKEN_SCAN_DIRS.length; d += 1) {
+    const tile = tilesByHex.get(hexKey(hitAxial.q + TOKEN_SCAN_DIRS[d][0], hitAxial.r + TOKEN_SCAN_DIRS[d][1]));
+    const el = tile ? tileEls.get(tile.id) : null;
+    if (!el) continue;
+    const tokens = el.getElementsByClassName("hex-occupant-token");
+    for (let i = 0; i < tokens.length; i += 1) {
+      const token = tokens[i];
+      const rect = token.getBoundingClientRect();
+      if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) continue;
+      const dx = clientX - (rect.left + rect.width / 2);
+      const dy = clientY - (rect.top + rect.height / 2);
+      const dist = dx * dx + dy * dy;
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = token;
+      }
+    }
+  }
   return best;
 }
 
@@ -1810,6 +1959,11 @@ function onBoardTouchTap(event) {
     boardTouchActivatedAt = Date.now();
     return;
   }
+  // INPUT QUARANTINE: an overlay closed under this finger a moment ago.
+  if (consumeBoardTapShield(event)) {
+    boardTouchActivatedAt = Date.now();
+    return;
+  }
   boardTouchActivatedAt = Date.now();
   const fromTarget = event.target instanceof Element ? event.target.closest(".hex-tile") : null;
   activateBoardTarget(event, fromTarget);
@@ -1854,15 +2008,12 @@ function patchBoardChrome(state, legalMoveIds, pickHighlights, size) {
   };
   let patched = 0;
   state.board.forEach((tile) => {
-    const el = board.querySelector(`.hex-tile[data-tile-id="${tile.id}"]`);
+    const el = tileEls.get(tile.id);
     if (!el) return;
     const { y } = hexToPixel(tile.q, tile.r, size);
-    const tutorialRevealTarget = sets.tutorialRevealId === tile.id && !(tile.revealed && !tile.wasteland);
-    el.className = hexTileClassName(tile, state, sets);
-    el.style.zIndex = String(
-      (tutorialRevealTarget || sets.revealSet.has(tile.id) || sets.legalSet.has(tile.id) ? 4000 : 1000)
-      + Math.round(y + bounds.offsetY)
-    );
+    const nextClass = hexTileClassName(tile, state, sets);
+    if (el.className !== nextClass) el.className = nextClass;
+    el.style.zIndex = String(tileZIndex(el, y, bounds.offsetY));
     patched += 1;
   });
   return patched === state.board.length;
@@ -1881,12 +2032,16 @@ export function renderBoard(
   const board = document.getElementById("hex-board");
   const size = fitHexSize(state);
   const chromeKey = boardChromeKey(state, legalMoveIds, pickHighlights);
-  const structureKey = boardStructureKey(state, size);
+  const structureKey = boardStructureKey(state);
   if (
     structureKey === lastBoardStructureKey
     && board?.childElementCount
+    && tileEls.size === state.board.length
     && !board.querySelector(".just-revealed, .just-forgotten")
   ) {
+    // ZERO-REBUILD PATH: same tiles, same occupants. Zoom -> geometry patch only;
+    // selection / legal-move changes -> class + z-index patch only.
+    if (size !== boardGeom.size) patchBoardGeometry(board, state, size);
     if (chromeKey !== lastBoardChromeKey) {
       lastBoardChromeKey = chromeKey;
       patchBoardChrome(state, legalMoveIds, pickHighlights, size);
@@ -1896,15 +2051,13 @@ export function renderBoard(
   lastBoardStructureKey = structureKey;
   lastBoardChromeKey = chromeKey;
 
-  board.innerHTML = "";
+  // Structural render: detach children in one operation, then rebuild.
+  board.replaceChildren();
+  tileEls.clear();
+  tilesByHex.clear();
 
-  const scale = size / HEX_BASE;
-  board.style.setProperty("--hex-scale", String(scale));
-  board.style.setProperty("--hex-size", `${size}px`);
-  const bounds = boardPixelBounds(state, size);
+  const bounds = writeBoardGeometry(board, state, size);
   board.style.position = "relative";
-  board.style.width = `${bounds.width}px`;
-  board.style.height = `${bounds.height}px`;
   board.style.margin = "0 auto";
 
   const legalSet = new Set(legalMoveIds);
@@ -1931,6 +2084,8 @@ export function renderBoard(
     const el = document.createElement("button");
     el.type = "button";
     el.dataset.tileId = tile.id;
+    tileEls.set(tile.id, el);
+    tilesByHex.set(hexKey(tile.q, tile.r), tile);
     const isBedFinal = tile.center && tile.finalRecurrenceSide;
     const showFace = tile.revealed && !tile.wasteland;
     const encounters = tileEncounters(tile);
@@ -2043,6 +2198,7 @@ export function renderBoard(
     el.addEventListener("click", (event) => {
       if (touchTapJustHandled()) return;
       if (consumeBoardClickSuppression()) return;
+      if (consumeBoardTapShield(event)) return;
       activateBoardTarget(event, el);
     });
     if (tutorialRevealTarget) {
@@ -4246,6 +4402,7 @@ export function hideUtilityModal(force = false) {
     return;
   }
   const modal = document.getElementById("utility-modal");
+  if (modal && !modal.classList.contains("hidden")) armBoardTapShield();
   modal?.classList.add("hidden");
   modal?.classList.remove("utility-modal-minimized", "utility-modal-required");
   document.body.classList.remove("utility-modal-open");

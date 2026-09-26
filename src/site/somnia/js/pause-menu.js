@@ -1,11 +1,4 @@
-import {
-  loadSettings,
-  saveSettings,
-  MUSIC_TRACKS,
-  VIEW_MODE_ORDER,
-  VIEW_MODE_LABELS,
-  footerCreditsHtml,
-} from "./audio-settings.js";
+import { MUSIC_TRACKS, footerCreditsHtml } from "./audio-settings.js";
 import {
   applyAudioSettings,
   getAudioState,
@@ -18,8 +11,9 @@ import {
   setMusicPan,
   setSfxPan,
 } from "./audio.js";
-import { applyLayout, resetPanelLayout, setViewMode } from "./panel-layout.js";
+import { resetPanelLayout } from "./panel-layout.js";
 import { getFormOverride, setFormOverride } from "./device-mode.js";
+import { armBoardTapShield } from "./input-quarantine.js";
 import { validateScoreName } from "./highscores.js";
 import { showDreamFeedModal } from "./ui.js";
 
@@ -105,31 +99,24 @@ function renderAudioTab() {
 }
 
 function renderDisplayTab() {
-  const mode = loadSettings().viewMode || "auto";
-  const modes = VIEW_MODE_ORDER.map(
-    (m) => `<button type="button" class="btn ${mode === m ? "primary" : ""}" data-view-mode="${m}">${VIEW_MODE_LABELS[m] || m}</button>`,
-  ).join("");
   const form = getFormOverride();
   const forms = ["auto", "phone", "tablet", "desktop"].map(
     (m) => `<button type="button" class="btn ${form === m ? "primary" : ""}" data-form-override="${m}">${m === "auto" ? "Auto" : m[0].toUpperCase() + m.slice(1)}</button>`,
   ).join("");
+  const isDesktop = document.documentElement.dataset.form === "desktop";
 
   return `
     <div class="pause-section">
-      <h3>Device layout</h3>
-      <p class="pause-hint">Auto follows this screen. Override if the table picks the wrong chrome.</p>
+      <h3>Table layout</h3>
+      <p class="pause-hint">The Dreamscape fits itself to this screen — Desktop, Tablet or Phone — and re-fits on rotation. Override only if the table picked the wrong chrome.</p>
       <div class="pause-btn-row">${forms}</div>
     </div>
-    <div class="pause-section">
-      <h3>Interface size</h3>
-      <p class="pause-hint">Auto matches your screen resolution and Windows display scaling. Presets still shrink so the table fits on smaller windows.</p>
-      <div class="pause-btn-row">${modes}</div>
-    </div>
+    ${isDesktop ? `
     <div class="pause-section">
       <h3>Panel layout</h3>
-      <p class="pause-hint">Drag the edges between panels in-game to resize. Reset restores the current preset.</p>
+      <p class="pause-hint">Drag the edges between panels in-game to resize. Reset returns them to the automatic fit.</p>
       <button type="button" class="btn" id="pause-reset-panels">Reset panel sizes</button>
-    </div>
+    </div>` : ""}
   `;
 }
 
@@ -427,12 +414,6 @@ function bindAudioControls(root) {
 }
 
 function bindDisplayControls(root) {
-  root.querySelectorAll("[data-view-mode]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      setViewMode(btn.dataset.viewMode);
-      showTab("display");
-    });
-  });
   root.querySelectorAll("[data-form-override]").forEach((btn) => {
     btn.addEventListener("click", () => {
       setFormOverride(btn.dataset.formOverride);
@@ -490,6 +471,8 @@ export function openPauseMenu() {
 export function closePauseMenu() {
   const menu = document.getElementById("pause-menu");
   if (!menu) return;
+  // INPUT QUARANTINE: the tap that resumed must not land on the table underneath.
+  if (open) armBoardTapShield();
   open = false;
   menu.classList.add("hidden");
   menu.setAttribute("aria-hidden", "true");
@@ -517,57 +500,4 @@ export function initPauseMenu({ onResumeCallback, gameSaveHooks: hooks } = {}) {
     if (open) closePauseMenu();
     else openPauseMenu();
   }, { capture: true });
-}
-
-export function buildSetupAudioControls(container) {
-  if (!container) return;
-  const s = loadSettings();
-  const trackOptions = MUSIC_TRACKS.map(
-    (t) => `<option value="${t.id}" ${s.trackId === t.id ? "selected" : ""}>${t.title}</option>`,
-  ).join("");
-
-  container.innerHTML = `
-    <h3>Audio &amp; display</h3>
-    <p class="setup-hint">Music starts when you enter the dream table. Settings carry into the game.</p>
-    <label class="field">
-      <span>Music</span>
-      <select id="setup-music-mode">
-        <option value="radio" ${s.musicMode === "radio" ? "selected" : ""}>📻 Radio playlist</option>
-        <option value="track" ${s.musicMode === "track" ? "selected" : ""}>🎵 Single track</option>
-        <option value="off" ${s.musicMode === "off" ? "selected" : ""}>🔇 Off</option>
-      </select>
-    </label>
-    <label class="field">
-      <span>Track (single mode)</span>
-      <select id="setup-track" ${s.musicMode !== "track" ? "disabled" : ""}>${trackOptions}</select>
-    </label>
-    <label class="field">
-      <span>Interface size</span>
-      <select id="setup-view-mode">
-        <option value="auto" ${s.viewMode === "auto" ? "selected" : ""}>Auto — fits your screen</option>
-        <option value="small" ${s.viewMode === "small" ? "selected" : ""}>Small</option>
-        <option value="medium" ${s.viewMode === "medium" ? "selected" : ""}>Medium</option>
-        <option value="large" ${s.viewMode === "large" ? "selected" : ""}>Large</option>
-      </select>
-    </label>
-    ${footerCreditsHtml()}
-  `;
-
-  const persist = () => {
-    const viewMode = container.querySelector("#setup-view-mode")?.value || "auto";
-    saveSettings({
-      musicMode: container.querySelector("#setup-music-mode")?.value || "radio",
-      trackId: container.querySelector("#setup-track")?.value || "dreams-become-real",
-      viewMode,
-    });
-    setViewMode(viewMode);
-  };
-
-  container.querySelector("#setup-music-mode")?.addEventListener("change", (e) => {
-    const trackSel = container.querySelector("#setup-track");
-    if (trackSel) trackSel.disabled = e.target.value !== "track";
-    persist();
-  });
-  container.querySelector("#setup-track")?.addEventListener("change", persist);
-  container.querySelector("#setup-view-mode")?.addEventListener("change", persist);
 }

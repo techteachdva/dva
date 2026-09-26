@@ -1437,7 +1437,9 @@ body.in-game main {
   z-index: 2;
   inset: 0;
   display: grid;
-  grid-template-columns: 1fr var(--menu-art-size) 1fr;
+  /* Side gutters never drop below 300px, so the 340px launch panel (scaled by
+     --menu-panel-scale) always lands inside the screen on 1280-1600px laptops. */
+  grid-template-columns: minmax(0, 1fr) min(var(--menu-art-size), calc(100% - 600px)) minmax(0, 1fr);
   align-items: start;
   padding-top: clamp(4.5rem, 11vh, 8rem);
   pointer-events: none;
@@ -1448,7 +1450,11 @@ body.in-game main {
   isolation: isolate;
   overflow: hidden;
   justify-self: center;
-  transform: scale(var(--menu-ui-scale));
+  /* 30.2: the float keyframes below must repeat this scale — an animated
+     `transform` replaces the static one, which is why the desktop menu never
+     shrank to its gutters and the launch panel ran off 1440px screens. */
+  --menu-panel-scale: var(--menu-ui-scale, 1);
+  transform: scale(var(--menu-panel-scale));
   transform-origin: center top;
   pointer-events: auto;
   background: rgba(8, 6, 18, 0.38);
@@ -1798,10 +1804,6 @@ html[data-form="phone"][data-menu-layout="stack"] .setup-panel-left.menu-glass-p
 html[data-form="phone"][data-menu-layout="stack"] .setup-panel-center.menu-glass-panel,
 html[data-form="phone"][data-menu-layout="stack"] .setup-panel-right.menu-glass-panel {
   width: min(94vw, 22rem);
-}
-
-html[data-form="phone"] .field-view-mode {
-  display: none;
 }
 
 html[data-form="phone"] body.menu-window #screen-setup .dreamer-pick {
@@ -5474,6 +5476,17 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   z-index: 800;
 }
 
+/* Dialog band during play: every open dialog paints above the HUD (600) and the
+   header dropdowns (700). The tutorial coach card rides above the card modal so its
+   prompts stay readable while a Dream or Encounter card is being resolved. */
+body.play-window #card-modal:not(.hidden) {
+  z-index: 610;
+}
+
+body.play-window .tutorial-card {
+  z-index: 620;
+}
+
 body.utility-modal-open.tutorial-mode-active .tutorial-overlay {
   pointer-events: none;
 }
@@ -6589,12 +6602,22 @@ body.card-detail-open .tutorial-card {
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.65);
 }
 
+/* The modal body must be a bounded flex child, otherwise the shell's 1fr row
+   resolves against an auto height and the binder grid runs off the bottom of
+   short viewports (iPad landscape) instead of scrolling inside its page. */
+#utility-modal.subconscious-binder-modal .utility-content.subconscious-binder-fullscreen #utility-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .subconscious-binder-shell {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) min(33vh, 33%);
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
-  height: 100%;
+  height: auto;
   gap: 0.35rem;
 }
 
@@ -7314,6 +7337,7 @@ html[data-menu-layout="split"] .setup-panel-right.menu-glass-panel,
 html[data-menu-layout="stack"] .setup-panel-left.menu-glass-panel,
 html[data-menu-layout="stack"] .setup-panel-center.menu-glass-panel,
 html[data-menu-layout="stack"] .setup-panel-right.menu-glass-panel {
+  --menu-panel-scale: 1;
   transform: none;
   width: 100%;
   max-width: 100%;
@@ -7609,8 +7633,11 @@ html[data-form="tablet"][data-orientation="landscape"] body.sidebar-collapsed .c
   display: none;
 }
 
-html[data-form="phone"] #sidebar-right,
-html[data-form="tablet"][data-orientation="portrait"] #sidebar-right {
+/* 30.2: `#screen-game .sidebar.right { position: relative }` (1,2,0) used to beat
+   this (1,1,0) rule, so the "drawer" stayed in normal flow, forced an implicit
+   grid column and squeezed the board to 70px on phones. */
+html[data-form="phone"] #screen-game #sidebar-right,
+html[data-form="tablet"][data-orientation="portrait"] #screen-game #sidebar-right {
   display: flex;
   position: fixed;
   top: calc(var(--topbar-h, 52px) + env(safe-area-inset-top));
@@ -7623,8 +7650,8 @@ html[data-form="tablet"][data-orientation="portrait"] #sidebar-right {
   max-width: min(320px, 86vw);
 }
 
-html[data-form="phone"] body.sidebar-drawer-open #sidebar-right,
-html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open #sidebar-right {
+html[data-form="phone"] body.sidebar-drawer-open #screen-game #sidebar-right,
+html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open #screen-game #sidebar-right {
   transform: none;
 }
 
@@ -8501,11 +8528,6 @@ body.panel-resizing {
 .narrator-title {
   font-size: calc(1rem * var(--ui-scale));
 }
-
-.view-mode-small .hud-item { font-size: 0.88rem; }
-.view-mode-large .hud-item { font-size: 1.08rem; }
-.view-mode-large .sidebar h3 { font-size: 1.05rem; }
-.view-mode-large .deck-pile { font-size: 1rem; }
 
 /* ——— Card flow FX ——— */
 
@@ -10639,8 +10661,8 @@ body.menu-window .brand-wordmark {
 }
 
 @keyframes menu-panel-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  0%, 100% { transform: translateY(0) scale(var(--menu-panel-scale, 1)); }
+  50% { transform: translateY(-4px) scale(var(--menu-panel-scale, 1)); }
 }
 
 @keyframes menu-title-glow {
@@ -11706,7 +11728,10 @@ html[data-form="tablet"][data-orientation="landscape"] body.play-window .top-bar
   padding: 0.35rem 0.5rem;
   min-height: var(--topbar-h);
   overflow: visible;
-  z-index: 1200;
+  /* Same band as desktop (600). It used to be 1200, which painted the top bar
+     over every dialog (800-band): the Return picker's Confirm button was hidden
+     under the HUD on iPad landscape. The "more" panel is its own fixed 1400 layer. */
+  z-index: 600;
 }
 
 html[data-form="tablet"][data-orientation="landscape"] body.play-window .top-bar.play-top-bar .brand {
@@ -12052,4 +12077,696 @@ html[data-form="tablet"] .version-label {
 html[data-touch="true"] .game-card:focus:not(:focus-visible),
 html[data-touch="true"] .hex-tile:focus:not(:focus-visible) {
   outline: none;
+}
+
+/* ==========================================================================
+   30.2 Input quarantine (js/input-quarantine.js)
+   The table (#board-viewport, touch-action:none) owns pan / pinch / tap. Every
+   other surface is HTML chrome that must scroll and click natively but never
+   hand a gesture to the browser's page zoom or to the table underneath.
+   ========================================================================== */
+
+/* Two-finger pinch or double-tap that starts on chrome must not zoom the page. */
+html[data-touch="true"] body.in-game {
+  touch-action: pan-x pan-y;
+  overscroll-behavior: none;
+}
+
+html[data-touch="true"] body.in-game #app {
+  overscroll-behavior: none;
+}
+
+/* Scrollable overlays keep momentum scrolling but never chain to the page. */
+html[data-touch="true"] body.in-game .modal-content,
+html[data-touch="true"] body.in-game .pause-card,
+html[data-touch="true"] body.in-game #sidebar-right,
+html[data-touch="true"] body.in-game .hand-bar,
+html[data-touch="true"] body.in-game .deck-column,
+html[data-touch="true"] body.in-game .tutorial-card-body,
+html[data-touch="true"] body.in-game .header-dropdown-panel,
+html[data-touch="true"] body.in-game .guide-panel {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Radial action menu: on touch the scrim is the dismiss surface, so a tap outside
+   the ring is consumed here and never reaches a hex tile (ui.js paintRadialMenu).
+   Fine pointers keep click-through (scrim stays pointer-events:none). */
+html[data-touch="true"] .power-token-radial-layer.open .power-token-radial-scrim {
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* ==========================================================================
+   30.2 Viewport sync (js/viewport-sync.js)
+   --vvh / --vvw / --vv-top / --kbd-h track the *visible* viewport: Safari's
+   collapsing toolbars and the software keyboard shrink it without changing
+   100dvh. Fallbacks keep the layout correct before the first JS frame.
+   ========================================================================== */
+
+body.in-game #app {
+  height: var(--vvh, 100dvh);
+  max-height: var(--vvh, 100dvh);
+}
+
+/* Fixed overlays are pinned to the visible region, not the layout viewport, so a
+   modal or the pause card stays centred above the keyboard / below the toolbar. */
+html[data-touch="true"] .modal,
+html[data-touch="true"] .pause-menu,
+html[data-touch="true"] .power-token-radial-layer,
+html[data-touch="true"] .chrome-drawer-backdrop {
+  top: var(--vv-top, 0px);
+  bottom: auto;
+  height: var(--vvh, 100dvh);
+}
+
+/* While the keyboard is up, a focused field's modal should not be taller than what is visible. */
+html[data-keyboard="open"] .modal-content,
+html[data-keyboard="open"] .pause-card {
+  max-height: calc(var(--vvh, 100dvh) - 1.5rem);
+}
+
+/* ==========================================================================
+   30.2 Touch dialogs — every choice a thumb can reach
+   Dreams, Encounters, Object effects, Return / Repress pickers and phase-skip
+   prompts all render into #utility-modal / #card-modal. On touch the action row
+   docks to the bottom edge of the dialog (sticky inside the scroll area) with
+   44px targets, and the dialog never grows past the visible viewport.
+   ========================================================================== */
+
+html[data-touch="true"] .modal-content {
+  max-height: calc(var(--vvh, 100dvh) - 1rem);
+}
+
+html[data-touch="true"] .modal-content .utility-actions,
+html[data-touch="true"] .modal-content .modal-card-actions:not([hidden]),
+html[data-touch="true"] .modal-content .landscape-detail-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0.75rem -1rem 0;
+  padding: 0.6rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--bg-panel) 78%, rgba(14, 12, 28, 0));
+  border-top: 1px solid rgba(180, 160, 255, 0.18);
+}
+
+html[data-touch="true"] .modal-content .utility-actions .btn,
+html[data-touch="true"] .modal-content .modal-card-actions .btn,
+html[data-touch="true"] .modal-content .landscape-detail-actions .btn,
+html[data-touch="true"] .modal-close {
+  min-height: 44px;
+  font-size: max(0.95rem, 15px);
+}
+
+html[data-touch="true"] .modal-content .utility-actions .btn.primary {
+  flex: 1 1 12rem;
+}
+
+/* The Subconscious binder is a full-screen dialog: its header copy stays at the
+   top, but the tally + Confirm Return + skip controls move to a docked footer so
+   they sit under the thumb instead of the HUD. */
+html[data-touch="true"] .subconscious-binder-shell {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+html[data-touch="true"] .subconscious-binder-header {
+  display: contents;
+}
+
+html[data-touch="true"] .subconscious-binder-header-copy {
+  order: 1;
+}
+
+html[data-touch="true"] .subconscious-binder-root {
+  order: 2;
+}
+
+html[data-touch="true"] .subconscious-binder-header-bar {
+  order: 3;
+  justify-content: flex-end;
+  padding: 0.55rem 0 calc(0.25rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(180, 160, 255, 0.18);
+}
+
+html[data-touch="true"] .subconscious-binder-header-bar .btn {
+  min-height: 44px;
+  font-size: max(0.9rem, 15px);
+}
+
+html[data-touch="true"] .subconscious-binder-header-bar #card-choice-confirm {
+  flex: 1 1 11rem;
+  max-width: 20rem;
+}
+
+html[data-touch="true"] .subconscious-binder-bottom-pad {
+  display: none;
+}
+
+html[data-touch="true"] .subconscious-binder-header-copy h2 {
+  font-size: 1.15rem;
+}
+
+/* ==========================================================================
+   30.2 Phone & stacked main menu — readable, thumb-sized, scrolls
+   The stacked menu (phones, and any window narrower than ~720px) used a 0.52
+   type scale on a 12px root: 5px labels and 6px button text. The column already
+   scrolls, so type now sits at real reading sizes and every control is ≥44px.
+   ========================================================================== */
+
+/* Fallback before panel-layout.js writes the live values inline
+   (computeMenuViewportMetrics: phone portrait 1.42, phone landscape 1.22). */
+html[data-menu-layout="stack"] body.menu-window,
+html[data-form="phone"] body.menu-window {
+  --setup-type-scale: 1.42;
+  --menu-ui-scale: 1;
+}
+
+html[data-form="phone"][data-menu-layout="split"] body.menu-window {
+  --setup-type-scale: 1.22;
+}
+
+html[data-menu-layout="stack"] body.menu-window #screen-setup .menu-panel-title,
+html[data-form="phone"] body.menu-window #screen-setup .menu-panel-title {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.04em;
+}
+
+html[data-menu-layout="stack"] .menu-glass-panel,
+html[data-form="phone"] .menu-glass-panel {
+  padding: 0.85rem 0.9rem 0.95rem;
+}
+
+html[data-form="phone"][data-menu-layout="stack"] .setup-triad {
+  padding: calc(4.2rem + env(safe-area-inset-top, 0px)) 0.65rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  gap: 0.75rem;
+}
+
+html[data-form="phone"][data-menu-layout="stack"] .setup-panel-left.menu-glass-panel,
+html[data-form="phone"][data-menu-layout="stack"] .setup-panel-center.menu-glass-panel,
+html[data-form="phone"][data-menu-layout="stack"] .setup-panel-right.menu-glass-panel {
+  width: min(100%, 30rem);
+}
+
+html[data-menu-layout="stack"] body.menu-window #screen-setup .field > span,
+html[data-form="phone"] body.menu-window #screen-setup .field > span {
+  font-size: 1.05rem;
+  margin-bottom: 0.25rem;
+}
+
+html[data-menu-layout="stack"] body.menu-window #screen-setup .field,
+html[data-form="phone"] body.menu-window #screen-setup .field {
+  margin-bottom: 0.65rem;
+}
+
+html[data-form="phone"] body.menu-window #screen-setup .seed-preview {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Dreamer picker: three across, names readable, stats back on. */
+html[data-form="phone"] body.menu-window #screen-setup .game-card.portrait {
+  width: min(104px, 100%);
+}
+
+html[data-form="phone"] body.menu-window #screen-setup .game-card.portrait .art {
+  height: 96px;
+  max-height: 96px;
+}
+
+html[data-form="phone"] body.menu-window #screen-setup .dreamer-pick-name {
+  font-size: 0.95rem;
+  max-width: 7.5rem;
+}
+
+html[data-form="phone"] body.menu-window #screen-setup .dreamer-pick-stats .stat {
+  display: inline-flex;
+  font-size: 0.78rem;
+}
+
+html[data-form="phone"] body.menu-window #screen-setup .setup-continue-meta,
+html[data-form="phone"] body.menu-window #screen-setup .menu-tutorial-hint,
+html[data-form="phone"] body.menu-window #screen-setup .seed-preview {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+html[data-form="phone"] body.menu-window #screen-setup .dreamer-pick-slot {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.35rem;
+}
+
+/* Launch controls: one full-width, 48px button per row. */
+html[data-form="phone"] body.menu-window #screen-setup .btn-tutorial-menu,
+html[data-form="phone"] body.menu-window #screen-setup .begin-dream-btn,
+html[data-form="phone"] body.menu-window #screen-setup .btn-continue-dream,
+html[data-form="phone"] body.menu-window #screen-setup .btn-saved-dreams,
+html[data-form="phone"] body.menu-window #screen-setup .btn-pwa-install,
+html[data-form="phone"] body.menu-window #screen-setup .setup-launch-row--first-visit #btn-tutorial-mode,
+html[data-form="phone"] body.menu-window #screen-setup #btn-start.begin-dream-btn {
+  font-size: 1.12rem;
+  min-height: 48px;
+  padding: 0.55rem 0.75rem;
+  width: 100%;
+}
+
+html[data-form="phone"] .setup-launch-row,
+html[data-form="phone"][data-menu-layout="stack"] .setup-launch-row {
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+html[data-form="phone"] .setup-launch-row .btn {
+  flex: 1 1 auto;
+}
+
+html[data-form="phone"] .setup-continue-meta,
+html[data-form="phone"] .menu-tutorial-hint {
+  display: block;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+html[data-menu-layout="stack"] body.menu-window #screen-setup .btn,
+html[data-form="phone"] body.menu-window #screen-setup .btn {
+  min-height: 44px;
+}
+
+html[data-menu-layout="stack"] body.menu-window #screen-setup .field select,
+html[data-form="phone"] body.menu-window #screen-setup .field select,
+html[data-form="phone"] body.menu-window #screen-setup .field input {
+  font-size: max(16px, 1.05rem);
+  min-height: 46px;
+}
+
+/* Phone top bar on the menu: one row (wordmark left, music right) instead of
+   the ≤640px column stack, so the first panel is not hidden under it. */
+@media (max-width: 640px) {
+  html[data-form="phone"] body.menu-window .top-bar,
+  html[data-menu-layout="stack"] body.menu-window .top-bar {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  padding: calc(0.3rem + env(safe-area-inset-top, 0px)) 0.6rem 0.3rem;
+  }
+}
+
+html[data-form="phone"] body.menu-window .brand-wordmark {
+  height: 2.4rem;
+  width: 10.5rem;
+}
+
+html[data-form="phone"] body.menu-window .header-actions .btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+html[data-form="phone"][data-menu-layout="stack"] .setup-triad {
+  padding-top: calc(4.9rem + env(safe-area-inset-top, 0px));
+}
+
+/* Phone landscape (≈844×390): the old two-column split stacked Settings over
+   Launch in a 390px-tall column and pushed Begin Dreaming off-screen. Three
+   scrolling columns instead — Settings | Dreamers | Launch — each clipped to
+   the viewport height and scrollable on its own. */
+html[data-form="phone"][data-menu-layout="split"] .setup-triad {
+  grid-template-columns: minmax(13rem, 26%) minmax(0, 1fr) minmax(13rem, 26%);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  align-content: stretch;
+  padding:
+    calc(4.7rem + env(safe-area-inset-top, 0px))
+    calc(0.45rem + env(safe-area-inset-right, 0px))
+    calc(0.45rem + env(safe-area-inset-bottom, 0px))
+    calc(0.45rem + env(safe-area-inset-left, 0px));
+  gap: 0.45rem;
+  overflow: hidden;
+}
+
+html[data-form="phone"][data-menu-layout="split"] .setup-panel-left.menu-glass-panel,
+html[data-form="phone"][data-menu-layout="split"] .setup-panel-center.menu-glass-panel,
+html[data-form="phone"][data-menu-layout="split"] .setup-panel-right.menu-glass-panel {
+  grid-row: 1;
+  align-self: stretch;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding: 0.6rem 0.65rem 0.7rem;
+}
+
+html[data-form="phone"][data-menu-layout="split"] .setup-panel-left.menu-glass-panel { grid-column: 1; }
+html[data-form="phone"][data-menu-layout="split"] .setup-panel-center.menu-glass-panel { grid-column: 2; display: block; }
+html[data-form="phone"][data-menu-layout="split"] .setup-panel-right.menu-glass-panel { grid-column: 3; }
+
+html[data-form="phone"][data-menu-layout="split"] body.menu-window #screen-setup .menu-dreamer-picker {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  height: auto;
+  min-height: 0;
+  align-content: start;
+}
+
+html[data-form="phone"][data-menu-layout="split"] body.menu-window #screen-setup .menu-panel-title {
+  font-size: 1.05rem;
+  margin-bottom: 0.4rem;
+}
+
+html[data-form="phone"][data-menu-layout="split"] body.menu-window #screen-setup .btn-tutorial-menu,
+html[data-form="phone"][data-menu-layout="split"] body.menu-window #screen-setup .begin-dream-btn,
+html[data-form="phone"][data-menu-layout="split"] body.menu-window #screen-setup .btn-continue-dream,
+html[data-form="phone"][data-menu-layout="split"] body.menu-window #screen-setup .btn-saved-dreams,
+html[data-form="phone"][data-menu-layout="split"] body.menu-window #screen-setup .btn-pwa-install,
+html[data-form="phone"][data-menu-layout="split"] body.menu-window #screen-setup #btn-start.begin-dream-btn {
+  min-height: 44px;
+  font-size: 1rem;
+  padding: 0.4rem 0.6rem;
+}
+
+html[data-form="phone"][data-orientation="landscape"] body.menu-window .brand-wordmark {
+  height: 2rem;
+  width: 8.75rem;
+}
+
+@media (max-width: 900px) {
+  html[data-form="phone"][data-orientation="landscape"] body.menu-window .top-bar {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(0.25rem + env(safe-area-inset-top, 0px)) calc(0.6rem + env(safe-area-inset-right, 0px)) 0.25rem calc(0.6rem + env(safe-area-inset-left, 0px));
+  }
+}
+
+/* --------------------------------------------------------------------------
+   30.2 Phone play table
+   Body text on phones used to be 12px root × 0.62 = 7.4px; panel-layout.js now
+   keeps --ui-scale at 1 on phones. The six-column hand grid (sized for a wide
+   table) becomes a horizontal snap scroller of full-height panes: Psyche hand
+   first, then Dreamers, Power, Allies, Objects, Persistent.
+   -------------------------------------------------------------------------- */
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.5rem;
+  height: var(--hand-h);
+  max-height: var(--hand-h);
+  min-height: 0;
+  padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar > * {
+  flex: 0 0 auto;
+  grid-column: auto;
+  grid-row: auto;
+  min-width: 0;
+  min-height: 0;
+  scroll-snap-align: start;
+  border-left: none;
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar > .resize-handle {
+  display: none;
+}
+
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar > .psyche-hand-section {
+  order: 0;
+  width: min(92vw, 28rem);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar > .dreamer-dock {
+  order: 1;
+  width: min(84vw, 22rem);
+}
+
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar > .power-section {
+  order: 2;
+  width: 9.5rem;
+  max-width: none;
+}
+
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar > .allies-section { order: 3; }
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar > .objects-hand-section { order: 4; }
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar > .persistent-section { order: 5; }
+
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar > .allies-section,
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar > .objects-hand-section,
+html[data-form="phone"] body.play-window #screen-game.active .hand-bar > .persistent-section {
+  width: 8.5rem;
+}
+
+/* Landscape phone (≈844×390): a bottom hand bar leaves ~200px for the board.
+   Table on the left, hand panes stacked in a scrolling column on the right. */
+html[data-form="phone"][data-orientation="landscape"] #screen-game.active {
+  grid-template-columns: minmax(0, 1fr) min(42vw, 21rem);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "table hand";
+}
+
+html[data-form="phone"][data-orientation="landscape"] body.play-window #screen-game.active .hand-bar {
+  flex-direction: column;
+  align-items: stretch;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  padding: 0.4rem calc(0.4rem + env(safe-area-inset-right, 0px)) calc(0.4rem + env(safe-area-inset-bottom, 0px)) 0.4rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y proximity;
+  scroll-padding-left: 0;
+  scroll-padding-top: 0.4rem;
+  border-left: 1px solid var(--border);
+  border-top: none;
+}
+
+html[data-form="phone"][data-orientation="landscape"] body.play-window #screen-game.active .hand-bar > * {
+  width: auto;
+  min-height: 7.5rem;
+}
+
+html[data-form="phone"][data-orientation="landscape"] body.play-window #screen-game.active .hand-bar > .psyche-hand-section {
+  min-height: 11rem;
+  overflow-x: auto;
+}
+
+html[data-form="phone"][data-orientation="landscape"] #screen-game #sidebar-right {
+  bottom: 0;
+  width: min(360px, 60vw);
+  max-width: min(360px, 60vw);
+}
+
+html[data-form="phone"][data-orientation="landscape"] .chrome-edge-toggle-side {
+  right: calc(min(42vw, 21rem) + 0.45rem);
+}
+
+/* Cards in the phone hand: thumb-sized, one row, scroll sideways. */
+html[data-form="phone"] .hand-primary .game-card,
+html[data-form="phone"] #screen-game .hand .game-card {
+  min-width: 64px;
+  width: 64px;
+}
+
+html[data-form="phone"] .player-list-dock .player-chip {
+  width: 48px;
+  min-width: 48px;
+}
+
+/* Top bar: phase stepper + music + pause in one 44px row. */
+html[data-form="phone"] body.play-window {
+  --topbar-h: calc(4.6rem + env(safe-area-inset-top, 0px));
+}
+
+html[data-form="phone"] body.play-window .top-bar.play-top-bar {
+  padding: calc(0.3rem + env(safe-area-inset-top, 0px)) 0.45rem 0.3rem;
+  gap: 0.3rem;
+}
+
+html[data-form="phone"] body.play-window .top-bar.play-top-bar .btn {
+  min-height: 40px;
+  min-width: 40px;
+}
+
+/* 390px wide: stepper (3 steps + arrows) + music + pause + more overflowed by
+   ~55px. Inactive steps collapse to their suit icon; the stepper may shrink. */
+html[data-form="phone"] body.play-window .top-bar.play-top-bar .phase-stepper {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  flex-direction: row;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  gap: 0.15rem;
+}
+
+/* Portrait phone: the HUD (goal · dreams · round · narration · guide) used to be
+   squeezed to 0px and simply vanished. It now takes a second, shorter row under
+   the stepper; in landscape everything fits on one row again. */
+@media (max-width: 640px) {
+  html[data-form="phone"] body.play-window {
+    --topbar-h: calc(7.4rem + env(safe-area-inset-top, 0px));
+  }
+
+  html[data-form="phone"] body.play-window .top-bar.play-top-bar {
+    flex-wrap: wrap;
+    row-gap: 0.2rem;
+  }
+
+  html[data-form="phone"] body.play-window .top-bar.play-top-bar .phase-stepper {
+    order: 1;
+  }
+
+  html[data-form="phone"] body.play-window .top-bar.play-top-bar .header-actions {
+    order: 2;
+    margin-left: auto;
+  }
+
+  html[data-form="phone"] body.play-window .top-bar.play-top-bar .hud {
+    order: 3;
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 0.3rem;
+    padding-bottom: 0;
+    scrollbar-width: none;
+  }
+
+  html[data-form="phone"] body.play-window .top-bar.play-top-bar .hud::-webkit-scrollbar {
+    display: none;
+  }
+
+  html[data-form="phone"] body.play-window .top-bar.play-top-bar .hud .hud-item {
+    flex: 0 0 auto;
+    min-height: 30px;
+    font-size: 0.8rem;
+  }
+
+  html[data-form="phone"] body.play-window .top-bar.play-top-bar .hud .hud-feed-cluster {
+    margin-left: auto;
+  }
+
+  html[data-form="phone"] body.play-window .top-bar.play-top-bar .hud .btn {
+    min-height: 32px;
+    height: 32px;
+  }
+}
+
+@media (min-width: 641px) {
+  html[data-form="phone"] body.play-window .top-bar.play-top-bar .hud {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    gap: 0.25rem;
+  }
+}
+
+html[data-form="phone"] body.play-window .top-bar.play-top-bar .hud .btn,
+html[data-form="phone"] body.play-window .top-bar.play-top-bar .header-actions .btn-icon {
+  min-width: 40px;
+  width: 40px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Pause: icon only on phones (the label is still announced via the title). */
+html[data-form="phone"] body.play-window .top-bar.play-top-bar #btn-pause {
+  font-size: 0;
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  line-height: 1;
+}
+
+html[data-form="phone"] body.play-window .top-bar.play-top-bar #btn-pause::before {
+  content: "⏸";
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+html[data-form="phone"] body.play-window .top-bar.play-top-bar .phase-stepper .step:not(.active) .step-label {
+  display: none;
+}
+
+html[data-form="phone"] body.play-window .top-bar.play-top-bar .phase-stepper .step {
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+html[data-form="phone"] body.play-window .top-bar.play-top-bar .header-actions {
+  flex: 0 0 auto;
+  gap: 0.25rem;
+}
+
+/* Subconscious binder / Return picker on a phone: 3 cards across in portrait
+   (≈100px, real card proportions) instead of 4 skinny 66px columns. */
+html[data-form="phone"] #utility-modal .subconscious-binder-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem 0.55rem;
+  padding: 0.6rem 0.55rem 0.8rem;
+}
+
+html[data-form="phone"][data-orientation="landscape"] #utility-modal .subconscious-binder-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+/* Portrait tablet: 8 columns squeezed to 78px thumbs; 6 keeps art legible. */
+html[data-form="tablet"][data-orientation="portrait"] #utility-modal .subconscious-binder-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+html[data-form="phone"] #utility-modal .subconscious-binder-cell .binder-thumb.game-card {
+  max-width: none;
+  aspect-ratio: 5 / 7;
+  min-height: 0 !important;
+  max-height: none;
+  overflow: hidden;
+}
+
+html[data-form="phone"] #utility-modal .subconscious-binder-cell {
+  padding: 0.25rem 0.15rem 0.4rem;
+}
+
+/* Right-side drawer (Table panel): full height between top bar and hand bar. */
+html[data-form="phone"] #screen-game #sidebar-right,
+html[data-form="tablet"][data-orientation="portrait"] #screen-game #sidebar-right {
+  height: auto;
+  max-height: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.75rem;
+}
+
+/* The three panels are overflow:hidden, so when they outgrow the viewport the
+   grid's `auto` rows shared the free space equally (≈250px each) and the panels
+   overlapped one another. Size rows by content and let the column scroll. */
+html[data-menu-layout="stack"] .setup-triad {
+  grid-auto-rows: max-content;
+  align-content: start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Embedded (itch.io iframe): no Home Screen install path, no safe-area insets,
+   fullscreen depends on the host's allowfullscreen. Hide the install copy. */
+html[data-embedded="true"] #pwa-install-hint,
+html[data-embedded="true"] .pwa-install-hint {
+  display: none !important;
 }

@@ -1,4 +1,6 @@
 import { prefersTouchUi } from "./device-mode.js";
+import { getViewportRect, invalidateViewportRect } from "./frame-metrics.js";
+import { onViewportSettled } from "./viewport-sync.js";
 
 const MIN_ZOOM = 0.45;
 const MAX_ZOOM = 5.5;
@@ -37,7 +39,53 @@ let panOriginY = 0;
 let panMoved = false;
 let suppressClick = false;
 
-const pointers = new Map();
+/* ---- Zero-allocation pointer tracking -----------------------------------
+   Board gestures never need more than two fingers. Two preallocated slots
+   replace a Map<id, {x,y}> that used to allocate an object on every
+   pointermove and spread into arrays for distance/midpoint math. */
+const slotA = { id: -1, x: 0, y: 0 };
+const slotB = { id: -1, x: 0, y: 0 };
+let pointerCount = 0;
+
+function slotFor(id) {
+  if (slotA.id === id) return slotA;
+  if (slotB.id === id) return slotB;
+  return null;
+}
+
+function trackPointer(id, x, y) {
+  let slot = slotFor(id);
+  if (!slot) {
+    if (slotA.id === -1) slot = slotA;
+    else if (slotB.id === -1) slot = slotB;
+    else return null; // third finger: ignored
+    slot.id = id;
+    pointerCount += 1;
+  }
+  slot.x = x;
+  slot.y = y;
+  return slot;
+}
+
+function untrackPointer(id) {
+  const slot = slotFor(id);
+  if (!slot) return;
+  slot.id = -1;
+  pointerCount -= 1;
+}
+
+function clearPointers() {
+  slotA.id = -1;
+  slotB.id = -1;
+  pointerCount = 0;
+}
+
+/** The single remaining tracked pointer after a pinch ends, or null. */
+function remainingPointer() {
+  if (pointerCount !== 1) return null;
+  return slotA.id !== -1 ? slotA : slotB;
+}
+
 let pinchActive = false;
 let pinchStartDist = 0;
 let pinchStartZoom = 1;
@@ -66,11 +114,65 @@ export function setBoardCameraMoveHandler(handler) {
   cameraMoveHandler = handler;
 }
 
+/* ---- Camera transform: one style write per frame --------------------------
+   pointermove can fire at 120 Hz on iPad Pro; writing style.transform (and
+   notifying radial/spotlight followers) on every event forced layout reads
+   between writes. Now moves only mark the camera dirty; the next animation
+   frame writes the transform once and notifies followers once. */
+let transformRaf = 0;
+let transformDirty = false;
+let lastTransformPanX = NaN;
+let lastTransformPanY = NaN;
+let lastTransformScale = NaN;
+/** Set by animated focus snaps so followers know to track the CSS transition. */
+let animatedCameraMove = false;
+
+function flushTransform() {
+  transformRaf = 0;
+  if (!transformDirty || !stage) return;
+  transformDirty = false;
+  if (panX !== lastTransformPanX || panY !== lastTransformPanY || gestureScale !== lastTransformScale) {
+    lastTransformPanX = panX;
+    lastTransformPanY = panY;
+    lastTransformScale = gestureScale;
+    stage.style.transform = gestureScale !== 1
+      ? `translate3d(${panX}px, ${panY}px, 0) scale(${gestureScale})`
+      : `translate3d(${panX}px, ${panY}px, 0)`;
+  }
+  const animated = animatedCameraMove;
+  animatedCameraMove = false;
+  cameraMoveHandler?.(animated);
+}
+
 function applyTransform() {
   if (!stage) return;
-  const scale = gestureScale !== 1 ? ` scale(${gestureScale})` : "";
-  stage.style.transform = `translate3d(${panX}px, ${panY}px, 0)${scale}`;
-  cameraMoveHandler?.();
+  transformDirty = true;
+  if (transformRaf) return;
+  transformRaf = requestAnimationFrame(flushTransform);
+}
+
+/** Write the transform synchronously (used right after a full board render). */
+function applyTransformNow() {
+  if (!stage) return;
+  transformDirty = true;
+  if (transformRaf) {
+    cancelAnimationFrame(transformRaf);
+    transformRaf = 0;
+  }
+  flushTransform();
+}
+
+/**
+ * Current camera for hit-testing: board-local = (viewportLocal - pan) / scale.
+ * Writes into `out` (no allocation). `scale` is the live pinch multiplier only;
+ * the committed zoom is already baked into the rendered hex size.
+ * @param {{panX:number,panY:number,scale:number}} out
+ */
+export function getBoardCamera(out) {
+  out.panX = panX;
+  out.panY = panY;
+  out.scale = gestureScale;
+  return out;
 }
 
 function getBoardEl() {
@@ -143,9 +245,10 @@ function applyQueuedBoardFocus() {
   const useMotion = animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (useMotion) {
     stage.classList.add("board-focus-snap");
+    animatedCameraMove = true;
     window.setTimeout(() => {
       stage.classList.remove("board-focus-snap");
-      cameraMoveHandler?.();
+      cameraMoveHandler?.(false);
     }, 420);
   }
   applyTransform();
@@ -153,8 +256,9 @@ function applyQueuedBoardFocus() {
 }
 
 export function syncBoardZoomAfterRender() {
+  invalidateViewportRect();
   if (!userAdjusted) centerBoardPan();
-  else applyTransform();
+  applyTransformNow();
   applyQueuedBoardFocus();
 }
 
@@ -228,20 +332,15 @@ function setPanning(active) {
 }
 
 function pointerDistance() {
-  if (pointers.size < 2) return 0;
-  const [a, b] = [...pointers.values()];
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-function pointerMidpoint() {
-  const [a, b] = [...pointers.values()];
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  if (pointerCount < 2) return 0;
+  return Math.hypot(slotA.x - slotB.x, slotA.y - slotB.y);
 }
 
 function startPinch() {
-  if (pointers.size < 2 || !viewport) return;
-  const mid = pointerMidpoint();
-  const rect = viewport.getBoundingClientRect();
+  if (pointerCount < 2 || !viewport) return;
+  // Viewport rect comes from frame-metrics (cached per frame) so the pinch anchor
+  // is exact inside an iframe or with drawers open — same rect hit-testing uses.
+  const rect = getViewportRect();
   pinchActive = true;
   pendingTouchPan = false;
   panning = false;
@@ -249,8 +348,8 @@ function startPinch() {
   pinchStartZoom = zoom;
   pinchOriginPanX = panX;
   pinchOriginPanY = panY;
-  pinchMidX = mid.x - rect.left;
-  pinchMidY = mid.y - rect.top;
+  pinchMidX = (slotA.x + slotB.x) / 2 - rect.left;
+  pinchMidY = (slotA.y + slotB.y) / 2 - rect.top;
   gestureScale = 1;
   userAdjusted = true;
   suppressClick = true;
@@ -262,10 +361,9 @@ function updatePinch() {
   if (!pinchActive || !viewport) return;
   const liveScale = pointerDistance() / pinchStartDist;
   const nextScale = clampZoom(pinchStartZoom * liveScale) / pinchStartZoom;
-  const mid = pointerMidpoint();
-  const rect = viewport.getBoundingClientRect();
-  pinchMidX = mid.x - rect.left;
-  pinchMidY = mid.y - rect.top;
+  const rect = getViewportRect();
+  pinchMidX = (slotA.x + slotB.x) / 2 - rect.left;
+  pinchMidY = (slotA.y + slotB.y) / 2 - rect.top;
   gestureScale = nextScale;
   panX = pinchMidX - (pinchMidX - pinchOriginPanX) * nextScale;
   panY = pinchMidY - (pinchMidY - pinchOriginPanY) * nextScale;
@@ -349,9 +447,9 @@ function onPointerDown(event) {
   if (!viewport?.contains(event.target)) return;
   if (isCameraControlTarget(event.target)) return;
 
-  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  if (!trackPointer(event.pointerId, event.clientX, event.clientY)) return;
 
-  if (pointers.size >= 2) {
+  if (pointerCount >= 2) {
     startPinch();
     event.preventDefault();
     return;
@@ -370,8 +468,10 @@ function onPointerDown(event) {
 }
 
 function onPointerMove(event) {
-  if (pointers.has(event.pointerId)) {
-    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  const slot = slotFor(event.pointerId);
+  if (slot) {
+    slot.x = event.clientX;
+    slot.y = event.clientY;
   }
 
   if (pinchActive) {
@@ -431,10 +531,10 @@ function maybeFitOnEmptyDoubleTap(event) {
 }
 
 function continuePanFromRemainingPointer() {
-  if (pointers.size !== 1 || !viewport) return;
-  const [id, point] = [...pointers.entries()][0];
+  const point = remainingPointer();
+  if (!point || !viewport) return;
   pendingTouchPan = false;
-  panPointerId = id;
+  panPointerId = point.id;
   panStartX = point.x;
   panStartY = point.y;
   panOriginX = panX;
@@ -442,18 +542,18 @@ function continuePanFromRemainingPointer() {
   panMoved = false;
   setPanning(true);
   try {
-    viewport.setPointerCapture(id);
+    viewport.setPointerCapture(point.id);
   } catch {
     // ignore
   }
 }
 
 function onPointerUp(event) {
-  pointers.delete(event.pointerId);
+  untrackPointer(event.pointerId);
 
   if (pinchActive) {
     endPinch();
-    if (pointers.size === 1) continuePanFromRemainingPointer();
+    if (pointerCount === 1) continuePanFromRemainingPointer();
     return;
   }
 
@@ -470,8 +570,8 @@ function onPointerUp(event) {
 }
 
 function onPointerCancel(event) {
-  pointers.delete(event.pointerId);
-  if (pinchActive && pointers.size < 2) endPinch();
+  untrackPointer(event.pointerId);
+  if (pinchActive && pointerCount < 2) endPinch();
   if (pendingTouchPan && event.pointerId === panPointerId) {
     pendingTouchPan = false;
     panPointerId = null;
@@ -575,7 +675,7 @@ function onWheel(event) {
   if (!viewport?.contains(event.target)) return;
   event.preventDefault();
 
-  const rect = viewport.getBoundingClientRect();
+  const rect = getViewportRect();
   const mx = event.clientX - rect.left;
   const my = event.clientY - rect.top;
   const factor = 1 - event.deltaY * ZOOM_SENSITIVITY;
@@ -652,7 +752,7 @@ export function initBoardZoom() {
   window.addEventListener("blur", () => {
     spaceHeld = false;
     viewport?.classList.remove("board-pan-ready");
-    pointers.clear();
+    clearPointers();
     if (pinchActive) endPinch();
     if (panning) endPan();
     pendingTouchPan = false;
@@ -664,39 +764,33 @@ export function initBoardZoom() {
 }
 
 /**
- * Rotating an iPad (or resizing a window) changes the board's fit. Re-fit
- * once the size settles, unless the player is mid-gesture or has zoomed in
- * on purpose — in that case only re-run the current camera so tiles still
- * land inside the viewport.
+ * Camera phase of the viewport settle lane (see viewport-sync.js).
+ *
+ * Rotating an iPad, collapsing Safari's toolbar, or the host resizing the itch.io
+ * iframe changes the board's fit. This runs *after* device-mode and panel-layout
+ * have written their CSS variables and *before* the single render phase, so it
+ * only adjusts camera state — the render that follows picks it up. Nothing here
+ * calls zoomChangeHandler, which is what used to cause a second full board build.
  */
-let refitTimer = 0;
-let lastFitW = 0;
-let lastFitH = 0;
+let refitBound = false;
 function bindViewportRefit() {
-  lastFitW = window.innerWidth;
-  lastFitH = window.innerHeight;
-  const schedule = (delay) => {
-    window.clearTimeout(refitTimer);
-    refitTimer = window.setTimeout(() => {
-      // The iOS keyboard shrinks the viewport too — leave the camera alone
-      // while a text field is being edited.
-      if (document.activeElement?.matches?.("input, textarea, select")) return;
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const orientationFlipped = (w >= h) !== (lastFitW >= lastFitH);
-      const grew = Math.abs(w - lastFitW) > 80 || Math.abs(h - lastFitH) > 80;
-      if (!orientationFlipped && !grew) return;
-      lastFitW = w;
-      lastFitH = h;
-      if (pinchActive || panning) return;
-      if (userAdjusted && !orientationFlipped) {
-        scheduleZoomRender();
-        return;
-      }
-      fitBoardToViewport();
-    }, delay);
-  };
-  window.addEventListener("resize", () => schedule(220));
-  window.addEventListener("orientationchange", () => schedule(320));
-  window.visualViewport?.addEventListener("resize", () => schedule(220));
+  if (refitBound) return;
+  refitBound = true;
+  onViewportSettled("camera", (ctx) => {
+    // The iOS keyboard only shrinks the visual viewport — the table is unchanged.
+    if (ctx.keyboardToggled && !ctx.orientationFlipped) return;
+    if (document.activeElement?.matches?.("input, textarea, select")) return;
+    const grew = Math.abs(ctx.widthDelta) > 80 || Math.abs(ctx.heightDelta) > 80;
+    if (!ctx.orientationFlipped && !grew) return;
+    if (pinchActive || panning) return;
+    if (userAdjusted && !ctx.orientationFlipped) {
+      // Keep the player's zoom; the render phase re-fits the hex size to the new box.
+      return;
+    }
+    zoom = 1;
+    panX = 0;
+    panY = 0;
+    gestureScale = 1;
+    userAdjusted = false;
+  });
 }

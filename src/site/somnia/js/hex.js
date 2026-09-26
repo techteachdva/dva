@@ -154,6 +154,33 @@ export function hexToPixel(q, r, size = 58) {
   return { x, y };
 }
 
+/**
+ * Inverse of hexToPixel: board-local pixel -> nearest axial (q, r), pointy-top.
+ * Fractional axial coords are rounded through cube space so the result is the
+ * hex whose area actually contains the point. Writes into `out` (no allocation);
+ * this runs on every board tap so it must not allocate.
+ * @param {number} x board-local px (bounds offset already removed)
+ * @param {number} y
+ * @param {number} size circumradius
+ * @param {{q:number,r:number}} out
+ */
+export function pixelToHex(x, y, size, out) {
+  const fq = ((Math.sqrt(3) / 3) * x - (1 / 3) * y) / size;
+  const fr = ((2 / 3) * y) / size;
+  const fs = -fq - fr;
+  let q = Math.round(fq);
+  let r = Math.round(fr);
+  const s = Math.round(fs);
+  const dq = Math.abs(q - fq);
+  const dr = Math.abs(r - fr);
+  const ds = Math.abs(s - fs);
+  if (dq > dr && dq > ds) q = -r - s;
+  else if (dr > ds) r = -q - s;
+  out.q = q;
+  out.r = r;
+  return out;
+}
+
 export function boardPixelBounds(state, size = 58) {
   const halfW = (size * Math.sqrt(3)) / 2;
   const halfH = size;

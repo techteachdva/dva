@@ -4,8 +4,7 @@ import { initSomniaPwa } from "./pwa.js";
 import { writeLaunchConfig, readStoredLaunchConfig } from "./launch-store.js";
 import { initDialogAccessibility } from "./dialog-a11y.js";
 import { initFxLayer } from "./fx.js";
-import { initPanelLayout, setViewMode } from "./panel-layout.js";
-import { loadSettings, VIEW_MODE_ORDER } from "./audio-settings.js";
+import { initPanelLayout } from "./panel-layout.js";
 import { loadGameData, LENGTHS } from "./data.js";
 import {
   listLocalSaves,
@@ -124,21 +123,12 @@ async function init() {
   bindSetup();
   prefillLastSeed();
   bindChangelog();
-  bindViewMode();
   bindModal();
   applyFirstVisitMenu();
   renderSetupIntro();
   refreshDreamerPicker();
   refreshContinueDream();
   await runMenuSplash(startedAt);
-}
-
-function bindViewMode() {
-  const select = document.getElementById("setup-view-mode");
-  if (!select) return;
-  const mode = loadSettings().viewMode || "auto";
-  if (VIEW_MODE_ORDER.includes(mode)) select.value = mode;
-  select.addEventListener("change", () => setViewMode(select.value));
 }
 
 function bindChangelog() {

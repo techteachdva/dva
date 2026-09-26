@@ -3,6 +3,7 @@
  */
 
 import { getCapabilityProfile } from "./device-mode.js";
+import { armBoardTapShield } from "./input-quarantine.js";
 
 const OVERFLOW_SEL = "[data-chrome-overflow]";
 
@@ -158,6 +159,9 @@ function bindEdgeToggles() {
     backdrop.dataset.chromeBound = "1";
     backdrop.addEventListener("click", () => {
       document.body.classList.add("sidebar-user-set");
+      // INPUT QUARANTINE: the backdrop sits over the board; closing it must not
+      // let the same tap select the tile that becomes exposed.
+      armBoardTapShield();
       setSidebarDrawerOpen(false);
     });
   }

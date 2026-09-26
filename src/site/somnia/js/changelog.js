@@ -6,10 +6,21 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "30.1";
+export const SOMNIA_VERSION = "30.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "30.2",
+    title: "The Pocket Dreamscape",
+    notes: [
+      "Somnia now fits itself to whatever it wakes up on — desktop, tablet, or phone — with no size dial to fiddle. The old Small / Medium / Large switch is gone; the table reads the screen and sets the type, the hand, and the board to match.",
+      "The phone finally gets its own table: a 7-wide board that fits a 390px screen, a thumb-scrolling hand rail, a two-row top bar with every phase and pill in reach, and a Table drawer that slides in from the right. Turn the phone sideways and the hand rail stands up beside the board.",
+      "Every choice a dream can throw at you — Return and Repress pickers, Dream and Encounter prompts, Object effects — now docks its Confirm and Cancel to the bottom edge of the dialog on touch, so no button is ever buried beneath the hand. The Innocent's Return no longer hides its Confirm.",
+      "The main menu breathes properly on every screen again: the three panels shrink to their gutters on laptops, stack and scroll on phones, and stand three abreast on a sideways phone. A menu animation had been quietly cancelling the auto-fit since the Seeded Dream.",
+      "Under the felt: touch input is quarantined per surface so a tap on the hand can never fall through to the board, one settle lane resizes the table after rotations and keyboard slides, and the render path no longer allocates per frame.",
+    ],
+  },
   {
     version: "30.1",
     title: "The Tablet Cut",

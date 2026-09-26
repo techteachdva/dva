@@ -3,6 +3,8 @@
  * Writes data-* attributes on <html> so CSS and JS share one profile.
  */
 
+import { initViewportSync, onViewportSettled } from "./viewport-sync.js";
+
 const MODES = ["desktop", "tablet", "mobile"];
 const FORM_OVERRIDE_KEY = "somnia.formOverride";
 const FORM_OVERRIDE_VALUES = ["phone", "tablet", "desktop"];
@@ -213,13 +215,12 @@ function bindReliableTaps() {
 }
 
 export function initDeviceMode() {
+  // VIEWPORT SYNC: the device profile is the "measure" phase of the single settle
+  // lane (viewport-sync.js) instead of owning its own resize/orientation timers.
+  initViewportSync();
   applyMode(detectDeviceMode());
   bindReliableTaps();
-
-  window.addEventListener("resize", scheduleApply);
-  window.addEventListener("orientationchange", () => {
-    setTimeout(() => applyMode(detectDeviceMode()), 200);
-  });
+  onViewportSettled("measure", () => applyMode(detectDeviceMode()));
 
   if (!mediaBound && typeof window.matchMedia === "function") {
     mediaBound = true;

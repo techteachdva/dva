@@ -1,0 +1,253 @@
+/* ==========================================================================
+   SOMNIA — itch.io custom CSS
+   --------------------------------------------------------------------------
+   Requires CSS access on the account (email support@itch.io — see README).
+   Paste into: project page → Edit Theme → CSS (bottom-left of the editor).
+
+   Rules kept:
+     * everything is scoped under #wrapper (itch.io requirement)
+     * only documented stable selectors + our own `custom-` classes
+     * no itch.io UI is hidden or moved; footer, buy box, comments untouched
+     * tested against small viewports (single column under 700px)
+
+   Palette matches the game: midnight #0b0a14, violet #7b5cff, gold #f0c96a.
+   ========================================================================== */
+
+#wrapper {
+  --itchio_link_color: #c9a0ff;
+  --itchio_button_color: #7b5cff;
+  --itchio_button_fg_color: #ffffff;
+  --itchio_button_hover_color: #8f74ff;
+  --itchio_button_active_color: #6a4de6;
+  --itchio_border_color: rgba(180, 160, 255, 0.32);
+  --itchio_border_radius: 10px;
+
+  /* Somnia tokens (local to our rules) */
+  --somnia-ink: #e8e4ff;
+  --somnia-muted: #9b93c4;
+  --somnia-violet: #7b5cff;
+  --somnia-violet-soft: rgba(123, 92, 255, 0.16);
+  --somnia-gold: #f0c96a;
+  --somnia-glass: rgba(8, 6, 18, 0.55);
+  --somnia-line: rgba(180, 160, 255, 0.32);
+  --somnia-lucidity: #6fb7ff;
+  --somnia-elasticity: #f0c96a;
+  --somnia-willpower: #ff6f9c;
+}
+
+/* Page background: keep the theme-editor image, add a soft violet vignette so
+   the glass panels read against any artwork. */
+#wrapper {
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+/* ---- Description container -------------------------------------------- */
+
+#wrapper .formatted_description .custom-somnia {
+  color: var(--somnia-ink);
+  font-size: 1.02rem;
+  line-height: 1.62;
+}
+
+#wrapper .custom-somnia-tagline {
+  margin: 0 0 0.6rem;
+  font-family: "Cinzel", Georgia, "Times New Roman", serif;
+  font-size: 1.9rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--somnia-gold);
+  text-shadow: 0 0 18px rgba(240, 201, 106, 0.35), 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+#wrapper .custom-somnia-lead {
+  font-size: 1.1rem;
+  color: var(--somnia-ink);
+}
+
+#wrapper .custom-somnia-rule {
+  border: 0;
+  height: 1px;
+  margin: 1.6rem 0;
+  background: linear-gradient(90deg, transparent, var(--somnia-line), transparent);
+}
+
+#wrapper .custom-somnia-h2 {
+  margin: 1.8rem 0 0.7rem;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--somnia-violet);
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+}
+
+/* ---- Phase cards (Reveal / Explore / Meet) ----------------------------- */
+
+#wrapper .custom-somnia-phases {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0 1.4rem;
+}
+
+#wrapper .custom-somnia-phase {
+  position: relative;
+  padding: 0.9rem 0.95rem 0.8rem;
+  border: 1px solid var(--somnia-line);
+  border-radius: 12px;
+  background: var(--somnia-glass);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+#wrapper .custom-somnia-phase::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: 12px 12px 0 0;
+  background: var(--somnia-violet);
+}
+
+#wrapper .custom-somnia-phase-reveal::before { background: var(--somnia-lucidity); }
+#wrapper .custom-somnia-phase-explore::before { background: var(--somnia-elasticity); }
+#wrapper .custom-somnia-phase-meet::before { background: var(--somnia-willpower); }
+
+#wrapper .custom-somnia-phase h3 {
+  margin: 0 0 0.35rem;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+#wrapper .custom-somnia-phase-reveal h3 { color: var(--somnia-lucidity); }
+#wrapper .custom-somnia-phase-explore h3 { color: var(--somnia-elasticity); }
+#wrapper .custom-somnia-phase-meet h3 { color: var(--somnia-willpower); }
+
+#wrapper .custom-somnia-phase p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--somnia-muted);
+}
+
+/* ---- Card list --------------------------------------------------------- */
+
+#wrapper .custom-somnia-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+
+#wrapper .custom-somnia-list li {
+  position: relative;
+  margin: 0 0 0.55rem;
+  padding: 0.55rem 0.8rem 0.55rem 1.6rem;
+  border-radius: 8px;
+  background: var(--somnia-violet-soft);
+  color: var(--somnia-ink);
+}
+
+#wrapper .custom-somnia-list li::before {
+  content: "◆";
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  font-size: 0.7rem;
+  color: var(--somnia-gold);
+}
+
+#wrapper .custom-somnia-list strong {
+  color: #ffffff;
+}
+
+/* ---- Call to action ---------------------------------------------------- */
+
+#wrapper .custom-somnia-cta {
+  margin: 1.2rem 0 0;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 1.35rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  color: var(--somnia-gold);
+  text-shadow: 0 0 16px rgba(240, 201, 106, 0.4);
+}
+
+/* ---- Fact table -------------------------------------------------------- */
+
+#wrapper .custom-somnia-table {
+  width: 100%;
+  margin: 0.6rem 0 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--somnia-line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--somnia-glass);
+}
+
+#wrapper .custom-somnia-table th,
+#wrapper .custom-somnia-table td {
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid rgba(180, 160, 255, 0.14);
+  vertical-align: top;
+  text-align: left;
+}
+
+#wrapper .custom-somnia-table tr:last-child th,
+#wrapper .custom-somnia-table tr:last-child td {
+  border-bottom: 0;
+}
+
+#wrapper .custom-somnia-table th {
+  width: 7.5rem;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--somnia-gold);
+  background: rgba(123, 92, 255, 0.12);
+}
+
+#wrapper .custom-somnia-table td {
+  color: var(--somnia-ink);
+}
+
+#wrapper .custom-somnia-small {
+  margin-top: 1.4rem;
+  font-size: 0.85rem;
+  color: var(--somnia-muted);
+}
+
+/* ---- Embedded game frame ------------------------------------------------ */
+
+#wrapper .game_frame {
+  border: 1px solid var(--somnia-line);
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 18px 60px rgba(0, 0, 0, 0.55), 0 0 48px rgba(123, 92, 255, 0.18);
+  overflow: hidden;
+}
+
+/* ---- Mobile ------------------------------------------------------------- */
+
+@media (max-width: 700px) {
+  #wrapper .custom-somnia-phases {
+    grid-template-columns: 1fr;
+  }
+
+  #wrapper .custom-somnia-tagline {
+    font-size: 1.5rem;
+  }
+
+  #wrapper .custom-somnia-table th {
+    width: 5.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #wrapper * {
+    transition: none !important;
+  }
+}

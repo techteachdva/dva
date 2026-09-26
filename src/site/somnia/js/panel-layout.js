@@ -1,5 +1,6 @@
-import { loadSettings, saveSettings, VIEW_PRESETS } from "./audio-settings.js";
+import { loadSettings, saveSettings } from "./audio-settings.js";
 import { getCapabilityProfile } from "./device-mode.js";
+import { onViewportSettled } from "./viewport-sync.js";
 
 const MIN = { sidebarW: 120, handH: 80, chromeH: 72, footerH: 56 };
 const MAX = { sidebarW: 480, handH: 480, chromeH: 140, footerH: 220 };
@@ -38,11 +39,12 @@ export function computeViewportMetrics() {
   const phone = form === "phone";
   const widthScale = w / 1600;
   const heightScale = h / 900;
-  const uiScale = Number(clamp(
-    Math.min(widthScale, heightScale),
-    phone ? 0.62 : 0.7,
-    phone ? 0.78 : 1.08,
-  ).toFixed(3));
+  // 30.2: phones already run a 12px root (game.css `html[data-form="phone"]`),
+  // so the extra 0.62 body scale produced 7.4px text across the whole table.
+  // Phone body text now stays at the root size; tablet/desktop keep the fit.
+  const uiScale = phone
+    ? 1
+    : Number(clamp(Math.min(widthScale, heightScale), 0.7, 1.08).toFixed(3));
 
   const chromeH = Math.round(clamp(h * (phone ? 0.10 : 0.11), phone ? 76 : 88, phone ? 104 : 120));
   const sidebarW = phone || (form === "tablet" && orientation === "portrait")
@@ -93,20 +95,6 @@ export function computeMenuViewportMetrics() {
     form === "phone" ? 0.62 : compact ? 0.78 : 0.42,
     form === "phone" ? 0.78 : compact ? 0.92 : 0.74,
   ).toFixed(3));
-  const setupTypeScale = Number(clamp(
-    form === "phone"
-      ? Math.min(w / 1280, h / 1100, 0.58)
-      : compact
-        ? Math.min(w / 920, h / 820, 0.86)
-        : Math.min(w / 620, h / 420, menuUiScale * 4.2),
-    form === "phone" ? 0.48 : compact ? 0.72 : 1.35,
-    form === "phone" ? 0.62 : compact ? 0.9 : 2.75,
-  ).toFixed(2));
-  const uiScale = Number(clamp(
-    Math.min(w / 1600, h / 900),
-    form === "phone" ? 0.62 : 0.75,
-    form === "phone" ? 0.82 : 1.12,
-  ).toFixed(3));
   const phoneLandscape = form === "phone" && orientation === "landscape";
   const menuLayout = phoneLandscape
     ? "split"
@@ -115,6 +103,25 @@ export function computeMenuViewportMetrics() {
       : form === "tablet" || w < 1180
         ? "split"
         : "triad";
+  // 30.2: stacked / split menus are not transform-scaled (see game.css
+  // `html[data-menu-layout="stack"] .menu-glass-panel { transform: none }`), so
+  // the type scale is the only thing standing between the player and 5px labels.
+  // Phones read at ~1.4 on a 12px root (≈13-15px body, 48px buttons); the
+  // column scrolls, so nothing is squeezed to fit.
+  const setupTypeScale = Number(clamp(
+    form === "phone"
+      ? (phoneLandscape ? 1.22 : 1.42)
+      : menuLayout === "stack"
+        ? 1.42
+        : compact
+          ? Math.min(w / 920, h / 820, 0.9)
+          : Math.min(w / 620, h / 420, menuUiScale * 4.2),
+    form === "phone" ? 1.2 : menuLayout === "stack" ? 1.42 : compact ? 0.78 : 1.35,
+    form === "phone" ? 1.42 : menuLayout === "stack" ? 1.42 : compact ? 0.9 : 2.75,
+  ).toFixed(2));
+  const uiScale = form === "phone"
+    ? 1
+    : Number(clamp(Math.min(w / 1600, h / 900), 0.75, 1.12).toFixed(3));
 
   return {
     w,
@@ -131,16 +138,16 @@ export function computeMenuViewportMetrics() {
   };
 }
 
-function presetForMode(mode) {
-  if (!mode || mode === "auto") return null;
-  return VIEW_PRESETS[mode] || VIEW_PRESETS.medium;
-}
-
+/**
+ * 30.2: the table always sizes itself from the real viewport + device form
+ * (desktop / tablet / phone). The old Small / Medium / Large presets are gone;
+ * a stored preset from an earlier version is read as "auto". On desktop the
+ * player may still drag panel edges (persisted in settings.panels); compact
+ * forms ignore those drags because their chrome is computed per orientation.
+ */
 function resolvedPanels() {
   const metrics = computeViewportMetrics();
-  const mode = settings.viewMode || "auto";
   const p = settings.panels || {};
-  const preset = presetForMode(mode);
   const compact = metrics.form === "phone" || metrics.form === "tablet";
 
   if (compact) {
@@ -156,25 +163,12 @@ function resolvedPanels() {
     };
   }
 
-  if (!preset) {
-    return {
-      sidebarW: p.sidebarW ?? metrics.sidebarW,
-      handH: p.handH ?? metrics.handH,
-      chromeH: p.chromeH ?? metrics.chromeH,
-      footerH: p.footerH ?? metrics.footerH,
-      uiScale: metrics.uiScale,
-      actionBtnH: metrics.actionBtnH,
-      actionBtnFs: metrics.actionBtnFs,
-      metrics,
-    };
-  }
-
   return {
-    sidebarW: p.sidebarW ?? Math.min(preset.sidebarW, Math.round(metrics.sidebarW * 1.15)),
-    handH: p.handH ?? Math.min(preset.handH, metrics.handH),
-    chromeH: p.chromeH ?? preset.chromeH,
-    footerH: p.footerH ?? preset.footerH,
-    uiScale: Math.min(preset.uiScale, Number((metrics.uiScale * 1.12).toFixed(3))),
+    sidebarW: p.sidebarW ?? metrics.sidebarW,
+    handH: p.handH ?? metrics.handH,
+    chromeH: p.chromeH ?? metrics.chromeH,
+    footerH: p.footerH ?? metrics.footerH,
+    uiScale: metrics.uiScale,
     actionBtnH: metrics.actionBtnH,
     actionBtnFs: metrics.actionBtnFs,
     metrics,
@@ -204,8 +198,8 @@ function applyMenuLayout() {
     el.style.setProperty("--ui-scale", String(metrics.uiScale));
   }
   applyMenuDataset(metrics);
-  document.body.classList.remove("view-mode-small", "view-mode-medium", "view-mode-large", "view-mode-auto");
-  document.body.classList.add(`view-mode-${settings.viewMode || "auto"}`);
+  document.body.classList.remove("view-mode-small", "view-mode-medium", "view-mode-large");
+  document.body.classList.add("view-mode-auto");
 }
 
 export function applyLayout() {
@@ -226,14 +220,14 @@ export function applyLayout() {
   root.style.setProperty("--action-btn-h", panels.actionBtnH);
   root.style.setProperty("--action-btn-fs", panels.actionBtnFs);
   applyViewportDataset(panels.metrics);
-  document.body.classList.remove("view-mode-small", "view-mode-medium", "view-mode-large", "view-mode-auto");
-  document.body.classList.add(`view-mode-${settings.viewMode || "auto"}`);
+  document.body.classList.remove("view-mode-small", "view-mode-medium", "view-mode-large");
+  document.body.classList.add("view-mode-auto");
 }
 
-export function setViewMode(mode) {
-  if (mode !== "auto" && !VIEW_PRESETS[mode]) return;
+/** Kept for older call sites; every mode now resolves to auto-fit. */
+export function setViewMode() {
   settings = saveSettings({
-    viewMode: mode,
+    viewMode: "auto",
     panels: { sidebarW: null, handH: null, chromeH: null, footerH: null },
   });
   applyLayout();
@@ -248,63 +242,71 @@ function persistPanel(key, value) {
   settings = saveSettings({ panels: { ...settings.panels, [key]: value } });
 }
 
+/**
+ * Panel resize handles use Pointer Events with capture: once the handle captures
+ * the pointer, every pointermove/pointerup is delivered to the handle itself, so
+ * nothing needs window-level touch listeners. (The hand bar and sidebar are
+ * quarantined overlays — see input-quarantine.js — which stop touch events at
+ * their boundary; window listeners would never have seen the touchend.)
+ * One pointer at a time; a second finger is ignored rather than fighting the drag.
+ */
 function bindResizeHandle(handle, axis, key, getStart, onMove) {
   if (!handle || handle.dataset.bound) return;
   handle.dataset.bound = "1";
 
-  handle.addEventListener("mousedown", (e) => {
+  let activePointer = null;
+  let start = null;
+
+  const finish = (e) => {
+    if (activePointer == null || (e && e.pointerId !== activePointer)) return;
+    activePointer = null;
+    start = null;
+    handle.classList.remove("dragging");
+    document.body.classList.remove("panel-resizing");
+    try {
+      if (e && handle.hasPointerCapture?.(e.pointerId)) handle.releasePointerCapture(e.pointerId);
+    } catch {
+      /* already released */
+    }
+  };
+
+  handle.addEventListener("pointerdown", (e) => {
+    if (activePointer != null) return;
+    if (e.button != null && e.button !== 0) return;
     e.preventDefault();
-    const start = getStart(e);
+    activePointer = e.pointerId;
+    start = getStart(e);
     handle.classList.add("dragging");
     document.body.classList.add("panel-resizing");
-
-    const move = (ev) => onMove(ev, start);
-    const up = () => {
-      handle.classList.remove("dragging");
-      document.body.classList.remove("panel-resizing");
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", up);
-    };
-
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
+    try {
+      handle.setPointerCapture(e.pointerId);
+    } catch {
+      /* capture unsupported — moves still arrive while the pointer is over the handle */
+    }
   });
 
-  handle.addEventListener("touchstart", (e) => {
-    const touch = e.touches[0];
-    if (!touch) return;
-    e.preventDefault();
-    const start = getStart(touch);
-    handle.classList.add("dragging");
-    document.body.classList.add("panel-resizing");
-
-    const move = (ev) => {
-      const t = ev.touches[0];
-      if (t) onMove(t, start);
-    };
-    const up = () => {
-      handle.classList.remove("dragging");
-      document.body.classList.remove("panel-resizing");
-      window.removeEventListener("touchmove", move);
-      window.removeEventListener("touchend", up);
-    };
-
-    window.addEventListener("touchmove", move, { passive: false });
-    window.addEventListener("touchend", up);
-  }, { passive: false });
+  handle.addEventListener("pointermove", (e) => {
+    if (e.pointerId !== activePointer || !start) return;
+    onMove(e, start);
+  });
+  handle.addEventListener("pointerup", finish);
+  handle.addEventListener("pointercancel", finish);
+  handle.addEventListener("lostpointercapture", finish);
 }
 
+/**
+ * VIEWPORT SYNC: panel CSS variables are the "layout" phase of the single settle
+ * lane, after device-mode has refreshed the profile and before the board camera
+ * and the one render. Keyboard-only changes skip relayout — the table did not move.
+ */
 function bindViewportFit() {
   if (viewportBound) return;
   viewportBound = true;
-  let resizeTimer = null;
-  const onResize = () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => applyLayout(), 80);
-  };
-  window.addEventListener("resize", onResize);
-  window.addEventListener("orientationchange", () => setTimeout(applyLayout, 180));
-  window.visualViewport?.addEventListener("resize", onResize);
+  onViewportSettled("layout", (ctx) => {
+    if (ctx.keyboardToggled && !ctx.orientationFlipped
+      && Math.abs(ctx.widthDelta) < 2 && Math.abs(ctx.heightDelta) < 2) return;
+    applyLayout();
+  });
 }
 
 export function initPanelLayout() {
@@ -337,8 +339,4 @@ export function initPanelLayout() {
       persistPanel("handH", h);
     },
   );
-}
-
-export function getViewMode() {
-  return loadSettings().viewMode || "auto";
 }

@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-30.1";
-const RUNTIME_CACHE = "somnia-runtime-30.1";
+const CACHE_NAME = "somnia-30.2";
+const RUNTIME_CACHE = "somnia-runtime-30.2";
 
 const PRECACHE = [
   "./",
@@ -65,6 +65,7 @@ const PRECACHE = [
   "./js/event-landscapes.js",
   "./js/final-recurrence-atmosphere.js",
   "./js/final-recurrence-rules.js",
+  "./js/frame-metrics.js",
   "./js/fx.js",
   "./js/game-cursor.js",
   "./js/game-save.js",
@@ -72,6 +73,7 @@ const PRECACHE = [
   "./js/guide.js",
   "./js/hex.js",
   "./js/highscores.js",
+  "./js/input-quarantine.js",
   "./js/landscape-actions.js",
   "./js/landscapes.js",
   "./js/launch-store.js",
@@ -111,6 +113,7 @@ const PRECACHE = [
   "./js/tutorial-mode.js",
   "./js/ui.js",
   "./js/victory-celebration.js",
+  "./js/viewport-sync.js",
   "./data/dreamers.json",
   "./data/archetypes.json",
   "./data/landscapes.json",
