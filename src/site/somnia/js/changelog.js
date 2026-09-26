@@ -18,7 +18,7 @@ export const CHANGELOG = [
       "Six keyword seeds bend the rules: SOMNIA wakes the whole inner ring with 2 Power Tokens each, SPARK starts everyone charged, FANTASY and NIGHTMARE stack their Dreambeasts on top of the Mindstreams, REM grants a free Reveal, Explore, and Meet every round, and DMZEMO foils every card holographic.",
       "The pause menu now shows your Game ID up top, browses device saves and cloud saves side by side — Game ID, date, Dreamers, and round — and a new button saves your dream and walks you back to the main menu. The menu's Saved Dreams shelf does the same before you even sit down.",
       "The opening deal no longer tips its hand: the board stays hidden until the tiles fly, and the spiral now truly launches from The Bed once the window finishes settling into fullscreen.",
-      "\"Dreamer's Awakening\" — a new BeepBox theme — now loops on the main menu and opens every dream before the radio takes over.",
+      "\"Dreamer's Awakening\" — a new BeepBox theme — now loops on the main menu and closes out every radio rotation before it begins again.",
     ],
   },
   {

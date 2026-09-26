@@ -45,6 +45,7 @@ const LANDSCAPE_MAX_SEC = 2.6;
 const LANDSCAPE_INTERRUPT_FADE = 0.1;
 
 function trackById(id) {
+  if (id === MENU_THEME_TRACK.id) return MENU_THEME_TRACK;
   return MUSIC_TRACKS.find((t) => t.id === id) || MUSIC_TRACKS[0];
 }
 
@@ -504,7 +505,9 @@ function loadCurrentTrack(autoplay = false) {
   if (!bgm) return;
   themeMode = false;
   const file = currentTrackFile();
-  const needsSwap = !bgm.src || !bgm.src.includes(file.replace(/^\//, ""));
+  // bgm.src is URL-encoded, so compare encoded (the theme file contains a space).
+  const encoded = encodeURI(file.replace(/^\//, ""));
+  const needsSwap = !bgm.src || !bgm.src.includes(encoded);
   if (needsSwap) {
     bgm.pause();
     bgm.src = file;
@@ -518,7 +521,7 @@ function loadCurrentTrack(autoplay = false) {
   }
 }
 
-/** Load "Dreamer's Awakening" — the menu loop and every game's opening track. */
+/** Load "Dreamer's Awakening" — the main menu loop. */
 function loadThemeTrack(loop) {
   if (!bgm) return;
   themeMode = true;
@@ -552,12 +555,6 @@ export function initGameAudio() {
   bgm = new Audio();
   bgm.preload = "auto";
   bgm.addEventListener("ended", () => {
-    if (themeMode) {
-      // The opening theme finished — hand off to the configured music.
-      themeMode = false;
-      loadCurrentTrack(true);
-      return;
-    }
     if (settings.musicMode === "radio") advanceRadio();
   });
   loadCurrentTrack(false);
@@ -567,9 +564,10 @@ export function startGameRadio() {
   initGameAudio();
   settings = loadSettings();
   if (settings.musicMode === "off" || settings.musicMuted) return;
-  // Every dream opens with "Dreamer's Awakening", then radio/track takes over.
-  loadThemeTrack(false);
-  playMusic();
+  // Games open at the top of the radio rotation ("Dreams Become Real");
+  // the menu theme only returns as the rotation's finale.
+  radioIndex = 0;
+  loadCurrentTrack(true);
 }
 
 /** Main menu: loop the theme. Browsers need a gesture before audio starts. */
