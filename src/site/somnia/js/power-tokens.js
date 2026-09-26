@@ -1,6 +1,6 @@
 import { recordQuestEvent } from "./quests.js";
 import { playSfx } from "./audio.js";
-import { queuePowerTokensFx } from "./board-fx.js";
+import { queuePowerTokensFx, queuePowerTokenSpendFx } from "./board-fx.js";
 import { PSYCHE_POWER_GRANT } from "./data.js";
 
 export const MAX_POWER_TOKEN_POOL = 24;
@@ -40,7 +40,7 @@ export function grantPowerTokens(state, player, requested, { reason = "", logQue
   return granted;
 }
 
-export function spendPowerTokens(state, player, requested, { reason = "" } = {}) {
+export function spendPowerTokens(state, player, requested, { reason = "", animate = true } = {}) {
   const amount = Math.max(0, Math.floor(requested || 0));
   if (!player || amount <= 0) return 0;
 
@@ -50,6 +50,7 @@ export function spendPowerTokens(state, player, requested, { reason = "" } = {})
 
   player.powerTokens = held - spent;
   if (reason) log(state, reason);
+  if (animate) queuePowerTokenSpendFx(player.id, spent);
   return spent;
 }
 
@@ -63,14 +64,19 @@ export function spendPowerTokensCollectively(state, requested, { reason = "" } =
     .sort((a, b) => (b.powerTokens || 0) - (a.powerTokens || 0));
 
   let spent = 0;
+  const spentBy = [];
   for (const player of players) {
+    let playerSpent = 0;
     while (left > 0 && (player.powerTokens || 0) > 0) {
       player.powerTokens -= 1;
       left -= 1;
       spent += 1;
+      playerSpent += 1;
     }
+    if (playerSpent) spentBy.push({ playerId: player.id, count: playerSpent });
   }
 
+  spentBy.forEach(({ playerId, count }) => queuePowerTokenSpendFx(playerId, count));
   if (spent > 0 && reason) log(state, reason);
   return spent;
 }

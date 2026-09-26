@@ -5,10 +5,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.8";
+export const SOMNIA_VERSION = "29.9";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.9",
+    title: "The Spiral Deal",
+    notes: [
+      "The table now deals itself like a card sharp: every Landscape starts stacked on The Bed, then tiles spiral outward one by one — placed, not appeared — in under three seconds.",
+      "Dreamer Powers finally take a bow: a Power Token flies to your Dreamer, bursts over their token, and names the power.",
+      "Every Power Token spent leaves the tray — watch it fly back into the dream. Trades carry their cards to the other Dreamer's chip, Archetype Powers flash their hard-won relics, and a falling Dreamer gets a dark ripple and a eulogy, not silence.",
+    ],
+  },
   {
     version: "29.8",
     title: "The Opening Deal",

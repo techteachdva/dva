@@ -2,7 +2,7 @@ import { createQuestTracker, canMarkQuest, recordQuestEvent } from "./quests.js"
 import { buildHexBoard } from "./hex.js";
 import { playSfx } from "./audio.js";
 import { markTileRevealed, markTileForgotten, markDreamFeedNudge } from "./fx.js";
-import { queueTileRevealFx, queueEncounterSpawnFx } from "./board-fx.js";
+import { queueTileRevealFx, queueEncounterSpawnFx, queueDreamerDeathFx } from "./board-fx.js";
 import { queueCardDraw, queueHandDelta } from "./card-fx.js";
 import {
   createSubconscious,
@@ -687,6 +687,7 @@ export function applyDreamerDeath(state, player) {
   const deaths = (player.deathCount || 0) + 1;
   player.deathCount = deaths;
 
+  queueDreamerDeathFx(player.id, player.name, player.landscapeId);
   repressTopMindstreamFromEachDeck(state);
   discardPlayerObjects(state, player);
   if (player.powerTokens) {

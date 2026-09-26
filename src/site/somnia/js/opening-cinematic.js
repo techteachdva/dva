@@ -1,20 +1,22 @@
-/** Opening deal cinematic — the table shuffles, the Dreamscape blooms, Psyche is dealt. */
+/** Opening deal cinematic — the table shuffles, then the Dreamscape is placed
+ *  tile by tile from a stack on The Bed, spiraling outward, and Psyche is dealt. */
 
-import { hexDistance, tileCoords } from "./hex.js";
+import { hexRingCoords, POOL_RING3_CORNER_SLOTS, hexKey } from "./hex.js";
 import { burstSparkles, playDreamWarble } from "./fx.js";
 import { playSfx } from "./audio.js";
 import { cardBackForDeckId } from "./card-backs.js";
 
 const ROW_STEP_MS = 70;
-const TILE_BASE_MS = 480;
-const TILE_STEP_MS = 100;
-const DEAL_GHOST_BASE_MS = 1120;
-const DEAL_STEP_MS = 100;
-const DEAL_CARD_BASE_MS = 1220;
-const TOKEN_BASE_MS = 1820;
-const CHIP_BASE_MS = 1900;
-const DREAM_PULSE_MS = 2150;
-const END_MS = 2650;
+const TILE_BASE_MS = 350;
+const TILE_STEP_MS = 80;
+const TILE_FLIGHT_MS = 300;
+const DEAL_GHOST_BASE_MS = 1350;
+const DEAL_STEP_MS = 90;
+const DEAL_CARD_BASE_MS = 1450;
+const TOKEN_BASE_MS = 2250;
+const CHIP_BASE_MS = 2000;
+const DREAM_PULSE_MS = 2620;
+const END_MS = 2950;
 
 function reducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -23,7 +25,7 @@ function reducedMotion() {
 function centerOf(el) {
   if (!el) return null;
   const r = el.getBoundingClientRect();
-  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height };
 }
 
 function deckEl(id) {
@@ -61,6 +63,76 @@ function flyGhost(from, to, { className = "", html = "", back = null, delay = 0,
   window.setTimeout(() => ghost.remove(), 780 + delay);
 }
 
+/** Copy the visible face of a hex tile so the flying ghost looks like the tile. */
+function hexFaceStyle(tileEl, ghost) {
+  const face = tileEl?.querySelector(".hex-face");
+  if (!face) return;
+  const cs = getComputedStyle(face);
+  if (cs.backgroundImage && cs.backgroundImage !== "none") ghost.style.backgroundImage = cs.backgroundImage;
+  ghost.style.backgroundColor = cs.backgroundColor || "#120f22";
+  ghost.style.backgroundSize = cs.backgroundSize;
+  ghost.style.backgroundPosition = cs.backgroundPosition;
+}
+
+/** A hex tile ghost that flies from the stack on The Bed to its board slot. */
+function flyHexGhost(from, target, tileEl, delay) {
+  const layer = document.getElementById("fx-layer");
+  if (!layer || !from || !target) return;
+  const ghost = document.createElement("div");
+  ghost.className = "fx-hex-ghost fx-opening-ghost";
+  ghost.style.width = `${target.w}px`;
+  ghost.style.height = `${target.h}px`;
+  ghost.style.left = `${from.x}px`;
+  ghost.style.top = `${from.y}px`;
+  ghost.style.animationDelay = `${delay}ms`;
+  hexFaceStyle(tileEl, ghost);
+  layer.appendChild(ghost);
+  requestAnimationFrame(() => {
+    ghost.style.setProperty("--fx-tx", `${target.x - from.x}px`);
+    ghost.style.setProperty("--fx-ty", `${target.y - from.y}px`);
+    ghost.classList.add("fx-hex-fly");
+  });
+  window.setTimeout(() => ghost.remove(), delay + TILE_FLIGHT_MS + 80);
+}
+
+/** The shrinking stack of face-down tiles waiting on The Bed. */
+function placeTileStack(at, faceSourceEl, departTimes) {
+  const layer = document.getElementById("fx-layer");
+  if (!layer || !at) return;
+  const layers = [];
+  for (let i = 0; i < 3; i += 1) {
+    const ghost = document.createElement("div");
+    ghost.className = "fx-hex-ghost fx-hex-stack fx-opening-ghost";
+    ghost.style.width = `${at.w}px`;
+    ghost.style.height = `${at.h}px`;
+    ghost.style.left = `${at.x}px`;
+    ghost.style.top = `${at.y - i * 3}px`;
+    hexFaceStyle(faceSourceEl, ghost);
+    layer.appendChild(ghost);
+    layers.push(ghost);
+  }
+  // Peel one layer off the stack at the first, middle, and last placement.
+  [0, Math.floor(departTimes.length / 2), departTimes.length - 1].forEach((slot, i) => {
+    const atMs = departTimes[Math.min(slot, departTimes.length - 1)] ?? 0;
+    window.setTimeout(() => {
+      const layerEl = layers[2 - i];
+      if (!layerEl) return;
+      layerEl.classList.add("fx-hex-stack-fade");
+      window.setTimeout(() => layerEl.remove(), 320);
+    }, atMs);
+  });
+}
+
+/** Spiral order around The Bed: center, ring 1, ring 2, then the ring-3 corners. */
+function spiralSlots() {
+  return [
+    ...hexRingCoords(0),
+    ...hexRingCoords(1),
+    ...hexRingCoords(2),
+    ...POOL_RING3_CORNER_SLOTS,
+  ];
+}
+
 /**
  * Choreographed new-game opening over the already-rendered table.
  * Purely visual — state is fully set up before this runs.
@@ -82,19 +154,52 @@ export function playOpeningCinematic(state) {
   later(() => playSfx("flip"), 120);
   later(() => playSfx("flip"), 300);
 
-  // 2. The Dreamscape blooms outward from The Bed.
-  const bed = state.board.find((t) => t.center) || state.board[0];
-  const bedCoords = bed ? tileCoords(bed) : { q: 0, r: 0 };
-  document.querySelectorAll(".hex-tile").forEach((el) => {
-    const tile = state.board.find((t) => t.id === el.dataset.tileId);
-    const dist = tile ? hexDistance(tileCoords(tile), bedCoords) : 2;
-    const jitter = Math.floor(Math.random() * 36);
-    el.style.setProperty("--deal-delay", `${TILE_BASE_MS + dist * TILE_STEP_MS + jitter}ms`);
+  // 2. The Dreamscape is placed from a stack on The Bed, spiraling outward.
+  const tileByKey = new Map(state.board.map((t) => [hexKey(t.q, t.r), t]));
+  const orderedTiles = spiralSlots()
+    .map((slot) => tileByKey.get(hexKey(slot.q, slot.r)))
+    .filter(Boolean);
+  // Any tile outside the spiral slots tags along at the end.
+  state.board.forEach((t) => {
+    if (!orderedTiles.includes(t)) orderedTiles.push(t);
   });
+
+  const bed = state.board.find((t) => t.center) || orderedTiles[0];
+  const bedEl = bed && document.querySelector(`.hex-tile[data-tile-id="${bed.id}"]`);
+  const bedCenter = centerOf(bedEl);
+  const departTimes = [];
+
+  orderedTiles.forEach((tile, i) => {
+    const el = document.querySelector(`.hex-tile[data-tile-id="${tile.id}"]`);
+    if (!el) return;
+    if (tile === bed || i === 0) {
+      el.style.setProperty("--deal-delay", "0ms");
+      return;
+    }
+    const departAt = TILE_BASE_MS + (departTimes.length) * TILE_STEP_MS;
+    departTimes.push(departAt);
+    const target = centerOf(el);
+    // The real tile pops in just as the ghost lands.
+    el.style.setProperty("--deal-delay", `${departAt + TILE_FLIGHT_MS - 60}ms`);
+    flyHexGhost(bedCenter, target, el, departAt);
+  });
+
+  if (bedCenter && departTimes.length) {
+    const anyWasteland = orderedTiles.find((t) => t !== bed && !t.revealed) || orderedTiles[1];
+    const stackFaceEl = anyWasteland
+      ? document.querySelector(`.hex-tile[data-tile-id="${anyWasteland.id}"]`)
+      : null;
+    placeTileStack(bedCenter, stackFaceEl, departTimes);
+  }
+
   later(() => {
     playDreamWarble(0.5);
     playSfx("reveal");
   }, TILE_BASE_MS);
+  // A rhythmic placing beat as tiles land.
+  for (let t = TILE_BASE_MS; t < TILE_BASE_MS + departTimes.length * TILE_STEP_MS; t += TILE_STEP_MS * 6) {
+    later(() => playSfx("flip"), t);
+  }
 
   // 3. Psyche is dealt — card backs fly from the Psyche deck to the hand.
   const handCards = [...document.querySelectorAll(

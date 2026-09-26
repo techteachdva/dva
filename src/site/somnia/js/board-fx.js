@@ -175,6 +175,14 @@ function powerTokensEl() {
   return document.getElementById("power-tokens") || document.getElementById("hand-bar");
 }
 
+function playerChipEl(playerId) {
+  return document.querySelector(`.player-chip[data-player-id="${playerId}"]`);
+}
+
+function dreamerTokenEl(playerId) {
+  return document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`);
+}
+
 function boardCenter() {
   const vp = document.getElementById("board-viewport");
   return centerOf(vp) || { x: window.innerWidth * 0.5, y: window.innerHeight * 0.42 };
@@ -303,6 +311,22 @@ export function queuePsycheSwirlFx(cards, tileId) {
 
 export function queueReshuffleFx(suit) {
   queue.push({ type: "reshuffle", suit });
+}
+
+export function queuePowerTokenSpendFx(playerId, count = 1) {
+  if (count > 0) queue.push({ type: "power-spend", playerId, count });
+}
+
+export function queueDreamerPowerFx(playerId, dreamer, tileId = null) {
+  queue.push({ type: "dreamer-power", playerId, dreamer, tileId });
+}
+
+export function queueDreamerDeathFx(playerId, name, tileId = null) {
+  queue.push({ type: "dreamer-death", playerId, name, tileId });
+}
+
+export function queueArchetypePowerFx(archetype) {
+  if (archetype) queue.push({ type: "archetype-power", archetype });
 }
 
 export function queueBossStingerFx(bossId, tileId = "bed") {
@@ -534,6 +558,65 @@ export function runPendingBoardFx() {
         floatLabel(c.x, c.y - 30, "Reshuffled", "fx-reshuffle-label", delay);
       }
       playSfx("flip");
+      delay += step * 0.6;
+    } else if (evt.type === "power-spend") {
+      const from = centerOf(powerTokensEl());
+      const to = boardCenter();
+      if (from) {
+        for (let i = 0; i < Math.min(evt.count, 3); i += 1) {
+          flyCard(
+            from,
+            { x: to.x + (i - 1) * 18, y: to.y - 40 },
+            { type: "psyche-power", powerTokens: 1 },
+            "power",
+            delay + i * 70,
+            { w: 36, h: 48 },
+          );
+        }
+        floatLabel(from.x, from.y - 18, `-${evt.count} Power`, "fx-loss", delay);
+        flashEl(powerTokensEl(), "power-tokens-spend", 650);
+        playSfx("deselect");
+      }
+      delay += step * 0.6;
+    } else if (evt.type === "dreamer-power") {
+      const from = centerOf(powerTokensEl()) || { x: window.innerWidth * 0.5, y: window.innerHeight * 0.85 };
+      const chip = playerChipEl(evt.playerId);
+      const to = centerOf(chip) || boardCenter();
+      flyCard(from, to, { type: "psyche-power", powerTokens: 1 }, "power", delay, { w: 36, h: 48 });
+      flashEl(chip, "life-gain", 700);
+      const burstAt = centerOf(dreamerTokenEl(evt.playerId))
+        || (evt.tileId ? centerOf(hexTileEl(evt.tileId)) : null);
+      const label = evt.dreamer?.name ? `${evt.dreamer.name} Power` : "Dreamer Power";
+      window.setTimeout(() => {
+        burstSparkles(to.x, to.y, 10, "#f0c96a");
+        if (burstAt) {
+          burstSparkles(burstAt.x, burstAt.y, 14, "#c9a0ff");
+          playPointRipple(burstAt.x, burstAt.y, "fx-land-ripple");
+          floatLabel(burstAt.x, burstAt.y - 30, label, "fx-gain");
+        } else {
+          floatLabel(to.x, to.y - 24, label, "fx-gain");
+        }
+      }, delay + 420);
+      playSfx("sparkle");
+      playDreamWarble(0.45);
+      delay += step;
+    } else if (evt.type === "dreamer-death") {
+      const tile = evt.tileId ? hexTileEl(evt.tileId) : null;
+      const c = centerOf(tile) || boardCenter();
+      flashEl(tile, "hex-meet-reject", 900);
+      burstSparkles(c.x, c.y, 12, "#8a8a9a");
+      burstSparkles(c.x, c.y, 8, "#e84848");
+      playPointRipple(c.x, c.y, "fx-summon-ripple");
+      floatLabel(c.x, c.y - 26, `✖ ${evt.name || "Dreamer"} falls`, "fx-loss", delay);
+      playSfx("dice-lose");
+      delay += step;
+    } else if (evt.type === "archetype-power") {
+      const el = document.getElementById("acquired-archetypes");
+      const c = centerOf(el) || boardCenter();
+      flashEl(el, "objects-gain", 650);
+      burstSparkles(c.x, c.y, 12, "#f0c96a");
+      floatLabel(c.x, c.y - 22, evt.archetype?.name || "Archetype Power", "fx-gain", delay);
+      playSfx("acquire");
       delay += step * 0.6;
     } else if (evt.type === "boss-stinger") {
       playBossFlash();

@@ -72,6 +72,7 @@ import {
 } from "./dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
+import { queueCardTrade } from "./card-fx.js";
 import { spendPowerTokens, grantPowerTokens, playPsychePowerFromHand } from "./power-tokens.js";
 import {
   beginDreamerPower,
@@ -86,7 +87,7 @@ import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPl
 import { spawnBossEncounterOnBed, isBossDreamCard } from "./dream-deck.js";
 import { resumeObjectEffect } from "./object-effects.js";
 import { psycheHandCount, hasPsycheHealth, canAddAllyToHand, allyHandLimitForPlayer, allyHandCount } from "./psyche.js";
-import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx } from "./board-fx.js";
+import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx } from "./board-fx.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "./archetypes.js";
 import { getActivatableArchetypePowers } from "./archetype-stats.js";
 import { isQuestConditionMet } from "./quests.js";
@@ -1680,6 +1681,10 @@ export function confirmTrade(state) {
   initiator.hand = initiator.hand.filter((c) => !state.trade.offerPsycheIds.includes(c.instanceId));
   partner.hand.push(...offered);
 
+  if (offered.length) {
+    queueCardTrade(initiator.id, partner.id, offered);
+    playSfx("draw", { count: Math.min(offered.length, 3) });
+  }
   addLog(state, `${initiator.name} traded ${offered.length} Psyche to ${partner.name}.`);
   state.tradeMode = false;
   state.trade = null;
@@ -1747,12 +1752,13 @@ export function useDreamerPower(state) {
   }
   const inMeet = getPhase(state) === "Meet";
   if (inMeet && !spendMeetAction(state, MEET_ACTIONS.DREAMER)) return null;
-  if (!spendPowerTokens(state, player, 1)) {
+  if (!spendPowerTokens(state, player, 1, { animate: false })) {
     if (inMeet) refundMeetAction(state, player, MEET_ACTIONS.DREAMER);
     addLog(state, "Need 1 Power Token.");
     return null;
   }
   addLog(state, `${player.name} activates ${player.dreamer.name} Power (1 Power Token${inMeet ? " and 1 Meet action" : ""}).`);
+  queueDreamerPowerFx(player.id, player.dreamer, player.landscapeId);
   state.pendingDreamerPower = { dreamerId: player.dreamer.id, actorId: player.id };
   return beginDreamerPower(state);
 }
@@ -1887,7 +1893,8 @@ export function handleUseArchetypePower(state, archetypeId) {
   }
   if (!spendMeetAction(state, MEET_ACTIONS.ARCHETYPE, archetype.id)) return false;
   const ok = useArchetypePower(state, archetype, activePlayer(state), getEffectHelpers());
-  if (!ok) refundMeetAction(state, activePlayer(state), MEET_ACTIONS.ARCHETYPE, archetype.id);
+  if (ok) queueArchetypePowerFx(archetype);
+  else refundMeetAction(state, activePlayer(state), MEET_ACTIONS.ARCHETYPE, archetype.id);
   return ok;
 }
 

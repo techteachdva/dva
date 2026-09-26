@@ -50,6 +50,15 @@ export function queueHandDelta(playerId, delta) {
   queue.push({ type: "life", playerId, delta });
 }
 
+export function queueCardTrade(fromPlayerId, toPlayerId, cards) {
+  const list = Array.isArray(cards) ? cards : [cards];
+  list.forEach((card) => {
+    if (!card?.instanceId) return;
+    queuedDiscardIds.add(card.instanceId);
+    queue.push({ type: "trade", fromPlayerId, toPlayerId, card: cardSnapshot(card) });
+  });
+}
+
 export function syncHandRemovals(state) {
   if (!state?.players) return;
   state.players.forEach((player) => {
@@ -179,7 +188,7 @@ function flyCard(from, to, card, kind, delay = 0) {
 
   setTimeout(() => {
     ghost.remove();
-    if (kind === "draw" || kind === "spend") {
+    if (kind === "draw" || kind === "spend" || kind === "trade") {
       burstSparkles(to.x, to.y, kind === "draw" ? 8 : 6, kind === "draw" ? "#6dffb0" : "#c9a0ff");
     }
   }, 650 + delay);
@@ -242,6 +251,13 @@ export function runPendingCardFx(state) {
       const kind = evt.reason === "spend" ? "spend" : evt.reason === "repress" ? "repress" : "discard";
       flyCard(from, to, evt.card, kind, delay);
       pulseDeck(targetId, kind === "repress" ? "deck-pulse-repress" : "deck-pulse-loss");
+      delay += step;
+    } else if (evt.type === "trade") {
+      const from = centerOf(handAreaEl(evt.fromPlayerId)) || { x: window.innerWidth * 0.5, y: window.innerHeight * 0.85 };
+      const to = centerOf(playerChipEl(evt.toPlayerId))
+        || centerOf(handAreaEl(evt.toPlayerId))
+        || { x: window.innerWidth * 0.5, y: window.innerHeight * 0.2 };
+      flyCard(from, to, evt.card, "trade", delay);
       delay += step;
     } else if (evt.type === "life") {
       const chip = playerChipEl(evt.playerId);

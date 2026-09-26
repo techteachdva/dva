@@ -7961,6 +7961,7 @@ body.menu-window #app::before {
 
   .fx-flying-card,
   .fx-float-label,
+  .fx-hex-ghost,
   .game-card.card-landed,
   .deck-pile.deck-pulse-gain,
   .deck-pile.deck-pulse-loss,
@@ -8329,6 +8330,7 @@ body.panel-resizing {
 .fx-flying-draw { box-shadow: 0 0 18px rgba(109, 255, 176, 0.55); }
 .fx-flying-discard { box-shadow: 0 0 16px rgba(255, 120, 120, 0.45); }
 .fx-flying-spend { box-shadow: 0 0 20px rgba(201, 160, 255, 0.65); border-color: var(--accent); }
+.fx-flying-trade { box-shadow: 0 0 20px rgba(109, 212, 255, 0.6); border-color: #6dd4ff; }
 .fx-flying-repress { box-shadow: 0 0 20px rgba(160, 80, 220, 0.65); border-color: #c878ff; }
 .fx-flying-spawn { box-shadow: 0 0 22px rgba(232, 72, 72, 0.7); border-color: #ff8a8a; }
 .fx-flying-power { box-shadow: 0 0 18px rgba(240, 201, 106, 0.75); border-color: #f0c96a; background: linear-gradient(160deg, #6a5010, #3a2808); color: #fff3c8; }
@@ -8637,6 +8639,15 @@ body.panel-resizing {
   animation: power-tokens-gain 0.6s ease;
 }
 
+.power-tokens.power-tokens-spend {
+  animation: power-tokens-spend 0.6s ease;
+}
+
+@keyframes power-tokens-spend {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: inset 0 0 16px rgba(255, 122, 146, 0.4); }
+}
+
 #player-objects.objects-gain,
 #player-persistent.objects-gain {
   animation: objects-gain 0.55s ease;
@@ -8791,7 +8802,7 @@ body.opening-cinematic .deck-rail-row {
 }
 
 body.opening-cinematic .hex-tile {
-  animation: opening-hex-deal-in 0.6s cubic-bezier(0.18, 0.85, 0.3, 1.18) both;
+  animation: opening-tile-place 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
   animation-delay: var(--deal-delay, 0ms);
 }
 
@@ -8812,10 +8823,54 @@ body.opening-cinematic .player-chip {
   100% { opacity: 1; translate: 0 0; }
 }
 
-@keyframes opening-hex-deal-in {
-  0% { opacity: 0; scale: 0.15; rotate: -100deg; }
-  55% { opacity: 1; scale: 1.08; rotate: 6deg; }
-  100% { opacity: 1; scale: 1; rotate: 0deg; }
+@keyframes opening-tile-place {
+  0% { opacity: 0; scale: 0.55; }
+  70% { opacity: 1; scale: 1.07; }
+  100% { opacity: 1; scale: 1; }
+}
+
+/* Hex tile ghosts — the stack on The Bed and each tile's flight to its slot. */
+
+.fx-hex-ghost {
+  position: fixed;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background-color: #120f22;
+  background-size: cover;
+  background-position: center;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.5));
+  z-index: 8550;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fx-hex-ghost.fx-hex-fly {
+  animation: fx-hex-place 0.3s cubic-bezier(0.25, 0.8, 0.35, 1.05) both;
+}
+
+@keyframes fx-hex-place {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.72) rotate(-16deg); }
+  12% { opacity: 1; }
+  55% {
+    transform: translate(calc(-50% + var(--fx-tx, 0) * 0.5), calc(-50% + var(--fx-ty, 0) * 0.5 - 34px)) scale(1.04) rotate(5deg);
+  }
+  88% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--fx-tx, 0)), calc(-50% + var(--fx-ty, 0))) scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--fx-tx, 0)), calc(-50% + var(--fx-ty, 0))) scale(1);
+  }
+}
+
+.fx-hex-ghost.fx-hex-stack {
+  opacity: 0.92;
+  z-index: 8540;
+}
+
+.fx-hex-ghost.fx-hex-stack.fx-hex-stack-fade {
+  transition: opacity 0.3s ease;
+  opacity: 0;
 }
 
 @keyframes opening-card-deal-in {
