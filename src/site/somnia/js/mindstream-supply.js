@@ -1,4 +1,5 @@
 import { shuffle, uid } from "./data.js";
+import { queueReshuffleFx } from "./board-fx.js";
 
 export const MINDSTREAM_SUIT_IDS = ["lucidity", "elasticity", "willpower"];
 
@@ -14,6 +15,7 @@ export function reshuffleMindstreamDiscardIfNeeded(state, suit) {
     state.mindstreamDecks[suit] = shuffle(discard);
     state.mindstreamDiscard[suit] = [];
     if (state.revealedDeckTops) delete state.revealedDeckTops[`mindstream-${suit}`];
+    queueReshuffleFx(suit);
     return true;
   }
   return false;

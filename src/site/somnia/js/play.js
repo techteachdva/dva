@@ -26,6 +26,7 @@ import {
   resetHandSnapshots,
 } from "./card-fx.js";
 import { runPendingBoardFx, syncBoardMotion, resetBoardMotion } from "./board-fx.js";
+import { playOpeningCinematic } from "./opening-cinematic.js";
 import { calculateFinalScore } from "./scoring.js";
 import { fetchHighScores, submitHighScore, validateScoreName, isStandaloneMode } from "./highscores.js";
 import {
@@ -370,6 +371,9 @@ function bindFullscreenPrompt() {
     fullscreenReady = true;
     prompt.classList.add("hidden");
     startGameRadio();
+    if (state && !launchConfig?.resumeSaveId && !state.tutorialMode) {
+      playOpeningCinematic(state);
+    }
     try {
       if (document.fullscreenEnabled && !document.fullscreenElement) {
         await document.documentElement.requestFullscreen();

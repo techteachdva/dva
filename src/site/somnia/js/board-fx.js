@@ -301,6 +301,10 @@ export function queuePsycheSwirlFx(cards, tileId) {
   queue.push({ type: "psyche-swirl", cards, tileId });
 }
 
+export function queueReshuffleFx(suit) {
+  queue.push({ type: "reshuffle", suit });
+}
+
 export function queueBossStingerFx(bossId, tileId = "bed") {
   queue.push({ type: "boss-stinger", bossId, tileId });
 }
@@ -520,6 +524,17 @@ export function runPendingBoardFx() {
         }
       }
       delay += step;
+    } else if (evt.type === "reshuffle") {
+      const deckKey = `mindstream-${evt.suit || "lucidity"}`;
+      const deck = deckEl(deckKey);
+      flashEl(deck, "deck-shuffle", 850);
+      const c = centerOf(deck);
+      if (c) {
+        burstSparkles(c.x, c.y, 10, "#9ad4ff");
+        floatLabel(c.x, c.y - 30, "Reshuffled", "fx-reshuffle-label", delay);
+      }
+      playSfx("flip");
+      delay += step * 0.6;
     } else if (evt.type === "boss-stinger") {
       playBossFlash();
       playBossStinger(evt.bossId);

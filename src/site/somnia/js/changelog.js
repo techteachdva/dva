@@ -5,10 +5,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.7";
+export const SOMNIA_VERSION = "29.8";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.8",
+    title: "The Opening Deal",
+    notes: [
+      "Tap to enter and the table deals itself in: the Dreamscape blooms outward from The Bed, Psyche flies to your hand, and the Dream deck beckons. Any tap skips the show.",
+      "Mindstream reshuffles finally speak up — the deck wiggles, sparkles, and announces itself.",
+      "A slow fingertip no longer double-fires deck backs and cards — one tap, one answer. No more fivefold Meet first.",
+    ],
+  },
   {
     version: "29.7",
     title: "The Unburied Button",

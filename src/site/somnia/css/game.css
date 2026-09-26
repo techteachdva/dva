@@ -7965,6 +7965,15 @@ body.menu-window #app::before {
   .deck-pile.deck-pulse-gain,
   .deck-pile.deck-pulse-loss,
   .deck-pile.deck-pulse-repress,
+  .deck-pile.deck-shuffle,
+  .deck-rail-row.deck-shuffle,
+  .deck-rail-draw.deck-shuffle,
+  body.opening-cinematic .deck-rail-row,
+  body.opening-cinematic .hex-tile,
+  body.opening-cinematic #hand .game-card,
+  body.opening-cinematic #hand-primary .game-card,
+  body.opening-cinematic .coop-hand-row .game-card,
+  body.opening-cinematic .player-chip,
   .player-chip.life-gain,
   .player-chip.life-loss,
   #hand-stats.life-gain,
@@ -8750,6 +8759,73 @@ body.panel-resizing {
 @keyframes deck-pulse-repress {
   0%, 100% { box-shadow: none; }
   50% { box-shadow: 0 0 0 2px rgba(200, 120, 255, 0.55), 0 0 18px rgba(160, 80, 220, 0.35); }
+}
+
+.deck-pile.deck-shuffle,
+.deck-dropdown-row.deck-shuffle,
+.deck-rail-row.deck-shuffle,
+.deck-rail-draw.deck-shuffle {
+  animation: deck-shuffle 0.8s ease;
+}
+
+@keyframes deck-shuffle {
+  0%, 100% { translate: 0 0; rotate: 0deg; box-shadow: none; }
+  15% { translate: -3px 0; rotate: -1.6deg; }
+  30% { translate: 3px 0; rotate: 1.6deg; box-shadow: 0 0 0 2px rgba(154, 212, 255, 0.5), 0 0 16px rgba(154, 212, 255, 0.3); }
+  45% { translate: -2px 0; rotate: -1.1deg; }
+  60% { translate: 2px 0; rotate: 1.1deg; }
+  75% { translate: -1px 0; rotate: -0.5deg; box-shadow: 0 0 0 2px rgba(154, 212, 255, 0.3), 0 0 12px rgba(154, 212, 255, 0.2); }
+}
+
+.fx-float-label.fx-reshuffle-label { color: #9ad4ff; }
+
+/* ——— Opening deal cinematic ——— */
+
+body.opening-cinematic #screen-game {
+  pointer-events: none;
+}
+
+body.opening-cinematic .deck-rail-row {
+  animation: opening-deck-row-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  animation-delay: var(--deal-delay, 0ms);
+}
+
+body.opening-cinematic .hex-tile {
+  animation: opening-hex-deal-in 0.6s cubic-bezier(0.18, 0.85, 0.3, 1.18) both;
+  animation-delay: var(--deal-delay, 0ms);
+}
+
+body.opening-cinematic #hand .game-card,
+body.opening-cinematic #hand-primary .game-card,
+body.opening-cinematic .coop-hand-row .game-card {
+  animation: opening-card-deal-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.12) both;
+  animation-delay: var(--deal-delay, 0ms);
+}
+
+body.opening-cinematic .player-chip {
+  animation: opening-chip-in 0.5s ease-out both;
+  animation-delay: var(--deal-delay, 0ms);
+}
+
+@keyframes opening-deck-row-in {
+  0% { opacity: 0; translate: -28px 0; }
+  100% { opacity: 1; translate: 0 0; }
+}
+
+@keyframes opening-hex-deal-in {
+  0% { opacity: 0; scale: 0.15; rotate: -100deg; }
+  55% { opacity: 1; scale: 1.08; rotate: 6deg; }
+  100% { opacity: 1; scale: 1; rotate: 0deg; }
+}
+
+@keyframes opening-card-deal-in {
+  0% { opacity: 0; translate: -18px 54px; scale: 0.72; }
+  100% { opacity: 1; translate: 0 0; scale: 1; }
+}
+
+@keyframes opening-chip-in {
+  0% { opacity: 0; translate: 0 14px; }
+  100% { opacity: 1; translate: 0 0; }
 }
 
 @keyframes life-gain-flash {

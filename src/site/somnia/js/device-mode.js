@@ -169,8 +169,17 @@ function bindReliableTaps() {
   let lastClickAt = 0;
   const starts = new Map();
 
-  document.addEventListener("click", () => {
+  document.addEventListener("click", (event) => {
     lastClickAt = Date.now();
+    if (!event.isTrusted) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const control = target?.closest("button, [role='button'], .player-chip, .game-card, .deck-draw-back");
+    if (!control) return;
+    const stamped = Number(control.dataset.touchClick || 0);
+    if (!stamped || Date.now() - stamped > 700) return;
+    // A synthetic fallback click already handled this tap — swallow the late real one.
+    event.preventDefault();
+    event.stopImmediatePropagation();
   }, true);
 
   document.addEventListener("pointerdown", (event) => {
@@ -193,6 +202,7 @@ function bindReliableTaps() {
     const armedAt = Date.now();
     window.setTimeout(() => {
       if (lastClickAt >= armedAt - 40) return;
+      control.dataset.touchClick = String(Date.now());
       control.click();
     }, 80);
   }, true);
