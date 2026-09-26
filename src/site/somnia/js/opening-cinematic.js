@@ -139,9 +139,13 @@ function spiralSlots() {
  * Any tap or key skips to the end. Returns the full duration in ms.
  */
 export function playOpeningCinematic(state) {
-  if (!state?.board?.length || reducedMotion()) return 0;
+  if (!state?.board?.length || reducedMotion()) {
+    document.body.classList.remove("opening-cinematic-pending");
+    return 0;
+  }
   const body = document.body;
   if (body.classList.contains("opening-cinematic")) return 0;
+  body.classList.remove("opening-cinematic-pending");
   body.classList.add("opening-cinematic");
 
   const timers = [];
@@ -253,7 +257,7 @@ export function playOpeningCinematic(state) {
 
   const finish = () => {
     timers.forEach((t) => window.clearTimeout(t));
-    body.classList.remove("opening-cinematic");
+    body.classList.remove("opening-cinematic", "opening-cinematic-pending");
     document.querySelectorAll(".fx-opening-ghost").forEach((el) => el.remove());
     document.querySelectorAll("[style*='--deal-delay']").forEach((el) => {
       el.style.removeProperty("--deal-delay");

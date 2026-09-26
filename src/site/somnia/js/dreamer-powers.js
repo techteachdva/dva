@@ -24,6 +24,7 @@ import {
 } from "./mindstream-supply.js";
 import { isDreambeastPsycheCard } from "./subconscious.js";
 import { handRoomForPsycheDraw } from "./objects.js";
+import { random } from "./rng.js";
 
 function alivePlayers(state) {
   return state.players.filter((p) => p.alive);
@@ -93,7 +94,7 @@ function moveEncounterOneStep(state, tile, encounter = null, { toward = null, aw
     adj.sort((a, b) => hexDistance(b, awayFrom) - hexDistance(a, awayFrom));
     dest = adj.find((t) => hexDistance(t, awayFrom) > hexDistance(tile, awayFrom)) || adj[0];
   } else {
-    dest = adj[Math.floor(Math.random() * adj.length)];
+    dest = adj[Math.floor(random() * adj.length)];
   }
   if (!dest) return false;
 

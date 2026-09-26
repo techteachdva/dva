@@ -145,6 +145,9 @@ function normalizeSaveMeta(entry) {
     round: Number(entry.round) || 0,
     phase: String(entry.phase || "").slice(0, 16),
     status: String(entry.status || "playing").slice(0, 16),
+    gameId: String(entry.gameId || "").slice(0, 40),
+    seed: String(entry.seed || "").slice(0, 24),
+    dreamers: String(entry.dreamers || "").slice(0, 120),
     compressed: Boolean(entry.compressed),
   };
 }

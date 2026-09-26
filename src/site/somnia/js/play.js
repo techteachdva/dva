@@ -28,6 +28,7 @@ import {
 import { runPendingBoardFx, syncBoardMotion, resetBoardMotion } from "./board-fx.js";
 import { playOpeningCinematic } from "./opening-cinematic.js";
 import { calculateFinalScore } from "./scoring.js";
+import { seedRandomness } from "./rng.js";
 import { fetchHighScores, submitHighScore, validateScoreName, isStandaloneMode } from "./highscores.js";
 import {
   canSaveGame,
@@ -336,7 +337,7 @@ function readLaunchConfig() {
     const launchParam = params.get("launch");
     if (launchParam) {
       const config = JSON.parse(atob(decodeURIComponent(launchParam)));
-      const validResume = Boolean(config?.resumeSaveId);
+      const validResume = Boolean(config?.resumeSaveId || config?.resumeCloudSaveId);
       const validNewGame = config?.lengthKey
         && Array.isArray(config.selectedDreamerIds)
         && config.selectedDreamerIds.length;
@@ -371,15 +372,49 @@ function bindFullscreenPrompt() {
     fullscreenReady = true;
     prompt.classList.add("hidden");
     startGameRadio();
-    if (state && !launchConfig?.resumeSaveId && !state.tutorialMode) {
-      playOpeningCinematic(state);
-    }
+    const wantsCinematic = state && !launchConfig?.resumeSaveId && !state.tutorialMode;
     try {
       if (document.fullscreenEnabled && !document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
       }
     } catch {
       /* fullscreen denied or unsupported — game still runs */
+    }
+    if (wantsCinematic) {
+      // If fullscreen actually engaged, the viewport resize trails the
+      // promise — wait until the size goes quiet before measuring tiles.
+      if (document.fullscreenElement) {
+        await new Promise((resolve) => {
+          let lastW = window.innerWidth;
+          let lastH = window.innerHeight;
+          let lastChange = Date.now();
+          const t0 = lastChange;
+          const noteChange = () => { lastChange = Date.now(); };
+          window.addEventListener("resize", noteChange);
+          const tick = () => {
+            if (window.innerWidth !== lastW || window.innerHeight !== lastH) {
+              lastW = window.innerWidth;
+              lastH = window.innerHeight;
+              noteChange();
+            }
+            const quietFor = Date.now() - lastChange;
+            if (quietFor >= 300 || Date.now() - t0 >= 1500) {
+              window.removeEventListener("resize", noteChange);
+              resolve();
+              return;
+            }
+            window.setTimeout(tick, 60);
+          };
+          tick();
+        });
+      }
+      fitBoardToViewport();
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      if (playOpeningCinematic(state) === 0) {
+        document.body.classList.remove("opening-cinematic-pending");
+      }
+    } else {
+      document.body.classList.remove("opening-cinematic-pending");
     }
     prompt.remove();
   };
@@ -648,6 +683,8 @@ function buildPauseSaveHooks() {
     canSave: () => canSaveGame(state),
     saveLabel: () => (state ? buildSaveLabel(state) : ""),
     isStandalone: () => isStandaloneMode(),
+    getGameId: () => state?.gameId || null,
+    getSeed: () => state?.seed || null,
     saveLocal: async () => {
       if (!canSaveGame(state)) throw new Error("Cannot save right now.");
       await saveGameLocal(state, launchConfig, { id: "autosave" });
@@ -662,6 +699,21 @@ function buildPauseSaveHooks() {
       const loaded = await loadGameLocal("autosave");
       if (!loaded) throw new Error("No device save found.");
       applyLoadedGame(loaded);
+    },
+    listLocal: () => listLocalSaves(),
+    loadLocalById: async (id) => {
+      const loaded = await loadGameLocal(id);
+      if (!loaded) throw new Error("Device save not found.");
+      applyLoadedGame(loaded);
+    },
+    deleteLocal: (id) => {
+      deleteLocalSave(id);
+    },
+    saveAndExit: async () => {
+      if (canSaveGame(state)) {
+        await saveGameLocal(state, launchConfig, { id: "autosave" });
+      }
+      window.location.href = "index.html";
     },
     listCloud: async (name) => {
       const valid = name?.ok ? name : validateScoreName(name?.first, name?.last);
@@ -686,6 +738,7 @@ function buildPauseSaveHooks() {
 function applyLoadedGame(loaded) {
   clearActionHistory();
   state = reattachGameRuntime(loaded.state);
+  seedRandomness(state?.seed || null);
   recoverLegacySilver(state);
   launchConfig = {
     ...loaded.launchConfig,
@@ -750,6 +803,17 @@ async function startGame(config) {
     return;
   }
 
+  if (config.resumeCloudSaveId) {
+    try {
+      const loaded = await loadCloudSave(config.resumeCloudSaveId);
+      if (!loaded) throw new Error("Save not found.");
+      applyLoadedGame(loaded);
+    } catch {
+      window.location.replace("index.html");
+    }
+    return;
+  }
+
   const selectedDreamers = config.selectedDreamerIds
     .map((id) => gameData.dreamers.find((d) => d.id === id))
     .filter(Boolean);
@@ -775,16 +839,27 @@ async function startGame(config) {
       lengthKey: config.lengthKey,
       selectedDreamers,
       gentleStart: !!config.gentleStart,
+      seed: config.seed || null,
     });
+    // Hide the table until the opening deal plays (removed when it starts/skips).
+    if (!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+      document.body.classList.add("opening-cinematic-pending");
+    }
     if (config.gentleStart) markGentleStartUsed();
     const opening = state.board.find((t) => !t.center && t.revealed && !t.wasteland);
-    const openingLine = opening
-      ? `${opening.name} is the only Landscape touching The Bed that begins Revealed.`
-      : "Only one Landscape touching The Bed begins Revealed.";
+    const openingLine = state.seedFlags?.somnia
+      ? "The whole inner ring begins Revealed around The Bed (SOMNIA seed)."
+      : opening
+        ? `${opening.name} is the only Landscape touching The Bed that begins Revealed.`
+        : "Only one Landscape touching The Bed begins Revealed.";
+    const startTokens = state.players[0]?.powerTokens ?? 1;
+    const seedLine = state.seed
+      ? ` Game ID ${state.gameId} — enter it as a seed on the menu to replay this exact dream.`
+      : "";
     narrate(
       state,
       "The Dreamscape forms",
-      `Each Dreamer starts on The Bed with 5 Psyche and 1 Power Token. The Dreamscape is shuffled: ${openingLine} Round 1 begins in the Reveal Phase — discuss, plan, and act in any order. The Head Dreamer (★) should Draw the Dream when the group is ready.`,
+      `Each Dreamer starts on The Bed with 5 Psyche and ${startTokens} Power Token${startTokens === 1 ? "" : "s"}. The Dreamscape is shuffled: ${openingLine}${seedLine} Round 1 begins in the Reveal Phase — discuss, plan, and act in any order. The Head Dreamer (★) should Draw the Dream when the group is ready.`,
       ["Reveal Phase: spend 1 Lucidity to flip Landscapes on the hex map"],
     );
   }
@@ -1786,6 +1861,7 @@ function handleDrawPileClick(deckId) {
 
 function renderAll() {
   if (!state) return;
+  document.body.classList.toggle("seed-dmzemo", !!state.seedFlags?.dmzemo);
   bindUiRenderState(state);
   resolveStaleLandscapePick(state);
   checkDefeat(state);

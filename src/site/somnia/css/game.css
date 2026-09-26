@@ -184,9 +184,9 @@ body.menu-window .brand-wordmark {
 }
 
 .utility-content.somnia-changelog-modal-wrap {
-  width: min(96vw, 720px);
-  max-width: 720px;
-  max-height: min(92vh, 880px);
+  width: min(96vw, 1440px);
+  max-width: 1440px;
+  max-height: min(94vh, 1100px);
   display: flex;
   flex-direction: column;
 }
@@ -201,21 +201,36 @@ body.menu-window .brand-wordmark {
 .somnia-changelog-modal h2 {
   margin: 0;
   font-family: var(--font-display, "Cinzel", serif);
+  font-size: 1.75rem;
 }
 
 .changelog-lead,
 .changelog-credits-lead {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   opacity: 0.9;
+}
+
+/* Links inside the changelog modal default to the browser's blue/purple,
+   which is unreadable on the dark panel — match the credits link color. */
+.somnia-changelog-modal a {
+  color: #b8a8e8;
+}
+
+.somnia-changelog-modal a:hover {
+  color: #d4c8f5;
 }
 
 .changelog-scroll {
   overflow-y: auto;
-  max-height: min(42vh, 360px);
+  max-height: min(52vh, 560px);
   padding-right: 0.35rem;
   border-top: 1px solid rgba(180, 160, 255, 0.15);
   border-bottom: 1px solid rgba(180, 160, 255, 0.15);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  column-gap: 2rem;
+  align-content: start;
 }
 
 .changelog-entry {
@@ -224,7 +239,7 @@ body.menu-window .brand-wordmark {
 
 .changelog-entry h3 {
   margin: 0 0 0.35rem;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   font-weight: 600;
 }
 
@@ -236,26 +251,36 @@ body.menu-window .brand-wordmark {
 .changelog-entry ul {
   margin: 0;
   padding-left: 1.15rem;
-  font-size: 0.85rem;
+  font-size: 1rem;
+  line-height: 1.5;
   opacity: 0.92;
 }
 
 .changelog-credits-section h3 {
   margin: 0.5rem 0 0.35rem;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
 }
 
 .changelog-landscape-credits {
   margin: 0.35rem 0 0;
   padding-left: 1.15rem;
-  font-size: 0.78rem;
-  max-height: min(28vh, 240px);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-height: min(30vh, 300px);
   overflow-y: auto;
+  columns: 2;
+  column-gap: 2rem;
 }
 
 .changelog-credits-section .music-credit {
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   margin: 0.25rem 0;
+}
+
+@media (max-width: 700px) {
+  .changelog-landscape-credits {
+    columns: 1;
+  }
 }
 
 body.menu-window .tagline {
@@ -8220,7 +8245,7 @@ body.panel-resizing {
 
 .pause-save-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.35rem 0.5rem;
   align-items: center;
   padding: 0.45rem 0.55rem;
@@ -8229,10 +8254,188 @@ body.panel-resizing {
   background: rgba(0, 0, 0, 0.18);
 }
 
+.pause-save-info {
+  min-width: 0;
+}
+
+.pause-save-info strong {
+  display: block;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+
+.pause-save-owner {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-left: 0.25rem;
+}
+
+.pause-save-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
 .pause-save-meta {
   display: block;
   font-size: 0.75rem;
   color: var(--muted);
+}
+
+.pause-save-dreamers {
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.pause-game-id-section {
+  border: 1px solid rgba(140, 120, 255, 0.28);
+  border-radius: 12px;
+  padding: 0.65rem 0.8rem;
+  background: linear-gradient(135deg, rgba(90, 70, 220, 0.14), rgba(30, 20, 80, 0.1));
+}
+
+.pause-game-id-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
+.pause-game-id {
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #d8ccff;
+  cursor: pointer;
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(180, 160, 255, 0.45);
+  background: rgba(0, 0, 0, 0.25);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pause-game-id:hover {
+  background: rgba(120, 90, 255, 0.18);
+  border-color: rgba(200, 180, 255, 0.8);
+}
+
+.pause-seed-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  border: 1px solid rgba(140, 120, 255, 0.35);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+}
+
+.pause-exit-btn {
+  border-color: rgba(255, 190, 120, 0.4);
+}
+
+.saved-dreams-modal h2 {
+  margin-top: 0;
+}
+
+.saved-dreams-section {
+  margin-bottom: 1.1rem;
+}
+
+.saved-dreams-section h3 {
+  margin: 0 0 0.4rem;
+}
+
+.btn-saved-dreams {
+  margin-top: 0.55rem;
+  width: 100%;
+}
+
+.field-seed input {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.field-optional {
+  font-style: normal;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
+.seed-preview {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--muted);
+  border-left: 3px solid rgba(140, 120, 255, 0.4);
+  padding: 0.25rem 0 0.25rem 0.6rem;
+  margin: 0.35rem 0 0;
+}
+
+.seed-preview-special {
+  color: #e8dcff;
+  border-left-color: var(--accent);
+  background: linear-gradient(90deg, rgba(120, 90, 255, 0.12), transparent);
+}
+
+/* DMZEMO seed — holographic foil on every card */
+.seed-dmzemo .game-card {
+  position: relative;
+  isolation: isolate;
+}
+
+.seed-dmzemo .game-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgba(255, 0, 128, 0.22) 35%,
+    rgba(255, 235, 0, 0.2) 45%,
+    rgba(0, 255, 200, 0.22) 55%,
+    rgba(0, 120, 255, 0.22) 65%,
+    transparent 80%
+  );
+  background-size: 280% 280%;
+  mix-blend-mode: screen;
+  animation: dmzemo-holo-shift 5s linear infinite;
+}
+
+.seed-dmzemo .game-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 3;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.045) 0 1px,
+    transparent 1px 3px
+  );
+  mix-blend-mode: overlay;
+}
+
+@keyframes dmzemo-holo-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seed-dmzemo .game-card::after {
+    animation: none;
+    background-position: 50% 50%;
+  }
 }
 
 .setup-audio-display {
@@ -8791,6 +8994,17 @@ body.panel-resizing {
 .fx-float-label.fx-reshuffle-label { color: #9ad4ff; }
 
 /* ——— Opening deal cinematic ——— */
+
+/* Before the deal: keep the table hidden so the board never flashes pre-placed. */
+body.opening-cinematic-pending .deck-rail-row,
+body.opening-cinematic-pending .hex-tile,
+body.opening-cinematic-pending #hand .game-card,
+body.opening-cinematic-pending #hand-primary .game-card,
+body.opening-cinematic-pending .coop-hand-row .game-card,
+body.opening-cinematic-pending .player-chip,
+body.opening-cinematic-pending #power-tokens {
+  opacity: 0;
+}
 
 body.opening-cinematic #screen-game {
   pointer-events: none;

@@ -1,5 +1,7 @@
 /** Axial hex coordinates (q, r) for the Somnia Dreamscape board. */
 
+import { random } from "./rng.js";
+
 /** Inner disk (bed + starters + ring 2) plus six ring-3 corners = 25 landscape tiles. */
 export const BOARD_RADIUS = 3;
 
@@ -221,7 +223,7 @@ function placeTutorialStarters(board, landscapes) {
   });
 }
 
-function placeShuffledDreamscape(board, landscapes) {
+function placeShuffledDreamscape(board, landscapes, { revealRing1 = false } = {}) {
   const pool = shufflePool(landscapes.filter((l) => !l.center));
   const outerSlots = allBoardSlots().filter((s) => !(s.q === 0 && s.r === 0));
   if (pool.length > outerSlots.length) {
@@ -235,7 +237,14 @@ function placeShuffledDreamscape(board, landscapes) {
   });
   const ring1Tiles = board.filter((t) => ring1Keys.has(hexKey(t.q, t.r)));
   if (!ring1Tiles.length) return;
-  const opening = ring1Tiles[Math.floor(Math.random() * ring1Tiles.length)];
+  if (revealRing1) {
+    ring1Tiles.forEach((tile) => {
+      tile.revealed = true;
+      tile.wasteland = false;
+    });
+    return;
+  }
+  const opening = ring1Tiles[Math.floor(random() * ring1Tiles.length)];
   opening.revealed = true;
   opening.wasteland = false;
 }
@@ -244,8 +253,9 @@ function placeShuffledDreamscape(board, landscapes) {
  * Build board: Bed at origin, remaining 24 Landscapes shuffled onto the hex disk.
  * Normal games start with every ring-1 tile hidden except one random neighbor of The Bed.
  * Tutorial keeps the six classic starters revealed on ring 1 so the script can teach House/City.
+ * The SOMNIA seed reveals all of ring 1 (lucid start).
  */
-export function buildHexBoard(landscapes, { tutorialLayout = false } = {}) {
+export function buildHexBoard(landscapes, { tutorialLayout = false, revealRing1 = false } = {}) {
   const all = landscapes.filter((l) => !l.hidden);
   const center = all.find((l) => l.center);
   const board = [];
@@ -255,7 +265,7 @@ export function buildHexBoard(landscapes, { tutorialLayout = false } = {}) {
   }
 
   if (tutorialLayout) placeTutorialStarters(board, all);
-  else placeShuffledDreamscape(board, all);
+  else placeShuffledDreamscape(board, all, { revealRing1 });
 
   return board;
 }
@@ -263,7 +273,7 @@ export function buildHexBoard(landscapes, { tutorialLayout = false } = {}) {
 function shufflePool(array) {
   const copy = [...array];
   for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;

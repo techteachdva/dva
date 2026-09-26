@@ -80,7 +80,7 @@ function getSavesSheet_() {
 
 function initSaveHeaders_(sheet) {
   sheet
-    .getRange(1, 1, 1, 10)
+    .getRange(1, 1, 1, 13)
     .setValues([[
       "id",
       "updatedAt",
@@ -92,8 +92,11 @@ function initSaveHeaders_(sheet) {
       "status",
       "compressed",
       "stateData",
+      "gameId",
+      "dreamers",
+      "seed",
     ]]);
-  sheet.getRange(1, 1, 1, 10).setFontWeight("bold");
+  sheet.getRange(1, 1, 1, 13).setFontWeight("bold");
   sheet.setFrozenRows(1);
 }
 
@@ -301,6 +304,9 @@ function rowToSaveMeta_(row) {
     phase: String(row[6] || ""),
     status: String(row[7] || "playing"),
     compressed: Boolean(row[8]),
+    gameId: String(row[10] || ""),
+    dreamers: String(row[11] || ""),
+    seed: String(row[12] || ""),
   };
 }
 
@@ -316,13 +322,16 @@ function rowToSave_(row) {
     status: String(row[7] || "playing"),
     compressed: Boolean(row[8]),
     stateData: String(row[9] || ""),
+    gameId: String(row[10] || ""),
+    dreamers: String(row[11] || ""),
+    seed: String(row[12] || ""),
   };
 }
 
 function readSaveRows_(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
-  return sheet.getRange(2, 1, lastRow, 10).getValues();
+  return sheet.getRange(2, 1, lastRow, 13).getValues();
 }
 
 function listSaves_(nameFilter) {
@@ -350,6 +359,9 @@ function saveGame_(params) {
   const status = String(params.status || "playing").trim().slice(0, 16);
   const compressed = params.compressed ? 1 : 0;
   const stateData = String(params.stateData || "");
+  const gameId = String(params.gameId || "").trim().slice(0, 40);
+  const dreamers = String(params.dreamers || "").trim().slice(0, 120);
+  const seed = String(params.seed || "").trim().slice(0, 24);
 
   if (!stateData) throw new Error("Missing save data.");
   if (stateData.length > MAX_STATE_CHARS) {
@@ -388,6 +400,9 @@ function saveGame_(params) {
     status,
     compressed,
     stateData,
+    gameId,
+    dreamers,
+    seed,
   ]);
 
   writeSaveRows_(sheet, rows);
@@ -423,13 +438,13 @@ function deleteSave_(id) {
 function writeSaveRows_(sheet, rows) {
   const lastRow = sheet.getLastRow();
   if (lastRow > 1) {
-    sheet.getRange(2, 1, lastRow, 10).clearContent();
+    sheet.getRange(2, 1, lastRow, 13).clearContent();
     if (lastRow > rows.length + 1) {
       sheet.deleteRows(rows.length + 2, lastRow - rows.length - 1);
     }
   }
   if (!rows.length) return;
-  sheet.getRange(2, 1, rows.length, 10).setValues(rows);
+  sheet.getRange(2, 1, rows.length, 13).setValues(rows);
 }
 
 function respond_(obj) {

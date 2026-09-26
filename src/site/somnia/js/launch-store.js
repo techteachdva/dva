@@ -9,7 +9,7 @@ const PERSIST_KEY = "somnia.launch.persist";
 function parseConfig(raw) {
   if (!raw) return null;
   const config = JSON.parse(raw);
-  if (config?.resumeSaveId) return config;
+  if (config?.resumeSaveId || config?.resumeCloudSaveId) return config;
   if (!config?.lengthKey || !Array.isArray(config.selectedDreamerIds)) return null;
   if (!config.selectedDreamerIds.length) return null;
   return config;

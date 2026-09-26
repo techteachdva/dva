@@ -73,6 +73,7 @@ import {
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
 import { queueCardTrade } from "./card-fx.js";
+import { random } from "./rng.js";
 import { spendPowerTokens, grantPowerTokens, playPsychePowerFromHand } from "./power-tokens.js";
 import {
   beginDreamerPower,
@@ -398,16 +399,23 @@ export function getPhaseActions(state, handlers) {
     const stat = statForPhaseBudget("Reveal", state);
     const mapOpen = allLandscapesRevealed(state);
     const deckTopPick = state.landscapePick?.mode === "reveal-deck-tops";
+    const remFreeReveal = !!state.seedFlags?.rem && !state.remFree?.reveal && !state.revealLandscapeUsed && !deckTopPick;
     actions.push({
       label: deckTopPick
         ? `Reveal Deck Tops (${state.landscapePick.remaining} left)`
         : mapOpen
           ? (budget >= 1 ? `Reveal Deck Tops (${budget})` : "Reveal Deck Tops (select Lucidity)")
-          : (budget >= 1 ? `Reveal Landscapes (${budget} for team)` : "Reveal Landscapes (select Lucidity)"),
+          : budget >= 1
+            ? `Reveal Landscapes (${budget} for team)`
+            : remFreeReveal
+              ? "Reveal 1 Landscape (REM free)"
+              : "Reveal Landscapes (select Lucidity)",
       kind: "revealLandscape",
       hint: !state.dreamDrawn
         ? "Draw & Resolve the Dream first, then spend Lucidity."
-        : deckTopPick
+        : remFreeReveal && budget < 1
+          ? "REM cycle: the first Reveal each round is free — no Lucidity needed."
+          : deckTopPick
           ? "Click a Mindstream card back to flip its next facedown card, or open Reveal Deck Top."
           : mapOpen
             ? "The map is fully Revealed. Lucidity now flips Mindstream tops — click a card back or this action."
@@ -415,7 +423,7 @@ export function getPhaseActions(state, handlers) {
               ? `One Dreamer spends 1 Lucidity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus). Leftover Reveals flip Mindstream tops once the map is finished.`
               : "One Dreamer spends Lucidity to set everyone's reveal budget.",
       section: "main",
-      disabled: !state.dreamDrawn || state.revealLandscapeUsed || (budget < 1 && !deckTopPick),
+      disabled: !state.dreamDrawn || state.revealLandscapeUsed || (budget < 1 && !deckTopPick && !remFreeReveal),
       onClick: handlers.revealLandscape,
     });
     if (deckTopPick) {
@@ -439,17 +447,22 @@ export function getPhaseActions(state, handlers) {
       const budget = contributor ? exploreBudget(state, contributor) : 0;
       const best = bestPhaseContributor(state);
       const stat = statForPhaseBudget("Explore", state);
+      const remFreeExplore = !!state.seedFlags?.rem && !state.remFree?.explore;
       actions.push({
         label: budget >= 1
           ? `Spend Elasticity (${budget} team moves)`
-          : "Spend Elasticity (select cards)",
+          : remFreeExplore
+            ? "1 free move (REM)"
+            : "Spend Elasticity (select cards)",
         kind: "spendElasticity",
-        hint: best
-          ? `One Dreamer spends 1 Elasticity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
-          : "One Dreamer spends Elasticity to set everyone's move budget.",
+        hint: remFreeExplore && budget < 1
+          ? "REM cycle: the first Explore move each round is free — no Elasticity needed."
+          : best
+            ? `One Dreamer spends 1 Elasticity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
+            : "One Dreamer spends Elasticity to set everyone's move budget.",
         section: "main",
         primary: true,
-        disabled: budget < 1,
+        disabled: budget < 1 && !remFreeExplore,
         onClick: handlers.activateExplore,
       });
       actions.push(phaseTokenAction("Elasticity"));
@@ -476,17 +489,22 @@ export function getPhaseActions(state, handlers) {
       const budget = contributor ? meetActionBudgetFromWillpower(state, contributor) : 0;
       const best = bestPhaseContributor(state);
       const stat = statForPhaseBudget("Meet", state);
+      const remFreeMeet = !!state.seedFlags?.rem && !state.remFree?.meet;
       actions.push({
         label: budget >= 1
           ? `Gain Actions (${budget} for team)`
-          : "Gain Actions (select Willpower)",
+          : remFreeMeet
+            ? "Gain 1 free action (REM)"
+            : "Gain Actions (select Willpower)",
         kind: "gainMeetActions",
-        hint: best
-          ? `One Dreamer spends 1 Willpower — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
-          : "One Dreamer spends Willpower to set shared Meet actions.",
+        hint: remFreeMeet && budget < 1
+          ? "REM cycle: the first Meet action each round is free — no Willpower needed."
+          : best
+            ? `One Dreamer spends 1 Willpower — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
+            : "One Dreamer spends Willpower to set shared Meet actions.",
         section: "main",
         primary: true,
-        disabled: budget < 1,
+        disabled: budget < 1 && !remFreeMeet,
         onClick: handlers.gainMeetActions,
       });
       actions.push(phaseTokenAction("Willpower"));
@@ -840,6 +858,14 @@ export function revealLandscape(state) {
     narrate(state, "Draw the Dream first", "Resolve the active Dream before spending Lucidity to reveal Landscapes.");
     return;
   }
+  if (state.seedFlags?.rem && !state.remFree?.reveal && !state.revealLandscapeUsed && state.landscapePick?.mode !== "reveal") {
+    state.remFree.reveal = true;
+    beginRevealPicking(state, 1);
+    addLog(state, "REM cycle: the team takes 1 free Reveal — no Lucidity spent.");
+    recordQuestEvent(state, "reveal_landscape", { count: 0 });
+    playPhaseSpendFlash("lucidity");
+    return;
+  }
   const player = findPhaseContributor(state);
   if (!player) {
     const best = bestPhaseContributor(state);
@@ -885,6 +911,14 @@ export function revealLandscape(state) {
 }
 
 export function activateExplore(state) {
+  if (state.seedFlags?.rem && !state.remFree?.explore && !state.exploreActivated) {
+    state.remFree.explore = true;
+    state.exploreMovesLeft = 1;
+    state.exploreActivated = true;
+    addLog(state, "REM cycle: the team takes 1 free Explore move — no Elasticity spent. Click a Dreamer chip, then a highlighted hex.");
+    playPhaseSpendFlash("elasticity");
+    return;
+  }
   const player = findPhaseContributor(state);
   const freeRound = state.freeExploreNextRound;
   let budget = player ? exploreBudget(state, player) : 0;
@@ -1017,6 +1051,15 @@ export function moveDreamer(state, targetLandscapeId) {
 }
 
 export function gainMeetActions(state) {
+  if (state.seedFlags?.rem && !state.remFree?.meet && (state.meetActionBudget || 0) < 1) {
+    state.remFree.meet = true;
+    state.meetActionBudget = 1;
+    state.meetActionsUsed = 0;
+    clearAllUsedMeetActions(state);
+    addLog(state, "REM cycle: the team gains 1 free Meet action — no Willpower spent.");
+    playPhaseSpendFlash("willpower");
+    return;
+  }
   const player = findPhaseContributor(state);
   if (!player) {
     const best = bestPhaseContributor(state);
@@ -1787,7 +1830,7 @@ export function spawnRandomEncounter(state) {
   const revealed = revealedLandscapeTiles(state);
   if (!revealed.length) return null;
   if (state.tutorialMode || revealed.length === 1) {
-    const tile = revealed[Math.floor(Math.random() * revealed.length)];
+    const tile = revealed[Math.floor(random() * revealed.length)];
     return spawnEncounterOnLandscape(state, tile.id);
   }
   const pulled = pullDreambeastFromMindstream(state);

@@ -7,6 +7,13 @@ export const MUSIC_TRACKS = [
   { id: "magic-escape-room", title: "Magic Escape Room", file: "audio/magic-escape-room.mp3" },
 ];
 
+/** The Somnia theme — loops on the main menu and opens every game. */
+export const MENU_THEME_TRACK = {
+  id: "dreamers-awakening",
+  title: "Dreamer's Awakening",
+  file: "audio/Dreamers Awakening.wav",
+};
+
 export const RADIO_PLAYLIST = MUSIC_TRACKS.map((t) => t.id);
 
 export const MUSIC_ATTRIBUTION = {
@@ -91,6 +98,10 @@ export function musicCreditHtml() {
     .map((t) => `<a href="${sourceUrl}" rel="noopener noreferrer">"${t.title}"</a>`)
     .join(", ");
   return `<p class="music-credit">Music: ${list} by ${artist} (${host}), licensed under <a href="${licenseUrl}" rel="noopener noreferrer">${license}</a>.</p>`;
+}
+
+export function menuThemeCreditHtml() {
+  return `<p class="music-credit">Main menu theme: "Dreamer's Awakening" — composed with <a href="https://beepbox.co" rel="noopener noreferrer">BeepBox</a> by Cursor AI, directed by Philip Carroll.</p>`;
 }
 
 export function artCreditHtml() {

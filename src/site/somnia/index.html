@@ -30,7 +30,7 @@
   <div id="app">
     <header class="top-bar">
       <button type="button" class="brand brand-logo-btn" id="btn-somnia-changelog" title="Somnia Changelog &amp; Credits" aria-label="Open Somnia Changelog and Credits">
-        <span class="version-label">v 29.9</span>
+        <span class="version-label">v 30.0</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
         <p class="tagline">Cooperative Dreamscape Roguelike</p>
       </button>
@@ -72,6 +72,11 @@
                 <option value="large">Large</option>
               </select>
             </label>
+            <label class="field field-seed">
+              <span>Seed <em class="field-optional">optional</em></span>
+              <input type="text" id="setup-seed" maxlength="24" placeholder="e.g. SOMNIA or a Game ID" autocomplete="off" spellcheck="false" title="Same seed = same shuffle. Six secret keywords bend the rules…" />
+            </label>
+            <p id="setup-seed-preview" class="seed-preview hidden"></p>
           </div>
 
           <div class="setup-panel-center menu-glass-panel">
@@ -89,6 +94,7 @@
               <button type="button" id="btn-start" class="btn begin-dream-btn" disabled>Begin Dreaming</button>
               <button type="button" id="btn-tutorial-mode" class="btn btn-tutorial-menu" title="Two guided rounds with step-by-step coaching">Tutorial</button>
             </div>
+            <button type="button" id="btn-saved-dreams" class="btn btn-saved-dreams">Saved Dreams</button>
             <p class="menu-tutorial-hint">Tutorial Mode walks you through two guided rounds. Open <strong>?</strong> or Pause → Help anytime for rules.</p>
             <button type="button" id="btn-pwa-install" class="btn btn-pwa-install hidden" hidden>Install Somnia</button>
             <p id="pwa-install-hint" class="pwa-install-hint" hidden>On iPad: open Somnia once while online, then Share → Add to Home Screen. The icon plays with no internet.</p>

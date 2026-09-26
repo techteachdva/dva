@@ -43,6 +43,7 @@ import {
   resolveAllPowerCardsInHands,
 } from "./power-tokens.js";
 import { applyMeetStartTax } from "./meet-phase.js";
+import { seedRandomness, mintSeedSuffix, specialSeedFlag, buildGameId, normalizeSeedInput } from "./rng.js";
 import { snapshotDeckCaps } from "./deck-pressure.js";
 
 function pinFirstById(list, id) {
@@ -67,15 +68,38 @@ function pinOpeningDream(dreamDeck, dreams, id) {
   }
 }
 
+/** FANTASY / NIGHTMARE seeds: float that beast kind to the top of every Mindstream deck. */
+function stackBeastKindToTop(mindstreamDecks, kind) {
+  Object.keys(mindstreamDecks).forEach((suit) => {
+    const deck = mindstreamDecks[suit];
+    if (!Array.isArray(deck)) return;
+    const favored = deck.filter((c) => c.type === "dreambeast" && c.beastKind === kind);
+    if (!favored.length) return;
+    const rest = deck.filter((c) => !favored.includes(c));
+    mindstreamDecks[suit] = [...favored, ...rest];
+  });
+}
+
 export function createInitialState(data, options) {
   const length = LENGTHS[options.lengthKey];
   const landscapes = data.landscapes.filter((l) => !l.hidden);
+
+  const seed = seedRandomness(normalizeSeedInput(options.seed) || mintSeedSuffix());
+  const seedFlag = specialSeedFlag(seed);
+  const seedFlags = {
+    somnia: seedFlag === "somnia",
+    dmzemo: seedFlag === "dmzemo",
+    spark: seedFlag === "spark",
+    fantasy: seedFlag === "fantasy",
+    nightmare: seedFlag === "nightmare",
+    rem: seedFlag === "rem",
+  };
 
   const usedDreamerIds = new Set(options.selectedDreamers.map((d) => d.id));
   const availableDreamers = data.dreamers.filter((d) => !usedDreamerIds.has(d.id));
 
   const tutorialLayout = Boolean(options.tutorialMode);
-  const board = buildHexBoard(landscapes, { tutorialLayout });
+  const board = buildHexBoard(landscapes, { tutorialLayout, revealRing1: seedFlags.somnia && !tutorialLayout });
   const openingNeighbor = tutorialLayout
     ? null
     : board.find((t) => !t.center && t.revealed && !t.wasteland);
@@ -124,6 +148,12 @@ export function createInitialState(data, options) {
     repressFromMindstreamSetup({ mindstreamDecks, subconscious }, suit, players.length);
   });
 
+  // FANTASY / NIGHTMARE seeds stack AFTER the opening repress so the
+  // favored Dreambeasts genuinely sit on top of each Mindstream deck.
+  if (seedFlags.fantasy || seedFlags.nightmare) {
+    stackBeastKindToTop(mindstreamDecks, seedFlags.fantasy ? "fantasy" : "nightmare");
+  }
+
   if (options.gentleStart) {
     pinFirstById(archetypeDeck, "innocent");
     pinOpeningDream(dreamDeck, data.dreams, "quiet");
@@ -137,6 +167,10 @@ export function createInitialState(data, options) {
     phaseIndex: 0,
     round: 1,
     lengthKey: options.lengthKey,
+    seed,
+    seedFlags,
+    gameId: buildGameId(openingNeighbor?.name, seed),
+    remFree: { reveal: false, explore: false, meet: false },
     goalPoints: length.points,
     dreamDeck,
     psycheDeck,
@@ -156,9 +190,11 @@ export function createInitialState(data, options) {
     selectedHand: [],
     selectedLandscapeId: "bed",
     log: [
-      openingNeighbor
-        ? `The Dreamscape is shuffled. Only ${openingNeighbor.name} is Revealed beside The Bed; every other Landscape starts forgotten.`
-        : "The Dreamscape forms around The Bed...",
+      seedFlags.somnia
+        ? `Lucid start (${buildGameId(openingNeighbor?.name, seed)}): the whole inner ring begins Revealed around The Bed. Enter this Game ID as a seed to replay this dream.`
+        : openingNeighbor
+          ? `The Dreamscape is shuffled (${buildGameId(openingNeighbor.name, seed)}). Only ${openingNeighbor.name} is Revealed beside The Bed; every other Landscape starts forgotten.`
+          : "The Dreamscape forms around The Bed...",
     ],
     status: "playing",
     finalRecurrence: false,
@@ -233,8 +269,9 @@ export function createInitialState(data, options) {
   state.phaseIndex = 0;
   addLog(state, `Round ${state.round}: Reveal Phase — each Dreamer begins with ${PSYCHE_STARTING_HAND} Psyche.`);
   players.forEach((player) => {
-    grantPowerTokens(state, player, 1, {
-      reason: `${player.name} begins with 1 Power Token.`,
+    const startingTokens = seedFlags.spark || seedFlags.somnia ? 2 : 1;
+    grantPowerTokens(state, player, startingTokens, {
+      reason: `${player.name} begins with ${startingTokens} Power Token${startingTokens === 1 ? "" : "s"}.`,
       logQuest: false,
       animate: false,
     });
@@ -622,6 +659,7 @@ export function resetPhaseFlags(state) {
 export function beginRoundReveal(state) {
   resetPhaseFlags(state);
   state.phaseIndex = 0;
+  state.remFree = { reveal: false, explore: false, meet: false };
 
   state.players.forEach((player) => {
     if (!player.alive) return;

@@ -1,3 +1,5 @@
+import { random } from "./rng.js";
+
 export async function loadGameData() {
   const files = [
     "dreamers",
@@ -118,7 +120,7 @@ export const MINDSTREAM_DECK_SIZE = Object.values(MINDSTREAM_COMPOSITION).reduce
 export function shuffle(array) {
   const copy = [...array];
   for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;

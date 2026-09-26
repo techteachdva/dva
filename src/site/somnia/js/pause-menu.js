@@ -117,23 +117,63 @@ function renderDisplayTab() {
   `;
 }
 
+function saveRowHtml(save, { cloud = false } = {}) {
+  const title = save.gameId || save.label || `Round ${save.round || "?"}`;
+  const when = save.updatedAt ? new Date(save.updatedAt).toLocaleString() : "";
+  const dreamers = Array.isArray(save.dreamers) ? save.dreamers.join(", ") : (save.dreamers || "");
+  const bits = [
+    when,
+    save.round ? `Round ${save.round}` : "",
+    save.phase || "",
+  ].filter(Boolean).join(" · ");
+  return `
+    <div class="pause-save-row">
+      <div class="pause-save-info">
+        <strong>${title}${cloud && save.name ? ` <span class="pause-save-owner">${save.name}</span>` : ""}</strong>
+        <span class="pause-save-meta">${bits}</span>
+        ${dreamers ? `<span class="pause-save-meta pause-save-dreamers">${dreamers}</span>` : ""}
+      </div>
+      <div class="pause-save-actions">
+        <button type="button" class="btn btn-sm" data-load-save="${save.id}">Load</button>
+        <button type="button" class="btn btn-sm" data-delete-save="${save.id}">Delete</button>
+      </div>
+    </div>
+  `;
+}
+
 function renderGameTab() {
   const hooks = gameSaveHooks || {};
   const canSave = hooks.canSave?.() ?? false;
   const label = hooks.saveLabel?.() || "Current dream";
   const standalone = hooks.isStandalone?.() ?? false;
+  const gameId = hooks.getGameId?.() || "";
+  const seed = hooks.getSeed?.() || "";
   return `
+    ${gameId ? `
+    <div class="pause-section pause-game-id-section">
+      <h3>This dream</h3>
+      <div class="pause-game-id-row">
+        <span class="pause-game-id" id="pause-game-id" title="Tap to copy">${gameId}</span>
+        ${seed ? `<span class="pause-seed-badge">seed ${seed}</span>` : ""}
+      </div>
+      <p class="pause-hint">Share this Game ID as a seed on the menu to replay the same dream.</p>
+    </div>` : ""}
     <div class="pause-section">
       <h3>Save progress</h3>
       <p class="pause-hint">${canSave ? `Autosave keeps <strong>${label}</strong> on this device.` : "Finish the guided tutorial steps to unlock saving, or start a Daydream from the menu."}</p>
       <div class="pause-btn-row pause-btn-col">
         <button type="button" class="btn primary" id="pause-save-local" ${canSave ? "" : "disabled"}>Save on this device</button>
         <button type="button" class="btn" id="pause-save-cloud" ${canSave && !standalone ? "" : "disabled"}>${standalone ? "Cloud save (web only)" : "Save to cloud"}</button>
+        <button type="button" class="btn pause-exit-btn" id="pause-save-exit" ${canSave ? "" : "disabled"}>Save &amp; return to main menu</button>
       </div>
       <p id="pause-save-status" class="pause-hint" aria-live="polite"></p>
     </div>
     <div class="pause-section">
-      <h3>Load dream</h3>
+      <h3>Device saves</h3>
+      <div id="pause-local-save-list" class="pause-save-list"></div>
+    </div>
+    <div class="pause-section">
+      <h3>Cloud saves</h3>
       <p class="pause-hint">Enter the same first name and last initial you use for high scores.</p>
       <div class="pause-save-name-row">
         <label class="pause-field">
@@ -146,8 +186,7 @@ function renderGameTab() {
         </label>
       </div>
       <div class="pause-btn-row">
-        <button type="button" class="btn" id="pause-load-list">List saves</button>
-        <button type="button" class="btn" id="pause-load-local">Load device save</button>
+        <button type="button" class="btn" id="pause-load-list">List cloud saves</button>
       </div>
       <div id="pause-save-list" class="pause-save-list"></div>
     </div>
@@ -168,10 +207,21 @@ function bindGameControls(root) {
     status.classList.toggle("pause-save-error", isError);
   };
 
+  root.querySelector("#pause-game-id")?.addEventListener("click", async (e) => {
+    const text = e.currentTarget.textContent.trim();
+    try {
+      await navigator.clipboard.writeText(text);
+      setStatus(`Game ID ${text} copied — use it as a seed to replay this dream.`);
+    } catch {
+      setStatus(`Game ID: ${text}`);
+    }
+  });
+
   root.querySelector("#pause-save-local")?.addEventListener("click", async () => {
     try {
       await gameSaveHooks?.saveLocal?.();
       setStatus("Saved on this device.");
+      renderLocalSaveList(root);
     } catch (e) {
       setStatus(e.message || "Could not save.", true);
     }
@@ -191,14 +241,19 @@ function bindGameControls(root) {
     }
   });
 
-  root.querySelector("#pause-load-local")?.addEventListener("click", async () => {
+  root.querySelector("#pause-save-exit")?.addEventListener("click", async () => {
+    const btn = root.querySelector("#pause-save-exit");
+    if (btn) btn.disabled = true;
+    setStatus("Saving your dream…");
     try {
-      await gameSaveHooks?.loadLocal?.();
-      closePauseMenu();
+      await gameSaveHooks?.saveAndExit?.();
     } catch (e) {
-      setStatus(e.message || "Could not load device save.", true);
+      if (btn) btn.disabled = false;
+      setStatus(e.message || "Could not save before leaving.", true);
     }
   });
+
+  renderLocalSaveList(root);
 
   root.querySelector("#pause-load-list")?.addEventListener("click", async () => {
     const valid = readPauseSaveName(root);
@@ -215,16 +270,7 @@ function bindGameControls(root) {
         listEl.innerHTML = "<p class=\"pause-hint\">No cloud saves for that name.</p>";
         return;
       }
-      listEl.innerHTML = saves.map((save) => `
-        <div class="pause-save-row">
-          <div>
-            <strong>${save.label || `Round ${save.round}`}</strong>
-            <span class="pause-save-meta">${save.phase || ""} · ${new Date(save.updatedAt).toLocaleString()}</span>
-          </div>
-          <button type="button" class="btn btn-sm" data-load-save="${save.id}">Load</button>
-          <button type="button" class="btn btn-sm" data-delete-save="${save.id}">Delete</button>
-        </div>
-      `).join("");
+      listEl.innerHTML = saves.map((save) => saveRowHtml(save, { cloud: true })).join("");
       listEl.querySelectorAll("[data-load-save]").forEach((btn) => {
         btn.addEventListener("click", async () => {
           try {
@@ -250,6 +296,44 @@ function bindGameControls(root) {
       listEl.innerHTML = "";
       setStatus(e.message || "Could not list saves.", true);
     }
+  });
+}
+
+function renderLocalSaveList(root) {
+  const listEl = root.querySelector("#pause-local-save-list");
+  if (!listEl) return;
+  const saves = (gameSaveHooks?.listLocal?.() || [])
+    .slice()
+    .sort((a, b) => Number(b.updatedAt) - Number(a.updatedAt));
+  if (!saves.length) {
+    listEl.innerHTML = "<p class=\"pause-hint\">No device saves yet.</p>";
+    return;
+  }
+  listEl.innerHTML = saves.map((save) => saveRowHtml(save)).join("");
+  listEl.querySelectorAll("[data-load-save]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await gameSaveHooks?.loadLocalById?.(btn.dataset.loadSave);
+        closePauseMenu();
+      } catch (e) {
+        const status = document.getElementById("pause-save-status");
+        if (status) {
+          status.textContent = e.message || "Could not load save.";
+          status.classList.add("pause-save-error");
+        }
+      }
+    });
+  });
+  listEl.querySelectorAll("[data-delete-save]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      try {
+        gameSaveHooks?.deleteLocal?.(btn.dataset.deleteSave);
+        btn.closest(".pause-save-row")?.remove();
+        if (!listEl.querySelector(".pause-save-row")) {
+          listEl.innerHTML = "<p class=\"pause-hint\">No device saves yet.</p>";
+        }
+      } catch { /* ignore */ }
+    });
   });
 }
 

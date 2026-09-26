@@ -90,16 +90,23 @@ async function gunzipText(data, compressed) {
 
 export async function packGameSave(state, launchConfig, { label, playerName } = {}) {
   const game = stripRuntime(state);
+  const dreamers = (state.players || [])
+    .map((p) => p.dreamer?.name || p.name)
+    .filter(Boolean);
   const payload = {
     version: SAVE_VERSION,
     savedAt: Date.now(),
     label: label || buildSaveLabel(state),
+    gameId: state.gameId || null,
+    seed: state.seed || null,
+    dreamers,
     launchConfig: {
       lengthKey: launchConfig?.lengthKey || state.lengthKey,
       selectedDreamerIds: launchConfig?.selectedDreamerIds
         || state.players?.map((p) => p.dreamer?.id).filter(Boolean),
       tutorialMode: false,
       gentleStart: launchConfig?.gentleStart ?? false,
+      seed: state.seed || launchConfig?.seed || null,
     },
     game,
   };
@@ -141,6 +148,9 @@ export async function saveGameLocal(state, launchConfig, options = {}) {
     round: state.round,
     phase: getPhase(state),
     status: state.status,
+    gameId: packed.gameId,
+    seed: packed.seed,
+    dreamers: packed.dreamers,
     compressed: packed.compressed,
     stateData: packed.stateData,
     launchConfig: packed.launchConfig,
@@ -173,6 +183,9 @@ export async function saveGameCloud(state, launchConfig, { playerName, label } =
     round: state.round,
     phase: getPhase(state),
     status: state.status,
+    gameId: packed.gameId,
+    seed: packed.seed,
+    dreamers: packed.dreamers.join(", "),
     compressed: packed.compressed,
     stateData: packed.stateData,
     launchConfig: packed.launchConfig,

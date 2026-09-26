@@ -3,6 +3,7 @@ import {
   saveSettings,
   MUSIC_TRACKS,
   RADIO_PLAYLIST,
+  MENU_THEME_TRACK,
   musicCreditHtml,
   artCreditHtml,
   boxArtCreditHtml,
@@ -23,6 +24,7 @@ let settings = loadSettings();
 let bgm = null;
 let musicStarted = false;
 let radioIndex = 0;
+let themeMode = false;
 let audioCtx = null;
 let musicSource = null;
 let musicGain = null;
@@ -500,6 +502,7 @@ function advanceRadio() {
 
 function loadCurrentTrack(autoplay = false) {
   if (!bgm) return;
+  themeMode = false;
   const file = currentTrackFile();
   const needsSwap = !bgm.src || !bgm.src.includes(file.replace(/^\//, ""));
   if (needsSwap) {
@@ -513,6 +516,18 @@ function loadCurrentTrack(autoplay = false) {
   if (autoplay && !settings.musicMuted && settings.musicMode !== "off") {
     playMusic();
   }
+}
+
+/** Load "Dreamer's Awakening" — the menu loop and every game's opening track. */
+function loadThemeTrack(loop) {
+  if (!bgm) return;
+  themeMode = true;
+  bgm.pause();
+  bgm.src = MENU_THEME_TRACK.file;
+  bgm.load();
+  bgm.loop = loop;
+  musicStarted = false;
+  applyMusicLevels();
 }
 
 function playMusic() {
@@ -537,6 +552,12 @@ export function initGameAudio() {
   bgm = new Audio();
   bgm.preload = "auto";
   bgm.addEventListener("ended", () => {
+    if (themeMode) {
+      // The opening theme finished — hand off to the configured music.
+      themeMode = false;
+      loadCurrentTrack(true);
+      return;
+    }
     if (settings.musicMode === "radio") advanceRadio();
   });
   loadCurrentTrack(false);
@@ -546,12 +567,38 @@ export function startGameRadio() {
   initGameAudio();
   settings = loadSettings();
   if (settings.musicMode === "off" || settings.musicMuted) return;
-  loadCurrentTrack(true);
+  // Every dream opens with "Dreamer's Awakening", then radio/track takes over.
+  loadThemeTrack(false);
+  playMusic();
+}
+
+/** Main menu: loop the theme. Browsers need a gesture before audio starts. */
+export function startMenuTheme() {
+  initGameAudio();
+  loadThemeTrack(true);
+  const tryPlay = () => {
+    const s = loadSettings();
+    if (s.musicMuted || s.musicMode === "off") return;
+    playMusic();
+  };
+  tryPlay();
+  document.addEventListener("pointerdown", tryPlay);
+  document.addEventListener("keydown", tryPlay);
 }
 
 export function applyAudioSettings() {
   settings = loadSettings();
-  loadCurrentTrack(musicStarted || settings.musicMode !== "off");
+  if (themeMode) {
+    // Keep the theme playing through settings changes; only honor off/mute.
+    if (settings.musicMuted || settings.musicMode === "off") {
+      bgm?.pause();
+      musicStarted = false;
+    } else {
+      playMusic();
+    }
+  } else {
+    loadCurrentTrack(musicStarted || settings.musicMode !== "off");
+  }
   applyMusicLevels();
   applySfxLevels();
   updateMusicToggleButtons();

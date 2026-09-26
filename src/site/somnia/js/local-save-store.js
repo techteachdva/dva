@@ -3,7 +3,7 @@
  */
 
 const STORAGE_KEY = "somnia.gameSaves";
-const MAX_SAVES = 5;
+const MAX_SAVES = 12;
 
 function loadStore() {
   try {
