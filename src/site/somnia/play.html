@@ -34,7 +34,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 30.0</span>
+        <span class="version-label">v 30.1</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
@@ -174,8 +174,8 @@
             <h3>Leaderboard</h3>
             <p class="end-leaderboard-hint">Enter your name to save your score.</p>
             <div class="end-name-row">
-              <input type="text" id="end-score-first" class="input" placeholder="First name" maxlength="16" autocomplete="given-name">
-              <input type="text" id="end-score-last" class="input end-score-last" placeholder="Last initial" maxlength="1" autocomplete="family-name">
+              <input type="text" id="end-score-first" class="input" placeholder="First name" maxlength="16" autocomplete="given-name" autocorrect="off" autocapitalize="words" enterkeyhint="next">
+              <input type="text" id="end-score-last" class="input end-score-last" placeholder="Last initial" maxlength="1" autocomplete="family-name" autocorrect="off" autocapitalize="characters" enterkeyhint="done">
               <button type="button" id="end-score-submit" class="btn primary">Submit</button>
             </div>
             <p id="end-score-status" class="end-score-status" role="status"></p>

@@ -35,6 +35,40 @@ html {
   text-size-adjust: 100%;
 }
 
+/* ---- iPad / touch: keep native gestures off the table pieces ---------------
+   iPadOS opens an image callout or starts a drag preview on a long press,
+   which cancels the pointer before the long-press-to-inspect gesture fires. */
+html[data-touch="true"] .game-card,
+html[data-touch="true"] .game-card *,
+html[data-touch="true"] .hex-tile,
+html[data-touch="true"] .hex-tile *,
+html[data-touch="true"] .deck-column,
+html[data-touch="true"] .deck-column *,
+html[data-touch="true"] .power-token-chip,
+html[data-touch="true"] .player-chip,
+html[data-touch="true"] .mini-card-row *,
+html[data-touch="true"] .active-card-slot *,
+html[data-touch="true"] .hex-occupant-token,
+html[data-touch="true"] .menu-dreamer-picker * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+html[data-touch="true"] img {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+
+/* iOS Safari zooms the page when a focused control is under 16px, and a
+   Home Screen install cannot pinch back out. Hold every control at 16px. */
+html[data-touch="true"] input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+html[data-touch="true"] select,
+html[data-touch="true"] textarea {
+  font-size: max(16px, 1em);
+}
+
 html, body {
   margin: 0;
   height: 100%;
@@ -176,7 +210,7 @@ body.menu-window .brand-wordmark {
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.brand-logo-btn:hover,
+:where(html:not([data-hover="false"])) .brand-logo-btn:hover,
 .brand-logo-btn:focus-visible {
   background: rgba(123, 92, 255, 0.12);
   box-shadow: 0 0 0 1px rgba(180, 160, 255, 0.25);
@@ -446,6 +480,7 @@ body.play-window #screen-game.active {
   display: grid;
   place-items: center;
   background: rgba(4, 3, 12, 0.88);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   cursor: pointer;
 }
@@ -532,7 +567,7 @@ body.play-window #screen-end.active {
   border: 1px solid transparent;
 }
 
-.quest-progress-list li.quest-clickable:hover,
+:where(html:not([data-hover="false"])) .quest-progress-list li.quest-clickable:hover,
 .quest-progress-list li.quest-clickable:focus-visible {
   border-color: rgba(240, 201, 106, 0.55);
   background: rgba(240, 201, 106, 0.1);
@@ -727,6 +762,7 @@ body.victory-celebrating .end-panel {
   min-height: var(--topbar-h);
   border-bottom: 1px solid var(--border);
   background: rgba(8, 7, 16, 0.92);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   flex-shrink: 0;
 }
@@ -1077,6 +1113,7 @@ body.in-game main {
   box-shadow:
     0 10px 28px rgba(0, 0, 0, 0.38),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   pointer-events: auto;
 }
@@ -1246,7 +1283,7 @@ body.in-game main {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.42);
 }
 
-.deck-discard-top-card:hover {
+:where(html:not([data-hover="false"])) .deck-discard-top-card:hover {
   transform: translateX(-50%) translateY(-2px);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.48);
 }
@@ -1294,7 +1331,7 @@ body.in-game main {
   background: #120f22;
 }
 
-.reveal-deck-top-choice:hover,
+:where(html:not([data-hover="false"])) .reveal-deck-top-choice:hover,
 .reveal-deck-top-choice:focus-visible {
   border-color: rgba(201, 160, 255, 0.7);
   box-shadow: 0 0 0 1px rgba(201, 160, 255, 0.25);
@@ -1415,6 +1452,7 @@ body.in-game main {
   transform-origin: center top;
   pointer-events: auto;
   background: rgba(8, 6, 18, 0.38);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(180, 160, 255, 0.32);
   border-radius: var(--radius);
@@ -1571,7 +1609,7 @@ body.in-game main {
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-.btn-tutorial-menu:hover {
+:where(html:not([data-hover="false"])) .btn-tutorial-menu:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(180, 160, 255, 0.35);
   color: var(--text);
@@ -2021,7 +2059,7 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   pointer-events: none;
 }
 
-#btn-start.begin-dream-btn.begin-dream-ready:hover {
+:where(html:not([data-hover="false"])) #btn-start.begin-dream-btn.begin-dream-ready:hover {
   transform: translateY(-3px) scale(1.02);
   animation:
     btn-shimmer 2.4s ease-in-out infinite,
@@ -2921,7 +2959,7 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   cursor: pointer;
 }
 
-.tutorial-window-btn:hover {
+:where(html:not([data-hover="false"])) .tutorial-window-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.35);
 }
@@ -3551,7 +3589,7 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight:not(:disabled) {
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 
-.rules-reference-tab:hover {
+:where(html:not([data-hover="false"])) .rules-reference-tab:hover {
   border-color: var(--accent);
   color: var(--text);
 }
@@ -3667,7 +3705,7 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight:not(:disabled) {
   transition: opacity 0.35s ease;
 }
 
-.btn:hover:not(:disabled) { border-color: var(--accent); }
+:where(html:not([data-hover="false"])) .btn:hover:not(:disabled) { border-color: var(--accent); }
 
 .btn:active:not(:disabled) {
   transform: scale(0.96);
@@ -3935,11 +3973,11 @@ html[data-pointer="hybrid"] .board-viewport::after {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 18px rgba(74, 158, 255, 0.5);
 }
 
-.btn-next-phase:hover:not(:disabled),
+:where(html:not([data-hover="false"])) .btn-next-phase:hover:not(:disabled),
 .btn-next-phase:focus-visible:not(:disabled),
-.btn-map-back:hover:not(:disabled),
+:where(html:not([data-hover="false"])) .btn-map-back:hover:not(:disabled),
 .btn-map-back:focus-visible:not(:disabled),
-.btn-draw-dream:hover:not(:disabled),
+:where(html:not([data-hover="false"])) .btn-draw-dream:hover:not(:disabled),
 .btn-draw-dream:focus-visible:not(:disabled) {
   transform: scale(1.06);
   outline: 2px solid rgba(240, 201, 106, 0.9);
@@ -4399,7 +4437,7 @@ html[data-pointer="coarse"] .board-camera-controls button {
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-.power-token-chip:hover,
+:where(html:not([data-hover="false"])) .power-token-chip:hover,
 .power-token-chip:focus-visible {
   transform: translateY(-1px) scale(1.08);
   box-shadow: 0 0 0 2px rgba(240, 201, 106, 0.7), 0 4px 10px rgba(0, 0, 0, 0.4);
@@ -4471,7 +4509,7 @@ html[data-pointer="coarse"] .board-camera-controls button {
   box-shadow: 0 0 14px rgba(240, 201, 106, 0.22);
 }
 
-.power-token-radial-item.ready:not(:disabled):hover {
+:where(html:not([data-hover="false"])) .power-token-radial-item.ready:not(:disabled):hover {
   transform: translate(-50%, -50%) scale(1.06);
   box-shadow: 0 0 18px rgba(240, 201, 106, 0.4);
 }
@@ -4678,7 +4716,7 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   margin-left: 0;
 }
 
-.hand-spillover .game-card.hand-dense:hover {
+:where(html:not([data-hover="false"])) .hand-spillover .game-card.hand-dense:hover {
   z-index: 3;
   transform: translateY(-6px) scale(1.04);
 }
@@ -4751,7 +4789,7 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   cursor: default;
 }
 
-.game-card.hand-inactive:hover {
+:where(html:not([data-hover="false"])) .game-card.hand-inactive:hover {
   transform: none;
   box-shadow: none;
 }
@@ -5308,7 +5346,7 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   border-left: 4px solid #c9a0ff;
 }
 
-.deck-pile:hover {
+:where(html:not([data-hover="false"])) .deck-pile:hover {
   background: rgba(255,255,255,0.06);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -5465,6 +5503,7 @@ body.card-detail-open .tutorial-card {
   position: absolute;
   inset: 0;
   background: rgba(4, 3, 10, 0.75);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 
@@ -5869,7 +5908,7 @@ body.card-detail-open .tutorial-card {
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4), 0 0 16px rgba(232, 72, 72, 0.4);
 }
 
-.btn-spread-opener:hover:not(:disabled),
+:where(html:not([data-hover="false"])) .btn-spread-opener:hover:not(:disabled),
 .btn-spread-opener:focus-visible:not(:disabled) {
   transform: translateY(-2px);
   outline: 2px solid rgba(240, 201, 106, 0.85);
@@ -6168,7 +6207,7 @@ body.card-detail-open .tutorial-card {
   transition: outline-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-.landscape-detail-occupant-card.is-clickable:hover,
+:where(html:not([data-hover="false"])) .landscape-detail-occupant-card.is-clickable:hover,
 .landscape-detail-occupant-card.is-clickable:focus-visible {
   outline-color: rgba(240, 201, 106, 0.75);
   box-shadow: 0 0 18px rgba(123, 92, 255, 0.32);
@@ -6655,7 +6694,7 @@ body.card-detail-open .tutorial-card {
   min-width: 0;
 }
 
-.subconscious-binder-cell:hover {
+:where(html:not([data-hover="false"])) .subconscious-binder-cell:hover {
   background: rgba(123, 92, 255, 0.14);
 }
 
@@ -6760,7 +6799,7 @@ body.card-detail-open .tutorial-card {
   transition: background 0.15s, border-color 0.15s;
 }
 
-.subconscious-binder-zoom-arrow:hover:not(:disabled) {
+:where(html:not([data-hover="false"])) .subconscious-binder-zoom-arrow:hover:not(:disabled) {
   background: rgba(123, 92, 255, 0.35);
   border-color: rgba(201, 160, 255, 0.65);
 }
@@ -6819,7 +6858,7 @@ body.card-detail-open .tutorial-card {
   transform: scale(1);
 }
 
-.subconscious-binder-zoom-item:hover {
+:where(html:not([data-hover="false"])) .subconscious-binder-zoom-item:hover {
   opacity: 1;
 }
 
@@ -8092,6 +8131,7 @@ body.panel-resizing {
   position: absolute;
   inset: 0;
   background: rgba(4, 3, 12, 0.72);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
 
@@ -8318,7 +8358,7 @@ body.panel-resizing {
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.pause-game-id:hover {
+:where(html:not([data-hover="false"])) .pause-game-id:hover {
   background: rgba(120, 90, 255, 0.18);
   border-color: rgba(200, 180, 255, 0.8);
 }
@@ -9152,7 +9192,7 @@ body.opening-cinematic .player-chip {
   box-shadow: 0 0 10px rgba(240, 201, 106, 0.25);
 }
 
-.btn-moment-history:hover:not(:disabled) {
+:where(html:not([data-hover="false"])) .btn-moment-history:hover:not(:disabled) {
   background: rgba(240, 201, 106, 0.28);
   border-color: var(--gold);
 }
@@ -9176,7 +9216,7 @@ body.opening-cinematic .player-chip {
   box-shadow: 0 0 12px rgba(123, 92, 255, 0.35);
 }
 
-.btn-dream-feed:hover:not(:disabled) {
+:where(html:not([data-hover="false"])) .btn-dream-feed:hover:not(:disabled) {
   background: rgba(123, 92, 255, 0.38);
   border-color: var(--accent);
 }
@@ -9533,7 +9573,7 @@ body.play-window .action-dock-wrap {
   color: #fff;
 }
 
-.action-dock-btn.btn-ready:not(:disabled):hover {
+:where(html:not([data-hover="false"])) .action-dock-btn.btn-ready:not(:disabled):hover {
   transform: translateY(-1px);
   box-shadow: 0 0 18px rgba(123, 92, 255, 0.38);
 }
@@ -9595,6 +9635,7 @@ html[data-touch="true"] .action-dock .btn-advance {
   place-items: center;
   padding: 1.25rem;
   background: rgba(4, 3, 12, 0.82);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   pointer-events: none;
 }
@@ -10973,7 +11014,7 @@ body.play-window .phase-stepper.top-bar-stepper {
   margin-right: 0;
 }
 
-#screen-game .hand-primary .game-card:hover,
+:where(html:not([data-hover="false"])) #screen-game .hand-primary .game-card:hover,
 #screen-game .hand-primary .game-card:focus-visible {
   position: relative;
   z-index: 50;
@@ -11909,4 +11950,106 @@ html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open .
     --deck-face-w: 2rem;
     --deck-face-h: 2.7rem;
   }
+}
+
+/* ---- 30.1 iPad ergonomics ---------------------------------------------------
+   44pt targets for anything a fingertip has to land on, and a touch of extra
+   size on the labels that measured 7–9px on a 10.2" iPad. */
+html[data-touch="true"] body.menu-window .header-actions .btn,
+html[data-touch="true"] [data-music-toggle],
+html[data-touch="true"] .modal-close,
+html[data-touch="true"] .utility-close {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* The menu's select rule carries an ID, so restate the 16px floor at that weight. */
+html[data-touch="true"] body.menu-window #screen-setup .field select,
+html[data-touch="true"] body.menu-window #screen-setup .field input[type="text"] {
+  font-size: max(16px, 1em);
+  min-height: 44px;
+}
+
+html[data-touch="true"] .btn-icon {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+html[data-touch="true"] .pause-game-id {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.75rem;
+}
+
+html[data-touch="true"] body.menu-window .setup-panel-right .btn,
+html[data-touch="true"] .pause-header .btn,
+html[data-touch="true"] .pause-tab,
+html[data-touch="true"] .pause-body .btn,
+html[data-touch="true"] .end-actions .btn,
+html[data-touch="true"] .field select,
+html[data-touch="true"] .field input[type="text"],
+html[data-touch="true"] .pause-field select,
+html[data-touch="true"] .pause-field input[type="text"],
+html[data-touch="true"] .end-name-row .input {
+  min-height: 44px;
+}
+
+html[data-touch="true"] .pause-toggle {
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.pause-audio-hint {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(240, 200, 48, 0.35);
+  background: rgba(240, 200, 48, 0.08);
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+html[data-touch="true"] .pause-toggle input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+html[data-touch="true"] .pause-field input[type="range"] {
+  height: 40px;
+  margin: 0;
+  cursor: pointer;
+}
+
+html[data-form="tablet"] .hex-tile .name {
+  font-size: calc(0.88rem * var(--hex-scale, 1.72));
+}
+
+html[data-form="tablet"] .hex-tile .tokens {
+  font-size: calc(0.7rem * var(--hex-scale, 1.72));
+}
+
+html[data-form="tablet"] .hud-item .label {
+  font-size: 0.86rem;
+}
+
+/* The compact landscape chrome rule (0.58rem) outranks the line above; hold
+   a readable floor at the same weight. */
+html[data-form="tablet"][data-orientation="landscape"] body.play-window .hud-item .label {
+  font-size: 0.74rem;
+}
+
+html[data-form="tablet"] .version-label {
+  font-size: 0.7rem;
+}
+
+/* Sticky :hover on touch is handled by the data-hover guards above; keep
+   focus rings visible for external keyboards without a mouse-style outline. */
+html[data-touch="true"] .game-card:focus:not(:focus-visible),
+html[data-touch="true"] .hex-tile:focus:not(:focus-visible) {
+  outline: none;
 }

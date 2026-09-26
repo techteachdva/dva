@@ -6,10 +6,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "30.0";
+export const SOMNIA_VERSION = "30.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "30.1",
+    title: "The Tablet Cut",
+    notes: [
+      "Somnia was audited end to end on iPad. Tapping into the seed box or the settings no longer zooms the whole page, and the menu theme now wakes on the very first tap instead of waiting for a mouse.",
+      "Rotate the iPad and the board re-fits itself; long-press a card and the inspect view opens instead of iPadOS offering to save the picture. Music survives Siri, FaceTime, and a trip to another app.",
+      "The dream stays lit: the screen no longer dims mid-turn during a long co-op discussion, and the pause menu's checkboxes, sliders, and tabs grew to proper fingertip size. Tap your Game ID on iPad to share it straight to Messages or Notes.",
+      "The offline library went on a diet — Landscape stings are trimmed to the few seconds you actually hear and the theme is a fraction of its old size — so a Home Screen install is roughly 100 MB lighter than it was.",
+    ],
+  },
   {
     version: "30.0",
     title: "The Seeded Dream",

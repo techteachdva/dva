@@ -17,8 +17,31 @@ function loadStore() {
   }
 }
 
+function isQuotaError(err) {
+  return err && (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED" || err.code === 22 || err.code === 1014);
+}
+
+/**
+ * iOS caps localStorage around 5 MB. If a write overflows, drop the oldest
+ * manual saves (never the autosave being written) and retry before giving up.
+ */
 function persistStore(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  for (let attempt = 0; attempt < MAX_SAVES; attempt += 1) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      return;
+    } catch (err) {
+      if (!isQuotaError(err)) throw err;
+      const victims = Object.values(data.saves)
+        .filter((entry) => entry.id !== "autosave")
+        .sort((a, b) => (a.updatedAt || 0) - (b.updatedAt || 0));
+      if (!victims.length) {
+        throw new Error("This device's save storage is full. Delete a saved dream and try again.");
+      }
+      delete data.saves[victims[0].id];
+    }
+  }
+  throw new Error("This device's save storage is full. Delete a saved dream and try again.");
 }
 
 export function listSaves() {

@@ -27,6 +27,21 @@ let open = false;
 let onResume = null;
 let gameSaveHooks = null;
 
+function isTouchDevice() {
+  return document.documentElement.dataset.touch === "true";
+}
+
+function isAppleTouchDevice() {
+  const ua = navigator.userAgent || "";
+  if (/iPad|iPhone|iPod/.test(ua)) return true;
+  return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+}
+
+function silentModeHintHtml() {
+  if (!isAppleTouchDevice()) return "";
+  return `<p class="pause-audio-hint">No sound? Somnia's music and effects follow the iPad's <strong>Silent Mode</strong> — check Control Center, and make sure the volume is up.</p>`;
+}
+
 function panLabel(value) {
   if (value < -0.25) return "◀ Left";
   if (value > 0.25) return "Right ▶";
@@ -40,6 +55,7 @@ function renderAudioTab() {
   ).join("");
 
   return `
+    ${silentModeHintHtml()}
     <div class="pause-section">
       <h3>Music</h3>
       <label class="pause-field">
@@ -209,6 +225,21 @@ function bindGameControls(root) {
 
   root.querySelector("#pause-game-id")?.addEventListener("click", async (e) => {
     const text = e.currentTarget.textContent.trim();
+    // iPad: the native share sheet beats a silent clipboard write (Messages,
+    // AirDrop, Notes). Fall back to the clipboard everywhere else.
+    if (isTouchDevice() && typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: "Somnia Game ID",
+          text: `Somnia Game ID ${text} — enter it as a seed to replay this exact dream.`,
+        });
+        setStatus(`Game ID ${text} shared.`);
+        return;
+      } catch (err) {
+        if (err?.name === "AbortError") return;
+        /* share unavailable — try the clipboard */
+      }
+    }
     try {
       await navigator.clipboard.writeText(text);
       setStatus(`Game ID ${text} copied — use it as a seed to replay this dream.`);

@@ -57,10 +57,42 @@ function ensureAudioContext() {
       return null;
     }
   }
-  if (audioCtx.state === "suspended") {
+  // iOS reports "interrupted" (Siri, FaceTime, app switch) as well as
+  // "suspended"; anything short of running needs a resume.
+  if (audioCtx.state !== "running" && audioCtx.state !== "closed") {
     audioCtx.resume().catch(() => {});
   }
   return audioCtx;
+}
+
+/**
+ * After an iOS interruption the graph stays silent even though the media
+ * element still reports playing. Kick the context and the element together.
+ */
+function recoverAfterInterruption() {
+  const ac = ensureAudioContext();
+  if (!ac) return;
+  if (!bgm || !musicStarted) return;
+  settings = loadSettings();
+  if (settings.musicMuted || settings.musicMode === "off") return;
+  const kick = () => {
+    if (bgm.paused) {
+      bgm.play().catch(() => {});
+    }
+  };
+  if (ac.state === "running") kick();
+  else ac.resume().then(kick).catch(() => {});
+}
+
+let visibilityBound = false;
+function bindVisibilityRecovery() {
+  if (visibilityBound) return;
+  visibilityBound = true;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") recoverAfterInterruption();
+  });
+  window.addEventListener("pageshow", recoverAfterInterruption);
+  window.addEventListener("focus", recoverAfterInterruption);
 }
 
 function ensureMusicChain() {
@@ -237,6 +269,27 @@ async function loadLandscapeSfxMap() {
   return landscapeSfxLoading;
 }
 
+/**
+ * iOS keeps a hardware decoder per <audio> element and caps how many can be
+ * alive at once; past the cap new stings fail silently. Keep a small LRU.
+ */
+const LANDSCAPE_CACHE_MAX = 6;
+function evictLandscapeAudio() {
+  while (landscapeAudioCache.size > LANDSCAPE_CACHE_MAX) {
+    const oldestId = landscapeAudioCache.keys().next().value;
+    const oldest = landscapeAudioCache.get(oldestId);
+    landscapeAudioCache.delete(oldestId);
+    if (!oldest || activeLandscapePlayback?.audio === oldest) continue;
+    try {
+      oldest.pause();
+      oldest.removeAttribute("src");
+      oldest.load();
+    } catch {
+      /* already released */
+    }
+  }
+}
+
 function proceduralLandscapeTone(landscapeId) {
   let hash = 0;
   for (let i = 0; i < landscapeId.length; i += 1) {
@@ -369,10 +422,15 @@ export function playLandscapeSfx(landscapeId) {
       return;
     }
     let audio = landscapeAudioCache.get(landscapeId);
-    if (!audio) {
+    if (audio) {
+      // Refresh recency: Map iteration order is insertion order.
+      landscapeAudioCache.delete(landscapeId);
+      landscapeAudioCache.set(landscapeId, audio);
+    } else {
       audio = new Audio(entry.file);
       audio.preload = "auto";
       landscapeAudioCache.set(landscapeId, audio);
+      evictLandscapeAudio();
     }
     audio.volume = 1;
     playLandscapeElement(audio, landscapeId, () => proceduralLandscapeTone(landscapeId));
@@ -551,9 +609,11 @@ export function initGameAudio() {
   if (bgm) return;
   initSfx();
   loadLandscapeSfxMap();
+  bindVisibilityRecovery();
   settings = loadSettings();
   bgm = new Audio();
   bgm.preload = "auto";
+  bgm.setAttribute("playsinline", "");
   bgm.addEventListener("ended", () => {
     if (settings.musicMode === "radio") advanceRadio();
   });
@@ -570,18 +630,37 @@ export function startGameRadio() {
   loadCurrentTrack(true);
 }
 
-/** Main menu: loop the theme. Browsers need a gesture before audio starts. */
+/**
+ * Main menu: loop the theme. Browsers need a gesture before audio starts, and
+ * WebKit only honours click / touchend / keydown (not the touchstart-derived
+ * pointerdown), so listen broadly and stop once playback has actually begun.
+ */
 export function startMenuTheme() {
   initGameAudio();
   loadThemeTrack(true);
+  const GESTURES = ["pointerdown", "pointerup", "touchend", "click", "keydown"];
+  let armed = true;
   const tryPlay = () => {
     const s = loadSettings();
     if (s.musicMuted || s.musicMode === "off") return;
+    if (!bgm || (!bgm.paused && musicStarted)) {
+      disarm();
+      return;
+    }
+    ensureAudioContext();
     playMusic();
   };
+  const disarm = () => {
+    if (!armed) return;
+    armed = false;
+    GESTURES.forEach((type) => document.removeEventListener(type, tryPlay, true));
+  };
   tryPlay();
-  document.addEventListener("pointerdown", tryPlay);
-  document.addEventListener("keydown", tryPlay);
+  GESTURES.forEach((type) => document.addEventListener(type, tryPlay, { capture: true, passive: true }));
+  bgm?.addEventListener("playing", () => {
+    // Keep listening a beat longer: iOS can report playing then stall.
+    setTimeout(() => { if (bgm && !bgm.paused) disarm(); }, 1500);
+  });
 }
 
 export function applyAudioSettings() {

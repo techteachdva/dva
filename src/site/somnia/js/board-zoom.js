@@ -658,6 +658,45 @@ export function initBoardZoom() {
     pendingTouchPan = false;
   });
 
+  bindViewportRefit();
   resetBoardZoom();
   showBoardPanHint();
+}
+
+/**
+ * Rotating an iPad (or resizing a window) changes the board's fit. Re-fit
+ * once the size settles, unless the player is mid-gesture or has zoomed in
+ * on purpose — in that case only re-run the current camera so tiles still
+ * land inside the viewport.
+ */
+let refitTimer = 0;
+let lastFitW = 0;
+let lastFitH = 0;
+function bindViewportRefit() {
+  lastFitW = window.innerWidth;
+  lastFitH = window.innerHeight;
+  const schedule = (delay) => {
+    window.clearTimeout(refitTimer);
+    refitTimer = window.setTimeout(() => {
+      // The iOS keyboard shrinks the viewport too — leave the camera alone
+      // while a text field is being edited.
+      if (document.activeElement?.matches?.("input, textarea, select")) return;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const orientationFlipped = (w >= h) !== (lastFitW >= lastFitH);
+      const grew = Math.abs(w - lastFitW) > 80 || Math.abs(h - lastFitH) > 80;
+      if (!orientationFlipped && !grew) return;
+      lastFitW = w;
+      lastFitH = h;
+      if (pinchActive || panning) return;
+      if (userAdjusted && !orientationFlipped) {
+        scheduleZoomRender();
+        return;
+      }
+      fitBoardToViewport();
+    }, delay);
+  };
+  window.addEventListener("resize", () => schedule(220));
+  window.addEventListener("orientationchange", () => schedule(320));
+  window.visualViewport?.addEventListener("resize", () => schedule(220));
 }

@@ -307,6 +307,7 @@ async function init() {
     trackTutorialSpotlightWithCamera(480);
   });
   bindFullscreenPrompt();
+  bindImageDragGuard();
   bindRestart();
   bindEndLeaderboard();
   bindPowerBonus();
@@ -363,6 +364,60 @@ function readLaunchConfig() {
   }
 }
 
+/* ---- Screen wake lock -------------------------------------------------------
+   A co-op turn can take minutes; without this an iPad dims and locks
+   mid-discussion. Safari 16.4+ supports screen wake locks (gesture required,
+   auto-released when the page is hidden, so re-request on return). */
+let wakeLock = null;
+let wakeLockWanted = false;
+let wakeLockPending = false;
+
+async function requestWakeLock() {
+  if (!wakeLockWanted || !("wakeLock" in navigator)) return;
+  if (wakeLockPending || (wakeLock && !wakeLock.released)) return;
+  if (document.visibilityState !== "visible") return;
+  wakeLockPending = true;
+  try {
+    const sentinel = await navigator.wakeLock.request("screen");
+    if (!wakeLockWanted) {
+      sentinel.release().catch(() => {});
+      return;
+    }
+    wakeLock = sentinel;
+    sentinel.addEventListener("release", () => {
+      if (wakeLock === sentinel) wakeLock = null;
+    });
+  } catch {
+    wakeLock = null;
+  } finally {
+    wakeLockPending = false;
+  }
+}
+
+function keepScreenAwake() {
+  if (wakeLockWanted) return;
+  wakeLockWanted = true;
+  requestWakeLock();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") requestWakeLock();
+  });
+}
+
+function releaseWakeLock() {
+  wakeLockWanted = false;
+  wakeLock?.release?.().catch?.(() => {});
+  wakeLock = null;
+}
+
+/** iPadOS starts a native image drag on long-press; that cancels our
+ *  long-press-to-inspect pointer, so refuse drags from table art. */
+function bindImageDragGuard() {
+  document.addEventListener("dragstart", (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) event.preventDefault();
+  });
+}
+
 function bindFullscreenPrompt() {
   const prompt = document.getElementById("fullscreen-prompt");
   if (!prompt) return;
@@ -372,6 +427,7 @@ function bindFullscreenPrompt() {
     fullscreenReady = true;
     prompt.classList.add("hidden");
     startGameRadio();
+    keepScreenAwake();
     const wantsCinematic = state && !launchConfig?.resumeSaveId && !state.tutorialMode;
     try {
       if (document.fullscreenEnabled && !document.fullscreenElement) {
@@ -1062,6 +1118,7 @@ function launchReplayTutorial() {
 
 function returnToMainMenu() {
   stopVictoryCelebration();
+  releaseWakeLock();
   if (document.fullscreenElement) {
     document.exitFullscreen().catch(() => {});
   }
