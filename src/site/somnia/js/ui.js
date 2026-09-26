@@ -255,9 +255,10 @@ function layoutPsycheFan(container) {
   const maxRot = spread ? Math.min(5, 1.2 + n * 0.35) : Math.min(12, 3 + n * 0.8);
   const pip = spread ? cardW + 24 : 22;
   const maxStep = n <= 1 ? cardW : (avail - cardW) / Math.max(n - 1, 1);
+  const touchPitch = prefersTouchUi() && !spread ? Math.min(cardW, 48) : cardW * 0.58;
   const step = spread
     ? Math.max(cardW + 24, pip)
-    : Math.min(cardW * 0.58, Math.max(pip, maxStep));
+    : Math.min(touchPitch, Math.max(pip, maxStep));
   cards.forEach((el, i) => {
     const t = n <= 1 ? 0 : (i - mid) / Math.max(mid, 1);
     el.style.setProperty("--fan-rot", `${(t * maxRot).toFixed(2)}deg`);
@@ -1750,6 +1751,12 @@ function touchTapJustHandled() {
   return Date.now() - boardTouchActivatedAt < 700;
 }
 
+const MAP_CHROME_SEL = ".btn-next-phase, .btn-map-back, .btn-draw-dream, .board-camera-controls button";
+
+function mapChromeControl(target) {
+  return target instanceof Element ? target.closest(MAP_CHROME_SEL) : null;
+}
+
 function isBoardChromeControl(target) {
   if (!(target instanceof Element)) return false;
   if (target.closest(".hex-tile, .hex-occupant-token")) return false;
@@ -1785,6 +1792,16 @@ function onBoardTouchTap(event) {
   boardTouchStarts.delete(event.pointerId);
   if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
   if (!start || !boardTouchCtx) return;
+  const chrome = mapChromeControl(event.target);
+  if (chrome) {
+    const distChrome = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+    if (distChrome > TOUCH_TAP_SLOP) return;
+    if (chrome.hasAttribute("disabled") || chrome.getAttribute("aria-disabled") === "true") return;
+    boardTouchActivatedAt = Date.now();
+    chrome.dataset.touchClick = String(Date.now());
+    chrome.click();
+    return;
+  }
   if (isBoardChromeControl(event.target)) return;
   const dist = Math.hypot(event.clientX - start.x, event.clientY - start.y);
   if (dist > TOUCH_TAP_SLOP) return;
@@ -1803,11 +1820,19 @@ function bindBoardTouchTap() {
   const viewport = document.getElementById("board-viewport");
   if (!viewport) return;
   boardTouchBound = true;
+  viewport.addEventListener("click", (event) => {
+    const control = mapChromeControl(event.target);
+    if (!control || !event.isTrusted) return;
+    const stamped = Number(control.dataset.touchClick || 0);
+    if (Date.now() - stamped > 700) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
   viewport.addEventListener("pointerdown", (event) => {
     if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
     boardTouchStarts.set(event.pointerId, { x: event.clientX, y: event.clientY });
-  });
-  viewport.addEventListener("pointerup", onBoardTouchTap);
+  }, true);
+  viewport.addEventListener("pointerup", onBoardTouchTap, true);
   viewport.addEventListener("pointercancel", (event) => {
     boardTouchStarts.delete(event.pointerId);
   });

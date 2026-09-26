@@ -331,8 +331,9 @@ function isCameraControlTarget(target) {
 
 /** Buttons and fields keep their tap. A finger on them must not start a board pan. */
 function isInteractiveControl(target) {
-  return target instanceof Element
-    && !!target.closest("button, a, input, textarea, select, label, .board-camera-controls, .spread-tray, .btn");
+  if (!(target instanceof Element)) return false;
+  if (target.closest(".hex-tile, .hex-occupant-token")) return false;
+  return !!target.closest("button, a, input, textarea, select, label, .board-camera-controls, .spread-tray, .btn");
 }
 
 function isBoardChrome(target) {

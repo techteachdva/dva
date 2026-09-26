@@ -5,10 +5,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.5";
+export const SOMNIA_VERSION = "29.6";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.6",
+    title: "The Finger on the Map",
+    notes: [
+      "Next, Back, Draw Dream, and the zoom buttons take a fingertip even when the click never arrives. The square around each round button belongs to that button.",
+      "A longer slide on a Landscape pans the table. A short tap still flips a lit tile.",
+      "In portrait, those buttons sit beside the open archetype drawer. The dimmer no longer swallows Back.",
+      "Pause, the … menu, and a Psyche card answer without the half-second wait. Each card in the hand keeps a wider strip for the finger.",
+    ],
+  },
   {
     version: "29.5",
     title: "The Highlighted Tile",

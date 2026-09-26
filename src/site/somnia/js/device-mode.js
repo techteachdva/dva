@@ -186,14 +186,15 @@ function bindReliableTaps() {
     if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 28) return;
     if (Date.now() - start.t > 700) return;
     const target = event.target instanceof Element ? event.target : null;
-    if (!target || target.closest("#board-viewport, input, textarea, select, a")) return;
-    const control = target.closest("button, [role='button']");
+    if (!target || target.closest("input, textarea, select, a")) return;
+    if (target.closest("#board-viewport")) return;
+    const control = target.closest("button, [role='button'], .player-chip, .game-card, .deck-draw-back");
     if (!control || control.hasAttribute("disabled") || control.getAttribute("aria-disabled") === "true") return;
     const armedAt = Date.now();
     window.setTimeout(() => {
       if (lastClickAt >= armedAt - 40) return;
       control.click();
-    }, 450);
+    }, 80);
   }, true);
 
   document.addEventListener("pointercancel", (event) => {

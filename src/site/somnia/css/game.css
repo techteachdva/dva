@@ -11494,3 +11494,66 @@ html[data-form="tablet"][data-orientation="landscape"] body.play-window #header-
 html[data-touch="true"] .hex-tile {
   touch-action: manipulation;
 }
+
+/* ── Somnia 29.6 — finger on the map ─────────────────────────── */
+
+html[data-touch="true"] .btn-next-phase::after,
+html[data-touch="true"] .btn-map-back::after,
+html[data-touch="true"] .btn-draw-dream::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+}
+
+html[data-touch="true"] body.play-window .header-actions .btn,
+html[data-touch="true"] #btn-header-more,
+html[data-touch="true"] .hud-moment-history-btn,
+html[data-touch="true"] .hud-dream-feed-btn,
+html[data-touch="true"] .btn-music-toggle,
+html[data-touch="true"] #power-tokens button,
+html[data-touch="true"] .player-list-dock .player-chip {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+html[data-form="phone"] .chrome-edge-toggle-side,
+html[data-form="tablet"][data-orientation="portrait"] .chrome-edge-toggle-side {
+  top: 8.4rem;
+}
+
+html[data-form="phone"] body.sidebar-drawer-open #board-viewport,
+html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open #board-viewport {
+  z-index: auto;
+}
+
+html[data-form="phone"] body.sidebar-drawer-open .btn-next-phase,
+html[data-form="phone"] body.sidebar-drawer-open .btn-draw-dream,
+html[data-form="phone"] body.sidebar-drawer-open .btn-map-back,
+html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open .btn-next-phase,
+html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open .btn-draw-dream,
+html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open .btn-map-back {
+  position: fixed;
+  top: calc(var(--topbar-h, 52px) + 0.55rem);
+  z-index: 95;
+}
+
+html[data-form="phone"] body.sidebar-drawer-open .chrome-edge-toggle,
+html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open .chrome-edge-toggle {
+  z-index: 96;
+}
+
+html[data-form="phone"] body.sidebar-drawer-open .btn-next-phase,
+html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open .btn-next-phase {
+  right: calc(min(320px, 86vw) + 0.65rem);
+}
+
+html[data-form="phone"] body.sidebar-drawer-open .btn-draw-dream,
+html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open .btn-draw-dream {
+  right: calc(min(320px, 86vw) + 6.05rem);
+}
+
+html[data-form="phone"] body.sidebar-drawer-open .chrome-edge-toggle-side,
+html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open .chrome-edge-toggle-side {
+  right: calc(min(320px, 86vw) + 0.45rem);
+}
