@@ -32,10 +32,32 @@ function applyOverflow(form) {
   if (!hasItems) closeMoreMenu();
 }
 
+function clearMorePanelPlacement(panel) {
+  if (!panel) return;
+  panel.classList.remove("header-more-panel-fixed");
+  panel.style.top = "";
+  panel.style.right = "";
+  panel.style.left = "";
+  panel.style.maxHeight = "";
+}
+
+function placeMorePanel(btn, panel) {
+  const form = document.documentElement.dataset.form;
+  if (form !== "phone" && form !== "tablet") return;
+  const rect = btn.getBoundingClientRect();
+  const margin = 8;
+  panel.classList.add("header-more-panel-fixed");
+  panel.style.top = `${Math.round(rect.bottom + 6)}px`;
+  panel.style.right = `${Math.max(margin, Math.round(window.innerWidth - rect.right))}px`;
+  panel.style.left = "auto";
+  panel.style.maxHeight = `${Math.max(160, Math.round(window.innerHeight - rect.bottom - 16))}px`;
+}
+
 function closeMoreMenu() {
   const btn = document.getElementById("btn-header-more");
   const panel = document.getElementById("header-more-panel");
   panel?.classList.add("hidden");
+  clearMorePanelPlacement(panel);
   btn?.setAttribute("aria-expanded", "false");
 }
 
@@ -50,6 +72,7 @@ function bindMoreMenu() {
     const willOpen = panel.classList.contains("hidden");
     closeMoreMenu();
     if (willOpen) {
+      placeMorePanel(btn, panel);
       panel.classList.remove("hidden");
       btn.setAttribute("aria-expanded", "true");
     }

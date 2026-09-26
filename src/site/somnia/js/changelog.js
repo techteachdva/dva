@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.4";
+export const SOMNIA_VERSION = "29.5";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.5",
+    title: "The Highlighted Tile",
+    notes: [
+      "The … in the top right stays in front of Active Archetype. Its menu opens above that card.",
+      "When a Landscape is lit to reveal, a tap on that tile flips it.",
+    ],
+  },
   {
     version: "29.4",
     title: "The iPad Table",

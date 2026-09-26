@@ -11319,7 +11319,8 @@ html[data-form="tablet"][data-orientation="landscape"] body.play-window .top-bar
   gap: 0.3rem 0.4rem;
   padding: 0.35rem 0.5rem;
   min-height: var(--topbar-h);
-  overflow: hidden;
+  overflow: visible;
+  z-index: 1200;
 }
 
 html[data-form="tablet"][data-orientation="landscape"] body.play-window .top-bar.play-top-bar .brand {
@@ -11458,4 +11459,38 @@ html[data-form="tablet"] #screen-game .sidebar.right .quest-list li {
   white-space: normal;
   overflow: visible;
   text-overflow: unset;
+}
+
+/* ── Somnia 29.5 — more menu above the archetype, reveal taps ── */
+
+html[data-form="tablet"][data-orientation="landscape"] #screen-game.active {
+  z-index: 1;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] #sidebar-right {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window #header-more-menu {
+  position: relative;
+  z-index: 3;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window #header-more-panel:not(.hidden) {
+  position: fixed;
+  top: 4.15rem;
+  right: 0.5rem;
+  z-index: 1400;
+  width: min(280px, calc(100vw - 1rem));
+}
+
+.header-more-panel-fixed {
+  position: fixed;
+  z-index: 1400;
+  width: min(280px, calc(100vw - 1rem));
+}
+
+html[data-touch="true"] .hex-tile {
+  touch-action: manipulation;
 }

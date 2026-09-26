@@ -1700,22 +1700,26 @@ function pointInPointyHex(dx, dy, radius) {
 function hexTileUnderPoint(clientX, clientY) {
   const board = document.getElementById("hex-board");
   if (!board) return null;
-  let best = null;
-  let bestDist = Infinity;
+  const hits = [];
   board.querySelectorAll(".hex-tile").forEach((tile) => {
     const rect = tile.getBoundingClientRect();
     if (rect.width < 2 || rect.height < 2) return;
     const dx = clientX - (rect.left + rect.width / 2);
     const dy = clientY - (rect.top + rect.height / 2);
-    const radius = rect.height / 2 + 8;
+    const radius = rect.height / 2 + 10;
     if (!pointInPointyHex(dx, dy, radius)) return;
-    const dist = dx * dx + dy * dy;
-    if (dist < bestDist) {
-      bestDist = dist;
-      best = tile;
-    }
+    hits.push({ tile, dist: dx * dx + dy * dy });
   });
-  return best;
+  if (!hits.length) return null;
+  const highlighted = hits.filter(({ tile }) => (
+    tile.classList.contains("pick-reveal")
+    || tile.classList.contains("tutorial-reveal-target")
+    || tile.classList.contains("pick-forget")
+    || tile.classList.contains("pick-choose")
+  ));
+  const pool = highlighted.length ? highlighted : hits;
+  pool.sort((a, b) => a.dist - b.dist);
+  return pool[0].tile;
 }
 
 function tokenUnderPoint(clientX, clientY) {
@@ -1747,8 +1751,9 @@ function touchTapJustHandled() {
 }
 
 function isBoardChromeControl(target) {
-  return target instanceof Element
-    && !!target.closest(".board-camera-controls, .btn-next-phase, .btn-map-back, .btn-draw-dream, button, a, input, select, textarea");
+  if (!(target instanceof Element)) return false;
+  if (target.closest(".hex-tile, .hex-occupant-token")) return false;
+  return !!target.closest("button, a, input, select, textarea, .board-camera-controls, .spread-tray");
 }
 
 function activateBoardTarget(event, fallbackEl = null) {
@@ -1789,7 +1794,8 @@ function onBoardTouchTap(event) {
     return;
   }
   boardTouchActivatedAt = Date.now();
-  activateBoardTarget(event);
+  const fromTarget = event.target instanceof Element ? event.target.closest(".hex-tile") : null;
+  activateBoardTarget(event, fromTarget);
 }
 
 function bindBoardTouchTap() {
