@@ -3508,11 +3508,17 @@ export function showScreen(id) {
   document.getElementById("header-actions")?.classList.toggle("hidden", !inGame);
 }
 
-export function showEndScreen(won, message, scoreResult = null) {
+/**
+ * Win / lose screen. `dream` carries { gameId, seed } for real dreams so the
+ * player can copy the Game ID and replay the exact shuffle; pass null for the
+ * tutorial, which has no seed worth sharing.
+ */
+export function showEndScreen(won, message, scoreResult = null, dream = null) {
   showScreen("screen-end");
   document.getElementById("end-title").textContent = won ? "You Wake Up!" : "Trapped Forever";
   document.getElementById("end-message").textContent = message;
   document.getElementById("btn-start-daydream")?.classList.add("hidden");
+  renderEndGameId(dream);
 
   const breakdownEl = document.getElementById("end-score-breakdown");
   const leaderboardEl = document.getElementById("end-leaderboard");
@@ -3534,6 +3540,53 @@ export function showEndScreen(won, message, scoreResult = null) {
   } else {
     breakdownEl?.classList.add("hidden");
     leaderboardEl?.classList.add("hidden");
+  }
+}
+
+function renderEndGameId(dream) {
+  const row = document.getElementById("end-game-id-row");
+  const idEl = document.getElementById("end-game-id");
+  const badge = document.getElementById("end-seed-badge");
+  const hint = document.getElementById("end-game-id-hint");
+  if (!row || !idEl) return;
+  const gameId = dream?.gameId || "";
+  if (!gameId) {
+    row.classList.add("hidden");
+    return;
+  }
+  row.classList.remove("hidden");
+  idEl.textContent = gameId;
+  if (badge) {
+    const seed = dream?.seed || "";
+    badge.textContent = seed && seed !== gameId ? `seed ${seed}` : "";
+    badge.classList.toggle("hidden", !badge.textContent);
+  }
+  const baseHint = "Enter this Game ID as a seed on the menu to dream this exact dream again.";
+  if (hint) hint.textContent = baseHint;
+  if (!idEl.dataset.bound) {
+    idEl.dataset.bound = "1";
+    idEl.addEventListener("click", async () => {
+      const text = idEl.textContent.trim();
+      const say = (msg) => { if (hint) hint.textContent = msg; };
+      if (prefersTouchUi() && typeof navigator.share === "function") {
+        try {
+          await navigator.share({
+            title: "Somnia Game ID",
+            text: `Somnia Game ID ${text} — enter it as a seed to replay this exact dream.`,
+          });
+          say(`Game ID ${text} shared.`);
+          return;
+        } catch (err) {
+          if (err?.name === "AbortError") return;
+        }
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        say(`Game ID ${text} copied — use it as a seed to replay this dream.`);
+      } catch {
+        say(`Game ID: ${text}`);
+      }
+    });
   }
 }
 

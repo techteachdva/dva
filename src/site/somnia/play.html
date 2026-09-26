@@ -34,7 +34,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 30.2</span>
+        <span class="version-label">v 30.3</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
@@ -169,6 +169,12 @@
         <div class="end-panel">
           <h2 id="end-title"></h2>
           <p id="end-message"></p>
+          <div id="end-game-id-row" class="end-game-id-row hidden">
+            <span class="end-game-id-label">Game ID</span>
+            <button type="button" id="end-game-id" class="pause-game-id end-game-id" title="Tap to copy"></button>
+            <span id="end-seed-badge" class="pause-seed-badge"></span>
+            <p id="end-game-id-hint" class="end-game-id-hint">Enter this Game ID as a seed on the menu to dream this exact dream again.</p>
+          </div>
           <div id="end-score-breakdown" class="end-score-breakdown hidden"></div>
           <div id="end-leaderboard" class="end-leaderboard hidden">
             <h3>Leaderboard</h3>

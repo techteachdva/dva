@@ -8401,6 +8401,47 @@ body.panel-resizing {
   padding: 0.15rem 0.6rem;
 }
 
+/* Win / lose screen: the dream's Game ID, tap to copy or share. */
+.end-game-id-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.7rem;
+  margin: 0.4rem auto 1rem;
+  padding: 0.65rem 0.9rem;
+  max-width: 34rem;
+  border: 1px solid rgba(140, 120, 255, 0.28);
+  border-radius: 12px;
+  background: rgba(30, 20, 80, 0.22);
+}
+
+.end-game-id-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+button.end-game-id {
+  font: inherit;
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  min-height: 40px;
+}
+
+.end-game-id-hint {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: center;
+}
+
 .pause-exit-btn {
   border-color: rgba(255, 190, 120, 0.4);
 }

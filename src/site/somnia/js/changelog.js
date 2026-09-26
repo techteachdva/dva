@@ -6,10 +6,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "30.2";
+export const SOMNIA_VERSION = "30.3";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "30.3",
+    title: "The Shared Seed",
+    notes: [
+      "Win or lose, the end screen now shows the Game ID — and the seed badge — so you can copy it and dream that exact shuffle again.",
+      "The guided tutorial stays seedless: no Game ID in the pause menu, and none on the wake screen.",
+      "Tutorial pause no longer offers saves. The Save tab becomes Leave, with a Return to main menu button that walks you back without writing a dream.",
+    ],
+  },
   {
     version: "30.2",
     title: "The Pocket Dreamscape",

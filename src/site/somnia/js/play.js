@@ -264,6 +264,12 @@ let pendingScoreResult = null;
 let scoreSubmitted = false;
 let victoryShown = false;
 
+/** Game ID + seed for the end screen; the tutorial's fixed layout has neither. */
+function endScreenDream() {
+  if (!state || state.tutorialMode || state.tutorialVictory) return null;
+  return { gameId: state.gameId || "", seed: state.seed || "" };
+}
+
 function getNewHandCardIds(state) {
   const player = activePlayer(state);
   const current = new Set(player.hand.map((c) => c.instanceId));
@@ -763,8 +769,13 @@ function buildPauseSaveHooks() {
     canSave: () => canSaveGame(state),
     saveLabel: () => (state ? buildSaveLabel(state) : ""),
     isStandalone: () => isStandaloneMode(),
-    getGameId: () => state?.gameId || null,
-    getSeed: () => state?.seed || null,
+    // The guided tutorial is a fixed layout, not a real dream: no seed to share.
+    isTutorial: () => !!state?.tutorialMode,
+    getGameId: () => (state && !state.tutorialMode ? state.gameId || null : null),
+    getSeed: () => (state && !state.tutorialMode ? state.seed || null : null),
+    exitToMenu: () => {
+      window.location.href = "index.html";
+    },
     saveLocal: async () => {
       if (!canSaveGame(state)) throw new Error("Cannot save right now.");
       await saveGameLocal(state, launchConfig, { id: "autosave" });
@@ -1971,7 +1982,12 @@ function renderAll() {
       : (state.finalRecurrence
         ? "All Remaining Archetypes defeated in the Final Recurrence!"
         : `You collected ${state.acquiredPoints} Archetype points and all Dreamers returned to the Bed!`);
-    showEndScreen(true, msg, state.tutorialVictory ? { breakdown: pendingScoreResult.breakdown } : pendingScoreResult);
+    showEndScreen(
+      true,
+      msg,
+      state.tutorialVictory ? { breakdown: pendingScoreResult.breakdown } : pendingScoreResult,
+      endScreenDream(),
+    );
     document.getElementById("btn-start-daydream")?.classList.toggle("hidden", !state.tutorialVictory);
     document.getElementById("end-leaderboard")?.classList.toggle("hidden", !!state.tutorialVictory);
     if (!victoryShown) {
@@ -1989,7 +2005,7 @@ function renderAll() {
       syncDeckPressure(state);
       clearAutosave();
       stopVictoryCelebration();
-      showEndScreen(false, state.log[0] || "The Dreamscape collapses.");
+      showEndScreen(false, state.log[0] || "The Dreamscape collapses.", null, endScreenDream());
       return;
     }
   }

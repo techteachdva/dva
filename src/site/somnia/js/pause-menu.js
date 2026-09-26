@@ -144,8 +144,29 @@ function saveRowHtml(save, { cloud = false } = {}) {
   `;
 }
 
+function isTutorialPause() {
+  return gameSaveHooks?.isTutorial?.() === true
+    || document.body.classList.contains("tutorial-mode-active");
+}
+
+function syncGameTabLabel() {
+  const tab = document.querySelector('[data-pause-tab="game"]');
+  if (!tab) return;
+  tab.textContent = isTutorialPause() ? "Leave" : "💾 Save";
+}
+
 function renderGameTab() {
   const hooks = gameSaveHooks || {};
+  if (isTutorialPause()) {
+    return `
+    <div class="pause-section">
+      <h3>Leave tutorial</h3>
+      <p class="pause-hint">The guided tutorial isn't saved. Return to the main menu any time.</p>
+      <div class="pause-btn-row pause-btn-col">
+        <button type="button" class="btn pause-exit-btn" id="pause-exit-menu">Return to main menu</button>
+      </div>
+    </div>`;
+  }
   const canSave = hooks.canSave?.() ?? false;
   const label = hooks.saveLabel?.() || "Current dream";
   const standalone = hooks.isStandalone?.() ?? false;
@@ -257,6 +278,11 @@ function bindGameControls(root) {
     } catch (e) {
       setStatus(e.message || "Could not save to cloud.", true);
     }
+  });
+
+  root.querySelector("#pause-exit-menu")?.addEventListener("click", () => {
+    if (typeof gameSaveHooks?.exitToMenu === "function") gameSaveHooks.exitToMenu();
+    else window.location.href = "index.html";
   });
 
   root.querySelector("#pause-save-exit")?.addEventListener("click", async () => {
@@ -465,6 +491,7 @@ export function openPauseMenu() {
   open = true;
   menu.classList.remove("hidden");
   menu.setAttribute("aria-hidden", "false");
+  syncGameTabLabel();
   showTab("audio");
 }
 
