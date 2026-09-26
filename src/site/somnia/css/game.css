@@ -11236,3 +11236,226 @@ body.dreamscape-unstable #hex-board {
   40% { filter: hue-rotate(12deg) saturate(1.18); }
   70% { filter: hue-rotate(-10deg) saturate(1.08); }
 }
+
+/* ── Somnia 29.4 — iPad table ─────────────────────────────────── */
+
+html[data-touch="true"] button,
+html[data-touch="true"] .btn,
+html[data-touch="true"] a,
+html[data-touch="true"] select,
+html[data-touch="true"] summary,
+html[data-touch="true"] [role="button"] {
+  touch-action: manipulation;
+}
+
+html[data-touch="true"] .btn:active:not(:disabled),
+html[data-touch="true"] button:active {
+  transform: none;
+}
+
+body.menu-window #screen-setup .btn,
+body.menu-window #screen-setup #btn-start.begin-dream-btn,
+body.menu-window #screen-setup .btn-tutorial-menu,
+body.menu-window #screen-setup .btn-continue-dream,
+body.menu-window #screen-setup .btn-pwa-install {
+  line-height: 1.45;
+  height: auto;
+  min-height: 3rem;
+  padding-top: 0.85em;
+  padding-bottom: 0.7em;
+  overflow: visible;
+}
+
+body.menu-window #screen-setup #btn-start.begin-dream-btn.begin-dream-ready {
+  overflow: hidden;
+  line-height: 1.5;
+  padding-top: 0.95em;
+  padding-bottom: 0.8em;
+}
+
+body.menu-window #screen-setup .setup-launch-row,
+body.menu-window #screen-setup .setup-launch-row--first-visit {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  grid-template-columns: 1fr;
+  min-height: 0;
+  height: auto;
+}
+
+body.menu-window #screen-setup .setup-launch-row .btn,
+body.menu-window #screen-setup #btn-start.begin-dream-btn,
+body.menu-window #screen-setup .btn-tutorial-menu {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 2.85rem;
+  white-space: normal;
+  letter-spacing: 0.03em;
+}
+
+html[data-menu-layout="split"] .setup-panel-right.menu-glass-panel {
+  align-self: stretch;
+  overflow: auto;
+  min-height: 0;
+  max-height: 100%;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window {
+  --topbar-h: 3.35rem;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] .chrome-edge-toggle-side {
+  top: 10.6rem;
+  right: calc(var(--sidebar-w) + 0.65rem);
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window .top-bar.play-top-bar {
+  display: grid;
+  grid-template-columns: auto minmax(11.5rem, max-content) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.3rem 0.4rem;
+  padding: 0.35rem 0.5rem;
+  min-height: var(--topbar-h);
+  overflow: hidden;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window .top-bar.play-top-bar .brand {
+  min-width: 0;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window .brand-wordmark {
+  height: 1.55rem;
+  width: 6.4rem;
+  max-width: 6.4rem;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window .version-label {
+  font-size: 0.52rem;
+  line-height: 1.2;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window .phase-stepper.top-bar-stepper {
+  min-width: 0;
+  max-width: none;
+  width: auto;
+  margin: 0;
+  padding: 0.16rem 0.28rem;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] .top-bar-stepper .step {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 0.26rem 0.38rem;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window .top-bar.play-top-bar .hud {
+  min-width: 0;
+  width: auto;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  overflow: hidden;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window .hud-item {
+  padding: 0.18rem 0.46rem;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window .hud-item .label {
+  font-size: 0.58rem;
+  letter-spacing: 0.03em;
+  margin-right: 0.2rem;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] .hud-round-wrap,
+html[data-form="tablet"][data-orientation="landscape"] .hud-boss-rounds {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window .header-actions {
+  gap: 0.22rem;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] body.play-window .header-actions .btn-sm {
+  padding: 0.32rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+html[data-form="tablet"] body:not(.deck-expanded) .deck-column {
+  width: 4.85rem;
+  padding: 0.28rem 0.26rem;
+}
+
+html[data-form="tablet"] body:not(.deck-expanded) #screen-game .board-viewport {
+  --map-chrome-left: 5.6rem;
+  padding-left: var(--map-chrome-left);
+}
+
+html[data-form="tablet"] body:not(.deck-expanded) .deck-column .deck-rail-head,
+html[data-form="tablet"] body:not(.deck-expanded) .deck-column .deck-rail-discard,
+html[data-form="tablet"] body:not(.deck-expanded) .deck-column .deck-rect-stack,
+html[data-form="tablet"] body:not(.deck-expanded) .deck-column .deck-rail-sep {
+  display: none;
+}
+
+html[data-form="tablet"] body:not(.deck-expanded) .deck-column .deck-rail-piles {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  height: 100%;
+  min-height: 0;
+}
+
+html[data-form="tablet"] body:not(.deck-expanded) .deck-column .deck-rail-draw {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+html[data-form="tablet"] body:not(.deck-expanded) .deck-column .deck-draw-back {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  transform: none;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none;
+}
+
+html[data-form="tablet"] body:not(.deck-expanded) .deck-column .deck-draw-back img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+html[data-form="tablet"][data-orientation="landscape"] #screen-game .sidebar.right .active-card-slot .game-card.portrait .art {
+  max-height: min(26vh, 168px);
+}
+
+html[data-form="tablet"] #screen-game .sidebar.right .quest-list,
+html[data-form="tablet"] #screen-game .sidebar.right .quest-list.compact {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  overflow: visible;
+}
+
+html[data-form="tablet"] #screen-game .sidebar.right .quest-list li {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}

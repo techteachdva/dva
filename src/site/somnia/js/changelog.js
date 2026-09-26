@@ -5,10 +5,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "29.3";
+export const SOMNIA_VERSION = "29.4";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "29.4",
+    title: "The iPad Table",
+    notes: [
+      "An iPad in landscape keeps Reveal, Explore, and Meet on one bar with Goal, Points, Dreams Left, and Round. The round marks stay inside their pill, clear of Pause.",
+      "A fingertip on a Landscape, a Dreamer, or a button stays a tap. A small slide no longer turns that touch into a pan.",
+      "The deck rail shows card backs. Active Archetype is wide enough for a full quest sentence.",
+      "Menu buttons keep every letter. After one online visit, Add to Home Screen keeps the dream when the connection is gone.",
+    ],
+  },
   {
     version: "29.3",
     title: "Subconscious Zoom Carousel",

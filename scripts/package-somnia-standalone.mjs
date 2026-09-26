@@ -67,17 +67,30 @@ function pruneStandaloneAssets(outDir) {
   let removed = 0;
   let savedBytes = 0;
   const landscapesDir = path.join(outDir, "audio/landscapes");
-  if (!fs.existsSync(landscapesDir)) return { removed, savedBytes };
+  if (fs.existsSync(landscapesDir)) {
+    for (const file of fs.readdirSync(landscapesDir)) {
+      if (!file.endsWith(".wav")) continue;
+      const mp3 = file.replace(/\.wav$/i, ".mp3");
+      const wavPath = path.join(landscapesDir, file);
+      const mp3Path = path.join(landscapesDir, mp3);
+      if (!fs.existsSync(mp3Path)) continue;
+      savedBytes += fs.statSync(wavPath).size;
+      fs.unlinkSync(wavPath);
+      removed += 1;
+    }
+  }
 
-  for (const file of fs.readdirSync(landscapesDir)) {
-    if (!file.endsWith(".wav")) continue;
-    const mp3 = file.replace(/\.wav$/i, ".mp3");
-    const wavPath = path.join(landscapesDir, file);
-    const mp3Path = path.join(landscapesDir, mp3);
-    if (!fs.existsSync(mp3Path)) continue;
-    savedBytes += fs.statSync(wavPath).size;
-    fs.unlinkSync(wavPath);
-    removed += 1;
+  const backsDir = path.join(outDir, "images/backs");
+  if (fs.existsSync(backsDir)) {
+    for (const file of fs.readdirSync(backsDir)) {
+      if (!file.endsWith(".png")) continue;
+      const webp = file.replace(/\.png$/i, ".webp");
+      if (!fs.existsSync(path.join(backsDir, webp))) continue;
+      const pngPath = path.join(backsDir, file);
+      savedBytes += fs.statSync(pngPath).size;
+      fs.unlinkSync(pngPath);
+      removed += 1;
+    }
   }
 
   return { removed, savedBytes };
@@ -227,10 +240,16 @@ async function downloadFonts(outDir) {
   console.log(`Wrote ${path.relative(REPO, localCssPath)}`);
 }
 
+function readSomniaVersion() {
+  const changelog = fs.readFileSync(path.join(SOURCE, "js/changelog.js"), "utf8");
+  const match = changelog.match(/export const SOMNIA_VERSION = "([^"]+)"/);
+  return match ? match[1] : "0";
+}
+
 function writeManifest(outDir) {
   const manifest = {
     name: "Somnia",
-    version: "28.1",
+    version: readSomniaVersion(),
     standalone: true,
     pwaWorker: false,
     packagedAt: new Date().toISOString(),
@@ -326,7 +345,11 @@ async function main() {
     console.log(`Pruned ${pruned.removed} duplicate landscape WAV files (${(pruned.savedBytes / (1024 * 1024)).toFixed(1)} MB saved).`);
   }
 
-  await downloadFonts(OUT_DIR);
+  if (!fs.existsSync(path.join(OUT_DIR, "css/fonts-local.css"))) {
+    await downloadFonts(OUT_DIR);
+  } else {
+    console.log("Using vendored fonts (css/fonts-local.css).");
+  }
   writeLaunchers(OUT_DIR);
   writeManifest(OUT_DIR);
   zipOutput();

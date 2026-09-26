@@ -70,7 +70,7 @@ import {
   tileFlipElapsedMs,
 } from "./fx.js";
 import { BOSS_DREAM_DECK_SLOTS } from "./data.js";
-import { consumeBoardClickSuppression, getBoardZoom, cancelPendingBoardGesture, suppressNextBoardClick, isBoardCameraBusy } from "./board-zoom.js";
+import { consumeBoardClickSuppression, getBoardZoom, cancelPendingBoardGesture, suppressNextBoardClick, isBoardCameraBusy, TOUCH_TAP_SLOP } from "./board-zoom.js";
 import { bindLongPress, bindInspectGesture } from "./pointer-gestures.js";
 import { prefersTouchUi, getCapabilityProfile } from "./device-mode.js";
 import { revealCompactTarget } from "./compact-chrome.js";
@@ -1691,6 +1691,122 @@ function hexTileClassName(tile, state, sets) {
   ].filter(Boolean).join(" ");
 }
 
+/** Pointy-top hex in center-relative pixels. Extra radius covers a fingertip on the edge. */
+function pointInPointyHex(dx, dy, radius) {
+  if (radius <= 0) return false;
+  return Math.abs(dy) + Math.abs(dx) / Math.sqrt(3) <= radius;
+}
+
+function hexTileUnderPoint(clientX, clientY) {
+  const board = document.getElementById("hex-board");
+  if (!board) return null;
+  let best = null;
+  let bestDist = Infinity;
+  board.querySelectorAll(".hex-tile").forEach((tile) => {
+    const rect = tile.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) return;
+    const dx = clientX - (rect.left + rect.width / 2);
+    const dy = clientY - (rect.top + rect.height / 2);
+    const radius = rect.height / 2 + 8;
+    if (!pointInPointyHex(dx, dy, radius)) return;
+    const dist = dx * dx + dy * dy;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = tile;
+    }
+  });
+  return best;
+}
+
+function tokenUnderPoint(clientX, clientY) {
+  const board = document.getElementById("hex-board");
+  if (!board) return null;
+  let best = null;
+  let bestDist = Infinity;
+  board.querySelectorAll(".hex-occupant-token").forEach((token) => {
+    const rect = token.getBoundingClientRect();
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return;
+    const dx = clientX - (rect.left + rect.width / 2);
+    const dy = clientY - (rect.top + rect.height / 2);
+    const dist = dx * dx + dy * dy;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = token;
+    }
+  });
+  return best;
+}
+
+let boardTouchCtx = null;
+let boardTouchBound = false;
+const boardTouchStarts = new Map();
+let boardTouchActivatedAt = 0;
+
+function touchTapJustHandled() {
+  return Date.now() - boardTouchActivatedAt < 700;
+}
+
+function isBoardChromeControl(target) {
+  return target instanceof Element
+    && !!target.closest(".board-camera-controls, .btn-next-phase, .btn-map-back, .btn-draw-dream, button, a, input, select, textarea");
+}
+
+function activateBoardTarget(event, fallbackEl = null) {
+  const ctx = boardTouchCtx;
+  if (!ctx) return;
+  const token = tokenUnderPoint(event.clientX, event.clientY);
+  if (token?.classList.contains("hex-occupant-dreamer") && token.dataset.dreamerId) {
+    const tileEl = token.closest(".hex-tile");
+    ctx.boardOptions.onDreamerTokenClick?.(token.dataset.dreamerId, tileEl?.dataset.tileId, token, event);
+    return;
+  }
+  if (token?.classList.contains("hex-occupant-beast") && token.dataset.encounterKey) {
+    const tileEl = token.closest(".hex-tile");
+    const tile = ctx.state.board.find((entry) => entry.id === tileEl?.dataset.tileId);
+    const enc = tile
+      ? tileEncounters(tile).find((entry) => encounterKey(entry) === token.dataset.encounterKey)
+      : null;
+    if (enc && tile) {
+      ctx.boardOptions.onBeastTokenClick?.(enc, tile.id, token, event);
+      return;
+    }
+  }
+  const hex = hexTileUnderPoint(event.clientX, event.clientY) || fallbackEl;
+  if (hex?.dataset.tileId) ctx.onSelectLandscape(hex.dataset.tileId);
+}
+
+function onBoardTouchTap(event) {
+  const start = boardTouchStarts.get(event.pointerId);
+  boardTouchStarts.delete(event.pointerId);
+  if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+  if (!start || !boardTouchCtx) return;
+  if (isBoardChromeControl(event.target)) return;
+  const dist = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+  if (dist > TOUCH_TAP_SLOP) return;
+  if (isBoardCameraBusy()) return;
+  if (consumeBoardClickSuppression()) {
+    boardTouchActivatedAt = Date.now();
+    return;
+  }
+  boardTouchActivatedAt = Date.now();
+  activateBoardTarget(event);
+}
+
+function bindBoardTouchTap() {
+  if (boardTouchBound) return;
+  const viewport = document.getElementById("board-viewport");
+  if (!viewport) return;
+  boardTouchBound = true;
+  viewport.addEventListener("pointerdown", (event) => {
+    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+    boardTouchStarts.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  });
+  viewport.addEventListener("pointerup", onBoardTouchTap);
+  viewport.addEventListener("pointercancel", (event) => {
+    boardTouchStarts.delete(event.pointerId);
+  });
+}
+
 function patchBoardChrome(state, legalMoveIds, pickHighlights, size) {
   const board = document.getElementById("hex-board");
   if (!board) return false;
@@ -1729,6 +1845,8 @@ export function renderBoard(
   onInspectLandscape = null,
   boardOptions = {},
 ) {
+  boardTouchCtx = { state, onSelectLandscape, boardOptions };
+  bindBoardTouchTap();
   const board = document.getElementById("hex-board");
   const size = fitHexSize(state);
   const chromeKey = boardChromeKey(state, legalMoveIds, pickHighlights);
@@ -1892,23 +2010,9 @@ export function renderBoard(
       boardOptions.onDreamerTokenClick?.(dreamerEl.dataset.dreamerId, tile.id, dreamerEl, event);
     });
     el.addEventListener("click", (event) => {
+      if (touchTapJustHandled()) return;
       if (consumeBoardClickSuppression()) return;
-      const dreamerEl = event.target.closest(".hex-occupant-dreamer");
-      if (dreamerEl?.dataset.dreamerId) {
-        event.stopPropagation();
-        boardOptions.onDreamerTokenClick?.(dreamerEl.dataset.dreamerId, tile.id, dreamerEl, event);
-        return;
-      }
-      const beastEl = event.target.closest(".hex-occupant-beast");
-      if (beastEl?.dataset.encounterKey) {
-        const enc = encounters.find((e) => encounterKey(e) === beastEl.dataset.encounterKey);
-        if (enc) {
-          event.stopPropagation();
-          boardOptions.onBeastTokenClick?.(enc, tile.id, beastEl, event);
-          return;
-        }
-      }
-      onSelectLandscape(tile.id);
+      activateBoardTarget(event, el);
     });
     if (tutorialRevealTarget) {
       el.title = `Click to reveal ${tile.name}`;
@@ -1925,7 +2029,7 @@ export function renderBoard(
         cancelPendingBoardGesture();
         suppressNextBoardClick();
         onInspectLandscape(tile.id);
-      });
+      }, { ms: 700, moveTolerance: TOUCH_TAP_SLOP });
       if (!tutorialRevealTarget) {
         el.title = prefersTouchUi()
           ? "Tap landscape to interact · hold for overview"

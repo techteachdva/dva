@@ -62,6 +62,13 @@ function detectPointerKind() {
   return "fine";
 }
 
+function isIpad() {
+  const ua = navigator.userAgent || "";
+  if (/iPad/.test(ua)) return true;
+  // iPadOS reports a desktop Macintosh, but still has a touch screen.
+  return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+}
+
 function detectForm() {
   const override = getFormOverride();
   if (override !== "auto") return override;
@@ -78,6 +85,7 @@ function detectForm() {
   if (minSide <= 520 || (coarse && minSide <= 600 && maxSide <= 960)) {
     return "phone";
   }
+  if (isIpad()) return "tablet";
   if (coarse) return "tablet";
   if (touch && minSide <= 1100 && maxSide <= 1400) return "tablet";
   if (touch && !hybrid && maxSide <= 1366) return "tablet";
@@ -150,8 +158,52 @@ function scheduleApply() {
   resizeTimer = setTimeout(() => applyMode(detectDeviceMode()), 120);
 }
 
+/**
+ * iPad sometimes drops the click that should follow a finger tap, especially
+ * when a button scales away under the fingertip. If no click arrives, fire one.
+ */
+function bindReliableTaps() {
+  if (document.documentElement.dataset.tapRepair) return;
+  document.documentElement.dataset.tapRepair = "1";
+
+  let lastClickAt = 0;
+  const starts = new Map();
+
+  document.addEventListener("click", () => {
+    lastClickAt = Date.now();
+  }, true);
+
+  document.addEventListener("pointerdown", (event) => {
+    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+    starts.set(event.pointerId, { x: event.clientX, y: event.clientY, t: Date.now() });
+  }, true);
+
+  document.addEventListener("pointerup", (event) => {
+    const start = starts.get(event.pointerId);
+    starts.delete(event.pointerId);
+    if (!start) return;
+    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 28) return;
+    if (Date.now() - start.t > 700) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target || target.closest("#board-viewport, input, textarea, select, a")) return;
+    const control = target.closest("button, [role='button']");
+    if (!control || control.hasAttribute("disabled") || control.getAttribute("aria-disabled") === "true") return;
+    const armedAt = Date.now();
+    window.setTimeout(() => {
+      if (lastClickAt >= armedAt - 40) return;
+      control.click();
+    }, 450);
+  }, true);
+
+  document.addEventListener("pointercancel", (event) => {
+    starts.delete(event.pointerId);
+  }, true);
+}
+
 export function initDeviceMode() {
   applyMode(detectDeviceMode());
+  bindReliableTaps();
 
   window.addEventListener("resize", scheduleApply);
   window.addEventListener("orientationchange", () => {

@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-29.3";
-const RUNTIME_CACHE = "somnia-runtime-29.3";
+const CACHE_NAME = "somnia-29.4";
+const RUNTIME_CACHE = "somnia-runtime-29.4";
 
 const PRECACHE = [
   "./",
@@ -12,20 +12,103 @@ const PRECACHE = [
   "./play.html",
   "./manifest.webmanifest",
   "./css/game.css",
-  "./js/setup.js",
-  "./js/play.js",
-  "./js/meet-phase.js",
-  "./js/dice-battle.js",
-  "./js/deck-pressure.js",
-  "./js/pwa.js",
-  "./js/standalone.js",
-  "./js/device-mode.js",
-  "./js/panel-layout.js",
-  "./js/launch-store.js",
+  "./css/fonts-local.css",
+  "./fonts/font-0.woff2",
+  "./fonts/font-1.woff2",
+  "./fonts/font-2.woff2",
+  "./fonts/font-3.woff2",
+  "./fonts/font-4.woff2",
+  "./fonts/font-5.woff2",
+  "./fonts/font-6.woff2",
+  "./fonts/font-7.woff2",
+  "./fonts/font-8.woff2",
+  "./fonts/font-9.woff2",
+  "./fonts/font-10.woff2",
+  "./fonts/font-11.woff2",
+  "./fonts/font-12.woff2",
+  "./fonts/font-13.woff2",
+  "./fonts/font-14.woff2",
+  "./fonts/font-15.woff2",
+  "./fonts/font-16.woff2",
+  "./fonts/font-17.woff2",
+  "./fonts/font-18.woff2",
+  "./fonts/font-19.woff2",
+  "./fonts/font-20.woff2",
+  "./fonts/font-21.woff2",
+  "./js/action-history.js",
+  "./js/archetype-stats.js",
+  "./js/archetypes.js",
+  "./js/audio-settings.js",
+  "./js/audio.js",
+  "./js/board-fx.js",
+  "./js/board-zoom.js",
+  "./js/bosses.js",
+  "./js/card-backs.js",
+  "./js/card-fx.js",
+  "./js/changelog.js",
+  "./js/click-feedback.js",
   "./js/compact-chrome.js",
-  "./js/game-save.js",
-  "./js/local-save-store.js",
   "./js/data.js",
+  "./js/deck-pressure.js",
+  "./js/dev-commands.js",
+  "./js/dev-console.js",
+  "./js/device-mode.js",
+  "./js/dialog-a11y.js",
+  "./js/dice-battle.js",
+  "./js/dream-choices.js",
+  "./js/dream-deck.js",
+  "./js/dreambeasts.js",
+  "./js/dreamer-powers.js",
+  "./js/effect-choices.js",
+  "./js/effects.js",
+  "./js/event-choices.js",
+  "./js/event-landscapes.js",
+  "./js/final-recurrence-atmosphere.js",
+  "./js/final-recurrence-rules.js",
+  "./js/fx.js",
+  "./js/game-cursor.js",
+  "./js/game-save.js",
+  "./js/game.js",
+  "./js/guide.js",
+  "./js/hex.js",
+  "./js/highscores.js",
+  "./js/landscape-actions.js",
+  "./js/landscapes.js",
+  "./js/launch-store.js",
+  "./js/local-save-store.js",
+  "./js/local-score-store.js",
+  "./js/meet-phase-tax.js",
+  "./js/meet-phase.js",
+  "./js/mindstream-extra.js",
+  "./js/mindstream-supply.js",
+  "./js/mindstream.js",
+  "./js/moment-overlay.js",
+  "./js/narrator.js",
+  "./js/object-effects.js",
+  "./js/objects.js",
+  "./js/panel-layout.js",
+  "./js/pause-menu.js",
+  "./js/phase-skip.js",
+  "./js/play.js",
+  "./js/pointer-gestures.js",
+  "./js/power-tokens.js",
+  "./js/psyche-pressure.js",
+  "./js/psyche.js",
+  "./js/pwa.js",
+  "./js/quests.js",
+  "./js/remote-save-store.js",
+  "./js/remote-score-store.js",
+  "./js/rules.js",
+  "./js/scoring.js",
+  "./js/setup.js",
+  "./js/standalone.js",
+  "./js/stat-tier.js",
+  "./js/state.js",
+  "./js/subconscious.js",
+  "./js/tutorial-canonical.js",
+  "./js/tutorial-mode.js",
+  "./js/ui.js",
+  "./js/victory-celebration.js",
   "./data/dreamers.json",
   "./data/archetypes.json",
   "./data/landscapes.json",
@@ -92,18 +175,26 @@ async function putRuntime(request, response) {
 
 async function networkFirst(request) {
   const cached = await caches.match(request);
-  try {
-    const fresh = await fetch(request);
-    const copy = fresh.clone();
-    caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
-    return fresh;
-  } catch {
-    if (cached) return cached;
-    if (isDocument(request)) {
-      return caches.match("./index.html");
+  const freshPromise = fetch(request).then((fresh) => {
+    if (fresh && fresh.ok) {
+      const copy = fresh.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
     }
-    throw new Error("offline");
+    return fresh;
+  }).catch(() => null);
+
+  if (cached) {
+    freshPromise.catch(() => {});
+    return cached;
   }
+
+  const fresh = await freshPromise;
+  if (fresh) return fresh;
+  if (isDocument(request)) {
+    const fallback = await caches.match("./index.html");
+    if (fallback) return fallback;
+  }
+  throw new Error("offline");
 }
 
 async function staleWhileRevalidate(request) {

@@ -47,7 +47,11 @@ export function computeViewportMetrics() {
   const chromeH = Math.round(clamp(h * (phone ? 0.10 : 0.11), phone ? 76 : 88, phone ? 104 : 120));
   const sidebarW = phone || (form === "tablet" && orientation === "portrait")
     ? 0
-    : Math.round(clamp(w * (compact ? 0.20 : 0.22), compact ? 188 : 220, compact ? 260 : 380));
+    : Math.round(clamp(
+      w * (form === "tablet" ? 0.34 : compact ? 0.22 : 0.22),
+      form === "tablet" ? 340 : compact ? 220 : 220,
+      form === "tablet" ? 460 : compact ? 320 : 380,
+    ));
   const maxHand = Math.round(h * (phone ? 0.34 : compact ? 0.34 : 0.36));
   const minBoard = Math.round(h * (phone ? 0.48 : compact ? 0.46 : 0.40));
   const handH = Math.round(clamp(
@@ -192,11 +196,13 @@ function applyMenuDataset(metrics) {
 
 function applyMenuLayout() {
   const metrics = computeMenuViewportMetrics();
-  const root = document.documentElement;
-  root.style.setProperty("--menu-art-size", metrics.artSize);
-  root.style.setProperty("--menu-ui-scale", String(metrics.menuUiScale));
-  root.style.setProperty("--setup-type-scale", String(metrics.setupTypeScale));
-  root.style.setProperty("--ui-scale", String(metrics.uiScale));
+  const targets = [document.documentElement, document.body].filter(Boolean);
+  for (const el of targets) {
+    el.style.setProperty("--menu-art-size", metrics.artSize);
+    el.style.setProperty("--menu-ui-scale", String(metrics.menuUiScale));
+    el.style.setProperty("--setup-type-scale", String(metrics.setupTypeScale));
+    el.style.setProperty("--ui-scale", String(metrics.uiScale));
+  }
   applyMenuDataset(metrics);
   document.body.classList.remove("view-mode-small", "view-mode-medium", "view-mode-large", "view-mode-auto");
   document.body.classList.add(`view-mode-${settings.viewMode || "auto"}`);

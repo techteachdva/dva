@@ -5,7 +5,9 @@ const MAX_ZOOM = 5.5;
 const ZOOM_SENSITIVITY = 0.0012;
 const BUTTON_ZOOM_FACTOR = 1.18;
 const PAN_CLICK_THRESHOLD = 5;
-const TOUCH_PAN_THRESHOLD = 10;
+/** A fingertip on iPad jitters well past 10px. Past this, the gesture becomes a pan. */
+export const TOUCH_TAP_SLOP = 28;
+const TOUCH_PAN_THRESHOLD = TOUCH_TAP_SLOP;
 const ARROW_PAN_FRACTION = 0.06;
 const EMPTY_DOUBLE_TAP_MS = 400;
 
@@ -327,6 +329,12 @@ function isCameraControlTarget(target) {
   return target instanceof Element && !!target.closest(".board-camera-controls");
 }
 
+/** Buttons and fields keep their tap. A finger on them must not start a board pan. */
+function isInteractiveControl(target) {
+  return target instanceof Element
+    && !!target.closest("button, a, input, textarea, select, label, .board-camera-controls, .spread-tray, .btn");
+}
+
 function isBoardChrome(target) {
   if (!(target instanceof Element)) return false;
   if (isCameraControlTarget(target)) return false;
@@ -354,7 +362,7 @@ function onPointerDown(event) {
     return;
   }
 
-  if (event.button === 0 && isTouchLike(event)) {
+  if (event.button === 0 && isTouchLike(event) && !isInteractiveControl(event.target)) {
     pendingTouchPan = true;
     beginTrackedPan(event, { capture: false });
   }

@@ -71,17 +71,99 @@ function watchRegistration(registration) {
   });
 }
 
+const WARM_DATA = [
+  "./data/card-manifest.json",
+  "./data/landscapes.json",
+  "./data/dreamers.json",
+  "./data/archetypes.json",
+  "./data/dreambeasts.json",
+  "./data/dreams.json",
+  "./data/psyche.json",
+  "./data/mindstream.json",
+  "./data/objects.json",
+  "./data/event-landscapes.json",
+  "./data/landscape-sfx.json",
+];
+
+function collectAssetUrls(value, into) {
+  if (typeof value === "string") {
+    if (/^https?:/i.test(value)) return;
+    if (/\.(png|jpe?g|webp|gif|svg|mp3|wav|ogg)(\?|$)/i.test(value)) {
+      into.add(value.replace(/^\.\//, ""));
+    }
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((entry) => collectAssetUrls(entry, into));
+    return;
+  }
+  if (value && typeof value === "object") {
+    Object.values(value).forEach((entry) => collectAssetUrls(entry, into));
+  }
+}
+
+let warming = false;
+
+/** Pull card art and landscape stings into the cache while the first visit is online. */
+export async function warmOfflineLibrary() {
+  if (warming || !navigator.onLine) return;
+  warming = true;
+  try {
+    const urls = new Set();
+    await Promise.all(WARM_DATA.map(async (url) => {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) return;
+        collectAssetUrls(await response.json(), urls);
+      } catch {
+        /* a missing list should not stop the rest */
+      }
+    }));
+    const queue = [...urls];
+    const batchSize = 6;
+    for (let i = 0; i < queue.length; i += batchSize) {
+      const batch = queue.slice(i, i + batchSize);
+      await Promise.all(batch.map((url) => fetch(url).catch(() => null)));
+    }
+  } finally {
+    warming = false;
+  }
+}
+
+function claimFirstInstall(registration) {
+  if (navigator.serviceWorker.controller) return;
+  const worker = registration.installing || registration.waiting;
+  if (!worker) return;
+  const skip = () => {
+    if (navigator.serviceWorker.controller) return;
+    registration.waiting?.postMessage("SKIP_WAITING");
+    if (worker.state === "installed") worker.postMessage?.("SKIP_WAITING");
+  };
+  if (worker.state === "installed") skip();
+  else worker.addEventListener("statechange", () => {
+    if (worker.state === "installed") skip();
+  });
+}
+
 async function registerWorker() {
   if (!pwaEnabled()) return null;
   const swUrl = new URL("../sw.js", import.meta.url);
   try {
+    let seenController = !!navigator.serviceWorker.controller;
     const registration = await navigator.serviceWorker.register(swUrl);
     navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!seenController) {
+        seenController = true;
+        warmOfflineLibrary();
+        return;
+      }
       if (reloading) return;
       reloading = true;
       window.location.reload();
     });
     watchRegistration(registration);
+    claimFirstInstall(registration);
+    if (navigator.serviceWorker.controller) warmOfflineLibrary();
     registration.update().catch(() => {});
     window.addEventListener("focus", () => registration.update().catch(() => {}));
     return registration;
@@ -106,7 +188,7 @@ function ensureInstallSheet() {
       <ol>
         <li>Tap <strong>Share</strong> in Safari.</li>
         <li>Choose <strong>Add to Home Screen</strong>.</li>
-        <li>Open the new Somnia icon for a full-bleed table.</li>
+        <li>Open the new Somnia icon. After this visit, that icon plays with no internet.</li>
       </ol>
       <button type="button" class="btn primary" data-pwa-sheet-close>Got it</button>
     </div>
