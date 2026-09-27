@@ -42,14 +42,44 @@ function clearMorePanelPlacement(panel) {
   panel.style.maxHeight = "";
 }
 
+function parkMorePanel(panel) {
+  const menu = document.getElementById("header-more-menu");
+  if (!panel || !menu || panel.parentElement === menu) return;
+  menu.appendChild(panel);
+}
+
+function phaseOrbsToAvoid() {
+  return ["btn-next-phase", "btn-draw-dream", "btn-map-back"]
+    .map((id) => document.getElementById(id))
+    .filter((el) => el && !el.hidden && el.getBoundingClientRect().width > 0)
+    .map((el) => el.getBoundingClientRect());
+}
+
 function placeMorePanel(btn, panel) {
   const form = document.documentElement.dataset.form;
   if (form !== "phone" && form !== "tablet") return;
+  // The top bar's blur traps position:fixed descendants, so a menu opened
+  // inside it paints under later dialogs and uses the wrong origin.
+  document.body.appendChild(panel);
   const rect = btn.getBoundingClientRect();
   const margin = 8;
+  const panelWidth = Math.min(280, window.innerWidth - margin * 2);
+  let right = Math.max(margin, Math.round(window.innerWidth - rect.right));
+  let panelRight = window.innerWidth - right;
+  let panelLeft = panelRight - panelWidth;
+  const top = Math.round(rect.bottom + 6);
+  for (const orb of phaseOrbsToAvoid()) {
+    const vertical = top < orb.bottom && top + 48 > orb.top;
+    const horizontal = panelLeft < orb.right && panelRight > orb.left;
+    if (!vertical || !horizontal) continue;
+    panelRight = Math.round(orb.left - margin);
+    panelLeft = panelRight - panelWidth;
+    right = Math.round(window.innerWidth - panelRight);
+  }
+  right = Math.max(margin, Math.min(right, window.innerWidth - panelWidth - margin));
   panel.classList.add("header-more-panel-fixed");
-  panel.style.top = `${Math.round(rect.bottom + 6)}px`;
-  panel.style.right = `${Math.max(margin, Math.round(window.innerWidth - rect.right))}px`;
+  panel.style.top = `${top}px`;
+  panel.style.right = `${right}px`;
   panel.style.left = "auto";
   panel.style.maxHeight = `${Math.max(160, Math.round(window.innerHeight - rect.bottom - 16))}px`;
 }
@@ -59,6 +89,7 @@ function closeMoreMenu() {
   const panel = document.getElementById("header-more-panel");
   panel?.classList.add("hidden");
   clearMorePanelPlacement(panel);
+  parkMorePanel(panel);
   btn?.setAttribute("aria-expanded", "false");
 }
 
@@ -80,7 +111,7 @@ function bindMoreMenu() {
   });
 
   document.addEventListener("click", (event) => {
-    if (event.target.closest("#header-more-menu")) return;
+    if (event.target.closest("#header-more-menu, #header-more-panel")) return;
     closeMoreMenu();
   });
   document.addEventListener("keydown", (event) => {

@@ -4656,6 +4656,10 @@ function ensureDreamerDetailOverlay() {
   dreamerOverlayEl.className = "dreamer-detail-overlay hidden";
   dreamerOverlayEl.setAttribute("role", "dialog");
   dreamerOverlayEl.setAttribute("aria-modal", "true");
+  dreamerOverlayEl.addEventListener("click", (event) => {
+    if (event.target.closest(".dreamer-overlay-shell")) return;
+    hideDreamerDetailOverlay();
+  });
   document.body.appendChild(dreamerOverlayEl);
   return dreamerOverlayEl;
 }
@@ -4668,6 +4672,17 @@ export function showDreamerDetailOverlay(dreamer, options = {}) {
 
   const shell = document.createElement("div");
   shell.className = "dreamer-overlay-shell";
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "dreamer-overlay-close";
+  close.setAttribute("aria-label", "Close Dreamer details");
+  close.textContent = "×";
+  close.addEventListener("click", (event) => {
+    event.stopPropagation();
+    hideDreamerDetailOverlay();
+  });
+  shell.appendChild(close);
 
   const left = document.createElement("div");
   left.className = "dreamer-overlay-left";

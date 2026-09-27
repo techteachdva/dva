@@ -3094,16 +3094,21 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 }
 
 /* Play stacking (root):
+   deck-pressure banner        560  (top strip; under every dialog)
    HUD / board / hand          auto–152
-   play top-bar                600  (dropdowns stay inside this context)
+   play top-bar                600  (in-bar dropdowns stay in this context)
+   portaled more menu          790  (escapes the bar; under dialogs)
    tutorial sparkles + flyer   680  (must sit above HUD chrome)
    tutorial overlay + card     740
    tutorial brief              750
    utility modal               800
-   card detail modal           820
    dreamer overlay             840
    dreamer tooltip             1200
-   pause / FX / dev            8600+ */
+   card detail (zoomed)        8800
+   choice dock                 8600
+   pause                       11500 (above dice battles)
+   dice battle stage           11000
+   dev console                 10000 */
 .tutorial-highlight {
   position: relative;
   z-index: 150;
@@ -5483,6 +5488,13 @@ body.play-window #card-modal:not(.hidden) {
   z-index: 610;
 }
 
+/* The play-window rule above is more specific than a bare card-detail
+   bump, so a zoom opened from the Subconscious (utility modal at 800)
+   was stuck behind the binder. This beats that rule and the choice dock. */
+body.play-window.card-detail-open #card-modal:not(.hidden) {
+  z-index: 8800;
+}
+
 body.play-window .tutorial-card {
   z-index: 620;
 }
@@ -5650,10 +5662,17 @@ body.card-detail-open .tutorial-card {
   position: absolute;
   top: 0.5rem;
   right: 0.6rem;
+  z-index: 5;
+  width: 2.15rem;
+  height: 2.15rem;
+  display: grid;
+  place-items: center;
   border: none;
-  background: transparent;
+  border-radius: 999px;
+  background: rgba(8, 6, 18, 0.88);
   color: var(--text);
   font-size: 1.4rem;
+  line-height: 1;
   cursor: pointer;
 }
 
@@ -8143,7 +8162,7 @@ body.panel-resizing {
 .pause-menu {
   position: fixed;
   inset: 0;
-  z-index: 9000;
+  z-index: 11500;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9711,7 +9730,26 @@ html[data-touch="true"] .action-dock .btn-advance {
   display: none;
 }
 
+.dreamer-overlay-close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  z-index: 2;
+  width: 2.15rem;
+  height: 2.15rem;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 999px;
+  background: rgba(8, 6, 18, 0.88);
+  color: var(--text);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .dreamer-overlay-shell {
+  position: relative;
   width: min(960px, 96vw);
   max-height: min(88vh, 760px);
   overflow: auto;
@@ -10080,6 +10118,12 @@ body.play-window .top-bar.play-top-bar {
 
 body.play-window .header-dropdown-panel {
   z-index: 700;
+}
+
+/* Portaled out of the top bar so it is not trapped by the bar's blur.
+   Beats the 700 rule above, stays under the utility modal (800). */
+body.play-window #header-more-panel.header-more-panel-fixed {
+  z-index: 790;
 }
 
 body.play-window .top-bar.play-top-bar .brand {
@@ -11603,7 +11647,7 @@ body.dice-rolling #screen-game .table-surface::after {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 9800;
+  z-index: 560;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11942,13 +11986,13 @@ html[data-form="tablet"][data-orientation="landscape"] body.play-window #header-
   position: fixed;
   top: 4.15rem;
   right: 0.5rem;
-  z-index: 1400;
+  z-index: 790;
   width: min(280px, calc(100vw - 1rem));
 }
 
 .header-more-panel-fixed {
   position: fixed;
-  z-index: 1400;
+  z-index: 790;
   width: min(280px, calc(100vw - 1rem));
 }
 

@@ -931,14 +931,24 @@ function rewardRestedDreamers(state) {
 }
 
 function passHeadDreamer(state) {
-  const currentHeadIndex = state.players.findIndex((p) => p.isHead);
-  const headIndex = currentHeadIndex >= 0 ? currentHeadIndex : state.activePlayerIndex;
-  const nextHead = (headIndex + 1) % state.players.length;
-  state.players.forEach((p) => {
+  const players = state.players || [];
+  const currentHeadIndex = players.findIndex((p) => p.isHead);
+  const start = currentHeadIndex >= 0 ? currentHeadIndex : state.activePlayerIndex;
+  let next = null;
+  for (let step = 1; step <= players.length; step += 1) {
+    const player = players[(start + step) % players.length];
+    if (player?.alive) {
+      next = player;
+      break;
+    }
+  }
+  if (!next) return;
+  players.forEach((p) => {
     p.isHead = false;
   });
-  state.players[nextHead].isHead = true;
-  state.activePlayerIndex = nextHead;
+  next.isHead = true;
+  const idx = players.findIndex((p) => p.id === next.id);
+  if (idx >= 0) state.activePlayerIndex = idx;
 }
 
 export function allDreamersOnBed(state) {

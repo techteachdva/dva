@@ -15,7 +15,7 @@ import { resetPanelLayout } from "./panel-layout.js";
 import { getFormOverride, setFormOverride } from "./device-mode.js";
 import { armBoardTapShield } from "./input-quarantine.js";
 import { validateScoreName } from "./highscores.js";
-import { showDreamFeedModal } from "./ui.js";
+import { hideDreamerDetailOverlay, hideDreamerDetailTooltip, hideRadialMenu, showDreamFeedModal } from "./ui.js";
 
 let open = false;
 let onResume = null;
@@ -489,6 +489,9 @@ export function openPauseMenu() {
   const menu = document.getElementById("pause-menu");
   if (!menu || open) return;
   open = true;
+  hideDreamerDetailTooltip();
+  hideDreamerDetailOverlay();
+  hideRadialMenu();
   menu.classList.remove("hidden");
   menu.setAttribute("aria-hidden", "false");
   syncGameTabLabel();

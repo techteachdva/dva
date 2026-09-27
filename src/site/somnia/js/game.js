@@ -237,7 +237,12 @@ function meetActionActor(state, action) {
 
 function meetPassBlocks(state, actor) {
   if (state.tutorialMode || !state.meetPassHolderId) return false;
-  return actor?.id !== state.meetPassHolderId;
+  const holder = state.players.find((p) => p.id === state.meetPassHolderId);
+  if (!holder?.alive) {
+    state.meetPassHolderId = null;
+    return false;
+  }
+  return actor?.id !== holder.id;
 }
 
 function nextLivingClockwise(state, fromId) {
@@ -1004,7 +1009,6 @@ export function revealLandscape(state) {
   }
   if (state.seedFlags?.rem && !state.remFree?.reveal && !state.revealLandscapeUsed && state.landscapePick?.mode !== "reveal") {
     state.remFree.reveal = true;
-    state.lastPhaseOpenerId = null;
     beginRevealPicking(state, 1);
     addLog(state, "REM cycle: the team takes 1 free Reveal — no Lucidity spent.");
     recordQuestEvent(state, "reveal_landscape", { count: 0 });
@@ -1063,7 +1067,6 @@ export function revealLandscape(state) {
 export function activateExplore(state) {
   if (state.seedFlags?.rem && !state.remFree?.explore && !state.exploreActivated) {
     state.remFree.explore = true;
-    state.lastPhaseOpenerId = null;
     state.exploreMovesLeft = 1;
     state.exploreActivated = true;
     addLog(state, "REM cycle: the team takes 1 free Explore move — no Elasticity spent. Click a Dreamer chip, then a highlighted hex.");
@@ -1110,7 +1113,6 @@ export function activateExplore(state) {
     addLog(state, `${player.name} spends 1 Power Token as 1 Elasticity.`);
   }
   if (player && (elaCards.length || tokenValue)) recordPhaseOpener(state, player);
-  else if (freeRound) state.lastPhaseOpenerId = null;
   state.exploreMovesLeft = budget;
   state.exploreActivated = true;
   const insulationBonus = consumeInsulationMoves(state);
@@ -1219,7 +1221,6 @@ export function moveDreamer(state, targetLandscapeId) {
 export function gainMeetActions(state) {
   if (state.seedFlags?.rem && !state.remFree?.meet && (state.meetActionBudget || 0) < 1) {
     state.remFree.meet = true;
-    state.lastPhaseOpenerId = null;
     state.meetActionBudget = 1;
     state.meetActionsUsed = 0;
     clearAllUsedMeetActions(state);
@@ -2019,6 +2020,7 @@ export function startWeaverSwap(state) {
 function offerHunterShove(state, actor, encounter, tile) {
   if (state.tutorialMode || state.hunterShoveUsed) return;
   if (actor?.dreamer?.id !== "the-hunter") return;
+  if (state.pendingEffectChoice) return;
   const adj = adjacentTiles(state, tile.id).filter((hex) => hex.revealed && !hex.wasteland);
   state.hunterShoveUsed = true;
   if (!adj.length) {

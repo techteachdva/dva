@@ -6,10 +6,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "31.0";
+export const SOMNIA_VERSION = "32.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "32.0",
+    title: "The Quiet Drift",
+    notes: [
+      "The table behind the glass drifts, very slowly: a dark midnight field of black and purple, with a faint sparkle. It stays out of the way of the board.",
+      "A card opened from the Subconscious now sits in front of the binder, so you can read it and close it. Pause, the Dream Guide, and a zoomed card stay above the deck-warning strip. During a dice battle, Pause opens on top of the dice.",
+      "On a phone or tablet, More opens beside Next Phase instead of covering it.",
+      "A free phase no longer lets the same Dreamer open the next paid phase. A lost Dreamer drops the Meet Pass. The Hunter's shove waits if another choice is already on the table.",
+    ],
+  },
   {
     version: "31.0",
     title: "The Glass Dream",
