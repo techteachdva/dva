@@ -213,14 +213,14 @@ export function resumeArchetypeFollowup(state) {
   return true;
 }
 
-/** Quintessential passives log on acquire; activatable powers use Meet phase + token. */
+/** Quintessential passives log on acquire; activatable powers cost 1 Power Token. */
 export function resolveOnAcquire(state, archetype, player) {
   if (!archetype) return;
   if (isQuintessentialArchetype(archetype)) {
     addLog(state, `${archetype.name} acquired: ${archetype.passive} (passive, while acquired).`);
     return;
   }
-  addLog(state, `${archetype.name} acquired. Spend 1 Meet action and 1 Power Token during Meet to use: ${archetype.power}`);
+  addLog(state, `${archetype.name} acquired. Spend 1 Power Token in any phase to use: ${archetype.power}`);
 }
 
 export function useArchetypePower(state, archetype, player, helpers = {}) {

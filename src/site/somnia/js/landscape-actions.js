@@ -17,8 +17,8 @@ import {
   rememberRevealedTops,
 } from "./state.js";
 import { requestChooseTile } from "./landscapes.js";
-import { SUIT_LABELS } from "./rules.js";
-import { grantPowerTokens, spendPowerTokens } from "./power-tokens.js";
+import { SUIT_LABELS, totalStat } from "./rules.js";
+import { grantPowerTokens } from "./power-tokens.js";
 import { queueMindstreamDrawFx, queueMindstreamDiscardFx } from "./board-fx.js";
 import { adjacentTiles, hexDistance } from "./hex.js";
 import {
@@ -107,10 +107,6 @@ export const LANDSCAPE_ACTION_DEFS = {
     label: "Return Psyche",
     description: "Return 1 Psyche card from the Subconscious.",
   },
-  "power-draw-psyche": {
-    label: "Power for Psyche",
-    description: "Discard 1 Power Token, then Draw 3 Psyche.",
-  },
   "replay-dream": {
     label: "Replay Dream",
     description: "Take the last discarded Dream and resolve it again.",
@@ -131,11 +127,28 @@ export const LANDSCAPE_ACTION_DEFS = {
     label: "Draw 3 Psyche",
     description: "Draw 3 Psyche cards from the Psyche deck.",
   },
-  "bed-play-3-draw-3": {
-    label: "Play 3 Psyche Points → Draw 3",
-    description: "Play Psyche totaling 3 points, then Draw 3 Psyche cards.",
+  "peek-then-move-1": {
+    label: "Peek, then Move 1",
+    description: "Glimpse one adjacent forgotten Landscape, then move 1 step.",
+  },
+  "draw-psyche-equal-to-elasticity": {
+    label: "Draw your Elasticity",
+    description: "Draw Psyche equal to your Elasticity.",
+  },
+  "move-1-dreamer-1": {
+    label: "Move 1 Step",
+    description: "Move 1 Dreamer 1 Landscape.",
+  },
+  "draw-1-psyche": {
+    label: "Draw 1 Psyche",
+    description: "Draw 1 Psyche card.",
   },
 };
+
+function actionCadence(actionId) {
+  if (actionId === "draw-3-psyche") return "Once per Dreamer this Meet.";
+  return "Once this Meet for the whole table.";
+}
 
 function alivePlayers(state) {
   return state.players.filter((p) => p.alive);
@@ -177,6 +190,32 @@ function destinationsAtSteps(state, startId, steps) {
     if (!frontier.length) break;
   }
   return frontier.filter((id) => id !== startId);
+}
+
+function beginPeekThenMove(state, player, tile) {
+  const forgotten = adjacentTiles(state, tile.id).filter((t) => !t.center && (!t.revealed || t.wasteland));
+  const startMove = () => {
+    moveDreamerSteps(state, player, 1);
+    return { ok: true };
+  };
+  if (!forgotten.length) return startMove();
+  if (forgotten.length === 1 || state.tutorialMode) {
+    const glimpsed = forgotten[0];
+    addLog(state, `${tile.name}: glimpses ${glimpsed.name}${glimpsed.suit ? ` (${SUIT_LABELS[glimpsed.suit] || glimpsed.suit})` : ""}.`);
+    return startMove();
+  }
+  const picked = requestChooseTile(state, {
+    allowedIds: forgotten.map((t) => t.id),
+    action: "record",
+    remaining: 1,
+    title: "Glimpse a forgotten Landscape",
+    detail: "Peek one adjacent forgotten tile, then move 1 step.",
+    followup: { landscapeAction: "peek-then-move-1", playerId: player.id },
+  });
+  if (picked !== "pending" && state.pendingObjectFollowup?.landscapeAction === "peek-then-move-1") {
+    resumeLandscapeAction(state);
+  }
+  return { ok: true };
 }
 
 function moveDreamerSteps(state, player, steps) {
@@ -874,6 +913,17 @@ export function resumeLandscapeAction(state) {
     return true;
   }
 
+  if (action === "peek-then-move-1") {
+    const id = (follow.pickedIds || [])[0];
+    const glimpsed = landscapeById(state, id);
+    if (glimpsed) {
+      addLog(state, `Glimpses ${glimpsed.name}${glimpsed.suit ? ` (${SUIT_LABELS[glimpsed.suit] || glimpsed.suit})` : ""}.`);
+    }
+    const mover = alivePlayers(state).find((p) => p.id === follow.playerId) || alivePlayers(state)[0];
+    if (mover) moveDreamerSteps(state, mover, 1);
+    return true;
+  }
+
   if (action === "move-2-dreambeasts-1") {
     offerBeastMove(state, follow.remaining ?? 0, follow.movedKeys || []);
     return true;
@@ -891,7 +941,7 @@ export function getUniqueLandscapeActionChoices(tile) {
       return {
         id,
         ...def,
-        description: `${def.description || ""} Once per Dreamer this Meet.`.trim(),
+        description: `${def.description || ""} ${actionCadence(id)}`.trim(),
       };
     });
   }
@@ -904,7 +954,7 @@ export function getUniqueLandscapeActionChoices(tile) {
   return [{
     id: tile.uniqueAction,
     ...def,
-    description: `${def.description} Once per Dreamer this Meet.`,
+    description: `${def.description} ${actionCadence(tile.uniqueAction)}`,
   }];
 }
 
@@ -1014,6 +1064,35 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       return { ok: true };
     }
 
+    case "move-1-dreamer-1": {
+      moveDreamerSteps(state, player, 1);
+      return { ok: true };
+    }
+
+    case "peek-then-move-1":
+      return beginPeekThenMove(state, player, tile);
+
+    case "draw-psyche-equal-to-elasticity": {
+      const count = Math.max(0, totalStat(player, "elasticity", state));
+      if (count <= 0) {
+        addLog(state, `${player.name} has no Elasticity to draw from.`);
+        return { ok: false, refund: true };
+      }
+      const drawn = drawPsycheForPlayer(state, player, count);
+      addLog(state, `${landscapeName}: ${player.name} draws ${drawn.length} Psyche (Elasticity ${count}).`);
+      return { ok: true };
+    }
+
+    case "draw-1-psyche": {
+      const drawn = drawPsycheForPlayer(state, player, 1);
+      if (!drawn.length) {
+        addLog(state, "The Psyche deck is empty.");
+        return { ok: false, refund: true };
+      }
+      addLog(state, `${landscapeName}: ${player.name} draws 1 Psyche.`);
+      return { ok: true };
+    }
+
     case "move-2-dreambeasts-1":
       return beginMoveTwoDreambeasts(state);
 
@@ -1079,35 +1158,6 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
     case "draw-3-psyche": {
       const drawn = drawPsycheForPlayer(state, player, 3);
       addLog(state, `${landscapeName}: ${player.name} draws ${drawn.length} Psyche.`);
-      recordQuestEvent(state, "draw_psyche", { count: drawn.length });
-      return { ok: true };
-    }
-
-    case "bed-play-3-draw-3": {
-      const points = helpers?.psychePointTotal
-        ? helpers.psychePointTotal(state)
-        : 0;
-      if (points < 3) {
-        addLog(state, `Need 3 Psyche points in the spread (currently ${points}).`);
-        return { ok: false, refund: true, needsPsychePool: 3 };
-      }
-      if (helpers.discardPsychePool) {
-        helpers.discardPsychePool(state);
-      }
-      const drawn = drawPsycheForPlayer(state, player, 3);
-      addLog(state, `The Bed: played ${points} Psyche points — ${player.name} draws ${drawn.length} Psyche.`);
-      recordQuestEvent(state, "draw_psyche", { count: drawn.length });
-      recordQuestEvent(state, "discard_psyche", { count: points, landscapeId: "bed" });
-      return { ok: true };
-    }
-
-    case "power-draw-psyche": {
-      if (!spendPowerTokens(state, player, 1)) {
-        addLog(state, "Need 1 Power Token.");
-        return { ok: false };
-      }
-      const drawn = drawPsycheForPlayer(state, player, 3);
-      addLog(state, `${landscapeName}: discarded 1 Power, drew ${drawn.length} Psyche.`);
       recordQuestEvent(state, "draw_psyche", { count: drawn.length });
       return { ok: true };
     }

@@ -37,7 +37,9 @@ function forfeitRemainingExploreMoves(state) {
   state.exploreMovesLeft = 0;
   logMoment(
     state,
-    `Explore ends early — ${left} unused team move${left === 1 ? "" : "s"} forfeited.`,
+    left >= 2
+      ? `Explore ends early — ${left} unused moves forfeited. 2 could have peeked the next Dream.`
+      : `Explore ends early — ${left} unused team move${left === 1 ? "" : "s"} forfeited.`,
   );
 }
 
@@ -49,7 +51,9 @@ function forfeitRemainingMeetActions(state) {
   state.meetActionsUsed = budget;
   logMoment(
     state,
-    `Meet ends early — ${left} unused team action${left === 1 ? "" : "s"} forfeited.`,
+    left >= 2
+      ? `Meet ends early — ${left} unused actions forfeited. 2 could have Returned 1 Dreambeast.`
+      : `Meet ends early — ${left} unused team action${left === 1 ? "" : "s"} forfeited.`,
   );
 }
 

@@ -16,14 +16,14 @@ import {
 import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
 import { repressCard, requestReturnCards, enqueueReturnCards, dreambeastToHandCard } from "./subconscious.js";
-import { handRoomForPsycheDraw, beginNothingResolution } from "./objects.js";
+import { handRoomForPsycheDraw, handLimitForPlayer, beginNothingResolution } from "./objects.js";
 import {
   pullDreambeastFromMindstream,
   pullFromMindstreamByType,
   encounterFromDreambeastCard,
 } from "./mindstream-supply.js";
 import { encounterRejectCost, applyRejectReward, applyAcceptEffect } from "./dreambeasts.js";
-import { canAddAllyToHand, allyHandLimitForPlayer, psycheCardValue } from "./psyche.js";
+import { psycheCardValue } from "./psyche.js";
 import { requestChooseTile, beginFreeRevealPicking } from "./landscapes.js";
 import { edgeLandscapes } from "./hex.js";
 import { SUIT_LABELS } from "./rules.js";
@@ -275,8 +275,8 @@ function finishToothSaber(state, player, helpers, { landscapeId, mode, cardIds, 
   recordQuestEvent(state, "discard_psyche", { count: selected.length });
 
   if (mode === "accept") {
-    if (!canAddAllyToHand(state, player)) {
-      addLog(state, `${player.name} already has ${allyHandLimitForPlayer(state, player)} allies.`);
+    if (player.hand.length >= handLimitForPlayer(state, player)) {
+      addLog(state, `${player.name}'s hand is full (${handLimitForPlayer(state, player)} cards).`);
       selected.forEach((card) => player.hand.push(card));
       state.psycheDiscard = state.psycheDiscard.filter((c) => !selected.includes(c));
       return;

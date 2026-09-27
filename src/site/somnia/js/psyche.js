@@ -1,7 +1,8 @@
 import { isDreambeastPsycheCard } from "./subconscious.js";
 
 export const MAX_PSYCHE_IN_HAND = 10;
-export const MAX_ALLIES_IN_HAND = 10;
+/** @deprecated Allies share the Psyche hand limit. Kept so older UI imports resolve. */
+export const MAX_ALLIES_IN_HAND = MAX_PSYCHE_IN_HAND;
 
 export function isWildPsyche(card) {
   return !!(card?.wild || card?.id?.startsWith("wild-"));
@@ -25,17 +26,17 @@ export function allyHandCount(player) {
   return alliesInHand(player).length;
 }
 
-/** Max accepted Dreambeast allies a Dreamer may hold (separate from Psyche card limit). */
+/** Allies count toward the same 10-card hand as Psyche. */
 export function allyHandLimitForPlayer(_state, _player) {
-  return MAX_ALLIES_IN_HAND;
+  return MAX_PSYCHE_IN_HAND;
 }
 
 export function allyRoomInHand(state, player) {
-  return Math.max(0, allyHandLimitForPlayer(state, player) - allyHandCount(player));
+  return Math.max(0, MAX_PSYCHE_IN_HAND - (player?.hand?.length || 0));
 }
 
 export function canAddAllyToHand(state, player) {
-  return allyRoomInHand(state, player) > 0;
+  return (player?.hand?.length || 0) < MAX_PSYCHE_IN_HAND;
 }
 
 /** Effective Psyche health — each ally counts as 1 Psyche, same as a hand card. */

@@ -369,8 +369,7 @@ const DREAM_EFFECTS = {
     beginTemptationChoices(state);
   },
   paradox: (state) => {
-    state.paradoxMeet = true;
-    logMoment(state, "Paradox — Willpower and Elasticity costs swap next Meet Phase.");
+    logMoment(state, "Paradox dissolves — the three suits hold.");
   },
   powerlessness: (state, _player, helpers) => {
     rememberDreamHelpers(helpers);

@@ -13,6 +13,7 @@
   <title>Somnia — Dream Table</title>
   <link rel="stylesheet" href="css/fonts-local.css">
   <link rel="stylesheet" href="css/game.css">
+  <link rel="stylesheet" href="css/glass.css">
 </head>
 <body class="in-game play-window">
   <div id="final-nightmare-backdrop" class="final-nightmare-backdrop" aria-hidden="true"></div>
@@ -34,10 +35,16 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 30.3</span>
+        <span class="version-label">v 31.0</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
+      <div id="hud-suits" class="hud-suits" aria-label="Focused Dreamer">
+        <span class="hud-pill hud-pill-lucidity" title="Lucidity"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Lucidity</span><span id="hud-lucidity">0</span></span>
+        <span class="hud-pill hud-pill-elasticity" title="Elasticity"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Elasticity</span><span id="hud-elasticity">0</span></span>
+        <span class="hud-pill hud-pill-willpower" title="Willpower"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Willpower</span><span id="hud-willpower">0</span></span>
+        <span class="hud-pill hud-pill-power" title="Power Tokens"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Power</span><span id="hud-power">0</span></span>
+      </div>
       <div id="hud" class="hud">
         <div class="hud-item hud-goal-wrap"><span class="label">Goal</span><span id="hud-goal">8 pts</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span><div id="hud-escape-banner" class="hud-escape-banner hidden" role="status" aria-live="polite"></div></div>
         <div class="hud-item"><span class="label">Points</span><span id="hud-points">0</span></div>

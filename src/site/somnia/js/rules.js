@@ -12,7 +12,6 @@ import { PHASES } from "./data.js";
 import { isWildPsyche, psycheCardValue } from "./psyche.js";
 import { playSfx } from "./audio.js";
 import { queueCardDiscard, queueHandDelta } from "./card-fx.js";
-import { repressTopPsycheFromDeck } from "./state.js";
 
 export { isWildPsyche, psycheCardValue };
 
@@ -108,9 +107,7 @@ export function phaseOpeningActive(state) {
   return false;
 }
 
-export function statForPhaseBudget(phase, state) {
-  if (phase === "Explore" && state.paradoxMeet) return "willpower";
-  if (phase === "Meet" && state.paradoxMeet) return "elasticity";
+export function statForPhaseBudget(phase, _state) {
   return phaseSuitForOpening(phase);
 }
 
@@ -398,15 +395,13 @@ export function revealBudget(state, player) {
 export function exploreBudget(state, player) {
   const played = sumSelectedValue(state, player, "elasticity") + phaseTokenValue(state, player);
   if (played < 1) return 0;
-  const stat = state.paradoxMeet ? "willpower" : "elasticity";
-  return played + totalStat(player, stat, state);
+  return played + totalStat(player, "elasticity", state);
 }
 
 export function meetActionBudgetFromWillpower(state, player) {
   const played = sumSelectedValue(state, player, "willpower") + phaseTokenValue(state, player);
   if (played < 1) return 0;
-  const stat = state.paradoxMeet ? "elasticity" : "willpower";
-  return played + totalStat(player, stat, state);
+  return played + totalStat(player, "willpower", state);
 }
 
 export function meetPlayTotal(state, player) {
@@ -505,7 +500,6 @@ function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {
 
   if (wild) {
     repressCard(state, card);
-    if (!state.wildMillPrepaid) repressTopPsycheFromDeck(state, 5);
     playSfx("repress");
     return;
   }
@@ -530,7 +524,6 @@ export function discardSelected(state, player, { toRepress = false } = {}) {
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
   state.pendingPowerBonusTokens = 0;
-  state.wildMillPrepaid = false;
   if (state.checkPsycheDeath) state.checkPsycheDeath(player);
   return selected;
 }
@@ -550,7 +543,6 @@ export function discardAllSelected(state, { toRepress = false } = {}) {
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
   state.pendingPowerBonusTokens = 0;
-  state.wildMillPrepaid = false;
   return byPlayer;
 }
 
@@ -574,33 +566,6 @@ export function opposingSuit(suit) {
   return cycle[suit] || null;
 }
 
-const BOSS_PLAY_SHAPES = {
-  cerberus: "set",
-  double: "pair",
-  leviathan: "balance",
-};
-
-export function bossPlayShapeRequired(encounter) {
-  if (!encounter) return null;
-  return BOSS_PLAY_SHAPES[encounter.id] || (encounter.boss ? BOSS_PLAY_SHAPES[encounter.id] : null);
-}
-
-export function bossPlayShapeLabel(shape) {
-  if (shape === "set") return "Set (3 same value or suit)";
-  if (shape === "pair") return "Pair (2 matching values)";
-  if (shape === "balance") return "Balance (one of each suit)";
-  if (shape === "declared") return "Declared Card (1 regular Psyche)";
-  return shape;
-}
-
-export function payWildSpreadCost(state, cards) {
-  const wilds = (cards || []).filter((c) => isWildPsyche(c));
-  if (!wilds.length) return 0;
-  state.wildMillPrepaid = true;
-  wilds.forEach(() => repressTopPsycheFromDeck(state, 5));
-  return wilds.length;
-}
-
 export function validateEncounterPlayShape(encounter, cards, { accept = true } = {}) {
   if (!(cards || []).length) {
     return {
@@ -608,8 +573,6 @@ export function validateEncounterPlayShape(encounter, cards, { accept = true } =
       message: "Play 1 to 3 Psyche (allies extra). Include at least 1 of the required suit.",
     };
   }
-  const boss = validateBossPlayShape(encounter, cards);
-  if (!boss.ok) return boss;
   const paySuit = encounterPaySuit(encounter, accept);
   if (paySuit && !selectedHasPaySuit(cards, paySuit)) {
     return {
@@ -617,61 +580,5 @@ export function validateEncounterPlayShape(encounter, cards, { accept = true } =
       message: encounterPayHint(encounter, accept),
     };
   }
-  const id = encounter?.refId || encounter?.id;
-  if (accept && id === "chimera") {
-    const declared = (cards || []).filter((c) => !isDreambeastPsycheCard(c) && !isWildPsyche(c));
-    if (!declared.length) {
-      return {
-        ok: false,
-        message: "Chimera requires one Declared Card: include at least 1 regular Psyche (not an ally or wild).",
-      };
-    }
-  }
-  return { ok: true };
-}
-
-export function validateBossPlayShape(encounter, cards) {
-  const shape = bossPlayShapeRequired(encounter);
-  if (!shape) return { ok: true };
-
-  if (shape === "set") {
-    if (cards.length !== 3) {
-      return { ok: false, message: "Cerberus requires a Set: exactly 3 Psyche (same value or suit)." };
-    }
-    const nonWild = cards.filter((c) => !isWildPsyche(c));
-    if (nonWild.length <= 1) return { ok: true };
-    const sameValue = nonWild.every((c) => psycheCardValue(c) === psycheCardValue(nonWild[0]));
-    const sameSuit = nonWild.every((c) => c.suit === nonWild[0].suit);
-    if (!sameValue && !sameSuit) {
-      return { ok: false, message: "Cerberus Set: all 3 Psyche must share the same value or suit." };
-    }
-    return { ok: true };
-  }
-
-  if (shape === "pair") {
-    if (cards.length < 2) {
-      return { ok: false, message: "Double requires a Pair: at least 2 Psyche with matching values." };
-    }
-    const values = cards.map((c) => psycheCardValue(c));
-    const hasPair = values.some((v) => values.filter((x) => x === v).length >= 2);
-    if (!hasPair) {
-      return { ok: false, message: "Double Pair: at least 2 played Psyche must share the same value." };
-    }
-    return { ok: true };
-  }
-
-  if (shape === "balance") {
-    if (cards.length !== 3) {
-      return { ok: false, message: "Leviathan requires Balance: exactly 3 Psyche, one of each suit." };
-    }
-    const suited = cards.filter((c) => !isWildPsyche(c));
-    const wildCount = cards.length - suited.length;
-    const suits = new Set(suited.map((c) => c.suit));
-    if (suits.size + wildCount < 3) {
-      return { ok: false, message: "Leviathan Balance: play one Lucidity, Elasticity, and Willpower Psyche." };
-    }
-    return { ok: true };
-  }
-
   return { ok: true };
 }

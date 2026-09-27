@@ -13,10 +13,7 @@ import {
   repressFromMindstreamSetup,
   isDreambeastPsycheCard,
   repressTopMindstreamFromEachDeck,
-  enqueueReturnCards,
-  enqueueCollectiveRepressFromHand,
 } from "./subconscious.js";
-import { flashMoment } from "./moment-overlay.js";
 import {
   handLimitForPlayer,
   handRoomForPsycheDraw,
@@ -206,7 +203,16 @@ export function createInitialState(data, options) {
     meetActionBudget: 0,
     meetActionsUsed: 0,
     usedMeetActionsByPlayer: {},
+    usedUniqueActionsThisMeet: [],
     lastMeetActionByPlayer: {},
+    lastPhaseOpenerId: null,
+    phaseOpenersThisRound: [],
+    meetPassHolderId: null,
+    visionaryPeekUsed: false,
+    runnerFreeMoveUsed: false,
+    immovableTaxUsed: false,
+    hunterShoveUsed: false,
+    weaverSwapUsed: false,
     pendingPowerBonus: 0,
     pendingPowerBonusTokens: 0,
     phaseTokenAsPsyche: null,
@@ -242,7 +248,7 @@ export function createInitialState(data, options) {
     skipExploreReason: null,
     rivalryEncountersOnBed: 0,
     rivalryLeftover: 0,
-    paradoxMeet: false,
+    paradoxMeet: false, // unused — Paradox no longer swaps stats
     chaseDream: false,
     chaseTrapped: [],
     skipLandscapeActionsNextMeet: false,
@@ -360,6 +366,14 @@ export function rememberRevealedTops(state, deckKey, cards) {
   state.revealedDeckTops[deckKey] = deck.slice(0, n).map(peekCardSummary);
 }
 
+/** Look at the next facedown card without turning it face-up on the pile. */
+export function peekFacedownDeckCard(state, deckKey) {
+  const deck = pileForDeckKey(state, deckKey);
+  const shown = state.revealedDeckTops?.[deckKey]?.length || 0;
+  if (shown >= deck.length) return null;
+  return deck[shown] || null;
+}
+
 export function revealNextDeckCard(state, deckKey) {
   const deck = pileForDeckKey(state, deckKey);
   if (!deck.length) return null;
@@ -392,7 +406,7 @@ export function refillPsycheDeckFromDiscard(state) {
   return true;
 }
 
-/** Wild Psyche cost: Repress the top of the Psyche Deck, reshuffling discard if needed. */
+/** Repress the top of the Psyche Deck, reshuffling discard if needed. */
 export function repressTopPsycheFromDeck(state, count = 5) {
   let taken = 0;
   for (let i = 0; i < count; i += 1) {
@@ -404,7 +418,7 @@ export function repressTopPsycheFromDeck(state, count = 5) {
     taken += 1;
   }
   if (taken) {
-    addLog(state, `Wild Psyche Represses the top ${taken} card${taken === 1 ? "" : "s"} of the Psyche Deck.`);
+    addLog(state, `Repressed the top ${taken} card${taken === 1 ? "" : "s"} of the Psyche Deck.`);
   }
   checkDefeat(state);
   return taken;
@@ -420,7 +434,7 @@ export function drawPsycheForPlayer(state, player, count = 1) {
 
     if (card.type === "psyche-power") {
       const limit = handLimitForPlayer(state, player);
-      if (psycheHandCount(player) < limit) {
+      if ((player.hand?.length || 0) < limit) {
         player.hand.push(card);
         drawn.push(card);
       } else {
@@ -430,7 +444,7 @@ export function drawPsycheForPlayer(state, player, count = 1) {
     }
 
     const limit = handLimitForPlayer(state, player);
-    if (psycheHandCount(player) < limit) {
+    if ((player.hand?.length || 0) < limit) {
       player.hand.push(card);
       drawn.push(card);
     } else {
@@ -630,6 +644,7 @@ export function resetPhaseFlags(state) {
   state.meetActionBudget = 0;
   state.meetActionsUsed = 0;
   state.usedMeetActionsByPlayer = {};
+  state.usedUniqueActionsThisMeet = [];
   state.lastMeetActionByPlayer = {};
   state.pendingPowerBonus = 0;
   state.pendingPowerBonusTokens = 0;
@@ -660,6 +675,14 @@ export function beginRoundReveal(state) {
   resetPhaseFlags(state);
   state.phaseIndex = 0;
   state.remFree = { reveal: false, explore: false, meet: false };
+  state.lastPhaseOpenerId = null;
+  state.phaseOpenersThisRound = [];
+  state.meetPassHolderId = null;
+  state.visionaryPeekUsed = false;
+  state.runnerFreeMoveUsed = false;
+  state.immovableTaxUsed = false;
+  state.hunterShoveUsed = false;
+  state.weaverSwapUsed = false;
 
   state.players.forEach((player) => {
     if (!player.alive) return;
@@ -750,7 +773,7 @@ export function applyDreamerDeath(state, player) {
 
   addLog(
     state,
-    `${player.name} dies (${deaths}/${MAX_DREAMER_DEATHS}) — Mindstream tops Repressed; Objects discarded; Power returned to the pool. Returns to The Bed with ${target} Psyche and no new Power. Restock on The Bed if Meet actions remain.`,
+    `${player.name} dies (${deaths}/${MAX_DREAMER_DEATHS}) — Mindstream tops Repressed; Objects discarded; Power returned to the pool. Respawn on The Bed with ${target} Psyche (ladder 4 / 3 / 2 / 1) and no new Power. The Bed's Draw 3 is available as normal.`,
   );
 }
 
@@ -867,6 +890,7 @@ export function advancePhase(state) {
   const phase = getPhase(state);
 
   if (phase === "Meet") {
+    rewardRestedDreamers(state);
     passHeadDreamer(state);
     state.anchorMeetSpreadBonus = 0;
     state.round += 1;
@@ -893,6 +917,17 @@ export function advancePhase(state) {
     if (meetHere) state.selectedLandscapeId = meetHere.id;
     addLog(state, "Meet Phase — spend Willpower for shared Actions. Roaming Dreambeasts stay until Accepted or Rejected.");
   }
+}
+
+function rewardRestedDreamers(state) {
+  if (state.tutorialMode) return;
+  const opened = new Set(state.phaseOpenersThisRound || []);
+  state.players.forEach((player) => {
+    if (!player.alive || player.dreamer?.id !== "the-rested") return;
+    if (opened.has(player.id)) return;
+    const drawn = drawPsycheForPlayer(state, player, 1);
+    if (drawn.length) addLog(state, `${player.name} opened no phase this round — draws 1 Psyche.`);
+  });
 }
 
 function passHeadDreamer(state) {
@@ -1051,53 +1086,8 @@ export function completeQuest(state, questIndex, player, onAcquireFn) {
 
 export { forgetLandscapes, forgetNamedLandscapes } from "./landscapes.js";
 
-function dreamersPlusThree(state) {
-  return (state.players || []).filter((p) => p.alive).length + 3;
-}
-
-function outerLandscapes(state) {
-  return (state.board || []).filter((t) => t && t.id !== "bed" && !t.center);
-}
-
-/** Full-map Reveal Return and all-but-Bed Forget Repress. Edge-triggered; rearms if the map leaves that state. */
-export function maybeMapRevealForgetThresholds(state) {
-  if (!state?.board?.length || state.tutorialMode) return;
-
-  const outer = outerLandscapes(state);
-  if (!outer.length) return;
-
-  const allRevealed = outer.every((t) => t.revealed && !t.wasteland);
-  const allForgotten = !outer.some((t) => t.revealed && !t.wasteland)
-    && outer.some((t) => t.wasteland || t.forgotten);
-
-  if (allRevealed) {
-    if (!state.mapFullyRevealedLatch) {
-      state.mapFullyRevealedLatch = true;
-      const n = dreamersPlusThree(state);
-      enqueueReturnCards(state, n, null, {
-        reason: `The Dreamscape is fully Revealed. Return ${n} card(s) from the Subconscious (Dreamers+3).`,
-      });
-      addLog(state, `All Landscapes revealed — Return ${n} from the Subconscious.`);
-      flashMoment(`Fully Revealed — Return ${n} from the Subconscious.`);
-    }
-  } else {
-    state.mapFullyRevealedLatch = false;
-  }
-
-  if (allForgotten) {
-    if (!state.mapFullyForgottenLatch) {
-      state.mapFullyForgottenLatch = true;
-      const n = dreamersPlusThree(state);
-      enqueueCollectiveRepressFromHand(state, n, {
-        reason: `Only The Bed remains. Repress ${n} Psyche from hands (Dreamers+3).`,
-      });
-      addLog(state, `All Landscapes forgotten — Repress ${n} Psyche from hands.`);
-      flashMoment(`The map collapses — Repress ${n} Psyche.`);
-    }
-  } else {
-    state.mapFullyForgottenLatch = false;
-  }
-}
+/** Map thresholds removed — all-Forgotten still starts Final Recurrence elsewhere. */
+export function maybeMapRevealForgetThresholds(_state) {}
 
 export function revealLandscapeTile(state, tile) {
   if (!tile.revealed) {

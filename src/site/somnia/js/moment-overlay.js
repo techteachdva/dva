@@ -176,9 +176,6 @@ export function flashPhaseEntryMoments(state, phase) {
     }
   }
   if (phase === "Meet") {
-    if (state.paradoxMeet) {
-      lines.push("Paradox — Willpower and Elasticity costs swap this Meet Phase.");
-    }
     if (state.skipLandscapeActionsNextMeet) {
       lines.push("Landscape Meet actions skipped this round.");
     }

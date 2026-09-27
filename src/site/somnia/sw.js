@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-30.3";
-const RUNTIME_CACHE = "somnia-runtime-30.3";
+const CACHE_NAME = "somnia-31.0";
+const RUNTIME_CACHE = "somnia-runtime-31.0";
 
 const PRECACHE = [
   "./",
@@ -12,6 +12,7 @@ const PRECACHE = [
   "./play.html",
   "./manifest.webmanifest",
   "./css/game.css",
+  "./css/glass.css",
   "./css/fonts-local.css",
   "./fonts/font-0.woff2",
   "./fonts/font-1.woff2",

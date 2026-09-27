@@ -1,0 +1,227 @@
+/*
+  Somnia glass overlays. Loaded after game.css.
+  Offline stand-in for the Tailwind glass spec so the itch zip
+  does not need the Tailwind CDN.
+
+  Glass:     bg-slate-900/40 · backdrop-blur-md · border-white/10 · shadow-2xl shadow-indigo-950/50
+  Selected:  border-white/40 · bg-gradient-to-br from-white/10 to-transparent
+  Modal:     bg-slate-950/60 · backdrop-blur-xl
+  Nightmare: bg-rose-950/40 · border-rose-500/20 · shadow-rose-950/50
+  Card hover: -translate-y-2 · scale-105 · shadow-indigo-500/20 · duration-300
+*/
+
+body.play-window,
+body.menu-window {
+  --glass: rgba(15, 23, 42, 0.4);
+  --glass-deep: rgba(2, 6, 23, 0.6);
+  --glass-line: rgba(255, 255, 255, 0.1);
+  --glass-catch: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 25px 50px -12px rgba(30, 27, 75, 0.5);
+}
+
+body.play-window .top-bar,
+body.menu-window .top-bar {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-line);
+  border-top-color: var(--glass-catch);
+  border-left-color: var(--glass-catch);
+  box-shadow: var(--glass-shadow);
+}
+
+.hud-suits {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.hud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.2rem 0.65rem 0.2rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 20px rgba(30, 27, 75, 0.35);
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: #f8fafc;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-pill-name {
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.72);
+}
+
+.hud-pill-ring {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16);
+  flex: 0 0 auto;
+}
+
+.hud-pill-lucidity .hud-pill-ring { background: #4a9eff; }
+.hud-pill-elasticity .hud-pill-ring { background: #f0c830; }
+.hud-pill-willpower .hud-pill-ring { background: #e84848; }
+.hud-pill-power .hud-pill-ring { background: #c4b5fd; }
+
+body.play-window .hud-item,
+.header-actions .btn,
+.hand-bar,
+.sidebar,
+.deck-column,
+.phase-banner,
+.table-action-cue,
+.dice-battle-banner,
+.pause-card,
+.tutorial-card,
+.end-panel,
+.card-modal-panel,
+.utility-modal-panel {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--glass-shadow);
+}
+
+.modal-backdrop {
+  background: rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.modal-content,
+.fullscreen-prompt-card,
+#utility-modal .modal-content,
+#card-modal .modal-content {
+  background: rgba(2, 6, 23, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top-color: rgba(255, 255, 255, 0.22);
+  border-left-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 25px 50px -12px rgba(30, 27, 75, 0.55);
+  border-radius: 1.25rem;
+}
+
+.btn {
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  box-shadow: 0 10px 24px rgba(30, 27, 75, 0.28);
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  border-color: rgba(255, 255, 255, 0.4);
+  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), transparent);
+  outline: none;
+}
+
+.btn.primary,
+.btn[data-advance],
+#btn-next-phase {
+  background: rgba(49, 46, 129, 0.55);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+input,
+select,
+textarea,
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.28);
+}
+
+.hand-primary .game-card,
+.hand-spillover .game-card,
+.game-card.psyche-card {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.35);
+}
+
+:where(html:not([data-hover="false"])) #screen-game .hand-primary .game-card:hover,
+#screen-game .hand-primary .game-card:focus-visible {
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 18px 36px rgba(99, 102, 241, 0.2);
+  transform: rotate(var(--fan-rot, 0deg)) translateY(calc(var(--fan-y, 0px) - 0.5rem)) scale(1.05);
+  transition-duration: 300ms;
+}
+
+.game-card.selected,
+.game-card.is-selected,
+.hand-bar .game-card.selected {
+  border-color: rgba(255, 255, 255, 0.4);
+  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), transparent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2), 0 16px 32px rgba(99, 102, 241, 0.22);
+}
+
+body.nightmare-frost .top-bar,
+body.nightmare-frost .hand-bar,
+body.nightmare-frost .sidebar,
+body.nightmare-frost .modal-content,
+body.nightmare-frost .hud-pill,
+body.nightmare-frost #final-nightmare-backdrop ~ .top-bar {
+  background: rgba(76, 5, 25, 0.4);
+  border-color: rgba(244, 63, 94, 0.2);
+  box-shadow: 0 25px 50px -12px rgba(76, 5, 25, 0.5);
+}
+
+body.nightmare-frost .btn.primary {
+  background: rgba(136, 19, 55, 0.55);
+  border-color: rgba(251, 113, 133, 0.35);
+}
+
+#hud-forget-banner,
+.deck-pressure-banner,
+body.deck-pressure-active .top-bar.play-top-bar {
+  background: rgba(76, 5, 25, 0.4);
+  border-color: rgba(244, 63, 94, 0.2);
+  box-shadow: 0 18px 40px rgba(76, 5, 25, 0.45);
+}
+
+@media (max-width: 1180px) {
+  .hud-pill-name { display: none; }
+  .hud-pill { padding-right: 0.5rem; }
+}
+
+@media (max-width: 860px) {
+  body.play-window .top-bar.play-top-bar {
+    flex-wrap: wrap;
+    height: auto;
+  }
+  .hud-suits { order: 3; width: 100%; }
+}

@@ -6,10 +6,22 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "30.3";
+export const SOMNIA_VERSION = "31.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "31.0",
+    title: "The Glass Dream",
+    notes: [
+      "The table chrome is dream-glass now: a floating frost bar, a translucent hand rail, and deeper frost panels for Repress, Return, and Final Recurrence. Cards lift and glow under the cursor. Final Recurrence tints that glass crimson.",
+      "The top bar shows the focused Dreamer's Lucidity, Elasticity, Willpower, and Power.",
+      "Prepared Psyche is not a rule. Ten cards in hand is the limit.",
+      "Meet tax only touches Dreamers standing on a beast or next to one. Unique Landscape actions are once for the whole table. Two leftover Meet actions can Return one repressed Dreambeast, and you can do that again.",
+      "After the dice settle, one Power Token can subtract one beast success, or you can stand. Ties still favor the beast if you stand.",
+      "Each Dreamer has a free once-a-round passive. Meet passes a token around the table, and the same Dreamer cannot open two phases in a row unless they are alone or nobody else can pay.",
+    ],
+  },
   {
     version: "30.3",
     title: "The Shared Seed",

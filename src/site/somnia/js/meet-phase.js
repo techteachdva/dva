@@ -1,8 +1,8 @@
 /**
  * Canonical Meet Phase flow (Somnia 26+) — one source of truth.
  *
- * 1) Start of Meet — each Dreamer Represses 1 Psyche from hand per active
- *    Dreambeast on the board. Roaming beasts stay where they are.
+ * 1) Start of Meet — each Dreamer Represses 1 Psyche per Dreambeast on their
+ *    tile or an adjacent hex. Roaming beasts stay where they are.
  * 2) Middle of Meet — one Dreamer may spend 1 Willpower Psyche to unlock
  *    shared Meet Actions. Dreamers take Actions (Meet / Landscape / Trade /
  *    Powers) as they wish. Accept and Reject need 1 Psyche of the required
@@ -21,13 +21,14 @@ import {
   landscapeById,
   headPlayer,
 } from "./state.js";
+import { areHexAdjacent } from "./hex.js";
 import { logMoment } from "./narrator.js";
 import { enqueueRepressFromHand } from "./subconscious.js";
 import { forgetRandomLandscapes, forgetNamedLandscapes } from "./landscapes.js";
 import { applyFailEffect } from "./dreambeasts.js";
 
 export const MEET_PHASE_FLOW = Object.freeze({
-  start: "Each Dreamer Represses 1 Psyche from hand per active Dreambeast.",
+  start: "Each Dreamer on or adjacent to a roaming Dreambeast Represses 1 Psyche per such beast.",
   middle: "Spend 1 Willpower Psyche for shared Meet Actions. Accept/Reject are dice battles. Roaming beasts stay until won.",
   end: "Forget 1 random Landscape per remaining Dreambeast, then each remaining beast's Fail cost resolves in spawn order. Beasts stay.",
 });
@@ -70,28 +71,61 @@ function failActorForTile(state, tile) {
   return headPlayer(state);
 }
 
-/** Step 1 — start of Meet. Tutorial skips the tax. */
+function beastsPressuringDreamer(state, player, beasts) {
+  const here = landscapeById(state, player.landscapeId);
+  if (!here) return 0;
+  return beasts.filter(({ tile }) => tile?.id === here.id || areHexAdjacent(here, tile)).length;
+}
+
+/** Step 1 — start of Meet. Tutorial skips the tax. Only nearby beasts tax. */
 export function applyMeetStartTax(state) {
   if (state.tutorialMode) return;
-  const beastCount = countActiveDreambeasts(state);
-  if (beastCount <= 0) return;
+  const beasts = roamingDreambeastsInSpawnOrder(state);
+  if (!beasts.length) return;
 
-  const alive = state.players.filter((p) => p.alive);
+  const assessed = state.players
+    .filter((player) => player.alive)
+    .map((player) => {
+      let count = beastsPressuringDreamer(state, player, beasts);
+      const pressured = count > 0;
+      if (
+        count > 0
+        && !state.tutorialMode
+        && !state.immovableTaxUsed
+        && player.dreamer?.id === "the-immovable"
+      ) {
+        state.immovableTaxUsed = true;
+        count -= 1;
+        addLog(state, `${player.name} ignores 1 Meet-tax Psyche.`);
+      }
+      return { player, count, pressured };
+    });
+  const charges = assessed.filter((entry) => entry.count > 0);
+
+  if (!charges.length) {
+    if (!assessed.some((entry) => entry.pressured)) {
+      addLog(
+        state,
+        `Meet start: ${beasts.length} Dreambeast(s) roam out of reach. Nobody Represses.`,
+      );
+    }
+    return;
+  }
+
+  const summary = charges
+    .map(({ player, count }) => `${player.name} Represses ${count}`)
+    .join("; ");
   logMoment(
     state,
-    `Meet begins: ${beastCount} roaming Dreambeast${beastCount === 1 ? "" : "s"}. Each Dreamer Represses ${beastCount} Psyche from hand.`,
+    `Meet begins: Dreambeasts tax whoever shares their tile or stands next to it. ${summary}.`,
     { forget: true, durationMs: 16000 },
   );
-
-  alive.forEach((player) => {
-    enqueueRepressFromHand(state, player, beastCount, {
-      reason: `${player.name}: ${beastCount} roaming Dreambeast${beastCount === 1 ? "" : "s"} — Repress ${beastCount} Psyche from hand.`,
+  charges.forEach(({ player, count }) => {
+    enqueueRepressFromHand(state, player, count, {
+      reason: `${player.name}: ${count} Dreambeast${count === 1 ? "" : "s"} on or beside you — Repress ${count} Psyche from hand.`,
     });
   });
-  addLog(
-    state,
-    `Meet start: ${beastCount} Dreambeast(s) — each Dreamer Represses ${beastCount} Psyche from hand.`,
-  );
+  addLog(state, `Meet start: ${summary}.`);
 }
 
 /** @deprecated Use applyMeetStartTax. */
@@ -172,7 +206,7 @@ export function applyMeetEndConsequences(state) {
 export function meetEndPreview(state) {
   const beastCount = countActiveDreambeasts(state);
   if (beastCount <= 0) return null;
-  return { beastCount, forgetCount: beastCount };
+  return { beastCount, forgetCount: beastCount, relief: 0 };
 }
 
 export { isRoamingBeast };

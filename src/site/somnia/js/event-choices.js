@@ -1266,14 +1266,9 @@ export function startSilverForcedAccept(state, player, tileId, enc) {
   state.selectedLandscapeId = tileId;
   state.activeEncounter = enc;
   state.activeEncounterLandscapeId = tileId;
-  state.forcedAccept = {
-    playerId: player.id,
-    tileId,
-    encounterId: enc.instanceId || enc.id,
-  };
   addLog(
     state,
-    `Silver: ${enc.name} appears on ${tile?.name || tileId}. ${player.name} must Accept it — Reject is not allowed.`,
+    `Silver: ${enc.name} appears on ${tile?.name || tileId}. ${player.name} may Accept or Reject it as a normal Meet.`,
   );
 }
 
@@ -1298,7 +1293,7 @@ function startSilverSpawn(state, player, card) {
     action: "spawnEncounter",
     encounter,
     title: "Silver — spawn on a Dreamer",
-    detail: "Click a Landscape that has a Dreamer. That Dreamer must then Accept this Dreambeast (no Reject).",
+    detail: "Click a Landscape that has a Dreamer. Meet it there as a normal Accept or Reject.",
     followup: { cardId: "silver-accept", playerId: player.id },
   });
 }
@@ -1336,7 +1331,7 @@ export function beginSilver(state, player) {
     cardId: "silver",
     ui: "cards",
     title: "Silver — choose a Dreambeast",
-    message: "Pick any Dreambeast from Discard or Subconscious. It spawns on a Dreamer's Landscape and must be Accepted (no Reject).",
+    message: "Pick any Dreambeast from Discard or Subconscious. It spawns on a Dreamer's Landscape as a normal Encounter.",
     cards,
   });
 }

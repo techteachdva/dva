@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Somnia — The R.E.M. Round</title>
+<style>
+  :root {
+    --bg: #0c1120;
+    --panel: #121a2e;
+    --card: #0a0e1b;
+    --ink: #eef2ff;
+    --ink-2: #b9c2dc;
+    --ink-3: #7d88a8;
+    --line: rgba(160, 175, 220, 0.16);
+    --kicker: #3fc3f7;
+
+    --lucidity: #3b6cf5;
+    --lucidity-ink: #4a9eff;
+    --elasticity: #e08a1a;
+    --elasticity-ink: #f0c830;
+    --willpower: #d63a42;
+    --willpower-ink: #ff6b6b;
+
+    --must: #ff8a8a;
+    --may: #b48cff;
+    --free: #62d5a4;
+    --proposed-bg: #b1471f;
+    --proposed-ink: #ffd9c2;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); scrollbar-width: none; }
+  ::-webkit-scrollbar { display: none; }
+  body {
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 44px 48px 56px;
+    min-width: 1180px;
+  }
+
+  .kicker {
+    color: var(--kicker);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 6px;
+  }
+  h1 {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+  .sub {
+    color: var(--ink-3);
+    font-size: 14px;
+    margin: 0 0 22px;
+  }
+
+  .rail {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .pill {
+    background: #1a2238;
+    border: 1px solid var(--line);
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 999px;
+  }
+  .rail .dots { flex: 1; border-top: 2px dashed rgba(160,175,220,0.22); margin: 0 14px; }
+  .legend { display: flex; gap: 10px; align-items: center; }
+
+  .badge {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 4px;
+    line-height: 1;
+    vertical-align: middle;
+  }
+  .badge.must { color: var(--must); background: rgba(255,138,138,0.12); }
+  .badge.may { color: var(--may); background: rgba(180,140,255,0.12); }
+  .badge.free { color: var(--free); background: rgba(98,213,164,0.12); }
+  .badge.cost { color: var(--ink-2); background: rgba(185,194,220,0.12); }
+  .badge.proposed { color: var(--proposed-ink); background: var(--proposed-bg); }
+
+  .phases {
+    display: grid;
+    grid-template-columns: 1fr 34px 1fr 34px 1fr;
+    gap: 0;
+    align-items: stretch;
+  }
+  .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 700;
+    padding-top: 120px;
+  }
+  .arrow.to-explore { color: var(--kicker); }
+  .arrow.to-meet { color: var(--elasticity-ink); }
+
+  .phase {
+    background: var(--panel);
+    border-radius: 16px;
+    border: 2px solid transparent;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .phase.reveal { border-color: var(--lucidity); }
+  .phase.explore { border-color: var(--elasticity); }
+  .phase.meet { border-color: var(--willpower); }
+
+  .phase-head {
+    padding: 16px 20px 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    color: #fff;
+  }
+  .reveal .phase-head { background: var(--lucidity); }
+  .explore .phase-head { background: var(--elasticity); }
+  .meet .phase-head { background: var(--willpower); }
+  .phase-head .num { font-size: 15px; font-weight: 700; opacity: 0.85; }
+  .phase-head .name { font-size: 22px; font-weight: 800; }
+  .phase-head .suit {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .suit .dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; display: inline-block; }
+
+  .phase-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px 13px;
+  }
+  .card.accent-reveal { border-color: rgba(74,158,255,0.5); }
+  .card.accent-explore { border-color: rgba(240,200,48,0.5); }
+  .card.accent-meet { border-color: rgba(255,107,107,0.5); }
+  .card.condition { background: #171a3a; border-color: rgba(180,140,255,0.5); }
+
+  .label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .label.must { color: var(--must); }
+  .label.may { color: var(--may); }
+  .label.free { color: var(--free); }
+  .label.neutral { color: var(--ink-3); }
+
+  .card p { margin: 0; font-size: 14.5px; line-height: 1.4; color: var(--ink); }
+  .card p strong { font-weight: 700; }
+  .card .note { color: var(--ink-3); font-size: 12.5px; margin-top: 4px; }
+
+  ul.actions { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  ul.actions li {
+    font-size: 14px;
+    line-height: 1.35;
+    padding-left: 12px;
+    border-left: 2px solid var(--line);
+  }
+  ul.actions li .t { color: var(--ink); }
+  ul.actions li .t small { display: block; color: var(--ink-3); font-size: 12px; margin-top: 2px; }
+  ul.actions li .cost-col { display: inline-flex; gap: 4px; flex-wrap: wrap; margin-left: 6px; vertical-align: middle; }
+
+  .formula {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    color: var(--ink-2);
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    padding: 5px 8px;
+    margin-top: 6px;
+    display: inline-block;
+  }
+
+  .skip {
+    margin-top: auto;
+    font-size: 12.5px;
+    color: var(--ink-3);
+    padding: 8px 4px 0;
+    border-top: 1px dashed var(--line);
+  }
+
+  .strips { display: grid; grid-template-columns: 1.35fr 1fr; gap: 14px; margin-top: 18px; }
+  .strip {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .strip h3 {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .strip.anytime h3 { color: var(--free); }
+  .strip .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 14px; }
+  .strip .item { font-size: 13.5px; line-height: 1.35; display: flex; gap: 8px; align-items: baseline; }
+  .strip .item .cost { flex: none; }
+  .end .row { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 13.5px; line-height: 1.4; }
+  .end .k { font-weight: 800; letter-spacing: 0.06em; font-size: 11px; text-transform: uppercase; padding-top: 3px; }
+  .end .k.win { color: var(--free); }
+  .end .k.lose { color: var(--must); }
+  .end .k.turn { color: var(--ink-3); }
+
+  .dice {
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+    background: rgba(255,107,107,0.07);
+    border: 1px dashed rgba(255,107,107,0.35);
+    border-radius: 8px;
+    padding: 8px 10px;
+    line-height: 1.4;
+  }
+
+  footer { margin-top: 16px; color: var(--ink-3); font-size: 12px; display: flex; justify-content: space-between; }
+
+  @media print {
+    body { padding: 24px; }
+    .phase, .strip, .card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<p class="kicker">Round structure &amp; phase flow</p>
+<h1>The R.E.M. Round</h1>
+<p class="sub">One round, three phases, always in this order. There is no turn order inside a phase — the table acts together. One Dreamer opens each phase with 1 suited Psyche (or 1 Power Token), and everyone shares the budget.</p>
+
+<div class="rail">
+  <span class="pill">Start of Round</span>
+  <span class="dots"></span>
+  <span class="legend">
+    <span class="badge must">Must</span>
+    <span class="badge may">May</span>
+    <span class="badge free">Free</span>
+    <span class="badge cost">1 action</span>
+    <span class="badge cost">1 token</span>
+    <span class="badge proposed">Proposed</span>
+  </span>
+  <span class="dots"></span>
+  <span class="pill">End of Round</span>
+</div>
+
+<div class="phases">
+
+  <!-- REVEAL -->
+  <section class="phase reveal">
+    <header class="phase-head">
+      <span class="num">01</span>
+      <span class="name">Reveal</span>
+      <span class="suit"><span class="dot"></span>Lucidity</span>
+    </header>
+    <div class="phase-body">
+
+      <div class="card accent-reveal">
+        <div class="label must">At start of phase <span class="badge must">Must</span></div>
+        <p>The <strong>Head Dreamer (★)</strong> draws 1 Dream and resolves it.</p>
+        <p class="note">Round 2 and later: every living Dreamer also draws 2 Psyche.</p>
+      </div>
+
+      <div class="card">
+        <div class="label may">Open the phase <span class="badge may">May</span></div>
+        <p>One Dreamer spends <strong>1 Lucidity</strong> Psyche (or 1 Power Token as that card).</p>
+        <span class="formula">Reveal budget = card value + that Dreamer's Lucidity</span>
+      </div>
+
+      <div class="card">
+        <div class="label neutral">Then, with the budget</div>
+        <ul class="actions">
+          <li><span class="t">Flip a Wasteland hex face-up <span class="cost-col"><span class="badge cost">1 reveal</span></span><small>Anyone may click. Repeat until the budget is spent.</small></span></li>
+          <li><span class="t">Map already full? Flip the top card of a Mindstream instead <span class="cost-col"><span class="badge cost">1 reveal</span></span></span></li>
+        </ul>
+      </div>
+
+      <div class="card condition">
+        <div class="label may">Condition <span class="badge proposed">Proposed</span></div>
+        <p><strong>If every Landscape is Revealed:</strong> the Quintessential Archetype's map quest is complete.</p>
+        <p class="note">Replaces "Return Dreamers+3" and the old "hold 10 Psyche" quest.</p>
+      </div>
+
+      <div class="card accent-reveal">
+        <div class="label neutral">The clock</div>
+        <p>The Dream Deck is the timer: <strong>11 · 14 · 18</strong> Dreams for Daydream, Nap, Deep Sleep. Bosses wake on Dreams <strong>3, 6 and 9</strong>.</p>
+        <p class="note">Drawing <em>The Final Recurrence</em> starts the ten-card endgame. Reach the goal before the deck runs dry.</p>
+      </div>
+
+      <div class="skip">You may skip: press <strong>Next: Explore</strong> without spending Lucidity.</div>
+    </div>
+  </section>
+
+  <div class="arrow to-explore">→</div>
+
+  <!-- EXPLORE -->
+  <section class="phase explore">
+    <header class="phase-head">
+      <span class="num">02</span>
+      <span class="name">Explore</span>
+      <span class="suit"><span class="dot"></span>Elasticity</span>
+    </header>
+    <div class="phase-body">
+
+      <div class="card">
+        <div class="label may">Open the phase <span class="badge may">May</span></div>
+        <p>One Dreamer spends <strong>1 Elasticity</strong> Psyche (or 1 Power Token).</p>
+        <span class="formula">Team moves = card value + that Dreamer's Elasticity</span>
+      </div>
+
+      <div class="card">
+        <div class="label neutral">Then, with the budget</div>
+        <ul class="actions">
+          <li><span class="t">Move any Dreamer to an adjacent revealed hex <span class="cost-col"><span class="badge cost">1 move</span></span><small>Any Dreamer, any order. Not everyone has to move.</small></span></li>
+          <li><span class="t">Step onto Wasteland <span class="cost-col"><span class="badge cost">1 move</span><span class="badge must">−1 Psyche</span></span><small>Legal, but that Dreamer discards 1 Psyche.</small></span></li>
+        </ul>
+      </div>
+
+      <div class="card accent-explore">
+        <div class="label neutral">Why you move</div>
+        <p>Quests name Landscapes. Stand on the tile to <strong>Draw its Mindstream</strong> or <strong>Meet the beast</strong> there next phase.</p>
+        <p class="note">Beasts hurt the Dreamers next to them. Position is defense.</p>
+      </div>
+
+      <div class="card accent-explore">
+        <div class="label may">Leftover budget <span class="badge may">May</span></div>
+        <p><strong>2 unused moves</strong> peek the next Dream. Leave it on top, or bury it ahead of Final Recurrence.</p>
+        <p class="note">Fewer than 2, or pressing Next: Meet, forfeits the rest.</p>
+      </div>
+
+      <div class="card">
+        <div class="label neutral">Wasteland</div>
+        <p>A <strong>Forgotten</strong> Landscape flips face-down. Its Encounter is Repressed and any Dreamer standing there loses 1 Psyche.</p>
+        <p class="note">Wasteland can be Revealed again next round. The Bed is never Forgotten; if every other tile is, the Final Recurrence begins.</p>
+      </div>
+
+      <div class="skip">You may skip: press <strong>Next: Meet</strong>. Unused moves are forfeited. Two of them could have peeked the next Dream.</div>
+    </div>
+  </section>
+
+  <div class="arrow to-meet">→</div>
+
+  <!-- MEET -->
+  <section class="phase meet">
+    <header class="phase-head">
+      <span class="num">03</span>
+      <span class="name">Meet</span>
+      <span class="suit"><span class="dot"></span>Willpower</span>
+    </header>
+    <div class="phase-body">
+
+      <div class="card accent-meet">
+        <div class="label must">At start of phase <span class="badge must">Must</span></div>
+        <p>Each Dreamer <strong>on or adjacent to</strong> a roaming Dreambeast Represses 1 Psyche per such beast. Dreamers farther away pay nothing.</p>
+        <p class="note">Bosses on The Bed tax whoever stands on The Bed or touches it. The tutorial skips this tax.</p>
+      </div>
+
+      <div class="card">
+        <div class="label may">Open the phase <span class="badge may">May</span></div>
+        <p>One Dreamer spends <strong>1 Willpower</strong> Psyche (or 1 Power Token). The same Dreamer cannot open two phases in a row unless they are alone or nobody else can pay.</p>
+        <span class="formula">Shared actions = card value + that Dreamer's Willpower</span>
+      </div>
+
+      <div class="card">
+        <div class="label neutral">Actions — the table spends them in any order</div>
+        <ul class="actions">
+          <li><span class="t"><strong>Meet</strong> the Encounter on your hex — Accept or Reject <span class="cost-col"><span class="badge cost">1 action</span></span><small>Only the Dreamer standing there plays 1–3 Psyche (at least 1 of the required suit).</small></span></li>
+          <li><span class="t"><strong>Draw Mindstream</strong> of your hex's suit <span class="cost-col"><span class="badge cost">1 action</span></span><small>Repeatable. Beast, Object, Event, Power, or Draw-Dream.</small></span></li>
+          <li><span class="t"><strong>Landscape action</strong> printed on your hex <span class="cost-col"><span class="badge cost">1 action</span><span class="badge cost">Once per table</span></span><small>The Bed's Draw 3 stays once per Dreamer. Draw Mindstream stays repeatable.</small></span></li>
+          <li><span class="t"><strong>Pass</strong> the Meet token <span class="cost-col"><span class="badge free">Free</span></span><small>Holder takes one Meet action or passes. The token moves clockwise.</small></span></li>
+          <li><span class="t"><strong>Return 1 Dreambeast</strong> from the Subconscious <span class="cost-col"><span class="badge cost">2 actions</span></span><small>Cash leftover Meet actions. Repeatable while a Dreambeast is repressed.</small></span></li>
+          <li><span class="t"><strong>Trade</strong> up to 3 Psyche with a Dreamer on the same or touching hex <span class="cost-col"><span class="badge free">Free</span></span></span></li>
+        </ul>
+        <div class="dice"><strong>Dice battle.</strong> Your Power = Psyche played + matching stat + affinity + tokens. Roll that many d6 against the beast's Power d6. 5–6 succeed; most successes wins; ties go to the beast. After the dice settle, if you hold a Power Token, spend 1 once to <strong>subtract 1 beast success</strong>, or stand. Ties still favor the beast if you stand. Scripted tutorial battles skip this. Win: Accept (ally in hand) or Reject (reward). Lose: the play is spent, the beast stays.</div>
+      </div>
+
+      <div class="card">
+        <div class="label free">Free during Meet <span class="badge free">Free</span></div>
+        <ul class="actions">
+          <li><span class="t">Add <strong>+1d6</strong> to a spread per Power Token (max 3) <span class="cost-col"><span class="badge cost">1 token each</span></span></span></li>
+          <li><span class="t">Play an <strong>Instant</strong> Object from hand <span class="cost-col"><span class="badge free">Free</span></span></span></li>
+          <li><span class="t">Activate a <strong>Persistent</strong> Object <span class="cost-col"><span class="badge cost">1 token</span></span></span></li>
+        </ul>
+      </div>
+
+      <div class="card accent-meet">
+        <div class="label must">At end of phase <span class="badge must">Must</span></div>
+        <p>For each Dreambeast still on the board: <strong>Forget 1 random Landscape</strong>, then that beast's <strong>Fail cost</strong> resolves (in spawn order).</p>
+        <p class="note">Beasts stay until Accepted or Rejected. Quests still name their Landscape if it is forgotten.</p>
+      </div>
+
+      <div class="skip">You may skip: press <strong>End Round</strong>. Unused actions are forfeited; the end-of-phase step still happens. Two of them could have Returned 1 Dreambeast.</div>
+    </div>
+  </section>
+</div>
+
+<div class="strips">
+  <div class="strip anytime">
+    <h3>Any phase · no action cost</h3>
+    <div class="grid">
+      <div class="item"><span class="badge free cost">Free</span><span>Play <strong>Power Surge</strong> from hand → 1 Power Token</span></div>
+      <div class="item"><span class="badge cost">1 token</span><span><strong>Mark a completed quest</strong> on the Active Archetype</span></div>
+      <div class="item"><span class="badge free cost">Free</span><span><strong>Acquire</strong> the Active Archetype once both quests are marked</span></div>
+      <div class="item"><span class="badge cost">1 token</span><span><strong>Dreamer Power</strong> — any phase</span></div>
+      <div class="item"><span class="badge cost">1 token</span><span><strong>Archetype Power</strong> of an acquired Archetype — any phase</span></div>
+      <div class="item"><span class="badge free cost">Free</span><span><strong>Next Phase</strong> — skip whatever is left</span></div>
+    </div>
+  </div>
+
+  <div class="strip end">
+    <h3>Round end</h3>
+    <div class="row">
+      <span class="k turn">Rotate</span><span>Head Dreamer (★) passes clockwise.</span>
+      <span class="k win">Win</span><span>Point goal reached <strong>and</strong> every living Dreamer stands on The Bed.</span>
+      <span class="k lose">Lose</span><span>The Dream Deck is empty · Psyche deck and discard are both empty · a Mindstream suit is fully Repressed · any Dreamer dies a 5th time · in Final Recurrence, Dreams run out while Archetypes still stand.</span>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>Somnia · R.E.M. round reference · amber <span class="badge proposed">Proposed</span> items are not in the engine yet. Everything else on this chart is live.</span>
+  <span>Blue = Lucidity · Yellow = Elasticity · Red = Willpower</span>
+</footer>
+
+</body>
+</html>

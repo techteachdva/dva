@@ -80,6 +80,22 @@ export function listSubconsciousCards(state) {
   ];
 }
 
+export function isSubconsciousDreambeast(card) {
+  if (!card) return false;
+  return card.type === "dreambeast"
+    || card.type === "boss"
+    || card.type === "boss-dream"
+    || card.type === "psyche-dreambeast"
+    || card.isDreambeastPsyche
+    || !!card.boss;
+}
+
+function cardsForReturn(state, filter) {
+  const cards = listSubconsciousCards(state);
+  if (filter === "dreambeast") return cards.filter(isSubconsciousDreambeast);
+  return cards;
+}
+
 export function removeFromSubconscious(state, instanceId) {
   state.subconscious = normalizeSubconscious(state.subconscious);
   const sub = state.subconscious;
@@ -145,10 +161,10 @@ export function finalizeReturn(state, cards, { log = true } = {}) {
  * Request Return of N cards. Opens picker when choice matters; auto-returns if only one option.
  * @returns {{ pending: true, count: number } | Card[]}
  */
-export function requestReturnCards(state, count, player = null) {
+export function requestReturnCards(state, count, player = null, { filter = null } = {}) {
   if (count <= 0) return [];
 
-  const available = listSubconsciousCards(state);
+  const available = cardsForReturn(state, filter);
   if (!available.length) return [];
 
   const toReturn = Math.min(count, available.length);
@@ -161,13 +177,16 @@ export function requestReturnCards(state, count, player = null) {
     remaining: toReturn,
     picked: [],
     playerId: player?.id || null,
-    reason: `Return ${toReturn} card(s) from the Subconscious.`,
+    filter: filter || null,
+    reason: filter === "dreambeast"
+      ? `Return ${toReturn} Dreambeast(s) from the Subconscious.`
+      : `Return ${toReturn} card(s) from the Subconscious.`,
   };
   return { pending: true, count: toReturn };
 }
 
 /** Queue a Return step; processes sequentially when multiple effects fire in one resolution. */
-export function enqueueReturnCards(state, count, player = null, { reason = "" } = {}) {
+export function enqueueReturnCards(state, count, player = null, { reason = "", filter = null } = {}) {
   if (count <= 0) return [];
   state.resolutionQueue = state.resolutionQueue || [];
   const label = player?.name || "Team";
@@ -175,7 +194,10 @@ export function enqueueReturnCards(state, count, player = null, { reason = "" } 
     type: "return",
     count,
     playerId: player?.id || null,
-    reason: reason || `${label}: Return ${count} card(s) from the Subconscious.`,
+    filter: filter || null,
+    reason: reason || (filter === "dreambeast"
+      ? `${label}: Return ${count} Dreambeast(s) from the Subconscious.`
+      : `${label}: Return ${count} card(s) from the Subconscious.`),
   });
   if (!state.pendingRepress && !state.pendingReturn) {
     advanceResolutionQueue(state);
@@ -184,7 +206,7 @@ export function enqueueReturnCards(state, count, player = null, { reason = "" } 
 }
 
 function beginReturnStep(state, step) {
-  const available = listSubconsciousCards(state);
+  const available = cardsForReturn(state, step.filter);
   if (!available.length || step.count <= 0) {
     advanceResolutionQueue(state);
     return;
@@ -199,6 +221,7 @@ function beginReturnStep(state, step) {
     remaining: toReturn,
     picked: [],
     playerId: step.playerId || null,
+    filter: step.filter || null,
     reason: step.reason,
   };
   if (step.reason) flashMoment(step.reason);
@@ -208,7 +231,7 @@ export function pickReturnCard(state, instanceId) {
   const pending = state.pendingReturn;
   if (!pending) return false;
 
-  const card = listSubconsciousCards(state).find((c) => c.instanceId === instanceId);
+  const card = cardsForReturn(state, pending.filter).find((c) => c.instanceId === instanceId);
   if (!card || pending.picked.some((c) => c.instanceId === instanceId)) return false;
 
   pending.picked.push(card);
@@ -234,7 +257,7 @@ export function completeReturnSelection(state) {
 export function toggleReturnPick(state, instanceId) {
   const pending = state.pendingReturn;
   if (!pending) return false;
-  const card = listSubconsciousCards(state).find((c) => c.instanceId === instanceId);
+  const card = cardsForReturn(state, pending.filter).find((c) => c.instanceId === instanceId);
   if (!card) return false;
   const idx = pending.picked.findIndex((c) => c.instanceId === instanceId);
   if (idx >= 0) {
@@ -586,13 +609,14 @@ export function subconsciousPilesForUI(state) {
 
 /** Flat binder order: deck groups left-to-right, then cards within each pile. */
 export function subconsciousBinderEntries(state) {
+  const filter = state.pendingReturn?.filter;
   return subconsciousPilesForUI(state).flatMap((pile) =>
     pile.cards.map((card) => ({
       card,
       pileLabel: pile.label,
       pileIcon: pile.icon,
     })),
-  );
+  ).filter((entry) => (filter === "dreambeast" ? isSubconsciousDreambeast(entry.card) : true));
 }
 
 /** Convert an accepted Encounter into a hand card worth 3 Psyche in its suit. */

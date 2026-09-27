@@ -42,8 +42,6 @@ import {
   MEET_ACTIONS,
   canTradeBetween,
   validateEncounterPlayShape,
-  bossPlayShapeLabel,
-  bossPlayShapeRequired,
   formatDreamerStatsText,
   SUIT_LABELS,
   findPhaseContributor,
@@ -54,10 +52,8 @@ import {
   totalStat,
   phaseOpeningActive,
   cardCountsAsSuit,
-  isWildPsyche,
   encounterPlayTotal,
   encounterPayHint,
-  payWildSpreadCost,
   PHASE_OPENER_MAX_CARDS,
 } from "./rules.js";
 import {
@@ -71,7 +67,7 @@ import {
   applyFailEffect,
 } from "./dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
-import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
+import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard, isSubconsciousDreambeast, enqueueReturnCards } from "./subconscious.js";
 import { queueCardTrade } from "./card-fx.js";
 import { random } from "./rng.js";
 import { spendPowerTokens, grantPowerTokens, playPsychePowerFromHand } from "./power-tokens.js";
@@ -87,10 +83,11 @@ import {
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
 import { spawnBossEncounterOnBed, isBossDreamCard } from "./dream-deck.js";
 import { resumeObjectEffect } from "./object-effects.js";
-import { psycheHandCount, hasPsycheHealth, canAddAllyToHand, allyHandLimitForPlayer, allyHandCount } from "./psyche.js";
+import { hasPsycheHealth, allyHandCount, isWildPsyche } from "./psyche.js";
 import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx } from "./board-fx.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "./archetypes.js";
 import { getActivatableArchetypePowers } from "./archetype-stats.js";
+import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
 import { isQuestConditionMet } from "./quests.js";
 import {
   getLandscapeActionChoices,
@@ -165,6 +162,8 @@ function meetActionKey(action, landscapeActionId = null) {
   return action;
 }
 
+const PER_DREAMER_LANDSCAPE_ACTIONS = new Set(["draw-3-psyche"]);
+
 function usedMeetActionList(state, player) {
   if (!player) return [];
   const used = state.usedMeetActionsByPlayer?.[player.id];
@@ -173,7 +172,21 @@ function usedMeetActionList(state, player) {
   return last ? [last] : [];
 }
 
+function landscapeActionIdFromKey(key) {
+  return typeof key === "string" && key.startsWith("landscape:")
+    ? key.slice("landscape:".length)
+    : null;
+}
+
+function isTableUniqueLandscapeAction(actionId) {
+  return !!actionId && actionId !== "draw-mindstream" && !PER_DREAMER_LANDSCAPE_ACTIONS.has(actionId);
+}
+
 function hasUsedMeetAction(state, player, key) {
+  const actionId = landscapeActionIdFromKey(key);
+  if (isTableUniqueLandscapeAction(actionId)) {
+    return (state.usedUniqueActionsThisMeet || []).includes(actionId);
+  }
   return usedMeetActionList(state, player).includes(key);
 }
 
@@ -183,6 +196,13 @@ function markUsedMeetAction(state, player, key) {
   const list = usedMeetActionList(state, player).filter(Boolean);
   if (!list.includes(key)) list.push(key);
   state.usedMeetActionsByPlayer[player.id] = list;
+  const actionId = landscapeActionIdFromKey(key);
+  if (isTableUniqueLandscapeAction(actionId)) {
+    if (!state.usedUniqueActionsThisMeet) state.usedUniqueActionsThisMeet = [];
+    if (!state.usedUniqueActionsThisMeet.includes(actionId)) {
+      state.usedUniqueActionsThisMeet.push(actionId);
+    }
+  }
 }
 
 function unmarkUsedMeetAction(state, player, key) {
@@ -194,11 +214,16 @@ function unmarkUsedMeetAction(state, player, key) {
   if (state.lastMeetActionByPlayer?.[player.id] === key) {
     delete state.lastMeetActionByPlayer[player.id];
   }
+  const actionId = landscapeActionIdFromKey(key);
+  if (isTableUniqueLandscapeAction(actionId) && state.usedUniqueActionsThisMeet) {
+    state.usedUniqueActionsThisMeet = state.usedUniqueActionsThisMeet.filter((id) => id !== actionId);
+  }
 }
 
 function clearAllUsedMeetActions(state) {
   state.usedMeetActionsByPlayer = {};
   state.lastMeetActionByPlayer = {};
+  state.usedUniqueActionsThisMeet = [];
 }
 
 function meetActionActor(state, action) {
@@ -210,8 +235,76 @@ function meetActionActor(state, action) {
   return actorOnLandscape(state, tile.id);
 }
 
+function meetPassBlocks(state, actor) {
+  if (state.tutorialMode || !state.meetPassHolderId) return false;
+  return actor?.id !== state.meetPassHolderId;
+}
+
+function nextLivingClockwise(state, fromId) {
+  const players = state.players || [];
+  const start = Math.max(0, players.findIndex((p) => p.id === fromId));
+  for (let step = 1; step <= players.length; step += 1) {
+    const player = players[(start + step) % players.length];
+    if (player?.alive) return player;
+  }
+  return null;
+}
+
+function seatMeetPassToken(state, openerId) {
+  if (state.tutorialMode) {
+    state.meetPassHolderId = null;
+    return;
+  }
+  const alive = state.players.filter((p) => p.alive);
+  if (alive.length < 2) {
+    state.meetPassHolderId = null;
+    return;
+  }
+  const head = alive.find((p) => p.isHead) || alive[0];
+  const holder = head.id !== openerId ? head : nextLivingClockwise(state, openerId);
+  state.meetPassHolderId = holder?.id || null;
+  if (holder) addLog(state, `Meet Pass Token starts with ${holder.name}. Take one Meet action, or pass.`);
+}
+
+function passMeetToken(state) {
+  if (state.tutorialMode || !state.meetPassHolderId) return;
+  const next = nextLivingClockwise(state, state.meetPassHolderId);
+  if (!next || next.id === state.meetPassHolderId) return;
+  state.meetPassHolderId = next.id;
+  addLog(state, `Meet Pass Token moves to ${next.name}.`);
+}
+
+function dreamerCanPayOpener(player, suit) {
+  if ((player.powerTokens || 0) >= 1) return true;
+  return (player.hand || []).some((card) => {
+    if (isDreambeastPsycheCard(card) || card.type === "psyche-power") return false;
+    return isWildPsyche(card) || card.suit === suit;
+  });
+}
+
+function openerRotationBlocks(state, player) {
+  if (state.tutorialMode || !player || state.lastPhaseOpenerId !== player.id) return false;
+  const alive = state.players.filter((p) => p.alive);
+  if (alive.length <= 1) return false;
+  const suit = phaseSuitForOpening(getPhase(state));
+  return alive.some((other) => other.id !== player.id && dreamerCanPayOpener(other, suit));
+}
+
+function recordPhaseOpener(state, player) {
+  if (state.tutorialMode || !player) return;
+  state.lastPhaseOpenerId = player.id;
+  if (!state.phaseOpenersThisRound) state.phaseOpenersThisRound = [];
+  if (!state.phaseOpenersThisRound.includes(player.id)) state.phaseOpenersThisRound.push(player.id);
+}
+
+function isSwappablePsyche(card) {
+  if (!card || isDreambeastPsycheCard(card) || card.type === "psyche-power") return false;
+  return card.type === "psyche" || isWildPsyche(card);
+}
+
 function canUseMeetActionForActor(state, actor, action, landscapeActionId = null) {
   if (!actor) return false;
+  if (meetPassBlocks(state, actor)) return false;
   if (!canSpendMeetAction(state, actor, action, MEET_ACTIONS)) return false;
   if (landscapeActionId !== "draw-mindstream" && hasUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId))) return false;
   if (state.meetActionsUsed >= state.meetActionBudget) return false;
@@ -251,9 +344,15 @@ export function canDreamerMeetOnLandscape(state, player, tileId) {
 function meetActionHint(state, action, landscapeActionId, baseHint = "") {
   const actor = meetActionActor(state, action);
   if (!actor) return "A Dreamer must stand on this Landscape.";
+  if (meetPassBlocks(state, actor)) {
+    const holder = state.players.find((p) => p.id === state.meetPassHolderId);
+    return `Meet Pass Token is with ${holder?.name || "another Dreamer"}.`;
+  }
   if (state.meetActionsUsed >= state.meetActionBudget) return "No Meet actions remaining.";
   if (hasUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId))) {
-    return "This Dreamer already used that action this Meet.";
+    return isTableUniqueLandscapeAction(landscapeActionId)
+      ? "Already used this Meet."
+      : "This Dreamer already used that action this Meet.";
   }
   if (!canSpendMeetAction(state, actor, action, MEET_ACTIONS)) return baseHint || "This Meet action is restricted right now.";
   return baseHint;
@@ -269,6 +368,7 @@ function spendMeetAction(state, action, landscapeActionId = null) {
   if (landscapeActionId !== "draw-mindstream") {
     markUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId));
   }
+  passMeetToken(state);
   return true;
 }
 
@@ -309,20 +409,23 @@ export function getPhaseActions(state, handlers) {
   const player = activePlayer(state);
   const actions = [];
 
-  const dreamerPowerAction = () => {
-    const inMeet = phase === "Meet";
-    const meetBlocked = inMeet && !canUseMeetAction(state, MEET_ACTIONS.DREAMER);
-    return {
-      label: "Dreamer Power",
-      kind: "dreamerPower",
-      section: "progress",
-      hint: inMeet
-        ? meetActionHint(state, MEET_ACTIONS.DREAMER, null, `${player.dreamer.power} Costs 1 Meet action and 1 Power Token.`)
-        : `${player.dreamer.power} Costs 1 Power Token.`,
-      disabled: player.powerTokens < 1 || hasPendingDreamerPower(state) || !canActivateDreamerPower(state, player) || meetBlocked,
-      onClick: handlers.useDreamerPower,
-    };
-  };
+  const dreamerPowerAction = () => ({
+    label: "Dreamer Power",
+    kind: "dreamerPower",
+    section: "progress",
+    hint: `${player.dreamer.power} Costs 1 Power Token.`,
+    disabled: player.powerTokens < 1 || hasPendingDreamerPower(state) || !canActivateDreamerPower(state, player),
+    onClick: handlers.useDreamerPower,
+  });
+
+  const archetypePowerActions = () => getActivatableArchetypePowers(state).map((acquired) => ({
+    label: `${acquired.name} Power`,
+    kind: "archetypePower",
+    section: "progress",
+    hint: `${acquired.power} Costs 1 Power Token.`,
+    disabled: activePlayer(state).powerTokens < 1,
+    onClick: () => handlers.useArchetypePower(acquired.id),
+  }));
 
   const objectFreeActions = () => {
     const list = [];
@@ -439,6 +542,7 @@ export function getPhaseActions(state, handlers) {
     actions.push(...objectFreeActions());
     actions.push(dreamerPowerAction());
     actions.push(...questActions());
+    actions.push(...archetypePowerActions());
   }
 
   if (phase === "Explore") {
@@ -473,10 +577,20 @@ export function getPhaseActions(state, handlers) {
         disabled: true,
         onClick: () => {},
       });
+      if (!state.tutorialMode && (state.exploreMovesLeft || 0) >= 2 && state.dreamDeck?.length) {
+        actions.push({
+          label: "Peek next Dream (2 moves)",
+          kind: "clockPeek",
+          section: "actions",
+          hint: "Spend 2 unused moves to see the next Dream. Leave it on top, or bury it ahead of Final Recurrence.",
+          onClick: () => cashExplorePeek(state),
+        });
+      }
     }
     actions.push(...objectFreeActions());
     actions.push(dreamerPowerAction());
     actions.push(...questActions());
+    actions.push(...archetypePowerActions());
   }
 
   if (phase === "Meet") {
@@ -554,11 +668,9 @@ export function getPhaseActions(state, handlers) {
     const meetTile = meetLandscapeTile(state);
     const meetEnc = encounterForMeet(state);
     if (meetEnc && !state.finalRecurrence) {
-      const shape = bossPlayShapeRequired(meetEnc);
-      const shapeHint = shape ? ` · ${bossPlayShapeLabel(shape)}` : "";
       const payHint = encounterPayHint(meetEnc, true);
       actions.push({
-        label: `${encounterPowerLabel(meetEnc, true)} — ${encounterAcceptSummary(meetEnc)}${shapeHint}`,
+        label: `${encounterPowerLabel(meetEnc, true)} — ${encounterAcceptSummary(meetEnc)}`,
         kind: "meetAccept",
         section: "encounter",
         hint: meetActionHint(
@@ -573,7 +685,7 @@ export function getPhaseActions(state, handlers) {
       });
       if (!state.forcedAccept) {
         actions.push({
-          label: `${encounterPowerLabel(meetEnc, false)} — ${encounterRejectSummary(meetEnc)}${shapeHint}`,
+          label: `${encounterPowerLabel(meetEnc, false)} — ${encounterRejectSummary(meetEnc)}`,
           kind: "meetReject",
           section: "encounter",
           hint: meetActionHint(
@@ -599,26 +711,51 @@ export function getPhaseActions(state, handlers) {
       });
     });
     actions.push(...objectFreeActions());
+    if (!state.tutorialMode && meetActionsLeft(state) >= 2 && subconsciousDreambeastCount(state) > 0 && !meetPassBlocks(state, player)) {
+      actions.push({
+        label: "Return 1 Dreambeast (2 actions)",
+        kind: "clockReturn",
+        section: "actions",
+        hint: "Spend 2 unused Meet actions to Return 1 Dreambeast from the Subconscious. Repeatable.",
+        onClick: () => cashMeetReturn(state),
+      });
+    }
     actions.push({
       label: "Trade",
       kind: "trade",
       section: "actions",
-      hint: meetActionHint(state, MEET_ACTIONS.TRADE, null, "Trade up to 3 Psyche with an adjacent Dreamer."),
-      disabled: !canUseMeetAction(state, MEET_ACTIONS.TRADE),
+      hint: canStartTrade(state)
+        ? "Free — trade up to 3 Psyche with a Dreamer on the same or adjacent hex."
+        : "Free during Meet. Partner must stand on the same or adjacent hex.",
+      disabled: !canStartTrade(state),
       onClick: handlers.tradeAction,
     });
     actions.push(dreamerPowerAction());
     actions.push(...questActions());
-    getActivatableArchetypePowers(state).forEach((acquired) => {
+    actions.push(...archetypePowerActions());
+    if (!state.tutorialMode && state.meetPassHolderId === player.id && (state.meetActionBudget || 0) > 0) {
       actions.push({
-        label: `${acquired.name} Power`,
-        kind: "archetypePower",
-        section: "progress",
-        hint: meetActionHint(state, MEET_ACTIONS.ARCHETYPE, acquired.id, `${acquired.power} Costs 1 Meet action and 1 Power Token.`),
-        disabled: activePlayer(state).powerTokens < 1 || !canUseMeetAction(state, MEET_ACTIONS.ARCHETYPE, acquired.id),
-        onClick: () => handlers.useArchetypePower(acquired.id),
+        label: "Pass Meet",
+        kind: "meetPass",
+        section: "actions",
+        hint: "Skip your Meet action. The Pass Token moves clockwise.",
+        onClick: () => passMeetToken(state),
       });
-    });
+    }
+    if (
+      !state.tutorialMode
+      && player.dreamer?.id === "the-weaver"
+      && !state.weaverSwapUsed
+      && (state.meetActionBudget || 0) > 0
+    ) {
+      actions.push({
+        label: "Weaver Swap",
+        kind: "weaverSwap",
+        section: "actions",
+        hint: "Once this Meet, free: swap 1 selected Psyche with an adjacent Dreamer.",
+        onClick: () => startWeaverSwap(state),
+      });
+    }
   }
 
   return actions;
@@ -635,7 +772,6 @@ function phaseAdvanceBlockReason(state) {
   if (state.pendingEffectChoice) return "Choose an Event or Encounter effect before advancing.";
   if (state.pendingArchetypePower) return "Finish the Archetype Power before advancing.";
   if (state.pendingObjectFollowup) return "Finish the Object effect before advancing.";
-  if (state.forcedAccept) return "Silver: Accept the spawned Dreambeast (Reject is not allowed).";
   return null;
 }
 
@@ -741,6 +877,10 @@ const DREAMER_RADIAL_KINDS = new Set([
   "drawMindstream",
   "defeatFinalArchetype",
   "sacrificeForFinal",
+  "clockPeek",
+  "clockReturn",
+  "meetPass",
+  "weaverSwap",
 ]);
 
 const DREAMER_RADIAL_ORDER = [
@@ -753,6 +893,10 @@ const DREAMER_RADIAL_ORDER = [
   "trade",
   "archetypePower",
   "drawMindstream",
+  "clockPeek",
+  "clockReturn",
+  "meetPass",
+  "weaverSwap",
   "defeatFinalArchetype",
   "sacrificeForFinal",
 ];
@@ -860,6 +1004,7 @@ export function revealLandscape(state) {
   }
   if (state.seedFlags?.rem && !state.remFree?.reveal && !state.revealLandscapeUsed && state.landscapePick?.mode !== "reveal") {
     state.remFree.reveal = true;
+    state.lastPhaseOpenerId = null;
     beginRevealPicking(state, 1);
     addLog(state, "REM cycle: the team takes 1 free Reveal — no Lucidity spent.");
     recordQuestEvent(state, "reveal_landscape", { count: 0 });
@@ -877,6 +1022,10 @@ export function revealLandscape(state) {
         ? `One Dreamer spends 1 blue ${SUIT_LABELS.lucidity} card to set the team's reveal budget. ${best.name} has the highest Lucidity (+${totalStat(best, stat, state)}) — have them play the card.`
         : `Choose 1 blue ${SUIT_LABELS.lucidity} card from any Dreamer's hand, then click Reveal Landscapes.`,
     );
+    return;
+  }
+  if (openerRotationBlocks(state, player)) {
+    narrate(state, "Someone else opens this phase", `${player.name} opened the last phase. Another Dreamer who can pay Lucidity opens Reveal, unless nobody else can.`);
     return;
   }
   const budget = revealBudget(state, player);
@@ -905,6 +1054,7 @@ export function revealLandscape(state) {
   }
 
   beginRevealPicking(state, budget);
+  recordPhaseOpener(state, player);
   addLog(state, `${player.name} spends Lucidity — the team may reveal up to ${budget} Landscapes.`);
   recordQuestEvent(state, "reveal_landscape", { count: 0 });
   playPhaseSpendFlash("lucidity");
@@ -913,6 +1063,7 @@ export function revealLandscape(state) {
 export function activateExplore(state) {
   if (state.seedFlags?.rem && !state.remFree?.explore && !state.exploreActivated) {
     state.remFree.explore = true;
+    state.lastPhaseOpenerId = null;
     state.exploreMovesLeft = 1;
     state.exploreActivated = true;
     addLog(state, "REM cycle: the team takes 1 free Explore move — no Elasticity spent. Click a Dreamer chip, then a highlighted hex.");
@@ -938,6 +1089,11 @@ export function activateExplore(state) {
     return;
   }
 
+  if (player && openerRotationBlocks(state, player)) {
+    addLog(state, `${player.name} opened the last phase. Another Dreamer who can pay Elasticity must open Explore.`);
+    return;
+  }
+
   const elaCards = player ? selectedBySuit(state, player, "elasticity") : [];
 
   const tokenValue = player ? phaseTokenValue(state, player) : 0;
@@ -953,6 +1109,8 @@ export function activateExplore(state) {
   if (player && consumePhasePowerToken(state, player)) {
     addLog(state, `${player.name} spends 1 Power Token as 1 Elasticity.`);
   }
+  if (player && (elaCards.length || tokenValue)) recordPhaseOpener(state, player);
+  else if (freeRound) state.lastPhaseOpenerId = null;
   state.exploreMovesLeft = budget;
   state.exploreActivated = true;
   const insulationBonus = consumeInsulationMoves(state);
@@ -985,7 +1143,10 @@ export function moveDreamer(state, targetLandscapeId) {
   const to = landscapeById(state, targetLandscapeId);
 
   if (getPhase(state) === "Explore") {
-    if (!state.exploreActivated || state.exploreMovesLeft < 1) {
+    const runnerFree = !state.tutorialMode
+      && player.dreamer?.id === "the-runner"
+      && !state.runnerFreeMoveUsed;
+    if (!state.exploreActivated || (state.exploreMovesLeft < 1 && !runnerFree)) {
       addLog(state, "Activate Explore with Elasticity Psyche first.");
       return;
     }
@@ -1002,7 +1163,12 @@ export function moveDreamer(state, targetLandscapeId) {
 
     player.landscapeId = targetLandscapeId;
     state.selectedLandscapeId = targetLandscapeId;
-    state.exploreMovesLeft -= 1;
+    if (runnerFree) {
+      state.runnerFreeMoveUsed = true;
+      addLog(state, `${player.name} spends the first move on them for free.`);
+    } else {
+      state.exploreMovesLeft -= 1;
+    }
     onExploreMove(state);
     recordQuestEvent(state, "move_player", { count: 1 });
     recordCancellableMove(state, player, fromId, targetLandscapeId);
@@ -1053,9 +1219,11 @@ export function moveDreamer(state, targetLandscapeId) {
 export function gainMeetActions(state) {
   if (state.seedFlags?.rem && !state.remFree?.meet && (state.meetActionBudget || 0) < 1) {
     state.remFree.meet = true;
+    state.lastPhaseOpenerId = null;
     state.meetActionBudget = 1;
     state.meetActionsUsed = 0;
     clearAllUsedMeetActions(state);
+    seatMeetPassToken(state, null);
     addLog(state, "REM cycle: the team gains 1 free Meet action — no Willpower spent.");
     playPhaseSpendFlash("willpower");
     return;
@@ -1067,6 +1235,10 @@ export function gainMeetActions(state) {
     addLog(state, best
       ? `Select 1 Willpower card from a Dreamer's hand. ${best.name} has the best Willpower bonus (+${totalStat(best, stat, state)}).`
       : `Play 1 ${SUIT_LABELS.willpower} Psyche card from any Dreamer for shared Meet Actions.`);
+    return;
+  }
+  if (openerRotationBlocks(state, player)) {
+    addLog(state, `${player.name} opened the last phase. Another Dreamer who can pay Willpower must open Meet.`);
     return;
   }
   const budget = meetActionBudgetFromWillpower(state, player);
@@ -1086,6 +1258,8 @@ export function gainMeetActions(state) {
   state.meetActionBudget = budget;
   state.meetActionsUsed = 0;
   clearAllUsedMeetActions(state);
+  recordPhaseOpener(state, player);
+  seatMeetPassToken(state, player.id);
   addLog(state, `${player.name} spends Willpower — the team gains ${budget} shared Meet Actions.`);
   playPhaseSpendFlash("willpower");
 }
@@ -1326,8 +1500,8 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
   const recommended = recommendedEncounterPower(encounter, !isReject);
   const selected = selectedCards(state, actor);
 
-  if (!isReject && !canAddAllyToHand(state, actor)) {
-    abortMeet(`${actor.name} already has ${allyHandLimitForPlayer(state, actor)} allies (max). Repress this Encounter or spend allies first.`);
+  if (!isReject && actor.hand.length >= handLimitForPlayer(state, actor)) {
+    abortMeet(`${actor.name}'s hand is full (${handLimitForPlayer(state, actor)} cards). Spend Psyche or allies first.`);
     return;
   }
 
@@ -1341,21 +1515,9 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
     abortMeet(shapeCheck.message);
     return;
   }
-  if (!isReject && (encounter.refId || encounter.id) === "chimera") {
-    const declared = selected.find((c) => !isDreambeastPsycheCard(c) && !isWildPsyche(c));
-    if (declared) addLog(state, `Chimera Declared Card: ${declared.name || `${declared.suit} ${declared.value}`}.`);
-  }
-
   const played = Math.max(1, encounterPlayTotal(state, { accept: !isReject }));
   const bonus = meetBonusBreakdown(state);
   const ctx = { mode, isReject, encounter, tile, actor, selected, played, needed: beastPower };
-
-  payWildSpreadCost(state, selected);
-  if (state.status === "lost") {
-    discardSelected(state, actor);
-    onDone?.();
-    return;
-  }
 
   const recNote = played < recommended
     ? ` Under recommended ${recommended} (beast Power ${beastPower}).`
@@ -1388,6 +1550,12 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
     beastDice: beastPower,
     forceWinner: scriptedWinner,
     instant: typeof document === "undefined",
+    allowPostRollToken: !scriptedWinner && (actor.powerTokens || 0) > 0,
+    onPostRoll: () => {
+      if (!spendPowerTokens(state, actor, 1, { animate: false })) return false;
+      addLog(state, `${actor.name} spends 1 Power Token to subtract 1 beast success.`);
+      return true;
+    },
     onComplete: ({ dreamerWins }) => finish(dreamerWins),
   });
 }
@@ -1407,6 +1575,7 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
       `${actor.name} loses the dice battle with ${encounter.name}. The play is spent. ${encounter.name} remains on ${tile.name} and will Fail at the end of Meet.`,
     );
     logMoment(state, `${encounter.name} wins the clash — it stays on ${tile.name}.`);
+    offerHunterShove(state, actor, encounter, tile);
     return;
   }
 
@@ -1417,12 +1586,6 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     const handCard = dreambeastToHandCard(encounter);
     actor.hand.push(handCard);
     addLog(state, `${encounter.name} joins ${actor.name}'s hand as a 3 ${SUIT_LABELS[encounter.suit] || encounter.suit} Psyche ally.`);
-
-    if (encounter.accept >= 10) {
-      const objs = drawObjects(state, actor, 1, getEffectHelpers());
-      recordQuestEvent(state, "draw_object", { count: objs.length });
-      if (objs.length) addLog(state, `High-tier Accept: ${actor.name} draws an Object.`);
-    }
   } else {
     addLog(state, `${actor.name} Rejects ${encounter.name}. ${encounter.rejectReward || ""}`);
     repressCard(state, { ...encounter, type: "dreambeast" });
@@ -1447,16 +1610,15 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     } else {
       const limit = handLimitForPlayer(state, actor);
       let drew = 0;
-      while (psycheHandCount(actor) < limit) {
+      while (actor.hand.length < limit) {
         const n = drawPsycheForPlayer(state, actor, 1);
         if (!n.length) break;
         drew += n.length;
       }
       if (drew) trackPsycheDraw(state, actor, drew);
-      const allyLimit = allyHandLimitForPlayer(state, actor);
       const allies = allyHandCount(actor);
-      const allyNote = allies ? ` + ${allies}/${allyLimit} allies` : "";
-      logMoment(state, `Heating Up — drew Psyche up to hand limit (${psycheHandCount(actor)}/${limit} Psyche${allyNote}).`);
+      const allyNote = allies ? ` · ${allies} allies` : "";
+      logMoment(state, `Heating Up — drew Psyche up to hand limit (${actor.hand.length}/${limit}${allyNote}).`);
     }
     state.pendingHeatingUp = false;
   }
@@ -1487,14 +1649,7 @@ function validateMeetLandscape(state) {
   return { tile, player };
 }
 
-function landscapeActionPreflight(state, actionId) {
-  if (actionId !== "bed-play-3-draw-3") return true;
-  const helpers = landscapeActionHelpers(state);
-  const points = helpers.psychePointTotal(state);
-  if (points < 3) {
-    addLog(state, `Select Psyche totaling 3 points (currently ${points}).`);
-    return false;
-  }
+function landscapeActionPreflight(_state, _actionId) {
   return true;
 }
 
@@ -1671,8 +1826,231 @@ export function activateObject(state) {
   return playObject(state, card.instanceId, { usePower: true });
 }
 
+function meetActionsLeft(state) {
+  return Math.max(0, (state.meetActionBudget || 0) - (state.meetActionsUsed || 0));
+}
+
+function spendLeftoverMeetActions(state, count) {
+  if (meetActionsLeft(state) < count) return false;
+  state.meetActionsUsed += count;
+  return true;
+}
+
+/** Move the top Dream to just before Final Recurrence. You Never Wake Up stays last. */
+function buryDreamTop(deck) {
+  const card = deck.shift();
+  if (!card) return null;
+  if (card.id === "you-never-wake") {
+    deck.unshift(card);
+    return card;
+  }
+  const finaleAt = deck.findIndex((c) => c.type === "final" || c.id === "final-recurrence");
+  if (finaleAt < 0) deck.push(card);
+  else deck.splice(finaleAt, 0, card);
+  return card;
+}
+
+export function cashExplorePeek(state) {
+  if (state.tutorialMode || getPhase(state) !== "Explore") return false;
+  if ((state.exploreMovesLeft || 0) < 2) {
+    addLog(state, "Need 2 unused Explore moves to peek the Dream Deck.");
+    return false;
+  }
+  const top = state.dreamDeck?.[0];
+  if (!top) {
+    addLog(state, "The Dream Deck is empty.");
+    return false;
+  }
+  state.exploreMovesLeft -= 2;
+  addLog(state, `Spent 2 moves to peek the next Dream: ${top.name}.`);
+  offerEffectChoice(state, activePlayer(state), {
+    cardId: "clock-peek",
+    title: "Next Dream",
+    message: `${top.name}. Leave it on top, or bury it ahead of Final Recurrence.`,
+    choices: [
+      { id: "keep", label: "Leave on top", hint: "It will be drawn next." },
+      { id: "bury", label: "Bury it", hint: "Slide it down, just before the Final Recurrence." },
+    ],
+  });
+  return true;
+}
+
+registerEffectResolver("clock-peek", (state, choiceId) => {
+  const deck = state.dreamDeck || [];
+  const card = deck[0];
+  state.pendingEffectChoice = null;
+  if (!card) return false;
+  if (choiceId === "bury") {
+    buryDreamTop(deck);
+    addLog(state, `Buried ${card.name} ahead of Final Recurrence.`);
+  } else {
+    addLog(state, `${card.name} stays on top of the Dream Deck.`);
+  }
+  return true;
+});
+
+registerEffectResolver("weaver-swap", (state, choiceId) => {
+  const pending = state.pendingEffectChoice;
+  const payload = pending?.payload || {};
+  const weaver = state.players.find((p) => p.id === payload.weaverId) || activePlayer(state);
+  if (payload.step === "neighbor") {
+    const neighbor = state.players.find((p) => p.id === choiceId);
+    const cards = psycheCardsForSwap(neighbor);
+    if (!neighbor || !cards.length) {
+      state.pendingEffectChoice = null;
+      return false;
+    }
+    offerEffectChoice(state, weaver, {
+      cardId: "weaver-swap",
+      title: "Weaver Swap",
+      message: `Choose 1 Psyche from ${neighbor.name}.`,
+      choices: cards.map((card) => ({
+        id: card.instanceId,
+        label: card.name || `${card.suit} ${card.value}`,
+      })),
+      payload: { step: "card", cardId: payload.cardId, neighborId: neighbor.id, weaverId: payload.weaverId },
+    });
+    return true;
+  }
+  state.pendingEffectChoice = null;
+  const neighbor = state.players.find((p) => p.id === payload.neighborId);
+  const mine = weaver?.hand?.find((card) => card.instanceId === payload.cardId);
+  const theirs = neighbor?.hand?.find((card) => card.instanceId === choiceId);
+  if (!weaver || !neighbor || !mine || !theirs) return false;
+  weaver.hand = weaver.hand.filter((card) => card.instanceId !== mine.instanceId);
+  neighbor.hand = neighbor.hand.filter((card) => card.instanceId !== theirs.instanceId);
+  weaver.hand.push(theirs);
+  neighbor.hand.push(mine);
+  state.selectedHand = (state.selectedHand || []).filter((id) => id !== mine.instanceId && id !== theirs.instanceId);
+  state.weaverSwapUsed = true;
+  addLog(state, `${weaver.name} swaps ${mine.name} with ${neighbor.name}'s ${theirs.name}.`);
+  return true;
+});
+
+registerEffectResolver("hunter-shove", (state, choiceId) => {
+  const pending = state.pendingEffectChoice;
+  const payload = pending?.payload || {};
+  state.pendingEffectChoice = null;
+  if (choiceId !== "shove") {
+    addLog(state, "The Hunter leaves the Dreambeast where it stands.");
+    return true;
+  }
+  const tile = landscapeById(state, payload.tileId);
+  const encounter = encounterOnLandscape(state, payload.tileId);
+  if (!tile || !encounter) return false;
+  const adj = adjacentTiles(state, tile.id).filter((hex) => hex.revealed && !hex.wasteland);
+  if (!adj.length) return false;
+  requestChooseTile(state, {
+    allowedIds: adj.map((hex) => hex.id),
+    action: "moveEncounter",
+    fromTileId: tile.id,
+    encounter,
+    title: "Hunter — shove the beast",
+    detail: "Move that Dreambeast 1 hex. This is free.",
+  });
+  return true;
+});
+
+function subconsciousDreambeastCount(state) {
+  return listSubconsciousCards(state).filter(isSubconsciousDreambeast).length;
+}
+
+export function cashMeetReturn(state) {
+  if (state.tutorialMode) return false;
+  if (meetPassBlocks(state, activePlayer(state))) {
+    addLog(state, "The Meet Pass Token is with another Dreamer.");
+    return false;
+  }
+  if (!subconsciousDreambeastCount(state)) {
+    addLog(state, "No Dreambeast in the Subconscious to Return.");
+    return false;
+  }
+  if (!spendLeftoverMeetActions(state, 2)) {
+    addLog(state, "Need 2 unused Meet actions to Return a Dreambeast.");
+    return false;
+  }
+  const player = activePlayer(state);
+  enqueueReturnCards(state, 1, player, {
+    filter: "dreambeast",
+    reason: `${player.name} spends 2 Meet actions to Return 1 Dreambeast from the Subconscious.`,
+  });
+  addLog(state, `${player.name} cashes 2 Meet actions: Return 1 Dreambeast.`);
+  passMeetToken(state);
+  return true;
+}
+
+function psycheCardsForSwap(player) {
+  return (player?.hand || []).filter(isSwappablePsyche);
+}
+
+export function startWeaverSwap(state) {
+  if (state.tutorialMode || state.weaverSwapUsed) return false;
+  if (getPhase(state) !== "Meet" || (state.meetActionBudget || 0) < 1) {
+    addLog(state, "The Weaver swaps during an open Meet.");
+    return false;
+  }
+  const weaver = activePlayer(state);
+  if (weaver?.dreamer?.id !== "the-weaver") return false;
+  const mine = selectedCards(state, weaver).filter(isSwappablePsyche);
+  if (mine.length !== 1) {
+    addLog(state, `${weaver.name}: select exactly 1 Psyche to swap.`);
+    return false;
+  }
+  const neighbors = state.players.filter((other) => (
+    other.alive
+    && other.id !== weaver.id
+    && canTradeBetween(state, weaver.landscapeId, other.landscapeId)
+    && psycheCardsForSwap(other).length
+  ));
+  if (!neighbors.length) {
+    addLog(state, "No adjacent Dreamer has a Psyche to swap.");
+    return false;
+  }
+  offerEffectChoice(state, weaver, {
+    cardId: "weaver-swap",
+    title: "Weaver Swap",
+    message: "Choose an adjacent Dreamer.",
+    choices: neighbors.map((other) => ({ id: other.id, label: other.name })),
+    payload: { step: "neighbor", cardId: mine[0].instanceId, weaverId: weaver.id },
+  });
+  return true;
+}
+
+function offerHunterShove(state, actor, encounter, tile) {
+  if (state.tutorialMode || state.hunterShoveUsed) return;
+  if (actor?.dreamer?.id !== "the-hunter") return;
+  const adj = adjacentTiles(state, tile.id).filter((hex) => hex.revealed && !hex.wasteland);
+  state.hunterShoveUsed = true;
+  if (!adj.length) {
+    addLog(state, `${actor.name}'s hunt has nowhere to shove ${encounter.name}.`);
+    return;
+  }
+  offerEffectChoice(state, actor, {
+    cardId: "hunter-shove",
+    title: "The Hunter",
+    message: `Move ${encounter.name} 1 hex for free, or leave it.`,
+    choices: [
+      { id: "shove", label: "Shove 1 hex" },
+      { id: "leave", label: "Leave it" },
+    ],
+    payload: { tileId: tile.id, encounterKey: encounter.instanceId || encounter.id },
+  });
+}
+
+function canStartTrade(state) {
+  if (getPhase(state) !== "Meet" || (state.meetActionBudget || 0) < 1) return false;
+  const me = activePlayer(state);
+  if (!me?.alive) return false;
+  return state.players.some((p) => (
+    p.alive && p.id !== me.id && canTradeBetween(state, me.landscapeId, p.landscapeId)
+  ));
+}
+
 export function tradeAction(state) {
-  if (!spendMeetAction(state, MEET_ACTIONS.TRADE)) return;
+  if (!canStartTrade(state)) {
+    addLog(state, "Trade needs an open Meet and a Dreamer on the same or adjacent hex.");
+    return;
+  }
   state.tradeMode = true;
   state.trade = {
     initiatorId: activePlayer(state).id,
@@ -1793,14 +2171,11 @@ export function useDreamerPower(state) {
     addLog(state, `${player.dreamer.name} Power cannot be used right now.`);
     return null;
   }
-  const inMeet = getPhase(state) === "Meet";
-  if (inMeet && !spendMeetAction(state, MEET_ACTIONS.DREAMER)) return null;
   if (!spendPowerTokens(state, player, 1, { animate: false })) {
-    if (inMeet) refundMeetAction(state, player, MEET_ACTIONS.DREAMER);
     addLog(state, "Need 1 Power Token.");
     return null;
   }
-  addLog(state, `${player.name} activates ${player.dreamer.name} Power (1 Power Token${inMeet ? " and 1 Meet action" : ""}).`);
+  addLog(state, `${player.name} activates ${player.dreamer.name} Power (1 Power Token).`);
   queueDreamerPowerFx(player.id, player.dreamer, player.landscapeId);
   state.pendingDreamerPower = { dreamerId: player.dreamer.id, actorId: player.id };
   return beginDreamerPower(state);
@@ -1930,14 +2305,8 @@ export function handleUseArchetypePower(state, archetypeId) {
   const powers = getActivatableArchetypePowers(state);
   const archetype = powers.find((a) => a.id === archetypeId);
   if (!archetype) return false;
-  if (getPhase(state) !== "Meet") {
-    addLog(state, "Archetype Powers are Meet actions.");
-    return false;
-  }
-  if (!spendMeetAction(state, MEET_ACTIONS.ARCHETYPE, archetype.id)) return false;
   const ok = useArchetypePower(state, archetype, activePlayer(state), getEffectHelpers());
   if (ok) queueArchetypePowerFx(archetype);
-  else refundMeetAction(state, activePlayer(state), MEET_ACTIONS.ARCHETYPE, archetype.id);
   return ok;
 }
 

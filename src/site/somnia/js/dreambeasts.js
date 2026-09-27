@@ -248,7 +248,7 @@ const ACCEPT_EFFECTS = {
   mindless: { type: "all-repress-hand", count: 1 },
   automaton: { type: "move-one-space" },
   guardian: { type: "move-from-bed", distance: 2 },
-  merperson: { type: "flip-leviathan-ocean" },
+  merperson: { type: "forget", ids: ["endless-ocean"] },
   "trash-gremlin": { type: "repress-object" },
   nixie: { type: "forget", ids: ["endless-ocean", "sea-of-teeth"] },
   jackalope: { type: "repress-mindstream", suit: "elasticity", count: 3 },
@@ -256,7 +256,7 @@ const ACCEPT_EFFECTS = {
   "black-dog": { type: "if-stat", stat: "lucidity", op: ">=", value: 2, then: { type: "draw-psyche", count: 1 } },
   basilisk: { type: "if-stat", stat: "lucidity", op: "<=", value: 1, then: { type: "discard-hand", count: 2 } },
   baku: { type: "forget", ids: ["tranquil-grove", "awards"] },
-  chimera: { type: "none" },
+  chimera: { type: "repress-mindstream", suit: "lucidity", count: 2 },
   gorgon: { type: "discard-highest" },
   sandman: { type: "forget", ids: ["house", "road"] },
   sincubus: { type: "if-stat", stat: "willpower", op: "<=", value: 2, then: { type: "discard-hand", count: 2 } },
@@ -397,11 +397,6 @@ function runSimpleEffect(state, actor, effect, helpers) {
     case "repress-minus-willpower": {
       const n = Math.max(0, 3 - (actor.dreamer?.willpower ?? 0));
       if (n) enqueueRepressFromHand(state, actor, n, { reason: `Winged Turtle: Repress ${n} Psyche.` });
-      break;
-    }
-    case "flip-leviathan-ocean": {
-      const lev = flipLeviathan(state, helpers);
-      if (lev?.awake) moveLeviathanToOcean(state);
       break;
     }
     case "move-one-space":

@@ -35,7 +35,7 @@ import {
   encounterPowerLabel,
 } from "./dreambeasts.js";
 import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate } from "./objects.js";
-import { psycheHandCount, alliesInHand, psycheCardsInHand, allyHandCount, allyHandLimitForPlayer, effectivePsycheHealth, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue } from "./psyche.js";
+import { alliesInHand, psycheCardsInHand, allyHandCount, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue } from "./psyche.js";
 import { getQuestStatus, activeQuestLandscapeIds } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
 import { hexToPixel, boardPixelBounds, pixelToHex, hexKey } from "./hex.js";
@@ -390,18 +390,12 @@ function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini,
 
 function formatHandPsycheLine(state, player) {
   const limit = handLimitForPlayer(state, player);
-  const psyche = psycheHandCount(player);
+  const total = player.hand?.length || 0;
   const allies = allyHandCount(player);
-  const allyLimit = allyHandLimitForPlayer(state, player);
-  const total = effectivePsycheHealth(player);
-
-  if (allies && psyche === 0) {
-    return `${total} health (${allies}/${allyLimit} allies)`;
-  }
   if (allies) {
-    return `${total} health · ${psyche}/${limit} Psyche · ${allies}/${allyLimit} allies`;
+    return `${total}/${limit} cards · ${allies} allies`;
   }
-  return `${psyche}/${limit} Psyche`;
+  return `${total}/${limit} Psyche`;
 }
 
 function handStatsHtml(state, player) {
@@ -3070,6 +3064,20 @@ export function renderHud(state, hint = "") {
   }
 
   document.getElementById("hud-round").textContent = String(state.round);
+  const focused = activePlayer(state);
+  const paintPill = (id, value) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = String(value);
+  };
+  if (focused) {
+    paintPill("hud-lucidity", totalStat(focused, "lucidity", state));
+    paintPill("hud-elasticity", totalStat(focused, "elasticity", state));
+    paintPill("hud-willpower", totalStat(focused, "willpower", state));
+    paintPill("hud-power", focused.powerTokens || 0);
+    const suitBar = document.getElementById("hud-suits");
+    if (suitBar) suitBar.title = focused.name;
+  }
+  document.body.classList.toggle("nightmare-frost", !!state.finalRecurrence);
   const bossRounds = BOSS_DREAM_DECK_SLOTS.map((slot) => slot + 1);
   const bossEl = document.getElementById("hud-boss-rounds");
   if (bossEl) {
@@ -3305,7 +3313,11 @@ export function renderPhaseActions(_actions, _advanceAction = null, state = null
     const parts = [];
     const beastCount = countBoardDreambeasts(state);
     if (beastCount > 0) {
-      parts.push(`Meet start: each Dreamer Represses 1 Psyche per roaming Dreambeast (${beastCount}). End of Meet: Forget ${beastCount} random Landscape${beastCount === 1 ? "" : "s"}, then each remaining beast Fails in spawn order. Beasts stay until you win a dice battle.`);
+      const holder = state.meetPassHolderId
+        ? state.players.find((p) => p.id === state.meetPassHolderId)
+        : null;
+      const passNote = holder ? ` Pass Token: ${holder.name}.` : "";
+      parts.push(`Meet start: a Dreamer Represses 1 Psyche for each Dreambeast on their tile or an adjacent hex (${beastCount} roaming). End of Meet: Forget ${beastCount} random Landscape${beastCount === 1 ? "" : "s"}, then each remaining beast Fails in spawn order. Beasts stay until you win a dice battle.${passNote}`);
     }
     const toll = timelineTollPreview(state);
     if (toll && !beastCount) {

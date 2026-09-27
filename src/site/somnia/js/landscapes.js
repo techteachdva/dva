@@ -13,6 +13,7 @@ import {
   maybeMapRevealForgetThresholds,
   allLandscapesRevealed,
   revealNextDeckCard,
+  peekFacedownDeckCard,
 } from "./state.js";
 import { shuffle } from "./data.js";
 import { repressCard } from "./subconscious.js";
@@ -545,6 +546,26 @@ export function spendRevealOnMindstreamTop(state, suit) {
   if (pick?.mode !== "reveal-deck-tops") return null;
   if (pick.remaining <= 0) return null;
   const deckKey = `mindstream-${suit}`;
+  const visionary = (state.players || []).find((p) => p.alive && p.dreamer?.id === "the-visionary");
+  if (visionary && !state.tutorialMode && !state.visionaryPeekUsed) {
+    const peeked = peekFacedownDeckCard(state, deckKey);
+    if (peeked) {
+      state.visionaryPeekUsed = true;
+      pick.remaining -= 1;
+      narrate(
+        state,
+        `The Visionary peeks ${peeked.name}.`,
+        `${peeked.name} stays facedown on the ${suit} Mindstream.${pick.remaining > 0 ? ` ${pick.remaining} Reveal(s) left.` : ""}`,
+      );
+      addLog(state, `The Visionary peeks ${peeked.name} on the ${suit} Mindstream. It stays facedown.`);
+      if (pick.remaining <= 0) {
+        state.landscapePick = null;
+        state.revealLandscapeUsed = true;
+        recordQuestEvent(state, "reveal_landscape", { count: (pick.picked || []).length });
+      }
+      return peeked;
+    }
+  }
   const card = revealNextDeckCard(state, deckKey);
   if (!card) {
     addLog(state, `No facedown ${suit} Mindstream cards left to flip.`);

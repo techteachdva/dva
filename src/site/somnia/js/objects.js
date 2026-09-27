@@ -102,7 +102,7 @@ export function handLimitForPlayer(state, player) {
 }
 
 export function handRoomForPsycheDraw(state, player) {
-  return Math.max(0, handLimitForPlayer(state, player) - psycheHandCount(player));
+  return Math.max(0, handLimitForPlayer(state, player) - (player?.hand?.length || 0));
 }
 
 export function persistentMeetBonus(state, player) {

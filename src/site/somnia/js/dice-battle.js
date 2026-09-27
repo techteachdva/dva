@@ -207,6 +207,8 @@ export function playDiceBattle(opts) {
     forceWinner = null,
     instant = false,
     hold = false,
+    allowPostRollToken = false,
+    onPostRoll = null,
     onComplete,
   } = opts || {};
 
@@ -214,6 +216,7 @@ export function playDiceBattle(opts) {
   const bCount = clampDice(beastDice);
   let dreamerFaces = rollD6(dCount);
   let beastFaces = rollD6(bCount);
+  let postRollSpent = false;
 
   if (forceWinner === "dreamer") {
     let guard = 12;
@@ -233,26 +236,32 @@ export function playDiceBattle(opts) {
     }
   }
 
-  const dreamerSuccesses = countSuccesses(dreamerFaces);
-  const beastSuccesses = countSuccesses(beastFaces);
-  const dreamerWins = dreamerSuccesses > beastSuccesses;
-  const result = { dreamerWins, dreamerSuccesses, beastSuccesses, dreamerFaces, beastFaces };
+  let dreamerSuccesses = countSuccesses(dreamerFaces);
+  let beastSuccesses = countSuccesses(beastFaces);
+  let dreamerWins = dreamerSuccesses > beastSuccesses;
+  const result = () => ({
+    dreamerWins,
+    dreamerSuccesses,
+    beastSuccesses,
+    dreamerFaces,
+    beastFaces,
+  });
 
   const finish = () => {
     const stage = typeof document !== "undefined" ? document.getElementById("dice-battle-stage") : null;
     if (stage) clearStage(stage);
     activeBattle = null;
-    onComplete?.(result);
+    onComplete?.(result());
   };
 
   if (instant || typeof document === "undefined") {
     finish();
-    return result;
+    return result();
   }
 
   const stage = ensureStage();
   cancelBattleAnims();
-  activeBattle = { result, timer: null, anims: [] };
+  activeBattle = { result: result(), timer: null, anims: [] };
 
   const shownD = Math.min(dCount, MAX_SHOWN);
   const shownB = Math.min(bCount, MAX_SHOWN);
@@ -333,11 +342,22 @@ export function playDiceBattle(opts) {
     28 + Math.max(0, shownB - 1) * stagger,
   ) + tumbleMs + 50;
 
-  activeBattle.timer = window.setTimeout(() => {
+  const recount = () => {
+    dreamerSuccesses = countSuccesses(dreamerFaces);
+    beastSuccesses = countSuccesses(beastFaces);
+    dreamerWins = dreamerSuccesses > beastSuccesses;
+    if (activeBattle) activeBattle.result = result();
     if (scoreD) scoreD.textContent = String(dreamerSuccesses);
     if (scoreB) scoreB.textContent = String(beastSuccesses);
     if (compare) compare.textContent = `${dreamerSuccesses} – ${beastSuccesses}`;
+  };
+
+  const presentWinner = () => {
+    if (!activeBattle) return;
+    stage.querySelector(".dice-post-roll")?.remove();
+    recount();
     document.body.classList.remove("dice-rolling");
+    stage.classList.remove("winner-dreamer", "winner-beast");
     stage.classList.add(dreamerWins ? "winner-dreamer" : "winner-beast");
     if (banner) {
       banner.hidden = false;
@@ -355,9 +375,49 @@ export function playDiceBattle(opts) {
     if (!hold) {
       activeBattle.timer = window.setTimeout(dismiss, quiet ? 800 : RESULT_HOLD_MS);
     }
+  };
+
+  const showPostRoll = () => {
+    const beastHit = beastSuccesses > 0;
+    if (postRollSpent || !allowPostRollToken || typeof onPostRoll !== "function" || !beastHit) {
+      presentWinner();
+      return;
+    }
+    const row = document.createElement("div");
+    row.className = "dice-post-roll";
+    row.innerHTML = `
+      <p>Spend 1 Power Token, once. Ties still favor the beast if you stand.</p>
+      <div class="dice-post-roll-actions">
+        <button type="button" class="btn" data-post="subtract">Subtract 1 beast success</button>
+        <button type="button" class="btn primary" data-post="stand">Stand</button>
+      </div>
+    `;
+    stage.querySelector(".dice-battle-table")?.after(row);
+    row.addEventListener("click", (event) => event.stopPropagation());
+    row.querySelectorAll("[data-post]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const kind = btn.getAttribute("data-post");
+        if (kind === "stand") {
+          presentWinner();
+          return;
+        }
+        if (postRollSpent || !onPostRoll("subtract")) return;
+        postRollSpent = true;
+        const index = beastFaces.findIndex((face) => face >= SUCCESS_MIN);
+        if (index >= 0) beastFaces[index] = 1;
+        recount();
+        presentWinner();
+      });
+    });
+  };
+
+  activeBattle.timer = window.setTimeout(() => {
+    recount();
+    document.body.classList.remove("dice-rolling");
+    showPostRoll();
   }, lastDelay);
 
-  return result;
+  return result();
 }
 
 function escapeHtml(value) {

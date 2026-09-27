@@ -571,7 +571,7 @@ function settleTutorialRail(state) {
   }
 }
 
-/** Innocent Power needs 1 Meet action + 1 token; quest marks often spend the whole pool first. */
+/** Innocent Power needs 1 token; quest marks often spend the token first. */
 function ensureTutorialArchetypePowerResources(state, playerIndex = 0) {
   const player = state.players[playerIndex];
   if (player && (player.powerTokens || 0) < 1) {
@@ -1226,7 +1226,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-hold",
     round: 1,
     title: "Dreamer Power: Hold the Line",
-    why: "The Immovable's Power banks +1 Psyche on every Accept or Reject during the NEXT Meet. Spend it now so Round 2's rematch is stacked. Dreamer Powers cost 1 Power Token and 1 Meet action.",
+    why: "The Immovable's Power banks +1 Psyche on every Accept or Reject during the NEXT Meet. Spend it now so Round 2's rematch is stacked. Dreamer Powers cost 1 Power Token.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Bed." },
@@ -1338,7 +1338,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-arch-power",
     round: 2,
     title: "Archetype Power",
-    why: "Acquired Archetypes spend 1 Meet action and 1 Power Token. Innocent Returns 4 Repressed cards from the Subconscious — the Misunderstanding mill you just suffered. Use it.",
+    why: "Acquired Archetypes spend 1 Power Token. Innocent Returns 4 Repressed cards from the Subconscious — the Misunderstanding mill you just suffered. Use it.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary." },
