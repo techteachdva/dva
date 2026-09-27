@@ -5164,6 +5164,9 @@ function bindTutorialScrollRefresh() {
   tutorialScrollBound = true;
   document.getElementById("hand-bar")?.addEventListener("scroll", () => positionTutorialSpotlight(), { passive: true });
   window.addEventListener("resize", () => positionTutorialSpotlight(), { passive: true });
+  document.addEventListener("somnia-dice-post-roll", () => {
+    refreshTutorialSpotlight();
+  });
 }
 
 const SPARKLE_COUNT = 32;
@@ -5213,7 +5216,9 @@ function resolvePrimarySpotlightElement(step) {
       || document.querySelector(`.player-chip[data-player-id="${beat.playerId}"]`);
   }
 
-  if (beat?.kind === "meetAccept" || beat?.kind === "meetReject") {
+    if (beat?.kind === "meetAccept" || beat?.kind === "meetReject") {
+    const stand = document.querySelector(".dice-post-roll [data-post='stand']");
+    if (stand) return stand;
     const tileId = beat.tileId || (beat.kind === "meetReject" ? "the-basement" : "house");
     const kind = beat.kind;
     return document.querySelector(`.radial-menu-item.ready[data-tutorial-action="${kind}"]`)
@@ -5233,6 +5238,7 @@ function resolvePrimarySpotlightElement(step) {
     || beat?.kind === "landscapeActionB"
     || beat?.kind === "powerBonus"
     || beat?.kind === "dreamerPower"
+    || beat?.kind === "meetPass"
     || beat?.kind === "archetypePower"
     || beat?.kind === "advancePhase") {
     if (beat.kind === "advancePhase") {

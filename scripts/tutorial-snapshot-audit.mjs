@@ -52,6 +52,7 @@ const {
   meetEncounter,
   performLandscapeAction,
   gainMeetActions,
+  passMeetToken,
 } = gameMod;
 const { meetPsychePlayTotal } = await import(pathToFileURL(path.join(JS_DIR, "rules.js")).href);
 
@@ -316,17 +317,29 @@ function auditStepsAndEffects() {
 function auditLiveCardEffects() {
   const state = createTutorialState(gameData);
   jumpTutorialToStep(state, TUTORIAL_SCRIPT.findIndex((s) => s.id === "r2-rematch"));
+  if ((state.meetActionBudget || 0) <= 0) {
+    state.tutorialFlags.meetPassLive = true;
+    state.activePlayerIndex = 0;
+    state.selectedHand = state.players[0].hand
+      .filter((c) => c.id === "willpower-1-v-open")
+      .map((c) => c.instanceId);
+    gainMeetActions(state);
+    passMeetToken(state);
+  }
   state.activePlayerIndex = 1;
-  state.selectedHand = state.players[1].hand
-    .filter((c) => c.id === "willpower-1-i-w1")
-    .map((c) => c.instanceId);
-  gainMeetActions(state);
+  const surge = state.players[1].hand.find((c) => c.type === "psyche-power");
+  if (surge && (state.players[1].powerTokens || 0) < 1) {
+    state.selectedHand = [surge.instanceId];
+  }
   state.tutorialFlags.nextBattleWinner = "dreamer";
   state.activePlayerIndex = 0;
   state.selectedLandscapeId = "the-attic";
   state.selectedHand = state.players[0].hand
-    .filter((c) => c.id === "lucidity-3-v-l3" || c.id === "lucidity-2-v-l2" || c.id === "willpower-2-v-w2")
+    .filter((c) => c.id === "lucidity-3-v-l3" || c.id === "lucidity-2-v-l2" || c.id === "elasticity-2-v-e2")
     .map((c) => c.instanceId);
+  if (state.meetPassHolderId && state.meetPassHolderId !== state.players[0].id) {
+    passMeetToken(state);
+  }
   meetEncounter(state, "accept");
   const mandrakeInHand = state.players[0].hand.some(
     (c) => c.id === "mandrake" || c.name === "Mandrake",
@@ -341,6 +354,9 @@ function auditLiveCardEffects() {
   jumpTutorialToStep(state, TUTORIAL_SCRIPT.findIndex((s) => s.id === "r2-mindstream"));
   state.activePlayerIndex = 0;
   state.selectedLandscapeId = "the-attic";
+  if (state.meetPassHolderId && state.meetPassHolderId !== state.players[0].id) {
+    passMeetToken(state);
+  }
   performLandscapeAction(state, "draw-mindstream");
   if (!state.questTracker?.mindstreamOnLandscape?.["the-attic"]) {
     fail("live-attic-mindstream", { reason: "quest tracker not updated after draw" });

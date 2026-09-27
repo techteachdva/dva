@@ -235,8 +235,12 @@ function meetActionActor(state, action) {
   return actorOnLandscape(state, tile.id);
 }
 
+function tutorialSuppressesMeetPass(state) {
+  return !!(state.tutorialMode && !state.tutorialFlags?.meetPassLive);
+}
+
 function meetPassBlocks(state, actor) {
-  if (state.tutorialMode || !state.meetPassHolderId) return false;
+  if (tutorialSuppressesMeetPass(state) || !state.meetPassHolderId) return false;
   const holder = state.players.find((p) => p.id === state.meetPassHolderId);
   if (!holder?.alive) {
     state.meetPassHolderId = null;
@@ -256,7 +260,7 @@ function nextLivingClockwise(state, fromId) {
 }
 
 function seatMeetPassToken(state, openerId) {
-  if (state.tutorialMode) {
+  if (tutorialSuppressesMeetPass(state)) {
     state.meetPassHolderId = null;
     return;
   }
@@ -271,8 +275,8 @@ function seatMeetPassToken(state, openerId) {
   if (holder) addLog(state, `Meet Pass Token starts with ${holder.name}. Take one Meet action, or pass.`);
 }
 
-function passMeetToken(state) {
-  if (state.tutorialMode || !state.meetPassHolderId) return;
+export function passMeetToken(state) {
+  if (tutorialSuppressesMeetPass(state) || !state.meetPassHolderId) return;
   const next = nextLivingClockwise(state, state.meetPassHolderId);
   if (!next || next.id === state.meetPassHolderId) return;
   state.meetPassHolderId = next.id;
@@ -288,7 +292,7 @@ function dreamerCanPayOpener(player, suit) {
 }
 
 function openerRotationBlocks(state, player) {
-  if (state.tutorialMode || !player || state.lastPhaseOpenerId !== player.id) return false;
+  if (!player || state.lastPhaseOpenerId !== player.id) return false;
   const alive = state.players.filter((p) => p.alive);
   if (alive.length <= 1) return false;
   const suit = phaseSuitForOpening(getPhase(state));
@@ -296,7 +300,7 @@ function openerRotationBlocks(state, player) {
 }
 
 function recordPhaseOpener(state, player) {
-  if (state.tutorialMode || !player) return;
+  if (!player) return;
   state.lastPhaseOpenerId = player.id;
   if (!state.phaseOpenersThisRound) state.phaseOpenersThisRound = [];
   if (!state.phaseOpenersThisRound.includes(player.id)) state.phaseOpenersThisRound.push(player.id);
@@ -738,7 +742,7 @@ export function getPhaseActions(state, handlers) {
     actions.push(dreamerPowerAction());
     actions.push(...questActions());
     actions.push(...archetypePowerActions());
-    if (!state.tutorialMode && state.meetPassHolderId === player.id && (state.meetActionBudget || 0) > 0) {
+    if (!tutorialSuppressesMeetPass(state) && state.meetPassHolderId === player.id && (state.meetActionBudget || 0) > 0) {
       actions.push({
         label: "Pass Meet",
         kind: "meetPass",
@@ -1537,6 +1541,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
   const scriptedWinner = state.tutorialMode
     ? (state.tutorialFlags?.nextBattleWinner || "dreamer")
     : null;
+  const teachStand = !!(state.tutorialMode && scriptedWinner === "beast" && (actor.powerTokens || 0) > 0);
 
   if (instant || typeof document === "undefined") {
     finish(scriptedWinner !== "beast");
@@ -1550,8 +1555,12 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
     dreamerDice: played,
     beastDice: beastPower,
     forceWinner: scriptedWinner,
+    minBeastLead: teachStand ? 2 : 0,
     instant: typeof document === "undefined",
-    allowPostRollToken: !scriptedWinner && (actor.powerTokens || 0) > 0,
+    allowPostRollToken: teachStand || (!scriptedWinner && (actor.powerTokens || 0) > 0),
+    postRollLead: teachStand
+      ? "Mandrake leads by more than 1 success. Subtract 1 cannot flip this fight. Click Stand. In a closer fight, that same token can take one success. A tie still favors the beast."
+      : "",
     onPostRoll: () => {
       if (!spendPowerTokens(state, actor, 1, { animate: false })) return false;
       addLog(state, `${actor.name} spends 1 Power Token to subtract 1 beast success.`);

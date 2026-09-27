@@ -6,10 +6,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "32.0";
+export const SOMNIA_VERSION = "32.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "32.1",
+    title: "The Veiled Update",
+    notes: [
+      "The tutorial now plays the rules that used to sit quietly in the book. A different Dreamer opens each phase. The first Mandrake fight asks you to Stand after the dice. You see who a beast can reach, then you pass the Meet.",
+      "The ? Dream Guide lists the rest in the open: passives, paid powers, leftover peeks and Returns, bosses, trade, and the end of the dream.",
+      "Every lesson still has a reason and a single next click. The short story stays two rounds.",
+    ],
+  },
   {
     version: "32.0",
     title: "The Quiet Drift",

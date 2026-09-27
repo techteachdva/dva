@@ -205,9 +205,11 @@ export function playDiceBattle(opts) {
     dreamerDice,
     beastDice,
     forceWinner = null,
+    minBeastLead = 0,
     instant = false,
     hold = false,
     allowPostRollToken = false,
+    postRollLead = "",
     onPostRoll = null,
     onComplete,
   } = opts || {};
@@ -233,6 +235,19 @@ export function playDiceBattle(opts) {
     while (countSuccesses(dreamerFaces) > countSuccesses(beastFaces) && guard-- > 0) {
       dreamerFaces = rollD6(dCount);
       beastFaces = rollD6(bCount);
+    }
+  }
+
+  if (minBeastLead > 0) {
+    let guard = 16;
+    while (countSuccesses(beastFaces) < countSuccesses(dreamerFaces) + minBeastLead && guard-- > 0) {
+      const miss = beastFaces.findIndex((face) => face < 5);
+      if (miss >= 0) beastFaces[miss] = 6;
+      else {
+        const hit = dreamerFaces.findIndex((face) => face >= 5);
+        if (hit >= 0) dreamerFaces[hit] = 1;
+        else break;
+      }
     }
   }
 
@@ -386,7 +401,7 @@ export function playDiceBattle(opts) {
     const row = document.createElement("div");
     row.className = "dice-post-roll";
     row.innerHTML = `
-      <p>Spend 1 Power Token, once. Ties still favor the beast if you stand.</p>
+      <p>${escapeHtml(postRollLead) || "Spend 1 Power Token, once. Ties still favor the beast if you stand."}</p>
       <div class="dice-post-roll-actions">
         <button type="button" class="btn" data-post="subtract">Subtract 1 beast success</button>
         <button type="button" class="btn primary" data-post="stand">Stand</button>
@@ -394,6 +409,7 @@ export function playDiceBattle(opts) {
     `;
     stage.querySelector(".dice-battle-table")?.after(row);
     row.addEventListener("click", (event) => event.stopPropagation());
+    document.dispatchEvent(new CustomEvent("somnia-dice-post-roll"));
     row.querySelectorAll("[data-post]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const kind = btn.getAttribute("data-post");

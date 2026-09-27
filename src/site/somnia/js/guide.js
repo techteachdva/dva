@@ -414,14 +414,16 @@ export const RULES_TAB_DETAILS = "details";
 export function tutorialBriefHtml() {
   return `
     <div class="rules-page tutorial-brief-page">
-      <p class="rules-lead">Welcome to Somnia — follow the sparkles through a scripted two-round story. You will stumble once, then wake like you beat the real game.</p>
+      <p class="rules-lead">Welcome to Somnia. Follow the sparkles through a scripted two-round story. You will stumble once, pass the Meet, then wake like you beat the real game.</p>
       <section class="overview-block tutorial-brief-outcomes">
         <h3>You will learn</h3>
         <ul>
           <li>Psyche as health and actions, and when to <strong>skip a phase</strong></li>
-          <li>Reveal, Explore, Meet, and dice battles (underpay lose, stacked win)</li>
-          <li>Mindstream card types, Innocent quests, Dreamer and Archetype Powers</li>
+          <li>Who may open a phase, Reveal, Explore, and Meet</li>
+          <li>Dice battles: underpay and Stand, then stack a win</li>
+          <li>Beast reach, the Meet Pass, Mindstreams, quests, and powers</li>
         </ul>
+        <p>Death, bosses, Objects, passives, and Final Recurrence stay in the <strong>?</strong> Dream Guide. Open it any time.</p>
       </section>
     </div>
   `;
@@ -477,7 +479,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 32.0 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 32.1. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -531,7 +533,7 @@ export function rulesRemHtml() {
             <li><strong>2 unused actions</strong> may Return 1 Dreambeast from the Subconscious. This can be repeated. Otherwise leftovers are forfeited</li>
             <li>Quests name Landscapes. A forgotten tile does not move the quest to another hex of the same suit</li>
             <li><strong>Free during Meet:</strong> Trade up to 3 Psyche with a Dreamer on the same or adjacent hex, place up to 3 Power Tokens for +1d6 each on a Psyche spread, activate an Object (Persistent costs 1 token), use a Dreamer or Archetype Power (1 token), or mark a completed Quest (1 token). These do not spend the action budget</li>
-            <li><strong>After the dice land</strong>, if you hold a Power Token, spend 1 once to subtract 1 from the Dreambeast's successes, or stand. Ties still favor the beast if you stand. Scripted tutorial battles skip this prompt</li>
+            <li><strong>After the dice land</strong>, if you hold a Power Token, spend 1 once to subtract 1 from the Dreambeast's successes, or stand. Ties still favor the beast if you stand. The tutorial's first battle is too far behind for Subtract 1 to flip it, so the lesson is to Stand.</li>
             <li>Using an Instant Object Represses it</li>
           </ul>
         </div>
@@ -559,7 +561,7 @@ export function rulesDetailsHtml() {
 
       <h3>Guided Tutorial</h3>
       <ul>
-        <li>The in-game tutorial is a scripted two-round story with a lose-then-win Mandrake fight. The guide window docks on the map; drag the header or resize the corner if you want it elsewhere.</li>
+        <li>The guided tutorial plays opener rotation, a scripted loss where you Stand after the dice, beast reach, the Meet Pass, a stacked rematch, Mindstreams, quests, and powers. The guide window docks on the map. Drag the header or resize the corner if you want it elsewhere.</li>
         <li>Follow the sparkle: <strong>Draw Dream</strong> is left of Next Phase. Select 1 Psyche, then press the button beside it to open Reveal, Explore, or Meet. Click a Dreamer or an occupied Landscape for landscape options. Mark a ready quest on the Active Archetype, or spend a Power Token. Every required click is highlighted, including hand cards, hexes, and Next Phase. <strong>Back</strong> sits at the top-left of the map if you need to undo.</li>
         <li>Each step shows a punchy Objective plus one or two sentences of why that action matters. <strong>?</strong> and Pause → Help stay available after you graduate.</li>
       </ul>
@@ -653,7 +655,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 32.0</p>
+          <p class="info-hub-kicker">Somnia v 32.1</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>
@@ -671,14 +673,42 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Play Together</h3>
-            <p>${COOP_PLAY_TIP} One Dreamer opens each phase with <strong>1 suited Psyche</strong> (or <strong>1 Power Token as 1 Psyche</strong>). Budget = that card's value + Dreamer, Object, and Acquired Archetype bonuses.</p>
+            <p>${COOP_PLAY_TIP} One Dreamer opens each phase with <strong>1 suited Psyche</strong> (or <strong>1 Power Token as 1 Psyche</strong>). Budget = that card's value + Dreamer, Object, and Acquired Archetype bonuses. The same Dreamer cannot open the next phase unless they are alone, or nobody else can pay the suit.</p>
           </div>
           <div class="info-hub-rule info-hub-rem">
             <h3>R.E.M. — Every Round</h3>
             <ul>
               <li class="suit-lucidity"><strong>Reveal</strong> — Head (★) draws a Dream. Spend Lucidity to flip Wastelands, or Mindstream tops once the map is fully Revealed.</li>
-              <li class="suit-elasticity"><strong>Explore</strong> — Spend Elasticity for shared moves. Entering Wasteland discards 1 Psyche.</li>
-              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Start: Repress 1 Psyche per roaming Dreambeast. Dice battle to Accept or Reject (1 required-suit Psyche; recommended Power is beast Power + 2; underpaying is legal). End: Forget 1 random Landscape per remaining beast, then Fail in spawn order. Beasts stay until won. Draw Mindstream is repeatable. Unique Landscape actions cost 1 action. Trade, Dreamer Powers, and Archetype Powers do not.</li>
+              <li class="suit-elasticity"><strong>Explore</strong> — Spend Elasticity for shared moves. Entering Wasteland discards 1 Psyche. <strong>2 unused moves</strong> may peek the next Dream: leave it on top, or bury it ahead of Final Recurrence.</li>
+              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Start: Repress 1 Psyche per Dreambeast on your tile or a neighboring hex. A Pass Token then moves around the table, one Meet action at a time. Dice battle to Accept or Reject. End: Forget 1 random Landscape per remaining beast, then Fail in spawn order. <strong>2 unused actions</strong> may Return 1 Dreambeast from the Subconscious, and you can do that again.</li>
+            </ul>
+          </div>
+          <div class="info-hub-rule">
+            <h3>Meet Pass</h3>
+            <p>After Meet opens, a Pass Token starts with a living Dreamer who did not open the phase. If the Head opened it, the next Dreamer clockwise holds it. They take one Meet action, or pass. Passing moves the token clockwise. A Dreamer who dies drops the token. Next Phase can still end Meet early.</p>
+          </div>
+          <div class="info-hub-rule">
+            <h3>Free Passives</h3>
+            <p>Once a round, and free:</p>
+            <ul>
+              <li><strong>Visionary</strong> peeks the first leftover Mindstream flip. It stays facedown.</li>
+              <li><strong>Runner</strong>'s first move costs no team move.</li>
+              <li><strong>Immovable</strong> ignores 1 Meet-tax card.</li>
+              <li><strong>Hunter</strong> may shove the beast 1 hex after their first battle, if it stays.</li>
+              <li><strong>Rested</strong> draws 1 Psyche at round end if they opened no phase.</li>
+              <li><strong>Weaver</strong> swaps 1 Psyche with an adjacent Dreamer once per Meet.</li>
+            </ul>
+          </div>
+          <div class="info-hub-rule">
+            <h3>Paid Dreamer Powers</h3>
+            <p>Each costs <strong>1 Power Token</strong>. During Meet it does not spend the action budget.</p>
+            <ul>
+              <li><strong>Rested:</strong> everyone draws from the Psyche discard, or one Dreamer puts 1 Psyche on the bottom and draws 1.</li>
+              <li><strong>Visionary:</strong> reveal Dreamers+1 Landscapes, or each Dreamer peeks a deck top and may bury it.</li>
+              <li><strong>Runner:</strong> everyone moves 2 hexes toward or away from The Bed.</li>
+              <li><strong>Hunter:</strong> move each Dreambeast 1 hex toward the nearest Dreamer or away from The Bed.</li>
+              <li><strong>Immovable:</strong> Hold the Line. Next Meet, every spread may add +1 Psyche.</li>
+              <li><strong>Weaver:</strong> each Dreamer discards 1 Psyche and draws 1.</li>
             </ul>
           </div>
           <div class="info-hub-rule">
@@ -687,13 +717,17 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Hands, Tokens &amp; Objects</h3>
-            <p>Max <strong>10 cards</strong> in hand, allies included. Wild (5) is any suit. Power Surge is yellowish-purple — click anytime for 1 Power Token. Instant Objects Repress when used. Persistent Objects activate for 1 token. Spent allies Repress to the Subconscious.</p>
+            <p>Max <strong>10 cards</strong> in hand, allies included. Round 1 starts at 5. From round 2, each living Dreamer draws 2 at Reveal. Wild (5) is any suit. Power Surge is yellowish-purple. Click it anytime for 1 Power Token. Instant Objects are free, then Repressed. Persistent Objects stay and activate for 1 token. Must-play Objects resolve on draw. Trade is free during Meet with a Dreamer on the same hex or next door, up to 3 Psyche. Spent allies Repress to the Subconscious.</p>
+          </div>
+          <div class="info-hub-rule">
+            <h3>Bosses</h3>
+            <p>Cerberus, Double, and Leviathan are Power 12. Their Dreams spawn them on <strong>The Bed</strong>, usually on Reveal rounds 3, 6, and 9. Other spawned beasts land on the acting Dreamer's Landscape unless the card says to choose a tile.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Death &amp; Final Recurrence</h3>
             <p>No Psyche cards and no allies: that Dreamer dies, Objects discard, Power returns to the pool, and they respawn on The Bed with 1 fewer Psyche (no new Power). Fifth death of any Dreamer ends the game. Forget every outer Landscape — or draw <strong>The Final Recurrence</strong> — to start the endgame. Defeat remaining Archetypes with <strong>≥ 15</strong> pooled Psyche including the opposing suit, or sacrifice acquired Archetypes 1:1. Last card: <strong>You Never Wake Up</strong>.</p>
           </div>
-          <p class="info-hub-footer">Draw Dream sits left of Next Phase during Reveal. Select 1 Psyche, then press the button beside it to open that phase. Back in the top-left undoes the last action. Click a ready quest on the Active Archetype, or spend a Power Token. Landscapes are named in their suit color. Draw Mindstream is repeatable; unique tile actions cost 1 Meet action and are once per table. Dreamer and Archetype Powers cost 1 token.</p>
+          <p class="info-hub-footer">Draw Dream sits left of Next Phase during Reveal. Select 1 Psyche, then press the button beside it to open that phase. Back in the top-left undoes the last action. Click a ready quest on the Active Archetype, or spend a Power Token. The Head (★) rotates at round end. Draw Mindstream is repeatable. Unique tile actions cost 1 Meet action and are once per table. The Bed's Draw 3 is once per Dreamer this Meet. Quests still name their Landscape after it is Forgotten.</p>
         </section>
       </div>
     </div>

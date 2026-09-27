@@ -22,6 +22,7 @@ import {
   useDreamerPower,
   handleUseArchetypePower,
   powerBonus,
+  passMeetToken,
 } from "./game.js";
 import { playPsychePowerFromHand } from "./power-tokens.js";
 
@@ -232,6 +233,34 @@ function rejectAtticEncounter(state) {
   state.tutorialFlags.firstBattleLost = true;
 }
 
+function grantPassOpener(state) {
+  const visionary = state.players[0];
+  if (!visionary) return;
+  if (!state.tutorialFlags) state.tutorialFlags = {};
+  if (visionary.hand.some((c) => c.id === "willpower-1-v-open")) {
+    state.tutorialFlags.passOpenerGranted = true;
+    return;
+  }
+  visionary.hand.push({
+    id: "willpower-1-v-open",
+    type: "psyche",
+    suit: "willpower",
+    value: 1,
+    name: "Willpower 1",
+    instanceId: "psyche-v-open-canonical",
+  });
+  state.tutorialFlags.passOpenerGranted = true;
+}
+
+function openMeetAndPass(state) {
+  if (!state.tutorialFlags) state.tutorialFlags = {};
+  state.tutorialFlags.meetPassLive = true;
+  grantPassOpener(state);
+  selectExactCards(state, 0, ["willpower-1-v-open"]);
+  gainMeetActions(state);
+  passMeetToken(state);
+}
+
 function acceptAtticRematch(state) {
   placePlayerOnLandscape(state, 0, "the-attic");
   state.activePlayerIndex = 1;
@@ -242,7 +271,7 @@ function acceptAtticRematch(state) {
   state.activePlayerIndex = 0;
   state.selectedLandscapeId = "the-attic";
   state.tutorialFlags.nextBattleWinner = "dreamer";
-  selectExactCards(state, 0, ["lucidity-3-v-l3", "lucidity-2-v-l2", "willpower-2-v-w2"]);
+  selectExactCards(state, 0, ["lucidity-3-v-l3", "lucidity-2-v-l2", "elasticity-2-v-e2"]);
   meetEncounter(state, "accept", { instant: true });
   state.tutorialFlags.encounterResolved = true;
 }
@@ -304,7 +333,7 @@ export function applyCanonicalTutorialStep(state, step) {
       return;
 
     case "explore-r1":
-      selectExactCards(state, 0, ["elasticity-2-v-e2"]);
+      selectExactCards(state, 1, ["elasticity-2-i-e2"]);
       activateExplore(state);
       if (!state.exploreActivated) {
         state.exploreActivated = true;
@@ -316,10 +345,14 @@ export function applyCanonicalTutorialStep(state, step) {
       return;
 
     case "meet-r1":
-      selectExactCards(state, 1, ["willpower-3-i-w3"]);
+      selectExactCards(state, 0, ["willpower-2-v-w2"]);
       gainMeetActions(state);
-      if (state.meetActionBudget <= 0) spendWillpowerPhase(state, 1);
+      if (state.meetActionBudget <= 0) spendWillpowerPhase(state, 0);
       rejectAtticEncounter(state);
+      return;
+
+    case "meet-reach":
+      state.activePlayerIndex = 1;
       return;
 
     case "meet-hold":
@@ -336,13 +369,16 @@ export function applyCanonicalTutorialStep(state, step) {
 
     case "r2-skip":
       skipToMeetRound2(state);
+      grantPassOpener(state);
+      return;
+
+    case "r2-pass":
+      openMeetAndPass(state);
       return;
 
     case "r2-rematch":
       if (getPhase(state) !== "Meet") skipToMeetRound2(state);
-      selectExactCards(state, 1, ["willpower-1-i-w1"]);
-      gainMeetActions(state);
-      if (state.meetActionBudget <= 0) spendWillpowerPhase(state, 1);
+      if ((state.meetActionBudget || 0) <= 0) openMeetAndPass(state);
       acceptAtticRematch(state);
       return;
 
@@ -373,6 +409,13 @@ function drawMindstreamOn(state, playerIndex, landscapeId) {
   placePlayerOnLandscape(state, playerIndex, landscapeId);
   state.selectedLandscapeId = landscapeId;
   ensureMeetBudget(state, playerIndex);
+  if (
+    state.tutorialFlags?.meetPassLive
+    && state.meetPassHolderId
+    && state.meetPassHolderId !== state.players[playerIndex]?.id
+  ) {
+    passMeetToken(state);
+  }
   performLandscapeAction(state, "draw-mindstream");
   if (!state.questTracker) state.questTracker = { mindstreamOnLandscape: {}, landscapeActions: {} };
   if (!state.questTracker.mindstreamOnLandscape) state.questTracker.mindstreamOnLandscape = {};
