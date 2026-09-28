@@ -6,10 +6,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "33.0";
+export const SOMNIA_VERSION = "33.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "33.1",
+    title: "The Open Steps",
+    notes: [
+      "The main menu reads larger on a laptop. Choose Dreamers sits in one row on the stairs, so the wordmark, the fairy, and the house stay visible above it.",
+      "Dream Settings and Begin Dreaming stand in the side margins. On a tablet, the menu type stays large in landscape and in portrait.",
+    ],
+  },
   {
     version: "33.0",
     title: "The Mirror Mirror Update",

@@ -479,7 +479,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 33.0. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 33.1. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -656,7 +656,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 33.0</p>
+          <p class="info-hub-kicker">Somnia v 33.1</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>

@@ -89,12 +89,6 @@ export function computeMenuViewportMetrics() {
   const { form, orientation } = getCapabilityProfile();
   const artSize = Math.min(w, h);
   const gutter = Math.max(0, (w - artSize) / 2);
-  const compact = form === "phone" || form === "tablet";
-  const menuUiScale = Number(clamp(
-    form === "phone" ? 0.72 : compact ? 0.88 : Math.min(gutter / 300, h / 980, w / 1500),
-    form === "phone" ? 0.62 : compact ? 0.78 : 0.42,
-    form === "phone" ? 0.78 : compact ? 0.92 : 0.74,
-  ).toFixed(3));
   const phoneLandscape = form === "phone" && orientation === "landscape";
   const menuLayout = phoneLandscape
     ? "split"
@@ -103,21 +97,27 @@ export function computeMenuViewportMetrics() {
       : form === "tablet" || w < 1180
         ? "split"
         : "triad";
-  // 30.2: stacked / split menus are not transform-scaled (see game.css
-  // `html[data-menu-layout="stack"] .menu-glass-panel { transform: none }`), so
-  // the type scale is the only thing standing between the player and 5px labels.
-  // Phones read at ~1.4 on a 12px root (≈13-15px body, 48px buttons); the
-  // column scrolls, so nothing is squeezed to fit.
+  // Triad panels are transform-scaled so the 340px launch panel stays in the
+  // side gutter. Split and stack menus are not scaled (CSS sets scale to 1).
+  const menuUiScale = menuLayout === "triad"
+    ? Number(clamp(
+      Math.min(Math.max(gutter - 12, 0) / 340, (h - 48) / 480, 1),
+      0.62,
+      1,
+    ).toFixed(3))
+    : 1;
+  // Hold painted type near a readable size. On the triad, type grows when the
+  // panel scale shrinks, so a 1366px laptop does not keep 12px Dreamer names.
   const setupTypeScale = Number(clamp(
     form === "phone"
       ? (phoneLandscape ? 1.22 : 1.42)
       : menuLayout === "stack"
         ? 1.42
-        : compact
-          ? Math.min(w / 920, h / 820, 0.9)
-          : Math.min(w / 620, h / 420, menuUiScale * 4.2),
-    form === "phone" ? 1.2 : menuLayout === "stack" ? 1.42 : compact ? 0.78 : 1.35,
-    form === "phone" ? 1.42 : menuLayout === "stack" ? 1.42 : compact ? 0.9 : 2.75,
+        : menuLayout === "split"
+          ? 1.2
+          : 1.62 / Math.max(menuUiScale, 0.62),
+    form === "phone" ? 1.2 : menuLayout === "stack" ? 1.42 : menuLayout === "split" ? 1.15 : 1.35,
+    form === "phone" ? 1.42 : menuLayout === "stack" ? 1.42 : menuLayout === "split" ? 1.28 : 1.9,
   ).toFixed(2));
   const uiScale = form === "phone"
     ? 1
