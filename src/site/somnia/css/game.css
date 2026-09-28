@@ -11074,6 +11074,53 @@ html[data-form="tablet"] .top-bar {
   padding: 0.5rem 0;
 }
 
+.utility-content.trade-modal-wrap {
+  width: min(1080px, 96vw);
+  max-height: 92vh;
+  overflow: hidden;
+}
+
+.trade-picker {
+  max-height: 84vh;
+}
+
+.trade-board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+  max-height: min(62vh, 640px);
+  overflow: auto;
+}
+
+.trade-column h3 {
+  margin: 0;
+  text-align: center;
+}
+
+.trade-column-count,
+.trade-column-empty {
+  margin: 0.2rem 0 0;
+  text-align: center;
+  color: var(--muted, var(--text-muted));
+  font-size: 0.85rem;
+}
+
+.trade-column .card-choice-row {
+  justify-content: center;
+  min-height: 4rem;
+}
+
+.trade-partner-list {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 800px) {
+  .trade-board {
+    grid-template-columns: 1fr;
+  }
+}
+
 .card-choice-wrap {
   position: relative;
   display: flex;

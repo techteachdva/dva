@@ -6,10 +6,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "33.1";
+export const SOMNIA_VERSION = "33.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "33.2",
+    title: "The Two Hands",
+    notes: [
+      "Trade opens a window with one Dreamer's Psyche on the left and the other's on the right. Each can offer up to 3. Confirm swaps the highlighted cards.",
+      "The partner stands on the same hex or next door. When several Dreamers are in range, you choose the name first.",
+    ],
+  },
   {
     version: "33.1",
     title: "The Open Steps",

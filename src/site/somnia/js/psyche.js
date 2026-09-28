@@ -8,6 +8,19 @@ export function isWildPsyche(card) {
   return !!(card?.wild || card?.id?.startsWith("wild-"));
 }
 
+/** Each Dreamer may offer this many Psyche in one trade. */
+export const TRADE_OFFER_LIMIT = 3;
+
+/** Psyche that can move in a trade. Power Surge and accepted allies stay put. */
+export function isTradablePsyche(card) {
+  if (!card || card.type === "psyche-power" || isDreambeastPsycheCard(card)) return false;
+  return card.type === "psyche" || isWildPsyche(card);
+}
+
+export function tradablePsycheInHand(player) {
+  return (player?.hand || []).filter(isTradablePsyche);
+}
+
 /** Regular Psyche cards in hand (excludes accepted Dreambeast allies). */
 export function psycheCardsInHand(player) {
   return (player?.hand || []).filter((c) => !isDreambeastPsycheCard(c));

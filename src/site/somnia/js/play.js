@@ -91,6 +91,7 @@ import {
   tryDrawMindstreamFromDeck,
   tradeAction,
   selectTradePartner,
+  toggleTradeOffer,
   confirmTrade,
   cancelTrade,
   playObject,
@@ -706,8 +707,8 @@ function bindHelp() {
 function bindModal() {
   document.querySelector("#card-modal .modal-backdrop").addEventListener("click", hideModal);
   document.querySelector("#card-modal .modal-close").addEventListener("click", hideModal);
-  document.querySelector("#utility-modal .utility-backdrop")?.addEventListener("click", handleUtilityModalDismiss);
-  document.querySelector("#utility-modal .utility-close")?.addEventListener("click", handleUtilityModalDismiss);
+  document.querySelector("#utility-modal .utility-backdrop")?.addEventListener("click", dismissUtilityModal);
+  document.querySelector("#utility-modal .utility-close")?.addEventListener("click", dismissUtilityModal);
   document.getElementById("utility-choice-restore")?.addEventListener("click", restoreUtilityModal);
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
@@ -718,9 +719,9 @@ function bindModal() {
       restoreUtilityModal();
       return;
     }
-    if (isBlockingGameChoice(state)) {
+    if (isBlockingGameChoice(state) || state?.tradeMode) {
       event.preventDefault();
-      handleUtilityModalDismiss();
+      dismissUtilityModal();
     }
   });
 }
@@ -1717,21 +1718,62 @@ function maybeShowRespawn() {
   });
 }
 
-function maybeShowTradePanel() {
-  if (!state?.tradeMode || !state.trade) return;
-  if (state.trade.step === "select-offer") {
-    showTradeControls(
-      state,
-      () => {
-        confirmTrade(state);
-        renderAll();
-      },
-      () => {
-        cancelTrade(state);
-        renderAll();
-      }
-    );
+let lastTradePanelKey = null;
+
+function dismissUtilityModal() {
+  if (state?.tradeMode) {
+    cancelTrade(state);
+    hideUtilityModal(true);
+    lastTradePanelKey = null;
+    renderAll();
+    return;
   }
+  handleUtilityModalDismiss();
+}
+
+function maybeShowTradePanel() {
+  if (!state?.tradeMode || !state.trade) {
+    lastTradePanelKey = null;
+    return;
+  }
+  if (isBlockingGameChoice(state)) return;
+  const trade = state.trade;
+  const key = [
+    trade.step,
+    trade.partnerId || "",
+    (trade.offerPsycheIds || []).join(","),
+    (trade.partnerOfferIds || []).join(","),
+  ].join("|");
+  const modalHidden = document.getElementById("utility-modal")?.classList.contains("hidden");
+  if (key === lastTradePanelKey && !modalHidden) return;
+  lastTradePanelKey = key;
+  showTradeControls(
+    state,
+    () => {
+      const ok = confirmTrade(state);
+      if (ok) {
+        hideUtilityModal(true);
+        lastTradePanelKey = null;
+      }
+      renderAll();
+    },
+    () => {
+      cancelTrade(state);
+      hideUtilityModal(true);
+      lastTradePanelKey = null;
+      renderAll();
+    },
+    (card, owner) => {
+      toggleTradeOffer(state, card, owner);
+      lastTradePanelKey = null;
+      maybeShowTradePanel();
+    },
+    (index) => {
+      if (!selectTradePartner(state, index)) return;
+      lastTradePanelKey = null;
+      renderAll();
+    },
+  );
 }
 
 function maybeShowRepressPicker() {
@@ -1882,6 +1924,14 @@ function renderBoardArea() {
         tutorialActionBlocked(state);
         return;
       }
+      if (state.tradeMode && state.trade?.step === "pick-partner") {
+        if (selectTradePartner(state, playerIndex)) {
+          lastTradePanelKey = null;
+          renderAll();
+        }
+        return;
+      }
+      if (state.tradeMode && state.trade?.step === "select-offer") return;
       if (event?.detail >= 2) {
         lastDreamerTokenTap = { id: null, time: 0 };
         zoomMaxOnDreamer(playerId, tileId);
@@ -2084,12 +2134,12 @@ function renderAll() {
     }
     if (state.tradeMode && state.trade?.step === "pick-partner") {
       if (selectTradePartner(state, index)) {
-        state.trade.step = "select-offer";
+        lastTradePanelKey = null;
         renderAll();
-        maybeShowTradePanel();
       }
       return;
     }
+    if (state.tradeMode && state.trade?.step === "select-offer") return;
     hideRadialMenu();
     const prevId = state.players[state.activePlayerIndex]?.id;
     state.activePlayerIndex = index;
@@ -2199,6 +2249,7 @@ function renderAll() {
   maybeShowRepressPicker();
   maybeShowReturnPicker();
   maybeShowDreamerPowerUI();
+  if (!isBlockingGameChoice(state)) maybeShowTradePanel();
 
   const blocking = isBlockingGameChoice(state);
   setUtilityModalRequired(blocking, blockingChoiceLabel(state));

@@ -83,7 +83,7 @@ import {
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
 import { spawnBossEncounterOnBed, isBossDreamCard } from "./dream-deck.js";
 import { resumeObjectEffect } from "./object-effects.js";
-import { hasPsycheHealth, allyHandCount, isWildPsyche } from "./psyche.js";
+import { hasPsycheHealth, allyHandCount, isWildPsyche, isTradablePsyche, TRADE_OFFER_LIMIT } from "./psyche.js";
 import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx } from "./board-fx.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "./archetypes.js";
 import { getActivatableArchetypePowers } from "./archetype-stats.js";
@@ -734,7 +734,7 @@ export function getPhaseActions(state, handlers) {
       kind: "trade",
       section: "actions",
       hint: canStartTrade(state)
-        ? "Free — trade up to 3 Psyche with a Dreamer on the same or adjacent hex."
+        ? "Free. Each Dreamer offers up to 3 Psyche. Same hex or next door."
         : "Free during Meet. Partner must stand on the same or adjacent hex.",
       disabled: !canStartTrade(state),
       onClick: handlers.tradeAction,
@@ -2049,16 +2049,21 @@ function offerHunterShove(state, actor, encounter, tile) {
 }
 
 function canStartTrade(state) {
-  if (getPhase(state) !== "Meet" || (state.meetActionBudget || 0) < 1) return false;
+  return legalTradePartners(state).length > 0 && getPhase(state) === "Meet" && (state.meetActionBudget || 0) >= 1;
+}
+
+export function legalTradePartners(state) {
+  if (getPhase(state) !== "Meet" || (state.meetActionBudget || 0) < 1) return [];
   const me = activePlayer(state);
-  if (!me?.alive) return false;
-  return state.players.some((p) => (
+  if (!me?.alive) return [];
+  return state.players.filter((p) => (
     p.alive && p.id !== me.id && canTradeBetween(state, me.landscapeId, p.landscapeId)
   ));
 }
 
 export function tradeAction(state) {
-  if (!canStartTrade(state)) {
+  const partners = legalTradePartners(state);
+  if (!partners.length) {
     addLog(state, "Trade needs an open Meet and a Dreamer on the same or adjacent hex.");
     return;
   }
@@ -2067,15 +2072,21 @@ export function tradeAction(state) {
     initiatorId: activePlayer(state).id,
     partnerId: null,
     offerPsycheIds: [],
+    partnerOfferIds: [],
     offerObjectIds: [],
     step: "pick-partner",
   };
-  addLog(state, "Trade: click another Dreamer on the same or adjacent Landscape.");
+  if (partners.length === 1) {
+    const index = state.players.findIndex((p) => p.id === partners[0].id);
+    selectTradePartner(state, index);
+    return;
+  }
+  addLog(state, "Trade: choose a Dreamer on the same or adjacent Landscape.");
 }
 
 export function selectTradePartner(state, playerIndex) {
   if (!state.tradeMode || !state.trade) return false;
-  const initiator = activePlayer(state);
+  const initiator = state.players.find((p) => p.id === state.trade.initiatorId) || activePlayer(state);
   const partner = state.players[playerIndex];
   if (!partner?.alive || partner.id === initiator.id) return false;
   if (!canTradeBetween(state, initiator.landscapeId, partner.landscapeId)) {
@@ -2088,16 +2099,32 @@ export function selectTradePartner(state, playerIndex) {
   return true;
 }
 
-export function toggleTradeOffer(state, card) {
-  if (!state.trade || state.trade.step !== "select-offer") return;
-  const player = activePlayer(state);
+function tradeOfferKey(state, holder) {
+  if (!state.trade || !holder) return null;
+  if (holder.id === state.trade.initiatorId) return "offerPsycheIds";
+  if (holder.id === state.trade.partnerId) return "partnerOfferIds";
+  return null;
+}
+
+export function toggleTradeOffer(state, card, owner = null) {
+  if (!state.trade || state.trade.step !== "select-offer" || !card) return false;
+  const holder = owner || activePlayer(state);
+  const key = tradeOfferKey(state, holder);
+  if (!key || !isTradablePsyche(card)) return false;
+  if (!holder.hand.some((c) => c.instanceId === card.instanceId)) return false;
   const id = card.instanceId;
-  const list = state.trade.offerPsycheIds;
+  const list = state.trade[key] || [];
+  state.trade[key] = list;
   if (list.includes(id)) {
-    state.trade.offerPsycheIds = list.filter((x) => x !== id);
-  } else if (list.length < 3 && player.hand.some((c) => c.instanceId === id)) {
-    list.push(id);
+    state.trade[key] = list.filter((x) => x !== id);
+    return true;
   }
+  if (list.length >= TRADE_OFFER_LIMIT) {
+    addLog(state, `${holder.name} can offer up to ${TRADE_OFFER_LIMIT} Psyche.`);
+    return false;
+  }
+  list.push(id);
+  return true;
 }
 
 export function confirmTrade(state) {
@@ -2108,19 +2135,48 @@ export function confirmTrade(state) {
   const initiator = state.players.find((p) => p.id === state.trade.initiatorId);
   const partner = state.players.find((p) => p.id === state.trade.partnerId);
   if (!initiator || !partner) return false;
-
-  const offered = initiator.hand.filter((c) => state.trade.offerPsycheIds.includes(c.instanceId));
-  initiator.hand = initiator.hand.filter((c) => !state.trade.offerPsycheIds.includes(c.instanceId));
-  partner.hand.push(...offered);
-
-  if (offered.length) {
-    queueCardTrade(initiator.id, partner.id, offered);
-    playSfx("draw", { count: Math.min(offered.length, 3) });
+  if (!canTradeBetween(state, initiator.landscapeId, partner.landscapeId)) {
+    addLog(state, "Trade partner must be on the same or adjacent Landscape.");
+    return false;
   }
-  addLog(state, `${initiator.name} traded ${offered.length} Psyche to ${partner.name}.`);
+
+  const giveIds = new Set(state.trade.offerPsycheIds || []);
+  const takeIds = new Set(state.trade.partnerOfferIds || []);
+  const given = initiator.hand.filter((c) => giveIds.has(c.instanceId) && isTradablePsyche(c));
+  const taken = partner.hand.filter((c) => takeIds.has(c.instanceId) && isTradablePsyche(c));
+  if (!given.length && !taken.length) {
+    addLog(state, "Select at least 1 Psyche to trade.");
+    return false;
+  }
+
+  const initiatorNext = initiator.hand.length - given.length + taken.length;
+  const partnerNext = partner.hand.length - taken.length + given.length;
+  const initiatorLimit = handLimitForPlayer(state, initiator);
+  const partnerLimit = handLimitForPlayer(state, partner);
+  if (initiatorNext > initiatorLimit || partnerNext > partnerLimit) {
+    const who = initiatorNext > initiatorLimit ? initiator.name : partner.name;
+    const limit = initiatorNext > initiatorLimit ? initiatorLimit : partnerLimit;
+    addLog(state, `${who}'s hand would pass ${limit} cards. Offer fewer Psyche.`);
+    return false;
+  }
+
+  const givenIds = new Set(given.map((c) => c.instanceId));
+  const takenIds = new Set(taken.map((c) => c.instanceId));
+  initiator.hand = initiator.hand.filter((c) => !givenIds.has(c.instanceId));
+  partner.hand = partner.hand.filter((c) => !takenIds.has(c.instanceId));
+  initiator.hand.push(...taken);
+  partner.hand.push(...given);
+  const moved = new Set([...givenIds, ...takenIds]);
+  state.selectedHand = (state.selectedHand || []).filter((id) => !moved.has(id));
+
+  if (given.length) queueCardTrade(initiator.id, partner.id, given);
+  if (taken.length) queueCardTrade(partner.id, initiator.id, taken);
+  if (given.length || taken.length) {
+    playSfx("draw", { count: Math.min(given.length + taken.length, 3) });
+  }
+  addLog(state, `${initiator.name} gave ${given.length} Psyche to ${partner.name}. ${partner.name} gave ${taken.length} Psyche to ${initiator.name}.`);
   state.tradeMode = false;
   state.trade = null;
-  state.selectedHand = [];
   return true;
 }
 
@@ -2238,8 +2294,7 @@ export function toggleHandCard(state, card, owner = null) {
   const id = card.instanceId;
 
   if (state.tradeMode && state.trade?.step === "select-offer") {
-    if (player !== activePlayer(state)) return;
-    toggleTradeOffer(state, card);
+    toggleTradeOffer(state, card, player);
     return;
   }
 

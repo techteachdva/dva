@@ -35,10 +35,10 @@ import {
   encounterPowerLabel,
 } from "./dreambeasts.js";
 import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate } from "./objects.js";
-import { alliesInHand, psycheCardsInHand, allyHandCount, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue } from "./psyche.js";
+import { alliesInHand, psycheCardsInHand, allyHandCount, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue, tradablePsycheInHand, TRADE_OFFER_LIMIT } from "./psyche.js";
 import { getQuestStatus, activeQuestLandscapeIds } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
-import { hexToPixel, boardPixelBounds, pixelToHex, hexKey } from "./hex.js";
+import { hexToPixel, boardPixelBounds, pixelToHex, hexKey, canTradeBetween } from "./hex.js";
 import {
   subconsciousCount,
   subconsciousPilesForUI,
@@ -509,7 +509,10 @@ export function renderActiveDreamerHand(state, onCardClick, {
   inHand.forEach((card, index) => {
     const clickable = canClickCard(card, player);
     appendHandCard(primary, card, {
-      selected: Boolean(state.trade?.offerPsycheIds?.includes(card.instanceId)),
+      selected: Boolean(
+        state.trade?.offerPsycheIds?.includes(card.instanceId)
+        || state.trade?.partnerOfferIds?.includes(card.instanceId),
+      ),
       suggested: suggestCard(card, player),
       entering: fresh.has(card.instanceId),
       dealIndex: index,
@@ -532,7 +535,8 @@ export function renderActiveDreamerHand(state, onCardClick, {
         const clickable = canClickCard(card, player);
         appendHandCard(allyHost, card, {
           selected: state.selectedHand.includes(card.instanceId)
-            || state.trade?.offerPsycheIds?.includes(card.instanceId),
+            || state.trade?.offerPsycheIds?.includes(card.instanceId)
+            || state.trade?.partnerOfferIds?.includes(card.instanceId),
           suggested: suggestCard(card, player),
           entering: fresh.has(card.instanceId),
           dealIndex: index,
@@ -4030,29 +4034,99 @@ export function showMindstreamPicker(onPick) {
   modal.classList.remove("hidden");
 }
 
-export function showTradeControls(state, onConfirm, onCancel) {
-  const modal = document.getElementById("utility-modal");
+function fillTradeColumn(row, player, selectedIds, onToggle) {
+  const cards = tradablePsycheInHand(player);
+  if (!cards.length) {
+    const empty = document.createElement("p");
+    empty.className = "trade-column-empty";
+    empty.textContent = "No Psyche to offer.";
+    row.appendChild(empty);
+    return;
+  }
+  const selected = new Set(selectedIds || []);
+  cards.forEach((card) => {
+    mountChoicePickerCard(row, card, {
+      cards,
+      selected: selected.has(card.instanceId),
+      disabled: !selected.has(card.instanceId) && selected.size >= TRADE_OFFER_LIMIT,
+      onSelect: () => onToggle?.(card, player),
+    });
+  });
+}
+
+export function showTradeControls(state, onConfirm, onCancel, onToggle, onPickPartner) {
   const body = document.getElementById("utility-modal-body");
-  const partner = state.players.find((p) => p.id === state.trade?.partnerId);
-  const offerCount = state.trade?.offerPsycheIds?.length || 0;
+  const trade = state.trade;
+  if (!body || !trade) return;
+  const initiator = state.players.find((p) => p.id === trade.initiatorId) || activePlayer(state);
+  const partner = state.players.find((p) => p.id === trade.partnerId);
+  prepareCardChoiceModal();
+  document.querySelector("#utility-modal .utility-content")?.classList.add("trade-modal-wrap");
+
+  if (trade.step === "pick-partner" || !partner) {
+    body.innerHTML = `
+      <div class="trade-picker card-choice-picker">
+        <h2>Choose a Dreamer</h2>
+        <p class="card-choice-message">Trade with a Dreamer on the same hex or next door. Each of you can offer up to ${TRADE_OFFER_LIMIT} Psyche.</p>
+        <div class="utility-actions trade-partner-list" id="trade-partner-list"></div>
+        <div class="utility-actions">
+          <button type="button" class="btn" id="trade-cancel">Cancel</button>
+        </div>
+      </div>
+    `;
+    const list = body.querySelector("#trade-partner-list");
+    state.players.forEach((player, index) => {
+      if (!player.alive || player.id === initiator?.id) return;
+      if (!canTradeBetween(state, initiator?.landscapeId, player.landscapeId)) return;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn";
+      btn.textContent = player.name;
+      btn.addEventListener("click", () => onPickPartner?.(index));
+      list?.appendChild(btn);
+    });
+    body.querySelector("#trade-cancel")?.addEventListener("click", () => onCancel?.());
+    return;
+  }
+
+  const giveCount = trade.offerPsycheIds?.length || 0;
+  const takeCount = trade.partnerOfferIds?.length || 0;
   body.innerHTML = `
-    <h2>Trade with ${partner?.name || "…"}</h2>
-    <p>Select up to 3 Psyche cards from your hand to offer, then confirm.</p>
-    <p><strong>Offering:</strong> ${offerCount} card(s)</p>
-    <div class="utility-actions">
-      <button type="button" class="btn primary" id="trade-confirm">Confirm Trade</button>
-      <button type="button" class="btn" id="trade-cancel">Cancel</button>
+    <div class="trade-picker card-choice-picker">
+      <h2>Trade</h2>
+      <p class="card-choice-message">Click Psyche to offer it. Each Dreamer can offer up to ${TRADE_OFFER_LIMIT}. Confirm swaps the highlighted cards.</p>
+      <div class="trade-board">
+        <section class="trade-column">
+          <h3 id="trade-left-name"></h3>
+          <p class="trade-column-count" id="trade-left-count"></p>
+          <div class="card-choice-row" id="trade-row-left"></div>
+        </section>
+        <section class="trade-column">
+          <h3 id="trade-right-name"></h3>
+          <p class="trade-column-count" id="trade-right-count"></p>
+          <div class="card-choice-row" id="trade-row-right"></div>
+        </section>
+      </div>
+      <p class="card-choice-status" id="trade-status"></p>
+      <div class="utility-actions">
+        <button type="button" class="btn" id="trade-cancel">Cancel</button>
+        <button type="button" class="btn primary" id="trade-confirm">Confirm Trade</button>
+      </div>
     </div>
   `;
-  body.querySelector("#trade-confirm").addEventListener("click", () => {
-    hideUtilityModal(true);
-    onConfirm();
-  });
-  body.querySelector("#trade-cancel").addEventListener("click", () => {
-    hideUtilityModal(true);
-    onCancel();
-  });
-  modal.classList.remove("hidden");
+  body.querySelector("#trade-left-name").textContent = initiator?.name || "You";
+  body.querySelector("#trade-right-name").textContent = partner.name;
+  body.querySelector("#trade-left-count").textContent = `${giveCount} of ${TRADE_OFFER_LIMIT} offered`;
+  body.querySelector("#trade-right-count").textContent = `${takeCount} of ${TRADE_OFFER_LIMIT} offered`;
+  const status = body.querySelector("#trade-status");
+  if (!giveCount && !takeCount) status.textContent = "Select at least 1 Psyche.";
+  else status.textContent = `${initiator?.name || "You"} offers ${giveCount}. ${partner.name} offers ${takeCount}.`;
+  fillTradeColumn(body.querySelector("#trade-row-left"), initiator, trade.offerPsycheIds, onToggle);
+  fillTradeColumn(body.querySelector("#trade-row-right"), partner, trade.partnerOfferIds, onToggle);
+  const confirmBtn = body.querySelector("#trade-confirm");
+  confirmBtn.disabled = !giveCount && !takeCount;
+  confirmBtn.addEventListener("click", () => onConfirm?.());
+  body.querySelector("#trade-cancel")?.addEventListener("click", () => onCancel?.());
 }
 
 export function showNothingChoiceModal(state, onToken, onRepress) {
@@ -4628,6 +4702,7 @@ export function hideUtilityModal(force = false) {
     "info-hub-modal",
     "fullscreen-browser",
     "card-choice-modal-wrap",
+    "trade-modal-wrap",
     "subconscious-binder-fullscreen",
     "somnia-changelog-modal-wrap",
   );
