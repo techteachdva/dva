@@ -118,6 +118,7 @@ import { requestEndPhase } from "./phase-skip.js";
 import { initDevConsole } from "./dev-console.js";
 import { enableDevMode } from "./dev-commands.js";
 import { narrate } from "./narrator.js";
+import { openingHookText, showOpeningHook } from "./opening-hook.js";
 import { cancelPendingReturn, pickRepressCard, confirmRepressStep } from "./subconscious.js";
 import { getLandscapePickHighlights, resolveStaleLandscapePick } from "./landscapes.js";
 import {
@@ -159,6 +160,7 @@ import {
   getTutorialExploreLegalMoveIds,
   getTutorialCameraFocus,
   currentRailBeat,
+  exploreMoveLockActive,
   RECOMMENDED_STARTER_IDS,
 } from "./tutorial-mode.js";
 import {
@@ -480,6 +482,7 @@ function bindFullscreenPrompt() {
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       if (playOpeningCinematic(state) === 0) {
         document.body.classList.remove("opening-cinematic-pending");
+        showOpeningHook(state);
       }
     } else {
       document.body.classList.remove("opening-cinematic-pending");
@@ -921,9 +924,9 @@ async function startGame(config) {
     document.body.classList.add("tutorial-mode-active");
     narrate(
       state,
-      "Tutorial Mode",
-      "On-rails: click the highlighted Dreamer, cards, and hexes. The table keeps what you reveal.",
-      ["Follow the progress bar — each step names the exact click."],
+      "You are dreaming",
+      openingHookText(state),
+      ["Click Continue. The sparkles lead the way."],
     );
   } else {
     state = createInitialState(gameData, {
@@ -937,21 +940,11 @@ async function startGame(config) {
       document.body.classList.add("opening-cinematic-pending");
     }
     if (config.gentleStart) markGentleStartUsed();
-    const opening = state.board.find((t) => !t.center && t.revealed && !t.wasteland);
-    const openingLine = state.seedFlags?.somnia
-      ? "The whole inner ring begins Revealed around The Bed (SOMNIA seed)."
-      : opening
-        ? `${opening.name} is the only Landscape touching The Bed that begins Revealed.`
-        : "Only one Landscape touching The Bed begins Revealed.";
-    const startTokens = state.players[0]?.powerTokens ?? 1;
-    const seedLine = state.seed
-      ? ` Game ID ${state.gameId} — enter it as a seed on the menu to replay this exact dream.`
-      : "";
     narrate(
       state,
-      "The Dreamscape forms",
-      `Each Dreamer starts on The Bed with 5 Psyche and ${startTokens} Power Token${startTokens === 1 ? "" : "s"}. The Dreamscape is shuffled: ${openingLine}${seedLine} Round 1 begins in the Reveal Phase — discuss, plan, and act in any order. The Head Dreamer (★) should Draw the Dream when the group is ready.`,
-      ["Reveal Phase: spend 1 Lucidity to flip Landscapes on the hex map"],
+      "You are dreaming",
+      openingHookText(state),
+      ["The Head Dreamer draws the Dream when the group is ready."],
     );
   }
 
@@ -1848,9 +1841,14 @@ function renderBoardArea() {
   if (isInteractiveTutorialActive(state)) {
     legalMoves = getTutorialExploreLegalMoveIds(state, legalMoves);
   }
-  renderBoard(state, (id) => {
+  const commitLandscape = (id) => {
     if (!isTutorialActionAllowed(state, "boardClick", { tileId: id })) {
       tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    if (exploreMoveLockActive(state) && !legalMoves.includes(id)) {
+      addLog(state, "Glowing Landscapes are the steps you can take.");
       renderAll();
       return;
     }
@@ -1866,7 +1864,8 @@ function renderBoardArea() {
     if (result && typeof result === "object" && result.openRadial) {
       openDreamerBoardRadial(null, result.playerId, result.tileId);
     }
-  }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id, {
+  };
+  renderBoard(state, commitLandscape, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id, {
     onDreamerClick: (playerId, tileId) => {
       hideUtilityModal(true);
       openDreamerBoardRadial(null, playerId, tileId);
@@ -1892,7 +1891,22 @@ function renderBoardArea() {
       openDreamerBoardRadial(anchorEl, playerId, tileId);
     },
     onBeastTokenClick: (encounter, tileId, anchorEl) => {
+      if (exploreMoveLockActive(state) && tileId) {
+        commitLandscape(tileId);
+        return;
+      }
       openBeastBoardRadial(anchorEl, encounter, tileId);
+    },
+    onExploreWalkerPick: (playerId) => {
+      const playerIndex = state.players.findIndex((p) => p.id === playerId);
+      if (playerIndex < 0) return;
+      if (isInteractiveTutorialActive(state)) {
+        tutorialActionBlocked(state);
+        renderAll();
+        return;
+      }
+      state.activePlayerIndex = playerIndex;
+      renderAll();
     },
   });
   syncBoardZoomAfterRender();

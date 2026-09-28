@@ -14,6 +14,7 @@ import { hexNeighbors, getLegalMoveTargets } from "./hex.js";
 import { precomputeTutorialSnapshots } from "./tutorial-canonical.js";
 import { resetBoardMotion } from "./board-fx.js";
 import { listSubconsciousCards, pickReturnCard } from "./subconscious.js";
+import { openingHookText } from "./opening-hook.js";
 
 export const TUTORIAL_DREAMER_IDS = ["the-visionary", "the-immovable"];
 export const RECOMMENDED_STARTER_IDS = TUTORIAL_DREAMER_IDS;
@@ -440,6 +441,22 @@ export function currentRailBeat(state) {
   return step.rail.find((beat) => !isRailBeatComplete(state, beat)) || null;
 }
 
+/** After Elasticity is spent, walking is a locked selection: Landscapes only. */
+export function exploreMoveLockActive(state) {
+  if (!state || getPhase(state) !== "Explore" || !state.exploreActivated) return false;
+  const player = state.players?.[state.activePlayerIndex];
+  const runnerFree = !state.tutorialMode
+    && player?.alive
+    && player.dreamer?.id === "the-runner"
+    && !state.runnerFreeMoveUsed
+    && (state.exploreMovesLeft || 0) < 1;
+  if ((state.exploreMovesLeft || 0) < 1 && !runnerFree) return false;
+  if (state.tutorialMode && !state.tutorialComplete) {
+    return currentRailBeat(state)?.kind === "exploreMove";
+  }
+  return true;
+}
+
 function railComplete(state, step) {
   if (!step?.rail?.length) return true;
   if (step.until?.(state)) return true;
@@ -827,8 +844,11 @@ function railHighlight(state, step, beat) {
 function decorateTutorialStep(state, step, objective) {
   const beat = currentRailBeat(state);
   const { targets, spotlight } = railHighlight(state, step, beat);
+  const welcome = step.id === "welcome";
   return {
     ...step,
+    title: welcome ? "You Are Dreaming" : step.title,
+    why: welcome ? openingHookText(state) : step.why,
     targets,
     spotlight: spotlight || step.spotlight || null,
     spotlightBeat: beat
@@ -1187,9 +1207,9 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "welcome",
     round: 1,
-    title: "Welcome to Somnia",
-    why: "You are Dreamers trapped in a collapsing Dreamscape. Psyche cards are your health and your action points. Empty hands are deadly. Spend 1 suited Psyche to unlock a phase: Lucidity opens Reveal, Elasticity opens Explore, Willpower opens Meet. Skipping a phase is often the plan. The sparkles show the next legal click. The ? button keeps every rule this short lesson does not play.",
-    objective: "Click Continue. The sparkles show the next legal click.",
+    title: "You Are Dreaming",
+    why: "The wake story is filled in from this table when the lesson opens.",
+    objective: "Click Continue. Answer the call.",
     targets: ["#active-archetype", "#phase-stepper"],
     spotlight: "#active-archetype",
   },
@@ -1223,15 +1243,15 @@ export const TUTORIAL_SCRIPT = [
     id: "explore-r1",
     round: 1,
     title: "Explore: The Other Dreamer Opens",
-    why: "The Visionary just opened Reveal, so they cannot open Explore. The same Dreamer cannot open two phases in a row unless they are alone, or nobody else can pay the suit. The Immovable spends Elasticity 2. Their Elasticity is 0, so the team gets exactly 2 shared moves. The Visionary still walks. In a real game, 2 leftover moves can peek the next Dream. This budget is the walk, so spend both.",
+    why: "The Visionary just opened Reveal, so they cannot open Explore. The same Dreamer cannot open two phases in a row unless they are alone, or nobody else can pay the suit. The Immovable spends Elasticity 2. Their Elasticity is 0, so the team gets exactly 2 shared moves. Each click is one adjacent hex. Once that spend lands, the board locks to the walk: only the glowing Landscape takes a step. The picture on that hex is the same click.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Bed." },
       { kind: "handToggle", playerIndex: 1, cardId: "elasticity-2-i-e2", prompt: "Select Elasticity 2 in The Immovable's hand." },
       { kind: "spendElasticity", prompt: "Click Spend Elasticity to the right of the selected Psyche." },
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary. The moves belong to the whole team." },
-      { kind: "exploreMove", playerIndex: 0, tileId: "house", prompt: "Click House. First step toward The Attic." },
-      { kind: "exploreMove", playerIndex: 0, tileId: "the-attic", prompt: "Click The Attic to stand on Mandrake." },
+      { kind: "exploreMove", playerIndex: 0, tileId: "house", prompt: "Click the glowing House hex." },
+      { kind: "exploreMove", playerIndex: 0, tileId: "the-attic", prompt: "Click the glowing Attic hex. Mandrake's picture is that same hex." },
       { kind: "advancePhase", toPhase: "Meet", prompt: "Click Next: Meet in the top-right of the map." },
     ],
     until: (s) => getPhase(s) === "Meet",

@@ -6,10 +6,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "32.1";
+export const SOMNIA_VERSION = "33.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "33.0",
+    title: "The Mirror Mirror Update",
+    notes: [
+      "After Elasticity is spent, walking locks onto the map. Only glowing Landscapes take a step. A Dreamer or beast drawn on that hex is the same click as the Landscape, so Mandrake cannot swallow the walk to The Attic.",
+      "Hover a glowing hex to see the one-step path and the cost. The Dreamer then slides along that step. Each click is one adjacent hex. The shared budget is how many of those steps the team has.",
+      "Map Back still undoes the last action. The tutorial walk only advances when the step lands. Skip stays quiet until that walk is finished.",
+      "Every fresh dream waits for the board to fly in, then fills the screen with its own opening. The story names the Archetype and the Landscape beside The Bed. A resumed save skips that telling.",
+    ],
+  },
   {
     version: "32.1",
     title: "The Veiled Update",

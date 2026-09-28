@@ -479,7 +479,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 32.1. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 33.0. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -513,7 +513,8 @@ export function rulesRemHtml() {
           <p><strong>One Dreamer</strong> spends 1 Elasticity card to unlock <strong>shared team moves</strong>.</p>
           <ul>
             <li><strong>Move budget</strong> = that 1 card's value + Elasticity bonuses → that many moves for the whole team</li>
-            <li>Click Dreamer chips and green dashed hexes in any order; you do not have to use every move</li>
+            <li>Click a Dreamer chip to choose who walks, then click a glowing Landscape. Each click is one adjacent hex</li>
+            <li>While moves remain, green hexes are the only steps. A picture on a green hex is that hex</li>
             <li>Entering the <strong>Wasteland</strong> during Explore discards 1 Psyche (can trigger death)</li>
             <li><strong>2 unused moves</strong> may peek the next Dream: leave it on top, or bury it ahead of Final Recurrence. Otherwise leftovers are forfeited</li>
           </ul>
@@ -655,7 +656,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 32.1</p>
+          <p class="info-hub-kicker">Somnia v 33.0</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>

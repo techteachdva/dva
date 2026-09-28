@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-32.1";
-const RUNTIME_CACHE = "somnia-runtime-32.1";
+const CACHE_NAME = "somnia-33.0";
+const RUNTIME_CACHE = "somnia-runtime-33.0";
 
 const PRECACHE = [
   "./",
@@ -90,6 +90,7 @@ const PRECACHE = [
   "./js/object-effects.js",
   "./js/objects.js",
   "./js/opening-cinematic.js",
+  "./js/opening-hook.js",
   "./js/panel-layout.js",
   "./js/pause-menu.js",
   "./js/phase-skip.js",
@@ -138,6 +139,7 @@ const PRECACHE = [
 ];
 
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     await Promise.all(PRECACHE.map((url) => cache.add(url).catch(() => {})));
@@ -206,8 +208,10 @@ async function networkFirst(request) {
 async function staleWhileRevalidate(request) {
   const cached = await caches.match(request);
   const fetching = fetch(request).then((fresh) => {
-    putRuntime(request, fresh.clone()).catch(() => {});
-    caches.open(CACHE_NAME).then((cache) => cache.put(request, fresh.clone())).catch(() => {});
+    if (fresh && fresh.ok) {
+      putRuntime(request, fresh.clone()).catch(() => {});
+      caches.open(CACHE_NAME).then((cache) => cache.put(request, fresh.clone())).catch(() => {});
+    }
     return fresh;
   }).catch(() => null);
   return cached || fetching || Promise.reject(new Error("offline"));

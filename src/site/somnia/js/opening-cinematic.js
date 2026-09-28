@@ -5,6 +5,7 @@ import { hexRingCoords, POOL_RING3_CORNER_SLOTS, hexKey } from "./hex.js";
 import { burstSparkles, playDreamWarble } from "./fx.js";
 import { playSfx } from "./audio.js";
 import { cardBackForDeckId } from "./card-backs.js";
+import { showOpeningHook } from "./opening-hook.js";
 
 const ROW_STEP_MS = 70;
 const TILE_BASE_MS = 350;
@@ -144,7 +145,8 @@ export function playOpeningCinematic(state) {
     return 0;
   }
   const body = document.body;
-  if (body.classList.contains("opening-cinematic")) return 0;
+  // Already playing. The overlay is scheduled at the end. Do not show it early.
+  if (body.classList.contains("opening-cinematic")) return END_MS;
   body.classList.remove("opening-cinematic-pending");
   body.classList.add("opening-cinematic");
 
@@ -255,7 +257,10 @@ export function playOpeningCinematic(state) {
     if (c) burstSparkles(c.x, c.y, 10, "#c9a0ff");
   }, DREAM_PULSE_MS);
 
+  let finished = false;
   const finish = () => {
+    if (finished) return;
+    finished = true;
     timers.forEach((t) => window.clearTimeout(t));
     body.classList.remove("opening-cinematic", "opening-cinematic-pending");
     document.querySelectorAll(".fx-opening-ghost").forEach((el) => el.remove());
@@ -264,6 +269,9 @@ export function playOpeningCinematic(state) {
     });
     document.removeEventListener("pointerdown", finish, true);
     document.removeEventListener("keydown", finish, true);
+    // Board tiles use opening-tile-place (0.3s) after their flight.
+    // END_MS is past the last of those delays, so the overlay follows the entrance.
+    window.setTimeout(() => showOpeningHook(state), 0);
   };
   later(finish, END_MS);
   // An impatient Dreamer skips with any tap or key.

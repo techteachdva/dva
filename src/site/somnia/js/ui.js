@@ -54,6 +54,7 @@ import {
   getTutorialRevealTargetId,
   tutorialPhaseActionSelector,
   tutorialDreamerTokenSelector,
+  exploreMoveLockActive,
 } from "./tutorial-mode.js";
 import { getNarratorView } from "./narrator.js";
 import {
@@ -1735,6 +1736,8 @@ function boardStructureKey(state) {
 }
 
 function boardChromeKey(state, legalMoveIds, pickHighlights) {
+  const moveLock = exploreMoveLockActive(state);
+  const walker = moveLock ? (activePlayer(state)?.landscapeId || "") : "";
   return [
     state.selectedLandscapeId || "",
     (legalMoveIds || []).join(","),
@@ -1743,6 +1746,8 @@ function boardChromeKey(state, legalMoveIds, pickHighlights) {
     (pickHighlights.choose || []).join(","),
     getTutorialRevealTargetId(state) || "",
     activeQuestLandscapeIds(state).join(","),
+    moveLock ? "lock" : "",
+    walker,
   ].join("|");
 }
 
@@ -1764,6 +1769,7 @@ function hexTileClassName(tile, state, sets) {
     encounters.length ? "has-encounter" : "",
     sets.questHighlightSet.has(tile.id) ? "quest-highlight" : "",
     sets.legalSet.has(tile.id) ? "movable" : "",
+    sets.walkerTileId && sets.walkerTileId === tile.id ? "explore-walker" : "",
     sets.revealSet.has(tile.id) ? "pick-reveal" : "",
     tutorialRevealTarget ? "tutorial-reveal-target" : "",
     sets.forgetSet.has(tile.id) ? "pick-forget" : "",
@@ -1906,9 +1912,38 @@ function isBoardChromeControl(target) {
   return !!target.closest("button, a, input, select, textarea, .board-camera-controls, .spread-tray");
 }
 
+function resolveExploreMoveHit(event, fallbackEl, legalIds) {
+  const legal = new Set(legalIds || []);
+  const hex = hexTileUnderPoint(event.clientX, event.clientY) || fallbackEl;
+  const hexId = hex?.dataset?.tileId || null;
+  if (hexId && legal.has(hexId)) return { kind: "move", tileId: hexId };
+
+  const token = tokenUnderPoint(event.clientX, event.clientY);
+  const tokenTileId = token?.closest(".hex-tile")?.dataset.tileId || null;
+  if (tokenTileId && legal.has(tokenTileId)) return { kind: "move", tileId: tokenTileId };
+
+  if (token?.classList.contains("hex-occupant-dreamer") && token.dataset.dreamerId) {
+    return { kind: "walker", dreamerId: token.dataset.dreamerId, tileId: tokenTileId, token };
+  }
+  return { kind: "hex", tileId: hexId || tokenTileId };
+}
+
 function activateBoardTarget(event, fallbackEl = null) {
   const ctx = boardTouchCtx;
   if (!ctx) return;
+  if (ctx.moveLock) {
+    const hit = resolveExploreMoveHit(event, fallbackEl, ctx.legalMoveIds);
+    if (hit.kind === "move" && hit.tileId) {
+      ctx.onSelectLandscape(hit.tileId);
+      return;
+    }
+    if (hit.kind === "walker") {
+      ctx.boardOptions.onExploreWalkerPick?.(hit.dreamerId, hit.tileId, hit.token, event);
+      return;
+    }
+    if (hit.tileId) ctx.onSelectLandscape(hit.tileId);
+    return;
+  }
   const token = tokenUnderPoint(event.clientX, event.clientY);
   if (token?.classList.contains("hex-occupant-dreamer") && token.dataset.dreamerId) {
     const tileEl = token.closest(".hex-tile");
@@ -1928,6 +1963,94 @@ function activateBoardTarget(event, fallbackEl = null) {
   }
   const hex = hexTileUnderPoint(event.clientX, event.clientY) || fallbackEl;
   if (hex?.dataset.tileId) ctx.onSelectLandscape(hex.dataset.tileId);
+}
+
+let movePreviewBound = false;
+
+function ensureMovePreviewEls() {
+  let badge = document.getElementById("move-cost-badge");
+  if (!badge) {
+    badge = document.createElement("div");
+    badge.id = "move-cost-badge";
+    badge.hidden = true;
+    document.body.appendChild(badge);
+  }
+  let line = document.getElementById("move-preview-line");
+  if (!line) {
+    line = document.createElement("div");
+    line.id = "move-preview-line";
+    line.hidden = true;
+    line.setAttribute("aria-hidden", "true");
+    document.body.appendChild(line);
+  }
+  return { badge, line };
+}
+
+function clearExploreMovePreview() {
+  document.querySelectorAll(".hex-tile.move-hover").forEach((el) => el.classList.remove("move-hover"));
+  const badge = document.getElementById("move-cost-badge");
+  const line = document.getElementById("move-preview-line");
+  if (badge) badge.hidden = true;
+  if (line) line.hidden = true;
+}
+
+function onExploreMovePreview(event) {
+  const ctx = boardTouchCtx;
+  if (!ctx?.moveLock || event.pointerType === "touch") {
+    clearExploreMovePreview();
+    return;
+  }
+  const hex = hexTileUnderPoint(event.clientX, event.clientY);
+  let tileId = hex?.dataset?.tileId || null;
+  const legal = new Set(ctx.legalMoveIds || []);
+  if (!tileId || !legal.has(tileId)) {
+    const token = tokenUnderPoint(event.clientX, event.clientY);
+    const parentId = token?.closest(".hex-tile")?.dataset.tileId || null;
+    if (parentId && legal.has(parentId)) tileId = parentId;
+    else {
+      clearExploreMovePreview();
+      return;
+    }
+  }
+  document.querySelectorAll(".hex-tile.move-hover").forEach((el) => {
+    if (el.dataset.tileId !== tileId) el.classList.remove("move-hover");
+  });
+  const dest = tileEls.get(tileId);
+  dest?.classList.add("move-hover");
+  const { badge, line } = ensureMovePreviewEls();
+  const left = ctx.state.exploreMovesLeft || 0;
+  const after = Math.max(0, left - 1);
+  badge.hidden = false;
+  badge.textContent = after === 0 ? "1 move. Last step." : `1 move. ${after} left after.`;
+  badge.style.left = `${event.clientX + 16}px`;
+  badge.style.top = `${event.clientY + 18}px`;
+
+  const walkerId = activePlayer(ctx.state)?.landscapeId;
+  const from = walkerId ? tileEls.get(walkerId) : null;
+  if (from && dest && from !== dest) {
+    const a = from.getBoundingClientRect();
+    const b = dest.getBoundingClientRect();
+    const x1 = a.left + a.width / 2;
+    const y1 = a.top + a.height / 2;
+    const x2 = b.left + b.width / 2;
+    const y2 = b.top + b.height / 2;
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    line.hidden = false;
+    line.style.width = `${Math.max(0, len - 36)}px`;
+    line.style.transform = `translate(${x1}px, ${y1}px) rotate(${angle}deg)`;
+  } else {
+    line.hidden = true;
+  }
+}
+
+function bindExploreMovePreview() {
+  if (movePreviewBound) return;
+  const viewport = document.getElementById("board-viewport");
+  if (!viewport) return;
+  movePreviewBound = true;
+  viewport.addEventListener("pointermove", onExploreMovePreview);
+  viewport.addEventListener("pointerleave", clearExploreMovePreview);
 }
 
 function onBoardTouchTap(event) {
@@ -1999,6 +2122,7 @@ function patchBoardChrome(state, legalMoveIds, pickHighlights, size) {
     justRevealed: new Set(),
     justForgotten: new Set(),
     tutorialRevealId: getTutorialRevealTargetId(state),
+    walkerTileId: exploreMoveLockActive(state) ? (activePlayer(state)?.landscapeId || "") : "",
   };
   let patched = 0;
   state.board.forEach((tile) => {
@@ -2021,8 +2145,18 @@ export function renderBoard(
   onInspectLandscape = null,
   boardOptions = {},
 ) {
-  boardTouchCtx = { state, onSelectLandscape, boardOptions };
+  const moveLock = exploreMoveLockActive(state);
+  boardTouchCtx = {
+    state,
+    onSelectLandscape,
+    boardOptions,
+    legalMoveIds: legalMoveIds || [],
+    moveLock,
+  };
+  document.body.classList.toggle("explore-move-lock", moveLock);
+  if (!moveLock) clearExploreMovePreview();
   bindBoardTouchTap();
+  bindExploreMovePreview();
   const board = document.getElementById("hex-board");
   const size = fitHexSize(state);
   const chromeKey = boardChromeKey(state, legalMoveIds, pickHighlights);
@@ -2071,6 +2205,7 @@ export function renderBoard(
     justRevealed,
     justForgotten,
     tutorialRevealId,
+    walkerTileId: moveLock ? (activePlayer(state)?.landscapeId || "") : "",
   };
 
   state.board.forEach((tile) => {
@@ -2187,6 +2322,12 @@ export function renderBoard(
       if (!dreamerEl?.dataset.dreamerId) return;
       event.preventDefault();
       event.stopPropagation();
+      if (boardTouchCtx?.moveLock) {
+        const legal = new Set(boardTouchCtx.legalMoveIds || []);
+        if (legal.has(tile.id)) boardTouchCtx.onSelectLandscape(tile.id);
+        else boardOptions.onExploreWalkerPick?.(dreamerEl.dataset.dreamerId, tile.id, dreamerEl, event);
+        return;
+      }
       boardOptions.onDreamerTokenClick?.(dreamerEl.dataset.dreamerId, tile.id, dreamerEl, event);
     });
     el.addEventListener("click", (event) => {
@@ -6090,6 +6231,14 @@ function clearTutorialHighlight({ keepLayer = false } = {}) {
   }
 }
 
+function syncTutorialWalkSkip(step) {
+  const skip = document.getElementById("tutorial-skip");
+  if (!skip) return;
+  const walking = step?.spotlightBeat?.kind === "exploreMove";
+  skip.disabled = walking;
+  skip.title = walking ? "Walk onto the glowing Landscape to continue." : "";
+}
+
 export function updateTutorialStepUI({
   step,
   stepIndex,
@@ -6108,6 +6257,7 @@ export function updateTutorialStepUI({
 
   const backBtn = document.getElementById("tutorial-back");
   if (backBtn) backBtn.disabled = stepIndex <= 0;
+  syncTutorialWalkSkip(step);
 
   const card = overlay.querySelector(".tutorial-card");
   card?.classList.toggle("tutorial-waiting", waiting);
@@ -6216,6 +6366,7 @@ export function showTutorialStep(step, stepIndex, total, {
   const freshBack = document.getElementById("tutorial-back");
 
   if (freshBack) freshBack.disabled = stepIndex <= 0;
+  syncTutorialWalkSkip(step);
   applyTutorialContinueDelay(freshNext, waiting, label);
 
   freshNext.addEventListener("click", () => {
