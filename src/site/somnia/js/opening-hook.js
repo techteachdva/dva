@@ -101,7 +101,7 @@ export function openingHookText(state) {
   ], state, "waste");
 
   return [
-    `You wake within a place you've never been, with a feeling like you've never left, ${friendsClause(state)}.`,
+    `You wake within a place you've never been, with a feeling like you've never left, ${friendsClause(state)}. Somewhere in this dream an Archetype is waiting. Capture it. Stand together on The Bed. Wake before the deck of nights runs out.`,
     "You clear the sand from your eyes, and you see you are dreaming, somehow connected to each other's minds and souls.",
     `In the distance you hear the call of ${call}, though you know not how you know its song. ${song}`,
     `Speaking of your hands, you have glowing fingertips of color, ${fingers} of them lit as you wake. You feel you could be unstoppable with both full hands of ${fullHands} fingers lit.`,

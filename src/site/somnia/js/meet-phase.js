@@ -5,14 +5,14 @@
  *    tile or an adjacent hex. Roaming beasts stay where they are.
  * 2) Middle of Meet — one Dreamer may spend 1 Willpower Psyche to unlock
  *    shared Meet Actions. Dreamers take Actions (Meet / Landscape / Trade /
- *    Powers) as they wish. Accept and Reject need 1 Psyche of the required
+ *    Powers) as they wish. Accept and Repress need 1 Psyche of the required
  *    suit (1–3 cards; allies extra). Beast Power is its dice; recommended
  *    Dreamer Power is beast Power + 2. Underpaying is legal. A win removes
  *    the beast, a loss spends the play and leaves the beast on the map.
  * 3) End of Meet — if any Dreambeasts remain, Forget 1 random Landscape per
  *    remaining beast (never the Bed, never a hex that still hosts a beast),
  *    then each remaining beast's Fail cost resolves in spawn order. Beasts
- *    stay on their Landscapes until Accepted or Rejected.
+ *    stay on their Landscapes until Accepted or Repressed.
  */
 import {
   addLog,
@@ -29,7 +29,7 @@ import { applyFailEffect } from "./dreambeasts.js";
 
 export const MEET_PHASE_FLOW = Object.freeze({
   start: "Each Dreamer on or adjacent to a roaming Dreambeast Represses 1 Psyche per such beast.",
-  middle: "Spend 1 Willpower Psyche for shared Meet Actions. Accept/Reject are dice battles. Roaming beasts stay until won.",
+  middle: "Spend 1 Willpower Psyche for shared Meet Actions. Accept and Repress are dice battles. Roaming beasts stay until won.",
   end: "Forget 1 random Landscape per remaining Dreambeast, then each remaining beast's Fail cost resolves in spawn order. Beasts stay.",
 });
 

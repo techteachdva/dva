@@ -6,6 +6,7 @@ import {
   revealLandscapeTile,
   landscapeById,
   setEncounterOnLandscape,
+  removeEncounterFromLandscape,
   findEncounterOnBoard,
   moveEncounterBetweenLandscapes,
   tileEncounters,
@@ -17,7 +18,15 @@ import {
 import { recordQuestEvent } from "./quests.js";
 import { logMoment } from "./narrator.js";
 import { grantPowerTokens, spendPowerTokens } from "./power-tokens.js";
-import { repressCard, requestReturnCards, enqueueRepressFromHand, isDreambeastPsycheCard } from "./subconscious.js";
+import { uid } from "./data.js";
+import {
+  repressCard,
+  requestReturnCards,
+  enqueueRepressFromHand,
+  isDreambeastPsycheCard,
+  listSubconsciousCards,
+  removeFromSubconscious,
+} from "./subconscious.js";
 import { applyBossAcceptEffect } from "./bosses.js";
 import { adjacentTiles, hexDistance } from "./hex.js";
 import { requestChooseTile, requestForgetLandscapes, forgetNamedLandscapes, forgetRandomLandscapes } from "./landscapes.js";
@@ -71,9 +80,13 @@ export function recommendedEncounterPower(encounter, accept = true) {
   return encounterPower(encounter, accept) + 2;
 }
 
+export function isLeviathanCard(card) {
+  return !!(card && (card.id === "leviathan" || card.refId === "leviathan"));
+}
+
 export function encounterPowerLabel(encounter, accept = true) {
   const power = encounterPower(encounter, accept);
-  const verb = accept ? "Accept" : "Reject";
+  const verb = accept ? "Accept" : (isLeviathanCard(encounter) ? "Slumber" : "Repress");
   return `${verb} · Power ${power} · Rec ${power + 2}`;
 }
 
@@ -83,7 +96,10 @@ export function encounterAcceptSummary(encounter) {
 }
 
 export function encounterRejectSummary(encounter) {
-  return encounter?.rejectReward || "Exile Dreambeast to the Subconscious";
+  if (isLeviathanCard(encounter)) {
+    return encounter?.rejectReward || "Flip Asleep and Repress into the Subconscious";
+  }
+  return encounter?.rejectReward || "Repress the Dreambeast into the Subconscious";
 }
 
 export function dreamerMeetBonuses(dreamer, encounter) {
@@ -182,61 +198,92 @@ function moveEncounter(state, encounter, toId) {
   return true;
 }
 
-export function flipLeviathan(state, helpers = {}) {
-  const located = state.board
-    .map((tile) => {
-      const enc = tileEncounters(tile).find((e) => e.id === "leviathan" || e.refId === "leviathan");
-      return enc ? { tile, encounter: enc } : null;
-    })
-    .find(Boolean);
-  if (located?.encounter) {
-    located.encounter.awake = true;
-    addLog(state, "Leviathan flips — it is Awake.");
-    return located.encounter;
+function locateLeviathan(state) {
+  for (const tile of state.board || []) {
+    const encounter = tileEncounters(tile).find(isLeviathanCard);
+    if (encounter) return { tile, encounter };
   }
+  return null;
+}
 
-  const pullFrom = (list) => {
-    const idx = list.findIndex((c) => c.id === "leviathan" || c.refId === "leviathan");
-    if (idx < 0) return null;
-    return list.splice(idx, 1)[0];
-  };
-
-  const fromDream = pullFrom(state.dreamDeck || []);
-  const fromMind = ["lucidity", "elasticity", "willpower"]
-    .map((suit) => pullFrom(state.mindstreamDecks?.[suit] || []))
-    .find(Boolean);
-  const card = fromDream || fromMind;
-  if (!card) {
-    addLog(state, "Leviathan is not in play to flip.");
-    return null;
+function takeLeviathanFromSubconscious(state) {
+  const card = listSubconsciousCards(state).find(isLeviathanCard);
+  if (!card) return null;
+  if (card.instanceId) {
+    const removed = removeFromSubconscious(state, card.instanceId);
+    if (removed) return removed;
   }
+  const pile = state.subconscious?.dreambeasts;
+  const idx = pile?.findIndex(isLeviathanCard) ?? -1;
+  if (idx >= 0) return pile.splice(idx, 1)[0];
+  return null;
+}
 
-  const encounter = {
+function takeLeviathanFromDreamDeck(state) {
+  const deck = state.dreamDeck || [];
+  const idx = deck.findIndex(isLeviathanCard);
+  if (idx < 0) return null;
+  return deck.splice(idx, 1)[0];
+}
+
+function asAwakeLeviathan(card) {
+  return {
     ...card,
+    id: "leviathan",
+    refId: card.refId || "leviathan",
+    name: card.name || "Leviathan",
     type: "dreambeast",
     boss: true,
     awake: true,
-    id: card.refId || card.id || "leviathan",
+    instanceId: card.instanceId || uid("leviathan"),
   };
-  const dest = landscapeById(state, "endless-ocean")?.revealed ? "endless-ocean" : "bed";
-  if (helpers.spawnEncounterWithCard) helpers.spawnEncounterWithCard(state, dest, encounter);
-  else setEncounterOnLandscape(state, dest, encounter);
-  const spawned = encountersOnLandscape(state, dest).find((e) => e.id === "leviathan" || e.refId === "leviathan") || encounter;
-  spawned.awake = true;
-  const tile = landscapeById(state, dest);
-  addLog(state, `Leviathan emerges Awake on ${tile?.name || dest}!`);
-  return spawned;
 }
 
-function moveLeviathanToOcean(state) {
-  const located = state.board
-    .map((tile) => {
-      const enc = tileEncounters(tile).find((e) => e.id === "leviathan" || e.refId === "leviathan");
-      return enc ? { tile, encounter: enc } : null;
-    })
-    .find(Boolean);
-  if (!located) return;
-  moveEncounter(state, located.encounter, "endless-ocean");
+/** Awake on the board becomes Asleep in the Subconscious. */
+export function slumberLeviathan(state) {
+  const located = locateLeviathan(state);
+  if (!located) return null;
+  const card = {
+    ...located.encounter,
+    id: "leviathan",
+    refId: located.encounter.refId || "leviathan",
+    type: "dreambeast",
+    boss: true,
+    awake: false,
+    instanceId: located.encounter.instanceId || uid("leviathan"),
+  };
+  removeEncounterFromLandscape(state, located.tile.id, located.encounter);
+  repressCard(state, card);
+  addLog(state, "Leviathan falls Asleep and is Repressed into the Subconscious.");
+  logMoment(state, "Leviathan sleeps in the Subconscious.");
+  return card;
+}
+
+/** Asleep in the Subconscious, or still in the Dream Deck, wakes onto a tile. */
+export function wakeLeviathanOn(state, tileId = "bed") {
+  const already = locateLeviathan(state);
+  if (already) return already.encounter;
+  const card = takeLeviathanFromSubconscious(state) || takeLeviathanFromDreamDeck(state);
+  if (!card) return null;
+  const encounter = asAwakeLeviathan(card);
+  const dest = landscapeById(state, tileId) ? tileId : "bed";
+  setEncounterOnLandscape(state, dest, encounter);
+  const tile = landscapeById(state, dest);
+  addLog(state, `Leviathan wakes on ${tile?.name || "The Bed"}.`);
+  logMoment(state, `Leviathan wakes on ${tile?.name || "The Bed"}.`, { boss: true });
+  return encounter;
+}
+
+/**
+ * Flip Leviathan. Awake on the board goes to sleep in the Subconscious.
+ * Asleep in the Subconscious, or still in the Dream Deck, wakes on The Bed.
+ */
+export function flipLeviathan(state) {
+  if (locateLeviathan(state)) return slumberLeviathan(state);
+  const woken = wakeLeviathanOn(state, "bed");
+  if (woken) return woken;
+  addLog(state, "Leviathan is not on the board or in the Subconscious to flip.");
+  return null;
 }
 
 const ACCEPT_EFFECTS = {
@@ -717,7 +764,7 @@ export function applyRejectReward(state, encounter, actor, helpers = {}) {
     }
     case "gain-power": {
       grantPowerTokens(state, actor, effect.count || 1, {
-        reason: `Reject reward: ${effect.count || 1} Power Token.`,
+        reason: `Repress reward: ${effect.count || 1} Power Token.`,
         logQuest: false,
       });
       break;
@@ -756,7 +803,7 @@ export function applyRejectReward(state, encounter, actor, helpers = {}) {
       hidden.slice(0, n).forEach((t) => revealLandscapeTile(state, t));
       if (n) {
         recordQuestEvent(state, "reveal_landscape", { count: n });
-        addLog(state, `Reject reward: Reveal ${n} Landscape${n === 1 ? "" : "s"}.`);
+        addLog(state, `Repress reward: Reveal ${n} Landscape${n === 1 ? "" : "s"}.`);
       }
       break;
     }
@@ -793,7 +840,7 @@ export function applyRejectReward(state, encounter, actor, helpers = {}) {
       break;
     }
     default:
-      addLog(state, encounter.rejectReward || "Reject reward resolved.");
+      addLog(state, encounter.rejectReward || "Repress reward resolved.");
   }
 }
 

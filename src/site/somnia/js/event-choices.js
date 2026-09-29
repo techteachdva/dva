@@ -1268,7 +1268,7 @@ export function startSilverForcedAccept(state, player, tileId, enc) {
   state.activeEncounterLandscapeId = tileId;
   addLog(
     state,
-    `Silver: ${enc.name} appears on ${tile?.name || tileId}. ${player.name} may Accept or Reject it as a normal Meet.`,
+    `Silver: ${enc.name} appears on ${tile?.name || tileId}. ${player.name} may Accept or Repress it as a normal Meet.`,
   );
 }
 
@@ -1293,7 +1293,7 @@ function startSilverSpawn(state, player, card) {
     action: "spawnEncounter",
     encounter,
     title: "Silver — spawn on a Dreamer",
-    detail: "Click a Landscape that has a Dreamer. Meet it there as a normal Accept or Reject.",
+    detail: "Click a Landscape that has a Dreamer. Meet it there as a normal Accept or Repress.",
     followup: { cardId: "silver-accept", playerId: player.id },
   });
 }

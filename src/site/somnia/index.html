@@ -31,7 +31,7 @@
   <div id="app">
     <header class="top-bar">
       <button type="button" class="brand brand-logo-btn" id="btn-somnia-changelog" title="Somnia Changelog &amp; Credits" aria-label="Open Somnia Changelog and Credits">
-        <span class="version-label">v 33.2</span>
+        <span class="version-label">v 33.3</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
         <p class="tagline">Cooperative Dreamscape Roguelike</p>
       </button>
@@ -64,6 +64,7 @@
                 <option value="deep">Deep Sleep — 24 pts · 18 Dreams</option>
               </select>
             </label>
+            <p class="field-hint">Same rules on every night. Daydream is the first one. Nap and Deep Sleep ask for more points.</p>
             <label class="field field-seed">
               <span>Seed <em class="field-optional">optional</em></span>
               <input type="text" id="setup-seed" maxlength="24" placeholder="e.g. SOMNIA or a Game ID" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" title="Same seed = same shuffle. Six secret keywords bend the rules…" />
@@ -86,6 +87,7 @@
               <button type="button" id="btn-start" class="btn begin-dream-btn" disabled>Begin Dreaming</button>
               <button type="button" id="btn-tutorial-mode" class="btn btn-tutorial-menu" title="Two guided rounds with step-by-step coaching">Tutorial</button>
             </div>
+            <button type="button" id="btn-advanced-tutorial" class="btn btn-tutorial-menu btn-advanced-menu" disabled title="Finish the Tutorial to unlock the longer night">Advanced Tutorial</button>
             <button type="button" id="btn-saved-dreams" class="btn btn-saved-dreams">Saved Dreams</button>
             <p class="menu-tutorial-hint">Tutorial Mode walks you through two guided rounds. Open <strong>?</strong> or Pause → Help anytime for rules.</p>
             <button type="button" id="btn-pwa-install" class="btn btn-pwa-install hidden" hidden>Install Somnia</button>

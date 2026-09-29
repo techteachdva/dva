@@ -14,7 +14,13 @@ import { hexNeighbors, getLegalMoveTargets } from "./hex.js";
 import { precomputeTutorialSnapshots } from "./tutorial-canonical.js";
 import { resetBoardMotion } from "./board-fx.js";
 import { listSubconsciousCards, pickReturnCard } from "./subconscious.js";
-import { openingHookText } from "./opening-hook.js";
+import {
+  ADVANCED_TUTORIAL_SCRIPT,
+  ADVANCED_TUTORIAL_SECTIONS,
+  createAdvancedBaseState,
+  applyAdvancedCanonicalStep,
+  prepareAdvancedLiveStep,
+} from "./tutorial-advanced.js";
 
 export const TUTORIAL_DREAMER_IDS = ["the-visionary", "the-immovable"];
 export const RECOMMENDED_STARTER_IDS = TUTORIAL_DREAMER_IDS;
@@ -124,9 +130,8 @@ const TUTORIAL_QUEST_PLACEMENT = [
 ];
 
 export const TUTORIAL_REVEAL_TILE = "candy-mountain";
-const TUTORIAL_SNAPSHOT_VERSION = 29;
-let tutorialSnapshotCache = null;
-let tutorialSnapshotCacheVersion = 0;
+const TUTORIAL_SNAPSHOT_VERSION = 30;
+const tutorialSnapshotCaches = { basic: null, advanced: null };
 
 export function createTutorialBaseState(data) {
   resetTutorialUidSeq();
@@ -142,6 +147,7 @@ export function createTutorialBaseState(data) {
   });
 
   state.tutorialMode = true;
+  state.tutorialTrack = "basic";
   state.tutorialStepIndex = 0;
   state.tutorialCanAdvance = false;
   state.tutorialComplete = false;
@@ -242,15 +248,42 @@ export function createTutorialBaseState(data) {
   return state;
 }
 
-export function createTutorialState(data) {
-  if (!tutorialSnapshotCache || tutorialSnapshotCacheVersion !== TUTORIAL_SNAPSHOT_VERSION) {
-    tutorialSnapshotCache = precomputeTutorialSnapshots(data, TUTORIAL_SCRIPT, createTutorialBaseState);
-    tutorialSnapshotCacheVersion = TUTORIAL_SNAPSHOT_VERSION;
+export function tutorialScriptFor(state) {
+  return state?.tutorialTrack === "advanced" ? ADVANCED_TUTORIAL_SCRIPT : TUTORIAL_SCRIPT;
+}
+
+export function tutorialSectionsFor(state) {
+  return state?.tutorialTrack === "advanced" ? ADVANCED_TUTORIAL_SECTIONS : TUTORIAL_SECTIONS;
+}
+
+let shownTutorialTrack = "basic";
+
+export function noteTutorialTrack(track) {
+  shownTutorialTrack = track === "advanced" ? "advanced" : "basic";
+}
+
+export function activeTutorialSections() {
+  return shownTutorialTrack === "advanced" ? ADVANCED_TUTORIAL_SECTIONS : TUTORIAL_SECTIONS;
+}
+
+export function createTutorialState(data, options = {}) {
+  const track = options.track === "advanced" ? "advanced" : "basic";
+  const cached = tutorialSnapshotCaches[track];
+  if (!cached || cached.version !== TUTORIAL_SNAPSHOT_VERSION) {
+    const script = track === "advanced" ? ADVANCED_TUTORIAL_SCRIPT : TUTORIAL_SCRIPT;
+    const build = track === "advanced" ? createAdvancedBaseState : createTutorialBaseState;
+    const apply = track === "advanced" ? applyAdvancedCanonicalStep : undefined;
+    tutorialSnapshotCaches[track] = {
+      version: TUTORIAL_SNAPSHOT_VERSION,
+      snapshots: precomputeTutorialSnapshots(data, script, build, apply),
+    };
   }
-  const snapshots = tutorialSnapshotCache;
+  const snapshots = tutorialSnapshotCaches[track].snapshots;
   const state = JSON.parse(JSON.stringify(snapshots[0]));
   reattachStateRuntime(state);
   state.tutorialMode = true;
+  state.tutorialTrack = track;
+  noteTutorialTrack(track);
   state.tutorialSnapshots = snapshots;
   state.tutorialStepIndex = 0;
   state.tutorialCanAdvance = false;
@@ -291,6 +324,9 @@ const TUTORIAL_INFO_STEPS = new Set([
   "meet-lesson",
   "r2-intro",
   "wake",
+  "adv-welcome",
+  "adv-passives",
+  "adv-wake",
 ]);
 
 function allowsSuitHand(state, detail, suit) {
@@ -412,7 +448,18 @@ function isRailBeatComplete(state, beat) {
     case "powerBonus":
       return (state.pendingPowerBonus || 0) >= (beat.amount || 1);
     case "dreamerPower":
+      if (state.tutorialFlags?.hunterPowerUsed) return true;
       return (state.anchorMeetSpreadPending || 0) >= 1 || (state.anchorMeetSpreadBonus || 0) >= 1;
+    case "playObject":
+      return !(state.players[beat.playerIndex ?? 0]?.objects || []).some((card) => card.id === "coins");
+    case "activateObject":
+      return !!state.skeletonKeyPending;
+    case "trade":
+      return !!state.tutorialFlags?.tradeDone;
+    case "weaverSwap":
+      return !!state.weaverSwapUsed;
+    case "openGuide":
+      return !!state.tutorialFlags?.guideOpened;
     case "archetypePower":
       return !!state.tutorialFlags?.archetypePowerUsed;
     case "meetPass": {
@@ -495,6 +542,16 @@ function railBeatAllows(state, beat, kind, detail = {}) {
     case "exploreMove":
       if (kind !== "exploreMove" && kind !== "boardClick") return false;
       return exploreMoveAllowed(state, detail.tileId, [beat.tileId], beat.playerIndex);
+    case "playObject":
+      return kind === "playObject" || kind === "dreamerSelect";
+    case "activateObject":
+      return kind === "activateObject" || kind === "dreamerSelect";
+    case "trade":
+      return kind === "trade" || kind === "dreamerSelect";
+    case "weaverSwap":
+      return kind === "weaverSwap" || kind === "dreamerSelect" || kind === "handToggle";
+    case "openGuide":
+      return kind === "openGuide" || kind === "headerDreamFeed";
     case "gainMeetActions":
       return kind === "gainMeetActions";
     case "meetAccept":
@@ -848,7 +905,7 @@ function decorateTutorialStep(state, step, objective) {
   return {
     ...step,
     title: welcome ? "You Are Dreaming" : step.title,
-    why: welcome ? openingHookText(state) : step.why,
+    why: step.why,
     targets,
     spotlight: spotlight || step.spotlight || null,
     spotlightBeat: beat
@@ -870,7 +927,7 @@ export function classifyPhaseAction(action) {
   if (label.startsWith("Power Token as 1")) return "phasePowerToken";
   if (label.startsWith("Gain Actions")) return "gainMeetActions";
   if (label.startsWith("Accept")) return "meetAccept";
-  if (label.startsWith("Reject")) return "meetReject";
+  if (label.startsWith("Reject") || label.startsWith("Repress") || label.startsWith("Slumber")) return "meetReject";
   if (label === "Quest 1") return "completeQuest0";
   if (label === "Quest 2") return "completeQuest1";
   if (label.startsWith("+1 Spread") || label === "+1 to Spread") return "powerBonus";
@@ -915,6 +972,7 @@ export function isTutorialActionAllowed(state, kind, detail = {}) {
 
   if (kind === "headerPause") return true;
   if (kind === "headerOverview" || kind === "headerDreamFeed" || kind === "headerMomentHistory") {
+    if (kind === "headerDreamFeed" && currentRailBeat(state)?.kind === "openGuide") return true;
     return TUTORIAL_INFO_STEPS.has(step.id);
   }
 
@@ -924,6 +982,9 @@ export function isTutorialActionAllowed(state, kind, detail = {}) {
 
   if (kind === "boardClick" && state.landscapePick?.mode === "choose") {
     return (state.landscapePick.allowed || []).includes(detail?.tileId);
+  }
+  if (kind === "boardClick" && (state.landscapePick?.mode === "reveal" || state.landscapePick?.mode === "forget")) {
+    return true;
   }
 
   return stepAllowsAction(state, step, kind, detail);
@@ -1208,7 +1269,7 @@ export const TUTORIAL_SCRIPT = [
     id: "welcome",
     round: 1,
     title: "You Are Dreaming",
-    why: "The wake story is filled in from this table when the lesson opens.",
+    why: "You wake within a place you've never been, with a feeling like you've never left, with The Visionary and The Immovable beside you. The Innocent is calling. Capture that Archetype, stand together on The Bed, and wake. The Dream Deck is already counting.",
     objective: "Click Continue. Answer the call.",
     targets: ["#active-archetype", "#phase-stepper"],
     spotlight: "#active-archetype",
@@ -1217,7 +1278,7 @@ export const TUTORIAL_SCRIPT = [
     id: "draw-dream-r1",
     round: 1,
     title: "Reveal: Draw the Dream",
-    why: "Every round the Head Dreamer draws one Dream and resolves it before anyone spends Lucidity. This one is Heroism — not a Quiet night. Each Dreamer draws Psyche equal to Willpower. You already hold a yellowish-purple Power Surge for later.",
+    why: "Every round the Head draws one Dream, and the night arrives before anyone spends Lucidity. This one is Heroism. Draw it.",
     targets: ["#btn-draw-dream", "#board-viewport"],
     rail: [
       { kind: "drawDream", prompt: "Click Draw Dream to the left of Next Phase." },
@@ -1228,7 +1289,7 @@ export const TUTORIAL_SCRIPT = [
     id: "reveal-r1",
     round: 1,
     title: "Reveal: Flip the Map",
-    why: "Forgotten hexes are Wasteland. One Lucidity card opens a shared reveal budget. Flip what you will walk. Later you may skip Reveal entirely if the map is already open and you need those cards for a fight.",
+    why: "Forgotten hexes are Wasteland. One Lucidity opens a shared budget. Flip the room you mean to walk. Revealing a hex is how you keep a room the dream wants shut.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
@@ -1243,7 +1304,7 @@ export const TUTORIAL_SCRIPT = [
     id: "explore-r1",
     round: 1,
     title: "Explore: The Other Dreamer Opens",
-    why: "The Visionary just opened Reveal, so they cannot open Explore. The same Dreamer cannot open two phases in a row unless they are alone, or nobody else can pay the suit. The Immovable spends Elasticity 2. Their Elasticity is 0, so the team gets exactly 2 shared moves. Each click is one adjacent hex. Once that spend lands, the board locks to the walk: only the glowing Landscape takes a step. The picture on that hex is the same click.",
+    why: "The Visionary opened Reveal, so The Immovable opens Explore. One Dreamer pays. The moves belong to the table. Walk The Visionary onto Mandrake.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Bed." },
@@ -1260,14 +1321,14 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-r1",
     round: 1,
     title: "Meet: Underpay and Lose",
-    why: "The Immovable opened Explore, so The Visionary opens Meet. Willpower 2 plus their Willpower of 1 gives the team 3 actions. Then play Willpower 1 against Mandrake. That is far under Power 6. A miracle 1 success to their 0 can happen. The odds are cruel. Only the Dreamer standing on the beast may play the Psyche. When the dice stop, click Stand. One Power Token removes a single beast success, and this fight is too far behind for that to matter. A tie still favors the beast.",
+    why: "Willpower opens Meet for the table. Then The Visionary, and only The Visionary, can fight the beast they are standing on. Willpower 1 against Power 6 is a thin Repress. Repress sends the beast to the Subconscious. When the dice stop, Stand. A tie favors the beast.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
       { kind: "handToggle", playerIndex: 0, cardId: "willpower-2-v-w2", prompt: "Select Willpower 2 to open Meet." },
       { kind: "gainMeetActions", prompt: "Click Gain Actions to the right of the selected Psyche." },
-      { kind: "handToggle", playerIndex: 0, cardId: "willpower-1-v-w1", prompt: "Select Willpower 1. A thin Reject." },
-      { kind: "meetReject", tileId: "the-attic", scripted: "lose", prompt: "Click The Visionary or Mandrake, then Reject. When the dice stop, click Stand." },
+      { kind: "handToggle", playerIndex: 0, cardId: "willpower-1-v-w1", prompt: "Select Willpower 1. A thin Repress." },
+      { kind: "meetReject", tileId: "the-attic", scripted: "lose", prompt: "Click The Visionary or Mandrake, then Repress. When the dice stop, click Stand." },
     ],
     until: (s) => !!s.tutorialFlags?.firstBattleLost,
   },
@@ -1275,7 +1336,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-lesson",
     round: 1,
     title: "Play the Odds",
-    why: "The dice can spike a miracle: 1 success to the beast's 0. One Power Token after the roll only removes 1 success, which is why Stand was the honest call. Smart tables stack Power before they roll. Next time you will play 3 Psyche, spend a Power Token for +1d6, and use The Visionary's Lucidity plus Fantasy match. Recommended Power is the beast's Power + 2.",
+    why: "Recommended Power is the beast's Power + 2. One Power Token after the roll removes a single success. Stack the token before you roll. Mandrake still owns The Attic.",
     objective: "Click Continue. Mandrake still owns The Attic.",
     targets: ["#board-viewport"],
     spotlight: "#board-viewport",
@@ -1284,7 +1345,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-reach",
     round: 1,
     title: "Who the Beast Can Reach",
-    why: "At the start of Meet, each Dreambeast taxes Dreamers on its hex or on a neighboring hex. Repress 1 Psyche for each beast that can reach you. Dreamers farther away pay nothing. The Visionary is on Mandrake, so they are in reach. The Immovable is on The Bed, outside that ring, so they would pay nothing. If The Immovable were in reach, their free passive ignores the first tax card once this round. Standing back is how you keep a hand for the fight.",
+    why: "At Meet's start, a beast takes 1 Psyche from each Dreamer on its hex or next door. Farther away, you pay nothing. Standing back is how you keep a hand for the fight. The Immovable's free passive ignores the first tax card once this round.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Bed. They are outside Mandrake's reach." },
@@ -1295,7 +1356,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-hold",
     round: 1,
     title: "Dreamer Power: Hold the Line",
-    why: "The free passive and the paid power are different tools. Hold the Line costs 1 Power Token. It banks +1 Psyche on every Accept or Reject during the next Meet. Spend it now so the rematch is stacked. The ? button lists every Dreamer's paid power and free passive.",
+    why: "The free passive and the paid power are different. Hold the Line costs 1 Power Token and banks +1 Psyche on every fight during the next Meet.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Bed." },
@@ -1307,7 +1368,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-penalty",
     round: 1,
     title: "End Meet: The Tax",
-    why: "Meet has two taxes. The start tax only hits Dreamers a beast can reach. The end tax hits the map: Forget 1 random Landscape for each beast still roaming, then each beast Fails. Candy Mountain, the hex you just opened, is about to slam shut. Clear the beast, or skip Meet when you cannot.",
+    why: "A beast you leave standing spends a room. Meet end Forgets 1 Landscape for each beast still roaming, then each beast Fails. Clear it, or the map pays. Candy Mountain is about to shut.",
     targets: ["#btn-next-phase"],
     rail: [
       { kind: "advancePhase", toRound: 2, prompt: "Click End Round. Watch the leftover Mandrake punish the table." },
@@ -1327,7 +1388,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-dream",
     round: 2,
     title: "Round 2 Dream: Misunderstanding",
-    why: "Misunderstanding Represses Mindstream cards into the Subconscious. That sting fills the graveyard The Innocent can later Return. Draw it, resolve it, then skip the rest of Reveal.",
+    why: "Misunderstanding Represses Mindstream cards into the Subconscious. Repress is exile: the card leaves its deck and sits in that pile. A whole Mindstream suit in the Subconscious, with nothing left to draw or shuffle, and you never wake up. Return is how those cards come back into the discard, ready to be drawn again. The Innocent will Return this mill. Draw the Dream, then leave Reveal.",
     targets: ["#btn-draw-dream"],
     rail: [
       { kind: "drawDream", prompt: "Click Draw Dream." },
@@ -1351,7 +1412,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-pass",
     round: 2,
     title: "Pass the Meet",
-    why: "After Meet opens, a Pass Token starts with a living Dreamer who did not open the phase. If the Head opened it, the next Dreamer clockwise holds the token. That Dreamer takes one Meet action, or passes. Passing moves the token clockwise. Round reset, so The Visionary may open again. The token starts with The Immovable, who is not on Mandrake. Pass it so The Visionary can fight. Two leftover Meet actions can Return one Dreambeast from the Subconscious. You will spend this budget on the fight and a Mindstream draw instead.",
+    why: "After Meet opens, a Pass Token starts with a living Dreamer who did not open the phase. If the Head opened it, the next Dreamer clockwise holds the token. That Dreamer takes one Meet action, or passes. Passing moves the token clockwise. Round reset, so The Visionary may open again. The token starts with The Immovable, who is not on Mandrake. Pass it so The Visionary can fight. Two leftover Meet actions can Return one Repressed Dreambeast from the Subconscious, putting it back in the Mindstream discard. You will spend this budget on the fight and a Mindstream draw instead.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
@@ -1421,7 +1482,8 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-arch-power",
     round: 2,
     title: "Archetype Power",
-    why: "Acquired Archetypes spend 1 Power Token. Innocent Returns 4 Repressed cards from the Subconscious, the mill Misunderstanding just dealt you. Use it.",
+    objective: "Return the cards Misunderstanding sent to the Subconscious.",
+    why: "The Innocent spends 1 Power Token and Returns 4 Repressed cards from the Subconscious. That is why the pile matters. Cards you Repress are not destroyed. Returning them puts Psyche and Mindstream cards back into their discards, so the decks can be shuffled and drawn. A Dreambeast you Repress can be Returned the same way, for 2 unused Meet actions. Use the power. The mill from Misunderstanding is waiting.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary." },
@@ -1433,7 +1495,7 @@ export const TUTORIAL_SCRIPT = [
     id: "wake",
     round: 2,
     title: "Wake Up",
-    why: "Goal reached. In a real game every living Dreamer walks back to The Bed. The Bed pulls you home now, with the same fanfare as beating a Daydream. You played the round, the dice, the Pass Token, Mindstreams, quests, and powers. Death, bosses, Objects, and Final Recurrence wait in the ? button. Go play for real.",
+    why: "Goal reached. In a real game every living Dreamer walks back to The Bed. The Bed pulls you home now. This was a Daydream. A longer night uses the same rules. If the outer rooms all go dark, or the deck draws The Final Recurrence, the goal changes. You face what is left, or you never wake up.",
     objective: "Click Finish to return to The Bed and wake.",
     targets: ["#active-archetype"],
     spotlight: "#active-archetype",
@@ -1463,7 +1525,7 @@ export function getTutorialObjective(state, step) {
 
 export function getTutorialStep(state) {
   if (!state?.tutorialMode) return null;
-  return TUTORIAL_SCRIPT[state.tutorialStepIndex] || null;
+  return tutorialScriptFor(state)[state.tutorialStepIndex] || null;
 }
 
 export function syncTutorial(state) {
@@ -1474,6 +1536,7 @@ export function syncTutorial(state) {
     return { complete: true };
   }
 
+  prepareAdvancedLiveStep(state, step);
   settleTutorialRail(state);
 
   if (step.until) {
@@ -1490,7 +1553,7 @@ export function syncTutorial(state) {
   return {
     step: decorated,
     stepIndex: state.tutorialStepIndex,
-    total: TUTORIAL_SCRIPT.length,
+    total: tutorialScriptFor(state).length,
     canAdvance: state.tutorialCanAdvance,
     round: step.round || state.round,
     objective,
@@ -1500,7 +1563,7 @@ export function syncTutorial(state) {
 export function advanceTutorialStep(state) {
   if (!state?.tutorialMode) return;
   const next = state.tutorialStepIndex + 1;
-  if (next >= TUTORIAL_SCRIPT.length) {
+  if (next >= tutorialScriptFor(state).length) {
     state.tutorialComplete = true;
     return;
   }
@@ -1554,7 +1617,7 @@ export function notifyTutorialArchetypeAcquired(state) {
 
 export function jumpTutorialToStep(state, stepIndex) {
   if (!state?.tutorialMode) return false;
-  const idx = Math.max(0, Math.min(stepIndex, TUTORIAL_SCRIPT.length - 1));
+  const idx = Math.max(0, Math.min(stepIndex, tutorialScriptFor(state).length - 1));
   restoreTutorialSnapshot(state, idx);
   state.tutorialStepIndex = idx;
   state.tutorialCanAdvance = false;

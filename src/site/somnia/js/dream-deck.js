@@ -12,7 +12,7 @@ import {
 import { logMoment } from "./narrator.js";
 import { markDreamFeedNudge } from "./fx.js";
 import { queueBossStingerFx } from "./board-fx.js";
-import { repressCard, normalizeSubconscious } from "./subconscious.js";
+import { repressCard, normalizeSubconscious, listSubconsciousCards } from "./subconscious.js";
 
 const BOSS_IDS = new Set(["cerberus", "double", "leviathan"]);
 
@@ -70,7 +70,8 @@ export function spawnBossEncounterOnBed(state, card) {
     ...card,
     type: "dreambeast",
     boss: true,
-    instanceId: uid("enc"),
+    awake: card.id === "leviathan" || card.refId === "leviathan" ? true : card.awake,
+    instanceId: card.instanceId || uid("enc"),
   };
   setEncounterOnLandscape(state, "bed", encounter);
   logMoment(state, `${card.name} awakens on The Bed!`, { boss: true });
@@ -126,7 +127,9 @@ export function repairMisplacedBossDreams(state) {
   const kept = [];
   const moved = [];
   pile.forEach((card) => {
-    if (!isBossDreamCard(card) || bossAlreadyOnBoard(state, card)) {
+    const asleepLeviathan = (card.id === "leviathan" || card.refId === "leviathan")
+      && listSubconsciousCards(state).some((c) => c.id === "leviathan" || c.refId === "leviathan");
+    if (!isBossDreamCard(card) || bossAlreadyOnBoard(state, card) || asleepLeviathan) {
       kept.push(card);
       return;
     }

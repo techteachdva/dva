@@ -285,10 +285,10 @@ function hunterPowerStart(state) {
 function immovablePowerExecute(state) {
   if (getPhase(state) === "Meet") {
     state.anchorMeetSpreadPending = 1;
-    addLog(state, "Hold the Line: during the next Meet Phase, all Dreamers may add +1 Psyche to any Accept or Reject spread.");
+    addLog(state, "Hold the Line: during the next Meet Phase, all Dreamers may add +1 Psyche to any Accept or Repress spread.");
   } else {
     state.anchorMeetSpreadBonus = 1;
-    addLog(state, "Hold the Line: this Meet Phase, all Dreamers may add +1 Psyche to any Accept or Reject spread.");
+    addLog(state, "Hold the Line: this Meet Phase, all Dreamers may add +1 Psyche to any Accept or Repress spread.");
   }
   clearDreamerPower(state);
   return { done: true };
@@ -494,6 +494,7 @@ export function resolveDreamerPowerChoice(state, choiceId) {
     addLog(state, choiceId === "toward-dreamers"
       ? "Hunter Power: each Dreambeast moves toward the nearest Dreamer."
       : "Hunter Power: each Dreambeast moves away from The Bed.");
+    if (state.tutorialFlags) state.tutorialFlags.hunterPowerUsed = true;
     clearDreamerPower(state);
     return { done: true };
   }

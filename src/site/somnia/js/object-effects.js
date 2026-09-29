@@ -292,7 +292,7 @@ function finishToothSaber(state, player, helpers, { landscapeId, mode, cardIds, 
   repressCard(state, { ...enc, type: "dreambeast" });
   applyRejectReward(state, enc, player, helpers);
   removeEncounterFromLandscape(state, landscapeId, enc);
-  addLog(state, `${player.name} Rejects ${enc.name}.`);
+  addLog(state, `${player.name} Represses ${enc.name}.`);
   recordQuestEvent(state, "meet_on_landscape", { landscapeId });
 }
 
@@ -670,10 +670,10 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
       cardId: "tooth-saber",
       step: "pick-mode",
       title: "Tooth-Saber",
-      message: `${enc.name}: Accept or Reject?`,
+      message: `${enc.name}: Accept or Repress?`,
       choices: [
         { id: "accept", label: `Accept (${enc.accept})`, hint: "Joins hand as a Psyche ally." },
-        { id: "reject", label: `Reject (${encounterRejectCost(enc)})`, hint: "Repress the Encounter." },
+        { id: "reject", label: `Repress (${encounterRejectCost(enc)})`, hint: "Send the Encounter to the Subconscious." },
       ],
       payload: { landscapeId: tileId, encounterId: encKey },
     });
@@ -1071,7 +1071,7 @@ export const OBJECT_EFFECTS = {
       step: "pick-encounter",
       title: "Tooth-Saber",
       message: "Choose an Encounter:",
-      log: "Tooth-Saber: choose an Encounter, then Accept or Reject.",
+      log: "Tooth-Saber: choose an Encounter, then Accept or Repress.",
       choices: encounters.map(({ tile, encounter }) => ({
         id: `${tile.id}:${encounterKey(encounter)}`,
         label: `${encounter.name} on ${tile.name}`,

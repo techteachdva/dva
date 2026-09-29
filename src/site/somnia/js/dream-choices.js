@@ -12,9 +12,9 @@ import { logMoment } from "./narrator.js";
 import { repressCard } from "./subconscious.js";
 import { discardToMindstream, encounterFromDreambeastCard } from "./mindstream-supply.js";
 import { adjacentTiles, edgeLandscapes } from "./hex.js";
-import { uid } from "./data.js";
 import { recordCancellableDiscard } from "./dreamer-powers.js";
 import { collapseDuplicateBosses } from "./dream-deck.js";
+import { wakeLeviathanOn } from "./dreambeasts.js";
 
 let lastHelpers = null;
 
@@ -504,25 +504,14 @@ function awakenLeviathan(state, tileId) {
     existing.encounter.awake = true;
     if (existing.tile.id !== spawnTile.id) {
       moveEncounterBetweenLandscapes(state, existing.tile.id, spawnTile.id, existing.encounter);
-      addLog(state, `Judgement moves Leviathan to ${spawnTile.name}!`);
+      addLog(state, `Judgement moves Leviathan to ${spawnTile.name}.`);
     } else {
-      addLog(state, `Judgement finds Leviathan already on ${spawnTile.name}.`);
+      addLog(state, `Judgement finds Leviathan already awake on ${spawnTile.name}.`);
     }
     return;
   }
-  const leviathan = {
-    id: "leviathan",
-    name: "Leviathan",
-    type: "dreambeast",
-    boss: true,
-    suit: "willpower",
-    accept: 12,
-    repress: 10,
-    awake: true,
-    instanceId: uid("enc"),
-  };
-  setEncounterOnLandscape(state, spawnTile.id, leviathan);
-  addLog(state, `Judgement awakens Leviathan on ${spawnTile.name}!`);
+  const woken = wakeLeviathanOn(state, spawnTile.id);
+  if (!woken) addLog(state, "Judgement cannot find Leviathan in the Subconscious or the Dream Deck.");
 }
 
 export function beginPowerlessnessChoices(state, spawnHelpers) {

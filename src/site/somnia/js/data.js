@@ -408,7 +408,7 @@ export function insertBossDreams(deck, dreambeasts) {
   const bosses = ["cerberus", "double", "leviathan"]
     .map((id) => dreambeasts.find((b) => b.id === id))
     .filter(Boolean)
-    .map((b) => ({ ...b, type: "boss-dream" }));
+    .map((b) => ({ ...b, type: "boss-dream", instanceId: uid("boss"), awake: b.id === "leviathan" ? false : undefined }));
 
   const copy = [...deck];
   bosses.forEach((boss, index) => {

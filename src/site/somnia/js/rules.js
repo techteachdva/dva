@@ -4,7 +4,7 @@ import {
   repressCard,
   isDreambeastPsycheCard,
 } from "./subconscious.js";
-import { dreamerMeetBonuses, encounterRejectCost, encounterPower, recommendedEncounterPower } from "./dreambeasts.js";
+import { dreamerMeetBonuses, encounterRejectCost, encounterPower, recommendedEncounterPower, isLeviathanCard } from "./dreambeasts.js";
 import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
 import { persistentMeetBonus, sumEffectivePsycheValue } from "./objects.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
@@ -235,7 +235,7 @@ export function psycheCursorBreakdown(state) {
       extras.push({
         suit,
         value: totalStat(actor, suit, state),
-        label: accept ? "Accept" : "Reject",
+        label: accept ? "Accept" : "Repress",
       });
     });
     const affinity = meetBonusBreakdown(state);
@@ -433,7 +433,7 @@ export function selectedHasPaySuit(cards, suit) {
 export function encounterPayHint(encounter, accept = true) {
   const suit = encounterPaySuit(encounter, accept);
   if (!suit) return "";
-  const verb = accept ? "Accept" : "Reject";
+  const verb = accept ? "Accept" : (isLeviathanCard(encounter) ? "Slumber" : "Repress");
   const power = encounterPower(encounter, accept);
   return `${verb} needs at least 1 ${SUIT_LABELS[suit]} Psyche (1–3 cards; allies extra). Beast Power ${power}, recommended ${power + 2}. You may play less and still roll. Matching ${SUIT_LABELS[suit]} is added to your Power.`;
 }

@@ -65,6 +65,7 @@ import {
   applyRejectReward,
   applyAcceptEffect,
   applyFailEffect,
+  isLeviathanCard,
 } from "./dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard, isSubconsciousDreambeast, enqueueReturnCards } from "./subconscious.js";
@@ -678,7 +679,8 @@ export function getPhaseActions(state, handlers) {
     const meetEnc = encounterForMeet(state);
     if (meetEnc && !state.finalRecurrence) {
       const payHint = encounterPayHint(meetEnc, true);
-      actions.push({
+      const slumberOnly = isLeviathanCard(meetEnc);
+      if (!slumberOnly) actions.push({
         label: `${encounterPowerLabel(meetEnc, true)} — ${encounterAcceptSummary(meetEnc)}`,
         kind: "meetAccept",
         section: "encounter",
@@ -752,7 +754,7 @@ export function getPhaseActions(state, handlers) {
       });
     }
     if (
-      !state.tutorialMode
+      (!state.tutorialMode || state.tutorialTrack === "advanced")
       && player.dreamer?.id === "the-weaver"
       && !state.weaverSwapUsed
       && (state.meetActionBudget || 0) > 0
@@ -994,6 +996,7 @@ export function drawDreamCard(state, onShowModal) {
   if (isBossDreamCard(card)) {
     spawnBossEncounterOnBed(state, card);
     recordQuestEvent(state, "meet_boss", { bossId: card.id });
+    if (state.tutorialFlags) state.tutorialFlags.bossDrawn = true;
   } else {
     resolveCardEffect(state, card, head, getEffectHelpers());
   }
@@ -1342,7 +1345,7 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
     options.push({
       id: "silverAccept",
       label: "Accept",
-      hint: "Silver: play the Accept spread. This Dreambeast cannot be Rejected.",
+      hint: "Silver: play the Accept spread. This Dreambeast cannot be Repressed.",
       primary: true,
       onPick: () => handlers.meetEncounter("accept"),
     });
@@ -1476,7 +1479,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
   if (state.forcedAccept) {
     state.selectedLandscapeId = state.forcedAccept.tileId;
     if (mode !== "accept") {
-      addLog(state, "Silver: this Dreambeast must be Accepted. It cannot be Rejected.");
+      addLog(state, "Silver: this Dreambeast must be Accepted. It cannot be Repressed.");
       return;
     }
   }
@@ -1501,6 +1504,10 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
     return;
   }
   const isReject = mode === "reject" || mode === "repress";
+  if (!isReject && isLeviathanCard(encounter)) {
+    abortMeet("Leviathan is Awake. The only Meet is Slumber: Repress it, and it flips Asleep into the Subconscious.");
+    return;
+  }
   const beastPower = encounterPower(encounter, !isReject);
   const recommended = recommendedEncounterPower(encounter, !isReject);
   const selected = selectedCards(state, actor);
@@ -1597,8 +1604,13 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     actor.hand.push(handCard);
     addLog(state, `${encounter.name} joins ${actor.name}'s hand as a 3 ${SUIT_LABELS[encounter.suit] || encounter.suit} Psyche ally.`);
   } else {
-    addLog(state, `${actor.name} Rejects ${encounter.name}. ${encounter.rejectReward || ""}`);
-    repressCard(state, { ...encounter, type: "dreambeast" });
+    if (isLeviathanCard(encounter)) {
+      encounter.awake = false;
+      addLog(state, `${actor.name} forces Leviathan into Slumber. It flips Asleep and is Repressed into the Subconscious.`);
+    } else {
+      addLog(state, `${actor.name} Represses ${encounter.name}. ${encounter.rejectReward || ""}`);
+    }
+    repressCard(state, { ...encounter, type: "dreambeast", awake: isLeviathanCard(encounter) ? false : encounter.awake });
     applyRejectReward(state, encounter, actor, getEffectHelpers());
   }
 
@@ -1994,7 +2006,8 @@ function psycheCardsForSwap(player) {
 }
 
 export function startWeaverSwap(state) {
-  if (state.tutorialMode || state.weaverSwapUsed) return false;
+  if (state.tutorialMode && state.tutorialTrack !== "advanced") return false;
+  if (state.weaverSwapUsed) return false;
   if (getPhase(state) !== "Meet" || (state.meetActionBudget || 0) < 1) {
     addLog(state, "The Weaver swaps during an open Meet.");
     return false;
@@ -2175,6 +2188,7 @@ export function confirmTrade(state) {
     playSfx("draw", { count: Math.min(given.length + taken.length, 3) });
   }
   addLog(state, `${initiator.name} gave ${given.length} Psyche to ${partner.name}. ${partner.name} gave ${taken.length} Psyche to ${initiator.name}.`);
+  if (state.tutorialFlags) state.tutorialFlags.tradeDone = true;
   state.tradeMode = false;
   state.trade = null;
   return true;

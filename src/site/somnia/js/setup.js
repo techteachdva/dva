@@ -21,7 +21,7 @@ import {
   hideDreamerDetailTooltip,
   hideUtilityModal,
 } from "./ui.js";
-import { hasSeenTutorial, hasUsedGentleStart } from "./guide.js";
+import { hasSeenTutorial, hasCompletedBasicTutorial, hasUsedGentleStart } from "./guide.js";
 import { TUTORIAL_DREAMER_IDS } from "./tutorial-mode.js";
 
 const SPLASH_MIN_MS = 3200;
@@ -140,12 +140,23 @@ function bindChangelog() {
 function applyFirstVisitMenu() {
   const row = document.querySelector(".setup-launch-row");
   const tutorial = document.getElementById("btn-tutorial-mode");
+  const advanced = document.getElementById("btn-advanced-tutorial");
   const hint = document.querySelector(".menu-tutorial-hint");
+  const basicDone = hasCompletedBasicTutorial();
   row?.classList.toggle("setup-launch-row--first-visit", firstVisit);
+  if (advanced) {
+    advanced.disabled = !basicDone;
+    advanced.title = basicDone
+      ? "Trade, objects, powers, death, and the boss on The Bed"
+      : "Finish the Tutorial to unlock the longer night";
+    advanced.setAttribute("aria-disabled", basicDone ? "false" : "true");
+  }
   if (hint) {
-    hint.innerHTML = firstVisit
-      ? "New here? Start with <strong>Tutorial</strong> — two guided rounds. The Visionary and The Immovable are a balanced first pair."
-      : "Tutorial Mode walks you through two guided rounds. Open <strong>?</strong> or Pause → Help anytime for rules.";
+    hint.innerHTML = basicDone
+      ? "Replay <strong>Tutorial</strong> or <strong>Advanced Tutorial</strong> any time. Open <strong>?</strong> during a dream for the Dream Guide."
+      : (firstVisit
+        ? "New here? <strong>Tutorial</strong> is two guided rounds. You can also <strong>Begin Dreaming</strong>, or leave the lesson early and come back. The longer night unlocks when you finish."
+        : "Tutorial Mode walks you through two guided rounds. Finish it to unlock the Advanced Tutorial. Open <strong>?</strong> anytime for rules.");
   }
   if (firstVisit && tutorial) {
     tutorial.title = "Two guided rounds with step-by-step coaching";
@@ -162,7 +173,11 @@ function bindSetup() {
     hideDreamerDetailTooltip();
     refreshDreamerPicker();
   });
-  document.getElementById("btn-tutorial-mode")?.addEventListener("click", () => launchTutorialMode());
+  document.getElementById("btn-tutorial-mode")?.addEventListener("click", () => launchTutorialMode("basic"));
+  document.getElementById("btn-advanced-tutorial")?.addEventListener("click", () => {
+    if (!hasCompletedBasicTutorial()) return;
+    launchTutorialMode("advanced");
+  });
   bindSeedInput();
   bindSavedDreams();
 }
@@ -383,11 +398,14 @@ function launchGame(config = null) {
   window.location.href = playUrl.href;
 }
 
-function launchTutorialMode() {
+function launchTutorialMode(track = "basic") {
+  const advanced = track === "advanced";
+  if (advanced && !hasCompletedBasicTutorial()) return;
   launchGame({
     lengthKey: "daydream",
-    selectedDreamerIds: [...TUTORIAL_DREAMER_IDS],
+    selectedDreamerIds: advanced ? ["the-weaver", "the-hunter"] : [...TUTORIAL_DREAMER_IDS],
     tutorialMode: true,
+    tutorialTrack: advanced ? "advanced" : "basic",
     launchedAt: Date.now(),
   });
 }

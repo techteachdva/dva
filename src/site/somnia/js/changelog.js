@@ -6,10 +6,21 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "33.2";
+export const SOMNIA_VERSION = "33.3";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "33.3",
+    title: "Leviathan",
+    notes: [
+      "The Tutorial stays the short race: capture, The Bed, and the Dream Deck. Finish it and the Advanced Tutorial unlocks, on the wake screen and on the main menu.",
+      "The longer night teaches the six passives, trade, Instant and Persistent and Must-play Objects, a paid power, the death ladder, and a boss on The Bed. Either lesson can be replayed.",
+      "During Meet, the guide says how many Landscapes the roaming beasts will Forget if you stop now. The Dream Guide opens on the race: capture the Archetypes, stand on The Bed, wake before the deck runs out.",
+      "Accept or Repress. Repress is the word for sending a Dreambeast, or any other card, into the Subconscious. The basic lesson says why you Return those cards: a Mindstream suit left entirely in the Subconscious ends the dream.",
+      "Leviathan has two sides. Awake, it stands on The Bed and the only Meet is Slumber, which flips it Asleep into the Subconscious and Returns 6 Psyche. Flip Leviathan sleeps it if it is awake, or wakes it onto The Bed if it is in the Subconscious.",
+    ],
+  },
   {
     version: "33.2",
     title: "The Two Hands",

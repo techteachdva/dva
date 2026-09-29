@@ -915,7 +915,7 @@ export function advancePhase(state) {
       t.revealed && tileHasEncounters(t) && state.players.some((p) => p.alive && p.landscapeId === t.id),
     );
     if (meetHere) state.selectedLandscapeId = meetHere.id;
-    addLog(state, "Meet Phase — spend Willpower for shared Actions. Roaming Dreambeasts stay until Accepted or Rejected.");
+    addLog(state, "Meet Phase — spend Willpower for shared Actions. Roaming Dreambeasts stay until Accepted or Repressed.");
   }
 }
 

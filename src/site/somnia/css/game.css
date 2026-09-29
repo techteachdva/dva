@@ -1620,6 +1620,23 @@ body.in-game main {
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
+.btn-advanced-menu {
+  width: 100%;
+  margin-top: 0.55rem;
+}
+
+.btn-advanced-menu:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.field-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  opacity: 0.8;
+}
+
 :where(html:not([data-hover="false"])) .btn-tutorial-menu:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(180, 160, 255, 0.35);

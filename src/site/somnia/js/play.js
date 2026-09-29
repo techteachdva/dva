@@ -114,7 +114,7 @@ import {
   getEffectHelpers,
   canDreamerMeetOnLandscape,
 } from "./game.js";
-import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "./dreambeasts.js";
+import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel, isLeviathanCard } from "./dreambeasts.js";
 import { requestEndPhase } from "./phase-skip.js";
 import { initDevConsole } from "./dev-console.js";
 import { enableDevMode } from "./dev-commands.js";
@@ -137,7 +137,10 @@ import { phaseOpeningActive, encounterPayHint, actorOnLandscape } from "./rules.
 import {
   TUTORIAL_STEPS,
   tutorialBriefHtml,
+  advancedTutorialBriefHtml,
   markTutorialSeen,
+  markBasicTutorialComplete,
+  markAdvancedTutorialComplete,
   markGentleStartUsed,
 } from "./guide.js";
 import {
@@ -655,7 +658,13 @@ function bindRestart() {
   });
 
   document.getElementById("btn-replay-tutorial")?.addEventListener("click", () => {
-    launchReplayTutorial();
+    launchReplayTutorial(state?.tutorialTrack === "advanced" ? "advanced" : "basic");
+  });
+  document.getElementById("btn-replay-basic")?.addEventListener("click", () => {
+    launchReplayTutorial("basic");
+  });
+  document.getElementById("btn-advanced-tutorial")?.addEventListener("click", () => {
+    launchReplayTutorial("advanced");
   });
   document.getElementById("btn-start-daydream")?.addEventListener("click", () => {
     stopVictoryCelebration();
@@ -683,6 +692,10 @@ function bindHelp() {
       return;
     }
     showDreamFeedModal(state);
+    if (state?.tutorialFlags && state.tutorialTrack === "advanced") {
+      state.tutorialFlags.guideOpened = true;
+      renderAll();
+    }
   });
   document.getElementById("btn-header-subconscious")?.addEventListener("click", () => {
     if (!isTutorialActionAllowed(state, "headerSubconscious")) {
@@ -919,14 +932,18 @@ async function startGame(config) {
   }
 
   if (config.tutorialMode) {
-    state = createTutorialState(gameData);
+    const track = config.tutorialTrack === "advanced" ? "advanced" : "basic";
+    state = createTutorialState(gameData, { track });
     interactiveTutorialActive = true;
     tutorialBriefPending = true;
     document.body.classList.add("tutorial-mode-active");
+    document.body.dataset.tutorialTrack = track;
     narrate(
       state,
-      "You are dreaming",
-      openingHookText(state),
+      track === "advanced" ? "The longer night" : "You are dreaming",
+      track === "advanced"
+        ? "The Weaver and The Hunter are already in Meet. The sparkles lead the rest."
+        : openingHookText(state),
       ["Click Continue. The sparkles lead the way."],
     );
   } else {
@@ -958,7 +975,18 @@ async function startGame(config) {
   resetBoardMotion(state);
   renderAll();
   if (config.tutorialMode) {
-    showTutorialBrief(tutorialBriefHtml(), () => {
+    const track = state?.tutorialTrack === "advanced" ? "advanced" : "basic";
+    const title = document.getElementById("tutorial-brief-title");
+    const sub = document.querySelector(".tutorial-brief-header p");
+    if (title) title.textContent = track === "advanced" ? "Advanced Tutorial" : "Guided Tutorial";
+    const beginBtn = document.getElementById("tutorial-brief-begin");
+    if (beginBtn) beginBtn.textContent = track === "advanced" ? "Begin the Longer Night" : "Begin Guided Tutorial";
+    if (sub) {
+      sub.textContent = track === "advanced"
+        ? "The longer night. The sparkles show every click."
+        : "Two practice rounds. The sparkles show every click.";
+    }
+    showTutorialBrief(track === "advanced" ? advancedTutorialBriefHtml() : tutorialBriefHtml(), () => {
       tutorialBriefPending = false;
       syncInteractiveTutorial();
     });
@@ -1044,8 +1072,16 @@ function finishTutorial() {
   renderAll();
 }
 
+function confirmLeaveTutorial() {
+  const advanced = state?.tutorialTrack === "advanced";
+  const message = advanced
+    ? "Leave the longer night? You can replay it from the menu."
+    : "Leave the guided steps? The Advanced Tutorial stays locked until you finish this lesson. You can keep practicing, or return later.";
+  return confirm(message);
+}
+
 function handleTutorialSkip() {
-  if (!confirm("Leave the guided steps? You can keep practicing on this table.")) return;
+  if (!confirmLeaveTutorial()) return;
   clearTimeout(tutorialAutoAdvanceTimer);
   tutorialAutoAdvanceTimer = null;
   releaseTutorialToPractice(state);
@@ -1135,11 +1171,14 @@ function launchGentleDaydream() {
   window.location.href = playUrl.href;
 }
 
-function launchReplayTutorial() {
+function launchReplayTutorial(track = "basic") {
   writeLaunchConfig({
     lengthKey: "daydream",
-    selectedDreamerIds: [...RECOMMENDED_STARTER_IDS],
+    selectedDreamerIds: track === "advanced"
+      ? ["the-weaver", "the-hunter"]
+      : [...RECOMMENDED_STARTER_IDS],
     tutorialMode: true,
+    tutorialTrack: track,
     launchedAt: Date.now(),
   });
   window.location.href = "play.html";
@@ -1220,7 +1259,7 @@ function syncInteractiveTutorial() {
     ensureTutorialStepTargetsVisible(step);
     refreshTutorialSpotlight();
     lastTutorialSyncKey = syncKey;
-    if (step.until && canAdvance) scheduleTutorialAutoAdvance();
+    if (step.until && canAdvance && step.id !== "adv-guide") scheduleTutorialAutoAdvance();
     return;
   }
 
@@ -1546,8 +1585,9 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
   const handlers = buildPhaseHandlers();
   const canMeet = occupant && canDreamerMeetOnLandscape(state, occupant, tileId);
 
+  const slumberOnly = isLeviathanCard(encounter);
   const options = [
-    {
+    !slumberOnly && {
       id: "accept",
       label: encounterPowerLabel(encounter, true),
       hint: `${encounterPayHint(encounter, true)} ${encounterAcceptSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
@@ -2054,6 +2094,27 @@ function renderAll() {
     );
     document.getElementById("btn-start-daydream")?.classList.toggle("hidden", !state.tutorialVictory);
     document.getElementById("end-leaderboard")?.classList.toggle("hidden", !!state.tutorialVictory);
+    const advancedEnd = document.getElementById("btn-advanced-tutorial");
+    const replayBasic = document.getElementById("btn-replay-basic");
+    const replay = document.getElementById("btn-replay-tutorial");
+    if (state.tutorialVictory) {
+      const longer = state.tutorialTrack === "advanced";
+      if (longer) markAdvancedTutorialComplete();
+      else markBasicTutorialComplete();
+      advancedEnd?.classList.toggle("hidden", longer);
+      replayBasic?.classList.toggle("hidden", !longer);
+      if (replay) replay.textContent = longer ? "Replay Advanced" : "Replay Tutorial";
+      const wake = document.getElementById("end-message");
+      if (wake && !longer) {
+        wake.textContent = "You woke on The Bed. The Advanced Tutorial is unlocked on this screen and on the main menu. It teaches trade, objects, powers, death, and the boss.";
+      }
+      if (wake && longer) {
+        wake.textContent = "You woke from the longer night. Replay either lesson from the menu, or begin a real Daydream.";
+      }
+    } else {
+      advancedEnd?.classList.add("hidden");
+      replayBasic?.classList.add("hidden");
+    }
     if (!victoryShown) {
       victoryShown = true;
       startVictoryCelebration();

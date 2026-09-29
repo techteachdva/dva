@@ -133,6 +133,7 @@ export function onObjectDrawn(state, player, card, helpers) {
   ensureObjectZones(player);
   if (card.subtype === "must-play") {
     addLog(state, `${player.name} must play ${card.name}.`);
+    if (state.tutorialFlags && card.id === "the-all-seeing-eye") state.tutorialFlags.eyePlayed = true;
     resolveMustPlayObject(state, player, card, helpers);
     return;
   }

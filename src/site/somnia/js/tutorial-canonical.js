@@ -428,7 +428,7 @@ function playTutorialPowerSurge(state, playerIndex = 0) {
   if (player && card) playPsychePowerFromHand(state, player, card);
 }
 
-export function precomputeTutorialSnapshots(data, script, buildBaseState) {
+export function precomputeTutorialSnapshots(data, script, buildBaseState, applyStep = applyCanonicalTutorialStep) {
   const snapshots = [];
   let state = buildBaseState(data);
   reattachStateRuntime(state);
@@ -436,7 +436,7 @@ export function precomputeTutorialSnapshots(data, script, buildBaseState) {
   for (let i = 0; i < script.length; i += 1) {
     snapshots.push(snapshotTutorialGame(state));
     if (i < script.length - 1) {
-      applyCanonicalTutorialStep(state, script[i]);
+      applyStep(state, script[i]);
       reattachStateRuntime(state);
     }
   }

@@ -30,6 +30,7 @@ import {
   encounterAcceptSummary,
   encounterRejectSummary,
   encounterRejectCost,
+  isLeviathanCard,
   encounterPower,
   recommendedEncounterPower,
   encounterPowerLabel,
@@ -48,7 +49,7 @@ import {
   completeReturnSelection,
 } from "./subconscious.js";
 import {
-  TUTORIAL_SECTIONS,
+  activeTutorialSections,
   getTutorialSpotlightSelector,
   getTutorialStepTargetSelectors,
   getTutorialRevealTargetId,
@@ -1099,6 +1100,8 @@ function appendDreambeastModalDetail(detail, card) {
   const rejectCost = encounterRejectCost(card);
   const rejectSuit = card.rejectSuit ? ` ${suitIconHtml(card.rejectSuit, { size: 14 })}` : "";
   const acceptSuit = card.suit ? ` ${suitIconHtml(card.suit, { size: 14 })}` : "";
+  const slumberOnly = isLeviathanCard(card);
+  const repressVerb = slumberOnly ? "Slumber" : "Repress";
 
   if (card.flavor) {
     const flavor = document.createElement("blockquote");
@@ -1110,13 +1113,13 @@ function appendDreambeastModalDetail(detail, card) {
   const costs = document.createElement("div");
   costs.className = "dreambeast-cost-breakdown";
   costs.innerHTML = `
-    <div class="dreambeast-cost-row accept">
-      <strong>Power ${card.accept}${acceptSuit} · Rec ${card.accept + 2}</strong>
+    ${slumberOnly ? "" : `<div class="dreambeast-cost-row accept">
+      <strong>Accept · Power ${card.accept}${acceptSuit} · Rec ${card.accept + 2}</strong>
       <span>${encounterPayHint(card, true)}</span>
       <span>${encounterAcceptSummary(card)}</span>
-    </div>
+    </div>`}
     <div class="dreambeast-cost-row reject">
-      <strong>Power ${rejectCost}${rejectSuit} · Rec ${rejectCost + 2}</strong>
+      <strong>${repressVerb} · Power ${rejectCost}${rejectSuit} · Rec ${rejectCost + 2}</strong>
       <span>${encounterPayHint(card, false)}</span>
       <span>${encounterRejectSummary(card)}</span>
     </div>
@@ -2303,7 +2306,7 @@ export function renderBoard(
       const arriving = encKey && isBeastTokenHidden(encKey) ? " is-arriving" : "";
       const offset = encIndex > 0 ? ` style="--beast-stack: ${encIndex}"` : "";
       occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-beast${arriving}" data-encounter-key="${encKey}"${offset} src="${encounter.image}" alt="${encounter.name}" title="${encounter.name} — Accept, Reject, or View" decoding="async" draggable="false" onerror="this.remove()">`
+        `<img class="hex-occupant-token hex-occupant-beast${arriving}" data-encounter-key="${encKey}"${offset} src="${encounter.image}" alt="${encounter.name}" title="${encounter.name} — Accept, Repress, or View" decoding="async" draggable="false" onerror="this.remove()">`
       );
     });
     const occupantsHtml = occupantTokens.length
@@ -3462,7 +3465,7 @@ export function renderPhaseActions(_actions, _advanceAction = null, state = null
         ? state.players.find((p) => p.id === state.meetPassHolderId)
         : null;
       const passNote = holder ? ` Pass Token: ${holder.name}.` : "";
-      parts.push(`Meet start: a Dreamer Represses 1 Psyche for each Dreambeast on their tile or an adjacent hex (${beastCount} roaming). End of Meet: Forget ${beastCount} random Landscape${beastCount === 1 ? "" : "s"}, then each remaining beast Fails in spawn order. Beasts stay until you win a dice battle.${passNote}`);
+      parts.push(`If you end Meet now, ${beastCount} Dreambeast${beastCount === 1 ? "" : "s"} will Forget ${beastCount} Landscape${beastCount === 1 ? "" : "s"}. At the start, a Dreamer on or beside a beast Represses 1 Psyche for each one that can reach them. Beasts stay until you win a dice battle.${passNote}`);
     }
     const toll = timelineTollPreview(state);
     if (toll && !beastCount) {
@@ -5221,12 +5224,13 @@ export function showLandscapeDetail(state, tileId, { onDreamerClick = null, onBe
     const rejectCost = encounterRejectCost(enc);
     const rejectSuit = enc.rejectSuit ? suitIconHtml(enc.rejectSuit, { size: 12 }) : "";
     const acceptSuit = enc.suit ? suitIconHtml(enc.suit, { size: 12 }) : "";
+    const slumberOnly = isLeviathanCard(enc);
     beastEntries.push({
       card: { ...enc, type: enc.type || "dreambeast" },
       caption: enc.name,
       detailHtml: `
-        <div class="landscape-detail-beast-cost accept"><strong>P${enc.accept} · Rec ${enc.accept + 2}</strong> ${acceptSuit}<span>${encounterPayHint(enc, true)}</span></div>
-        <div class="landscape-detail-beast-cost reject"><strong>P${rejectCost} · Rec ${rejectCost + 2}</strong> ${rejectSuit}<span>${encounterPayHint(enc, false)}</span></div>
+        ${slumberOnly ? "" : `<div class="landscape-detail-beast-cost accept"><strong>Accept · P${enc.accept} · Rec ${enc.accept + 2}</strong> ${acceptSuit}<span>${encounterPayHint(enc, true)}</span></div>`}
+        <div class="landscape-detail-beast-cost reject"><strong>${slumberOnly ? "Slumber" : "Repress"} · P${rejectCost} · Rec ${rejectCost + 2}</strong> ${rejectSuit}<span>${encounterPayHint(enc, false)}</span></div>
         ${enc.effect ? `<div class="landscape-detail-beast-effect"><strong>Effect:</strong> ${enc.effect}</div>` : ""}
         ${enc.flavor ? `<div class="landscape-detail-beast-flavor">${enc.flavor}</div>` : ""}
       `,
@@ -5964,11 +5968,12 @@ function positionTutorialCard(step) {
 function populateTutorialJumpMenu(stepIndex, onJump) {
   const select = document.getElementById("tutorial-jump");
   if (!select) return;
-  select.innerHTML = TUTORIAL_SECTIONS.map((section) =>
+  const sections = activeTutorialSections();
+  select.innerHTML = sections.map((section) =>
     `<option value="${section.stepIndex}">${section.label}</option>`).join("");
-  const active = TUTORIAL_SECTIONS.find((s) => s.stepIndex === stepIndex)
-    || [...TUTORIAL_SECTIONS].reverse().find((s) => s.stepIndex <= stepIndex)
-    || TUTORIAL_SECTIONS[0];
+  const active = sections.find((s) => s.stepIndex === stepIndex)
+    || [...sections].reverse().find((s) => s.stepIndex <= stepIndex)
+    || sections[0];
   select.value = String(active.stepIndex);
   select.onchange = () => {
     const target = parseInt(select.value, 10);
@@ -6414,6 +6419,8 @@ export function showTutorialStep(step, stepIndex, total, {
 
   populateTutorialJumpMenu(stepIndex, onJump);
   updateTutorialHeaderLabel(step, stepIndex, total, roundLabel);
+  document.getElementById("tutorial-card-body")?.scrollTo?.({ top: 0 });
+  document.getElementById("tutorial-next")?.scrollIntoView?.({ block: "nearest" });
 
   clearTutorialHighlight({ keepLayer: !!fromRect });
   ensureTutorialStepTargetsVisible(step);
