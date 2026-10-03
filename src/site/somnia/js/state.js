@@ -28,6 +28,8 @@ import {
   buildDreamDeck,
   insertBossDreams,
   buildMindstreamDecks,
+  makeExtraPsycheCards,
+  goalPointsForTable,
   uid,
   PSYCHE_STARTING_HAND,
 } from "./data.js";
@@ -125,6 +127,13 @@ export function createInitialState(data, options) {
     return hand;
   }
 
+  const extras = shuffle(makeExtraPsycheCards(options.selectedDreamers.length));
+  if (extras.length) {
+    psycheDeck.push(...extras);
+    const mixed = shuffle(psycheDeck.splice(0));
+    psycheDeck.push(...mixed);
+  }
+
   const players = options.selectedDreamers.map((dreamer, index) => ({
     id: uid("player"),
     name: dreamer.name,
@@ -168,7 +177,7 @@ export function createInitialState(data, options) {
     seedFlags,
     gameId: buildGameId(openingNeighbor?.name, seed),
     remFree: { reveal: false, explore: false, meet: false },
-    goalPoints: length.points,
+    goalPoints: goalPointsForTable(options.lengthKey, players.length),
     dreamDeck,
     psycheDeck,
     psycheDiscard: [],
@@ -705,8 +714,14 @@ export function deathAvoidTokenCost(state) {
   return Math.max(1, Math.floor(alive / 2));
 }
 
-function respawnPsycheTarget(deathCount) {
-  return Math.max(0, PSYCHE_STARTING_HAND - deathCount);
+export function deathCapFor(state) {
+  return state?.players?.length === 1 ? 8 : MAX_DREAMER_DEATHS;
+}
+
+function respawnPsycheTarget(state, deathCount) {
+  const raw = Math.max(0, PSYCHE_STARTING_HAND - deathCount);
+  if (state.players.length === 1) return Math.max(3, raw);
+  return raw;
 }
 
 function seatDreamerOnBed(state, player) {
@@ -716,11 +731,17 @@ function seatDreamerOnBed(state, player) {
   if (idx >= 0) state.activePlayerIndex = idx;
 }
 
-function loseOnFifthDeath(state, player) {
+function loseOnFinalDeath(state, player) {
   if (state.tutorialMode) return;
   if (state.status !== "playing") return;
   state.status = "lost";
-  addLog(state, `${player.name} died a fifth time — no Psyche left to return with. The table never wakes.`);
+  const solo = state.players.length === 1;
+  addLog(
+    state,
+    solo
+      ? `${player.name} died an eighth time. One Dreamer, and the night is over.`
+      : `${player.name} died a fifth time — no Psyche left to return with. The table never wakes.`,
+  );
 }
 
 function clearPlayerHandOnDeath(state, player) {
@@ -760,20 +781,29 @@ export function applyDreamerDeath(state, player) {
   clearPlayerHandOnDeath(state, player);
   seatDreamerOnBed(state, player);
 
-  if (deaths >= MAX_DREAMER_DEATHS) {
+  const cap = deathCapFor(state);
+  if (deaths >= cap) {
     player.alive = false;
-    addLog(state, `${player.name} cannot respawn (${deaths}/${MAX_DREAMER_DEATHS}) — starting hand would be 0.`);
-    loseOnFifthDeath(state, player);
+    addLog(
+      state,
+      state.players.length === 1
+        ? `${player.name} cannot respawn (${deaths}/${cap}).`
+        : `${player.name} cannot respawn (${deaths}/${cap}) — starting hand would be 0.`,
+    );
+    loseOnFinalDeath(state, player);
     return;
   }
 
-  const target = respawnPsycheTarget(deaths);
+  const target = respawnPsycheTarget(state, deaths);
   drawPsycheForPlayer(state, player, target);
   if (state.tutorialMode) resolvePowerCardsInHand(state, player);
 
+  const ladder = state.players.length === 1
+    ? "hand never below 3, eighth death ends the night"
+    : "ladder 4 / 3 / 2 / 1";
   addLog(
     state,
-    `${player.name} dies (${deaths}/${MAX_DREAMER_DEATHS}) — Mindstream tops Repressed; Objects discarded; Power returned to the pool. Respawn on The Bed with ${target} Psyche (ladder 4 / 3 / 2 / 1) and no new Power. The Bed's Draw 3 is available as normal.`,
+    `${player.name} dies (${deaths}/${cap}) — Mindstream tops Repressed; Objects discarded; Power returned to the pool. Respawn on The Bed with ${target} Psyche (${ladder}) and no new Power. The Bed's Draw 3 is available as normal.`,
   );
 }
 
@@ -979,7 +1009,7 @@ export function checkVictory(state) {
 export function checkDefeat(state) {
   if (state.tutorialMode) return;
   if (state.status !== "playing") return;
-  const fifthDeath = (state.players || []).find((p) => (p.deathCount || 0) >= MAX_DREAMER_DEATHS);
+  const fifthDeath = (state.players || []).find((p) => (p.deathCount || 0) >= deathCapFor(state));
   if (fifthDeath) {
     loseOnFifthDeath(state, fifthDeath);
     return;

@@ -6,10 +6,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "33.3";
+export const SOMNIA_VERSION = "34.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "34.0",
+    title: "The Wider Table",
+    notes: [
+      "Meet tax discards Psyche into the discard pile, so those cards can be shuffled back. Fail costs and cards that say Repress still go to the Subconscious.",
+      "Each Dreamer after the second adds 8 Psyche cards to the deck. Two Dreamers still share the 57-card deck.",
+      "One Dreamer plays a closer night: 4, 6, or 12 points, eight deaths, and a respawn hand that never drops below 3. The first Meet-tax card each Meet is ignored.",
+    ],
+  },
   {
     version: "33.3",
     title: "Leviathan",

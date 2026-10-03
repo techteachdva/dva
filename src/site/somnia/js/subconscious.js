@@ -324,6 +324,17 @@ function findCollectiveHandCard(state, instanceId) {
   return null;
 }
 
+function commitHandLoss(state, player, card, toDiscard) {
+  if (toDiscard && !isDreambeastPsycheCard(card)) {
+    if (!state.psycheDiscard) state.psycheDiscard = [];
+    state.psycheDiscard.push(card);
+    return "discard";
+  }
+  queueRepressFx(card, { playerId: player.id });
+  repressCard(state, card);
+  return "repress";
+}
+
 function beginRepressStep(state, step) {
   if (step.collective && step.source === "hand") {
     const available = collectiveHandPool(state);
@@ -337,6 +348,7 @@ function beginRepressStep(state, step) {
         remaining: needed,
         picked: [],
         reason: step.reason,
+        toDiscard: !!step.toDiscard,
         confirmEmpty: true,
       };
       return;
@@ -345,10 +357,11 @@ function beginRepressStep(state, step) {
     if (needed === 1 && available.length === 1) {
       const { player, card } = available[0];
       removeFromSource(player, step.source, card.instanceId);
-      queueRepressFx(card, { playerId: player.id });
-      repressCard(state, card);
+      const kind = commitHandLoss(state, player, card, !!step.toDiscard);
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
-      logRepress(state, `Team Repressed ${card.name} → Subconscious.`);
+      logRepress(state, kind === "discard"
+        ? `Team Discarded ${card.name}.`
+        : `Team Repressed ${card.name} → Subconscious.`);
       if (state.checkPsycheDeath) state.checkPsycheDeath(player);
       advanceResolutionQueue(state);
       return;
@@ -361,6 +374,7 @@ function beginRepressStep(state, step) {
       remaining: needed,
       picked: [],
       reason: step.reason,
+      toDiscard: !!step.toDiscard,
       confirmEmpty: false,
     };
     if (step.reason) flashMoment(step.reason);
@@ -383,6 +397,7 @@ function beginRepressStep(state, step) {
       remaining: needed,
       picked: [],
       reason: step.reason,
+      toDiscard: !!step.toDiscard,
       confirmEmpty: true,
     };
     return;
@@ -391,12 +406,13 @@ function beginRepressStep(state, step) {
   if (state.tutorialMode && needed === 1 && available.length >= 1) {
     const card = available.find((c) => c.type === "psyche" && !isDreambeastPsycheCard(c)) || available[0];
     removeFromSource(player, step.source, card.instanceId);
-    queueRepressFx(card, { playerId: player.id });
-    repressCard(state, card);
+    const kind = commitHandLoss(state, player, card, !!step.toDiscard);
     if (step.source === "hand") {
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
     }
-    logRepress(state, `${player.name} Repressed ${card.name} → Subconscious.`);
+    logRepress(state, kind === "discard"
+      ? `${player.name} Discarded ${card.name}.`
+      : `${player.name} Repressed ${card.name} → Subconscious.`);
     if (step.source === "hand" && state.checkPsycheDeath) {
       state.checkPsycheDeath(player);
     }
@@ -407,12 +423,13 @@ function beginRepressStep(state, step) {
   if (needed === 1 && available.length === 1) {
     const card = available[0];
     removeFromSource(player, step.source, card.instanceId);
-    queueRepressFx(card, { playerId: player.id });
-    repressCard(state, card);
+    const kind = commitHandLoss(state, player, card, !!step.toDiscard);
     if (step.source === "hand") {
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
     }
-    logRepress(state, `${player.name} Repressed ${card.name} → Subconscious.`);
+    logRepress(state, kind === "discard"
+      ? `${player.name} Discarded ${card.name}.`
+      : `${player.name} Repressed ${card.name} → Subconscious.`);
     if (step.source === "hand" && state.checkPsycheDeath) {
       state.checkPsycheDeath(player);
     }
@@ -426,6 +443,7 @@ function beginRepressStep(state, step) {
     remaining: needed,
     picked: [],
     reason: step.reason,
+    toDiscard: !!step.toDiscard,
     confirmEmpty: false,
   };
   if (step.reason) flashMoment(step.reason);
@@ -447,6 +465,21 @@ export function enqueueRepressObjects(state, player, count, { reason = "" } = {}
     playerId: player.id,
     count,
     reason: reason || `${player.name}: Repress ${count} Object(s).`,
+  });
+  if (!state.pendingRepress && !state.pendingReturn) {
+    advanceResolutionQueue(state);
+  }
+}
+
+export function enqueueDiscardFromHand(state, player, count, { reason = "" } = {}) {
+  state.resolutionQueue = state.resolutionQueue || [];
+  state.resolutionQueue.push({
+    type: "repress",
+    source: "hand",
+    playerId: player.id,
+    count,
+    toDiscard: true,
+    reason: reason || `${player.name}: Discard ${count} Psyche card(s).`,
   });
   if (!state.pendingRepress && !state.pendingReturn) {
     advanceResolutionQueue(state);
@@ -518,8 +551,7 @@ export function pickRepressCard(state, instanceId) {
   }
 
   removeFromSource(player, pending.source, instanceId);
-  repressCard(state, card);
-  queueRepressFx(card, { playerId: player.id });
+  commitHandLoss(state, player, card, !!pending.toDiscard);
   pending.picked.push(card);
   if (pending.source === "hand") {
     recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
@@ -527,10 +559,11 @@ export function pickRepressCard(state, instanceId) {
 
   if (pending.picked.length >= pending.remaining) {
     const names = pending.picked.map((c) => c.name).join(", ");
+    const verb = pending.toDiscard ? "Discarded" : "Repressed";
     if (pending.collective) {
-      logRepress(state, `Team Repressed ${pending.picked.length} Psyche card(s): ${names}.`);
+      logRepress(state, `Team ${verb} ${pending.picked.length} Psyche card(s): ${names}.`);
     } else {
-      logRepress(state, `${player.name} Repressed ${pending.picked.length} card(s): ${names}.`);
+      logRepress(state, `${player.name} ${verb} ${pending.picked.length} card(s): ${names}.`);
     }
     state.pendingRepress = null;
     if (pending.source === "hand" && state.checkPsycheDeath) {
@@ -551,14 +584,15 @@ export function confirmRepressStep(state) {
 
   const player = pending.collective ? null : playerById(state, pending.playerId);
   const subject = pending.collective ? "Team" : player?.name;
+  const verb = pending.toDiscard ? "Discard" : "Repress";
   if (pending.confirmEmpty && subject) {
     if (pending.remaining <= 0) {
-      logRepress(state, `${subject}: nothing to Repress — continuing.`);
+      logRepress(state, `${subject}: nothing to ${verb} — continuing.`);
     } else {
-      logRepress(state, `${subject}: no ${pending.source === "objects" ? "Objects" : "Psyche"} to Repress (${pending.picked.length}/${pending.remaining} chosen).`);
+      logRepress(state, `${subject}: no ${pending.source === "objects" ? "Objects" : "Psyche"} to ${verb} (${pending.picked.length}/${pending.remaining} chosen).`);
     }
   } else if (subject && pending.picked.length < pending.remaining) {
-    logRepress(state, `${subject} Repressed ${pending.picked.length}/${pending.remaining} (all available).`);
+    logRepress(state, `${subject} ${verb === "Discard" ? "Discarded" : "Repressed"} ${pending.picked.length}/${pending.remaining} (all available).`);
   }
 
   state.pendingRepress = null;

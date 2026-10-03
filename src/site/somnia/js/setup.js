@@ -121,6 +121,7 @@ async function init() {
   await preloadMenuSplashImage();
   gameData = await loadGameData();
   bindSetup();
+  refreshLengthOptions();
   prefillLastSeed();
   bindChangelog();
   bindModal();
@@ -163,6 +164,33 @@ function applyFirstVisitMenu() {
   }
 }
 
+function refreshLengthOptions() {
+  const solo = playerCount() === 1;
+  const select = document.getElementById("setup-length");
+  const hint = document.getElementById("setup-length-hint");
+  const labels = solo
+    ? {
+      daydream: "Daydream — 4 pts · 11 Dreams",
+      nap: "Nap — 6 pts · 14 Dreams",
+      deep: "Deep Sleep — 12 pts · 18 Dreams",
+    }
+    : {
+      daydream: "Daydream — 8 pts · 11 Dreams",
+      nap: "Nap — 12 pts · 14 Dreams",
+      deep: "Deep Sleep — 24 pts · 18 Dreams",
+    };
+  if (select) {
+    [...select.options].forEach((opt) => {
+      if (labels[opt.value]) opt.textContent = labels[opt.value];
+    });
+  }
+  if (hint) {
+    hint.textContent = solo
+      ? "One Dreamer. The same night, a closer goal: 4, 6, or 12 points. Eight deaths, and the first Meet tax is ignored."
+      : "Same rules on every night. Daydream is the first one. Nap and Deep Sleep ask for more points.";
+  }
+}
+
 function bindSetup() {
   document.getElementById("btn-start").addEventListener("click", () => launchGame());
   document.getElementById("btn-continue")?.addEventListener("click", () => {
@@ -171,6 +199,7 @@ function bindSetup() {
   document.getElementById("setup-players").addEventListener("change", () => {
     selectedDreamerIds = [];
     hideDreamerDetailTooltip();
+    refreshLengthOptions();
     refreshDreamerPicker();
   });
   document.getElementById("btn-tutorial-mode")?.addEventListener("click", () => launchTutorialMode("basic"));

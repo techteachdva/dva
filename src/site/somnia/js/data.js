@@ -47,9 +47,9 @@ function enrichMindstreamEvents(mindstream, catalog) {
 }
 
 export const LENGTHS = {
-  daydream: { label: "Daydream", points: 8, dreams: 11 },
-  nap: { label: "Nap", points: 12, dreams: 14 },
-  deep: { label: "Deep Sleep", points: 24, dreams: 18 },
+  daydream: { label: "Daydream", points: 8, soloPoints: 4, dreams: 11 },
+  nap: { label: "Nap", points: 12, soloPoints: 6, dreams: 14 },
+  deep: { label: "Deep Sleep", points: 24, soloPoints: 12, dreams: 18 },
 };
 
 /** ~33% boon / 66% hazard in weighted session draws. */
@@ -141,6 +141,39 @@ export const PSYCHE_DECK_SIZE =
   (Object.values(PSYCHE_DISTRIBUTION).reduce((sum, n) => sum + n, 0) * 3)
   + PSYCHE_WILD_COUNT
   + PSYCHE_POWER_TOKEN_COUNT;
+
+/** Eight low Psyche cards for each Dreamer after the second, so a full table does not drink a two-Dreamer deck. */
+export const EXTRA_PSYCHE_PER_DREAMER = 8;
+
+export function extraPsycheCount(playerCount) {
+  return Math.max(0, (playerCount || 0) - 2) * EXTRA_PSYCHE_PER_DREAMER;
+}
+
+export function makeExtraPsycheCards(playerCount) {
+  const suits = ["lucidity", "elasticity", "willpower"];
+  const cards = [];
+  const total = extraPsycheCount(playerCount);
+  for (let i = 0; i < total; i += 1) {
+    const suit = suits[i % suits.length];
+    const value = i % 2 === 0 ? 1 : 2;
+    const label = suit.charAt(0).toUpperCase() + suit.slice(1);
+    cards.push({
+      id: `${suit}-${value}`,
+      type: "psyche",
+      suit,
+      value,
+      name: `${label} ${value}`,
+      instanceId: uid("psyche"),
+    });
+  }
+  return cards;
+}
+
+export function goalPointsForTable(lengthKey, playerCount) {
+  const length = LENGTHS[lengthKey] || LENGTHS.daydream;
+  if (playerCount === 1 && length.soloPoints) return length.soloPoints;
+  return length.points;
+}
 
 export function buildPsycheDeck(psycheConfig = {}) {
   const suits = psycheConfig.suits || ["lucidity", "elasticity", "willpower"];

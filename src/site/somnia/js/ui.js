@@ -3465,7 +3465,7 @@ export function renderPhaseActions(_actions, _advanceAction = null, state = null
         ? state.players.find((p) => p.id === state.meetPassHolderId)
         : null;
       const passNote = holder ? ` Pass Token: ${holder.name}.` : "";
-      parts.push(`If you end Meet now, ${beastCount} Dreambeast${beastCount === 1 ? "" : "s"} will Forget ${beastCount} Landscape${beastCount === 1 ? "" : "s"}. At the start, a Dreamer on or beside a beast Represses 1 Psyche for each one that can reach them. Beasts stay until you win a dice battle.${passNote}`);
+      parts.push(`If you end Meet now, ${beastCount} Dreambeast${beastCount === 1 ? "" : "s"} will Forget ${beastCount} Landscape${beastCount === 1 ? "" : "s"}. At the start, a Dreamer on or beside a beast discards 1 Psyche for each one that can reach them. Beasts stay until you win a dice battle.${passNote}`);
     }
     const toll = timelineTollPreview(state);
     if (toll && !beastCount) {
@@ -4567,26 +4567,28 @@ export function showRepressPicker(state, onPick, onConfirm) {
   const needed = pending.remaining;
   const isEmpty = pending.confirmEmpty;
 
+  const discard = !!pending.toDiscard;
+  const verb = discard ? "Discard" : "Repress";
   let instruction;
   if (isEmpty && needed <= 0) {
-    instruction = "No cards to Repress for this effect.";
+    instruction = `No cards to ${verb} for this effect.`;
   } else if (isEmpty && pool.length === 0) {
-    instruction = `No ${sourceLabel} available to Repress (${needed} required).`;
+    instruction = `No ${sourceLabel} available to ${verb} (${needed} required).`;
   } else {
     instruction = collective
       ? `Choose ${needed - picked} more Psyche from any hand (${picked}/${needed} selected).`
-      : `Choose ${needed - picked} more ${sourceLabel} to Repress (${picked}/${needed} selected).`;
+      : `Choose ${needed - picked} more ${sourceLabel} to ${verb} (${picked}/${needed} selected).`;
   }
 
   body.innerHTML = `
     <div class="card-choice-picker card-choice-picker-wide">
-      <h2>Repress to Subconscious</h2>
+      <h2>${discard ? "Discard Psyche" : "Repress to Subconscious"}</h2>
       <p class="card-choice-message">${pending.reason || instruction}</p>
       <p class="resolution-player">${playerName}</p>
       <p class="resolution-instruction">${instruction}</p>
       <p class="card-choice-hint">${cardChoiceHint()}</p>
       <div id="repress-pool" class="subconscious-piles card-choice-piles"></div>
-      <p class="card-choice-status">${picked}/${needed} repressed</p>
+      <p class="card-choice-status">${picked}/${needed} ${discard ? "discarded" : "repressed"}</p>
       <div class="utility-actions card-choice-actions">
         <button type="button" class="btn primary" id="repress-confirm">${isEmpty || pool.length === 0 ? "Continue" : picked >= needed ? "Done" : "Continue with selected"}</button>
       </div>

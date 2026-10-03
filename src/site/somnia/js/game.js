@@ -2477,7 +2477,7 @@ export function endPhase(state) {
       ? `${COOP_PLAY_TIP} Head Dreamer (★) draws the Dream once. One Dreamer spends Lucidity to set team reveals.`
       : phase === "Explore"
         ? `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves — then move any Dreamer.`
-        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. Start: Repress 1 Psyche per roaming Dreambeast. End: Forget 1 random Landscape per remaining beast, then Fail costs in spawn order. Beasts stay until you win a dice battle.`,
+        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. Start: discard 1 Psyche per roaming Dreambeast on or beside you. End: Forget 1 random Landscape per remaining beast, then Fail costs in spawn order. Beasts stay until you win a dice battle.`,
     [],
     { moment: `${phase} Phase begins.` },
   );
