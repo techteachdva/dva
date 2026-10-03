@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 /**
- * Render scripts/beepbox-somnia-theme.url with BeepBox's synth (headless Edge)
- * and write src/site/somnia/audio/dreamers-awakening.mp3
+ * Render scripts/beepbox-somnia-theme.url with BeepBox's synth (headless Edge).
+ *
+ * Do not replace the menu mp3 with this. A headless re-render does not match
+ * the original BeepBox export: the pad sits at one volume and the piece
+ * becomes a drone. The menu file is an edit of that original recording.
+ * Pass --force to render anyway, and it writes scripts/beepbox-theme-render.mp3.
  */
 import { spawn } from "child_process";
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync } from "fs";
@@ -9,9 +13,13 @@ import { tmpdir } from "os";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
+if (!process.argv.includes("--force")) {
+  console.error("Refusing to render over the menu theme. See the note at the top of this file.");
+  process.exit(1);
+}
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const hash = readFileSync(join(root, "scripts/beepbox-somnia-theme.url"), "utf8").trim().split("#")[1];
-const outMp3 = join(root, "src/site/somnia/audio/dreamers-awakening.mp3");
+const outMp3 = join(root, "scripts/beepbox-theme-render.mp3");
 const edge = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
 const port = 9334;
 

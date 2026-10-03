@@ -14,7 +14,7 @@ export const CHANGELOG = [
     version: "34.1",
     title: "Dreamer's Awakening",
     notes: [
-      "The main menu theme is now a five-minute BeepBox loop. Pads open the night, the melody arrives, a long string swell takes the middle, and the last bar falls back into the quiet opening.",
+      "The main menu theme is the two-minute BeepBox song, carried out to five minutes: the piece, then the piece again, then the melody once more. The ending still falls into the quiet opening.",
       "The same recording still closes every radio rotation.",
     ],
   },

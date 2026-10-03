@@ -11,7 +11,7 @@ export const MUSIC_TRACKS = [
 export const MENU_THEME_TRACK = {
   id: "dreamers-awakening",
   title: "Dreamer's Awakening",
-  file: "audio/dreamers-awakening.mp3?v=5",
+  file: "audio/dreamers-awakening.mp3?v=6",
 };
 
 /** Kevin MacLeod rotation, with the theme as the finale before it loops. */

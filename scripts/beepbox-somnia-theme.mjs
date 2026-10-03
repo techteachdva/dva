@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import { writeFileSync } from "fs";
 // ============================================================================
-// "Somnia — Dreamer's Awakening" — a 5:00 seamlessly-looping menu theme, coded for BeepBox.
+// Reconstruction of "Dreamer's Awakening". The menu mp3 is NOT a render of
+// this file. It is the original two-minute BeepBox export, played twice,
+// then the melody (0:20–1:20) once more. A fresh synth render of this
+// script does not match that export.
 //
 // This script is a faithful port of Song.toBase64String() from BeepBox's
 // synth.ts (URL format version 9), generating a complete song URL for
@@ -97,9 +100,6 @@ function arp(pitches) {
 function arpQuarter(pitches) {
 	return pitches.map((p, i) => N(p, i * 24, 24, i === 0 ? 3 : 2));
 }
-function swellChord(pitches) {
-	return [N(pitches, 0, BAR, 1, { pins: [[0, 1], [72, 3], [192, 2]] })];
-}
 const boxPatterns = [
 	// P1 Am9
 	arp([57,64,69,71, 76,71,69,64, 60,64,69,64, 57,64,60,64]),
@@ -115,20 +115,12 @@ const boxPatterns = [
 	arpQuarter([69,72,76,72, 69,64,60,64]),
 	// P7 F sparse (break)
 	arpQuarter([65,69,72,69, 65,60,57,60]),
-	// P8–P12 swelling harp chords (Am9, Fmaj9, Cmaj9, Gadd9, Em7)
-	swellChord([57, 64, 69, 71]),
-	swellChord([53, 60, 65, 69]),
-	swellChord([55, 60, 67, 72]),
-	swellChord([55, 62, 67, 71]),
-	swellChord([52, 59, 64, 71]),
+	[],
 ];
 
 // --- Dream pad (FM): one swelling 4-note chord per bar ---
 function padChord(pitches, endSize = 1) {
 	return [N(pitches, 0, BAR, 0, { pins: [[0, 1], [96, 3], [192, endSize]] })];
-}
-function padRise(pitches) {
-	return [N(pitches, 0, BAR, 0, { pins: [[0, 0], [36, 1], [144, 3], [192, 2]] })];
 }
 const padPatterns = [
 	padChord([45, 48, 52, 59]), // P1 Am9:  A3 C4 E4 B4
@@ -137,12 +129,8 @@ const padPatterns = [
 	padChord([43, 47, 50, 57]), // P4 Gadd9: G3 B3 D4 A4
 	padChord([43, 47, 50, 52]), // P5 Em7:  G3 B3 D4 E4
 	padChord([43, 48, 50, 57]), // P6 Gsus: G3 C4 D4 A4
-	padRise([45, 52, 57, 64]), // P7 Am strings rising
-	padRise([41, 48, 53, 60]), // P8 F
-	padRise([43, 48, 55, 62]), // P9 C
-	padRise([43, 47, 55, 62]), // P10 G
-	padRise([40, 47, 52, 59]), // P11 Em
-	[],                        // P12
+	[],
+	[],
 ];
 
 // --- Lead (FM "crystal" w/ echo): the melody ---
@@ -163,20 +151,11 @@ const leadPatterns = [
 	[N(59, 0, 72, 3), N(55, 72, 24, 2), N(57, 96, 24, 2), N(59, 120, 72, 3)],
 	// P8 Am climax: C5 E5 A5 E5
 	[N(60, 0, 48, 2), N(64, 48, 48, 3), N(69, 96, 72, 3), N(64, 168, 24, 2)],
-	// P9 held E5, falling to C5 — the long line over the string swell
-	[N(64, 0, 144, 2, { pins: [[0, 1], [48, 3], [144, 2]] }), N(60, 144, 48, 2)],
-	// P10 held A4
-	[N(57, 0, BAR, 2, { pins: [[0, 1], [96, 3], [192, 1]] })],
-	[],
-	[],
 ];
 
 // --- Bass (chip triangle): root / root / fifth / root ---
 function bassLine(root, fifth) {
 	return [N(root, 0, 84, 3), N(root, 84, 12, 2), N(fifth, 96, 48, 2), N(root, 144, 48, 2)];
-}
-function pedal(root) {
-	return [N(root, 0, BAR, 2, { pins: [[0, 1], [48, 3], [192, 2]] })];
 }
 const bassPatterns = [
 	bassLine(33, 40), // P1 Am: A2 / E3
@@ -184,13 +163,7 @@ const bassPatterns = [
 	bassLine(36, 43), // P3 C:  C3 / G3
 	bassLine(31, 38), // P4 G:  G2 / D3
 	bassLine(28, 35), // P5 Em: E2 / B2
-	pedal(33),        // P6 Am pedal
-	pedal(29),        // P7 F
-	pedal(36),        // P8 C
-	pedal(31),        // P9 G
-	pedal(28),        // P10 Em
-	[],
-	[],
+	[], [], [],
 ];
 
 // --- Sparkle (FM celesta): high bell accents (E6/G6/A6 fit every chord) ---
@@ -198,9 +171,7 @@ const sparkPatterns = [
 	[N(76, 0, 96, 2)],                                    // P1 single shimmer
 	[N(79, 0, 48, 2), N(76, 96, 48, 2)],                  // P2 two-note answer
 	[N(76, 144, 12, 1), N(79, 156, 12, 1), N(81, 168, 24, 2)], // P3 run into next bar (also the loop bridge)
-	[N(81, 24, 72, 1), N(76, 96, 96, 1)],                     // P4 held shimmer
-	[N(79, 0, 96, 2), N(84, 96, 48, 1), N(81, 144, 48, 1)],   // P5 higher answer
-	[], [], [], [], [], [], [],
+	[], [], [], [], [],
 ];
 
 // --- Drums (drumset): 0 kick, 1 snare, 5 closed hat, 7 open hat, 9 crash ---
@@ -222,66 +193,24 @@ const drumPatterns = [
 	 N(SN, 168, 6, 2), N(SN, 174, 6, 3), N(SN, 180, 6, 3), N(SN, 186, 6, 3)],
 	// P4 soft: brushed kicks only
 	[N(K, 0, 48, 2), N(CH, 48, 48, 1), N(K, 96, 48, 2), N(CH, 144, 48, 1)],
-	// P5 orchestral pulse: timpani and a crash, no snare
-	[N([K, CR], 0, 96, 2), N(CH, 96, 48, 1), N(K, 144, 48, 2)],
-	// P6 cymbal wash
-	[N(CR, 0, 48, 2), N(OH, 48, 24, 1), N(OH, 72, 24, 1), N(OH, 96, 24, 2), N(OH, 120, 24, 2), N(OH, 144, 24, 2), N([OH, CR], 168, 24, 3)],
-	// P7 distant kick
-	[N(K, 0, 96, 2), N(CH, 96, 96, 1)],
-	[], [], [], [], [],
+	[], [], [], [],
 ];
 
-// --- Bar arrangement (pattern index per bar; 0 = rest). 60 bars, grouped by 4. ---
-const BARS = {
-	box: [
-		0,0,1,2, 3,4,1,2,
-		1,2,3,4, 1,2,3,4,
-		2,4,5,1, 2,3,4,4, 6,6,7,4,
-		8,9,10,11, 8,12,9,11, 10,11,8,9,
-		1,2,3,4, 1,2,3,4, 2,4,5,1,
-		6,6,7,4, 1,2,3,4,
-	],
-	pad: [
-		1,2,3,4, 1,2,3,4,
-		1,2,3,4, 1,2,3,4,
-		2,4,5,1, 2,3,4,4, 1,5,2,6,
-		7,8,9,10, 7,11,8,10, 9,10,7,8,
-		1,2,3,4, 1,2,3,4, 2,4,5,1,
-		1,5,2,6, 1,2,3,4,
-	],
-	lead: [
-		0,0,0,0, 0,0,0,0,
-		0,0,1,2, 3,4,1,2,
-		5,6,7,8, 2,3,4,6, 0,0,0,0,
-		9,0,10,0, 1,0,9,0, 2,0,10,0,
-		1,2,3,4, 5,6,7,8, 1,2,3,4,
-		0,0,0,0, 1,0,0,0,
-	],
-	bass: [
-		0,0,0,0, 0,0,3,4,
-		0,1,2,3, 4,1,2,3,
-		2,4,5,1, 2,3,4,4, 1,5,2,4,
-		6,7,8,9, 6,10,7,9, 8,9,6,7,
-		1,2,3,4, 1,2,3,4, 2,4,5,1,
-		1,5,2,4, 1,2,3,4,
-	],
-	spark: [
-		0,1,0,1, 0,1,0,1,
-		1,0,0,3, 0,2,0,0,
-		0,2,0,0, 0,0,0,3, 1,0,0,3,
-		4,0,4,0, 5,0,4,3, 0,5,0,4,
-		0,2,0,3, 1,2,0,3, 0,2,0,3,
-		1,0,0,3, 0,2,0,3,
-	],
-	drums: [
-		0,0,0,0, 0,0,0,0,
-		4,4,1,1, 1,2,1,1,
-		1,1,1,3, 1,1,1,2, 4,0,4,0,
-		5,5,5,6, 5,7,5,6, 5,6,7,5,
-		1,1,1,2, 1,1,1,3, 1,2,1,3,
-		4,0,4,0, 1,1,1,3,
-	],
+// The original 24-bar song, then that same song again from the melody onward,
+// then its second half once more. 24 + 20 + 16 = 60 bars. The last four bars
+// are the original turnaround, which falls into bar 1.
+const SONG = {
+	box:   [1,2,3,4, 1,2,3,4, 2,4,5,1, 2,3,4,4, 6,6,7,4, 1,2,3,4],
+	pad:   [1,2,3,4, 1,2,3,4, 2,4,5,1, 2,3,4,4, 1,5,2,6, 1,2,3,4],
+	lead:  [0,0,0,0, 1,2,3,4, 5,6,7,8, 2,3,4,6, 0,0,0,0, 1,2,3,4],
+	bass:  [0,0,3,4, 1,2,3,4, 2,4,5,1, 2,3,4,4, 1,5,2,4, 1,2,3,4],
+	spark: [0,1,0,1, 0,0,0,3, 0,2,0,0, 0,0,0,3, 1,0,0,3, 0,2,0,3],
+	drums: [0,0,4,4, 1,1,1,2, 1,1,1,3, 1,1,1,2, 4,0,4,0, 1,1,1,3],
 };
+const BARS = Object.fromEntries(Object.entries(SONG).map(([name, bars]) => [
+	name,
+	[...bars, ...bars.slice(4), ...bars.slice(8)],
+]));
 
 // ============================================================================
 // INSTRUMENTS
@@ -291,7 +220,7 @@ const BARS = {
 const musicBox = {
 	type: TYPE.pickedString, volume: 1, preset: 0,
 	eqFilter: [{ type: 0, freq: 25, gain: 5 }], // low-pass ~4757Hz, 0.5 gain
-	effects: 1 << FX.reverb, reverb: 2,
+	effects: 1 << FX.reverb, reverb: 1,
 	fadeIn: 0, fadeOut: FADE.t48,
 	harmonics: [7,0,0,7,0,0,0,0,0,0,7,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,5,0],
 	unison: 0, stringSustain: 9, stringSustainType: 0,
@@ -302,9 +231,9 @@ const musicBox = {
 const dreamPad = {
 	type: TYPE.fm, volume: 1, preset: 0,
 	eqFilter: [],
-	effects: (1 << FX.noteFilter) | (1 << FX.chorus) | (1 << FX.reverb),
+	effects: (1 << FX.noteFilter) | (1 << FX.chorus),
 	noteFilter: [{ type: 0, freq: 23, gain: 7 }], // low-pass ~3364Hz
-	chorus: 3, reverb: 3,
+	chorus: 3,
 	fadeIn: 4, fadeOut: FADE.t96, // ~0.0575s attack, long release
 	algorithm: 0, feedbackType: 0, feedbackAmplitude: 7,
 	opFreq: [0, 0, 0, 0], opAmp: [14, 6, 0, 0],
@@ -319,7 +248,7 @@ const lead = {
 	type: TYPE.fm, volume: 0, preset: 0,
 	eqFilter: [],
 	effects: (1 << FX.reverb) | (1 << FX.echo) | (1 << FX.vibrato),
-	vibrato: 1, echoSustain: 3, echoDelay: 5, reverb: 2, // echo delay = (5+1)*4 ticks = 0.5 beat
+	vibrato: 1, echoSustain: 3, echoDelay: 5, reverb: 1, // echo delay = (5+1)*4 ticks = 0.5 beat
 	fadeIn: 0, fadeOut: FADE.t12,
 	algorithm: 12, feedbackType: 8, feedbackAmplitude: 4, // "1 2 3 4", "1⟲ 2⟲ 3⟲ 4⟲"
 	opFreq: [0, 4, 7, 12], opAmp: [10, 7, 4, 4], // 1×, 3×, 6×, 13×
@@ -330,8 +259,8 @@ const lead = {
 const bass = {
 	type: TYPE.chip, volume: 1, preset: 0,
 	eqFilter: [{ type: 0, freq: 17, gain: 7 }], // low-pass ~1200Hz
-	effects: 1 << FX.reverb, reverb: 2,
-	fadeIn: 0, fadeOut: FADE.t48,
+	effects: 1 << FX.reverb, reverb: 1,
+	fadeIn: 0, fadeOut: FADE.t12,
 	chipWave: 1, unison: 0, // triangle
 	envelopes: [],
 };
@@ -353,7 +282,7 @@ const sparkle = {
 
 // "standard drumset" preset spectra (converted from 0-100 to 0-7)
 const drums = {
-	type: TYPE.drumset, volume: 0, preset: 0,
+	type: TYPE.drumset, volume: 1, preset: 0,
 	eqFilter: [],
 	effects: 1 << FX.reverb, reverb: 1,
 	drumsetEnvelopes: [ENV.twang1, ENV.twang1, ENV.twang1, ENV.twang1, ENV.decay2, ENV.decay1, ENV.twang3, ENV.decay3, ENV.twang3, ENV.decay3, ENV.flare1, ENV.decay2],
@@ -388,7 +317,7 @@ const song = {
 	tempo: 96,
 	beatsPerBar: 8,
 	barCount: 60,
-	patternsPerChannel: 12,
+	patternsPerChannel: 8,
 	rhythm: 1, // ÷4 (standard)
 	channels: [
 		{ octave: 4, instruments: [musicBox], patterns: boxPatterns,   bars: BARS.box },
