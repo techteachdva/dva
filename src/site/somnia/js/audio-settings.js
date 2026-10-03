@@ -11,7 +11,7 @@ export const MUSIC_TRACKS = [
 export const MENU_THEME_TRACK = {
   id: "dreamers-awakening",
   title: "Dreamer's Awakening",
-  file: "audio/dreamers-awakening.mp3",
+  file: "audio/dreamers-awakening.mp3?v=5",
 };
 
 /** Kevin MacLeod rotation, with the theme as the finale before it loops. */
@@ -102,7 +102,7 @@ export function musicCreditHtml() {
 }
 
 export function menuThemeCreditHtml() {
-  return `<p class="music-credit">Theme: "Dreamer's Awakening" — composed with <a href="https://beepbox.co" rel="noopener noreferrer">BeepBox</a> by Cursor AI, directed by Philip Carroll. Loops on the main menu and closes every radio rotation.</p>`;
+  return `<p class="music-credit">Theme: "Dreamer's Awakening" — a five-minute loop composed with <a href="https://beepbox.co" rel="noopener noreferrer">BeepBox</a> by Cursor AI, directed by Philip Carroll. Plays on the main menu and closes every radio rotation.</p>`;
 }
 
 export function artCreditHtml() {

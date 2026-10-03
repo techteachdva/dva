@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-34.0-wider-table";
-const RUNTIME_CACHE = "somnia-runtime-34.0-wider-table";
+const CACHE_NAME = "somnia-34.1-dreamers-awakening";
+const RUNTIME_CACHE = "somnia-runtime-34.1-dreamers-awakening";
 
 const PRECACHE = [
   "./",
@@ -220,7 +220,7 @@ async function staleWhileRevalidate(request) {
 async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
-  const fresh = await fetch(request);
+  const fresh = await fetch(request, { cache: "reload" });
   putRuntime(request, fresh.clone()).catch(() => {});
   return fresh;
 }

@@ -6,10 +6,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "34.0";
+export const SOMNIA_VERSION = "34.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "34.1",
+    title: "Dreamer's Awakening",
+    notes: [
+      "The main menu theme is now a five-minute BeepBox loop. Pads open the night, the melody arrives, a long string swell takes the middle, and the last bar falls back into the quiet opening.",
+      "The same recording still closes every radio rotation.",
+    ],
+  },
   {
     version: "34.0",
     title: "The Wider Table",
