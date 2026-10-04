@@ -6,10 +6,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "34.2";
+export const SOMNIA_VERSION = "35.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "35.0",
+    title: "The Intro Text Update",
+    notes: [
+      "The main menu teaches the night: 1–6 Dreamers, Archetype points, and what Lucidity, Elasticity, and Willpower do. The three phase cards are gone, and the Dreamer row fits the desktop menu without a scrollbar. A new dream opens as soft credits, scrolling up from the bottom. Dreamer names, the first Landscape, and the Archetype glow purple. The rest of the words glow a faint white.",
+      "A Death Clock sits at the top of the table. The sixth death, shared by everyone, ends the night at once. A Dreamer who has no Psyche and must pay even one dies, returns to The Bed, loses Power Tokens and Objects, and draws 3 Psyche.",
+      "One Power Token commits an Archetype, and only once both quests are already true. Solo's single token can finish a dream that is actually complete.",
+      "Random Forget turns over every other Landscape before an active quest Landscape. The Party puts the current Archetype on the bottom of the deck. The turn the point goal is reached, each Dreamer steps toward The Bed by their Elasticity. A Dreambeast drawn on the quest hex is Met without a second action.",
+    ],
+  },
   {
     version: "34.2",
     title: "The Two Landscapes",

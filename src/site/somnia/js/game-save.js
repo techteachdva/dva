@@ -35,7 +35,7 @@ function stripRuntime(state) {
 }
 
 export function reattachGameRuntime(state) {
-  state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
+  state.checkPsycheDeath = (player, opts) => checkDreamerPsycheDeath(state, player, opts);
   delete state.onResolutionIdle;
   ensureDeckCaps(state);
   repairMisplacedBossDreams(state);

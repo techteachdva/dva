@@ -192,6 +192,7 @@ export function onMeetPhaseEnd(state) {
   state.meetOnlyRound = false;
   state.skipLandscapeActionsNextMeet = false;
   state.pickEncounterOnSpawn = false;
+  state.freeQuestMeet = null;
 }
 
 const DREAM_EFFECTS = {

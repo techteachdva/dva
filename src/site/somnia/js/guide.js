@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 34.2. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 35.0. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -699,7 +699,7 @@ export function rulesDetailsHtml() {
       <p>Three 70-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, Power cards, Draw-Dream cards. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Dreams are drawn once per round by the Head Dreamer. A fading banner warns at <strong>10%</strong> remaining; a flashing banner stays at <strong>5%</strong>; at <strong>1%</strong> the Dreamscape turns unstable.</p>
 
       <h3>Death</h3>
-      <p>A Dreamer with <strong>no Psyche cards and no allies</strong> dies immediately. Objects go to Mindstream discards. Power Tokens return to the pool. They respawn on <strong>The Bed</strong> with their ladder hand (4 / 3 / 2 / 1) and <strong>no new Power Tokens</strong>. The Bed's Draw 3 is available as normal. The <strong>fifth death</strong> of any Dreamer ends the game. One Dreamer may die seven times and still return with at least 3 Psyche; the <strong>eighth death</strong> ends that night.</p>
+      <p>A Dreamer with <strong>no Psyche</strong> who must pay even one dies. Objects go to Mindstream discards. Power Tokens return to the pool. They respawn on <strong>The Bed</strong> and draw <strong>3 Psyche</strong>. The <strong>Death Clock</strong> at the top of the table ticks once. The <strong>sixth death</strong>, shared by the whole table, ends the night at once.</p>
 
       <h3>Final Recurrence</h3>
       <p>Triggered when <strong>The Final Recurrence</strong> is drawn (first of the ten endgame Dreams), or when every outer Landscape has been forgotten. The Bed cannot be forgotten. Goal points reset; remaining Archetypes become map Encounters. Defeat each with a Meet action, <strong>≥ 15</strong> pooled Psyche from <strong>all Dreamers</strong>, including at least one card of the <strong>opposing suit</strong>. Or sacrifice acquired Archetypes 1:1 to auto-defeat. Win by clearing all. The last card is always <strong>You Never Wake Up</strong>.</p>
@@ -714,7 +714,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 34.2</p>
+          <p class="info-hub-kicker">Somnia v 35.0</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>
@@ -727,8 +727,8 @@ export function infoHubHtml(options = {}) {
         <section class="info-hub-rules" aria-label="Rules highlights">
           <div class="info-hub-rule">
             <h3>Win &amp; Lose</h3>
-            <p><strong>Win:</strong> finish both Active Archetype quests (1 Power Token each), <strong>Acquire</strong> for 2, 3, or 4 points, and repeat until the goal. Magician, Warrior, and Sage are worth 4: defeat their boss, and have one Dreamer sacrifice one Object. Daydream asks for <strong>8</strong>, Nap for <strong>12</strong>, Deep Sleep for <strong>24</strong>. The rules do not change. The night is the same length. The treasure is farther. When the points are yours, every living Dreamer stands on <strong>The Bed</strong>, and you wake.</p>
-            <p><strong>Lose:</strong> any Dreamer dies a fifth time (an eighth time, if you are alone), the Dream Deck empties first, the Psyche Deck and discard are both empty, or any Mindstream suit is entirely Repressed in the Subconscious. A top-of-screen warning appears when those decks hit 10%, stays flashing at 5%, and makes the table unstable at 1%. In Final Recurrence you lose if Dreams run out while remaining Archetypes still stand.</p>
+            <p><strong>Win:</strong> when both Active Archetype quests are already true, spend <strong>1 Power Token</strong> to commit and <strong>Acquire</strong> for 2, 3, or 4 points. Repeat until the goal. Magician, Warrior, and Sage are worth 4: defeat their boss, and have one Dreamer sacrifice one Object. Daydream asks for <strong>8</strong>, Nap for <strong>12</strong>, Deep Sleep for <strong>24</strong>. The turn the goal is reached, each Dreamer may step toward <strong>The Bed</strong> a number of hexes equal to their Elasticity. Stand there together, and you wake. The Party puts the current Archetype on the bottom of the deck. Random Forget turns quest Landscapes last. A Dreambeast drawn on the quest hex is Met without a second action.</p>
+            <p><strong>Lose:</strong> the Death Clock reaches 6, the Dream Deck empties first, the Psyche Deck and discard are both empty, or any Mindstream suit is entirely Repressed in the Subconscious. A top-of-screen warning appears when those decks hit 10%, stays flashing at 5%, and makes the table unstable at 1%. In Final Recurrence you lose if Dreams run out while remaining Archetypes still stand.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Play Together</h3>
@@ -784,7 +784,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Death &amp; Final Recurrence</h3>
-            <p>No Psyche cards and no allies: that Dreamer dies, Objects discard, Power returns to the pool, and they respawn on The Bed with 1 fewer Psyche (no new Power). Fifth death of any Dreamer ends the game. One Dreamer returns with at least 3 Psyche until the eighth death. Forget every outer Landscape — or draw <strong>The Final Recurrence</strong> — to start the endgame. Defeat remaining Archetypes with <strong>≥ 15</strong> pooled Psyche including the opposing suit, or sacrifice acquired Archetypes 1:1. Last card: <strong>You Never Wake Up</strong>.</p>
+            <p>No Psyche when a payment is due: that Dreamer dies, Objects are lost, Power returns to the pool, and they redraw 3 Psyche on The Bed. The Death Clock ticks. Six deaths end the night. Forget every outer Landscape — or draw <strong>The Final Recurrence</strong> — to start the endgame. Defeat remaining Archetypes with <strong>≥ 15</strong> pooled Psyche including the opposing suit, or sacrifice acquired Archetypes 1:1. Last card: <strong>You Never Wake Up</strong>.</p>
           </div>
           <p class="info-hub-footer">Draw Dream sits left of Next Phase during Reveal. Select 1 Psyche, then press the button beside it to open that phase. Back in the top-left undoes the last action. Click a ready quest on the Active Archetype, or spend a Power Token. The Head (★) rotates at round end. Draw Mindstream is repeatable. Unique tile actions cost 1 Meet action and are once per table. The Bed's Draw 3 is once per Dreamer this Meet. Quests still name their Landscape after it is Forgotten.</p>
         </section>

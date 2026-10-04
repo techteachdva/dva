@@ -295,7 +295,7 @@ export function createTutorialState(data, options = {}) {
 // -- Step snapshots (Back / jump restores game state) -----------------
 
 function reattachStateRuntime(state) {
-  state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
+  state.checkPsycheDeath = (player, opts) => checkDreamerPsycheDeath(state, player, opts);
   delete state.onResolutionIdle;
 }
 
@@ -1467,14 +1467,13 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "r2-acquire",
     round: 2,
-    title: "Mark Quests and Acquire",
-    why: "Each quest mark spends 1 Power Token and is free. It does not spend a Meet action. Play the yellowish-purple Power Surge Heroism gave you, then mark both Innocent quests. Acquire grants Archetype points. Reach the goal and stand on The Bed to wake.",
+    title: "Commit and Acquire",
+    why: "Both quests are already true. One Power Token commits the Archetype. It does not spend a Meet action. Play the yellowish-purple Power Surge Heroism gave you, then commit. Acquire grants Archetype points. Reach the goal and stand on The Bed to wake.",
     target: "#active-archetype",
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary. They should hold Power Surge." },
       { kind: "handToggle", playerIndex: 0, cardId: "psyche-power-heroism", prompt: "Click Power Surge to gain 1 Power Token." },
-      { kind: "completeQuest0", playerIndex: 0, prompt: "Click Quest 1 on the Active Archetype." },
-      { kind: "completeQuest1", playerIndex: 0, prompt: "Click Quest 2 to spend the last token and Acquire The Innocent." },
+      { kind: "completeQuest0", playerIndex: 0, prompt: "Click Commit on the Active Archetype." },
     ],
     until: (s) => innocentAcquired(s),
   },

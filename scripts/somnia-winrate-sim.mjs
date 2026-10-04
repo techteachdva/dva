@@ -217,10 +217,16 @@ function unmarkedQuestCount(state) {
   return arch.questProgress.filter((done) => !done).length;
 }
 
+function commitReady(state) {
+  const arch = state.activeArchetype;
+  if (!arch?.quests?.length || state.finalRecurrence) return false;
+  if (arch.questProgress?.every(Boolean)) return false;
+  return arch.quests.every((quest) => isQuestConditionMet(state, arch.id, quest));
+}
+
 function tokensReserved(state, skill) {
-  if (skill === "sloppy" || state.finalRecurrence) return 0;
-  const deathSaves = alivePlayers(state).filter((p) => psycheHandCount(p) <= 2).length;
-  return readyQuestCount(state) + deathSaves;
+  if (skill === "sloppy" || state.finalRecurrence || !state.activeArchetype) return 0;
+  return 1;
 }
 
 function canSpendToken(state, player, skill) {
@@ -229,10 +235,8 @@ function canSpendToken(state, player, skill) {
 }
 
 function canSpendTokenOnPhase(state, player, skill) {
+  if (skill === "skilled" && commitReady(state)) return false;
   if (!canSpendToken(state, player, skill)) return false;
-  if (skill === "sloppy") return true;
-  const ready = readyQuestCount(state);
-  if (ready > 0 && teamTokens(state) <= ready) return false;
   return true;
 }
 
@@ -356,6 +360,31 @@ function canFightBeastTile(player, tile) {
   });
 }
 
+function meetQuestNeedsPull(state) {
+  if (!needsMeetQuest(state)) return false;
+  const ids = new Set(meetQuestLandscapeIds(state));
+  return !allEncountersOnBoard(state).some(({ tile }) => ids.has(tile.id));
+}
+
+function hunterPullHelpsQuest(state) {
+  if (!meetQuestNeedsPull(state)) return false;
+  const ids = new Set(meetQuestLandscapeIds(state));
+  return allEncountersOnBoard(state).some(({ tile }) => {
+    let best = null;
+    let bestD = 99;
+    alivePlayers(state).forEach((p) => {
+      const at = landscapeById(state, p.landscapeId);
+      if (!at) return;
+      const dist = hexDistance(tile, at);
+      if (dist < bestD) {
+        bestD = dist;
+        best = p;
+      }
+    });
+    return best && ids.has(best.landscapeId);
+  });
+}
+
 function beastNeedsAFighter(state) {
   return allEncountersOnBoard(state).some(({ tile }) => (
     !alivePlayers(state).some((p) => canFightBeastTile(p, tile))
@@ -364,11 +393,12 @@ function beastNeedsAFighter(state) {
 
 function dreamerPowerWorthIt(state, player, skill) {
   const id = player.dreamer?.id;
+  if (skill === "skilled" && ["the-rested", "the-immovable", "the-weaver"].includes(id)) {
+    if (teamTokens(state) <= tokensReserved(state, skill)) return false;
+  }
   if (id === "the-visionary") {
     if (state.botVisionaryRound === state.round) return false;
-    if (questTilesStillHidden(state)) return true;
-    if (needsBossQuest(state) && !bossAlreadySpawned(state) && (state.dreamDeck?.length || 0) > 0) return true;
-    return teamAvgHand(state) < 4 && (state.psycheDeck?.length || 0) > 0;
+    return questTilesStillHidden(state);
   }
   if (id === "the-rested") {
     if (state.botRestedRound === state.round) return false;
@@ -381,9 +411,12 @@ function dreamerPowerWorthIt(state, player, skill) {
   if (id === "the-runner") {
     if (state.botRunnerRound === state.round) return false;
     if (getPhase(state) !== "Explore" || !state.exploreActivated) return false;
+    const goingHome = state.acquiredPoints >= state.goalPoints && !state.finalRecurrence;
     return alivePlayers(state).some((p) => {
-      const dest = destForPlayer(state, p, skill);
+      const dest = goingHome ? "bed" : destForPlayer(state, p, skill);
       if (!dest || dest === p.landscapeId) return false;
+      const homeOrBeast = goingHome || tileHasEncounter(landscapeById(state, dest));
+      if (!homeOrBeast) return false;
       const from = landscapeById(state, p.landscapeId);
       const to = landscapeById(state, dest);
       return from && to && hexDistance(from, to) >= 2;
@@ -391,6 +424,7 @@ function dreamerPowerWorthIt(state, player, skill) {
   }
   if (id === "the-hunter") {
     if (state.botHunterRound === state.round) return false;
+    if (meetQuestNeedsPull(state)) return hunterPullHelpsQuest(state);
     const beasts = allEncountersOnBoard(state);
     if (!beasts.length) return false;
     return beasts.some(({ tile }) => {
@@ -401,7 +435,8 @@ function dreamerPowerWorthIt(state, player, skill) {
         const db = hexDistance(landscapeById(state, b.landscapeId), tile);
         return da - db;
       })[0];
-      return Boolean(nearest && canFightBeastTile(nearest, tile));
+      if (!nearest || !canFightBeastTile(nearest, tile)) return false;
+      return hexDistance(landscapeById(state, nearest.landscapeId), tile) === 1;
     });
   }
   if (id === "the-immovable") {
@@ -603,6 +638,15 @@ function rallyOnBedIfGoalMet(state, skill) {
   return moved;
 }
 
+function paySuits(state) {
+  const suits = new Set();
+  meetQuestLandscapeIds(state).forEach((id) => {
+    const tile = landscapeById(state, id);
+    if (tile?.suit) suits.add(tile.suit);
+  });
+  return suits;
+}
+
 function selectBestSuit(state, playerIndex, suit, max = 1, minValue = 1) {
   const player = state.players[playerIndex];
   setActive(state, playerIndex);
@@ -611,11 +655,17 @@ function selectBestSuit(state, playerIndex, suit, max = 1, minValue = 1) {
   const normals = cards.filter((c) => !isWildPsyche(c));
   const wilds = cards.filter((c) => isWildPsyche(c));
   const enough = normals.filter((c) => (c.value || 0) >= minValue);
-  const ordered = enough.length
+  let ordered = enough.length
     ? [...enough].sort((a, b) => (a.value || 0) - (b.value || 0))
     : (normals.length
       ? [...normals].sort((a, b) => (b.value || 0) - (a.value || 0))
       : wilds);
+  if (paySuits(state).has(suit)) {
+    const ofSuit = ordered.filter((card) => card.suit === suit && !isWildPsyche(card));
+    if (ofSuit.length <= 1) {
+      ordered = ordered.filter((card) => card.suit !== suit);
+    }
+  }
   state.selectedHand = ordered.slice(0, max).map((c) => c.instanceId);
   return state.selectedHand.length;
 }
@@ -634,9 +684,12 @@ function phaseMinCardValue(state, skill, suit, player) {
     return Math.max(1, Math.min(5, dist - stat));
   }
   if (suit === "willpower") {
+    const onBeast = alivePlayers(state).some((p) => tileHasEncounter(landscapeById(state, p.landscapeId)));
+    const fishing = needsMeetQuest(state) && standingOnQuestWork(state) && !onBeast ? 5 : 0;
     const fights = allEncountersOnBoard(state).filter(({ tile }) => occupantOn(state, tile.id)).length;
+    const intoFight = onBeast ? 2 : 0;
     const draw = standingOnQuestWork(state) ? 1 : 0;
-    return Math.max(1, Math.min(4, fights + draw - stat));
+    return Math.max(1, Math.min(5, Math.max(fishing, intoFight, fights + draw) - stat));
   }
   if (suit === "lucidity") {
     const hidden = activeQuestLandscapeIds(state).filter((id) => {
@@ -664,7 +717,13 @@ function openPhaseWithCardsOrToken(state, skill, suit) {
     }
   }
   const player = state.players[pi];
-  if (player && n < 1 && canSpendTokenOnPhase(state, player, skill)) {
+  const goalSprint = skill === "skilled"
+    && suit === "elasticity"
+    && !state.finalRecurrence
+    && state.acquiredPoints >= state.goalPoints
+    && alivePlayers(state).some((p) => p.landscapeId !== "bed")
+    && (player?.powerTokens || 0) > 0;
+  if (player && n < 1 && (canSpendTokenOnPhase(state, player, skill) || goalSprint)) {
     setActive(state, pi);
     togglePhasePowerToken(state);
   }
@@ -681,7 +740,8 @@ function bestContributor(state, suit, minValue = 1) {
     const cards = normals.length ? normals : wilds;
     if (!cards.length) return;
     const hasEnough = normals.some((c) => (c.value || 0) >= minValue);
-    const val = (p.dreamer?.[suit] || 0) + (normals.length ? 20 : 0) + (hasEnough ? 40 : 0) + cards.reduce((s, c) => s + (c.value || 0), 0);
+    const handBias = (p.hand?.length || 0) >= 3 ? 15 : ((p.hand?.length || 0) <= 1 ? -30 : 0);
+    const val = (p.dreamer?.[suit] || 0) + (normals.length ? 20 : 0) + (hasEnough ? 40 : 0) + handBias + cards.reduce((s, c) => s + (c.value || 0), 0);
     if (val > bestVal) {
       bestVal = val;
       best = i;
@@ -750,9 +810,7 @@ function resolvePendings(state, skill) {
     }
     if (state.landscapePick?.mode === "reveal") {
       const tiles = revealableTiles(state);
-      const quests = new Set(activeQuestLandscapeIds(state));
-      const ordered = [...tiles].sort((a, b) => Number(quests.has(b.id)) - Number(quests.has(a.id)));
-      const tile = skill === "skilled" ? ordered[0] : pick(tiles);
+      const tile = skill === "skilled" ? pickRevealTile(state, tiles) : pick(tiles);
       if (!tile) {
         cancelLandscapePick(state);
         break;
@@ -798,8 +856,10 @@ function resolvePendings(state, skill) {
     }
     if (state.pendingDeathChoice) {
       const player = state.players.find((p) => p.id === state.pendingDeathChoice.playerId);
-      const canPay = (player?.powerTokens || 0) >= state.pendingDeathChoice.cost;
-      if (skill === "skilled" && canPay) avoidDreamerDeath(state);
+      const cost = state.pendingDeathChoice.cost || 1;
+      const canPay = (player?.powerTokens || 0) >= cost;
+      const keepsQuestToken = teamTokens(state) - cost >= unmarkedQuestCount(state);
+      if (skill === "skilled" && canPay && keepsQuestToken) avoidDreamerDeath(state);
       else if (skill === "sloppy" && canPay && chance(0.45)) avoidDreamerDeath(state);
       else acceptDreamerDeath(state);
       continue;
@@ -891,7 +951,12 @@ function resolveModalChoice(state, skill, pending, resolver) {
       return;
     }
     const preferred = skill === "skilled"
-      ? choices.find((c) => /leviathan|sea-of-teeth|accept|stay|reveal|return|draw/i.test(`${c.id} ${c.label}`))
+      ? choices.find((c) => {
+        const tileId = String(c.id).split(":")[0];
+        return meetQuestLandscapeIds(state).includes(tileId)
+          || adjacentTiles(state, tileId).some((t) => meetQuestLandscapeIds(state).includes(t.id));
+      })
+      || choices.find((c) => /leviathan|sea-of-teeth|accept|stay|reveal|return|draw/i.test(`${c.id} ${c.label}`))
       : null;
     if (skill === "skilled" && pending.cardId === "hunter-shove") {
       const tile = landscapeById(state, pending.payload?.tileId);
@@ -1069,6 +1134,56 @@ function needsMeetQuest(state) {
   });
 }
 
+function needsDrawQuest(state) {
+  const arch = state.activeArchetype;
+  if (!arch?.quests) return false;
+  return arch.quests.some((q, i) => {
+    if (arch.questProgress?.[i]) return false;
+    if (!/draw mindstream/i.test(q)) return false;
+    return !isQuestConditionMet(state, arch.id, q);
+  });
+}
+
+function touchesRevealed(state, tile) {
+  return adjacentTiles(state, tile.id).some((n) => n.revealed && !n.wasteland);
+}
+
+function pickRevealTile(state, tiles) {
+  if (!tiles?.length) return null;
+  if (state.acquiredPoints >= state.goalPoints && !state.finalRecurrence) {
+    const bed = landscapeById(state, "bed");
+    const home = tiles
+      .filter((t) => t.wasteland && bed && hexDistance(t, bed) <= 2)
+      .sort((a, b) => hexDistance(a, bed) - hexDistance(b, bed));
+    if (home.length) return home[0];
+  }
+  const targets = [];
+  activeQuestLandscapeIds(state).forEach((id) => {
+    const tile = landscapeById(state, id);
+    if (tile && (!tile.revealed || tile.wasteland)) targets.push(tile);
+  });
+  if (needsMeetQuest(state) && meetQuestNeedsPull(state) && questTilesRevealed(state).length) {
+    const lava = landscapeById(state, "lava");
+    if (lava && (!lava.revealed || lava.wasteland)) targets.push(lava);
+  }
+  if (teamTokens(state) < unmarkedQuestCount(state)) {
+    ["awards", "candy-mountain"].forEach((id) => {
+      const tile = landscapeById(state, id);
+      if (tile && (!tile.revealed || tile.wasteland)) targets.push(tile);
+    });
+  }
+  const target = targets[0];
+  if (!target) return tiles[0];
+  const ready = tiles.find((t) => t.id === target.id && touchesRevealed(state, t));
+  if (ready) return ready;
+  const frontier = tiles.filter((t) => touchesRevealed(state, t));
+  if (frontier.length) {
+    frontier.sort((a, b) => hexDistance(a, target) - hexDistance(b, target));
+    return frontier[0];
+  }
+  return tiles.find((t) => t.id === target.id) || tiles[0];
+}
+
 function meetQuestLandscapeIds(state) {
   const arch = state.activeArchetype;
   if (!arch?.quests) return [];
@@ -1117,7 +1232,7 @@ function rankDestinations(state, player, ids, skill) {
   });
 }
 
-/** Camp The Bed until hands are thick enough, then leave together for quests. */
+/** Camp until hands can survive a Meet tax, then leave for a revealed quest. */
 function readyToExpedition(state, skill) {
   if (state.finalRecurrence) return true;
   if (state.acquiredPoints >= state.goalPoints) return true;
@@ -1128,16 +1243,39 @@ function readyToExpedition(state, skill) {
     return alivePlayers(state).some((p) => psycheHandCount(p) >= 10);
   }
   if (skill === "sloppy") return avg >= 4 || state.round >= 2;
-  if (revealed.length) {
-    if (n === 1) return avg >= 3 || state.round >= 1;
-    if (n === 2) return avg >= 3 || state.round >= 2;
-    return avg >= POOL_RETREAT || state.round >= 2;
-  }
-  if (n === 1) return avg >= 4 || state.round >= 2;
-  if (needsBossQuest(state) && state.round <= 6) return avg >= 5;
+  if (allEncountersOnBoard(state).length) return true;
   if (alivePlayers(state).some((p) => psycheHandCount(p) < 2)) return false;
-  if (avg >= POOL_LEAVE) return true;
-  return state.round >= 2 && avg >= 4;
+  if (revealed.length) return avg >= 3 || (n === 1 && state.round >= 2);
+  return avg >= 4 || state.round >= 3;
+}
+
+function psycheDrawTileId(state, player) {
+  const from = landscapeById(state, player.landscapeId);
+  const tiles = ["bed", "city", "candy-mountain"]
+    .map((id) => landscapeById(state, id))
+    .filter((t) => t?.revealed && !t.wasteland);
+  if (!tiles.length) return "bed";
+  tiles.sort((a, b) => {
+    const tax = meetTaxAt(state, player, a.id) - meetTaxAt(state, player, b.id);
+    if (tax) return tax;
+    return hexDistance(from, a) - hexDistance(from, b);
+  });
+  return tiles[0].id;
+}
+
+function safeCampId(state, player) {
+  const here = landscapeById(state, player.landscapeId);
+  const calm = state.board.filter((t) => (
+    t.revealed && !t.wasteland && meetTaxAt(state, player, t.id) === 0
+  ));
+  if (!calm.length) return "bed";
+  calm.sort((a, b) => {
+    const bias = (t) => (t.id === "bed" ? 4 : 0) + (t.id === "city" ? 2 : 0) + (t.id === player.landscapeId ? 1 : 0);
+    const gap = bias(b) - bias(a);
+    if (gap) return gap;
+    return hexDistance(here, a) - hexDistance(here, b);
+  });
+  return calm[0].id;
 }
 
 function powerHexId(state) {
@@ -1183,63 +1321,136 @@ function assignDestinations(state, skill) {
     return dests;
   }
 
-  const priorities = [];
-  const seen = new Set();
-  const pushId = (id) => {
-    if (!id || seen.has(id)) return;
-    const tile = landscapeById(state, id);
-    if (!tile?.revealed || tile.wasteland) return;
-    seen.add(id);
-    priorities.push(id);
-  };
-
-  allEncountersOnBoard(state)
-    .filter(({ encounter }) => encounter?.boss)
-    .forEach(({ tile }) => pushId(tile.id));
-  allEncountersOnBoard(state).forEach(({ tile }) => pushId(tile.id));
-  meetQuestLandscapeIds(state).forEach(pushId);
-  questTilesRevealed(state).forEach(pushId);
-  if (needsMeetQuest(state) || needsBossQuest(state)) {
-    state.board.filter((t) => t.revealed && !t.wasteland && tileHasEncounter(t)).forEach((t) => pushId(t.id));
-  }
-  const tokensWanted = Math.max(2, unmarkedQuestCount(state));
-  if (teamTokens(state) < tokensWanted) pushId(powerHexId(state));
-
   const taken = new Set();
-  for (const tid of priorities) {
-    const destTile = landscapeById(state, tid);
+  const questHere = new Set([...meetQuestLandscapeIds(state), ...questTilesRevealed(state)]);
+  const beastTiles = [];
+  const seenBeasts = new Set();
+  allEncountersOnBoard(state).forEach(({ tile }) => {
+    if (!tile?.revealed || tile.wasteland || seenBeasts.has(tile.id)) return;
+    seenBeasts.add(tile.id);
+    beastTiles.push(tile);
+  });
+  beastTiles.sort((a, b) => {
+    const score = (tile) => {
+      const nearest = Math.min(...alive.map((p) => hexDistance(landscapeById(state, p.landscapeId), tile)));
+      const fighter = alive.some((p) => canFightBeastTile(p, tile)) ? 15 : 0;
+      return (questHere.has(tile.id) ? 80 : 0)
+        + (tile.encounters?.some((enc) => enc.boss) ? 25 : 0)
+        + fighter
+        - nearest;
+    };
+    return score(b) - score(a);
+  });
+
+  for (const tile of beastTiles) {
     const remaining = alive.filter((p) => !taken.has(p.id));
     if (!remaining.length) break;
-    remaining.sort((a, b) => {
-      const powerTile = tid === "awards" || tid === "candy-mountain";
-      if (tileHasEncounter(destTile)) {
-        const survive = Number(survivesBeastTile(state, b, tid)) - Number(survivesBeastTile(state, a, tid));
-        if (survive) return survive;
-        const payBias = Number(canFightBeastTile(b, destTile)) - Number(canFightBeastTile(a, destTile));
-        if (payBias) return payBias;
-        const handBias = psycheHandCount(b) - psycheHandCount(a);
-        if (handBias) return handBias;
-      }
-      if (powerTile) {
-        const tokenBias = (a.powerTokens || 0) - (b.powerTokens || 0);
-        if (tokenBias) return tokenBias;
-      }
-      const da = hexDistance(landscapeById(state, a.landscapeId), destTile);
-      const db = hexDistance(landscapeById(state, b.landscapeId), destTile);
-      return da - db;
+    const fighters = remaining.filter((p) => canFightBeastTile(p, tile) && survivesBeastTile(state, p, tile.id));
+    const pool = fighters.length ? fighters : remaining;
+    pool.sort((a, b) => {
+      const fishing = (p) => questHere.has(p.landscapeId) && !tileHasEncounter(landscapeById(state, p.landscapeId));
+      const fishBias = Number(fishing(a)) - Number(fishing(b));
+      if (fishBias) return fishBias;
+      const payBias = Number(canFightBeastTile(b, tile)) - Number(canFightBeastTile(a, tile));
+      if (payBias) return payBias;
+      const da = hexDistance(landscapeById(state, a.landscapeId), tile);
+      const db = hexDistance(landscapeById(state, b.landscapeId), tile);
+      if (da !== db) return da - db;
+      return psycheHandCount(b) - psycheHandCount(a);
     });
-    if (tileHasEncounter(destTile) && (!canFightBeastTile(remaining[0], destTile) || !survivesBeastTile(state, remaining[0], tid))) continue;
-    dests[remaining[0].id] = tid;
-    taken.add(remaining[0].id);
+    const chosen = pool[0];
+    const canClear = canFightBeastTile(chosen, tile) && survivesBeastTile(state, chosen, tile.id);
+    if (!canClear && tile.id !== "bed") continue;
+    dests[chosen.id] = tile.id;
+    taken.add(chosen.id);
+  }
+
+  const unassigned = () => alive.filter((p) => !taken.has(p.id));
+  const boardClear = !allEncountersOnBoard(state).length;
+  if (alive.length >= 2 && boardClear && needsMeetQuest(state) && meetQuestNeedsPull(state)) {
+    const suit = spawnSuitForQuest(state);
+    const home = meetQuestLandscapeIds(state)
+      .map((id) => landscapeById(state, id))
+      .find((t) => t?.revealed && !t.wasteland && t.suit === suit);
+    const lava = landscapeById(state, "lava");
+    if (home && suit && lava?.revealed && !lava.wasteland) {
+      const waiters = unassigned()
+        .filter((p) => (p.hand || []).some((c) => c.suit === suit || isWildPsyche(c)))
+        .sort((a, b) => psycheHandCount(b) - psycheHandCount(a));
+      if (waiters.length) {
+        dests[waiters[0].id] = home.id;
+        taken.add(waiters[0].id);
+        const runners = unassigned();
+        if (runners.length) {
+          runners.sort((a, b) => (
+            hexDistance(landscapeById(state, a.landscapeId), lava)
+            - hexDistance(landscapeById(state, b.landscapeId), lava)
+          ));
+          dests[runners[0].id] = "lava";
+          taken.add(runners[0].id);
+        }
+      }
+    }
+  }
+
+  if (boardClear && (needsMeetQuest(state) || needsDrawQuest(state))) {
+    const locked = state.botLock?.archId === state.activeArchetype?.id
+      ? landscapeById(state, state.botLock.tileId)
+      : null;
+    const fishTiles = (locked?.revealed && !locked.wasteland ? [locked] : questTilesRevealed(state)
+      .map((id) => landscapeById(state, id))
+      .filter((t) => t && !tileHasEncounter(t)));
+    fishTiles.sort((a, b) => {
+      const occ = (t) => alive.some((p) => p.landscapeId === t.id) ? 1 : 0;
+      return occ(b) - occ(a);
+    });
+    const fish = fishTiles[0];
+    const remaining = unassigned().filter((p) => psycheHandCount(p) >= 2);
+    if (fish && remaining.length) {
+      remaining.sort((a, b) => {
+        const stick = Number(b.id === state.botLock?.camperId) - Number(a.id === state.botLock?.camperId);
+        if (stick) return stick;
+        return hexDistance(landscapeById(state, a.landscapeId), fish)
+          - hexDistance(landscapeById(state, b.landscapeId), fish);
+      });
+      dests[remaining[0].id] = fish.id;
+      taken.add(remaining[0].id);
+      state.botLock = { archId: state.activeArchetype?.id, tileId: fish.id, camperId: remaining[0].id };
+    }
+  }
+
+  if (!boardClear) {
+    unassigned().forEach((p) => {
+      dests[p.id] = psycheDrawTileId(state, p);
+      taken.add(p.id);
+    });
+  }
+
+  if (boardClear && teamTokens(state) < 1) {
+    const power = powerHexId(state);
+    const remaining = unassigned();
+    if (power && remaining.length) {
+      remaining.sort((a, b) => (a.powerTokens || 0) - (b.powerTokens || 0));
+      dests[remaining[0].id] = power;
+      taken.add(remaining[0].id);
+    }
+  }
+
+  if (boardClear && needsSacrificeQuest(state) && !listSacrificableObjects(state).length) {
+    const remaining = unassigned();
+    const suited = state.board.filter((t) => t.revealed && !t.wasteland && t.suit && !tileHasEncounter(t));
+    if (remaining.length && suited.length) {
+      remaining.sort((a, b) => psycheHandCount(b) - psycheHandCount(a));
+      const from = landscapeById(state, remaining[0].landscapeId);
+      suited.sort((a, b) => hexDistance(from, a) - hexDistance(from, b));
+      dests[remaining[0].id] = suited[0].id;
+      taken.add(remaining[0].id);
+    }
   }
 
   alive.forEach((p) => {
     if (dests[p.id]) return;
-    if (!readyToExpedition(state, skill) || psycheHandCount(p) < POOL_RETREAT) {
-      dests[p.id] = "bed";
-      return;
-    }
-    dests[p.id] = priorities[0] || "bed";
+    dests[p.id] = safeCampId(state, p);
   });
   return dests;
 }
@@ -1279,12 +1490,10 @@ function tryMeet(state, skill) {
 
   const meetQuestTiles = new Set(meetQuestLandscapeIds(state));
   meets.sort((a, b) => {
-    const aBoss = a.enc.boss ? 1 : 0;
-    const bBoss = b.enc.boss ? 1 : 0;
-    if (bBoss !== aBoss) return bBoss - aBoss;
     const aQuest = meetQuestTiles.has(a.tile.id) ? 1 : 0;
     const bQuest = meetQuestTiles.has(b.tile.id) ? 1 : 0;
-    return bQuest - aQuest;
+    if (bQuest !== aQuest) return bQuest - aQuest;
+    return (b.enc.boss ? 1 : 0) - (a.enc.boss ? 1 : 0);
   });
 
   for (const { tile, enc, actor } of meets) {
@@ -1351,6 +1560,7 @@ function tryMindstream(state, skill) {
     if (skill === "skilled" && quests.size && !onQuest && !state.finalRecurrence && !huntingObject) {
       continue;
     }
+    if (skill === "skilled" && meetQuest.has(tile.id) && beastOdds(state, tile.suit) <= 0) continue;
     setActive(state, playerIndex(state, player));
     state.selectedLandscapeId = tile.id;
     const before = state.meetActionsUsed;
@@ -1364,26 +1574,42 @@ function tryMindstream(state, skill) {
   return false;
 }
 
+function spawnSuitForQuest(state) {
+  return meetQuestLandscapeIds(state)
+    .map((id) => landscapeById(state, id))
+    .find((t) => t?.revealed && !t.wasteland && t.suit)?.suit || null;
+}
+
 function finishSpawnPending(state, result) {
   if (result?.pending !== "spawn-dreambeast-pick-suit" && result?.pending !== "pick-mindstream-suit") {
     return;
   }
   const tile = result.tile;
-  const suit = tile?.suit || "lucidity";
+  const suit = (result.pending === "spawn-dreambeast-pick-suit" && spawnSuitForQuest(state))
+    || tile?.suit
+    || "lucidity";
   finishLandscapeMindstreamPick(state, tile, result.player, result.actionId, suit);
 }
 
 function trySpawnBeast(state, skill) {
   if (skill === "sloppy") return false;
   if (!needsMeetQuest(state) && !needsBossQuest(state)) return false;
+  const suit = spawnSuitForQuest(state);
+  const home = meetQuestLandscapeIds(state)
+    .map((id) => landscapeById(state, id))
+    .find((t) => t?.revealed && !t.wasteland && t.suit === suit);
+  const waiter = home && alivePlayers(state).find((p) => (
+    p.landscapeId === home.id && (p.hand || []).some((c) => c.suit === suit || isWildPsyche(c))
+  ));
+  if (!waiter) return false;
   const meetIds = new Set(meetQuestLandscapeIds(state));
   for (const player of alivePlayers(state)) {
     const tile = landscapeById(state, player.landscapeId);
     if (!tile?.revealed || tile.wasteland) continue;
-    if (meetIds.size && !meetIds.has(tile.id) && !activeQuestLandscapeIds(state).includes(tile.id)) continue;
+    if (tile.id !== "lava" && meetIds.size && !meetIds.has(tile.id) && !activeQuestLandscapeIds(state).includes(tile.id)) continue;
     if (tileHasEncounter(tile)) continue;
-    if (psycheHandCount(player) < 4) continue;
-    if (psycheHandCount(player) <= meetTaxAt(state, player, tile.id) + 2) continue;
+    if (psycheHandCount(player) < 2) continue;
+    if (psycheHandCount(player) <= meetTaxAt(state, player, tile.id)) continue;
     const choices = getLandscapeActionChoices(tile);
     if (!choices.some((c) => c.id === "spawn-dreambeast")) continue;
     setActive(state, playerIndex(state, player));
@@ -1480,6 +1706,28 @@ function tryTakePower(state, skill) {
   return false;
 }
 
+function tryRestockPsyche(state, skill) {
+  if (skill === "sloppy") return false;
+  const actions = ["draw-3-psyche", "draw-psyche-equal-to-elasticity", "draw-1-psyche"];
+  const ordered = [...alivePlayers(state)].sort((a, b) => psycheHandCount(a) - psycheHandCount(b));
+  for (const player of ordered) {
+    if (psycheHandCount(player) >= POOL_LEAVE && !tileHasEncounter(landscapeById(state, player.landscapeId))) continue;
+    const tile = landscapeById(state, player.landscapeId);
+    if (!tile?.revealed || tile.wasteland) continue;
+    const choices = getLandscapeActionChoices(tile);
+    const action = actions.find((id) => choices.some((c) => c.id === id));
+    if (!action) continue;
+    if (psycheHandCount(player) >= handLimitForPlayer(state, player)) continue;
+    setActive(state, playerIndex(state, player));
+    state.selectedLandscapeId = tile.id;
+    const before = state.meetActionsUsed;
+    performLandscapeAction(state, action);
+    resolvePendings(state, skill);
+    if (state.meetActionsUsed > before) return true;
+  }
+  return false;
+}
+
 function tryBedPool(state, skill) {
   const campers = alivePlayers(state).filter((p) => p.landscapeId === "bed");
   if (!campers.length) return false;
@@ -1500,23 +1748,28 @@ function tryBedPool(state, skill) {
   return false;
 }
 
+function beastOdds(state, suit) {
+  const deck = state.mindstreamDecks?.[suit] || [];
+  const discard = state.mindstreamDiscard?.[suit] || [];
+  const pile = deck.concat(discard);
+  if (!pile.length) return 0;
+  const beasts = pile.filter((card) => card.type === "dreambeast").length;
+  return beasts / pile.length;
+}
+
 function tryMarkQuests(state, skill) {
   const arch = state.activeArchetype;
-  if (!arch) return false;
-  const ready = getQuestStatus(state, arch).filter((q) => q.ready);
-  if (!ready.length) return false;
-  let acted = false;
-  for (const q of ready) {
-    if (skill === "sloppy" && chance(0.35)) continue;
-    const holder = [...alivePlayers(state)]
-      .filter((p) => (p.powerTokens || 0) >= 1)
-      .sort((a, b) => (b.powerTokens || 0) - (a.powerTokens || 0))[0];
-    if (!holder) break;
-    setActive(state, playerIndex(state, holder));
-    if (handleQuestComplete(state, q.index)) {
-      resolvePendings(state, skill);
-      acted = true;
-    }
+  if (!arch || !commitReady(state)) return false;
+  if (skill === "sloppy" && chance(0.35)) return false;
+  const holder = [...alivePlayers(state)]
+    .filter((p) => (p.powerTokens || 0) >= 1)
+    .sort((a, b) => (b.powerTokens || 0) - (a.powerTokens || 0))[0];
+  if (!holder) return false;
+  setActive(state, playerIndex(state, holder));
+  const acted = !!handleQuestComplete(state, 0);
+  if (acted) {
+    state.botLock = null;
+    resolvePendings(state, skill);
   }
   return acted;
 }
@@ -1620,22 +1873,44 @@ function runMeet(state, skill) {
   let actions = 0;
   const actionCap = 8 + alivePlayers(state).length * 3;
   while (state.meetActionBudget > 0 && state.meetActionsUsed < state.meetActionBudget && actions++ < actionCap) {
+    if (skill === "skilled" && !state.finalRecurrence && state.acquiredPoints >= state.goalPoints) break;
     const used = state.meetActionsUsed;
     useTools(state, skill);
     if (tryFinalRecurrence(state, skill)) continue;
-    if (tryMeet(state, skill) && state.meetActionsUsed > used) continue;
-    if (trySpawnBeast(state, skill) && state.meetActionsUsed > used) continue;
+    if (tryMeet(state, skill) && state.meetActionsUsed > used) {
+      tryMarkQuests(state, skill);
+      continue;
+    }
+    const onBeast = alivePlayers(state).some((p) => tileHasEncounter(landscapeById(state, p.landscapeId)));
+    if (onBeast && tryRestockPsyche(state, skill) && state.meetActionsUsed > used) continue;
+    if (skill === "skilled" && teamTokens(state) < 1 && tryTakePower(state, skill)) continue;
+    const roaming = allEncountersOnBoard(state).length > 0;
+    const fishingMeet = !roaming && skill === "skilled" && needsMeetQuest(state) && standingOnQuestWork(state) && meetQuestNeedsPull(state);
+    if (fishingMeet && tryMindstream(state, skill)) {
+      tryMarkQuests(state, skill);
+      continue;
+    }
+    const drawFirst = !roaming && skill === "skilled" && needsDrawQuest(state) && standingOnQuestWork(state);
+    if (drawFirst && tryMindstream(state, skill)) {
+      tryMarkQuests(state, skill);
+      continue;
+    }
+    if (trySpawnBeast(state, skill) && state.meetActionsUsed > used) {
+      tryMarkQuests(state, skill);
+      continue;
+    }
     const huntingObject = needsSacrificeQuest(state) && !listSacrificableObjects(state).length;
-    if ((skill !== "sloppy" || chance(0.55)) && (readyToExpedition(state, skill) || standingOnQuestWork(state) || needsMeetQuest(state) || needsBossQuest(state) || huntingObject) && tryMindstream(state, skill)) continue;
+    if (!allEncountersOnBoard(state).length && (skill !== "sloppy" || chance(0.55)) && (readyToExpedition(state, skill) || standingOnQuestWork(state) || needsMeetQuest(state) || needsBossQuest(state) || huntingObject) && tryMindstream(state, skill)) continue;
     if (tryTakePower(state, skill)) continue;
     const pooling = !readyToExpedition(state, skill)
       || needsTenPsycheQuest(state)
       || alivePlayers(state).some((p) => p.landscapeId === "bed" && psycheHandCount(p) < POOL_LEAVE);
-    if (pooling && !standingOnQuestWork(state) && tryBedPool(state, skill)) continue;
-    if (tryBedPool(state, skill) && !standingOnQuestWork(state)) continue;
+    if (pooling && !standingOnQuestWork(state) && (tryRestockPsyche(state, skill) || tryBedPool(state, skill))) continue;
+    if ((tryRestockPsyche(state, skill) || tryBedPool(state, skill)) && !standingOnQuestWork(state)) continue;
     break;
   }
   tryMeet(state, skill);
+  tryMarkQuests(state, skill);
   resolvePendings(state, skill);
   endPhase(state);
 }
@@ -1643,9 +1918,7 @@ function runMeet(state, skill) {
 function lossReason(state) {
   if (state.status === "won") return "won";
   const log = (state.log || []).join("\n");
-  const solo = (state.players || []).length === 1;
-  if (/died an eighth time/i.test(log) || (solo && (state.players || []).some((p) => (p.deathCount || 0) >= 8))) return "eighth-death";
-  if (/died a fifth time/i.test(log) || (!solo && (state.players || []).some((p) => (p.deathCount || 0) >= 5))) return "fifth-death";
+  if ((state.deathClock || 0) >= 6 || /Death Clock strikes/i.test(log)) return "death-clock";
   if (/Psyche Deck is exhausted/i.test(log)) return "psyche-empty";
   if (/Mindstream is gone/i.test(log)) return "mindstream-gone";
   if (/You Never Wake/i.test(log)) return "you-never-wake";
@@ -1737,11 +2010,25 @@ function simulateGame({ lengthKey, skill, selectedDreamers }) {
     dreamsLeft: state.dreamDeck.length,
     deaths: state.players.reduce((s, p) => s + (p.deathCount || 0), 0),
     archetypes: state.players.reduce((s, p) => s + (p.acquiredArchetypes?.length || 0), 0),
+    milestone: milestoneScore(state, originalGoal),
     onBed,
     alive,
     goalMet: points >= originalGoal && originalGoal > 0,
     goalMetNotOnBed: points >= originalGoal && originalGoal > 0 && onBed < alive,
     roamingBeastsEnd: countBoardDreambeasts(state),
+    questSnap: process.env.SOMNIA_SIM_QUEST ? {
+      name: state.activeArchetype?.name || null,
+      quests: state.activeArchetype?.quests || [],
+      progress: state.activeArchetype?.questProgress || [],
+      met: (state.activeArchetype?.quests || []).map((q) => isQuestConditionMet(state, state.activeArchetype.id, q)),
+      mind: Object.keys(state.questTracker?.mindstreamOnLandscape || {}),
+      meet: Object.keys(state.questTracker?.meetOnLandscape || {}),
+      boss: state.questTracker?.meetBoss || null,
+      sac: !!state.questTracker?.sacrificedObject,
+      tokens: teamTokens(state),
+      lengthKey,
+      playerCount,
+    } : null,
     finalRecurrence: !!state.finalRecurrence,
     lengthKey,
     skill,
@@ -1752,6 +2039,17 @@ function simulateGame({ lengthKey, skill, selectedDreamers }) {
     passiveUses: { ...(state.botPassiveUses || {}) },
     sacrifices: state.botSacrifices || 0,
   };
+}
+
+function milestoneScore(state, goal) {
+  const points = state.acquiredPoints || 0;
+  const target = goal || 1;
+  const acquired = (state.players || []).reduce((sum, player) => sum + (player.acquiredArchetypes?.length || 0), 0);
+  const met = (state.activeArchetype?.quests || []).filter((quest) => (
+    isQuestConditionMet(state, state.activeArchetype.id, quest)
+  )).length;
+  const home = state.status === "won" ? 4 : (points >= target && target > 0 ? 2 : 0);
+  return acquired * 3 + met + Math.min(4, (points / target) * 4) + home - Math.min(6, state.deathClock || 0) * 0.4;
 }
 
 function summarize(rows) {
@@ -1774,6 +2072,7 @@ function summarize(rows) {
     avgRounds: +avg("rounds").toFixed(2),
     avgDeaths: +avg("deaths").toFixed(2),
     avgArchetypes: +avg("archetypes").toFixed(2),
+    avgMilestone: +avg("milestone").toFixed(2),
     avgDreamsLeft: +avg("dreamsLeft").toFixed(2),
     goalReachedButLost: rows.filter((r) => r.status === "lost" && r.goalMet).length,
     goalMetNotOnBed: rows.filter((r) => r.goalMetNotOnBed).length,
@@ -1913,7 +2212,7 @@ globalThis.__somniaCrashCount = 0;
 globalThis.__somniaCrashKinds = {};
 
 console.log(
-  `Somnia 34.2 combo matrix: ${DREAMER_ROSTER.length} Dreamers, 63 combinations × ${RUNS_PER_COMBO} skilled + ${6 * SLOPPY_PER_COUNT} sloppy = ${JOBS.length} games`,
+  `Somnia 35.0 combo matrix: ${DREAMER_ROSTER.length} Dreamers, 63 combinations × ${RUNS_PER_COMBO} skilled + ${6 * SLOPPY_PER_COUNT} sloppy = ${JOBS.length} games`,
 );
 
 let done = 0;
@@ -1943,8 +2242,8 @@ const comboRanks = Object.entries(byCombo)
   .sort((a, b) => b.winRate - a.winRate);
 
 const report = {
-  version: "34.2",
-  engineNote: "Real Somnia JS engine. Skilled bots buy enough Elasticity to reach a Dreambeast, Meet it with one legal card (the harness awards the dice battle), keep a Psyche-deck reserve, and use Dreamer powers when the table can afford the cost.",
+  version: "35.0",
+  engineNote: "Real Somnia JS engine, rules 35.0. One Power Token commits an Archetype once both quests are true. Death Clock of 6. Quest Landscapes are forgotten last. Skilled bots lock a camper on the quest hex, protect the pay card, and Meet a beast drawn there in the same phase.",
   generatedAt: new Date().toISOString(),
   elapsedMs: Date.now() - started,
   totalGames: all.length,
@@ -1980,3 +2279,23 @@ console.log("Dreamer powers per game (skilled):", Object.fromEntries(
 ));
 console.log("Passives:", report.dreamerPassives);
 console.log(`Object sacrifices: ${report.sacrifices}`);
+if (process.env.SOMNIA_SIM_QUEST) {
+  const snaps = all.map((r) => r.questSnap).filter(Boolean);
+  const drawMet = snaps.filter((s) => s.quests.some((q, i) => /draw mindstream/i.test(q) && s.met[i])).length;
+  const meetMet = snaps.filter((s) => s.quests.some((q, i) => /meet a dreambeast/i.test(q) && s.met[i])).length;
+  const bossMet = snaps.filter((s) => s.quests.some((q, i) => /defeat/i.test(q) && s.met[i])).length;
+  const sacMet = snaps.filter((s) => s.quests.some((q, i) => /sacrific/i.test(q) && s.met[i])).length;
+  const bothMarked = snaps.filter((s) => s.progress?.every(Boolean)).length;
+  console.log("QUEST SNAP", {
+    n: snaps.length,
+    drawMet,
+    meetMet,
+    bossMet,
+    sacMet,
+    bothMarked,
+    anyMind: snaps.filter((s) => s.mind.length).length,
+    anyMeet: snaps.filter((s) => s.meet.length).length,
+    avgTokens: (snaps.reduce((s, x) => s + x.tokens, 0) / snaps.length).toFixed(2),
+  });
+  console.log("sample", JSON.stringify(snaps.slice(0, 4), null, 0));
+}

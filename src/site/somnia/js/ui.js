@@ -2409,7 +2409,7 @@ export function renderPlayers(state, onSelectPlayer, onDoubleClickPlayer = null)
         <div class="info">
           <div class="name">${player.name}${player.isHead ? " ★" : ""}${isSuggestedSpender ? " ☆" : ""}${onScene ? " ●" : ""}${!player.alive ? " (lost)" : ""}</div>
           ${compact ? "" : dreamerStatsHtml(player.dreamer)}
-          <div class="sub">${player.powerTokens} power · ${formatHandPsycheLine(state, player)} · ${player.deathCount || 0}/5 deaths · ${player.objects.length} obj · ${player.persistent?.length || 0} persistent</div>
+          <div class="sub">${player.powerTokens} power · ${formatHandPsycheLine(state, player)} · ${player.deathCount || 0} deaths · ${player.objects.length} obj · ${player.persistent?.length || 0} persistent</div>
         </div>
       `;
 
@@ -3247,6 +3247,17 @@ export function renderHud(state, hint = "") {
   }
 
   document.getElementById("hud-round").textContent = String(state.round);
+  const clock = state.deathClock || 0;
+  const clockCap = 6;
+  const pips = document.getElementById("death-clock-pips");
+  if (pips) {
+    pips.innerHTML = Array.from({ length: clockCap }, (_, index) =>
+      `<span class="death-clock-pip${index < clock ? " ticked" : ""}"></span>`,
+    ).join("");
+  }
+  const clockCount = document.getElementById("death-clock-count");
+  if (clockCount) clockCount.textContent = `${clock}/${clockCap}`;
+  document.getElementById("death-clock")?.classList.toggle("full", clock >= clockCap);
   const focused = activePlayer(state);
   const paintPill = (id, value) => {
     const node = document.getElementById(id);
@@ -3684,12 +3695,7 @@ export function renderDreamerPicker(dreamers, selectedIds, onToggle, options = {
 
 export function renderSetupIntro() {
   const legend = document.getElementById("setup-phase-legend");
-  if (!legend) return;
-  legend.innerHTML = `
-    <div class="round-step suit-lucidity">${suitIconHtml("lucidity", { size: 22 })} <strong>Reveal</strong><span>Draw Dream · reveal Landscapes</span></div>
-    <div class="round-step suit-elasticity">${suitIconHtml("elasticity", { size: 22 })} <strong>Explore</strong><span>Spend Elasticity · move on the map</span></div>
-    <div class="round-step suit-willpower">${suitIconHtml("willpower", { size: 22 })} <strong>Meet</strong><span>Gain actions · face Encounters</span></div>
-  `;
+  if (legend) legend.remove();
 }
 
 export function showScreen(id) {

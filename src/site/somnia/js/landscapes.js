@@ -18,7 +18,7 @@ import {
 import { shuffle } from "./data.js";
 import { repressCard } from "./subconscious.js";
 import { narrate, logMoment } from "./narrator.js";
-import { recordQuestEvent } from "./quests.js";
+import { recordQuestEvent, activeQuestLandscapeIds } from "./quests.js";
 import { isEdgeLandscape } from "./hex.js";
 import { markTileForgotten } from "./fx.js";
 import { queueTileForgetFx, queueRepressFx } from "./board-fx.js";
@@ -476,10 +476,21 @@ function forgettableUnoccupied(state) {
 }
 
 /** Forget `count` random revealed Landscapes. Never The Bed. Optionally skip hexes that still host Dreambeasts. */
+function questLandscapesLast(state, tiles) {
+  const protect = new Set(activeQuestLandscapeIds(state));
+  const open = [];
+  const quest = [];
+  tiles.forEach((tile) => {
+    if (protect.has(tile.id)) quest.push(tile);
+    else open.push(tile);
+  });
+  return [...shuffle(open), ...shuffle(quest)];
+}
+
 export function forgetRandomLandscapes(state, count, { skipOccupied = true } = {}) {
   const n = Math.max(0, Math.floor(count || 0));
   if (n <= 0) return [];
-  const pool = shuffle(skipOccupied ? forgettableUnoccupied(state) : forgettableTiles(state));
+  const pool = questLandscapesLast(state, skipOccupied ? forgettableUnoccupied(state) : forgettableTiles(state));
   const picked = pool.slice(0, n);
   picked.forEach((t) => forgetTile(state, t));
   if (picked.length) {
@@ -525,7 +536,7 @@ export function forgetEdgeLandscapes(state, count) {
     requestForgetLandscapes(state, count);
     return 0;
   }
-  const picks = shuffle(edges).slice(0, count);
+  const picks = questLandscapesLast(state, edges).slice(0, count);
   picks.forEach((t) => forgetTile(state, t));
   if (picks.length) {
     recordQuestEvent(state, "forget_landscape", { count: picks.length });

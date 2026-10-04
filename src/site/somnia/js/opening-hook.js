@@ -54,39 +54,48 @@ export function openingNeighborLandscape(state) {
   return sorted[hashString(`${hookKey(state)}|neighbor`) % sorted.length];
 }
 
-function friendsClause(state) {
-  const dreamers = (state?.players || [])
+function dreamerNames(state) {
+  return (state?.players || [])
     .filter((player) => player.alive !== false)
     .map((player) => player.dreamer?.name || player.name)
     .filter(Boolean);
-  const count = dreamers.length;
-  if (count === 1) {
-    return pick([
-      `with ${dreamers[0]} beside you, a friend under a different face`,
-      "surrounded by the feeling of friends, though they go by different faces",
-    ], state, "friends");
-  }
-  if (count === 2) {
-    return pick([
-      `with ${dreamers[0]} and ${dreamers[1]} beside you, friends under different faces`,
-      "surrounded by friends, though they go by different faces",
-    ], state, "friends");
-  }
-  if (count > 2) {
-    return pick([
-      `among ${numberWord(count)} friends who go by different faces`,
-      `with ${dreamers[0]} and ${dreamers[1]} beside you, and more friends under different faces`,
-      "surrounded by friends, though they go by different faces",
-    ], state, "friends");
-  }
-  return "surrounded by friends, though they go by different faces";
 }
 
-/** The wake story. Starting fingertips are the opening Psyche deal (5). The longing is a full hand (10). */
-export function openingHookText(state) {
+function plain(text) {
+  return { text, variable: false };
+}
+
+function variable(text) {
+  return { text, variable: true };
+}
+
+function nameList(names) {
+  if (!names.length) return [plain("friends under different faces")];
+  if (names.length === 1) return [variable(names[0])];
+  if (names.length === 2) return [variable(names[0]), plain(" and "), variable(names[1])];
+  const parts = [];
+  names.forEach((name, index) => {
+    if (index > 0) parts.push(plain(index === names.length - 1 ? ", and " : ", "));
+    parts.push(variable(name));
+  });
+  return parts;
+}
+
+function sentenceLines(sentence) {
+  return String(sentence || "")
+    .split(/(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => [plain(line)]);
+}
+
+/** Credit lines. Variable spans are Dreamer names, the first Landscape, and the Archetype. */
+export function openingHookLines(state) {
+  const names = dreamerNames(state);
   const call = archetypeCall(state?.activeArchetype?.name);
   const neighbor = openingNeighborLandscape(state);
   const place = neighbor?.name || "a Landscape just next door";
+  const placeIsVariable = !!neighbor?.name;
   const fingers = numberWord(PSYCHE_STARTING_HAND);
   const fullHands = numberWord(MAX_PSYCHE_IN_HAND);
   const song = pick([
@@ -99,16 +108,49 @@ export function openingHookText(state) {
     "Each one waits like a closed eye, begging for your sight.",
     "They lean in from the dark, patient, ready to be taken by your sight.",
   ], state, "waste");
+  const company = names.length
+    ? [plain("with "), ...nameList(names), plain(" beside you, friends under different faces.")]
+    : [plain("surrounded by friends, though they go by different faces.")];
 
   return [
-    `You wake within a place you've never been, with a feeling like you've never left, ${friendsClause(state)}. Somewhere in this dream an Archetype is waiting. Capture it. Stand together on The Bed. Wake before the deck of nights runs out.`,
-    "You clear the sand from your eyes, and you see you are dreaming, somehow connected to each other's minds and souls.",
-    `In the distance you hear the call of ${call}, though you know not how you know its song. ${song}`,
-    `Speaking of your hands, you have glowing fingertips of color, ${fingers} of them lit as you wake. You feel you could be unstoppable with both full hands of ${fullHands} fingers lit.`,
-    `You hear the sounds of ${place} calling to you next door.`,
-    `All around you are darkened endless Wastelands. You could flip the script and light them up with your hands. ${waste}`,
-    "You look to your friends, and the stage is yours to play at.",
-  ].join(" ");
+    [plain("You wake within a place you've never been,")],
+    [plain("with a feeling like you've never left,")],
+    company,
+    [plain("Somewhere in this dream an Archetype is waiting.")],
+    [plain("Capture it.")],
+    [plain("Stand together on The Bed.")],
+    [plain("Wake before the deck of nights runs out.")],
+    [plain("You clear the sand from your eyes,")],
+    [plain("and you see you are dreaming,")],
+    [plain("somehow connected to each other's minds and souls.")],
+    [plain("In the distance you hear the call of "), variable(call), plain(",")],
+    [plain("though you know not how you know its song.")],
+    ...sentenceLines(song),
+    [plain("Speaking of your hands,")],
+    [plain("you have glowing fingertips of color,")],
+    [plain(`${fingers} of them lit as you wake.`)],
+    [plain("You feel you could be unstoppable")],
+    [plain(`with both full hands of ${fullHands} fingers lit.`)],
+    [
+      plain("You hear the sounds of "),
+      placeIsVariable ? variable(place) : plain(place),
+      plain(" calling to you next door."),
+    ],
+    [plain("All around you are darkened endless Wastelands.")],
+    [plain("You could flip the script and light them up with your hands.")],
+    ...sentenceLines(waste),
+    [plain("You look to your friends,")],
+    [plain("and the stage is yours to play at.")],
+  ];
+}
+
+function lineText(parts) {
+  return parts.map((part) => part.text).join("");
+}
+
+/** The wake story. Starting fingertips are the opening Psyche deal (5). The longing is a full hand (10). */
+export function openingHookText(state) {
+  return openingHookLines(state).map(lineText).join(" ");
 }
 
 const shownKeys = new Set();
@@ -139,11 +181,27 @@ export function showOpeningHook(state) {
   title.id = "opening-hook-title";
   title.textContent = "You are dreaming";
 
-  const body = document.createElement("p");
-  body.id = "opening-hook-body";
-  body.className = "opening-hook-body";
-  const story = openingHookText(state).trim();
-  body.textContent = story || "You wake dreaming. An Archetype is calling, and a Landscape beside The Bed is waiting.";
+  const crawl = document.createElement("div");
+  crawl.className = "opening-hook-crawl";
+  const reel = document.createElement("div");
+  reel.className = "opening-hook-reel";
+  reel.id = "opening-hook-body";
+  const lines = openingHookLines(state);
+  lines.forEach((parts) => {
+    const line = document.createElement("p");
+    line.className = "opening-hook-line";
+    parts.forEach((part) => {
+      if (!part.text) return;
+      const node = document.createElement("span");
+      node.className = part.variable ? "opening-hook-var" : "opening-hook-word";
+      node.textContent = part.text;
+      line.appendChild(node);
+    });
+    reel.appendChild(line);
+  });
+  const seconds = Math.max(28, Math.round(lines.length * 2.15));
+  reel.style.animationDuration = `${seconds}s`;
+  crawl.appendChild(reel);
 
   const actions = document.createElement("div");
   actions.className = "opening-hook-actions";
@@ -167,7 +225,7 @@ export function showOpeningHook(state) {
   });
 
   actions.appendChild(button);
-  card.append(title, body, actions);
+  card.append(title, crawl, actions);
   root.appendChild(card);
   document.body.appendChild(root);
   button.focus({ preventScroll: true });

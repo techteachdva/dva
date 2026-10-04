@@ -89,7 +89,7 @@ import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPow
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "./archetypes.js";
 import { getActivatableArchetypePowers } from "./archetype-stats.js";
 import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
-import { isQuestConditionMet } from "./quests.js";
+import { isQuestConditionMet, meetQuestLandscapeIds } from "./quests.js";
 import {
   getLandscapeActionChoices,
   getUniqueLandscapeActionChoices,
@@ -312,12 +312,21 @@ function isSwappablePsyche(card) {
   return card.type === "psyche" || isWildPsyche(card);
 }
 
+function isFreeQuestMeet(state, action) {
+  if (action !== MEET_ACTIONS.MEET) return false;
+  const free = state.freeQuestMeet;
+  if (!free?.landscapeId) return false;
+  if (state.selectedLandscapeId !== free.landscapeId) return false;
+  const actor = meetActionActor(state, action);
+  return !!actor && actor.landscapeId === free.landscapeId && !!encounterOnLandscape(state, free.landscapeId);
+}
+
 function canUseMeetActionForActor(state, actor, action, landscapeActionId = null) {
   if (!actor) return false;
   if (meetPassBlocks(state, actor)) return false;
   if (!canSpendMeetAction(state, actor, action, MEET_ACTIONS)) return false;
   if (landscapeActionId !== "draw-mindstream" && hasUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId))) return false;
-  if (state.meetActionsUsed >= state.meetActionBudget) return false;
+  if (!isFreeQuestMeet(state, action) && state.meetActionsUsed >= state.meetActionBudget) return false;
   return true;
 }
 
@@ -345,8 +354,9 @@ export function canDreamerMeetOnLandscape(state, player, tileId) {
   if (state.forcedAccept && player.id === state.forcedAccept.playerId && tileId === state.forcedAccept.tileId) {
     return !!enc;
   }
-  if (!enc || getPhase(state) !== "Meet" || state.meetActionBudget < 1) return false;
-  if (state.meetActionsUsed >= state.meetActionBudget) return false;
+  const freeMeet = state.freeQuestMeet?.landscapeId === tileId && player.landscapeId === tileId;
+  if (!enc || getPhase(state) !== "Meet") return false;
+  if (!freeMeet && (state.meetActionBudget < 1 || state.meetActionsUsed >= state.meetActionBudget)) return false;
   if (hasUsedMeetAction(state, player, meetActionKey(MEET_ACTIONS.MEET))) return false;
   return canSpendMeetAction(state, player, MEET_ACTIONS.MEET, MEET_ACTIONS);
 }
@@ -358,7 +368,7 @@ function meetActionHint(state, action, landscapeActionId, baseHint = "") {
     const holder = state.players.find((p) => p.id === state.meetPassHolderId);
     return `Meet Pass Token is with ${holder?.name || "another Dreamer"}.`;
   }
-  if (state.meetActionsUsed >= state.meetActionBudget) return "No Meet actions remaining.";
+  if (!isFreeQuestMeet(state, action) && state.meetActionsUsed >= state.meetActionBudget) return "No Meet actions remaining.";
   if (hasUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId))) {
     return isTableUniqueLandscapeAction(landscapeActionId)
       ? "Already used this Meet."
@@ -374,6 +384,14 @@ function spendMeetAction(state, action, landscapeActionId = null) {
     addLog(state, "Cannot use this Meet action (restricted or no actions remain).");
     return false;
   }
+  if (isFreeQuestMeet(state, action)) {
+    state.freeQuestMeet = null;
+    state.pendingFreeMeetRefund = true;
+    markUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId));
+    passMeetToken(state);
+    return true;
+  }
+  state.pendingFreeMeetRefund = false;
   state.meetActionsUsed += 1;
   if (landscapeActionId !== "draw-mindstream") {
     markUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId));
@@ -383,6 +401,11 @@ function spendMeetAction(state, action, landscapeActionId = null) {
 }
 
 function refundMeetAction(state, player, action = null, landscapeActionId = null) {
+  if (state.pendingFreeMeetRefund) {
+    state.pendingFreeMeetRefund = false;
+    if (action) unmarkUsedMeetAction(state, player, meetActionKey(action, landscapeActionId));
+    return;
+  }
   state.meetActionsUsed = Math.max(0, state.meetActionsUsed - 1);
   if (action) unmarkUsedMeetAction(state, player, meetActionKey(action, landscapeActionId));
 }
@@ -1182,14 +1205,18 @@ export function moveDreamer(state, targetLandscapeId) {
     recordCancellableMove(state, player, fromId, targetLandscapeId);
 
     if (to.wasteland) {
-      if (hasPsycheHealth(player)) {
-        const discarded = player.hand.pop();
-        state.psycheDiscard.push(discarded);
-        recordCancellableDiscard(state, player, discarded, "wasteland");
-        recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: targetLandscapeId });
-        addLog(state, `${player.name} discards 1 Psyche on Wasteland.`);
-        if (state.checkPsycheDeath) state.checkPsycheDeath(player);
+      const payable = (player.hand || []).filter((card) => !isDreambeastPsycheCard(card));
+      if (!payable.length) {
+        addLog(state, `${player.name} steps into Wasteland with no Psyche to pay.`);
+        if (state.checkPsycheDeath) state.checkPsycheDeath(player, { unpaid: true });
+        return;
       }
+      const discarded = payable[payable.length - 1];
+      player.hand = player.hand.filter((card) => card.instanceId !== discarded.instanceId);
+      state.psycheDiscard.push(discarded);
+      recordCancellableDiscard(state, player, discarded, "wasteland");
+      recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: targetLandscapeId });
+      addLog(state, `${player.name} discards 1 Psyche on Wasteland.`);
     } else {
       addLog(state, `${player.name} moves to ${to.name}. (${state.exploreMovesLeft} moves left)`);
     }
@@ -1407,29 +1434,24 @@ export function getPowerTokenRadialOptions(state) {
   const refundable = state.pendingPowerBonusTokens || 0;
   const arch = state.activeArchetype;
   const held = player.powerTokens || 0;
-  const questHint = (index) => {
-    if (!arch) return "No active Archetype.";
-    if (arch.questProgress[index]) return "This quest is already marked.";
-    if (held < 1) return "Need 1 Power Token.";
-    if (!isQuestConditionMet(state, arch.id, arch.quests[index])) {
-      return `Quest not met yet: ${arch.quests[index]}`;
-    }
-    return "Free action — spend 1 Power Token to mark this quest. Does not cost a Meet action.";
-  };
+  const bothTrue = !!arch?.quests?.every((quest) => isQuestConditionMet(state, arch.id, quest));
+  const already = !!arch?.questProgress?.every(Boolean);
+  const commitHint = !arch
+    ? "No active Archetype."
+    : already
+      ? "This Archetype is already committed."
+      : held < 1
+        ? "Need 1 Power Token."
+        : bothTrue
+          ? "Both quests are true. Spend 1 Power Token to commit. Does not cost a Meet action."
+          : "Both quests must already be true.";
   const options = [
     {
       id: "quest0",
       kind: "completeQuest0",
-      label: "Quest 1",
-      hint: questHint(0),
-      disabled: !arch || arch.questProgress[0] || !isQuestConditionMet(state, arch.id, arch.quests[0]) || held < 1,
-    },
-    {
-      id: "quest1",
-      kind: "completeQuest1",
-      label: "Quest 2",
-      hint: questHint(1),
-      disabled: !arch || arch.questProgress[1] || !isQuestConditionMet(state, arch.id, arch.quests[1]) || held < 1,
+      label: "Commit",
+      hint: commitHint,
+      disabled: !arch || already || !bothTrue || held < 1,
     },
     {
       id: "spreadPlus",
@@ -1758,8 +1780,16 @@ export function completeLandscapeAction(state, tile, player, actionId, onResult)
     refundMeetAction(state, player, MEET_ACTIONS.LANDSCAPE, actionId);
   }
 
+  noteFreeQuestMeet(state, tile, result);
   if (result?.card && onResult) onResult(result.card);
   return result;
+}
+
+function noteFreeQuestMeet(state, tile, result) {
+  if (result?.card?.type !== "dreambeast") return;
+  if (!meetQuestLandscapeIds(state).includes(tile?.id)) return;
+  state.freeQuestMeet = { landscapeId: tile.id };
+  addLog(state, `${result.card.name} stands on the quest Landscape. Meeting it does not cost another action.`);
 }
 
 export function finishLandscapeMindstreamPick(state, tile, player, actionId, suit, onResult) {
@@ -1772,6 +1802,7 @@ export function finishLandscapeMindstreamPick(state, tile, player, actionId, sui
     landscapeActionHelpers(state),
   );
   if (result?.refund) refundMeetAction(state, player, MEET_ACTIONS.LANDSCAPE, actionId);
+  noteFreeQuestMeet(state, tile, result);
   if (result?.card && onResult) onResult(result.card);
   return result;
 }

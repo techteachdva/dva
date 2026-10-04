@@ -335,7 +335,24 @@ function commitHandLoss(state, player, card, toDiscard) {
   return "repress";
 }
 
+function psycheAvailable(player) {
+  return (player?.hand || []).filter((card) => !isDreambeastPsycheCard(card)).length;
+}
+
+function dieIfUnpaidPsyche(state, player) {
+  if (!player || psycheAvailable(player) > 0) return false;
+  return !!(state.checkPsycheDeath && state.checkPsycheDeath(player, { unpaid: true }));
+}
+
 function beginRepressStep(state, step) {
+  if (step.collective && step.source === "hand" && (step.count || 0) >= 1) {
+    const owners = aliveHandOwners(state);
+    if (!owners.some((player) => psycheAvailable(player) > 0)) {
+      dieIfUnpaidPsyche(state, owners[0]);
+      advanceResolutionQueue(state);
+      return;
+    }
+  }
   if (step.collective && step.source === "hand") {
     const available = collectiveHandPool(state);
     const needed = step.count;
@@ -383,6 +400,10 @@ function beginRepressStep(state, step) {
 
   const player = playerById(state, step.playerId);
   if (!player) {
+    advanceResolutionQueue(state);
+    return;
+  }
+  if (step.source === "hand" && (step.count || 0) >= 1 && dieIfUnpaidPsyche(state, player)) {
     advanceResolutionQueue(state);
     return;
   }

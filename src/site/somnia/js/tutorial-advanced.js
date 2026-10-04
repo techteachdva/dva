@@ -160,8 +160,8 @@ export const ADVANCED_TUTORIAL_SCRIPT = [
   {
     id: "adv-death",
     round: 1,
-    title: "The Ladder",
-    why: "The Hunter is holding one Psyche. The dark hex beside them is Wasteland. Stepping in discards that card. No Psyche and no allies, and the dream lets go. They return to The Bed with 4. The next death would be 3, then 2, then 1. The fifth is the end. Power Tokens go back to the pool. None are given back.",
+    title: "The Death Clock",
+    why: "The Hunter is holding no Psyche. The dark hex beside them is Wasteland, and stepping in asks for 1 Psyche. With nothing to pay, they die. The Death Clock ticks. They return to The Bed and draw 3 Psyche. Power Tokens and Objects are lost. Six deaths, shared by the table, end the night.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Hunter." },
@@ -346,8 +346,7 @@ export function prepareAdvancedDeath(state) {
   state.exploreMovesLeft = 2;
   state.activePlayerIndex = 1;
   state.selectedLandscapeId = hunter.landscapeId || "sky";
-  const keep = hunter.hand.find((card) => card.type === "psyche") || hunter.hand[0];
-  hunter.hand = keep ? [keep] : [];
+  hunter.hand = [];
   hunter.objects = [];
   const neighbors = adjacentTiles(state, hunter.landscapeId).filter((tile) => tile.id !== "bed");
   const tile = neighbors[0];

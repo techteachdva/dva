@@ -1,5 +1,6 @@
-import { createQuestTracker, canMarkQuest, recordQuestEvent } from "./quests.js";
-import { buildHexBoard } from "./hex.js";
+import { createQuestTracker, recordQuestEvent, isQuestConditionMet } from "./quests.js";
+import { buildHexBoard, adjacentTiles, hexDistance } from "./hex.js";
+import { effectiveDreamerStat } from "./archetype-stats.js";
 import { playSfx } from "./audio.js";
 import { markTileRevealed, markTileForgotten, markDreamFeedNudge } from "./fx.js";
 import { queueTileRevealFx, queueEncounterSpawnFx, queueDreamerDeathFx } from "./board-fx.js";
@@ -193,6 +194,8 @@ export function createInitialState(data, options) {
     activeEncounterLandscapeId: null,
     activeDream: null,
     acquiredPoints: 0,
+    deathClock: 0,
+    goalBedSprintUsed: false,
     selectedHand: [],
     selectedLandscapeId: "bed",
     log: [
@@ -292,7 +295,7 @@ export function createInitialState(data, options) {
     });
   });
   if (state.tutorialMode) resolveAllPowerCardsInHands(state);
-  state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
+  state.checkPsycheDeath = (player, opts) => checkDreamerPsycheDeath(state, player, opts);
   return state;
 }
 
@@ -707,21 +710,20 @@ export function beginRoundReveal(state) {
   addLog(state, `Round ${state.round}: Reveal — each Dreamer draws 2 Psyche.`);
 }
 
-export const MAX_DREAMER_DEATHS = 5;
+export const DEATH_CLOCK_CAP = 6;
+/** @deprecated Personal caps are gone. The table shares DEATH_CLOCK_CAP. */
+export const MAX_DREAMER_DEATHS = DEATH_CLOCK_CAP;
 
-export function deathAvoidTokenCost(state) {
-  const alive = state.players.filter((p) => p.alive).length;
-  return Math.max(1, Math.floor(alive / 2));
+export function deathAvoidTokenCost() {
+  return 0;
 }
 
-export function deathCapFor(state) {
-  return state?.players?.length === 1 ? 8 : MAX_DREAMER_DEATHS;
+export function deathCapFor() {
+  return DEATH_CLOCK_CAP;
 }
 
-function respawnPsycheTarget(state, deathCount) {
-  const raw = Math.max(0, PSYCHE_STARTING_HAND - deathCount);
-  if (state.players.length === 1) return Math.max(3, raw);
-  return raw;
+function respawnPsycheTarget() {
+  return 3;
 }
 
 function seatDreamerOnBed(state, player) {
@@ -735,12 +737,9 @@ function loseOnFinalDeath(state, player) {
   if (state.tutorialMode) return;
   if (state.status !== "playing") return;
   state.status = "lost";
-  const solo = state.players.length === 1;
   addLog(
     state,
-    solo
-      ? `${player.name} died an eighth time. One Dreamer, and the night is over.`
-      : `${player.name} died a fifth time — no Psyche left to return with. The table never wakes.`,
+    `The Death Clock strikes ${DEATH_CLOCK_CAP}. ${player.name} does not return. You never wake up.`,
   );
 }
 
@@ -765,9 +764,12 @@ function discardPlayerObjects(state, player) {
 
 export function applyDreamerDeath(state, player) {
   state.pendingDeathChoice = null;
+  if (!player?.alive || state.status !== "playing") return;
 
   const deaths = (player.deathCount || 0) + 1;
   player.deathCount = deaths;
+  state.deathClock = (state.deathClock || 0) + 1;
+  const clock = state.deathClock;
 
   queueDreamerDeathFx(player.id, player.name, player.landscapeId);
   repressTopMindstreamFromEachDeck(state);
@@ -781,29 +783,20 @@ export function applyDreamerDeath(state, player) {
   clearPlayerHandOnDeath(state, player);
   seatDreamerOnBed(state, player);
 
-  const cap = deathCapFor(state);
-  if (deaths >= cap) {
+  if (clock >= DEATH_CLOCK_CAP) {
     player.alive = false;
-    addLog(
-      state,
-      state.players.length === 1
-        ? `${player.name} cannot respawn (${deaths}/${cap}).`
-        : `${player.name} cannot respawn (${deaths}/${cap}) — starting hand would be 0.`,
-    );
+    addLog(state, `${player.name} dies. The Death Clock is ${clock}/${DEATH_CLOCK_CAP}.`);
     loseOnFinalDeath(state, player);
     return;
   }
 
-  const target = respawnPsycheTarget(state, deaths);
+  const target = respawnPsycheTarget();
   drawPsycheForPlayer(state, player, target);
   if (state.tutorialMode) resolvePowerCardsInHand(state, player);
 
-  const ladder = state.players.length === 1
-    ? "hand never below 3, eighth death ends the night"
-    : "ladder 4 / 3 / 2 / 1";
   addLog(
     state,
-    `${player.name} dies (${deaths}/${cap}) — Mindstream tops Repressed; Objects discarded; Power returned to the pool. Respawn on The Bed with ${target} Psyche (${ladder}) and no new Power. The Bed's Draw 3 is available as normal.`,
+    `${player.name} dies with nothing to pay. The Death Clock ticks to ${clock}/${DEATH_CLOCK_CAP}. Objects are lost, Power Tokens return to the pool, and they redraw ${target} Psyche on The Bed.`,
   );
 }
 
@@ -851,8 +844,10 @@ export function acceptDreamerDeath(state) {
   return true;
 }
 
-export function checkDreamerPsycheDeath(state, player) {
-  if (!player?.alive || hasPsycheHealth(player)) return false;
+export function checkDreamerPsycheDeath(state, player, opts = {}) {
+  if (!player?.alive || state.status !== "playing") return false;
+  if (!opts.unpaid) return false;
+  if (psycheHandCount(player) > 0) return false;
   applyDreamerDeath(state, player);
   return true;
 }
@@ -986,6 +981,56 @@ export function allDreamersOnBed(state) {
   return alive.length > 0 && alive.every((p) => p.landscapeId === "bed");
 }
 
+function stepDreamerTowardBed(state, player) {
+  const bed = landscapeById(state, "bed");
+  const current = landscapeById(state, player.landscapeId);
+  if (!bed || !current || current.id === "bed") return false;
+  const adj = adjacentTiles(state, current.id).filter((tile) => tile.revealed);
+  const closer = adj
+    .filter((tile) => hexDistance(tile, bed) < hexDistance(current, bed))
+    .sort((a, b) => {
+      const waste = (tile) => (tile.wasteland ? 1 : 0);
+      return waste(a) - waste(b) || hexDistance(a, bed) - hexDistance(b, bed);
+    });
+  const dest = closer[0];
+  if (!dest) return false;
+  player.landscapeId = dest.id;
+  if (dest.wasteland && psycheHandCount(player) < 1) {
+    addLog(state, `${player.name} steps into Wasteland with no Psyche to pay.`);
+    applyDreamerDeath(state, player);
+    return false;
+  }
+  if (dest.wasteland) {
+    const card = (player.hand || []).find((entry) => !isDreambeastPsycheCard(entry));
+    if (card) {
+      player.hand = player.hand.filter((entry) => entry.instanceId !== card.instanceId);
+      if (!state.psycheDiscard) state.psycheDiscard = [];
+      state.psycheDiscard.push(card);
+      recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: dest.id });
+    }
+  }
+  recordQuestEvent(state, "move_player", { count: 1 });
+  return dest.name;
+}
+
+function grantGoalBedSprint(state) {
+  const moved = [];
+  for (const player of state.players.filter((entry) => entry.alive)) {
+    const steps = Math.max(0, effectiveDreamerStat(state, player.dreamer, "elasticity"));
+    const names = [];
+    for (let i = 0; i < steps; i += 1) {
+      if (!player.alive || player.landscapeId === "bed") break;
+      const name = stepDreamerTowardBed(state, player);
+      if (!name) break;
+      names.push(name);
+    }
+    if (names.length) moved.push(`${player.name} → ${names[names.length - 1]}`);
+  }
+  if (moved.length) {
+    addLog(state, `The goal is reached. Elasticity carries the table toward The Bed: ${moved.join("; ")}.`);
+  }
+}
+
 export function checkVictory(state) {
   if (state.finalRecurrence) {
     const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
@@ -996,6 +1041,11 @@ export function checkVictory(state) {
     return;
   }
   if (state.acquiredPoints >= state.goalPoints) {
+    if (!state.goalBedSprintUsed && !state.tutorialMode && state.status === "playing") {
+      state.goalBedSprintUsed = true;
+      grantGoalBedSprint(state);
+    }
+    if (state.status !== "playing") return;
     if (allDreamersOnBed(state)) {
       state.status = "won";
       addLog(state, "The Dreamers wake up! You escaped the Dreamscape.");
@@ -1009,9 +1059,9 @@ export function checkVictory(state) {
 export function checkDefeat(state) {
   if (state.tutorialMode) return;
   if (state.status !== "playing") return;
-  const fifthDeath = (state.players || []).find((p) => (p.deathCount || 0) >= deathCapFor(state));
-  if (fifthDeath) {
-    loseOnFifthDeath(state, fifthDeath);
+  if ((state.deathClock || 0) >= DEATH_CLOCK_CAP) {
+    const last = (state.players || []).find((p) => !p.alive) || state.players?.[0];
+    loseOnFinalDeath(state, last);
     return;
   }
   if (!(state.players || []).some((p) => p.alive)) {
@@ -1098,30 +1148,26 @@ export function blockingChoiceLabel(state) {
   return "Required choice";
 }
 
-export function completeQuest(state, questIndex, player, onAcquireFn) {
+export function completeQuest(state, _questIndex, player, onAcquireFn) {
   const archetype = state.activeArchetype;
-  if (!archetype || archetype.questProgress[questIndex]) return false;
-  if (player.powerTokens < 1) {
-    addLog(state, "Spend 1 Power Token to complete this Quest.");
+  if (!archetype?.quests?.length) return false;
+  if (archetype.questProgress?.every(Boolean)) return false;
+  const unmet = archetype.quests.filter((quest) => !isQuestConditionMet(state, archetype.id, quest));
+  if (unmet.length) {
+    addLog(state, `Both quests must already be true. Still open: ${unmet.join(" · ")}`);
     return false;
   }
-
-  const check = canMarkQuest(state, questIndex);
-  if (!check.ok) {
-    addLog(state, check.reason);
+  if (player.powerTokens < 1) {
+    addLog(state, "Spend 1 Power Token to commit this Archetype.");
     return false;
   }
 
   spendPowerTokens(state, player, 1);
-  archetype.questProgress[questIndex] = true;
-  archetype.powerTokensOnArchetype = (archetype.powerTokensOnArchetype || 0) + 1;
-  addLog(state, `${player.name} placed a Power Token on ${archetype.name}: ${archetype.quests[questIndex]}.`);
-
-  if (archetype.questProgress.every(Boolean)) {
-    acquireArchetype(state, player, onAcquireFn);
-    return "acquired";
-  }
-  return "quest";
+  archetype.questProgress = archetype.quests.map(() => true);
+  archetype.powerTokensOnArchetype = 1;
+  addLog(state, `${player.name} spends 1 Power Token and commits to ${archetype.name}.`);
+  acquireArchetype(state, player, onAcquireFn);
+  return "acquired";
 }
 
 export { forgetLandscapes, forgetNamedLandscapes } from "./landscapes.js";

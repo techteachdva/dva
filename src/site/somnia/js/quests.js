@@ -224,6 +224,19 @@ const QUEST_LANDSCAPE_HINTS = {
   "meet a dreambeast on day in the life or inner sanctum": ["day-in-the-life", "inner-sanctum"],
 };
 
+export function meetQuestLandscapeIds(state) {
+  const arch = state.activeArchetype;
+  if (!arch?.quests) return [];
+  const ids = new Set();
+  arch.quests.forEach((quest, index) => {
+    if (arch.questProgress?.[index]) return;
+    const key = normalizeQuest(quest);
+    if (!key.startsWith("meet a dreambeast")) return;
+    (QUEST_LANDSCAPE_HINTS[key] || []).forEach((id) => ids.add(id));
+  });
+  return [...ids];
+}
+
 export function activeQuestLandscapeIds(state) {
   const arch = state.activeArchetype;
   if (!arch?.quests) return [];

@@ -1112,8 +1112,8 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       state.activeArchetype = next;
       next.questProgress = [false, false];
       next.powerTokensOnArchetype = 0;
-      state.archetypeDeck.unshift(prev);
-      addLog(state, `${landscapeName}: swapped Active Archetype to ${next.name}.`);
+      state.archetypeDeck.push(prev);
+      addLog(state, `${landscapeName}: ${prev.name} goes to the bottom of the deck. ${next.name} is the dream to chase.`);
       return { ok: true };
     }
 

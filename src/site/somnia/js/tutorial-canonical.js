@@ -27,7 +27,7 @@ import {
 import { playPsychePowerFromHand } from "./power-tokens.js";
 
 function reattachStateRuntime(state) {
-  state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
+  state.checkPsycheDeath = (player, opts) => checkDreamerPsycheDeath(state, player, opts);
   delete state.onResolutionIdle;
 }
 
@@ -301,11 +301,7 @@ function markInnocentQuests(state) {
   if (visionary) visionary.powerTokens = Math.max(visionary.powerTokens || 0, 2);
 
   state.activePlayerIndex = 0;
-  if (!state.activeArchetype?.questProgress?.[0]) handleQuestComplete(state, 0);
-  state.activePlayerIndex = 0;
-  if (state.activeArchetype && !state.activeArchetype.questProgress?.[1]) {
-    handleQuestComplete(state, 1);
-  }
+  handleQuestComplete(state, 0);
   state.tutorialFlags.archetypeAcquired = true;
 }
 

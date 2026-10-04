@@ -1463,6 +1463,31 @@ body.in-game main {
   pointer-events: none;
 }
 
+.menu-overview {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: calc(50% - var(--menu-art-size) / 2 + 0.4rem);
+  transform: translateX(-50%);
+  width: min(52rem, 42%);
+  margin: 0;
+  padding: 0.55rem 0.9rem 0.65rem;
+  box-sizing: border-box;
+  overflow: visible;
+  text-align: center;
+  color: #f6f1e8;
+  font-size: clamp(0.92rem, 1.05vw, 1.15rem);
+  line-height: 1.38;
+  text-shadow: 0 1px 2px #000, 0 0 8px rgba(0, 0, 0, 0.85);
+  background: rgba(6, 2, 16, 0.72);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.menu-overview .overview-lucidity { color: #8ecbff; }
+.menu-overview .overview-elasticity { color: #f0d56a; }
+.menu-overview .overview-willpower { color: #ff8d8d; }
+
 .setup-triad {
   position: absolute;
   z-index: 2;
@@ -3174,20 +3199,78 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   text-shadow: 0 0 28px rgba(201, 160, 255, 0.55);
 }
 
-.opening-hook-body {
-  display: block;
+.opening-hook-crawl {
+  position: relative;
   flex: 1 1 auto;
-  min-height: 6rem;
-  margin: 0 auto 0.85rem;
-  max-width: 62rem;
-  overflow: auto;
+  min-height: 0;
+  overflow: hidden;
+  container-type: size;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 86%, transparent 100%);
+}
+
+.opening-hook-reel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  padding: 0 6vw 2rem;
+  animation: opening-credits linear forwards;
+  will-change: transform;
+}
+
+.opening-hook-line {
+  margin: 0 auto;
+  max-width: 46rem;
   font-family: var(--font-display);
-  font-size: clamp(1.2rem, 2.15vw, 1.7rem);
-  font-weight: 700;
-  line-height: 1.32;
-  color: #f7f1ff;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.65);
-  white-space: normal;
+  font-size: clamp(1.25rem, 2.3vw, 1.85rem);
+  font-weight: 600;
+  line-height: 1.85;
+  letter-spacing: 0.11em;
+  word-spacing: 0.38em;
+  text-align: center;
+}
+
+.opening-hook-word,
+.opening-hook-var {
+  white-space: pre-wrap;
+}
+
+.opening-hook-word {
+  color: rgba(255, 252, 255, 0.94);
+  text-shadow:
+    0 0 4px rgba(255, 255, 255, 0.8),
+    0 0 14px rgba(214, 226, 255, 0.42),
+    0 0 26px rgba(180, 198, 255, 0.2);
+}
+
+.opening-hook-var {
+  color: #f4e8ff;
+  text-shadow:
+    0 0 4px rgba(214, 168, 255, 0.95),
+    0 0 14px rgba(176, 104, 255, 0.55),
+    0 0 26px rgba(132, 64, 210, 0.32);
+}
+
+@keyframes opening-credits {
+  from { transform: translateY(100cqh); }
+  to { transform: translateY(calc(-100% - 12cqh)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opening-hook-crawl {
+    overflow: auto;
+    mask-image: none;
+  }
+
+  .opening-hook-reel {
+    position: relative;
+    animation: none;
+    transform: none;
+    padding-top: 0.5rem;
+  }
 }
 
 .opening-hook-actions {
@@ -7555,6 +7638,8 @@ html[data-menu-layout="split"] .setup-panel-center.menu-glass-panel {
 
 html[data-menu-layout="triad"] .setup-panel-center.menu-glass-panel {
   width: min(860px, 94%);
+  overflow: hidden;
+  max-height: none;
 }
 
 html[data-menu-layout="triad"] body.menu-window #screen-setup .card-grid.picker,
@@ -10328,6 +10413,49 @@ body.play-window {
   --radius: 22px;
   --btn-pill-radius: 999px;
   --topbar-h: 6.6rem;
+}
+
+.death-clock {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  padding: 0.18rem 0.6rem;
+  border: 1px solid rgba(196, 64, 84, 0.75);
+  border-radius: 999px;
+  background: rgba(48, 4, 12, 0.72);
+  color: #f6d5d8;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.death-clock-label {
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+}
+
+.death-clock-pips {
+  display: flex;
+  gap: 3px;
+}
+
+.death-clock-pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid #c45;
+  background: transparent;
+}
+
+.death-clock-pip.ticked {
+  background: #e23b4a;
+  box-shadow: 0 0 6px #e23b4a;
+}
+
+.death-clock.full {
+  border-color: #ff5a6a;
+  box-shadow: 0 0 10px rgba(226, 59, 74, 0.65);
 }
 
 body.play-window .top-bar.play-top-bar {
