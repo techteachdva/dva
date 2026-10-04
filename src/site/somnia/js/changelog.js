@@ -6,10 +6,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "35.0";
+export const SOMNIA_VERSION = "35.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "35.1",
+    title: "The Spiral",
+    notes: [
+      "The menu teaching sits in a panel you can close. A spiral on the O of SOMNIA opens it again.",
+      "Each sentence of the opening credits has the width of the screen, so it stays on one line. Dreamer names, the Archetype, and the first Landscape glow purple and underline, so they point at the table.",
+    ],
+  },
   {
     version: "35.0",
     title: "The Intro Text Update",

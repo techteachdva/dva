@@ -65,18 +65,18 @@ function plain(text) {
   return { text, variable: false };
 }
 
-function variable(text) {
-  return { text, variable: true };
+function variable(text, kind) {
+  return { text, variable: true, kind };
 }
 
 function nameList(names) {
   if (!names.length) return [plain("friends under different faces")];
-  if (names.length === 1) return [variable(names[0])];
-  if (names.length === 2) return [variable(names[0]), plain(" and "), variable(names[1])];
+  if (names.length === 1) return [variable(names[0], "Dreamer")];
+  if (names.length === 2) return [variable(names[0], "Dreamer"), plain(" and "), variable(names[1], "Dreamer")];
   const parts = [];
   names.forEach((name, index) => {
     if (index > 0) parts.push(plain(index === names.length - 1 ? ", and " : ", "));
-    parts.push(variable(name));
+    parts.push(variable(name, "Dreamer"));
   });
   return parts;
 }
@@ -123,7 +123,7 @@ export function openingHookLines(state) {
     [plain("You clear the sand from your eyes,")],
     [plain("and you see you are dreaming,")],
     [plain("somehow connected to each other's minds and souls.")],
-    [plain("In the distance you hear the call of "), variable(call), plain(",")],
+    [plain("In the distance you hear the call of "), variable(call, "Archetype"), plain(",")],
     [plain("though you know not how you know its song.")],
     ...sentenceLines(song),
     [plain("Speaking of your hands,")],
@@ -133,7 +133,7 @@ export function openingHookLines(state) {
     [plain(`with both full hands of ${fullHands} fingers lit.`)],
     [
       plain("You hear the sounds of "),
-      placeIsVariable ? variable(place) : plain(place),
+      placeIsVariable ? variable(place, "Landscape") : plain(place),
       plain(" calling to you next door."),
     ],
     [plain("All around you are darkened endless Wastelands.")],
@@ -151,6 +151,21 @@ function lineText(parts) {
 /** The wake story. Starting fingertips are the opening Psyche deal (5). The longing is a full hand (10). */
 export function openingHookText(state) {
   return openingHookLines(state).map(lineText).join(" ");
+}
+
+function fitOpeningReel(reel, crawl) {
+  const styles = getComputedStyle(reel);
+  const pad = (parseFloat(styles.paddingLeft) || 0) + (parseFloat(styles.paddingRight) || 0);
+  const max = Math.max(280, crawl.clientWidth - pad - 8);
+  let size = Math.min(30, Math.max(18, crawl.clientWidth / 58));
+  const widest = () => Math.max(0, ...[...reel.children].map((el) => el.scrollWidth));
+  reel.style.fontSize = `${size}px`;
+  let guard = 24;
+  while (widest() > max && size > 15 && guard > 0) {
+    size -= 1;
+    guard -= 1;
+    reel.style.fontSize = `${size}px`;
+  }
 }
 
 const shownKeys = new Set();
@@ -194,6 +209,10 @@ export function showOpeningHook(state) {
       if (!part.text) return;
       const node = document.createElement("span");
       node.className = part.variable ? "opening-hook-var" : "opening-hook-word";
+      if (part.kind) {
+        node.dataset.kind = part.kind;
+        node.title = part.kind;
+      }
       node.textContent = part.text;
       line.appendChild(node);
     });
@@ -202,6 +221,7 @@ export function showOpeningHook(state) {
   const seconds = Math.max(28, Math.round(lines.length * 2.15));
   reel.style.animationDuration = `${seconds}s`;
   crawl.appendChild(reel);
+  requestAnimationFrame(() => fitOpeningReel(reel, crawl));
 
   const actions = document.createElement("div");
   actions.className = "opening-hook-actions";

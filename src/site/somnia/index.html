@@ -31,7 +31,7 @@
   <div id="app">
     <header class="top-bar">
       <button type="button" class="brand brand-logo-btn" id="btn-somnia-changelog" title="Somnia Changelog &amp; Credits" aria-label="Open Somnia Changelog and Credits">
-        <span class="version-label">v 35.0</span>
+        <span class="version-label">v 35.1</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
         <p class="tagline">Cooperative Dreamscape Roguelike</p>
       </button>
@@ -42,7 +42,18 @@
 
     <main>
       <section id="screen-setup" class="screen active" aria-label="Main menu">
-        <p class="menu-overview" id="menu-overview">Play cooperatively as 1-6 Dreamers surviving and escaping a collapsing dreamscape. Chase the Archetype Quests, Gain enough Archetype points to wake up and win. Psyche cards are your power and health in the game, they represent your psychic abilities and your grasp on the dream reality. <span class="overview-lucidity">Lucidity</span> is blue and it is your ability to see the landscapes and reveal the future, <span class="overview-elasticity">Elasticity</span> is yellow and it is your movement through dreams, and <span class="overview-willpower">Willpower</span> is red and it is your ability to take actions and affect change. Each Dreamer is different, with passive bonuses to the three stats and an active special power. Work together as a team to escape before you never wake up from the dream.</p>
+        <button type="button" id="btn-menu-spiral" class="menu-spiral" aria-label="How Somnia is played" aria-expanded="true" aria-controls="menu-intro" title="How Somnia is played">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M32 34c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4-8-3.6-8-8 3.6-8 8-8 8 3.6 8 8-3.6 12-8 12-12-5.4-12-12 5.4-12 12-12 12 5.4 12 12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div id="menu-intro" class="menu-intro" role="dialog" aria-modal="true" aria-labelledby="menu-intro-title">
+          <div class="menu-intro-card">
+            <button type="button" id="btn-menu-intro-close" class="menu-intro-close" aria-label="Close">&times;</button>
+            <h2 id="menu-intro-title">Enter the Dreamscape</h2>
+            <p>Play cooperatively as 1-6 Dreamers surviving and escaping a collapsing dreamscape. Chase the Archetype Quests, Gain enough Archetype points to wake up and win. Psyche cards are your power and health in the game, they represent your psychic abilities and your grasp on the dream reality. <span class="overview-lucidity">Lucidity</span> is blue and it is your ability to see the landscapes and reveal the future, <span class="overview-elasticity">Elasticity</span> is yellow and it is your movement through dreams, and <span class="overview-willpower">Willpower</span> is red and it is your ability to take actions and affect change. Each Dreamer is different, with passive bonuses to the three stats and an active special power. Work together as a team to escape before you never wake up from the dream.</p>
+          </div>
+        </div>
         <div class="setup-triad">
           <div class="setup-panel-left menu-glass-panel">
             <h2 class="menu-panel-title">Dream Settings</h2>

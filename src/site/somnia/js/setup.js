@@ -124,12 +124,39 @@ async function init() {
   refreshLengthOptions();
   prefillLastSeed();
   bindChangelog();
+  bindMenuIntro();
   bindModal();
   applyFirstVisitMenu();
   renderSetupIntro();
   refreshDreamerPicker();
   refreshContinueDream();
   await runMenuSplash(startedAt);
+}
+
+function bindMenuIntro() {
+  const intro = document.getElementById("menu-intro");
+  const spiral = document.getElementById("btn-menu-spiral");
+  const closeBtn = document.getElementById("btn-menu-intro-close");
+  if (!intro || !spiral) return;
+
+  const open = () => {
+    intro.classList.remove("hidden");
+    spiral.setAttribute("aria-expanded", "true");
+  };
+  const close = () => {
+    intro.classList.add("hidden");
+    spiral.setAttribute("aria-expanded", "false");
+    spiral.focus();
+  };
+
+  spiral.addEventListener("click", open);
+  closeBtn?.addEventListener("click", close);
+  intro.addEventListener("click", (event) => {
+    if (event.target === intro) close();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !intro.classList.contains("hidden")) close();
+  });
 }
 
 function bindChangelog() {
