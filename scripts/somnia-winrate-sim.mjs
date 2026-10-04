@@ -2212,7 +2212,7 @@ globalThis.__somniaCrashCount = 0;
 globalThis.__somniaCrashKinds = {};
 
 console.log(
-  `Somnia 35.0 combo matrix: ${DREAMER_ROSTER.length} Dreamers, 63 combinations × ${RUNS_PER_COMBO} skilled + ${6 * SLOPPY_PER_COUNT} sloppy = ${JOBS.length} games`,
+  `Somnia 35.2 combo matrix: ${DREAMER_ROSTER.length} Dreamers, 63 combinations × ${RUNS_PER_COMBO} skilled + ${6 * SLOPPY_PER_COUNT} sloppy = ${JOBS.length} games`,
 );
 
 let done = 0;
@@ -2242,8 +2242,8 @@ const comboRanks = Object.entries(byCombo)
   .sort((a, b) => b.winRate - a.winRate);
 
 const report = {
-  version: "35.0",
-  engineNote: "Real Somnia JS engine, rules 35.0. One Power Token commits an Archetype once both quests are true. Death Clock of 6. Quest Landscapes are forgotten last. Skilled bots lock a camper on the quest hex, protect the pay card, and Meet a beast drawn there in the same phase.",
+  version: "35.2",
+  engineNote: "Real Somnia JS engine, rules 35.2. One Power Token commits an Archetype once both quests are true. Death Clock of 6. Meet start discards Psyche. Quest Landscapes are forgotten last. Skilled bots lock a camper on the quest hex, protect the pay card, and Meet a beast drawn there in the same phase.",
   generatedAt: new Date().toISOString(),
   elapsedMs: Date.now() - started,
   totalGames: all.length,

@@ -11,7 +11,6 @@ export async function loadGameData() {
     "mindstream",
     "event-landscapes",
     "objects",
-    "card-manifest",
   ];
   const data = {};
 

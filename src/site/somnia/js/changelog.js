@@ -6,10 +6,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "35.1";
+export const SOMNIA_VERSION = "35.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "35.2",
+    title: "The Pillow Update",
+    notes: [
+      "The first lesson opens with the point of the night: capture the Archetype, stand on The Bed, wake before the Dream Deck runs out. Psyche is the hand. Lucidity sees, Elasticity walks, Willpower acts. Reveal, Explore, Meet.",
+      "The Dream Guide, the Meet hint, and the solo menu match the table. Meet's start discards Psyche. One Power Token commits an Archetype once both quests are already true. The Death Clock is 6 for one Dreamer and for six.",
+      "The spiral sits in the eye of the O. The game no longer asks for the unfinished Somnia 12 slide crops. The board rests without a brightness filter over the whole table.",
+    ],
+  },
   {
     version: "35.1",
     title: "The Spiral",

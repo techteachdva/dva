@@ -213,7 +213,7 @@ function refreshLengthOptions() {
   }
   if (hint) {
     hint.textContent = solo
-      ? "One Dreamer. The same night, a closer goal: 4, 6, or 12 points. Eight deaths, and the first Meet tax is ignored."
+      ? "One Dreamer. A closer goal: 4, 6, or 12 points. The Death Clock is still 6. The first Meet tax is ignored."
       : "Same rules on every night. Daydream is the first one. Nap and Deep Sleep ask for more points.";
   }
 }

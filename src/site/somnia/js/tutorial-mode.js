@@ -1248,7 +1248,7 @@ function primeTutorialAcquirePower(state) {
   state.activePlayerIndex = 0;
   addLog(
     state,
-    "Tutorial — each Dreamer begins with 1 Power Token. Play Power Surge on The Visionary for a second, then mark both quests.",
+    "Tutorial — each Dreamer begins with 1 Power Token. Play Power Surge on The Visionary for a second, then Commit once both quests are true.",
   );
 }
 
@@ -1269,16 +1269,16 @@ export const TUTORIAL_SCRIPT = [
     id: "welcome",
     round: 1,
     title: "You Are Dreaming",
-    why: "You wake within a place you've never been, with a feeling like you've never left, with The Visionary and The Immovable beside you. The Innocent is calling. Capture that Archetype, stand together on The Bed, and wake. The Dream Deck is already counting.",
-    objective: "Click Continue. Answer the call.",
+    why: "Wake up. Capture The Innocent for points, then stand together on The Bed before the Dream Deck runs out. Psyche cards are your hand: power and health. Blue Lucidity sees. Yellow Elasticity walks. Red Willpower acts. Each round is Reveal, then Explore, then Meet.",
+    objective: "Click Continue. The Innocent is calling.",
     targets: ["#active-archetype", "#phase-stepper"],
     spotlight: "#active-archetype",
   },
   {
     id: "draw-dream-r1",
     round: 1,
-    title: "Reveal: Draw the Dream",
-    why: "Every round the Head draws one Dream, and the night arrives before anyone spends Lucidity. This one is Heroism. Draw it.",
+    title: "Reveal: The Dream Arrives",
+    why: "Reveal comes first. The Head draws one Dream before anyone spends blue Lucidity. This Dream is Heroism. It is the weather of the night. Draw it.",
     targets: ["#btn-draw-dream", "#board-viewport"],
     rail: [
       { kind: "drawDream", prompt: "Click Draw Dream to the left of Next Phase." },
@@ -1289,7 +1289,7 @@ export const TUTORIAL_SCRIPT = [
     id: "reveal-r1",
     round: 1,
     title: "Reveal: Flip the Map",
-    why: "Forgotten hexes are Wasteland. One Lucidity opens a shared budget. Flip the room you mean to walk. Revealing a hex is how you keep a room the dream wants shut.",
+    why: "Dark hexes are Wasteland, rooms the dream shut. One blue Lucidity opens reveals for the whole table. Flip Candy Mountain. That is the path toward Mandrake.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
@@ -1303,8 +1303,8 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "explore-r1",
     round: 1,
-    title: "Explore: The Other Dreamer Opens",
-    why: "The Visionary opened Reveal, so The Immovable opens Explore. One Dreamer pays. The moves belong to the table. Walk The Visionary onto Mandrake.",
+    title: "Explore: Walk to the Beast",
+    why: "The Visionary opened Reveal, so The Immovable opens Explore. One yellow Elasticity card buys steps for everyone. Walk The Visionary onto Mandrake. You have to stand on a beast to fight it.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Bed." },
@@ -1320,8 +1320,8 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "meet-r1",
     round: 1,
-    title: "Meet: Underpay and Lose",
-    why: "Willpower opens Meet for the table. Then The Visionary, and only The Visionary, can fight the beast they are standing on. Willpower 1 against Power 6 is a thin Repress. Repress sends the beast to the Subconscious. When the dice stop, Stand. A tie favors the beast.",
+    title: "Meet: A Thin Repress",
+    why: "Red Willpower opens Meet for the table. Only the Dreamer standing on Mandrake can fight. Willpower 1 against Power 6 is meant to lose. Repress would send the beast to the Subconscious. When the dice stop, click Stand. A tie favors the beast.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
@@ -1336,16 +1336,16 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-lesson",
     round: 1,
     title: "Play the Odds",
-    why: "Recommended Power is the beast's Power + 2. One Power Token after the roll removes a single success. Stack the token before you roll. Mandrake still owns The Attic.",
-    objective: "Click Continue. Mandrake still owns The Attic.",
+    why: "Recommended Power is the beast's Power plus 2. A Power Token before the roll adds a die. One after the roll can cancel a single success. Mandrake still holds The Attic. Next round you stack the dice.",
+    objective: "Click Continue. The rematch is next.",
     targets: ["#board-viewport"],
     spotlight: "#board-viewport",
   },
   {
     id: "meet-reach",
     round: 1,
-    title: "Who the Beast Can Reach",
-    why: "At Meet's start, a beast takes 1 Psyche from each Dreamer on its hex or next door. Farther away, you pay nothing. Standing back is how you keep a hand for the fight. The Immovable's free passive ignores the first tax card once this round.",
+    title: "Who Pays the Beast",
+    why: "At Meet's start, a beast makes each Dreamer on its hex or next door discard 1 Psyche. That card goes to the discard, not exile. Stand farther away and you pay nothing. Once a round, The Immovable ignores the first of those cards. They are safe on The Bed.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Bed. They are outside Mandrake's reach." },
@@ -1356,7 +1356,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-hold",
     round: 1,
     title: "Dreamer Power: Hold the Line",
-    why: "The free passive and the paid power are different. Hold the Line costs 1 Power Token and banks +1 Psyche on every fight during the next Meet.",
+    why: "The free gift and the paid power are different. Hold the Line costs 1 Power Token and banks +1 Psyche on every fight next Meet. Spend it now. The rematch is coming.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Bed." },
@@ -1367,8 +1367,8 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "meet-penalty",
     round: 1,
-    title: "End Meet: The Tax",
-    why: "A beast you leave standing spends a room. Meet end Forgets 1 Landscape for each beast still roaming, then each beast Fails. Clear it, or the map pays. Candy Mountain is about to shut.",
+    title: "Leave the Beast",
+    why: "A beast you leave standing spends a room. When Meet ends, the table Forgets 1 Landscape for each beast still roaming, then each beast Fails. Candy Mountain is about to shut. End the round and watch it.",
     targets: ["#btn-next-phase"],
     rail: [
       { kind: "advancePhase", toRound: 2, prompt: "Click End Round. Watch the leftover Mandrake punish the table." },
@@ -1379,16 +1379,16 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-intro",
     round: 2,
     title: "Skip What You Don't Need",
-    why: "You already stand on Mandrake. Spending Lucidity or Elasticity now would waste the rematch hand. Skipping Reveal keeps Psyche. Skipping Explore keeps your hex. Skipping Meet is correct when no beasts remain and you only need to walk home.",
-    objective: "Click Continue, then draw the new Dream. Do not spend a phase opener unless the sparkles ask.",
+    why: "You already stand on Mandrake. Spending Lucidity or Elasticity now would throw away the rematch hand. Skip a phase when you do not need it. Skip Meet only when no beasts remain and you just need to walk home.",
+    objective: "Click Continue. Draw the new Dream. Spend nothing the sparkles do not ask for.",
     targets: ["#active-archetype", "#phase-stepper"],
     spotlight: "#active-archetype",
   },
   {
     id: "r2-dream",
     round: 2,
-    title: "Round 2 Dream: Misunderstanding",
-    why: "Misunderstanding Represses Mindstream cards into the Subconscious. Repress is exile: the card leaves its deck and sits in that pile. A whole Mindstream suit in the Subconscious, with nothing left to draw or shuffle, and you never wake up. Return is how those cards come back into the discard, ready to be drawn again. The Innocent will Return this mill. Draw the Dream, then leave Reveal.",
+    title: "Round 2: Misunderstanding",
+    why: "This Dream exiles Mindstream cards to the Subconscious. Repress is exile. Return puts those cards back in the discard so they can be drawn again. A whole suit trapped there, and you never wake up. Draw it. The Innocent can bring it back.",
     targets: ["#btn-draw-dream"],
     rail: [
       { kind: "drawDream", prompt: "Click Draw Dream." },
@@ -1399,7 +1399,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-skip",
     round: 2,
     title: "Skip Reveal and Explore",
-    why: "Do not spend Lucidity. You are not flipping anything this round. Do not spend Elasticity. Leaving The Attic would abandon the rematch. Next Phase on the map is how you skip. If you had opened Explore and kept 2 moves, those leftovers could peek the next Dream. A skip spends nothing, so there is nothing to peek.",
+    why: "Do not spend Lucidity. You are not opening a room. Do not spend Elasticity. Leaving The Attic abandons the fight. Next Phase skips the rest. Two unused moves could peek the next Dream. A skip spends nothing, so there is nothing to peek.",
     closeRevealPick: true,
     targets: ["#btn-next-phase"],
     rail: [
@@ -1412,7 +1412,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-pass",
     round: 2,
     title: "Pass the Meet",
-    why: "After Meet opens, a Pass Token starts with a living Dreamer who did not open the phase. If the Head opened it, the next Dreamer clockwise holds the token. That Dreamer takes one Meet action, or passes. Passing moves the token clockwise. Round reset, so The Visionary may open again. The token starts with The Immovable, who is not on Mandrake. Pass it so The Visionary can fight. Two leftover Meet actions can Return one Repressed Dreambeast from the Subconscious, putting it back in the Mindstream discard. You will spend this budget on the fight and a Mindstream draw instead.",
+    why: "After Meet opens, a Pass Token starts with a Dreamer who did not open it. They take one action, or pass it clockwise. The Immovable holds it, and they are not on Mandrake. Pass it so The Visionary can fight.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
@@ -1427,7 +1427,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-rematch",
     round: 2,
     title: "Rematch: Stack the Dice",
-    why: "Same Mandrake. Accept uses Lucidity, the beast's suit. The Visionary adds Lucidity, Fantasy affinity, and a primary-suit bonus. Play Lucidity 3, Lucidity 2, and Elasticity 2. Spend The Immovable's Power Token for +1d6. Hold the Line adds +1. The Pass Token is already with The Visionary, so they may take the action. It will look random. It is not close.",
+    why: "Accept uses Lucidity, Mandrake's own color. Play Lucidity 3, Lucidity 2, and Elasticity 2. The Visionary's sight and Fantasy lean on the roll. Spend The Immovable's token for one more die. Hold the Line adds another. It will look like chance. It is not close.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable." },
@@ -1447,8 +1447,8 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "r2-mindstream",
     round: 2,
-    title: "Mindstreams: Four Card Types",
-    why: "The fight spent a Meet action, so the Pass Token moved clockwise to The Immovable. Pass it back. Then The Attic's Action A draws one Lucidity Mindstream card and finishes Innocent quest 1. Meeting Mandrake here already finished quest 2. Mindstream decks mix Dreambeasts, Objects, Events, and Power cards. Draw Mindstream can be repeated while actions remain. Each unique Landscape action is once for the whole table this Meet. The Visionary's free passive peeks the first leftover Mindstream flip once a round and leaves it facedown. The ? button lists the other five passives.",
+    title: "The Attic Answers",
+    why: "Pass the token back, then draw The Attic. That draw finishes the first quest. Meeting Mandrake here already finished the second. A Mindstream mixes Dreambeasts, Objects, Events, and Power cards. The ? button keeps the other Dreamer gifts.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable. They hold the Pass Token after the fight." },
@@ -1468,7 +1468,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-acquire",
     round: 2,
     title: "Commit and Acquire",
-    why: "Both quests are already true. One Power Token commits the Archetype. It does not spend a Meet action. Play the yellowish-purple Power Surge Heroism gave you, then commit. Acquire grants Archetype points. Reach the goal and stand on The Bed to wake.",
+    why: "Both quests are already true. One Power Token commits the Archetype. It does not spend a Meet action. Play the Power Surge Heroism gave you, then Commit. Points are how you earn the walk home.",
     target: "#active-archetype",
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary. They should hold Power Surge." },
@@ -1481,8 +1481,8 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-arch-power",
     round: 2,
     title: "Archetype Power",
-    objective: "Return the cards Misunderstanding sent to the Subconscious.",
-    why: "The Innocent spends 1 Power Token and Returns 4 Repressed cards from the Subconscious. That is why the pile matters. Cards you Repress are not destroyed. Returning them puts Psyche and Mindstream cards back into their discards, so the decks can be shuffled and drawn. A Dreambeast you Repress can be Returned the same way, for 2 unused Meet actions. Use the power. The mill from Misunderstanding is waiting.",
+    objective: "Bring back what Misunderstanding exiled.",
+    why: "The Innocent spends 1 Power Token and Returns 4 cards from the Subconscious. Repress is not destruction. Those cards go back to their discards. A Repressed beast can come back the same way, for 2 unused Meet actions. Use the power.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary." },
@@ -1494,8 +1494,8 @@ export const TUTORIAL_SCRIPT = [
     id: "wake",
     round: 2,
     title: "Wake Up",
-    why: "Goal reached. In a real game every living Dreamer walks back to The Bed. The Bed pulls you home now. This was a Daydream. A longer night uses the same rules. If the outer rooms all go dark, or the deck draws The Final Recurrence, the goal changes. You face what is left, or you never wake up.",
-    objective: "Click Finish to return to The Bed and wake.",
+    why: "Goal reached. In a real dream you walk home. The Bed pulls you there now. Daydream asks for 8 points, Nap for 12, Deep Sleep for 24. One Dreamer aims at 4, 6, or 12. If the outer rooms go dark, the goal changes. The longer lesson on the menu teaches trade, objects, and death.",
+    objective: "Click Finish. Then begin a real dream.",
     targets: ["#active-archetype"],
     spotlight: "#active-archetype",
   },

@@ -2560,7 +2560,7 @@ export function getPhaseHint(state) {
   }
   if (phase === "Meet") {
     if (state.meetActionBudget === 0) {
-      return `${COOP_PLAY_TIP} Start of Meet: each Dreamer Represses 1 Psyche and the table Forgets 1 Landscape per active Dreambeast. One Dreamer spends Willpower for shared Meet actions.`;
+      return `${COOP_PLAY_TIP} Dreamers on a beast or next door discard 1 Psyche. One Dreamer spends Willpower for shared Meet actions. Beasts still standing Forget a Landscape when Meet ends.`;
     }
     const pool = coopMeetPlayTotal(state);
     const count = allSelectedCards(state).length;

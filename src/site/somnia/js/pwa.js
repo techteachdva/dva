@@ -72,7 +72,6 @@ function watchRegistration(registration) {
 }
 
 const WARM_DATA = [
-  "./data/card-manifest.json",
   "./data/landscapes.json",
   "./data/dreamers.json",
   "./data/archetypes.json",
@@ -88,6 +87,8 @@ const WARM_DATA = [
 function collectAssetUrls(value, into) {
   if (typeof value === "string") {
     if (/^https?:/i.test(value)) return;
+    // Somnia 12 slide crops were never finished. Live art lives in the other data files.
+    if (value.includes("/cards/digitized/")) return;
     if (/\.(png|jpe?g|webp|gif|svg|mp3|wav|ogg)(\?|$)/i.test(value)) {
       into.add(value.replace(/^\.\//, ""));
     }
