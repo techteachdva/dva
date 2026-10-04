@@ -496,7 +496,7 @@ export function rulesIntroHtml() {
 
       <section class="overview-block">
         <h3>How You Win</h3>
-        <p>Complete both quests on the <strong>Active Archetype</strong>, spend 1 Power Token per quest to mark them, then <strong>Acquire</strong> it for points. Repeat until you reach your goal (<strong>8 / 12 / 24</strong> for Daydream, Nap, or Deep Sleep — 24 is every Archetype in the deck). One Dreamer aims lower: <strong>4 / 6 / 12</strong>. When you have enough points, <strong>every living Dreamer must stand on The Bed</strong> to escape.</p>
+        <p>Complete both quests on the <strong>Active Archetype</strong>, spend 1 Power Token per quest to mark them, then <strong>Acquire</strong> it for points. Nine Archetypes ask you to Draw Mindstream on one of two Landscapes and Meet a Dreambeast on one of two Landscapes. Reveal that hex, move there, and take the action. <strong>Magician, Warrior, and Sage</strong> require defeating their boss and one Dreamer sacrificing one Object. Repeat until you reach your goal (<strong>8 / 12 / 24</strong> for Daydream, Nap, or Deep Sleep). One Dreamer aims lower: <strong>4 / 6 / 12</strong>. When you have enough points, <strong>every living Dreamer must stand on The Bed</strong> to escape.</p>
       </section>
 
       <section class="overview-block">
@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 34.1. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 34.2. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -590,7 +590,7 @@ export function rulesRemHtml() {
             <li>The same Dreamer cannot open two phases in a row this round, unless they are alone or nobody else can pay the suit</li>
             <li><strong>Dreamer passives,</strong> once a round, free: Visionary peeks the first leftover Mindstream flip (it stays facedown). Runner's first move costs no team move. Immovable ignores 1 Meet-tax card. Hunter may shove the beast 1 hex after their first battle if it stays. Rested draws 1 Psyche at round end if they opened no phase. Weaver swaps 1 Psyche with an adjacent Dreamer once per Meet</li>
             <li><strong>2 unused actions</strong> may Return 1 Dreambeast from the Subconscious. This can be repeated. Otherwise leftovers are forfeited</li>
-            <li>Quests name Landscapes. A forgotten tile does not move the quest to another hex of the same suit</li>
+            <li>Nine Archetypes name two Landscapes for Draw Mindstream and two for Meeting a Dreambeast. Reveal that hex, move onto it, and take the action. A forgotten tile does not move the quest to another hex of the same suit. Magician, Warrior, and Sage require defeating their boss and one Dreamer sacrificing one Object</li>
             <li><strong>Free during Meet:</strong> Trade up to 3 Psyche with a Dreamer on the same or adjacent hex, place up to 3 Power Tokens for +1d6 each on a Psyche spread, activate an Object (Persistent costs 1 token), use a Dreamer or Archetype Power (1 token), or mark a completed Quest (1 token). These do not spend the action budget</li>
             <li><strong>After the dice land</strong>, if you hold a Power Token, spend 1 once to subtract 1 from the Dreambeast's successes, or stand. Ties still favor the beast if you stand. The tutorial's first battle is too far behind for Subtract 1 to flip it, so the lesson is to Stand.</li>
             <li>Using an Instant Object Represses it</li>
@@ -677,7 +677,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Archetypes &amp; Quests</h3>
-      <p>Active Archetype shows 2 quests. Meet each condition, spend 1 Power Token to mark it, then Acquire for points (1–3). Quintessential Archetypes (Sage, Magician, Warrior) grant passive stat bonuses only; their Psyche quest requires <strong>one Dreamer to hold 10 Psyche cards</strong> (full hand). Others have activatable powers for 1 Power Token in any phase.</p>
+      <p>Active Archetype shows 2 quests. Meet each condition, spend 1 Power Token to mark it, then Acquire for <strong>2, 3, or 4</strong> points. <strong>Magician, Warrior, and Sage are worth 4</strong>, one for each boss. They grant passive stat bonuses only. Their quests are defeating that boss (Accept or Repress it) and one living Dreamer sacrificing one Object, from Objects or Persistent. The card goes to its Mindstream discard. The button sits on the Active Archetype and does not spend a phase action. The other Archetypes are worth 2 or 3. Each asks for a Mindstream draw on one of two Landscapes and a Dreambeast Meet on one of two Landscapes, and they have activatable powers for 1 Power Token in any phase.</p>
 
       <h3>Objects</h3>
       <ul>
@@ -714,7 +714,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 34.1</p>
+          <p class="info-hub-kicker">Somnia v 34.2</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>
@@ -727,7 +727,7 @@ export function infoHubHtml(options = {}) {
         <section class="info-hub-rules" aria-label="Rules highlights">
           <div class="info-hub-rule">
             <h3>Win &amp; Lose</h3>
-            <p><strong>Win:</strong> finish both Active Archetype quests (1 Power Token each), <strong>Acquire</strong> for 1–3 points, and repeat until the goal. Daydream asks for <strong>8</strong>, Nap for <strong>12</strong>, Deep Sleep for <strong>24</strong>. The rules do not change. The night is the same length. The treasure is farther. When the points are yours, every living Dreamer stands on <strong>The Bed</strong>, and you wake.</p>
+            <p><strong>Win:</strong> finish both Active Archetype quests (1 Power Token each), <strong>Acquire</strong> for 2, 3, or 4 points, and repeat until the goal. Magician, Warrior, and Sage are worth 4: defeat their boss, and have one Dreamer sacrifice one Object. Daydream asks for <strong>8</strong>, Nap for <strong>12</strong>, Deep Sleep for <strong>24</strong>. The rules do not change. The night is the same length. The treasure is farther. When the points are yours, every living Dreamer stands on <strong>The Bed</strong>, and you wake.</p>
             <p><strong>Lose:</strong> any Dreamer dies a fifth time (an eighth time, if you are alone), the Dream Deck empties first, the Psyche Deck and discard are both empty, or any Mindstream suit is entirely Repressed in the Subconscious. A top-of-screen warning appears when those decks hit 10%, stays flashing at 5%, and makes the table unstable at 1%. In Final Recurrence you lose if Dreams run out while remaining Archetypes still stand.</p>
           </div>
           <div class="info-hub-rule">

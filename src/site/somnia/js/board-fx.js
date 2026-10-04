@@ -399,7 +399,6 @@ export function runPendingBoardFx() {
       window.setTimeout(() => {
         burstSparkles(to.x, to.y, 10, "#f0c96a");
         playPointRipple(to.x, to.y, "fx-land-ripple");
-        playLandscapeSfx(evt.toId);
         revealArriving("dreamer", evt.playerId);
       }, FLY_MS - 60);
       playDreamWarble(0.4);

@@ -97,8 +97,16 @@ gameData.mindstream = dataModule.enrichMindstreamEvents?.(
   gameData["event-landscapes"] || {},
 ) ?? gameData.mindstream;
 
-const { createInitialState, getPhase, landscapeById, avoidDreamerDeath, acceptDreamerDeath, allEncountersOnBoard } =
-  await import(pathToFileURL(join(JS_DIR, "state.js")).href);
+const {
+  createInitialState,
+  getPhase,
+  landscapeById,
+  avoidDreamerDeath,
+  acceptDreamerDeath,
+  allEncountersOnBoard,
+  checkVictory,
+  respawnDreamer,
+} = await import(pathToFileURL(join(JS_DIR, "state.js")).href);
 const {
   drawDreamCard,
   revealLandscape,
@@ -113,29 +121,31 @@ const {
   handleDefeatFinalArchetype,
   handleSacrificeForFinal,
   performLandscapeAction,
+  finishLandscapeMindstreamPick,
   powerBonus,
   togglePhasePowerToken,
   getEffectHelpers,
   playObject,
   useDreamerPower,
+  startWeaverSwap,
 } = await import(pathToFileURL(join(JS_DIR, "game.js")).href);
 const { resolveObjectChoice, resumeObjectEffect } = await import(pathToFileURL(join(JS_DIR, "object-effects.js")).href);
 const { playPsychePowerFromHand } = await import(pathToFileURL(join(JS_DIR, "power-tokens.js")).href);
 const { handleLandscapeTilePick, revealableTiles, forgettableTiles, cancelLandscapePick } =
   await import(pathToFileURL(join(JS_DIR, "landscapes.js")).href);
-const { getQuestStatus, activeQuestLandscapeIds, isQuestConditionMet } =
+const { getLandscapeActionChoices } = await import(pathToFileURL(join(JS_DIR, "landscape-actions.js")).href);
+const { getQuestStatus, activeQuestLandscapeIds, isQuestConditionMet, listSacrificableObjects, sacrificeHeldObject } =
   await import(pathToFileURL(join(JS_DIR, "quests.js")).href);
 const { getLegalMoveTargets, hexDistance, adjacentTiles } =
   await import(pathToFileURL(join(JS_DIR, "hex.js")).href);
-const { encounterRejectCost } = await import(pathToFileURL(join(JS_DIR, "dreambeasts.js")).href);
-const {
-  meetPsychePlayTotal,
-  selectedCards,
-  meetBonusBreakdown,
-} = await import(pathToFileURL(join(JS_DIR, "rules.js")).href);
+const { isLeviathanCard } = await import(pathToFileURL(join(JS_DIR, "dreambeasts.js")).href);
 const { pickReturnCard, pickRepressCard, confirmRepressStep, listSubconsciousCards } =
   await import(pathToFileURL(join(JS_DIR, "subconscious.js")).href);
 const { resolveNothingChoice, handLimitForPlayer } = await import(pathToFileURL(join(JS_DIR, "objects.js")).href);
+const { resolveDreamChoice, advanceDreamQueue } = await import(
+  pathToFileURL(join(JS_DIR, "dream-choices.js")).href,
+);
+const { resolveEffectChoice } = await import(pathToFileURL(join(JS_DIR, "effect-choices.js")).href);
 const {
   cancelDreamerPower,
   resolveDreamerPowerChoice,
@@ -143,10 +153,20 @@ const {
   resolveDreamerPowerHandPick,
   handleDreamerPowerTilePick,
 } = await import(pathToFileURL(join(JS_DIR, "dreamer-powers.js")).href);
-const { psycheHandCount, psycheCardValue } = await import(pathToFileURL(join(JS_DIR, "psyche.js")).href);
+const { psycheHandCount, psycheCardValue, isWildPsyche } = await import(pathToFileURL(join(JS_DIR, "psyche.js")).href);
+const { FINAL_RECURRENCE_PSYCHE_REQUIRED } = await import(
+  pathToFileURL(join(JS_DIR, "final-recurrence-rules.js")).href,
+);
+const { countBoardDreambeasts } = await import(pathToFileURL(join(JS_DIR, "phase-skip.js")).href);
 
-const POOL_LEAVE = 6;
+const POOL_LEAVE = 5;
 const POOL_RETREAT = 3;
+const PSYCHE_RESERVE = 8;
+const FINAL_PSYCHE = FINAL_RECURRENCE_PSYCHE_REQUIRED || 15;
+
+function deckCanDraw(state, count = 1) {
+  return (state.psycheDeck?.length || 0) - count >= PSYCHE_RESERVE;
+}
 
 function rng() {
   return Math.random();
@@ -191,11 +211,16 @@ function readyQuestCount(state) {
   return getQuestStatus(state, arch).filter((q) => q.ready).length;
 }
 
+function unmarkedQuestCount(state) {
+  const arch = state.activeArchetype;
+  if (!arch?.questProgress) return 0;
+  return arch.questProgress.filter((done) => !done).length;
+}
+
 function tokensReserved(state, skill) {
   if (skill === "sloppy" || state.finalRecurrence) return 0;
-  const ready = readyQuestCount(state);
-  if (ready > 0) return ready;
-  return 2;
+  const deathSaves = alivePlayers(state).filter((p) => psycheHandCount(p) <= 2).length;
+  return readyQuestCount(state) + deathSaves;
 }
 
 function canSpendToken(state, player, skill) {
@@ -231,13 +256,18 @@ function emptyRevealed(state) {
 
 function shouldPlayInstant(state, card, skill) {
   if (skill === "sloppy") return chance(0.25);
-  if (VALUE_INSTANTS.has(card.id)) return true;
+  if (VALUE_INSTANTS.has(card.id)) {
+    if (card.id === "egg") return deckCanDraw(state, 8) && teamHasHandRoom(state);
+    return true;
+  }
   if (card.id === "candle") return revealableTiles(state).length > 0;
   if (MOVE_INSTANTS.has(card.id)) {
     return alivePlayers(state).some((p) => p.landscapeId === "bed") || state.finalRecurrence;
   }
   if (card.id === "tooth-saber") return false;
-  if (SPAWN_INSTANTS.has(card.id) || card.id === "the-all") return false;
+  if (SPAWN_INSTANTS.has(card.id) || card.id === "the-all") {
+    return needsMeetQuest(state) || needsBossQuest(state);
+  }
   return false;
 }
 
@@ -251,30 +281,143 @@ function shouldActivatePersistent(state, player, card, skill) {
   return false;
 }
 
-function dreamerPowerWorthIt(state, player, skill) {
-  const id = player.dreamer?.id;
-  const hidden = revealableTiles(state);
-  const questsHidden = activeQuestLandscapeIds(state).some((lid) => {
+function questTilesStillHidden(state) {
+  return activeQuestLandscapeIds(state).some((lid) => {
     const tile = landscapeById(state, lid);
     return tile && (!tile.revealed || tile.wasteland);
   });
+}
+
+function teamHasHandRoom(state) {
+  return alivePlayers(state).some((p) => handLimitForPlayer(state, p) - psycheHandCount(p) > 0);
+}
+
+function lowestPsyche(player) {
+  return (player.hand || [])
+    .filter((c) => c.type === "psyche" || c.type === "psyche-power")
+    .sort((a, b) => (a.value || 0) - (b.value || 0))[0] || null;
+}
+
+function bestPeekDeck(state) {
+  if (needsBossQuest(state) && !bossAlreadySpawned(state) && (state.dreamDeck?.length || 0) > 0) return "dream";
+  if (teamAvgHand(state) < 5 && (state.psycheDeck?.length || 0) > 0) return "psyche";
+  for (const id of activeQuestLandscapeIds(state)) {
+    const suit = landscapeById(state, id)?.suit;
+    if (suit && state.mindstreamDecks?.[suit]?.length) return `mindstream-${suit}`;
+  }
+  if ((state.psycheDeck?.length || 0) > 0) return "psyche";
+  return "dream";
+}
+
+function shouldBuryPeek(state, pending) {
+  const top = state.revealedDeckTops?.[pending.peekDeckKey]?.[0];
+  if (!top) return false;
+  const key = pending.peekDeckKey;
+  if (key === "dream") {
+    if (top.id === "final-recurrence" || top.id === "you-never-wake") return (state.acquiredPoints || 0) < (state.goalPoints || 0);
+    if (["cerberus", "double", "leviathan"].includes(top.id)) return !needsBossQuest(state) || teamAvgHand(state) < 5;
+    return false;
+  }
+  if (key === "psyche") return (top.value || 0) <= 1 && teamAvgHand(state) >= 4;
+  if (key?.startsWith("mindstream-")) {
+    if (needsSacrificeQuest(state) && top.type === "object") return false;
+    if ((needsMeetQuest(state) || needsBossQuest(state)) && (top.type === "dreambeast" || top.isDreambeast)) return false;
+    return top.type === "event";
+  }
+  return false;
+}
+
+function bossAlreadySpawned(state) {
+  return allEncountersOnBoard(state).some(({ encounter }) => encounter?.boss);
+}
+
+function cheapestPayCard(player, encounter, accept) {
+  const suit = accept ? (encounter?.suit || null) : (encounter?.rejectSuit || encounter?.suit || null);
+  const hand = player?.hand || [];
+  const normals = hand.filter((c) => (
+    c.type !== "psyche-power"
+    && c.type !== "psyche-dreambeast"
+    && !isWildPsyche(c)
+    && (!suit || c.suit === suit)
+  ));
+  const allies = hand.filter((c) => c.type === "psyche-dreambeast" && (!suit || c.suit === suit));
+  const wilds = hand.filter((c) => isWildPsyche(c));
+  const pool = normals.length ? normals : (allies.length ? allies : wilds);
+  if (!pool.length) return null;
+  return [...pool].sort((a, b) => (a.value || 0) - (b.value || 0))[0];
+}
+
+function canFightBeastTile(player, tile) {
+  const list = tile?.encounters || (tile?.encounter ? [tile.encounter] : []);
+  if (!list.length) return false;
+  return list.some((enc) => {
+    if (isLeviathanCard(enc)) return Boolean(cheapestPayCard(player, enc, false));
+    return Boolean(cheapestPayCard(player, enc, true) || cheapestPayCard(player, enc, false));
+  });
+}
+
+function beastNeedsAFighter(state) {
+  return allEncountersOnBoard(state).some(({ tile }) => (
+    !alivePlayers(state).some((p) => canFightBeastTile(p, tile))
+  ));
+}
+
+function dreamerPowerWorthIt(state, player, skill) {
+  const id = player.dreamer?.id;
   if (id === "the-visionary") {
     if (state.botVisionaryRound === state.round) return false;
-    return questsHidden || (hidden.length >= 4 && state.round <= 4);
+    if (questTilesStillHidden(state)) return true;
+    if (needsBossQuest(state) && !bossAlreadySpawned(state) && (state.dreamDeck?.length || 0) > 0) return true;
+    return teamAvgHand(state) < 4 && (state.psycheDeck?.length || 0) > 0;
   }
-  if (id === "the-rested") return (state.psycheDiscard?.length || 0) >= 1 || getPhase(state) === "Reveal";
+  if (id === "the-rested") {
+    if (state.botRestedRound === state.round) return false;
+    const fishing = beastNeedsAFighter(state) && (state.psycheDiscard?.length || 0) > 0 && teamHasHandRoom(state);
+    if (fishing) return true;
+    if (!deckCanDraw(state, alivePlayers(state).length)) return false;
+    if ((state.psycheDiscard?.length || 0) > 0 && teamHasHandRoom(state)) return true;
+    return teamAvgHand(state) < 3 && deckCanDraw(state, alivePlayers(state).length + 2);
+  }
   if (id === "the-runner") {
-    if (state.finalRecurrence) return true;
-    const phase = getPhase(state);
-    if (phase !== "Explore") return false;
-    return alivePlayers(state).some((p) => destForPlayer(state, p, skill) !== p.landscapeId);
+    if (state.botRunnerRound === state.round) return false;
+    if (getPhase(state) !== "Explore" || !state.exploreActivated) return false;
+    return alivePlayers(state).some((p) => {
+      const dest = destForPlayer(state, p, skill);
+      if (!dest || dest === p.landscapeId) return false;
+      const from = landscapeById(state, p.landscapeId);
+      const to = landscapeById(state, dest);
+      return from && to && hexDistance(from, to) >= 2;
+    });
   }
   if (id === "the-hunter") {
-    return allEncountersOnBoard(state).length > 0;
+    if (state.botHunterRound === state.round) return false;
+    const beasts = allEncountersOnBoard(state);
+    if (!beasts.length) return false;
+    return beasts.some(({ tile }) => {
+      const occ = occupantOn(state, tile.id);
+      if (occ && canFightBeastTile(occ, tile)) return false;
+      const nearest = [...alivePlayers(state)].sort((a, b) => {
+        const da = hexDistance(landscapeById(state, a.landscapeId), tile);
+        const db = hexDistance(landscapeById(state, b.landscapeId), tile);
+        return da - db;
+      })[0];
+      return Boolean(nearest && canFightBeastTile(nearest, tile));
+    });
   }
-  if (id === "the-immovable") return getPhase(state) !== "Reveal" || state.round > 1;
+  if (id === "the-immovable") {
+    if (state.anchorMeetSpreadBonus || state.anchorMeetSpreadPending) return false;
+    if (getPhase(state) === "Meet") return false;
+    return allEncountersOnBoard(state).length > 0
+      && (needsMeetQuest(state) || needsBossQuest(state) || state.finalRecurrence);
+  }
   if (id === "the-weaver") {
-    return alivePlayers(state).some((p) => (p.hand || []).some((c) => c.type === "psyche" || c.type === "psyche-power"));
+    if (state.botWeaverRound === state.round) return false;
+    if (!deckCanDraw(state, 1)) return false;
+    if (beastNeedsAFighter(state)) return true;
+    return alivePlayers(state).some((p) => {
+      const low = lowestPsyche(p);
+      return low && (low.value || 0) <= 2;
+    });
   }
   return false;
 }
@@ -284,11 +427,15 @@ function chooseDreamerPowerOption(state, skill, pending, choices) {
   const pickId = (wanted) => ids.find((id) => id === wanted) || ids[0];
   if (skill === "sloppy") return pick(ids) || ids[0];
   if (pending.dreamerId === "the-visionary") {
-    if (pending.step === "peek-resolve") return pickId("peek-keep");
-    return revealableTiles(state).length ? pickId("reveal-landscapes") : pickId("peek-decks");
+    if (pending.step === "peek-resolve") return shouldBuryPeek(state, pending) ? pickId("peek-bottom") : pickId("peek-keep");
+    return questTilesStillHidden(state) && revealableTiles(state).length
+      ? pickId("reveal-landscapes")
+      : pickId("peek-decks");
   }
   if (pending.dreamerId === "the-rested") {
-    return (state.psycheDiscard?.length || 0) > 0 ? pickId("discard-draw") : pickId("refresh-hand");
+    return (state.psycheDiscard?.length || 0) > 0 && teamHasHandRoom(state)
+      ? pickId("discard-draw")
+      : pickId("refresh-hand");
   }
   if (pending.dreamerId === "the-runner") {
     const camping = !readyToExpedition(state, skill) || state.finalRecurrence || state.acquiredPoints >= state.goalPoints;
@@ -322,11 +469,14 @@ function resolveDreamerPowerPending(state, skill) {
     return true;
   }
   if (ui.type === "deck") {
-    resolveDreamerPowerDeckPick(state, "psyche");
+    resolveDreamerPowerDeckPick(state, bestPeekDeck(state));
     return true;
   }
   if (ui.type === "hand") {
-    const card = (ui.cards || [])[0];
+    const cards = ui.cards || [];
+    const card = skill === "skilled"
+      ? [...cards].sort((a, b) => (a.value || 0) - (b.value || 0))[0]
+      : cards[0];
     if (card) resolveDreamerPowerHandPick(state, card.instanceId || card.id);
     else cancelDreamerPower(state);
     return true;
@@ -350,8 +500,16 @@ function tryDreamerPowers(state, skill) {
     if (!canSpendToken(state, player, skill)) continue;
     if (!dreamerPowerWorthIt(state, player, skill)) continue;
     setActive(state, playerIndex(state, player));
-    if (!useDreamerPower(state)) continue;
-    if (player.dreamer?.id === "the-visionary") state.botVisionaryRound = state.round;
+    const started = useDreamerPower(state);
+    if (!started && !state.pendingDreamerPower) continue;
+    const dreamerId = player.dreamer?.id;
+    if (dreamerId === "the-visionary") state.botVisionaryRound = state.round;
+    if (dreamerId === "the-rested") state.botRestedRound = state.round;
+    if (dreamerId === "the-runner") state.botRunnerRound = state.round;
+    if (dreamerId === "the-hunter") state.botHunterRound = state.round;
+    if (dreamerId === "the-weaver") state.botWeaverRound = state.round;
+    state.botPowerUses = state.botPowerUses || {};
+    state.botPowerUses[dreamerId] = (state.botPowerUses[dreamerId] || 0) + 1;
     resolvePendings(state, skill);
     acted = true;
   }
@@ -390,49 +548,140 @@ function tryPlayObjects(state, skill) {
 
 function useTools(state, skill) {
   playPowerCards(state);
+  tryMarkQuests(state, skill);
   tryPlayObjects(state, skill);
+  trySacrificeObject(state, skill);
   tryDreamerPowers(state, skill);
+  tryWeaverSwap(state, skill);
   tryMarkQuests(state, skill);
 }
 
-function selectBestSuit(state, playerIndex, suit, max = 2) {
+function trySacrificeObject(state, skill) {
+  if (skill === "sloppy" && !chance(0.4)) return false;
+  if (!needsSacrificeQuest(state)) return false;
+  const rows = listSacrificableObjects(state);
+  if (!rows.length) return false;
+  const ranked = [...rows].sort((a, b) => Number(a.persistent) - Number(b.persistent));
+  const chosen = ranked[0];
+  const result = sacrificeHeldObject(state, chosen.playerId, chosen.instanceId);
+  if (!result?.ok) return false;
+  state.botSacrifices = (state.botSacrifices || 0) + 1;
+  return true;
+}
+
+function tryWeaverSwap(state, skill) {
+  if (skill === "sloppy" && !chance(0.2)) return false;
+  if (state.weaverSwapUsed || getPhase(state) !== "Meet") return false;
+  const weaver = alivePlayers(state).find((p) => p.dreamer?.id === "the-weaver");
+  if (!weaver) return false;
+  const mine = lowestPsyche(weaver);
+  if (!mine || (skill === "skilled" && (mine.value || 0) > 2)) return false;
+  setActive(state, playerIndex(state, weaver));
+  state.selectedHand = [mine.instanceId];
+  if (!startWeaverSwap(state)) return false;
+  state.botPassiveUses = state.botPassiveUses || {};
+  state.botPassiveUses.weaverSwap = (state.botPassiveUses.weaverSwap || 0) + 1;
+  resolvePendings(state, skill);
+  return true;
+}
+
+/** After point goal, every living Dreamer must stand on The Bed to win. */
+function rallyOnBedIfGoalMet(state, skill) {
+  if (state.finalRecurrence || state.acquiredPoints < state.goalPoints) return false;
+  let moved = false;
+  for (const player of alivePlayers(state)) {
+    if (player.landscapeId === "bed") continue;
+    setActive(state, playerIndex(state, player));
+    const step = nextStepToward(state, player, "bed", skill);
+    if (!step || step === player.landscapeId) continue;
+    moveDreamer(state, step);
+    resolvePendings(state, skill);
+    moved = true;
+    break;
+  }
+  checkVictory(state);
+  return moved;
+}
+
+function selectBestSuit(state, playerIndex, suit, max = 1, minValue = 1) {
   const player = state.players[playerIndex];
   setActive(state, playerIndex);
   const cards = player.hand
-    .filter((c) => c.type !== "psyche-power" && (c.suit === suit || c.isWild || c.suit === "wild"))
-    .sort((a, b) => (b.value || 0) - (a.value || 0));
-  state.selectedHand = cards.slice(0, max).map((c) => c.instanceId);
+    .filter((c) => c.type !== "psyche-power" && (c.suit === suit || isWildPsyche(c) || c.suit === "wild"));
+  const normals = cards.filter((c) => !isWildPsyche(c));
+  const wilds = cards.filter((c) => isWildPsyche(c));
+  const enough = normals.filter((c) => (c.value || 0) >= minValue);
+  const ordered = enough.length
+    ? [...enough].sort((a, b) => (a.value || 0) - (b.value || 0))
+    : (normals.length
+      ? [...normals].sort((a, b) => (b.value || 0) - (a.value || 0))
+      : wilds);
+  state.selectedHand = ordered.slice(0, max).map((c) => c.instanceId);
   return state.selectedHand.length;
+}
+
+function phaseMinCardValue(state, skill, suit, player) {
+  if (skill !== "skilled") return 1;
+  const stat = Number(player?.dreamer?.[suit] || 0);
+  if (suit === "elasticity") {
+    const dests = assignDestinations(state, skill);
+    let dist = 1;
+    alivePlayers(state).forEach((p) => {
+      const from = landscapeById(state, p.landscapeId);
+      const to = landscapeById(state, dests[p.id]);
+      if (from && to) dist = Math.max(dist, hexDistance(from, to));
+    });
+    return Math.max(1, Math.min(5, dist - stat));
+  }
+  if (suit === "willpower") {
+    const fights = allEncountersOnBoard(state).filter(({ tile }) => occupantOn(state, tile.id)).length;
+    const draw = standingOnQuestWork(state) ? 1 : 0;
+    return Math.max(1, Math.min(4, fights + draw - stat));
+  }
+  if (suit === "lucidity") {
+    const hidden = activeQuestLandscapeIds(state).filter((id) => {
+      const tile = landscapeById(state, id);
+      return !tile?.revealed || tile.wasteland;
+    }).length;
+    return Math.max(1, Math.min(3, Math.ceil(hidden / 2) - stat));
+  }
+  return 1;
 }
 
 function openPhaseWithCardsOrToken(state, skill, suit) {
   playPowerCards(state);
   tryMarkQuests(state, skill);
-  let pi = bestContributor(state, suit);
-  let n = selectBestSuit(state, pi, suit, skill === "skilled" ? 2 : 1);
+  const maxCards = 1;
+  let pi = bestContributor(state, suit, 1);
+  const minValue = phaseMinCardValue(state, skill, suit, state.players[pi]);
+  pi = bestContributor(state, suit, minValue);
+  let n = selectBestSuit(state, pi, suit, maxCards, minValue);
   if (n < 1) {
     const withTok = alivePlayers(state).find((p) => (p.powerTokens || 0) > 0);
     if (withTok) {
       pi = playerIndex(state, withTok);
-      n = selectBestSuit(state, pi, suit, skill === "skilled" ? 2 : 1);
+      n = selectBestSuit(state, pi, suit, maxCards);
     }
   }
   const player = state.players[pi];
-  if (player && n < (skill === "skilled" ? 2 : 1) && canSpendTokenOnPhase(state, player, skill)) {
+  if (player && n < 1 && canSpendTokenOnPhase(state, player, skill)) {
     setActive(state, pi);
     togglePhasePowerToken(state);
   }
   return n >= 1 || !!state.phaseTokenAsPsyche;
 }
 
-function bestContributor(state, suit) {
+function bestContributor(state, suit, minValue = 1) {
   let best = 0;
   let bestVal = -1;
   state.players.forEach((p, i) => {
     if (!p.alive) return;
-    const cards = p.hand.filter((c) => c.suit === suit || c.isWild || c.suit === "wild");
+    const normals = p.hand.filter((c) => c.type !== "psyche-power" && c.suit === suit && !isWildPsyche(c));
+    const wilds = p.hand.filter((c) => isWildPsyche(c));
+    const cards = normals.length ? normals : wilds;
     if (!cards.length) return;
-    const val = (p.dreamer?.[suit] || 0) + cards.reduce((s, c) => s + (c.value || 0), 0);
+    const hasEnough = normals.some((c) => (c.value || 0) >= minValue);
+    const val = (p.dreamer?.[suit] || 0) + (normals.length ? 20 : 0) + (hasEnough ? 40 : 0) + cards.reduce((s, c) => s + (c.value || 0), 0);
     if (val > bestVal) {
       bestVal = val;
       best = i;
@@ -489,7 +738,7 @@ function resolveObjectPending(state, skill) {
 }
 
 function resolvePendings(state, skill) {
-  let guard = 40;
+  let guard = 80;
   while (guard-- > 0) {
     if (state.pendingObjectChoice) {
       resolveObjectPending(state, skill);
@@ -513,7 +762,20 @@ function resolvePendings(state, skill) {
     }
     if (state.landscapePick?.mode === "forget") {
       const tiles = forgettableTiles(state);
-      const tile = pick(tiles);
+      const quests = new Set(activeQuestLandscapeIds(state));
+      const occupied = new Set(alivePlayers(state).map((p) => p.landscapeId));
+      const ranked = [...tiles].sort((a, b) => {
+        const score = (t) => {
+          let s = 0;
+          if (quests.has(t.id)) s -= 20;
+          if (occupied.has(t.id)) s -= 12;
+          if (tileHasEncounter(t)) s -= 6;
+          if (t.finalArchetype && !t.finalArchetype.defeated) s -= 30;
+          return s;
+        };
+        return score(b) - score(a);
+      });
+      const tile = skill === "skilled" ? ranked[0] : pick(tiles);
       if (!tile) {
         cancelLandscapePick(state);
         break;
@@ -542,6 +804,12 @@ function resolvePendings(state, skill) {
       else acceptDreamerDeath(state);
       continue;
     }
+    if (state.pendingRespawn) {
+      const next = (state.availableDreamers || [])[0];
+      if (next) respawnDreamer(state, state.pendingRespawn, next.id);
+      else state.pendingRespawn = null;
+      continue;
+    }
     if (state.pendingReturn) {
       const cards = listSubconsciousCards(state);
       const card = cards.find((c) => !state.pendingReturn.picked.some((p) => p.instanceId === c.instanceId));
@@ -562,7 +830,10 @@ function resolvePendings(state, skill) {
         ? alivePlayers(state).find((p) => p.hand.length)
         : state.players.find((p) => p.id === pending.playerId);
       const pool = pending.source === "objects" ? (player?.objects || []) : (player?.hand || []);
-      const card = pool.find((c) => !pending.picked.some((p) => p.instanceId === c.instanceId));
+      const sorted = skill === "skilled"
+        ? [...pool].sort((a, b) => discardPriority(state, player, a) - discardPriority(state, player, b))
+        : pool;
+      const card = sorted.find((c) => !pending.picked.some((p) => p.instanceId === c.instanceId));
       if (!card) {
         confirmRepressStep(state);
         continue;
@@ -574,6 +845,15 @@ function resolvePendings(state, skill) {
       resolveNothingChoice(state, skill === "skilled" ? "token" : (chance(0.5) ? "token" : "repress"));
       continue;
     }
+    if (state.pendingDreamChoice) {
+      resolveModalChoice(state, skill, state.pendingDreamChoice, resolveDreamChoice);
+      advanceDreamQueue?.(state);
+      continue;
+    }
+    if (state.pendingEffectChoice) {
+      resolveModalChoice(state, skill, state.pendingEffectChoice, resolveEffectChoice);
+      continue;
+    }
     if (state.pendingDreamerPower) {
       resolveDreamerPowerPending(state, skill);
       continue;
@@ -582,18 +862,136 @@ function resolvePendings(state, skill) {
   }
 }
 
+function resolveModalChoice(state, skill, pending, resolver) {
+  const helpers = getEffectHelpers();
+  try {
+    if (pending.ui === "spend") {
+      const cards = pending.cards || [];
+      const need = pending.needCount || (pending.need ? cards.length : 1);
+      const sorted = skill === "skilled"
+        ? [...cards].sort((a, b) => (a.value || 0) - (b.value || 0))
+        : cards;
+      for (const card of sorted.slice(0, Math.max(1, need))) {
+        resolver(state, card.instanceId || card.id, helpers);
+      }
+      resolver(state, "confirm", helpers);
+      return;
+    }
+    if (pending.ui === "cards") {
+      const card = (pending.cards || [])[0];
+      if (card) resolver(state, card.instanceId || card.id, helpers);
+      else if (pending === state.pendingDreamChoice) state.pendingDreamChoice = null;
+      else state.pendingEffectChoice = null;
+      return;
+    }
+    const choices = (pending.choices || []).filter((c) => !c.disabled);
+    if (!choices.length) {
+      if (pending === state.pendingDreamChoice) state.pendingDreamChoice = null;
+      else state.pendingEffectChoice = null;
+      return;
+    }
+    const preferred = skill === "skilled"
+      ? choices.find((c) => /leviathan|sea-of-teeth|accept|stay|reveal|return|draw/i.test(`${c.id} ${c.label}`))
+      : null;
+    if (skill === "skilled" && pending.cardId === "hunter-shove") {
+      const tile = landscapeById(state, pending.payload?.tileId);
+      const onQuest = tile && meetQuestLandscapeIds(state).includes(tile.id);
+      const bossHere = (tile?.encounters || []).some((e) => e.boss) || tile?.encounter?.boss;
+      const fightingHere = bossHere && needsBossQuest(state) && occupantOn(state, tile.id);
+      resolver(state, (onQuest || fightingHere) ? "leave" : "shove", helpers);
+      if (!(onQuest || fightingHere)) {
+        state.botPassiveUses = state.botPassiveUses || {};
+        state.botPassiveUses.hunterShove = (state.botPassiveUses.hunterShove || 0) + 1;
+      }
+      return;
+    }
+    if (skill === "skilled" && pending.cardId === "weaver-swap") {
+      const payload = pending.payload || {};
+      if (payload.step === "neighbor") {
+        const neighbor = [...choices].sort((a, b) => {
+          const pa = state.players.find((p) => p.id === a.id);
+          const pb = state.players.find((p) => p.id === b.id);
+          const best = (p) => Math.max(0, ...(p?.hand || []).map((c) => c.value || 0));
+          return best(pb) - best(pa);
+        })[0];
+        resolver(state, (neighbor || choices[0]).id, helpers);
+        return;
+      }
+      const ranked = [...choices].sort((a, b) => {
+        const valueOf = (choice) => {
+          const owner = state.players.find((p) => (p.hand || []).some((c) => c.instanceId === choice.id));
+          const card = owner?.hand?.find((c) => c.instanceId === choice.id);
+          return card?.value || 0;
+        };
+        return valueOf(b) - valueOf(a);
+      });
+      resolver(state, (ranked[0] || choices[0]).id, helpers);
+      return;
+    }
+    resolver(state, (preferred || pick(choices) || choices[0]).id, helpers);
+  } catch (err) {
+    if (pending === state.pendingDreamChoice) state.pendingDreamChoice = null;
+    else state.pendingEffectChoice = null;
+    if (!globalThis.__somniaChoiceErr) {
+      globalThis.__somniaChoiceErr = true;
+      console.error("CHOICE RESOLVE:", err?.stack || err);
+    }
+  }
+}
+
+function discardPriority(state, player, card) {
+  if (!player || !card) return card?.value || 0;
+  const here = landscapeById(state, player.landscapeId);
+  const nearby = allEncountersOnBoard(state).filter(({ tile }) => (
+    tile && here && (tile.id === here.id || hexDistance(here, tile) === 1)
+  ));
+  const keepsTheFight = nearby.some(({ encounter }) => {
+    const accept = isLeviathanCard(encounter) ? null : cheapestPayCard(player, encounter, true);
+    const reject = cheapestPayCard(player, encounter, false);
+    return accept?.instanceId === card.instanceId || reject?.instanceId === card.instanceId;
+  });
+  return (keepsTheFight ? 100 : 0) + (card.value || 0);
+}
+
+function survivesBeastTile(state, player, tileId) {
+  const tax = meetTaxAt(state, player, tileId);
+  const hand = psycheHandCount(player);
+  if (hand <= tax) return false;
+  const cap = (state.players?.length || 0) === 1 ? 8 : 5;
+  const left = cap - (player.deathCount || 0);
+  if (left <= 1 && hand <= tax + 2) return false;
+  return true;
+}
+
+function meetTaxAt(state, player, tileId) {
+  const here = landscapeById(state, tileId);
+  if (!here) return 0;
+  let count = allEncountersOnBoard(state).filter(({ tile }) => (
+    tile && (tile.id === here.id || hexDistance(here, tile) === 1)
+  )).length;
+  if ((state.players?.length || 0) === 1 && count > 0) count -= 1;
+  if (count > 0 && player?.dreamer?.id === "the-immovable") count -= 1;
+  return Math.max(0, count);
+}
+
 function nextStepToward(state, player, destId, skill = "skilled") {
   const dest = landscapeById(state, destId);
+  const start = landscapeById(state, player.landscapeId);
   const safeEnough = (t) => {
     if (!t) return false;
     if (t.wasteland && t.id !== destId) return false;
+    if (skill === "skilled" && psycheHandCount(player) <= meetTaxAt(state, player, t.id) + 1) {
+      const hunting = dest && tileHasEncounter(dest);
+      const closer = hunting && start && hexDistance(t, dest) < hexDistance(start, dest);
+      const survives = psycheHandCount(player) > meetTaxAt(state, player, t.id);
+      if (!(hunting && closer && survives)) return false;
+    }
     return true;
   };
   const legal = getLegalMoveTargets(state, player).filter(safeEnough);
   if (!legal.length) return null;
   if (legal.some((t) => t.id === destId)) return destId;
 
-  const start = landscapeById(state, player.landscapeId);
   if (!start || !dest) {
     return pick(legal)?.id || null;
   }
@@ -648,7 +1046,16 @@ function needsBossQuest(state) {
   if (!arch?.quests) return false;
   return arch.quests.some((q, i) => {
     if (arch.questProgress?.[i]) return false;
-    return /meet (cerberus|double|leviathan)/i.test(q) && !isQuestConditionMet(state, arch.id, q);
+    return /(?:meet|defeat) (cerberus|double|leviathan)/i.test(q) && !isQuestConditionMet(state, arch.id, q);
+  });
+}
+
+function needsSacrificeQuest(state) {
+  const arch = state.activeArchetype;
+  if (!arch?.quests) return false;
+  return arch.quests.some((q, i) => {
+    if (arch.questProgress?.[i]) return false;
+    return /sacrific/i.test(q) && !isQuestConditionMet(state, arch.id, q);
   });
 }
 
@@ -714,25 +1121,133 @@ function rankDestinations(state, player, ids, skill) {
 function readyToExpedition(state, skill) {
   if (state.finalRecurrence) return true;
   if (state.acquiredPoints >= state.goalPoints) return true;
+  const n = alivePlayers(state).length;
+  const avg = teamAvgHand(state);
+  const revealed = questTilesRevealed(state);
   if (needsTenPsycheQuest(state)) {
     return alivePlayers(state).some((p) => psycheHandCount(p) >= 10);
   }
-  if (needsBossQuest(state) && state.round <= 9) {
-    return teamAvgHand(state) >= POOL_LEAVE;
+  if (skill === "sloppy") return avg >= 4 || state.round >= 2;
+  if (revealed.length) {
+    if (n === 1) return avg >= 3 || state.round >= 1;
+    if (n === 2) return avg >= 3 || state.round >= 2;
+    return avg >= POOL_RETREAT || state.round >= 2;
   }
-  if (needsMeetQuest(state) && questTilesRevealed(state).length) {
-    return teamAvgHand(state) >= POOL_RETREAT;
-  }
-  if (skill === "sloppy") return teamAvgHand(state) >= 5 || state.round >= 2;
-  const revealed = questTilesRevealed(state);
-  const avg = teamAvgHand(state);
-  if (alivePlayers(state).some((p) => psycheHandCount(p) < POOL_RETREAT)) return false;
-  if (revealed.length && avg >= 5) return true;
+  if (n === 1) return avg >= 4 || state.round >= 2;
+  if (needsBossQuest(state) && state.round <= 6) return avg >= 5;
+  if (alivePlayers(state).some((p) => psycheHandCount(p) < 2)) return false;
   if (avg >= POOL_LEAVE) return true;
-  return state.round >= 2 && avg >= 5;
+  return state.round >= 2 && avg >= 4;
+}
+
+function powerHexId(state) {
+  const tile = ["awards", "candy-mountain"]
+    .map((id) => landscapeById(state, id))
+    .find((t) => t?.revealed && !t.wasteland);
+  return tile?.id || null;
+}
+
+function assignDestinations(state, skill) {
+  const alive = alivePlayers(state);
+  const dests = {};
+  if (!alive.length) return dests;
+
+  if (skill === "sloppy") {
+    alive.forEach((p) => { dests[p.id] = destForPlayer(state, p, skill); });
+    return dests;
+  }
+
+  if (state.acquiredPoints >= state.goalPoints && !state.finalRecurrence) {
+    alive.forEach((p) => { dests[p.id] = "bed"; });
+    return dests;
+  }
+
+  if (state.finalRecurrence) {
+    const tiles = state.board
+      .filter((t) => t.finalArchetype && !t.finalArchetype.defeated)
+      .map((t) => t.id);
+    const taken = new Set();
+    for (const tid of tiles) {
+      const destTile = landscapeById(state, tid);
+      const remaining = alive.filter((p) => !taken.has(p.id));
+      if (!remaining.length) break;
+      remaining.sort((a, b) => {
+        const da = hexDistance(landscapeById(state, a.landscapeId), destTile);
+        const db = hexDistance(landscapeById(state, b.landscapeId), destTile);
+        return da - db;
+      });
+      dests[remaining[0].id] = tid;
+      taken.add(remaining[0].id);
+    }
+    alive.forEach((p) => { if (!dests[p.id]) dests[p.id] = "bed"; });
+    return dests;
+  }
+
+  const priorities = [];
+  const seen = new Set();
+  const pushId = (id) => {
+    if (!id || seen.has(id)) return;
+    const tile = landscapeById(state, id);
+    if (!tile?.revealed || tile.wasteland) return;
+    seen.add(id);
+    priorities.push(id);
+  };
+
+  allEncountersOnBoard(state)
+    .filter(({ encounter }) => encounter?.boss)
+    .forEach(({ tile }) => pushId(tile.id));
+  allEncountersOnBoard(state).forEach(({ tile }) => pushId(tile.id));
+  meetQuestLandscapeIds(state).forEach(pushId);
+  questTilesRevealed(state).forEach(pushId);
+  if (needsMeetQuest(state) || needsBossQuest(state)) {
+    state.board.filter((t) => t.revealed && !t.wasteland && tileHasEncounter(t)).forEach((t) => pushId(t.id));
+  }
+  const tokensWanted = Math.max(2, unmarkedQuestCount(state));
+  if (teamTokens(state) < tokensWanted) pushId(powerHexId(state));
+
+  const taken = new Set();
+  for (const tid of priorities) {
+    const destTile = landscapeById(state, tid);
+    const remaining = alive.filter((p) => !taken.has(p.id));
+    if (!remaining.length) break;
+    remaining.sort((a, b) => {
+      const powerTile = tid === "awards" || tid === "candy-mountain";
+      if (tileHasEncounter(destTile)) {
+        const survive = Number(survivesBeastTile(state, b, tid)) - Number(survivesBeastTile(state, a, tid));
+        if (survive) return survive;
+        const payBias = Number(canFightBeastTile(b, destTile)) - Number(canFightBeastTile(a, destTile));
+        if (payBias) return payBias;
+        const handBias = psycheHandCount(b) - psycheHandCount(a);
+        if (handBias) return handBias;
+      }
+      if (powerTile) {
+        const tokenBias = (a.powerTokens || 0) - (b.powerTokens || 0);
+        if (tokenBias) return tokenBias;
+      }
+      const da = hexDistance(landscapeById(state, a.landscapeId), destTile);
+      const db = hexDistance(landscapeById(state, b.landscapeId), destTile);
+      return da - db;
+    });
+    if (tileHasEncounter(destTile) && (!canFightBeastTile(remaining[0], destTile) || !survivesBeastTile(state, remaining[0], tid))) continue;
+    dests[remaining[0].id] = tid;
+    taken.add(remaining[0].id);
+  }
+
+  alive.forEach((p) => {
+    if (dests[p.id]) return;
+    if (!readyToExpedition(state, skill) || psycheHandCount(p) < POOL_RETREAT) {
+      dests[p.id] = "bed";
+      return;
+    }
+    dests[p.id] = priorities[0] || "bed";
+  });
+  return dests;
 }
 
 function destForPlayer(state, player, skill) {
+  if (skill !== "sloppy") {
+    return assignDestinations(state, skill)[player.id] || "bed";
+  }
   if (state.finalRecurrence) {
     const tiles = state.board
       .filter((t) => t.finalArchetype && !t.finalArchetype.defeated)
@@ -741,42 +1256,7 @@ function destForPlayer(state, player, skill) {
     return tiles[idx % Math.max(1, tiles.length)] || "bed";
   }
   if (state.acquiredPoints >= state.goalPoints) return "bed";
-  if (skill === "sloppy") {
-    return pick(activeQuestLandscapeIds(state).concat(["bed", "city", "house"])) || "bed";
-  }
-  if (!readyToExpedition(state, skill) || psycheHandCount(player) < POOL_RETREAT) {
-    return "bed";
-  }
-  const teamTokens = alivePlayers(state).reduce((s, p) => s + (p.powerTokens || 0), 0);
-  if (teamTokens < 2) {
-    const powerHex = ["awards", "candy-mountain"]
-      .map((id) => landscapeById(state, id))
-      .find((t) => t?.revealed && !t.wasteland);
-    if (powerHex) return powerHex.id;
-  }
-  const quests = questTilesRevealed(state);
-  if (quests.length) {
-    const idx = Math.max(0, alivePlayers(state).findIndex((p) => p.id === player.id));
-    const ranked = rankDestinations(state, player, quests, skill);
-    return ranked[idx % ranked.length];
-  }
-  if (needsMeetQuest(state) || needsBossQuest(state)) {
-    const beastTiles = state.board
-      .filter((t) => t.revealed && !t.wasteland && tileHasEncounter(t))
-      .map((t) => t.id);
-    if (beastTiles.length) {
-      const idx = Math.max(0, alivePlayers(state).findIndex((p) => p.id === player.id));
-      const ranked = rankDestinations(state, player, beastTiles, skill);
-      return ranked[idx % ranked.length];
-    }
-  }
-  const empties = state.board.filter((t) => t.revealed && !t.wasteland && !t.center).map((t) => t.id);
-  if (empties.length) {
-    const idx = Math.max(0, alivePlayers(state).findIndex((p) => p.id === player.id));
-    const ranked = rankDestinations(state, player, empties, skill);
-    return ranked[idx % ranked.length] || "bed";
-  }
-  return "bed";
+  return pick(activeQuestLandscapeIds(state).concat(["bed", "city", "house"])) || "bed";
 }
 
 function standingOnQuestWork(state) {
@@ -799,11 +1279,9 @@ function tryMeet(state, skill) {
 
   const meetQuestTiles = new Set(meetQuestLandscapeIds(state));
   meets.sort((a, b) => {
-    if (needsBossQuest(state)) {
-      const aBoss = a.enc.boss ? 1 : 0;
-      const bBoss = b.enc.boss ? 1 : 0;
-      if (bBoss !== aBoss) return bBoss - aBoss;
-    }
+    const aBoss = a.enc.boss ? 1 : 0;
+    const bBoss = b.enc.boss ? 1 : 0;
+    if (bBoss !== aBoss) return bBoss - aBoss;
     const aQuest = meetQuestTiles.has(a.tile.id) ? 1 : 0;
     const bQuest = meetQuestTiles.has(b.tile.id) ? 1 : 0;
     return bQuest - aQuest;
@@ -815,33 +1293,35 @@ function tryMeet(state, skill) {
     state.activeEncounter = enc;
     state.activeEncounterLandscapeId = tile.id;
 
-    const cards = actor.hand
-      .filter((c) => c.type !== "psyche-power")
-      .sort((a, b) => (b.value || 0) - (a.value || 0));
-    let take = 0;
-    let sum = 0;
-    const target = enc.accept || encounterRejectCost(enc) || 8;
-    for (const card of cards) {
-      take += 1;
-      sum += card.value || 0;
-      if (sum >= target) break;
-    }
-    state.selectedHand = cards.slice(0, Math.max(take, Math.min(3, cards.length))).map((c) => c.instanceId);
-    const played = meetPsychePlayTotal(state);
-    const bonus = meetBonusBreakdown(state).total || 0;
-    const total = played + bonus;
-    const accept = enc.accept || 99;
-    const reject = encounterRejectCost(enc);
-
+    const leviathan = isLeviathanCard(enc);
+    const acceptCard = leviathan ? null : cheapestPayCard(actor, enc, true);
+    const rejectCard = cheapestPayCard(actor, enc, false);
+    const room = handLimitForPlayer(state, actor) - actor.hand.length;
     let mode = null;
-    if (total >= accept) mode = "accept";
-    else if (total >= reject) mode = skill === "skilled" ? "reject" : (chance(0.5) ? "reject" : null);
-    else if (skill === "sloppy" && chance(0.25)) mode = "accept";
-
-    if (!mode) continue;
-    const need = mode === "accept" ? accept : reject;
-    stackSpreadTokens(state, need, total);
-    meetEncounter(state, mode);
+    let card = null;
+    if (skill === "skilled") {
+      if (!leviathan && acceptCard && room > 0) {
+        mode = "accept";
+        card = acceptCard;
+      } else if (rejectCard) {
+        mode = "reject";
+        card = rejectCard;
+      } else if (acceptCard) {
+        mode = "accept";
+        card = acceptCard;
+      }
+    } else {
+      const cards = [acceptCard, rejectCard].filter(Boolean);
+      card = pick(cards);
+      mode = card && card === rejectCard && card !== acceptCard ? "reject" : (card ? "accept" : null);
+      if (leviathan && rejectCard) {
+        mode = "reject";
+        card = rejectCard;
+      }
+    }
+    if (!mode || !card) continue;
+    state.selectedHand = [card.instanceId];
+    meetEncounter(state, mode, { instant: true });
     resolvePendings(state, skill);
     return true;
   }
@@ -850,6 +1330,9 @@ function tryMeet(state, skill) {
 
 function tryMindstream(state, skill) {
   const quests = new Set(activeQuestLandscapeIds(state));
+  const meetQuest = new Set(meetQuestLandscapeIds(state));
+  const huntingObject = needsSacrificeQuest(state) && !listSacrificableObjects(state).length;
+  if (skill === "skilled" && !quests.size && !huntingObject && !state.finalRecurrence) return false;
   const candidates = state.players
     .filter((p) => p.alive)
     .map((p) => ({ player: p, tile: landscapeById(state, p.landscapeId) }))
@@ -858,12 +1341,14 @@ function tryMindstream(state, skill) {
   if (!candidates.length) return false;
   const ordered = skill === "sloppy"
     ? candidates
-    : [...candidates].sort((a, b) => Number(quests.has(b.tile.id)) - Number(quests.has(a.tile.id)));
+    : [...candidates].sort((a, b) => {
+      const score = (x) => (meetQuest.has(x.tile.id) ? 4 : 0) + (quests.has(x.tile.id) ? 2 : 0);
+      return score(b) - score(a);
+    });
 
   for (const { player, tile } of ordered) {
-    const meetQuest = meetQuestLandscapeIds(state);
-    const onMeetQuest = meetQuest.includes(tile.id);
-    if (skill === "skilled" && quests.size && !quests.has(tile.id) && !onMeetQuest && !state.finalRecurrence && chance(0.35)) {
+    const onQuest = quests.has(tile.id) || meetQuest.has(tile.id);
+    if (skill === "skilled" && quests.size && !onQuest && !state.finalRecurrence && !huntingObject) {
       continue;
     }
     setActive(state, playerIndex(state, player));
@@ -879,17 +1364,70 @@ function tryMindstream(state, skill) {
   return false;
 }
 
+function finishSpawnPending(state, result) {
+  if (result?.pending !== "spawn-dreambeast-pick-suit" && result?.pending !== "pick-mindstream-suit") {
+    return;
+  }
+  const tile = result.tile;
+  const suit = tile?.suit || "lucidity";
+  finishLandscapeMindstreamPick(state, tile, result.player, result.actionId, suit);
+}
+
+function trySpawnBeast(state, skill) {
+  if (skill === "sloppy") return false;
+  if (!needsMeetQuest(state) && !needsBossQuest(state)) return false;
+  const meetIds = new Set(meetQuestLandscapeIds(state));
+  for (const player of alivePlayers(state)) {
+    const tile = landscapeById(state, player.landscapeId);
+    if (!tile?.revealed || tile.wasteland) continue;
+    if (meetIds.size && !meetIds.has(tile.id) && !activeQuestLandscapeIds(state).includes(tile.id)) continue;
+    if (tileHasEncounter(tile)) continue;
+    if (psycheHandCount(player) < 4) continue;
+    if (psycheHandCount(player) <= meetTaxAt(state, player, tile.id) + 2) continue;
+    const choices = getLandscapeActionChoices(tile);
+    if (!choices.some((c) => c.id === "spawn-dreambeast")) continue;
+    setActive(state, playerIndex(state, player));
+    state.selectedLandscapeId = tile.id;
+    const before = state.meetActionsUsed;
+    const result = performLandscapeAction(state, "spawn-dreambeast");
+    finishSpawnPending(state, result);
+    resolvePendings(state, skill);
+    tryMeet(state, skill);
+    if (state.meetActionsUsed > before) return true;
+  }
+  return false;
+}
+
 function tryFinalRecurrence(state, skill) {
   if (!state.finalRecurrence) return false;
   const remaining = (state.finalArchetypes || []).filter((a) => !a.defeated);
   if (!remaining.length) return false;
-  if (skill !== "sloppy") handleSacrificeForFinal(state);
+
+  const acquired = state.players.reduce((n, p) => n + (p.acquiredArchetypes?.length || 0), 0);
+  const dreamsLeft = state.dreamDeck.length;
+  if (skill === "skilled" && acquired > 0 && dreamsLeft <= remaining.length + 1) {
+    handleSacrificeForFinal(state);
+  } else if (skill === "skilled" && acquired >= remaining.length && dreamsLeft < remaining.length * 3) {
+    handleSacrificeForFinal(state);
+  }
 
   for (const arch of remaining) {
     const tileId = state.board.find((t) => t.finalArchetype?.id === arch.id && !t.finalArchetype.defeated)?.id
       || arch.landscapeId;
     if (!tileId) continue;
-    const actor = occupantOn(state, tileId);
+    let actor = occupantOn(state, tileId);
+    if (!actor) {
+      const mover = alivePlayers(state).find((p) => p.landscapeId !== tileId);
+      if (mover && skill === "skilled") {
+        setActive(state, playerIndex(state, mover));
+        const step = nextStepToward(state, mover, tileId, skill);
+        if (step && step !== mover.landscapeId) {
+          moveDreamer(state, step);
+          resolvePendings(state, skill);
+          actor = occupantOn(state, tileId);
+        }
+      }
+    }
     if (!actor) continue;
     setActive(state, playerIndex(state, actor));
     state.selectedLandscapeId = tileId;
@@ -909,12 +1447,12 @@ function tryFinalRecurrence(state, skill) {
     }
     for (const item of pool) {
       if (picked.includes(item.card)) continue;
-      if (total >= 12 && picked.length >= 2) break;
+      if (total >= FINAL_PSYCHE && picked.length >= 2) break;
       picked.push(item.card);
       total += item.card.value || 0;
     }
     state.selectedHand = picked.map((c) => c.instanceId);
-    stackSpreadTokens(state, 12, total);
+    stackSpreadTokens(state, FINAL_PSYCHE, total);
     const before = state.status;
     handleDefeatFinalArchetype(state);
     resolvePendings(state, skill);
@@ -924,13 +1462,14 @@ function tryFinalRecurrence(state, skill) {
 }
 
 function tryTakePower(state, skill) {
+  const want = Math.max(2, unmarkedQuestCount(state));
+  if (skill !== "sloppy" && teamTokens(state) >= want + 1) return false;
   const tiles = ["awards", "candy-mountain"]
     .map((id) => landscapeById(state, id))
     .filter((t) => t?.revealed && !t.wasteland);
   for (const tile of tiles) {
     const player = occupantOn(state, tile.id);
     if (!player) continue;
-    if (skill !== "sloppy" && teamTokens(state) >= 4 && (player.powerTokens || 0) >= 2) continue;
     setActive(state, playerIndex(state, player));
     state.selectedLandscapeId = tile.id;
     const before = state.meetActionsUsed;
@@ -944,11 +1483,13 @@ function tryTakePower(state, skill) {
 function tryBedPool(state, skill) {
   const campers = alivePlayers(state).filter((p) => p.landscapeId === "bed");
   if (!campers.length) return false;
+  if (skill === "skilled" && !deckCanDraw(state, 3)) return false;
 
   const ordered = [...campers].sort((a, b) => psycheHandCount(a) - psycheHandCount(b));
   for (const player of ordered) {
     const room = handLimitForPlayer(state, player) - psycheHandCount(player);
     if (room < 1 && skill !== "sloppy") continue;
+    if (skill === "skilled" && psycheHandCount(player) >= POOL_LEAVE) continue;
     setActive(state, playerIndex(state, player));
     state.selectedLandscapeId = "bed";
     const before = state.meetActionsUsed;
@@ -1018,6 +1559,10 @@ function runReveal(state, skill) {
 
 function runExplore(state, skill) {
   useTools(state, skill);
+  if (rallyOnBedIfGoalMet(state, skill)) {
+    endPhase(state);
+    return;
+  }
   if (skill !== "sloppy" || chance(0.85)) {
     if (openPhaseWithCardsOrToken(state, skill, "elasticity")) {
       activateExplore(state);
@@ -1058,7 +1603,13 @@ function runExplore(state, skill) {
 }
 
 function runMeet(state, skill) {
+  resolvePendings(state, skill);
   useTools(state, skill);
+  if (rallyOnBedIfGoalMet(state, skill)) {
+    resolvePendings(state, skill);
+    endPhase(state);
+    return;
+  }
   if (skill !== "sloppy" || chance(0.8)) {
     if (openPhaseWithCardsOrToken(state, skill, "willpower")) {
       gainMeetActions(state);
@@ -1067,12 +1618,15 @@ function runMeet(state, skill) {
   resolvePendings(state, skill);
 
   let actions = 0;
-  while (state.meetActionBudget > 0 && state.meetActionsUsed < state.meetActionBudget && actions++ < 12) {
+  const actionCap = 8 + alivePlayers(state).length * 3;
+  while (state.meetActionBudget > 0 && state.meetActionsUsed < state.meetActionBudget && actions++ < actionCap) {
     const used = state.meetActionsUsed;
     useTools(state, skill);
     if (tryFinalRecurrence(state, skill)) continue;
     if (tryMeet(state, skill) && state.meetActionsUsed > used) continue;
-    if ((skill !== "sloppy" || chance(0.55)) && (readyToExpedition(state, skill) || standingOnQuestWork(state)) && tryMindstream(state, skill)) continue;
+    if (trySpawnBeast(state, skill) && state.meetActionsUsed > used) continue;
+    const huntingObject = needsSacrificeQuest(state) && !listSacrificableObjects(state).length;
+    if ((skill !== "sloppy" || chance(0.55)) && (readyToExpedition(state, skill) || standingOnQuestWork(state) || needsMeetQuest(state) || needsBossQuest(state) || huntingObject) && tryMindstream(state, skill)) continue;
     if (tryTakePower(state, skill)) continue;
     const pooling = !readyToExpedition(state, skill)
       || needsTenPsycheQuest(state)
@@ -1082,27 +1636,34 @@ function runMeet(state, skill) {
     break;
   }
   tryMeet(state, skill);
-  useTools(state, skill);
   resolvePendings(state, skill);
-  if (state.landscapePick) cancelLandscapePick(state);
   endPhase(state);
 }
 
 function lossReason(state) {
   if (state.status === "won") return "won";
+  const log = (state.log || []).join("\n");
+  const solo = (state.players || []).length === 1;
+  if (/died an eighth time/i.test(log) || (solo && (state.players || []).some((p) => (p.deathCount || 0) >= 8))) return "eighth-death";
+  if (/died a fifth time/i.test(log) || (!solo && (state.players || []).some((p) => (p.deathCount || 0) >= 5))) return "fifth-death";
+  if (/Psyche Deck is exhausted/i.test(log)) return "psyche-empty";
+  if (/Mindstream is gone/i.test(log)) return "mindstream-gone";
+  if (/You Never Wake/i.test(log)) return "you-never-wake";
+  if (/No Dreamers remain/i.test(log) || !alivePlayers(state).length) return "all-dead";
   if (state.finalRecurrence) {
     const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
     if (state.dreamDeck.length === 0 && left > 0) return "final-recurrence-deck";
     return "final-recurrence-stalled";
   }
   if (state.dreamDeck.length === 0) return "dream-deck-empty";
-  if (!alivePlayers(state).length) return "all-dead";
-  if (state.status === "lost") return "lost";
+  if (state.status === "lost") return "other-loss";
   return "stalled";
 }
 
-function simulateGame({ lengthKey, skill, playerCount }) {
-  const dreamers = [...gameData.dreamers].sort(() => rng() - 0.5).slice(0, playerCount);
+function simulateGame({ lengthKey, skill, selectedDreamers }) {
+  const dreamers = selectedDreamers;
+  const playerCount = dreamers.length;
+  const comboKey = dreamers.map((d) => d.id).sort().join("+");
   const state = createInitialState(gameData, {
     lengthKey,
     selectedDreamers: dreamers,
@@ -1148,24 +1709,48 @@ function simulateGame({ lengthKey, skill, playerCount }) {
         alive: p.alive,
       })),
       revealed: state.board.filter((t) => t.revealed && !t.wasteland).map((t) => t.id),
-      log: (state.log || []).slice(-40),
+      phase: getPhase(state),
+      pending: {
+        dream: state.pendingDreamChoice?.dreamId || state.pendingDreamChoice?.title || null,
+        dreamUi: state.pendingDreamChoice?.ui || null,
+        queue: state.pendingDreamQueue?.length || 0,
+        effect: state.pendingEffectChoice?.title || null,
+        repress: !!state.pendingRepress,
+        ret: !!state.pendingReturn,
+        object: state.pendingObjectChoice?.id || state.pendingObjectChoice?.cardId || null,
+        landscape: state.landscapePick?.mode || null,
+        block: state.log?.[0] || null,
+      },
+      log: (state.log || []).slice(0, 12),
     });
   }
 
+  const points = state.acquiredPoints || 0;
+  const onBed = state.players.filter((p) => p.alive && p.landscapeId === "bed").length;
+  const alive = alivePlayers(state).length;
   return {
     status: state.status === "won" ? "won" : "lost",
     reason: lossReason(state),
-    points: state.acquiredPoints || 0,
+    points,
     goal: originalGoal,
     rounds: state.round,
     dreamsLeft: state.dreamDeck.length,
     deaths: state.players.reduce((s, p) => s + (p.deathCount || 0), 0),
     archetypes: state.players.reduce((s, p) => s + (p.acquiredArchetypes?.length || 0), 0),
-    onBed: state.players.filter((p) => p.alive && p.landscapeId === "bed").length,
-    alive: alivePlayers(state).length,
+    onBed,
+    alive,
+    goalMet: points >= originalGoal && originalGoal > 0,
+    goalMetNotOnBed: points >= originalGoal && originalGoal > 0 && onBed < alive,
+    roamingBeastsEnd: countBoardDreambeasts(state),
     finalRecurrence: !!state.finalRecurrence,
     lengthKey,
     skill,
+    comboKey,
+    playerCount,
+    dreamerIds: dreamers.map((d) => d.id),
+    powerUses: { ...(state.botPowerUses || {}) },
+    passiveUses: { ...(state.botPassiveUses || {}) },
+    sacrifices: state.botSacrifices || 0,
   };
 }
 
@@ -1176,7 +1761,7 @@ function summarize(rows) {
   const se = n ? Math.sqrt(winRate * (1 - winRate) / n) : 0;
   const reasons = {};
   rows.forEach((r) => { reasons[r.reason] = (reasons[r.reason] || 0) + 1; });
-  const avg = (key) => rows.reduce((s, r) => s + r[key], 0) / n;
+  const avg = (key) => rows.reduce((s, r) => s + (Number(r[key]) || 0), 0) / n;
   return {
     n,
     wins,
@@ -1190,81 +1775,208 @@ function summarize(rows) {
     avgDeaths: +avg("deaths").toFixed(2),
     avgArchetypes: +avg("archetypes").toFixed(2),
     avgDreamsLeft: +avg("dreamsLeft").toFixed(2),
-    goalReachedButLost: rows.filter((r) => r.status === "lost" && r.points >= r.goal && r.goal > 0).length,
+    goalReachedButLost: rows.filter((r) => r.status === "lost" && r.goalMet).length,
+    goalMetNotOnBed: rows.filter((r) => r.goalMetNotOnBed).length,
     finalRecurrenceGames: rows.filter((r) => r.finalRecurrence).length,
+    avgRoamingBeasts: +avg("roamingBeastsEnd").toFixed(2),
   };
 }
 
-const TARGET_GAMES = Number(process.env.SOMNIA_SIM_GAMES || 2000);
-const SCALE = Number(process.env.SOMNIA_SIM_SCALE || 1);
-const BASE_CELLS = [
-  { lengthKey: "daydream", skill: "skilled", playerCount: 2, weight: 400 },
-  { lengthKey: "nap", skill: "skilled", playerCount: 2, weight: 400 },
-  { lengthKey: "deep", skill: "skilled", playerCount: 2, weight: 300 },
-  { lengthKey: "daydream", skill: "sloppy", playerCount: 2, weight: 300 },
-  { lengthKey: "nap", skill: "sloppy", playerCount: 2, weight: 300 },
-  { lengthKey: "daydream", skill: "skilled", playerCount: 3, weight: 200 },
-];
-const weightTotal = BASE_CELLS.reduce((sum, cell) => sum + cell.weight, 0);
-const CELLS = BASE_CELLS.map((cell) => ({
-  ...cell,
-  runs: Math.max(1, Math.round((cell.weight / weightTotal) * TARGET_GAMES * SCALE)),
-}));
+function combinations(items, k) {
+  const out = [];
+  const rec = (start, chosen) => {
+    if (chosen.length === k) {
+      out.push(chosen.slice());
+      return;
+    }
+    for (let i = start; i < items.length; i += 1) {
+      chosen.push(items[i]);
+      rec(i + 1, chosen);
+      chosen.pop();
+    }
+  };
+  rec(0, []);
+  return out;
+}
 
-const started = Date.now();
-const all = [];
-const byCell = [];
+function lengthForRun(i) {
+  return ["daydream", "nap", "deep"][i % 3];
+}
 
-for (const cell of CELLS) {
-  const rows = [];
-  for (let i = 0; i < cell.runs; i += 1) {
-    try {
-      rows.push(simulateGame(cell));
-    } catch (err) {
-      if (!globalThis.__somniaCrashLogged) {
-        globalThis.__somniaCrashLogged = true;
-        console.error("SIM CRASH:", err?.stack || err);
-      }
-      rows.push({
-        status: "lost",
-        reason: "crash",
-        points: 0,
-        goal: dataModule.LENGTHS[cell.lengthKey].points,
-        rounds: 0,
-        dreamsLeft: 0,
-        deaths: 0,
-        archetypes: 0,
-        onBed: 0,
-        alive: 0,
-        finalRecurrence: false,
-        lengthKey: cell.lengthKey,
-        skill: cell.skill,
+function crashRow(cell, err) {
+  if (!globalThis.__somniaCrashLogged) {
+    globalThis.__somniaCrashLogged = true;
+    console.error("SIM CRASH:", err?.stack || err);
+  }
+  globalThis.__somniaCrashCount = (globalThis.__somniaCrashCount || 0) + 1;
+  if (err?.message && !globalThis.__somniaCrashKinds) globalThis.__somniaCrashKinds = {};
+  if (err?.message) {
+    const kinds = globalThis.__somniaCrashKinds;
+    kinds[err.message] = (kinds[err.message] || 0) + 1;
+  }
+  return {
+    status: "lost",
+    reason: "crash",
+    points: 0,
+    goal: dataModule.LENGTHS[cell.lengthKey].points,
+    rounds: 0,
+    dreamsLeft: 0,
+    deaths: 0,
+    archetypes: 0,
+    onBed: 0,
+    alive: 0,
+    goalMet: false,
+    goalMetNotOnBed: false,
+    roamingBeastsEnd: 0,
+    finalRecurrence: false,
+    lengthKey: cell.lengthKey,
+    skill: cell.skill,
+    comboKey: cell.comboKey,
+    playerCount: cell.playerCount,
+    dreamerIds: cell.selectedDreamers.map((d) => d.id),
+    powerUses: {},
+    passiveUses: {},
+    sacrifices: 0,
+  };
+}
+
+function groupSummaries(rows, keyFn) {
+  const map = new Map();
+  rows.forEach((row) => {
+    const key = keyFn(row);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(row);
+  });
+  const out = {};
+  for (const [key, group] of map) out[key] = summarize(group);
+  return out;
+}
+
+function tallyNamedCounts(rows, field) {
+  const uses = {};
+  const games = {};
+  rows.forEach((row) => {
+    (row.dreamerIds || []).forEach((id) => { games[id] = (games[id] || 0) + 1; });
+    Object.entries(row[field] || {}).forEach(([id, n]) => { uses[id] = (uses[id] || 0) + n; });
+  });
+  const out = {};
+  const ids = new Set([...Object.keys(games), ...Object.keys(uses)]);
+  for (const id of ids) {
+    const present = games[id] || rows.length;
+    out[id] = {
+      games: games[id] || 0,
+      uses: uses[id] || 0,
+      perGame: +((uses[id] || 0) / Math.max(1, present)).toFixed(2),
+    };
+  }
+  return out;
+}
+
+const DREAMER_ROSTER = [...gameData.dreamers].sort((a, b) => a.id.localeCompare(b.id));
+const RUNS_PER_COMBO = Number(process.env.SOMNIA_SIM_COMBO_RUNS || 100);
+const SLOPPY_PER_COUNT = Number(process.env.SOMNIA_SIM_SLOPPY_PER_COUNT || 10);
+
+const JOBS = [];
+for (let k = 1; k <= 6; k += 1) {
+  for (const combo of combinations(DREAMER_ROSTER, k)) {
+    const comboKey = combo.map((d) => d.id).sort().join("+");
+    for (let i = 0; i < RUNS_PER_COMBO; i += 1) {
+      JOBS.push({
+        skill: "skilled",
+        lengthKey: lengthForRun(i),
+        selectedDreamers: combo,
+        playerCount: k,
+        comboKey,
       });
     }
   }
-  const summary = { ...cell, ...summarize(rows) };
-  byCell.push(summary);
-  all.push(...rows);
-  console.log(
-    `${cell.skill} ${cell.lengthKey} p${cell.playerCount}: ${summary.winPct}% (${summary.wins}/${summary.n}) 95% CI ${summary.ci95[0]}–${summary.ci95[1]} reasons=${JSON.stringify(summary.reasons)}`,
-  );
+}
+
+for (let k = 1; k <= 6; k += 1) {
+  const combos = combinations(DREAMER_ROSTER, k);
+  const sample = combos[0];
+  const comboKey = sample.map((d) => d.id).sort().join("+");
+  for (let i = 0; i < SLOPPY_PER_COUNT; i += 1) {
+    JOBS.push({
+      skill: "sloppy",
+      lengthKey: lengthForRun(i),
+      selectedDreamers: sample,
+      playerCount: k,
+      comboKey,
+    });
+  }
+}
+
+const started = Date.now();
+const all = [];
+globalThis.__somniaCrashCount = 0;
+globalThis.__somniaCrashKinds = {};
+
+console.log(
+  `Somnia 34.2 combo matrix: ${DREAMER_ROSTER.length} Dreamers, 63 combinations × ${RUNS_PER_COMBO} skilled + ${6 * SLOPPY_PER_COUNT} sloppy = ${JOBS.length} games`,
+);
+
+let done = 0;
+let lastLog = Date.now();
+for (const cell of JOBS) {
+  try {
+    all.push(simulateGame(cell));
+  } catch (err) {
+    all.push(crashRow(cell, err));
+  }
+  done += 1;
+  if (done % 200 === 0 || Date.now() - lastLog > 15000) {
+    const elapsed = ((Date.now() - started) / 1000).toFixed(0);
+    const wins = all.filter((r) => r.status === "won").length;
+    console.log(`… ${done}/${JOBS.length} (${elapsed}s) wins=${wins} crashes=${globalThis.__somniaCrashCount}`);
+    lastLog = Date.now();
+  }
 }
 
 const skilled = all.filter((r) => r.skill === "skilled");
 const sloppy = all.filter((r) => r.skill === "sloppy");
+const byLength = groupSummaries(all, (r) => r.lengthKey);
+const byPlayerCount = groupSummaries(skilled, (r) => String(r.playerCount));
+const byCombo = groupSummaries(skilled, (r) => r.comboKey);
+const comboRanks = Object.entries(byCombo)
+  .map(([comboKey, s]) => ({ comboKey, playerCount: comboKey.split("+").length, ...s }))
+  .sort((a, b) => b.winRate - a.winRate);
+
 const report = {
+  version: "34.2",
+  engineNote: "Real Somnia JS engine. Skilled bots buy enough Elasticity to reach a Dreambeast, Meet it with one legal card (the harness awards the dice battle), keep a Psyche-deck reserve, and use Dreamer powers when the table can afford the cost.",
   generatedAt: new Date().toISOString(),
   elapsedMs: Date.now() - started,
   totalGames: all.length,
+  comboRuns: RUNS_PER_COMBO,
+  combinationCount: 63,
+  crashCount: globalThis.__somniaCrashCount,
+  crashKinds: globalThis.__somniaCrashKinds,
   overall: summarize(all),
   skilled: summarize(skilled),
   sloppy: summarize(sloppy),
-  cells: byCell,
+  byLength,
+  byPlayerCount,
+  dreamerPowers: tallyNamedCounts(skilled, "powerUses"),
+  dreamerPassives: tallyNamedCounts(skilled, "passiveUses"),
+  sacrifices: skilled.reduce((sum, row) => sum + (row.sacrifices || 0), 0),
+  comboBest: comboRanks.slice(0, 8),
+  comboWorst: comboRanks.filter((c) => c.n >= Math.min(50, RUNS_PER_COMBO)).slice(-8).reverse(),
+  cells: comboRanks,
 };
 
 const out = join(__dirname, "somnia-winrate-report.json");
 writeFileSync(out, JSON.stringify(report, null, 2));
 console.log(`\nWrote ${out}`);
 console.log(`Total ${report.totalGames} games in ${(report.elapsedMs / 1000).toFixed(1)}s`);
-console.log(`Skilled win rate: ${report.skilled.winPct}%`);
+console.log(`Skilled win rate: ${report.skilled.winPct}%  (${report.skilled.wins}/${report.skilled.n})`);
 console.log(`Sloppy win rate: ${report.sloppy.winPct}%`);
+console.log(`Crashes: ${report.crashCount}`);
+console.log("By player count:", Object.fromEntries(
+  Object.entries(byPlayerCount).map(([k, s]) => [k, `${s.winPct}% (${s.wins}/${s.n})`]),
+));
+console.log("Dreamer powers per game (skilled):", Object.fromEntries(
+  Object.entries(report.dreamerPowers).map(([id, s]) => [id, `${s.uses} uses / ${s.games} games (${s.perGame}/game)`]),
+));
+console.log("Passives:", report.dreamerPassives);
+console.log(`Object sacrifices: ${report.sacrifices}`);

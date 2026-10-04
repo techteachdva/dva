@@ -280,6 +280,7 @@ function hunterPowerStart(state) {
       hint: "Each Dreambeast steps farther from The Bed.",
     },
   ]);
+  return { ui: state.pendingDreamerPower.ui };
 }
 
 function immovablePowerExecute(state) {

@@ -37,7 +37,7 @@ import {
 } from "./dreambeasts.js";
 import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate } from "./objects.js";
 import { alliesInHand, psycheCardsInHand, allyHandCount, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue, tradablePsycheInHand, TRADE_OFFER_LIMIT } from "./psyche.js";
-import { getQuestStatus, activeQuestLandscapeIds } from "./quests.js";
+import { getQuestStatus, activeQuestLandscapeIds, sacrificeQuestOpen, listSacrificableObjects } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
 import { hexToPixel, boardPixelBounds, pixelToHex, hexKey, canTradeBetween } from "./hex.js";
 import {
@@ -2982,6 +2982,38 @@ export function renderSubconsciousButton(state) {
       : "Browse The Subconscious (empty)";
 }
 
+function renderSacrificeObjectQuest(state, onSacrificeObject) {
+  const box = document.createElement("div");
+  box.className = "sacrifice-object-quest";
+  const label = document.createElement("p");
+  label.className = "sacrifice-object-label";
+  label.textContent = "Sacrifice 1 Object";
+  box.appendChild(label);
+  const rows = listSacrificableObjects(state);
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.className = "sacrifice-object-empty";
+    empty.textContent = "A living Dreamer must hold an Object.";
+    box.appendChild(empty);
+    return box;
+  }
+  rows.forEach((row) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sacrifice-object-btn";
+    const held = row.persistent ? `${row.name} (persistent)` : row.name;
+    btn.textContent = `${row.playerName}: ${held}`;
+    btn.title = `Sacrifice ${row.name}. It goes to its Mindstream discard.`;
+    btn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onSacrificeObject(row);
+    });
+    box.appendChild(btn);
+  });
+  return box;
+}
+
 function renderQuestProgressList(statuses, onQuestClick = null) {
   const ul = document.createElement("ul");
   ul.className = "quest-list compact quest-progress-list";
@@ -3033,7 +3065,7 @@ function renderQuestProgressList(statuses, onQuestClick = null) {
   return ul;
 }
 
-export function renderActiveSlots(state, onCardClick, onQuestClick = null) {
+export function renderActiveSlots(state, onCardClick, onQuestClick = null, onSacrificeObject = null) {
   const archetypeSlot = document.getElementById("active-archetype");
   const encounterSlot = document.getElementById("active-encounter");
   const acquired = document.getElementById("acquired-archetypes");
@@ -3058,6 +3090,9 @@ export function renderActiveSlots(state, onCardClick, onQuestClick = null) {
     }));
     if (statuses.length) {
       archetypeSlot.appendChild(renderQuestProgressList(statuses, onQuestClick));
+      if (typeof onSacrificeObject === "function" && sacrificeQuestOpen(state)) {
+        archetypeSlot.appendChild(renderSacrificeObjectQuest(state, onSacrificeObject));
+      }
       const tokens = document.createElement("p");
       tokens.className = "archetype-tokens";
       tokens.textContent = `${tokensOn}/2 Power Tokens on Archetype`;

@@ -3,6 +3,7 @@
  * Quest conditions persist once met so players can spend Power Tokens later.
  */
 import { psycheHandCount } from "./psyche.js";
+import { discardToMindstream } from "./mindstream-supply.js";
 
 export function createQuestTracker() {
   return {
@@ -19,6 +20,7 @@ export function createQuestTracker() {
     powerTokensTaken: 0,
     dreambeastsMoved: 0,
     playersMoved: 0,
+    sacrificedObject: false,
   };
 }
 
@@ -66,6 +68,9 @@ export function recordQuestEvent(state, event, data = {}) {
     case "move_dreambeast":
       t.dreambeastsMoved += data.count || 1;
       break;
+    case "sacrifice_object":
+      t.sacrificedObject = true;
+      break;
     case "move_player":
       t.playersMoved += data.count || 1;
       break;
@@ -94,9 +99,19 @@ const QUEST_CHECKS = {
   "meet cerberus": (t) => t.meetBoss.cerberus,
   "meet double": (t) => t.meetBoss.double,
   "meet leviathan": (t) => t.meetBoss.leviathan,
+  "defeat cerberus": (t) => t.meetBoss.cerberus,
+  "defeat double": (t) => t.meetBoss.double,
+  "defeat leviathan": (t) => t.meetBoss.leviathan,
+  "1 dreamer sacrifices 1 object": (t) => t.sacrificedObject,
   "have 10 psyche": (_t, state) => anyDreamerPsycheHand(state, 10),
   "1 dreamer holds 10 psyche cards": (_t, state) => anyDreamerPsycheHand(state, 10),
   "draw mindstream on the attic": (t) => t.mindstreamOnLandscape["the-attic"],
+  "draw mindstream on the attic or the basement": (t) =>
+    mindstreamOnAny(t, ["the-attic", "the-basement"]),
+  "draw mindstream on naked classroom or candy mountain": (t) =>
+    mindstreamOnAny(t, ["naked-classroom", "candy-mountain"]),
+  "draw mindstream on desert or silver mist": (t) =>
+    mindstreamOnAny(t, ["desert", "silver-mist"]),
   "draw mindstream on the basement": (t) => t.mindstreamOnLandscape["the-basement"],
   "meet a dreambeast on the attic or the basement": (t) =>
     meetOnAny(t, ["the-attic", "the-basement"]),
@@ -184,6 +199,9 @@ export function isQuestConditionMet(state, archetypeId, questText) {
 
 const QUEST_LANDSCAPE_HINTS = {
   "draw mindstream on the attic": ["the-attic"],
+  "draw mindstream on the attic or the basement": ["the-attic", "the-basement"],
+  "draw mindstream on naked classroom or candy mountain": ["naked-classroom", "candy-mountain"],
+  "draw mindstream on desert or silver mist": ["desert", "silver-mist"],
   "draw mindstream on the basement": ["the-basement"],
   "meet a dreambeast on the attic or the basement": ["the-attic", "the-basement"],
   "meet a dreambeast on naked classroom or candy mountain": ["naked-classroom", "candy-mountain"],
@@ -233,6 +251,58 @@ export function getQuestStatus(state, archetype) {
       index: i,
     };
   });
+}
+
+export function sacrificeQuestOpen(state) {
+  const arch = state.activeArchetype;
+  if (!arch?.quests) return false;
+  return arch.quests.some((quest, index) => {
+    if (arch.questProgress?.[index]) return false;
+    if (!normalizeQuest(quest).includes("sacrific")) return false;
+    return !isQuestConditionMet(state, arch.id, quest);
+  });
+}
+
+export function listSacrificableObjects(state) {
+  const rows = [];
+  for (const player of state.players || []) {
+    if (!player.alive) continue;
+    for (const card of player.objects || []) {
+      rows.push({
+        playerId: player.id,
+        playerName: player.name,
+        instanceId: card.instanceId,
+        name: card.name,
+        persistent: false,
+      });
+    }
+    for (const card of player.persistent || []) {
+      rows.push({
+        playerId: player.id,
+        playerName: player.name,
+        instanceId: card.instanceId,
+        name: card.name,
+        persistent: true,
+      });
+    }
+  }
+  return rows;
+}
+
+export function sacrificeHeldObject(state, playerId, instanceId) {
+  if (!sacrificeQuestOpen(state)) return { ok: false, reason: "That quest is not open." };
+  const player = (state.players || []).find((p) => p.id === playerId && p.alive);
+  if (!player) return { ok: false, reason: "That Dreamer cannot sacrifice." };
+  const fromObjects = (player.objects || []).find((c) => c.instanceId === instanceId);
+  const fromPersistent = (player.persistent || []).find((c) => c.instanceId === instanceId);
+  const card = fromObjects || fromPersistent;
+  if (!card) return { ok: false, reason: "That Object is no longer held." };
+  if (fromObjects) player.objects = player.objects.filter((c) => c.instanceId !== instanceId);
+  else player.persistent = (player.persistent || []).filter((c) => c.instanceId !== instanceId);
+  discardToMindstream(state, card);
+  recordQuestEvent(state, "sacrifice_object");
+  const who = player.name || "A Dreamer";
+  return { ok: true, log: `${who} sacrificed ${card.name}.` };
 }
 
 export function canMarkQuest(state, questIndex) {

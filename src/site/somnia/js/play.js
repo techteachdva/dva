@@ -71,6 +71,7 @@ import {
   encounterKey,
   checkDefeat,
 } from "./state.js";
+import { sacrificeHeldObject } from "./quests.js";
 import {
   getPhaseActions,
   getPhaseAdvanceAction,
@@ -1492,7 +1493,6 @@ function zoomMaxOnDreamer(playerId, tileId) {
   if (playerIndex >= 0) state.activePlayerIndex = playerIndex;
   if (getPhase(state) === "Meet" && tileId) state.selectedLandscapeId = tileId;
   if (playerId && tileId) focusOnDreamer(playerId, tileId);
-  if (tileId) playLandscapeSfx(tileId);
   renderAll();
   suppressDreamerOverlay(800);
 }
@@ -1557,7 +1557,6 @@ function openDreamerBoardRadial(anchorEl, playerId, tileId) {
   const sameMeetTile = getPhase(state) !== "Meet" || state.selectedLandscapeId === tileId;
   state.activePlayerIndex = playerIndex;
   if (getPhase(state) === "Meet") state.selectedLandscapeId = tileId;
-  playLandscapeSfx(tileId);
   const liveToken = document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`);
   if (sameDreamer && sameMeetTile && liveToken?.isConnected) {
     showDreamerBoardRadialMenu(playerId, tileId, player);
@@ -1947,16 +1946,20 @@ function renderBoardArea() {
       openDreamerBoardRadial(null, result.playerId, result.tileId);
     }
   };
-  renderBoard(state, commitLandscape, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id, {
-    onDreamerClick: (playerId, tileId) => {
-      hideUtilityModal(true);
-      openDreamerBoardRadial(null, playerId, tileId);
-    },
-    onBeastClick: (encounter, tileId) => {
-      hideUtilityModal(true);
-      openBeastBoardRadial(null, encounter, tileId);
-    },
-  }), {
+  renderBoard(state, commitLandscape, legalMoves, pickHighlights, (id) => {
+    const tile = state.board.find((t) => t.id === id);
+    if (tile?.revealed && !tile.wasteland) playLandscapeSfx(id);
+    showLandscapeDetail(state, id, {
+      onDreamerClick: (playerId, tileId) => {
+        hideUtilityModal(true);
+        openDreamerBoardRadial(null, playerId, tileId);
+      },
+      onBeastClick: (encounter, tileId) => {
+        hideUtilityModal(true);
+        openBeastBoardRadial(null, encounter, tileId);
+      },
+    });
+  }, {
     onDreamerTokenClick: (playerId, tileId, anchorEl, event) => {
       const playerIndex = state.players.findIndex((p) => p.id === playerId);
       if (playerIndex < 0) return;
@@ -2208,9 +2211,6 @@ function renderAll() {
     if (getPhase(state) === "Meet" && player?.landscapeId) {
       state.selectedLandscapeId = player.landscapeId;
     }
-    if (player?.alive && player.landscapeId) {
-      playLandscapeSfx(player.landscapeId);
-    }
     const nextId = state.players[index]?.id;
     if (prevId && nextId && prevId !== nextId) {
       playDreamerHandSparkle(prevId, nextId);
@@ -2289,6 +2289,19 @@ function renderAll() {
       notifyTutorialArchetypeAcquired(state);
       playSfx("acquire");
       requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
+    }
+    renderAll();
+  }, (row) => {
+    if (isBlockingGameChoice(state)) {
+      addLog(state, blockingChoiceLabel(state) || "Finish the current choice first.");
+      renderAll();
+      return;
+    }
+    const result = sacrificeHeldObject(state, row.playerId, row.instanceId);
+    if (!result.ok) addLog(state, result.reason);
+    else {
+      addLog(state, result.log);
+      playSfx("discard");
     }
     renderAll();
   });

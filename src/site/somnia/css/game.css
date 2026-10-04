@@ -624,6 +624,37 @@ body.play-window #screen-end.active {
   margin: 0.35rem 0 0;
 }
 
+.sacrifice-object-quest {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  margin-top: 0.4rem;
+}
+
+.sacrifice-object-label,
+.sacrifice-object-empty {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.sacrifice-object-btn {
+  text-align: left;
+  font: inherit;
+  font-size: 0.75rem;
+  color: #f0c96a;
+  background: rgba(240, 201, 106, 0.08);
+  border: 1px solid rgba(240, 201, 106, 0.45);
+  border-radius: 8px;
+  padding: 0.38rem 0.5rem;
+  cursor: pointer;
+}
+
+:where(html:not([data-hover="false"])) .sacrifice-object-btn:hover,
+.sacrifice-object-btn:focus-visible {
+  background: rgba(240, 201, 106, 0.16);
+}
+
 .victory-fx {
   position: absolute;
   inset: 0;

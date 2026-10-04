@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-34.1-theme-restored";
-const RUNTIME_CACHE = "somnia-runtime-34.1-theme-restored";
+const CACHE_NAME = "somnia-34.2-two-landscapes";
+const RUNTIME_CACHE = "somnia-runtime-34.2-two-landscapes";
 
 const PRECACHE = [
   "./",

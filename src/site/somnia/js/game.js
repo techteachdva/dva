@@ -995,7 +995,6 @@ export function drawDreamCard(state, onShowModal) {
 
   if (isBossDreamCard(card)) {
     spawnBossEncounterOnBed(state, card);
-    recordQuestEvent(state, "meet_boss", { bossId: card.id });
     if (state.tutorialFlags) state.tutorialFlags.bossDrawn = true;
   } else {
     resolveCardEffect(state, card, head, getEffectHelpers());

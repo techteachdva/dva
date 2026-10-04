@@ -6,10 +6,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "34.1";
+export const SOMNIA_VERSION = "34.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "34.2",
+    title: "The Two Landscapes",
+    notes: [
+      "Nine Archetypes ask you to Draw Mindstream on one of two Landscapes and Meet a Dreambeast on one of two. Reveal that hex, move there, and take the action. A forgotten tile does not move the quest.",
+      "Magician, Warrior, and Sage are worth 4, one for each boss. Defeat that boss, Accept or Repress, and have one living Dreamer sacrifice one Object. The card goes to its Mindstream discard. The button sits on the Active Archetype and does not spend a phase action.",
+      "Every other Archetype is worth 2 or 3.",
+      "A Landscape plays its sound once, when it flips out of the Wasteland, and again when you investigate it and open the Landscape window.",
+    ],
+  },
   {
     version: "34.1",
     title: "Dreamer's Awakening",

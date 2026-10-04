@@ -2,27 +2,27 @@
   {
     "id": "sage",
     "name": "Sage",
-    "points": 3,
+    "points": 4,
     "image": "images/archetypes/archetype-sage.webp",
     "suit": "lucidity",
     "passive": "All Dreamers +1 Lucidity",
     "power": null,
-    "quests": ["Meet Double", "1 Dreamer holds 10 Psyche cards"]
+    "quests": ["Defeat Double", "1 Dreamer sacrifices 1 Object"]
   },
   {
     "id": "innocent",
     "name": "Innocent",
-    "points": 1,
+    "points": 2,
     "image": "images/archetypes/archetype-innocent.webp",
     "suit": "lucidity",
     "passive": null,
     "power": "Return 4 Repressed Cards from Subconscious",
-    "quests": ["Draw Mindstream on The Attic", "Meet a Dreambeast on The Attic or The Basement"]
+    "quests": ["Draw Mindstream on The Attic or The Basement", "Meet a Dreambeast on The Attic or The Basement"]
   },
   {
     "id": "caregiver",
     "name": "Caregiver",
-    "points": 2,
+    "points": 3,
     "image": "images/archetypes/archetype-caregiver.webp",
     "suit": "willpower",
     "passive": null,
@@ -32,7 +32,7 @@
   {
     "id": "lover",
     "name": "Lover",
-    "points": 2,
+    "points": 3,
     "image": "images/archetypes/archetype-lover.webp",
     "suit": "elasticity",
     "passive": null,
@@ -42,7 +42,7 @@
   {
     "id": "explorer",
     "name": "Explorer",
-    "points": 2,
+    "points": 3,
     "image": "images/archetypes/archetype-explorer.webp",
     "suit": "elasticity",
     "passive": null,
@@ -52,27 +52,27 @@
   {
     "id": "magician",
     "name": "Magician",
-    "points": 3,
+    "points": 4,
     "image": "images/archetypes/archetype-magician.webp",
     "suit": "lucidity",
     "passive": "All Dreamers +1 Elasticity",
     "power": null,
-    "quests": ["Meet Cerberus", "1 Dreamer holds 10 Psyche cards"]
+    "quests": ["Defeat Cerberus", "1 Dreamer sacrifices 1 Object"]
   },
   {
     "id": "orphan",
     "name": "Orphan",
-    "points": 1,
+    "points": 2,
     "image": "images/archetypes/archetype-orphan.webp",
     "suit": "willpower",
     "passive": null,
     "power": "All Dreamers Draw 3 Psyche, Discard 1",
-    "quests": ["Draw Mindstream on Naked Classroom", "Meet a Dreambeast on Naked Classroom or Candy Mountain"]
+    "quests": ["Draw Mindstream on Naked Classroom or Candy Mountain", "Meet a Dreambeast on Naked Classroom or Candy Mountain"]
   },
   {
     "id": "fool",
     "name": "Fool",
-    "points": 2,
+    "points": 3,
     "image": "images/archetypes/archetype-fool.webp",
     "suit": "elasticity",
     "passive": null,
@@ -82,7 +82,7 @@
   {
     "id": "creator",
     "name": "Creator",
-    "points": 2,
+    "points": 3,
     "image": "images/archetypes/archetype-creator.webp",
     "suit": "lucidity",
     "passive": null,
@@ -92,7 +92,7 @@
   {
     "id": "ruler",
     "name": "Ruler",
-    "points": 2,
+    "points": 3,
     "image": "images/archetypes/archetype-ruler.webp",
     "suit": "willpower",
     "passive": null,
@@ -102,21 +102,21 @@
   {
     "id": "warrior",
     "name": "Warrior",
-    "points": 3,
+    "points": 4,
     "image": "images/archetypes/archetype-warrior.webp",
     "suit": "willpower",
     "passive": "All Dreamers +1 Willpower",
     "power": null,
-    "quests": ["Meet Leviathan", "1 Dreamer holds 10 Psyche cards"]
+    "quests": ["Defeat Leviathan", "1 Dreamer sacrifices 1 Object"]
   },
   {
     "id": "outlaw",
     "name": "Outlaw",
-    "points": 1,
+    "points": 2,
     "image": "images/archetypes/archetype-outlaw.webp",
     "suit": "elasticity",
     "passive": null,
     "power": "All Dreamers Draw top 1 Mindstream of same Suit and 1 from top of same suit Mindstream Discard, Choose 1 to resolve/play, discard other",
-    "quests": ["Draw Mindstream on Desert", "Meet a Dreambeast on Desert or Silver Mist"]
+    "quests": ["Draw Mindstream on Desert or Silver Mist", "Meet a Dreambeast on Desert or Silver Mist"]
   }
 ]
