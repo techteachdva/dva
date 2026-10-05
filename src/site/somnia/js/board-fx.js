@@ -267,6 +267,13 @@ export function queueMindstreamDrawFx(tileId, suit, card) {
   queue.push({ type: "mindstream-draw", tileId, suit, card });
 }
 
+/** Drop pending short board flies when the POV cinematic will own the reveal. */
+export function cancelQueuedMindstreamDrawFx() {
+  for (let i = queue.length - 1; i >= 0; i -= 1) {
+    if (queue[i].type === "mindstream-draw") queue.splice(i, 1);
+  }
+}
+
 export function queueMindstreamDiscardFx(tileId, suit, card, { wasted = false } = {}) {
   queue.push({ type: "mindstream-discard", tileId, suit, card, wasted });
 }

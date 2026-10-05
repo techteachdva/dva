@@ -3917,7 +3917,7 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
   `;
 
   content?.classList.add("ms-choice-modal-wrap", "fullscreen-browser");
-  modal?.classList.add("ms-choice-modal");
+  modal?.classList.add("ms-choice-modal", "ms-choice-modal--enter");
   setUtilityModalRequired(true);
   const closeBtn = modal?.querySelector(".utility-close");
   if (closeBtn) closeBtn.hidden = true;
@@ -3926,13 +3926,16 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
     if (btn.disabled) return;
     btn.addEventListener("click", () => {
       content?.classList.remove("ms-choice-modal-wrap", "fullscreen-browser");
-      modal?.classList.remove("ms-choice-modal");
+      modal?.classList.remove("ms-choice-modal", "ms-choice-modal--enter");
       hideUtilityModal(true);
       onPick(btn.dataset.choice);
     });
   });
   modal.classList.remove("hidden");
   document.body.classList.add("utility-modal-open");
+  requestAnimationFrame(() => {
+    modal?.classList.add("ms-choice-modal--visible");
+  });
 }
 
 export function showObjectCardPicker(ui, onPick) {
@@ -4845,6 +4848,7 @@ export function hideUtilityModal(force = false) {
     "ms-choice-modal-wrap",
   );
   modal?.classList.remove("ms-choice-modal");
+  modal?.classList.remove("ms-choice-modal--enter", "ms-choice-modal--visible");
   const closeBtn = modal?.querySelector(".utility-close");
   if (closeBtn) closeBtn.hidden = false;
 }

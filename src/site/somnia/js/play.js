@@ -134,6 +134,7 @@ import { resolveDreamChoice } from "./dream-choices.js";
 import { resolveEffectChoice } from "./effect-choices.js";
 import { continueDeferredEventQueues } from "./event-choices.js";
 import { resolveMindstreamChoice } from "./mindstream-choices.js";
+import { playMindstreamDrawCinematic } from "./mindstream-draw-cinematic.js";
 import { continueArchetypeQueues } from "./archetypes.js";
 import { phaseOpeningActive, encounterPayHint, actorOnLandscape } from "./rules.js";
 import {
@@ -1703,24 +1704,46 @@ function maybeShowMindstreamChoice() {
   const key = `${pending.kind}:${pending.cardId}:${(pending.choices || []).map((c) => `${c.id}:${c.disabled}`).join(",")}`;
   const modalHidden = document.getElementById("utility-modal")?.classList.contains("hidden");
   if (key === lastMindstreamChoiceKey && !modalHidden) return;
+  if (pending._cinematicPlaying) return;
   lastMindstreamChoiceKey = key;
   hideModal();
-  showMindstreamChoiceFullscreen(pending, (choiceId) => {
-    hideUtilityModal(true);
-    const helpers = {
-      ...getEffectHelpers(),
-      meetEncounter,
-      onChoiceResolved: () => {
-        continueDeferredEventQueues(state);
-        lastMindstreamChoiceKey = null;
-        renderAll();
-      },
-    };
-    resolveMindstreamChoice(state, choiceId, helpers);
-    continueDeferredEventQueues(state);
-    lastMindstreamChoiceKey = null;
-    renderAll();
-  });
+
+  const openChoice = () => {
+    if (!state?.pendingMindstreamChoice) return;
+    showMindstreamChoiceFullscreen(state.pendingMindstreamChoice, (choiceId) => {
+      hideUtilityModal(true);
+      const helpers = {
+        ...getEffectHelpers(),
+        meetEncounter,
+        onChoiceResolved: () => {
+          continueDeferredEventQueues(state);
+          lastMindstreamChoiceKey = null;
+          renderAll();
+        },
+      };
+      resolveMindstreamChoice(state, choiceId, helpers);
+      continueDeferredEventQueues(state);
+      lastMindstreamChoiceKey = null;
+      renderAll();
+    });
+  };
+
+  if (pending.needsDrawCinematic) {
+    pending.needsDrawCinematic = false;
+    pending._cinematicPlaying = true;
+    playMindstreamDrawCinematic({
+      card: pending.card,
+      suit: pending.suit || pending.card?.mindstreamSuit || pending.card?.suit,
+    }).then(() => {
+      if (state?.pendingMindstreamChoice) {
+        state.pendingMindstreamChoice._cinematicPlaying = false;
+      }
+      openChoice();
+    });
+    return;
+  }
+
+  openChoice();
 }
 
 function maybeShowObjectChoice() {

@@ -19,7 +19,7 @@ import {
 import { requestChooseTile } from "./landscapes.js";
 import { SUIT_LABELS, totalStat } from "./rules.js";
 import { grantPowerTokens } from "./power-tokens.js";
-import { queueMindstreamDrawFx, queueMindstreamDiscardFx } from "./board-fx.js";
+import { queueMindstreamDrawFx, queueMindstreamDiscardFx, cancelQueuedMindstreamDrawFx } from "./board-fx.js";
 import { adjacentTiles, hexDistance } from "./hex.js";
 import {
   listSubconsciousCards,
@@ -1024,6 +1024,9 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       }
       // 36.0: Events / power-tokens / draw-dream wait for fullscreen choice before discard.
       if (state.pendingMindstreamChoice) {
+        cancelQueuedMindstreamDrawFx();
+        state.pendingMindstreamChoice.needsDrawCinematic = true;
+        state.pendingMindstreamChoice.suit = suit;
         return { ok: true, card, pendingChoice: true };
       }
       if (card.type !== "object" && card.type !== "dreambeast") {
@@ -1200,10 +1203,14 @@ export function resolveLandscapeMindstreamPick(state, tile, player, suit, action
     const card = cards[0];
     addLog(state, `${tile.name}: draws ${card.name}.`);
     recordQuestEvent(state, "mindstream_on_landscape", { landscapeId: tile.id });
+    queueMindstreamDrawFx(tile.id, suit, card);
     if (helpers.resolveCardEffect) {
       helpers.resolveCardEffect(state, card, player, helpers);
     }
     if (state.pendingMindstreamChoice) {
+      cancelQueuedMindstreamDrawFx();
+      state.pendingMindstreamChoice.needsDrawCinematic = true;
+      state.pendingMindstreamChoice.suit = suit;
       return { ok: true, card, pendingChoice: true };
     }
     if (card.type !== "object" && card.type !== "dreambeast") {

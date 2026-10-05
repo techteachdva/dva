@@ -142,6 +142,7 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
       ],
       helpers,
     };
+    state.pendingMindstreamChoice.needsDrawCinematic = true;
     logMoment(state, `${card.name} — choose Good or Bad.`);
     return true;
   }
@@ -180,6 +181,7 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
       ],
       helpers,
     };
+    state.pendingMindstreamChoice.needsDrawCinematic = true;
     logMoment(state, `${card.name} — Take it, or discard for Psyche.`);
     return true;
   }
@@ -231,6 +233,7 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
       ],
       helpers,
     };
+    state.pendingMindstreamChoice.needsDrawCinematic = true;
     logMoment(state, `${card.name} — Accept, Flee, or Repress.`);
     return true;
   }
@@ -266,6 +269,7 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
       ],
       helpers,
     };
+    state.pendingMindstreamChoice.needsDrawCinematic = true;
     return true;
   }
 

@@ -13640,3 +13640,148 @@ html[data-embedded="true"] .pwa-install-hint {
     border-radius: 999px;
   }
 }
+
+/* ── Mindstream draw cinematic (deck → POV → choice) ───────────────────── */
+.ms-draw-cinematic {
+  position: fixed;
+  inset: 0;
+  z-index: 9200;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ms-draw-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 20%, rgba(4, 2, 12, 0) 55%, rgba(4, 2, 12, 0.55) 100%);
+  opacity: 0;
+  transition: opacity 0.55s ease;
+}
+.ms-draw-cinematic--play .ms-draw-veil { opacity: 1; }
+.ms-draw-card {
+  position: fixed;
+  left: var(--from-x);
+  top: var(--from-y);
+  width: 52px;
+  height: 74px;
+  margin-left: -26px;
+  margin-top: -37px;
+  transform: translate3d(0, 0, 0) scale(1) rotate(-8deg);
+  transform-origin: center center;
+  perspective: 1400px;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.55));
+  will-change: transform, filter;
+}
+.ms-draw-cinematic--play .ms-draw-card {
+  animation: ms-draw-swoop 1.65s cubic-bezier(0.14, 0.72, 0.18, 1) forwards;
+}
+.ms-draw-card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  border-radius: 0.45rem;
+}
+.ms-draw-cinematic--play .ms-draw-card-inner {
+  animation: ms-draw-flip 1.65s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+.ms-draw-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.45rem;
+  backface-visibility: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #120f22;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.ms-draw-face--front {
+  transform: rotateY(180deg);
+  display: grid;
+  place-items: center;
+}
+.ms-draw-face-title {
+  font-family: var(--font-display);
+  color: #f4eefc;
+  font-size: 0.7rem;
+  text-align: center;
+  padding: 0.35rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+.ms-draw-swallow {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transform: scale(1.08);
+  filter: saturate(1.15) contrast(1.05) brightness(0.75);
+}
+.ms-draw-cinematic--swallow .ms-draw-swallow {
+  animation: ms-draw-swallow 0.38s ease-out forwards;
+}
+.ms-draw-cinematic--swallow .ms-draw-card {
+  animation: ms-draw-dissolve 0.38s ease-in forwards;
+}
+@keyframes ms-draw-swoop {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(-10deg);
+  }
+  28% {
+    transform: translate3d(
+        calc(50vw - var(--from-x) + 40px),
+        calc(42vh - var(--from-y) - 30px),
+        0
+      )
+      scale(2.1) rotate(6deg);
+  }
+  58% {
+    transform: translate3d(
+        calc(50vw - var(--from-x) - 10px),
+        calc(48vh - var(--from-y) + 10px),
+        0
+      )
+      scale(4.4) rotate(-2deg);
+  }
+  100% {
+    transform: translate3d(
+        calc(50vw - var(--from-x)),
+        calc(50vh - var(--from-y)),
+        0
+      )
+      scale(9.5) rotate(0deg);
+  }
+}
+@keyframes ms-draw-flip {
+  0% { transform: rotateY(0deg); }
+  35% { transform: rotateY(0deg); }
+  55% { transform: rotateY(180deg); }
+  100% { transform: rotateY(180deg); }
+}
+@keyframes ms-draw-swallow {
+  from { opacity: 0; transform: scale(1.05); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes ms-draw-dissolve {
+  from { opacity: 1; filter: brightness(1); }
+  to { opacity: 0; filter: brightness(1.35); }
+}
+#utility-modal.ms-choice-modal.ms-choice-modal--enter {
+  opacity: 0;
+}
+#utility-modal.ms-choice-modal.ms-choice-modal--enter.ms-choice-modal--visible {
+  opacity: 1;
+  transition: opacity 0.45s ease;
+}
+body.ms-draw-cinematic-active {
+  cursor: wait;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-draw-cinematic { display: none !important; }
+  #utility-modal.ms-choice-modal.ms-choice-modal--enter {
+    opacity: 1;
+    transition: none;
+  }
+}
