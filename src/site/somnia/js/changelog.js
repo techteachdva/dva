@@ -6,10 +6,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "36.0";
+export const SOMNIA_VERSION = "36.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "36.1",
+    title: "The Swooping Draw",
+    notes: [
+      "Mindstream cards lift from the left-rail deck, flip face-up, and swoop toward the camera until they dissolve into the fullscreen choice — as if the painting swallowed you.",
+      "Good sits in the left letterbox, Bad in the right. The full card stays centered over a zoomed art bleed instead of black bars.",
+      "The old card modal no longer flashes before the choice screen.",
+    ],
+  },
   {
     version: "36.0",
     title: "Choices Update",
