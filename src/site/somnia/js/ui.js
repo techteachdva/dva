@@ -3862,7 +3862,8 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
     return "ms-choice-btn--circle";
   };
 
-  const buttonsHtml = choices.map((choice) => {
+  const renderBtn = (choice) => {
+    if (!choice) return "";
     const role = choice.role || "good";
     const disabled = choice.disabled ? " disabled" : "";
     const title = choice.disabled && choice.disabledReason
@@ -3876,7 +3877,11 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
         ${choice.hint ? `<span class="ms-choice-btn__hint">${choice.hint}</span>` : ""}
       </button>
     `;
-  }).join("");
+  };
+
+  const good = choices.find((c) => c.role === "good") || choices[0];
+  const bad = choices.find((c) => c.role === "bad") || choices[1];
+  const flee = choices.find((c) => c.role === "flee");
 
   const kindLabel = {
     event: "Event",
@@ -3895,14 +3900,18 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
     <div class="ms-choice-fullscreen" data-kind="${kind}" data-suit="${ui.suit || ""}">
       <div class="ms-choice-bleed" style="${artStyle}" aria-hidden="true"></div>
       <div class="ms-choice-stage">
-        <div class="ms-choice-card-frame">${cardImg}</div>
-        <div class="ms-choice-panel">
-          <p class="ms-choice-kicker">${kindLabel}</p>
-          <h2 class="ms-choice-title">${ui.title || card.name || "Choose"}</h2>
-          ${ui.message ? `<p class="ms-choice-message">${ui.message}</p>` : ""}
-          ${ui.landscapeHint ? `<p class="ms-choice-landscapes">Landscapes: ${ui.landscapeHint}</p>` : ""}
-          <div class="ms-choice-actions">${buttonsHtml}</div>
+        <aside class="ms-choice-rail ms-choice-rail--left">${renderBtn(good)}</aside>
+        <div class="ms-choice-center">
+          <div class="ms-choice-caption">
+            <p class="ms-choice-kicker">${kindLabel}</p>
+            <h2 class="ms-choice-title">${ui.title || card.name || "Choose"}</h2>
+            ${ui.message ? `<p class="ms-choice-message">${ui.message}</p>` : ""}
+            ${ui.landscapeHint ? `<p class="ms-choice-landscapes">Landscapes: ${ui.landscapeHint}</p>` : ""}
+          </div>
+          <div class="ms-choice-card-frame">${cardImg}</div>
+          ${flee ? `<div class="ms-choice-flee-slot">${renderBtn(flee)}</div>` : ""}
         </div>
+        <aside class="ms-choice-rail ms-choice-rail--right">${renderBtn(bad)}</aside>
       </div>
     </div>
   `;
