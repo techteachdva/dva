@@ -368,7 +368,7 @@ function passTurnAction(state) {
     kind: "meetPass",
     section: "actions",
     primary: true,
-    hint: `Skip your turn. The next Dreamer clockwise may spend the remaining shared ${noun}.`,
+    hint: `Skip your turn. The next Dreamer clockwise may spend the remaining shared ${noun}. Or open another Dreamer's radial and choose Give Turn.`,
     onClick: () => passMeetToken(state),
   };
 }
@@ -446,6 +446,7 @@ export function canDreamerMeetOnLandscape(state, player, tileId) {
   const freeMeet = state.freeQuestMeet?.landscapeId === tileId && player.landscapeId === tileId;
   if (!enc || getPhase(state) !== "Meet") return false;
   if (!freeMeet && (state.meetActionBudget < 1 || state.meetActionsUsed >= state.meetActionBudget)) return false;
+  if (meetPassBlocks(state, player)) return false;
   if (hasUsedMeetAction(state, player, meetActionKey(MEET_ACTIONS.MEET))) return false;
   return canSpendMeetAction(state, player, MEET_ACTIONS.MEET, MEET_ACTIONS);
 }
@@ -495,10 +496,34 @@ function refundMeetAction(state, player, action = null, landscapeActionId = null
   if (state.pendingFreeMeetRefund) {
     state.pendingFreeMeetRefund = false;
     if (action) unmarkUsedMeetAction(state, player, meetActionKey(action, landscapeActionId));
+    // Free meets still rotate the token on spend — put it back on the spender.
+    restoreActionTurnTo(state, player);
     return;
   }
   state.meetActionsUsed = Math.max(0, state.meetActionsUsed - 1);
   if (action) unmarkUsedMeetAction(state, player, meetActionKey(action, landscapeActionId));
+  // spendMeetAction already passed (or cleared) the token — restore the spender.
+  restoreActionTurnTo(state, player);
+}
+
+/** Put the shared Meet turn back on the Dreamer who attempted a refunded spend. */
+function restoreActionTurnTo(state, player) {
+  if (!player?.alive || tutorialSuppressesMeetPass(state)) return;
+  if (getPhase(state) !== "Meet") return;
+  if ((state.meetActionBudget || 0) < 1) return;
+  if (state.meetActionsUsed >= state.meetActionBudget) return;
+  state.meetPassHolderId = player.id;
+  focusActionTurnHolder(state);
+}
+
+/** After spending shared Explore/Meet budget outside spendMeetAction, pass or clear. */
+function afterSharedBudgetSpend(state) {
+  if (!state.meetPassHolderId || tutorialSuppressesMeetPass(state)) return;
+  if (!actionTurnActive(state)) {
+    clearActionTurn(state);
+    return;
+  }
+  passMeetToken(state);
 }
 
 function meetLandscapeTile(state) {
@@ -702,11 +727,16 @@ export function getPhaseActions(state, handlers) {
         onClick: () => {},
       });
       if (!state.tutorialMode && (state.exploreMovesLeft || 0) >= 2 && state.dreamDeck?.length) {
+        const peekHolder = actionTurnHolder(state);
+        const peekBlocked = meetPassBlocks(state, player);
         actions.push({
           label: "Peek next Dream (2 moves)",
           kind: "clockPeek",
           section: "actions",
-          hint: "Spend 2 unused moves to see the next Dream. Leave it on top, or bury it ahead of Final Recurrence.",
+          hint: peekBlocked
+            ? `It is ${peekHolder?.name || "another Dreamer"}'s turn to spend Explore moves.`
+            : "Spend 2 unused moves to see the next Dream. Leave it on top, or bury it ahead of Final Recurrence.",
+          disabled: peekBlocked,
           onClick: () => cashExplorePeek(state),
         });
       }
@@ -1264,9 +1294,7 @@ function consumeInsulationMoves(state) {
 }
 
 export function moveDreamer(state, targetLandscapeId) {
-  if (getPhase(state) === "Explore" && actionTurnActive(state)) {
-    focusActionTurnHolder(state);
-  }
+  // Move the turn holder without snapping camera/focus away from a viewed Dreamer.
   const player = actionTurnHolder(state) || activePlayer(state);
   const to = landscapeById(state, targetLandscapeId);
 
@@ -1366,7 +1394,7 @@ export function gainMeetActions(state) {
     state.meetActionBudget = 1;
     state.meetActionsUsed = 0;
     clearAllUsedMeetActions(state);
-    seatMeetPassToken(state, null);
+    seatMeetPassToken(state, activePlayer(state)?.id);
     addLog(state, "REM cycle: the team gains 1 free Meet action — no Willpower spent.");
     playPhaseSpendFlash("willpower");
     return;
@@ -1475,6 +1503,25 @@ export function failForcedAccept(state) {
 
 export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
   const options = [];
+  // Viewing another Dreamer: offer an explicit Give Turn (tapping alone no longer passes).
+  if (
+    player?.alive
+    && actionTurnActive(state)
+    && actionTurnHolder(state)
+    && actionTurnHolder(state).id !== player.id
+    && !tutorialSuppressesMeetPass(state)
+  ) {
+    const phase = getPhase(state);
+    const noun = phase === "Explore" ? "moves" : phase === "Meet" ? "actions" : "reveals";
+    options.push({
+      id: "giveTurn",
+      label: "Give Turn",
+      kind: "meetPass",
+      hint: `Hand the remaining shared ${noun} to ${player.name}.`,
+      primary: true,
+      onPick: () => passActionTurnTo(state, player.id),
+    });
+  }
   const forced = state.forcedAccept;
   if (forced && player?.id === forced.playerId && tileId === forced.tileId) {
     options.push({
@@ -2030,6 +2077,12 @@ function buryDreamTop(deck) {
 
 export function cashExplorePeek(state) {
   if (state.tutorialMode || getPhase(state) !== "Explore") return false;
+  const player = actionTurnHolder(state) || activePlayer(state);
+  if (meetPassBlocks(state, player)) {
+    const holder = actionTurnHolder(state);
+    addLog(state, `It is ${holder?.name || "another Dreamer"}'s turn to spend Explore moves.`);
+    return false;
+  }
   if ((state.exploreMovesLeft || 0) < 2) {
     addLog(state, "Need 2 unused Explore moves to peek the Dream Deck.");
     return false;
@@ -2041,7 +2094,7 @@ export function cashExplorePeek(state) {
   }
   state.exploreMovesLeft -= 2;
   addLog(state, `Spent 2 moves to peek the next Dream: ${top.name}.`);
-  offerEffectChoice(state, activePlayer(state), {
+  offerEffectChoice(state, player, {
     cardId: "clock-peek",
     title: "Next Dream",
     message: `${top.name}. Leave it on top, or bury it ahead of Final Recurrence.`,
@@ -2050,6 +2103,7 @@ export function cashExplorePeek(state) {
       { id: "bury", label: "Bury it", hint: "Slide it down, just before the Final Recurrence." },
     ],
   });
+  afterSharedBudgetSpend(state);
   return true;
 }
 
@@ -2153,7 +2207,7 @@ export function cashMeetReturn(state) {
     reason: `${player.name} spends 2 Meet actions to Return 1 Dreambeast from the Subconscious.`,
   });
   addLog(state, `${player.name} cashes 2 Meet actions: Return 1 Dreambeast.`);
-  passMeetToken(state);
+  afterSharedBudgetSpend(state);
   return true;
 }
 
@@ -2596,7 +2650,6 @@ export function handleBoardTileClick(state, tileId) {
 
   const phase = getPhase(state);
   if (phase === "Explore" && state.exploreActivated) {
-    if (actionTurnActive(state)) focusActionTurnHolder(state);
     const player = actionTurnHolder(state) || activePlayer(state);
     if (player && player.landscapeId !== tileId && canMoveTo(state, player, tileId)) {
       moveDreamer(state, tileId);
@@ -2619,6 +2672,7 @@ export function endPhase(state) {
   }
   cancelLandscapePick(state);
   cancelDreamerPower(state);
+  clearActionTurn(state);
   const leaving = getPhase(state);
   if (leaving === "Reveal" && !state.dreamDrawn) {
     drawDreamCard(state);
@@ -2650,7 +2704,7 @@ export function endPhase(state) {
     phase === "Reveal"
       ? `${COOP_PLAY_TIP} Head Dreamer (★) draws the Dream once. One Dreamer spends Lucidity to set team reveals.`
       : phase === "Explore"
-        ? `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves — then move any Dreamer.`
+        ? `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves — then Dreamers take turns spending them (Pass Turn or Give Turn to hand off).`
         : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. Start: discard 1 Psyche per roaming Dreambeast on or beside you. End: Forget 1 random Landscape per remaining beast, then Fail costs in spawn order. Beasts stay until you win a dice battle.`,
     [],
     { moment: `${phase} Phase begins.` },
@@ -2676,11 +2730,8 @@ export function getDeckTop(state, deckId) {
 export function getLegalExploreTargets(state) {
   if (getPhase(state) !== "Explore" || !state.exploreActivated) return [];
   if ((state.exploreMovesLeft || 0) < 1) return [];
-  // Always highlight the Dreamer who holds the Explore turn.
+  // Highlights for the turn holder — do not mutate focus (viewing another Dreamer is allowed).
   const player = actionTurnHolder(state) || activePlayer(state);
-  if (player && actionTurnActive(state) && state.activePlayerIndex !== state.players.indexOf(player)) {
-    focusActionTurnHolder(state);
-  }
   return getLegalMoveTargets(state, player);
 }
 
@@ -2706,7 +2757,7 @@ export function getPhaseHint(state) {
     }
     const holder = actionTurnHolder(state);
     const turnNote = holder
-      ? `${holder.name}'s turn to move — Pass or tap another Dreamer to hand them the remaining moves.`
+      ? `${holder.name}'s turn to move — Pass Turn, or Give Turn on another Dreamer's radial.`
       : "Tap a glowing hex to move.";
     return `${COOP_PLAY_TIP} ${state.exploreMovesLeft} team move(s) · ${legal} hexes reachable. ${turnNote}`;
   }
@@ -2717,9 +2768,13 @@ export function getPhaseHint(state) {
     const pool = coopMeetPlayTotal(state);
     const count = allSelectedCards(state).length;
     const actionsLeft = Math.max(0, state.meetActionBudget - (state.meetActionsUsed || 0));
+    const holder = actionTurnHolder(state);
+    const turnNote = holder && actionsLeft > 0
+      ? ` · ${holder.name}'s turn`
+      : "";
     const actionsTail = actionsLeft > 0
       ? ` · ${actionsLeft} action${actionsLeft === 1 ? "" : "s"} left`
       : " · Next Phase when actions are spent";
-    return `${COOP_PLAY_TIP} ${state.meetActionsUsed}/${state.meetActionBudget} actions · pool ${count}/3 (${pool})${actionsTail}.`;
+    return `${COOP_PLAY_TIP} ${state.meetActionsUsed}/${state.meetActionBudget} actions · pool ${count}/3 (${pool})${actionsTail}${turnNote}.`;
   }
 }

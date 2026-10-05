@@ -388,13 +388,15 @@ export function handleLandscapeTilePick(state, tileId) {
 
 export function cancelLandscapePick(state) {
   if (!state.landscapePick) return;
+  const revealMode = state.landscapePick.mode === "reveal" || state.landscapePick.mode === "reveal-deck-tops";
   // Paid Lucidity spend is complete even if the team reveals 0 tiles.
-  if ((state.landscapePick.mode === "reveal" || state.landscapePick.mode === "reveal-deck-tops")
-    && !state.landscapePick.freeReveal) {
+  if (revealMode && !state.landscapePick.freeReveal) {
     state.revealLandscapeUsed = true;
   }
   state.landscapePick = null;
   state.forgetPickActive = false;
+  // Reveal turn token dies with the pick (avoids stale meetPassHolderId across phases).
+  if (revealMode) state.meetPassHolderId = null;
 }
 
 /** Clear map pickers that have no valid targets left (prevents advance lock). */

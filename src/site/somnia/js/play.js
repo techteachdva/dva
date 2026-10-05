@@ -117,7 +117,6 @@ import {
   actionTurnActive,
   actionTurnHolder,
   passMeetToken,
-  passActionTurnTo,
   moveDreamer,
 } from "./game.js";
 import { createSpectatorBot } from "./bot-ai.js";
@@ -1566,23 +1565,18 @@ function bindTurnPlaquePass() {
   });
 }
 
-function tryFocusDreamer(playerIndex, { allowViewOnly = false, passTurn = false } = {}) {
+function tryFocusDreamer(playerIndex, { allowViewOnly = false } = {}) {
   if (!actionTurnActive(state)) return true;
   const holder = actionTurnHolder(state);
   const target = state.players[playerIndex];
   if (!holder || !target) return true;
   if (holder.id === target.id) return true;
-  if (passTurn && target.alive && !state.tutorialMode) {
-    // Hand the shared Explore/Meet budget to the Dreamer you tapped.
-    passActionTurnTo(state, target.id);
-    return true;
-  }
+  // Focusing another Dreamer is view-only — use Pass Turn / Give Turn to hand off the budget.
   if (allowViewOnly) {
-    addLog(state, `It is ${holder.name}'s turn — viewing ${target.name} only. Tap Pass Turn or their token to let them act.`);
+    addLog(state, `It is ${holder.name}'s turn — viewing ${target.name}. Pass Turn or Give Turn on their radial to let them act.`);
     return "view";
   }
-  addLog(state, `It is ${holder.name}'s turn. Pass Turn (or tap another Dreamer) to hand them the remaining actions.`);
-  return false;
+  return true;
 }
 
 function zoomMaxOnDreamer(playerId, tileId) {
@@ -1598,9 +1592,9 @@ function zoomMaxOnDreamer(playerId, tileId) {
     renderAll();
     return;
   }
-  if (focusOk === true && playerIndex >= 0) state.activePlayerIndex = playerIndex;
+  if (playerIndex >= 0) state.activePlayerIndex = playerIndex;
   if (getPhase(state) === "Meet" && tileId) state.selectedLandscapeId = tileId;
-  if (playerId && tileId && focusOk === true) focusOnDreamer(playerId, tileId);
+  if (playerId && tileId) focusOnDreamer(playerId, tileId);
   renderAll();
   suppressDreamerOverlay(800);
 }
@@ -1657,8 +1651,8 @@ function showDreamerBoardRadialMenu(playerId, tileId, player) {
 function openDreamerBoardRadial(anchorEl, playerId, tileId) {
   const playerIndex = state.players.findIndex((p) => p.id === playerId);
   if (playerIndex < 0) return;
-  // Tapping another Dreamer during Explore/Meet passes the shared turn to them.
-  const focusOk = tryFocusDreamer(playerIndex, { passTurn: true });
+  // Focus/view only — Give Turn on the radial hands off the shared budget.
+  const focusOk = tryFocusDreamer(playerIndex);
   if (focusOk === false) {
     renderAll();
     return;
@@ -2219,8 +2213,8 @@ function renderBoardArea() {
         renderAll();
         return;
       }
-      // Picking another walker passes them the remaining Explore moves.
-      if (tryFocusDreamer(playerIndex, { passTurn: true }) === false) {
+      // Focus the walker to view them; hex moves still spend the turn holder's move.
+      if (tryFocusDreamer(playerIndex) === false) {
         renderAll();
         return;
       }
@@ -2430,7 +2424,7 @@ function renderAll() {
       return;
     }
     if (state.tradeMode && state.trade?.step === "select-offer") return;
-    if (tryFocusDreamer(index, { passTurn: true }) === false) {
+    if (tryFocusDreamer(index) === false) {
       renderAll();
       return;
     }

@@ -6,10 +6,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "37.1";
+export const SOMNIA_VERSION = "37.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "37.2",
+    title: "Turn Token Clarity",
+    notes: [
+      "Tapping a Dreamer only focuses/views them. Pass Turn stays on the yellow plaque and the holder's radial; Give Turn on another Dreamer's radial hands them the remaining shared moves/actions.",
+      "Failed Meet spends restore the turn token to the spender instead of leaving it on the next Dreamer.",
+      "Explore no longer snaps focus away while you view someone else. Beast Accept/Reject and Peek respect whose turn it is; stale tokens clear on phase end and cancelled reveals.",
+    ],
+  },
   {
     version: "37.1",
     title: "Pass Turn & Choice Plumbing",
