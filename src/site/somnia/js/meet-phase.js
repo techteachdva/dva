@@ -12,9 +12,9 @@
  *    Dreamer Power is beast Power + 2. Underpaying is legal. A win removes
  *    the beast, a loss spends the play and leaves the beast on the map.
  * 3) End of Meet — if any Dreambeasts remain, Forget 1 random Landscape per
- *    remaining beast (never the Bed, never a hex that still hosts a beast),
- *    then each remaining beast's Fail cost resolves in spawn order. Beasts
- *    stay on their Landscapes until Accepted or Repressed.
+ *    remaining beast (never the Bed, never a hex that still hosts a beast).
+ *    Fail costs no longer resolve at Meet end (36.0) — Fail only when a
+ *    Dreambeast is drawn and Accept/Repress fails, or Flee fails.
  */
 import {
   addLog,
@@ -27,12 +27,11 @@ import { areHexAdjacent } from "./hex.js";
 import { logMoment } from "./narrator.js";
 import { enqueueDiscardFromHand } from "./subconscious.js";
 import { forgetRandomLandscapes, forgetNamedLandscapes } from "./landscapes.js";
-import { applyFailEffect } from "./dreambeasts.js";
 
 export const MEET_PHASE_FLOW = Object.freeze({
   start: "Each Dreamer on or adjacent to a roaming Dreambeast discards 1 Psyche per such beast. One Dreamer ignores the first card.",
   middle: "Spend 1 Willpower Psyche for shared Meet Actions. Accept and Repress are dice battles. Roaming beasts stay until won.",
-  end: "Forget 1 random Landscape per remaining Dreambeast, then each remaining beast's Fail cost resolves in spawn order. Beasts stay.",
+  end: "Forget 1 random Landscape per remaining Dreambeast. Fail costs resolve only on draw (failed Accept/Repress or failed Flee).",
 });
 
 export function countActiveDreambeasts(state) {
@@ -65,12 +64,6 @@ export function stampEncounterSpawnOrder(state, encounter) {
   state.encounterSpawnSeq = (state.encounterSpawnSeq || 0) + 1;
   encounter.spawnOrder = state.encounterSpawnSeq;
   return encounter;
-}
-
-function failActorForTile(state, tile) {
-  const onTile = (state.players || []).filter((p) => p.alive && p.landscapeId === tile?.id);
-  if (onTile.length) return onTile.find((p) => p.isHead) || onTile[0];
-  return headPlayer(state);
 }
 
 function beastsPressuringDreamer(state, player, beasts) {
@@ -196,16 +189,10 @@ export function applyMeetEndConsequences(state) {
   }
 
   beasts.forEach(({ tile, encounter }, index) => {
-    const still = allEncountersOnBoard(state).find(
-      (entry) => (entry.encounter.instanceId || entry.encounter.id) === (encounter.instanceId || encounter.id),
-    );
-    const host = still?.tile || landscapeById(state, tile.id) || tile;
-    const actor = failActorForTile(state, host);
     addLog(
       state,
-      `${encounter.name} (spawned ${index + 1}${beasts.length > 1 ? ` of ${beasts.length}` : ""}) remains on ${host?.name || "the Dreamscape"} — Fail.`,
+      `${encounter.name} (spawned ${index + 1}${beasts.length > 1 ? ` of ${beasts.length}` : ""}) remains on ${tile?.name || "the Dreamscape"} — no Fail (Fail only on draw Flee failure or failed Accept/Repress).`,
     );
-    applyFailEffect(state, actor, encounter);
   });
 }
 

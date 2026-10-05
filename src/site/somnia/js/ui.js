@@ -3844,6 +3844,81 @@ export function showDreamerPowerChoice(ui, onPick) {
   modal.classList.remove("hidden");
 }
 
+/** Somnia 36.0 — fullscreen Mindstream / Dream draw choice with suit-shaped buttons. */
+export function showMindstreamChoiceFullscreen(ui, onPick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const content = modal?.querySelector(".utility-content");
+  const card = ui.card || {};
+  const art = card.image || "";
+  const kind = ui.kind || "event";
+  const choices = ui.choices || [];
+
+  const shapeClass = (shape) => {
+    if (shape === "willpower") return "ms-choice-btn--square";
+    if (shape === "lucidity") return "ms-choice-btn--circle";
+    if (shape === "elasticity") return "ms-choice-btn--triangle";
+    if (shape === "spiral") return "ms-choice-btn--spiral";
+    return "ms-choice-btn--circle";
+  };
+
+  const buttonsHtml = choices.map((choice) => {
+    const role = choice.role || "good";
+    const disabled = choice.disabled ? " disabled" : "";
+    const title = choice.disabled && choice.disabledReason
+      ? ` title="${choice.disabledReason.replace(/"/g, "&quot;")}"`
+      : "";
+    return `
+      <button type="button"
+        class="ms-choice-btn ${shapeClass(choice.shape)} ms-choice-btn--${role}"
+        data-choice="${choice.id}"${disabled}${title}>
+        <span class="ms-choice-btn__label">${choice.label}</span>
+        ${choice.hint ? `<span class="ms-choice-btn__hint">${choice.hint}</span>` : ""}
+      </button>
+    `;
+  }).join("");
+
+  const kindLabel = {
+    event: "Event",
+    object: "Object",
+    dreambeast: "Dreambeast",
+    dream: "Dream",
+    "power-token": "Power",
+  }[kind] || "Mindstream";
+
+  body.innerHTML = `
+    <div class="ms-choice-fullscreen" data-kind="${kind}" data-suit="${ui.suit || ""}">
+      <div class="ms-choice-art" style="${art ? `background-image:url('${art}')` : ""}"></div>
+      <div class="ms-choice-veil"></div>
+      <div class="ms-choice-panel">
+        <p class="ms-choice-kicker">${kindLabel}</p>
+        <h2 class="ms-choice-title">${ui.title || card.name || "Choose"}</h2>
+        ${ui.message ? `<p class="ms-choice-message">${ui.message}</p>` : ""}
+        ${ui.landscapeHint ? `<p class="ms-choice-landscapes">Landscapes: ${ui.landscapeHint}</p>` : ""}
+        <div class="ms-choice-actions">${buttonsHtml}</div>
+      </div>
+    </div>
+  `;
+
+  content?.classList.add("ms-choice-modal-wrap", "fullscreen-browser");
+  modal?.classList.add("ms-choice-modal");
+  setUtilityModalRequired(true);
+  const closeBtn = modal?.querySelector(".utility-close");
+  if (closeBtn) closeBtn.hidden = true;
+
+  body.querySelectorAll("[data-choice]").forEach((btn) => {
+    if (btn.disabled) return;
+    btn.addEventListener("click", () => {
+      content?.classList.remove("ms-choice-modal-wrap", "fullscreen-browser");
+      modal?.classList.remove("ms-choice-modal");
+      hideUtilityModal(true);
+      onPick(btn.dataset.choice);
+    });
+  });
+  modal.classList.remove("hidden");
+  document.body.classList.add("utility-modal-open");
+}
+
 export function showObjectCardPicker(ui, onPick) {
   const body = document.getElementById("utility-modal-body");
   const cards = (ui.cards || []).filter(Boolean);
@@ -4751,7 +4826,9 @@ export function hideUtilityModal(force = false) {
     "trade-modal-wrap",
     "subconscious-binder-fullscreen",
     "somnia-changelog-modal-wrap",
+    "ms-choice-modal-wrap",
   );
+  modal?.classList.remove("ms-choice-modal");
   const closeBtn = modal?.querySelector(".utility-close");
   if (closeBtn) closeBtn.hidden = false;
 }

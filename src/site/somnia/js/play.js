@@ -133,6 +133,7 @@ import { resolveObjectChoice } from "./object-effects.js";
 import { resolveDreamChoice } from "./dream-choices.js";
 import { resolveEffectChoice } from "./effect-choices.js";
 import { continueDeferredEventQueues } from "./event-choices.js";
+import { resolveMindstreamChoice } from "./mindstream-choices.js";
 import { continueArchetypeQueues } from "./archetypes.js";
 import { phaseOpeningActive, encounterPayHint, actorOnLandscape } from "./rules.js";
 import {
@@ -205,6 +206,7 @@ import {
   showDreamerDetail,
   hideDreamerDetailTooltip,
   showDreamerPowerChoice,
+  showMindstreamChoiceFullscreen,
   showObjectCardPicker,
   showObjectReorderPicker,
   showObjectSpendPicker,
@@ -1684,8 +1686,38 @@ function maybeShowNothingChoice() {
 
 let lastNothingChoiceKey = null;
 let lastObjectChoiceKey = null;
+let lastMindstreamChoiceKey = null;
+
+function maybeShowMindstreamChoice() {
+  const pending = state?.pendingMindstreamChoice;
+  if (!pending || pending.ui !== "mindstream-fullscreen") {
+    lastMindstreamChoiceKey = null;
+    return;
+  }
+  const key = `${pending.kind}:${pending.cardId}:${(pending.choices || []).map((c) => `${c.id}:${c.disabled}`).join(",")}`;
+  const modalHidden = document.getElementById("utility-modal")?.classList.contains("hidden");
+  if (key === lastMindstreamChoiceKey && !modalHidden) return;
+  lastMindstreamChoiceKey = key;
+  showMindstreamChoiceFullscreen(pending, (choiceId) => {
+    hideUtilityModal(true);
+    const helpers = {
+      ...getEffectHelpers(),
+      meetEncounter,
+      onChoiceResolved: () => {
+        continueDeferredEventQueues(state);
+        lastMindstreamChoiceKey = null;
+        renderAll();
+      },
+    };
+    resolveMindstreamChoice(state, choiceId, helpers);
+    continueDeferredEventQueues(state);
+    lastMindstreamChoiceKey = null;
+    renderAll();
+  });
+}
 
 function maybeShowObjectChoice() {
+  if (state?.pendingMindstreamChoice) return;
   const pending = state?.pendingDreamChoice || state?.pendingEffectChoice || state?.pendingObjectChoice;
   const kind = state?.pendingDreamChoice ? "dream" : state?.pendingEffectChoice ? "effect" : "object";
   if (!pending) {
@@ -2318,6 +2350,7 @@ function renderAll() {
   resolvePendingDeathDream(state, showModal);
   maybeShowDeathChoice();
   maybeShowNothingChoice();
+  maybeShowMindstreamChoice();
   maybeShowObjectChoice();
   maybeShowRespawn();
   maybeShowRepressPicker();

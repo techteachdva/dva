@@ -114,6 +114,7 @@ function applyMindstreamDraw(state, player, suit) {
   const helpers = rememberEventHelpers();
   if (helpers?.resolveCardEffect) {
     helpers.resolveCardEffect(state, card, player, helpers);
+    if (state.pendingMindstreamChoice) return;
     if (card.type !== "dreambeast" && card.type !== "object") {
       discardToMindstream(state, card);
       if (card.type === "event" && card.eventWasted) {
@@ -128,7 +129,7 @@ function applyMindstreamDraw(state, player, suit) {
 }
 
 export function continueDeferredEventQueues(state) {
-  if (state.pendingEffectChoice || state.landscapePick || state.pendingDreamChoice) return;
+  if (state.pendingEffectChoice || state.landscapePick || state.pendingDreamChoice || state.pendingMindstreamChoice) return;
   if (state._mindstreamDrawQueue) {
     presentAnyMindstreamDraw(state);
     return;

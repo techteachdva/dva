@@ -1022,6 +1022,10 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       if (helpers.resolveCardEffect) {
         helpers.resolveCardEffect(state, card, player, helpers);
       }
+      // 36.0: Events / power-tokens / draw-dream wait for fullscreen choice before discard.
+      if (state.pendingMindstreamChoice) {
+        return { ok: true, card, pendingChoice: true };
+      }
       if (card.type !== "object" && card.type !== "dreambeast") {
         state.mindstreamDiscard[suit].push(card);
         if (card.type === "event") {
@@ -1198,6 +1202,9 @@ export function resolveLandscapeMindstreamPick(state, tile, player, suit, action
     recordQuestEvent(state, "mindstream_on_landscape", { landscapeId: tile.id });
     if (helpers.resolveCardEffect) {
       helpers.resolveCardEffect(state, card, player, helpers);
+    }
+    if (state.pendingMindstreamChoice) {
+      return { ok: true, card, pendingChoice: true };
     }
     if (card.type !== "object" && card.type !== "dreambeast") {
       state.mindstreamDiscard[suit].push(card);

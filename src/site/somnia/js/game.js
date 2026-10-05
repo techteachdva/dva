@@ -132,10 +132,13 @@ export function getEffectHelpers() {
     Object.assign(effectHelpers, createEffectHelpers(spawnEncounterOnLandscape));
     effectHelpers.resolveCardEffect = resolveCardEffect;
     effectHelpers.drawObjects = drawObjects;
-    effectHelpers.drawAdditionalDream = (s) => drawAdditionalDream(s);
+    effectHelpers.drawAdditionalDream = (s, onShowModal) => drawAdditionalDream(s, onShowModal);
     effectHelpers.spawnEncounterWithCard = (s, landscapeId, card) =>
       spawnEncounterOnLandscape(s, landscapeId, card);
+    effectHelpers.meetEncounter = meetEncounter;
   }
+  // Keep meetEncounter fresh even after first init.
+  effectHelpers.meetEncounter = meetEncounter;
   return effectHelpers;
 }
 
@@ -1492,7 +1495,7 @@ export function getPowerTokenRadialOptions(state) {
   return options;
 }
 
-export function meetEncounter(state, mode = "accept", { instant = false, onDone } = {}) {
+export function meetEncounter(state, mode = "accept", { instant = false, onDone, freeMeet = false, fromMindstreamDraw = false } = {}) {
   if (isDiceBattleOpen() || state.diceBattle) {
     addLog(state, "Finish the dice battle first.");
     return;
@@ -1510,14 +1513,14 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
     addLog(state, "Meet a Dreambeast on a Landscape you occupy.");
     return;
   }
-  if (!state.forcedAccept && !spendMeetAction(state, MEET_ACTIONS.MEET)) return;
+  if (!state.forcedAccept && !freeMeet && !spendMeetAction(state, MEET_ACTIONS.MEET)) return;
 
   state.activeEncounter = encounter;
   state.activeEncounterLandscapeId = tile.id;
   const actor = actorOnLandscape(state, tile.id);
   const abortMeet = (message) => {
     if (message) addLog(state, message);
-    if (state.forcedAccept) return;
+    if (state.forcedAccept || freeMeet) return;
     refundMeetAction(state, actor || meetActionActor(state, MEET_ACTIONS.MEET), MEET_ACTIONS.MEET);
   };
   if (!actor) {
@@ -1550,7 +1553,17 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
   }
   const played = Math.max(1, encounterPlayTotal(state, { accept: !isReject }));
   const bonus = meetBonusBreakdown(state);
-  const ctx = { mode, isReject, encounter, tile, actor, selected, played, needed: beastPower };
+  const ctx = {
+    mode,
+    isReject,
+    encounter,
+    tile,
+    actor,
+    selected,
+    played,
+    needed: beastPower,
+    fromMindstreamDraw: !!fromMindstreamDraw || !!encounter.drawnFromMindstream,
+  };
 
   const recNote = played < recommended
     ? ` Under recommended ${recommended} (beast Power ${beastPower}).`
@@ -1610,9 +1623,13 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     if (state.tutorialMode) state.tutorialFlags.firstBattleLost = true;
     addLog(
       state,
-      `${actor.name} loses the dice battle with ${encounter.name}. The play is spent. ${encounter.name} remains on ${tile.name} and will Fail at the end of Meet.`,
+      `${actor.name} loses the dice battle with ${encounter.name}. The play is spent. ${encounter.name} remains on ${tile.name}.`,
     );
     logMoment(state, `${encounter.name} wins the clash — it stays on ${tile.name}.`);
+    if (ctx.fromMindstreamDraw || encounter.drawnFromMindstream) {
+      applyFailEffect(state, actor, encounter);
+      logMoment(state, `${encounter.name} Fail resolves — failed Accept/Repress on draw.`);
+    }
     offerHunterShove(state, actor, encounter, tile);
     return;
   }

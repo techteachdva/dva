@@ -277,6 +277,7 @@ export function createInitialState(data, options) {
     pendingDreamChoice: null,
     pendingDreamQueue: [],
     pendingEffectChoice: null,
+    pendingMindstreamChoice: null,
     skipNextDreamDraw: false,
     revealedDeckTops: {},
     encounterSpawnSeq: 0,
@@ -1122,6 +1123,7 @@ export function isBlockingGameChoice(state) {
     state.pendingDreamChoice
     || state.pendingEffectChoice
     || state.pendingObjectChoice
+    || state.pendingMindstreamChoice
     || state.pendingReturn
     || state.pendingRepress
     || state.pendingDeathChoice
@@ -1135,6 +1137,7 @@ export function isBlockingGameChoice(state) {
 export function blockingChoiceLabel(state) {
   if (!state) return "Required choice";
   const pending = state.pendingDreamChoice
+    || state.pendingMindstreamChoice
     || state.pendingEffectChoice
     || state.pendingObjectChoice;
   if (pending?.title) return pending.title;

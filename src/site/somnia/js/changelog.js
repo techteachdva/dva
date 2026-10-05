@@ -6,10 +6,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "35.2";
+export const SOMNIA_VERSION = "36.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "36.0",
+    title: "Choices Update",
+    notes: [
+      "Every Mindstream draw opens a fullscreen choice over the card art: Events Good vs Bad, Objects Take vs Discard for 3 Psyche, Dreambeasts Accept / Flee / Repress, Power Tokens Take vs Return 2 from the Subconscious.",
+      "Event Good paths cost 1–5 Psyche of the Event suit; Dreamer base stats cover part of the cost, and Good needs a listed Landscape revealed. Bad is always free.",
+      "Dreambeast Fail no longer hits at Meet end. Fail resolves when a drawn beast's Accept/Repress fails, or when Flee fails (1d6 + Elasticity, need one 5+).",
+      "Dreams drawn as mini-quests: strive or suffer, same fullscreen choice language. Draw-Dream Mindstream cards now actually open the new Dream.",
+    ],
+  },
   {
     version: "35.2",
     title: "The Pillow Update",

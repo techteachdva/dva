@@ -45,6 +45,7 @@ import {
   beginPowerlessnessChoices,
 } from "./dream-choices.js";
 import { eventLandscapeIds, beginEventOrWaste } from "./event-landscapes.js";
+import { beginMindstreamCardChoice, beginDreamCardChoice } from "./mindstream-choices.js";
 import { uid } from "./data.js";
 
 function alivePlayers(state) {
@@ -530,6 +531,17 @@ export function resolveCardEffect(state, card, player, helpers) {
 
   const id = (card.refId || card.id || "").toLowerCase();
 
+  // Somnia 36.0 — Mindstream draws open a fullscreen choice before resolving.
+  if (
+    card.type === "event"
+    || card.type === "object"
+    || (card.type === "dreambeast" && card.accept)
+    || card.type === "power-token"
+    || card.type === "draw-dream"
+  ) {
+    if (beginMindstreamCardChoice(state, card, player, helpers)) return;
+  }
+
   if (card.type === "power-token") {
     const n = card.powerTokens || 2;
     grantPowerTokens(state, player, n, {
@@ -562,10 +574,13 @@ export function resolveCardEffect(state, card, player, helpers) {
     return;
   }
 
-  if ((card.type === "dream" || card.type === "final") && DREAM_EFFECTS[id]) {
+  if (card.type === "dream" || card.type === "final") {
     rememberDreamHelpers(helpers);
-    DREAM_EFFECTS[id](state, player, helpers);
-    return;
+    if (beginDreamCardChoice(state, card, player, helpers)) return;
+    if (DREAM_EFFECTS[id]) {
+      DREAM_EFFECTS[id](state, player, helpers);
+      return;
+    }
   }
   if (card.type === "event") {
     if (!beginEventOrWaste(state, card)) return;
