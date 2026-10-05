@@ -1339,18 +1339,18 @@ function buildPhaseHandlers() {
     },
     drawMindstream: () => {
       drawMindstreamOnLandscape(state, {
-        onResult: (card) => showModal(card),
+        onResult: (card) => showDrawnMindstreamCard(card),
       });
       renderAll();
     },
     landscapeAction: (actionId) => {
       const result = performLandscapeAction(state, actionId, {
-        onResult: (card) => showModal(card),
+        onResult: (card) => showDrawnMindstreamCard(card),
       });
       if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
         const { tile, player, actionId: pendingActionId } = result;
         showMindstreamPicker((suit) => {
-          finishLandscapeMindstreamPick(state, tile, player, pendingActionId, suit, (card) => showModal(card));
+          finishLandscapeMindstreamPick(state, tile, player, pendingActionId, suit, (card) => showDrawnMindstreamCard(card));
           renderAll();
         });
         return;
@@ -1369,11 +1369,11 @@ function buildPhaseHandlers() {
         onChoose: (choices, tile, player) => {
           showLandscapeActionPicker(tile, choices, (actionId) => {
             const result = performLandscapeAction(state, actionId, {
-              onResult: (card) => showModal(card),
+              onResult: (card) => showDrawnMindstreamCard(card),
             });
             if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
               showMindstreamPicker((suit) => {
-                finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showModal(card));
+                finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showDrawnMindstreamCard(card));
                 renderAll();
               });
               return;
@@ -1388,7 +1388,7 @@ function buildPhaseHandlers() {
             renderAll();
           });
         },
-        onResult: (card) => showModal(card),
+        onResult: (card) => showDrawnMindstreamCard(card),
       });
       renderAll();
     },
@@ -1688,6 +1688,12 @@ let lastNothingChoiceKey = null;
 let lastObjectChoiceKey = null;
 let lastMindstreamChoiceKey = null;
 
+/** Mindstream draws use the fullscreen choice UI — do not open the old card modal first. */
+function showDrawnMindstreamCard(card) {
+  if (!card || state?.pendingMindstreamChoice) return;
+  showModal(card);
+}
+
 function maybeShowMindstreamChoice() {
   const pending = state?.pendingMindstreamChoice;
   if (!pending || pending.ui !== "mindstream-fullscreen") {
@@ -1698,6 +1704,7 @@ function maybeShowMindstreamChoice() {
   const modalHidden = document.getElementById("utility-modal")?.classList.contains("hidden");
   if (key === lastMindstreamChoiceKey && !modalHidden) return;
   lastMindstreamChoiceKey = key;
+  hideModal();
   showMindstreamChoiceFullscreen(pending, (choiceId) => {
     hideUtilityModal(true);
     const helpers = {
@@ -2058,7 +2065,7 @@ function handleDrawPileClick(deckId) {
   if (deckId.startsWith("mindstream-")) {
     const suit = deckId.replace("mindstream-", "");
     const result = tryDrawMindstreamFromDeck(state, suit, {
-      onResult: (card) => showModal(card),
+      onResult: (card) => showDrawnMindstreamCard(card),
     });
     if (result?.ok) {
       renderAll();
@@ -2342,9 +2349,13 @@ function renderAll() {
   renderLog(state);
 
   if (state.pendingEventModal) {
-    const eventCard = state.pendingEventModal;
-    state.pendingEventModal = null;
-    showModal(eventCard);
+    if (state.pendingMindstreamChoice) {
+      state.pendingEventModal = null;
+    } else {
+      const eventCard = state.pendingEventModal;
+      state.pendingEventModal = null;
+      showModal(eventCard);
+    }
   }
 
   resolvePendingDeathDream(state, showModal);

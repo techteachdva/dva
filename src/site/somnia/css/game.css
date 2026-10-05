@@ -13354,6 +13354,7 @@ html[data-embedded="true"] .pwa-install-hint {
   width: 100vw;
   max-width: none;
   height: 100vh;
+  height: 100dvh;
   max-height: none;
   margin: 0;
   padding: 0;
@@ -13363,48 +13364,101 @@ html[data-embedded="true"] .pwa-install-hint {
   overflow: hidden;
 }
 #utility-modal.ms-choice-modal .utility-backdrop {
-  background: rgba(2, 1, 8, 0.92);
+  background: rgba(2, 1, 8, 0.55);
 }
 .ms-choice-fullscreen {
   position: relative;
   width: 100%;
   height: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   overflow: hidden;
 }
-.ms-choice-art {
+/* Zoomed card art fills the letterbox (sides / edges), not black bars. */
+.ms-choice-bleed {
   position: absolute;
-  inset: 0;
+  inset: -8%;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  transform: scale(1.04);
-  filter: saturate(1.05) contrast(1.05);
+  filter: saturate(1.12) contrast(1.08) brightness(0.52);
+  transform: scale(1.12);
+  pointer-events: none;
 }
-.ms-choice-veil {
+.ms-choice-bleed::after {
+  content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(180deg, rgba(6, 4, 14, 0.35) 0%, rgba(6, 4, 14, 0.72) 55%, rgba(6, 4, 14, 0.92) 100%),
-    radial-gradient(ellipse at center, transparent 20%, rgba(4, 2, 12, 0.55) 100%);
+  background: radial-gradient(ellipse at center, transparent 28%, rgba(4, 2, 12, 0.55) 100%);
 }
-.ms-choice-panel {
+.ms-choice-stage {
   position: relative;
   z-index: 2;
-  width: min(42rem, 92vw);
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1.5rem 1rem 2rem;
+  justify-content: flex-end;
+  padding: 0.75rem 0.75rem 1.1rem;
+  box-sizing: border-box;
+  gap: 0.55rem;
+}
+.ms-choice-card-frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: calc(100dvh - 11.5rem);
+  max-height: calc(100dvh - 11.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ms-choice-card {
+  display: block;
+  max-height: 100%;
+  max-width: min(92vw, 100%);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 0.45rem;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 18px 48px rgba(0, 0, 0, 0.55);
+}
+.ms-choice-card--placeholder {
+  display: grid;
+  place-items: center;
+  min-width: min(18rem, 70vw);
+  min-height: min(26rem, 60vh);
+  background: rgba(20, 14, 40, 0.85);
+  color: #f4eefc;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+}
+.ms-choice-panel {
+  position: relative;
+  z-index: 3;
+  width: min(42rem, 94vw);
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.75rem 0.25rem;
   text-align: center;
+  background: linear-gradient(180deg, transparent, rgba(6, 4, 14, 0.55) 18%, rgba(6, 4, 14, 0.72));
+  border-radius: 0.75rem;
 }
 .ms-choice-kicker {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: rgba(232, 224, 255, 0.72);
@@ -13413,37 +13467,37 @@ html[data-embedded="true"] .pwa-install-hint {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(1.75rem, 4.5vw, 3rem);
-  line-height: 1.1;
+  font-size: clamp(1.15rem, 3.2vw, 1.75rem);
+  line-height: 1.15;
   color: #f4eefc;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
 }
 .ms-choice-message,
 .ms-choice-landscapes {
   margin: 0;
   max-width: 36rem;
   font-family: var(--font-body);
-  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
-  line-height: 1.45;
+  font-size: clamp(0.82rem, 1.8vw, 0.98rem);
+  line-height: 1.35;
   color: rgba(236, 230, 255, 0.88);
 }
 .ms-choice-landscapes {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   color: rgba(200, 190, 230, 0.75);
 }
 .ms-choice-actions {
-  margin-top: 1rem;
+  margin-top: 0.45rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.7rem;
   width: 100%;
 }
 .ms-choice-fullscreen[data-kind="dreambeast"] .ms-choice-actions {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 0.85rem 1rem;
+  gap: 0.7rem 0.85rem;
   max-width: 48rem;
 }
 .ms-choice-fullscreen[data-kind="dreambeast"] .ms-choice-btn--good { grid-column: 1; grid-row: 1; }
@@ -13454,7 +13508,7 @@ html[data-embedded="true"] .pwa-install-hint {
   appearance: none;
   border: 2px solid rgba(255, 255, 255, 0.28);
   color: #f7f2ff;
-  background: rgba(18, 12, 36, 0.72);
+  background: rgba(18, 12, 36, 0.78);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   cursor: pointer;
@@ -13462,22 +13516,22 @@ html[data-embedded="true"] .pwa-install-hint {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 1.1rem 1.4rem;
+  gap: 0.3rem;
+  padding: 0.95rem 1.25rem;
   min-width: min(22rem, 88vw);
-  min-height: 5.5rem;
+  min-height: 4.6rem;
   font-family: var(--font-display);
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
 .ms-choice-btn__label {
-  font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  font-size: clamp(1rem, 2.4vw, 1.25rem);
   font-weight: 700;
   line-height: 1.2;
 }
 .ms-choice-btn__hint {
   font-family: var(--font-body);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   line-height: 1.3;
   color: rgba(230, 222, 255, 0.82);
   max-width: 18rem;
@@ -13495,20 +13549,20 @@ html[data-embedded="true"] .pwa-install-hint {
 }
 .ms-choice-btn--good {
   border-color: rgba(140, 220, 180, 0.55);
-  background: linear-gradient(160deg, rgba(28, 64, 48, 0.82), rgba(12, 24, 36, 0.78));
+  background: linear-gradient(160deg, rgba(28, 64, 48, 0.86), rgba(12, 24, 36, 0.82));
 }
 .ms-choice-btn--bad {
   border-color: rgba(220, 120, 120, 0.5);
-  background: linear-gradient(160deg, rgba(64, 24, 36, 0.82), rgba(20, 12, 28, 0.78));
+  background: linear-gradient(160deg, rgba(64, 24, 36, 0.86), rgba(20, 12, 28, 0.82));
 }
 .ms-choice-btn--flee {
   border-color: rgba(180, 160, 255, 0.55);
-  background: linear-gradient(160deg, rgba(48, 28, 80, 0.88), rgba(16, 10, 36, 0.82));
-  min-width: 7.5rem;
-  width: 7.5rem;
-  height: 7.5rem;
-  min-height: 7.5rem;
-  padding: 0.75rem;
+  background: linear-gradient(160deg, rgba(48, 28, 80, 0.9), rgba(16, 10, 36, 0.86));
+  min-width: 6.75rem;
+  width: 6.75rem;
+  height: 6.75rem;
+  min-height: 6.75rem;
+  padding: 0.65rem;
 }
 .ms-choice-btn--square {
   border-radius: 0.55rem;
@@ -13520,14 +13574,14 @@ html[data-embedded="true"] .pwa-install-hint {
 .ms-choice-btn--triangle {
   border-radius: 0.85rem 0.85rem 1.4rem 1.4rem;
   clip-path: polygon(50% 0%, 100% 88%, 0% 88%);
-  padding: 2.4rem 1.6rem 1.4rem;
-  min-height: 7.2rem;
+  padding: 2.1rem 1.5rem 1.2rem;
+  min-height: 6.4rem;
   border: 0;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-  background: linear-gradient(180deg, rgba(90, 70, 20, 0.9), rgba(28, 18, 8, 0.85));
+  background: linear-gradient(180deg, rgba(90, 70, 20, 0.92), rgba(28, 18, 8, 0.88));
 }
 .ms-choice-btn--triangle.ms-choice-btn--bad {
-  background: linear-gradient(180deg, rgba(90, 30, 30, 0.9), rgba(28, 10, 12, 0.85));
+  background: linear-gradient(180deg, rgba(90, 30, 30, 0.92), rgba(28, 10, 12, 0.88));
 }
 .ms-choice-btn--triangle .ms-choice-btn__hint {
   max-width: 14rem;
@@ -13558,6 +13612,9 @@ html[data-embedded="true"] .pwa-install-hint {
 }
 
 @media (max-width: 720px) {
+  .ms-choice-card-frame {
+    max-height: calc(100dvh - 13.5rem);
+  }
   .ms-choice-fullscreen[data-kind="dreambeast"] .ms-choice-actions {
     grid-template-columns: 1fr;
     max-width: 22rem;
@@ -13572,7 +13629,7 @@ html[data-embedded="true"] .pwa-install-hint {
     width: min(22rem, 88vw);
     min-width: min(22rem, 88vw);
     height: auto;
-    min-height: 5.5rem;
+    min-height: 4.6rem;
     border-radius: 999px;
   }
 }

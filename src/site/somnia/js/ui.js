@@ -3886,16 +3886,23 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
     "power-token": "Power",
   }[kind] || "Mindstream";
 
+  const artStyle = art ? `background-image:url('${art}')` : "";
+  const cardImg = art
+    ? `<img class="ms-choice-card" src="${art}" alt="${card.name || ui.title || "Card"}">`
+    : `<div class="ms-choice-card ms-choice-card--placeholder">${ui.title || "Card"}</div>`;
+
   body.innerHTML = `
     <div class="ms-choice-fullscreen" data-kind="${kind}" data-suit="${ui.suit || ""}">
-      <div class="ms-choice-art" style="${art ? `background-image:url('${art}')` : ""}"></div>
-      <div class="ms-choice-veil"></div>
-      <div class="ms-choice-panel">
-        <p class="ms-choice-kicker">${kindLabel}</p>
-        <h2 class="ms-choice-title">${ui.title || card.name || "Choose"}</h2>
-        ${ui.message ? `<p class="ms-choice-message">${ui.message}</p>` : ""}
-        ${ui.landscapeHint ? `<p class="ms-choice-landscapes">Landscapes: ${ui.landscapeHint}</p>` : ""}
-        <div class="ms-choice-actions">${buttonsHtml}</div>
+      <div class="ms-choice-bleed" style="${artStyle}" aria-hidden="true"></div>
+      <div class="ms-choice-stage">
+        <div class="ms-choice-card-frame">${cardImg}</div>
+        <div class="ms-choice-panel">
+          <p class="ms-choice-kicker">${kindLabel}</p>
+          <h2 class="ms-choice-title">${ui.title || card.name || "Choose"}</h2>
+          ${ui.message ? `<p class="ms-choice-message">${ui.message}</p>` : ""}
+          ${ui.landscapeHint ? `<p class="ms-choice-landscapes">Landscapes: ${ui.landscapeHint}</p>` : ""}
+          <div class="ms-choice-actions">${buttonsHtml}</div>
+        </div>
       </div>
     </div>
   `;
