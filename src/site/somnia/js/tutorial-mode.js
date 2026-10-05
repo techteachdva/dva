@@ -810,13 +810,20 @@ function railHighlight(state, step, beat) {
       if (nextCard) {
         const cardSel = `.game-card[data-instance-id="${nextCard.instanceId}"]`;
         return {
-          targets: ["#hand-bar", `#hand-bar ${cardSel}`],
-          spotlight: `#hand-bar ${cardSel}`,
+          targets: [
+            "#phase-opener-menu",
+            `#phase-opener-menu ${cardSel}`,
+            "#hand-bar",
+            `#hand-bar ${cardSel}`,
+          ],
+          spotlight: document.querySelector(`#phase-opener-menu ${cardSel}`)
+            ? `#phase-opener-menu ${cardSel}`
+            : `#hand-bar ${cardSel}`,
         };
       }
       return {
-        targets: ["#hand-bar"],
-        spotlight: "#hand-bar",
+        targets: ["#phase-opener-menu", "#hand-bar"],
+        spotlight: document.querySelector("#phase-opener-menu") ? "#phase-opener-menu" : "#hand-bar",
       };
     }
     case "drawDream":

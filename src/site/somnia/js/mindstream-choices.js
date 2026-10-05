@@ -357,7 +357,7 @@ function resolveFlee(state, pending, helpers) {
     }
   };
 
-  if (typeof document === "undefined") {
+  if (typeof document === "undefined" || helpers?.syncDice || helpers?.bot) {
     finish(fled);
     return true;
   }
@@ -444,6 +444,9 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
       h.meetEncounter(state, choiceId === "repress" ? "reject" : "accept", {
         freeMeet: true,
         fromMindstreamDraw: true,
+        // Bots / sims must resolve synchronously — animated dice leaves
+        // activeBattle open and blocks endPhase forever under a stubbed DOM.
+        instant: !!(h.bot || h.syncDice || h.instant),
         onDone: () => h.onChoiceResolved?.(state),
       });
     } else {

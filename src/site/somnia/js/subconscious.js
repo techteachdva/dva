@@ -55,11 +55,32 @@ function pileForCard(sub, card) {
   return sub.other;
 }
 
+function markFreshlyRepressed(state, card) {
+  if (!card?.instanceId) return;
+  if (!Array.isArray(state.freshlyRepressedInstanceIds)) state.freshlyRepressedInstanceIds = [];
+  if (!state.freshlyRepressedInstanceIds.includes(card.instanceId)) {
+    state.freshlyRepressedInstanceIds.push(card.instanceId);
+  }
+}
+
+/** Clears the same-resolution repress blocklist once return/repress chains finish. */
+export function clearFreshlyRepressed(state) {
+  if (state) state.freshlyRepressedInstanceIds = [];
+}
+
+export function maybeClearFreshlyRepressed(state) {
+  if (!state) return;
+  if (state.pendingRepress || state.pendingReturn) return;
+  if (state.resolutionQueue?.length) return;
+  clearFreshlyRepressed(state);
+}
+
 /** Repress: card goes face-up into the Subconscious. Spent allies go here, not back to Mindstream. */
 export function repressCard(state, card) {
   if (!card) return;
   state.subconscious = normalizeSubconscious(state.subconscious);
   pileForCard(state.subconscious, card).push(card);
+  markFreshlyRepressed(state, card);
 }
 
 export function repressCards(state, cards) {
@@ -91,7 +112,8 @@ export function isSubconsciousDreambeast(card) {
 }
 
 function cardsForReturn(state, filter) {
-  const cards = listSubconsciousCards(state);
+  const blocked = new Set(state.freshlyRepressedInstanceIds || []);
+  const cards = listSubconsciousCards(state).filter((c) => !blocked.has(c.instanceId));
   if (filter === "dreambeast") return cards.filter(isSubconsciousDreambeast);
   return cards;
 }
@@ -539,6 +561,7 @@ function advanceResolutionQueue(state) {
   if (state.pendingRepress || state.pendingReturn) return;
   const next = state.resolutionQueue?.shift();
   if (!next) {
+    maybeClearFreshlyRepressed(state);
     if (typeof state.onResolutionIdle === "function") {
       const fn = state.onResolutionIdle;
       state.onResolutionIdle = null;

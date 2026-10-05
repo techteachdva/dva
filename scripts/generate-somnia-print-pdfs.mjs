@@ -16,7 +16,7 @@ const SOMNIA = path.join(REPO, "src/site/somnia");
 const DATA = path.join(SOMNIA, "data");
 const PRINT = path.join(REPO, "print");
 const HTML_DIR = path.join(PRINT, "_html");
-const VERSION = "28.1";
+const VERSION = "33.1";
 
 const SUIT_LABELS = {
   lucidity: "Lucidity",
@@ -31,37 +31,44 @@ const SUIT_COLORS = {
 const LANDSCAPE_ACTIONS = {
   "draw-mindstream": {
     label: "Draw Mindstream",
-    description: "Draw 1 card from this Landscape's matching Mindstream. Repeatable.",
+    description: "Draw 1 card from this Landscape's matching Mindstream. Repeatable while Meet actions remain.",
   },
   "spawn-dreambeast": {
     label: "Spawn Dreambeast",
-    description: "Cycle a Mindstream until a Dreambeast, place it, mill the rest of that suit, reshuffle.",
+    description: "Cycle a Mindstream until a Dreambeast, place it on a matching-suit Landscape, discard the rest of that suit, reshuffle.",
   },
   "swap-psyche": { label: "Swap 2 Psyche", description: "Swap Psyche cards between two Dreamers." },
-  "move-2-dreamers-1": { label: "Move 2 Dreamers", description: "Move 2 Dreamers 1 Landscape." },
+  "move-2-dreamers-1": { label: "Move 2 Dreamers", description: "Move 2 Dreamers 1 Landscape in any direction." },
   "swap-landscapes": { label: "Swap Landscapes", description: "Swap the positions of 2 Landscapes." },
-  "move-1-dreamer-2": { label: "Move 1 Dreamer", description: "Move 1 Dreamer 2 Landscapes." },
-  "move-2-dreambeasts-1": { label: "Move 2 Dreambeasts", description: "Move 2 Dreambeasts 1 Landscape." },
+  "move-1-dreamer-2": { label: "Move 1 Dreamer", description: "Move 1 Dreamer 2 Landscapes in any direction." },
+  "move-2-dreambeasts-1": { label: "Move 2 Dreambeasts", description: "Move 2 Dreambeasts 1 Landscape in any direction." },
   "all-toward-bed": { label: "Toward Bed", description: "All Dreamers move 1 Landscape toward The Bed." },
   "swap-archetypes": { label: "Swap Archetypes", description: "Swap the Active Archetype with the next in the deck." },
   "take-power": { label: "Take Power", description: "Take 1 Power Token (US quarter) from the pool." },
   "swap-dreambeasts": { label: "Swap Dreambeasts", description: "Swap 2 active Dreambeasts between Landscapes." },
   "draw-2-keep-1": { label: "Draw 2, Keep 1", description: "Draw 2 from any deck; keep 1 and discard the other." },
   "draw-any-mindstream": { label: "Draw Any Mindstream", description: "Draw 1 card from any Mindstream." },
-  "return-2": { label: "Return 2 Cards", description: "Return 2 cards from the Subconscious." },
+  "return-2": { label: "Return 2 Cards", description: "Return 2 cards from the Subconscious to their discard piles." },
   "flip-top-3": { label: "Flip Top 3", description: "Flip the top 3 cards of any deck." },
   "cycle-psyche": { label: "Cycle Psyche", description: "Discard a Psyche card, then draw Psyche equal to its value." },
   "return-psyche": { label: "Return Psyche", description: "Return 1 Psyche from the Subconscious." },
-  "power-draw-psyche": { label: "Power for Psyche", description: "Discard 1 Power Token, then Draw 3 Psyche." },
   "replay-dream": { label: "Replay Dream", description: "Take the last discarded Dream and resolve it again." },
   "return-1": { label: "Return 1 Card", description: "Return 1 card from the Subconscious." },
   "return-event": { label: "Return Event", description: "Return 1 Event from the Subconscious." },
   "return-object": { label: "Return Object", description: "Return 1 Object from the Subconscious." },
-  "draw-3-psyche": { label: "Draw 3 Psyche", description: "Draw 3 Psyche from the Psyche deck." },
-  "bed-play-3-draw-3": {
-    label: "Play 3 Psyche Points → Draw 3",
-    description: "Play Psyche totaling 3 points, then Draw 3 Psyche cards.",
-  },
+  "draw-3-psyche": { label: "Draw 3 Psyche", description: "Draw 3 Psyche from the Psyche deck. Once per Dreamer this Meet." },
+  "peek-then-move-1": { label: "Peek, then Move 1", description: "Glimpse one adjacent forgotten Landscape, then move 1 step." },
+  "draw-psyche-equal-to-elasticity": { label: "Draw your Elasticity", description: "Draw Psyche equal to your Elasticity." },
+  "move-1-dreamer-1": { label: "Move 1 Step", description: "Move 1 Dreamer 1 Landscape." },
+  "draw-1-psyche": { label: "Draw 1 Psyche", description: "Draw 1 Psyche card." },
+};
+const DREAMER_PASSIVES = {
+  "the-rested": "Once a round, free: draw 1 Psyche at round end if you opened no phase.",
+  "the-visionary": "Once a round, free: peek the first leftover Mindstream flip. It stays facedown.",
+  "the-runner": "Once a round, free: your first Explore step costs no team move.",
+  "the-hunter": "Once a round, free: after your first battle, you may shove that beast 1 hex if it stays.",
+  "the-immovable": "Once a round, free: ignore 1 Meet-tax card.",
+  "the-weaver": "Once per Meet, free: swap 1 Psyche with an adjacent Dreamer.",
 };
 const MINDSTREAM_COMPOSITION = {
   dreambeasts: 10,
@@ -249,8 +256,12 @@ const SHARED_CSS = `
   .hex-map {
     width: 7.2in;
     height: 6.6in;
-    margin: 0.4in auto 0;
+    margin: 0.15in auto 0;
     position: relative;
+    page-break-before: always;
+    break-before: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
   .map-hex {
     position: absolute;
@@ -343,7 +354,7 @@ const SHARED_CSS = `
     right: 0;
     bottom: 0;
     z-index: 2;
-    max-height: 46%;
+    max-height: 54%;
     overflow: hidden;
     padding: 0.16in 0.08in 0.05in;
     background: linear-gradient(180deg, rgba(255,253,248,0) 0%, rgba(255,253,248,0.94) 0.16in, rgba(255,253,248,0.97) 28%);
@@ -496,8 +507,12 @@ function hexHtml(tile, { back = false } = {}) {
   const unique = tile.uniqueAction ? LANDSCAPE_ACTIONS[tile.uniqueAction] : null;
   const bedA = tile.landscapeActions?.[0] ? LANDSCAPE_ACTIONS[tile.landscapeActions[0]] : null;
   const bedB = tile.landscapeActions?.[1] ? LANDSCAPE_ACTIONS[tile.landscapeActions[1]] : null;
-  const actionA = tile.suit ? `A: Draw ${suit} Mindstream (repeatable)` : (bedA ? `A: ${bedA.label}` : "");
-  const actionB = unique ? `B: ${unique.label}` : (bedB ? `B: ${bedB.label}` : "");
+  const actionA = tile.suit
+    ? `A: Draw ${suit} Mindstream (repeatable)`
+    : (bedA ? `A: ${bedA.label} (once per Dreamer this Meet)` : "");
+  const actionB = unique
+    ? `B: ${unique.label} (once per table this Meet)`
+    : (bedB ? `B: ${bedB.label}` : "");
   const caption = back
     ? `<strong>Wasteland</strong>Back of ${esc(tile.name)}. Forgotten / unrevealed.`
     : `<strong>${esc(tile.name)}</strong>${suitChip(tile.suit)}${actionA ? `<br>${esc(actionA)}` : ""}${actionB ? `<br>${esc(actionB)}` : ""}`;
@@ -578,14 +593,14 @@ function rulesHtml(data) {
 <body>
   <section class="cover">
     <div>
-      <p class="kicker">Physical prototype · Somnia v ${VERSION}</p>
+      <p class="kicker">Physical prototype · Somnia v ${VERSION} · Mirror Mirror</p>
       <h1>Somnia</h1>
       <p class="lead">A cooperative dream-escape. Dreamers trapped in a collapsing Dreamscape earn Archetype points and wake on The Bed before the Dream Deck runs out.</p>
     </div>
     ${boxArt ? `<img class="cover-art" src="${boxArt}" alt="Somnia box art" />` : ""}
     <div class="meta">
-      <p>Rules bible and table setup for cardstock playtesting. Cutouts are in the companion PDF. Power Tokens = US quarters.</p>
-      <p>This document matches digital Somnia ${VERSION}. Do not upload these prototype PDFs with the website.</p>
+      <p>Rules bible and table setup for cardstock playtesting. Cutouts are in the companion PDFs. Power Tokens = US quarters.</p>
+      <p>This document matches digital Somnia ${VERSION}: the Mirror Mirror walk, Meet tax, Pass Token, free passives, and the current death and leftover rules. Do not upload these prototype PDFs with the website.</p>
     </div>
   </section>
 
@@ -605,7 +620,9 @@ function rulesHtml(data) {
       <h3>Lose</h3>
       <ul class="tight">
         <li>The Dream Deck empties before you reach the goal</li>
+        <li>The Psyche deck and its discard are both empty</li>
         <li>Any Mindstream suit is entirely Repressed (none left in that deck, its discard, or in play)</li>
+        <li>Any Dreamer dies a fifth time</li>
         <li>In Final Recurrence, Dreams run out while remaining Archetypes still stand</li>
       </ul>
     </div>
@@ -618,7 +635,8 @@ function rulesHtml(data) {
       <tr><td>Landscape hexes</td><td>${playable.length}</td><td>Faces in the cutout PDF. Glue Wasteland backs to the 24 outer tiles. The Bed never forgets.</td></tr>
       <tr><td>Dreamer cards</td><td>${dreamers.length}</td><td>${dreamers.map((d) => d.name).join(", ")}</td></tr>
       <tr><td>Archetypes</td><td>${archetypes.length}</td><td>Shuffle; reveal one Active Archetype.</td></tr>
-      <tr><td>Psyche</td><td>57</td><td>15 per suit (values 1–5), 6 Wild (value 5), 6 Power Surge.</td></tr>
+      <tr><td>Psyche</td><td>57</td><td>15 per suit (values 1–5), 6 Wild (value 5, any suit), 6 Power Surge. Hand limit 10, allies included.</td></tr>
+      <tr><td>Pass Token</td><td>1</td><td>Any small marker. It moves around the table during Meet.</td></tr>
       <tr><td>Dreams</td><td>${dreams.filter((d) => d.type === "dream").length} unique + copies · 10 Final · 3 bosses</td><td>Build the length you chose; bosses go in slots for Reveal rounds 3 / 6 / 9.</td></tr>
       <tr><td>Dreambeasts</td><td>${dreambeasts.length} unique</td><td>Bosses Cerberus, Double, Leviathan. 10 copies per Mindstream suit from non-boss beasts.</td></tr>
       <tr><td>Objects</td><td>${objects.length}</td><td>16 per suit in each Mindstream.</td></tr>
@@ -638,54 +656,71 @@ function rulesHtml(data) {
     <li>Flip <strong>exactly one</strong> Landscape that touches The Bed face-up. All other outer hexes stay Wasteland-side up (forgotten).</li>
     <li>Build three 70-card Mindstream decks (Lucidity / Elasticity / Willpower) from the cutouts. Keep discards separate; empty draw piles reshuffle their discard.</li>
     <li>Shuffle Archetypes; reveal the top as the Active Archetype. Shuffle Psyche. Build the Dream deck for your length, insert the three boss Dreams at rounds 3/6/9, then the Final Recurrence packet (The Final Recurrence, eight effect cards, You Never Wake Up on the bottom).</li>
-    <li>Put leftover quarters in a dish (the Power pool, cap 24). Place Objects, extra beasts, and repressed piles as the Subconscious nearby.</li>
-    <li>The first Head Dreamer is any agreed player (★). Head rotates clockwise at round end.</li>
+    <li>Put leftover quarters in a dish (the Power pool, cap 24). Place repressed piles nearby as the Subconscious (Psyche, Dreambeasts, Mindstream by suit, Objects). Return effects put cards back on the matching discard.</li>
+    <li>The first Head Dreamer is any agreed player (★). Head rotates clockwise at round end. Set the Pass Token aside until Meet.</li>
   </ol>
   ${mapDiagram(playable)}
 
   <h2>R.E.M. — every round</h2>
-  <p>There is no turn order inside a phase. Talk, then act. One Dreamer spends <strong>1 suited Psyche</strong> (or 1 quarter as 1 suited Psyche) to open the phase. Budget = that card’s value + that Dreamer’s matching stat, including Object and Acquired Archetype bonuses.</p>
+  <p>There is no turn order inside a phase. Talk, then act. Phases always run <strong>Reveal → Explore → Meet</strong>. One Dreamer spends <strong>1 suited Psyche</strong> (or 1 quarter as 1 suited Psyche) to open the phase. Budget = that card’s value + that Dreamer’s matching stat, including Object and Acquired Archetype bonuses. The same Dreamer cannot open the next phase this round unless they are alone, or nobody else can pay the suit.</p>
   <h3>Reveal — Lucidity</h3>
   <ul>
-    <li>Head Dreamer draws and resolves 1 Dream. Round 2+: each living Dreamer also draws 2 Psyche at the start of Reveal.</li>
-    <li>One Dreamer spends 1 Lucidity. Click/flip that many Wasteland hexes face-up.</li>
-    <li>When every Landscape is Revealed, leftover Lucidity Reveals flip the next facedown card of a Mindstream. Flipped cards stay face-up on that pile. Return Dreamers+3 from the Subconscious when the map first completes.</li>
+    <li>The Head Dreamer (★) draws and resolves 1 Dream. Draw the Dream and spend Lucidity in either order.</li>
+    <li><strong>Round 1:</strong> each Dreamer already has 5 Psyche. <strong>Round 2+:</strong> each living Dreamer draws 2 Psyche at the start of Reveal.</li>
+    <li>One Dreamer spends 1 Lucidity. Flip that many Wasteland hexes face-up.</li>
+    <li>When every Landscape is Revealed, leftover Reveals flip the next facedown card of a Mindstream. Flipped cards stay face-up on that pile.</li>
   </ul>
-  <h3>Explore — Elasticity</h3>
+  <h3>Explore — Elasticity (Mirror Mirror)</h3>
   <ul>
-    <li>One Dreamer spends 1 Elasticity for shared team moves. You need not spend every move.</li>
-    <li>Entering Wasteland discards 1 Psyche (can kill).</li>
+    <li>One Dreamer spends 1 Elasticity. The budget is a shared pile of steps for the whole team. You need not spend every step.</li>
+    <li>After that spend, walking locks to the map. Each step is <strong>one adjacent revealed hex</strong>. Only those neighboring Landscapes are legal. A Dreamer or beast standing on a hex is that hex: the token does not swallow the step.</li>
+    <li>Name who walks, then take one legal step. Repeat until the budget is gone. The Runner’s first step each round is free.</li>
+    <li>Stepping onto a Wasteland discards 1 Psyche and can kill. Forgotten hexes are not steps.</li>
+    <li><strong>2 unused steps</strong> may peek the next Dream. Leave it on top, or bury it just ahead of Final Recurrence. Otherwise leftovers are forfeited when you leave Explore.</li>
+    <li>The table may undo the last step (the digital Map Back).</li>
   </ul>
   <h3>Meet — Willpower</h3>
   <ul>
-    <li><strong>Start:</strong> each Dreamer Represses 1 Psyche from hand per roaming Dreambeast. Beasts stay on the map.</li>
-    <li>One Dreamer spends 1 Willpower for shared Meet actions. Accept and Reject are dice battles. Need 1 Psyche of the required suit (1–3 cards; allies extra). Beast Power = its dice. Recommended Dreamer Power is beast Power + 2; underpaying is legal. +1d6 type, +1d6 suit, +1d6 per Power Token (max 3). 5–6 succeed. Wild mill is paid before the roll.</li>
-    <li><strong>Draw Mindstream</strong> is repeatable. Each unique Landscape action is once per Dreamer this Meet. Archetype Powers cost 1 Meet action + 1 quarter.</li>
-    <li>Only the Dreamer standing on a hex may Meet its Encounter (up to 3 Psyche; allies extra). Win the dice battle to Accept (ally) or Reject (Subconscious + reward). Lose and the play is spent; the beast stays.</li>
-    <li><strong>End:</strong> Forget 1 random Landscape per remaining beast, then Fail costs in spawn order. Beasts remain until Accepted or Rejected.</li>
+    <li><strong>Start:</strong> each Dreamer Represses 1 Psyche from hand per Dreambeast on their hex or an adjacent hex. Dreamers farther away pay nothing. Beasts stay on the map. The Immovable ignores 1 tax card once this round.</li>
+    <li>One Dreamer spends 1 Willpower for shared Meet actions.</li>
+    <li><strong>Pass Token:</strong> it starts with a living Dreamer who did not open Meet (the Head, if the Head was not the opener; otherwise the next Dreamer clockwise). That Dreamer takes one Meet action or passes. Passing, or taking the action, moves the token clockwise. A Dreamer who dies drops it. The table may still end Meet early.</li>
+    <li>Spend the action budget on Encounters and Landscape actions. <strong>Draw Mindstream</strong> is repeatable. Each unique Landscape action is <strong>once for the whole table</strong> this Meet. <strong>The Bed’s Draw 3</strong> is once per Dreamer this Meet.</li>
+    <li>Only the Dreamer standing on a hex may Meet its Encounter and pool Psyche (up to 3 cards; allies are extra and do not count toward the 3). Need at least 1 card of the required suit.</li>
+    <li>Accept and Reject are dice battles. Beast Power is how many d6 it rolls. Recommended Dreamer Power is beast Power + 2; you may play less. Your dice are the Psyche played (Nightmare/Fantasy and suit bonuses included) plus the matching Dreamer stat, +1d6 if your Fantasy/Nightmare type matches, +1d6 if your primary suit matches the beast, and +1d6 per Power Token on the spread (max 3). A 5 or 6 is a success. Most successes win. Ties favor the beast. Jewelry and stick Objects add +1 each; a body tag doubles the highest card.</li>
+    <li><strong>After the dice land,</strong> if you hold a quarter, spend 1 once to subtract 1 beast success, or stand. Ties still favor the beast if you stand.</li>
+    <li><strong>Win — Accept:</strong> the beast joins that hand as a 3-value ally. <strong>Win — Reject:</strong> same cost, other suit; the beast goes to the Subconscious and you resolve its reward. <strong>Lose:</strong> the Psyche and quarters in the play are spent, the beast stays, and its Fail cost still hits at the end of Meet.</li>
+    <li><strong>Free during Meet</strong> (they do not spend the action budget): trade up to 3 Psyche with a Dreamer on the same hex or next door; place up to 3 quarters for +1d6 each on a spread; play an Instant Object (then Repress it); activate a Persistent Object (1 quarter); use a Dreamer or Archetype Power (1 quarter); mark a completed quest (1 quarter).</li>
+    <li><strong>2 unused actions</strong> may Return 1 Dreambeast from the Subconscious to its Mindstream discard. You may do this again. Otherwise leftovers are forfeited.</li>
+    <li><strong>End:</strong> Forget 1 random Landscape per remaining beast, then each remaining beast’s Fail cost in spawn order. Beasts stay until Accepted or Rejected. Forgetting a tile turns it Wasteland, Represses its Encounter, and the Dreamers standing there lose 1 Psyche to the Subconscious. The Bed cannot be forgotten. If every outer tile is Wasteland, Final Recurrence begins.</li>
   </ul>
-  <p>When a phase budget is spent — or you agree to skip leftovers — advance with a <strong>Next Phase</strong> marker (the digital game uses a circular button at the top-right of the map). Dreamer action menus do not change phase.</p>
+  <p>When a phase budget is spent — or the table agrees to skip leftovers — advance to the next phase. Skipping does not spend Psyche, so a skipped Explore has nothing to peek. Dreamer powers do not change the phase by themselves. Head rotates clockwise at round end.</p>
 
-  <h2>Spawning, mill, and circulation</h2>
+  <h2>Hands, objects, and circulation</h2>
   <ul>
-    <li>Spawn a Dreambeast: cycle the chosen Mindstream from the top until a beast appears, put it on a Landscape, <strong>discard the rest of that suit</strong>, then reshuffle the discard into a new draw pile.</li>
-    <li>Ebony Pawn spawns a Nightmare; Ivory Pawn a Fantasy. Bosses spawn on The Bed.</li>
-    <li>Empty Mindstream discard reshuffles. If a suit has no cards left in its Mindstream, discard, or in play (board / allies / objects), you lose immediately.</li>
+    <li>Max <strong>10 cards</strong> in hand, allies included (+2 with Persistent Severed Torso). Overflow goes to the Psyche discard.</li>
+    <li><strong>Wild</strong> (value 5) counts as any suit. When spent, Repress that card to the Subconscious.</li>
+    <li><strong>Power Surge</strong> (yellowish-purple) may be played any phase for 1 quarter, then discarded.</li>
+    <li><strong>Instant</strong> Objects are free during Meet, then Repressed. <strong>Persistent</strong> Objects stay in play and activate for 1 quarter. <strong>Must-play</strong> Objects resolve on draw, then Repress.</li>
+    <li>Spent allies are Repressed. Spent Psyche goes to the discard, unless it is Wild or an ally.</li>
+    <li>Spawn a Dreambeast: cycle the chosen Mindstream from the top until a beast appears, place it (on a matching-suit Landscape when the effect asks you to choose; otherwise on the acting Dreamer’s Landscape), <strong>discard the rest of that suit</strong>, then reshuffle the discard into a new draw pile. Ebony Pawn spawns a Nightmare; Ivory Pawn a Fantasy. Bosses spawn on The Bed.</li>
+    <li>Empty Mindstream or Psyche discards reshuffle into a new draw pile. If a Mindstream suit has nothing left in its deck, discard, or in play, you lose immediately. If the Psyche deck and discard are both empty, you lose immediately.</li>
   </ul>
 
-  <h2>Quests, death, Final Recurrence</h2>
+  <h2>Quests, death, bosses, Final Recurrence</h2>
   <ul>
-    <li>Mark a completed quest for 1 quarter, any phase. Mark both to Acquire.</li>
-    <li>Power Surge (yellowish-purple Psyche) may be spent any phase for 1 quarter.</li>
-    <li>At 0 Psyche: spend quarters (cost = max(1, floor(alive/2))) to draw 1 and live, or die: Repress top of each Mindstream, lose Objects/Persistent/Power, return to The Bed with 4/3/2/1 Psyche by death count, gain 2 quarters, resolve an Additional Dream. Fifth death is permanent.</li>
-    <li>Final Recurrence starts when that card is drawn or every outer Landscape is forgotten. Remaining Archetypes become map Encounters: defeat with a Meet action, ≥ 15 pooled Psyche including the opposing suit, or sacrifice acquired Archetypes 1:1. Last card is You Never Wake Up.</li>
+    <li>Quests name Landscapes. A forgotten tile does not move the quest to another hex of the same suit.</li>
+    <li>Mark a completed quest for 1 quarter, any phase. Mark both, then Acquire for 1–3 points. Quintessential Archetypes (Sage, Magician, Warrior) grant a passive stat bonus only. Their Psyche quest needs one Dreamer holding 10 Psyche. Other Archetype powers cost 1 quarter in any phase and do not spend a Meet action.</li>
+    <li>A Dreamer with <strong>no Psyche and no allies</strong> dies immediately. Repress the top card of each Mindstream. Objects go to Mindstream discards. Quarters return to the dish. They respawn on <strong>The Bed</strong> with 4 / 3 / 2 / 1 Psyche by death count and <strong>no new quarters</strong>. The Bed’s Draw 3 is available as normal. The <strong>fifth death</strong> of any Dreamer ends the game at once.</li>
+    <li><strong>Cerberus, Double, and Leviathan</strong> are Power 12. Their Dreams spawn them on The Bed, usually on Reveal rounds 3, 6, and 9.</li>
+    <li>Final Recurrence starts when that card is drawn, or when every outer Landscape is forgotten. Goal points reset. Remaining Archetypes become map Encounters. Defeat each with a Meet action and <strong>at least 15</strong> pooled Psyche from all Dreamers, including one card of the opposing suit, or sacrifice acquired Archetypes 1:1. The last card is always <strong>You Never Wake Up</strong>.</li>
   </ul>
 
-  <h2>Dreamer powers (1 quarter, any phase)</h2>
+  <h2>Dreamer passives and powers</h2>
+  <p>Each passive is free. Each paid power costs <strong>1 quarter</strong>, works in any phase, and does not spend the Meet action budget.</p>
   <table>
-    <thead><tr><th>Dreamer</th><th>L / E / W</th><th>Power</th></tr></thead>
+    <thead><tr><th>Dreamer</th><th>L / E / W</th><th>Passive</th><th>Power</th></tr></thead>
     <tbody>
-      ${dreamers.map((d) => `<tr><td>${esc(d.name)}</td><td>${d.lucidity} / ${d.elasticity} / ${d.willpower}</td><td>${esc(d.power)}</td></tr>`).join("")}
+      ${dreamers.map((d) => `<tr><td>${esc(d.name)}</td><td>${d.lucidity} / ${d.elasticity} / ${d.willpower}</td><td>${esc(DREAMER_PASSIVES[d.id] || "—")}</td><td>${esc(d.power)}</td></tr>`).join("")}
     </tbody>
   </table>
 
@@ -697,7 +732,7 @@ function rulesHtml(data) {
     </tbody>
   </table>
 
-  <p class="meta">Somnia v ${VERSION} physical prototype. Companion file: Card and Landscape cutouts. Artwork and mechanics from the digital game.</p>
+  <p class="meta">Somnia v ${VERSION} physical prototype, Mirror Mirror rules. Companion files: card and Landscape cutouts. Artwork and mechanics from the digital game.</p>
 
   ${cardTrayHtml()}
 </body>
@@ -744,7 +779,7 @@ function cutoutsHtml(data) {
           name: `${SUIT_LABELS[suit]} ${value}`,
           bannerLeft: "Psyche",
           bannerRight: suitChip(suit),
-          body: `<p>Play 1 suited Psyche to open a phase. Value ${esc(value)} + matching Dreamer stat (and Object / Acquired Archetype bonuses) is the team budget.</p>`,
+          body: `<p>Play 1 of this suit to open that phase. Value ${esc(value)} + that Dreamer’s matching stat (Objects and acquired Archetypes included) is the shared team budget. Hand limit 10.</p>`,
           footLeft: `Copy ${i + 1} of ${copies}`,
           footRight: SUIT_LABELS[suit],
           artColor: SUIT_COLORS[suit],
@@ -758,7 +793,7 @@ function cutoutsHtml(data) {
       name: "Wild Psyche",
       bannerLeft: "Wild",
       bannerRight: "Any suit · 5",
-      body: "<p>Counts as any suit, value 5. When spent, also Repress the top card of each Mindstream deck.</p>",
+      body: "<p>Any suit, value 5. When spent, Repress this card to the Subconscious.</p>",
       footLeft: `Copy ${i + 1} of ${psyche.wildCount ?? PSYCHE_WILD}`,
       artColor: "#9b7cff",
     }));
@@ -781,7 +816,7 @@ function cutoutsHtml(data) {
     art: d.image,
     bannerLeft: "Dreamer",
     bannerRight: `L${d.lucidity} E${d.elasticity} W${d.willpower}`,
-    body: `<p>${esc(d.flavor || "")}</p><p><strong>Power (1 quarter, any phase):</strong> ${esc(d.power)}</p>`,
+    body: `<p>${esc(d.flavor || "")}</p><p><strong>Passive:</strong> ${esc(DREAMER_PASSIVES[d.id] || "")}</p><p><strong>Power (1 quarter, any phase; does not spend a Meet action):</strong> ${esc(d.power)}</p>`,
     footLeft: "Player identity",
   }));
 
@@ -793,7 +828,7 @@ function cutoutsHtml(data) {
     bannerRight: `${a.points} pts ${suitChip(a.suit)}`,
     body: `<p><strong>Quests:</strong> ${esc((a.quests || []).join(" · "))}</p>
       ${a.passive ? `<p><strong>Passive:</strong> ${esc(a.passive)}</p>` : ""}
-      ${a.power ? `<p><strong>Power (1 Meet action + 1 quarter):</strong> ${esc(a.power)}</p>` : "<p>Quintessential — no activatable power. Psyche quest is one Dreamer holding 10 Psyche.</p>"}`,
+      ${a.power ? `<p><strong>Power (1 quarter, any phase; does not spend a Meet action):</strong> ${esc(a.power)}</p>` : "<p>Quintessential — passive stat bonus only. Psyche quest is one Dreamer holding 10 Psyche.</p>"}`,
     footLeft: "1 quarter per quest mark",
   }));
 

@@ -5,7 +5,7 @@
       "awards",
       "day-in-the-life",
       "silver-mist",
-      "naked-classroom",
+      "scary-classroom",
       "tranquil-grove"
     ],
     "effectTop": "Reveal 1 Landscape. If Lucidity 0-2, Reveal +1. If Lucidity 2+, Return 3 Cards."
@@ -45,7 +45,7 @@
       "awards",
       "day-in-the-life",
       "silver-mist",
-      "naked-classroom",
+      "scary-classroom",
       "tranquil-grove",
       "the-attic",
       "desert"
@@ -56,7 +56,7 @@
   "morning-routine": {
     "landscapes": [
       "day-in-the-life",
-      "naked-classroom",
+      "scary-classroom",
       "awards",
       "tranquil-grove",
       "silver-mist"
@@ -77,7 +77,7 @@
   },
   "a-face-appears": {
     "landscapes": [
-      "naked-classroom",
+      "scary-classroom",
       "awards",
       "black-void",
       "field-of-broken-glass",
@@ -109,7 +109,7 @@
   "denial": {
     "landscapes": [
       "insanity",
-      "naked-classroom",
+      "scary-classroom",
       "black-void",
       "field-of-broken-glass"
     ],
@@ -117,7 +117,7 @@
   },
   "forgot-clothes": {
     "landscapes": [
-      "naked-classroom",
+      "scary-classroom",
       "awards",
       "day-in-the-life",
       "tranquil-grove"
@@ -126,7 +126,7 @@
   },
   "pop-quiz": {
     "landscapes": [
-      "naked-classroom",
+      "scary-classroom",
       "awards",
       "day-in-the-life"
     ],
@@ -187,7 +187,7 @@
       "candy-mountain",
       "road"
     ],
-    "effectTop": "Elasticity 0–1 Move 1. Elasticity 2+ Move 3. Move to edge of Dreamscape."
+    "effectTop": "Elasticity 0ï¿½1 Move 1. Elasticity 2+ Move 3. Move to edge of Dreamscape."
   },
   "undulating-floor": {
     "landscapes": [
@@ -207,7 +207,7 @@
       "desert",
       "inner-sanctum"
     ],
-    "effectTop": "Elasticity 0–1, Draw 2 Psyche keep 1.",
+    "effectTop": "Elasticity 0ï¿½1, Draw 2 Psyche keep 1.",
     "effectBottom": "Willpower 2+, Draw 2 Objects keep 1."
   },
   "friendship": {
@@ -331,7 +331,7 @@
       "silver-mist",
       "awards"
     ],
-    "effectTop": "Willpower 0–1: Draw 3 Psyche. Willpower 2+: Draw 3 Psyche and Return 2."
+    "effectTop": "Willpower 0ï¿½1: Draw 3 Psyche. Willpower 2+: Draw 3 Psyche and Return 2."
   },
   "jaw-shark": {
     "landscapes": [
@@ -347,7 +347,7 @@
       "suburbia",
       "inner-sanctum"
     ],
-    "effectTop": "Willpower 0–1: Draw 2 Psyche. Willpower 2+: Draw 1 Object from any Mindstream."
+    "effectTop": "Willpower 0ï¿½1: Draw 2 Psyche. Willpower 2+: Draw 1 Object from any Mindstream."
   },
   "who-is-there": {
     "landscapes": [
@@ -372,7 +372,7 @@
       "inner-sanctum",
       "sea-of-teeth",
       "the-basement",
-      "naked-classroom"
+      "scary-classroom"
     ],
     "effectTop": "Repress Active Encounters+2 top Psyche.",
     "effectBottom": "Forget 2 Landscapes per Affected Landscape."
@@ -380,7 +380,7 @@
   "contagion": {
     "landscapes": [
       "insanity",
-      "naked-classroom",
+      "scary-classroom",
       "sea-of-teeth",
       "house",
       "the-basement"
@@ -776,7 +776,7 @@
       "tranquil-grove",
       "silver-mist"
     ],
-    "effectTop": "Elasticity 0–1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche. Return 1 Card per Affected Landscape."
+    "effectTop": "Elasticity 0ï¿½1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche. Return 1 Card per Affected Landscape."
   },
   "wrong-door": {
     "landscapes": [
@@ -828,7 +828,7 @@
       "tranquil-grove",
       "silver-mist"
     ],
-    "effectTop": "Elasticity 0–1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche."
+    "effectTop": "Elasticity 0ï¿½1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche."
   },
   "just-out-of-reach": {
     "landscapes": [
@@ -867,7 +867,7 @@
       "tranquil-grove",
       "silver-mist"
     ],
-    "effectTop": "Elasticity 0–1, Discard 2 Psyche. Elasticity 2+, Draw 2 Psyche."
+    "effectTop": "Elasticity 0ï¿½1, Discard 2 Psyche. Elasticity 2+, Draw 2 Psyche."
   },
   "a-mirage": {
     "landscapes": [
@@ -893,7 +893,7 @@
       "tranquil-grove",
       "silver-mist"
     ],
-    "effectTop": "Elasticity 0–1, Discard 1 Object or Psyche. Elasticity 2+, Move to Tranquil Grove or Inner Sanctum."
+    "effectTop": "Elasticity 0ï¿½1, Discard 1 Object or Psyche. Elasticity 2+, Move to Tranquil Grove or Inner Sanctum."
   },
   "rhythm-of-the-night": {
     "landscapes": [
@@ -1023,7 +1023,7 @@
       "tranquil-grove",
       "silver-mist"
     ],
-    "effectTop": "Willpower 0–1, Flip Leviathan. Willpower 2+, Move 2 toward Endless Ocean."
+    "effectTop": "Willpower 0ï¿½1, Flip Leviathan. Willpower 2+, Move 2 toward Endless Ocean."
   },
   "syrup-lake": {
     "landscapes": [
@@ -1101,7 +1101,7 @@
       "tranquil-grove",
       "silver-mist"
     ],
-    "effectTop": "Willpower 0–1: Draw 1 Psyche. Willpower 2+, Draw 1 Psyche and Return 3."
+    "effectTop": "Willpower 0ï¿½1: Draw 1 Psyche. Willpower 2+, Draw 1 Psyche and Return 3."
   },
   "tartar-algae": {
     "landscapes": [

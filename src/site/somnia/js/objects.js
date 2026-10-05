@@ -1,7 +1,7 @@
 import { addLog } from "./state.js";
 import { logMoment } from "./narrator.js";
 import { recordQuestEvent } from "./quests.js";
-import { repressCard } from "./subconscious.js";
+import { repressCard, maybeClearFreshlyRepressed } from "./subconscious.js";
 import {
   checkObjectTagSet,
   activatePersistentObjectEffect,
@@ -193,6 +193,7 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
       queueObjectPlayFx(card, { to: "mindstream", suit: card.mindstreamSuit || card.suit });
       discardToMindstream(state, card);
     }
+    maybeClearFreshlyRepressed(state);
     return card;
   }
 

@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-36.1-swoop";
-const RUNTIME_CACHE = "somnia-runtime-36.1-swoop";
+const CACHE_NAME = "somnia-37.0-autoplay";
+const RUNTIME_CACHE = "somnia-runtime-37.0-autoplay";
 
 const PRECACHE = [
   "./",
@@ -44,6 +44,7 @@ const PRECACHE = [
   "./js/board-fx.js",
   "./js/board-zoom.js",
   "./js/bosses.js",
+  "./js/bot-ai.js",
   "./js/card-backs.js",
   "./js/card-fx.js",
   "./js/changelog.js",
@@ -58,12 +59,14 @@ const PRECACHE = [
   "./js/dice-battle.js",
   "./js/dream-choices.js",
   "./js/dream-deck.js",
+  "./js/dream-resolutions.js",
   "./js/dreambeasts.js",
   "./js/dreamer-powers.js",
   "./js/effect-choices.js",
   "./js/effects.js",
   "./js/event-choices.js",
   "./js/event-landscapes.js",
+  "./js/event-resolutions.js",
   "./js/final-recurrence-atmosphere.js",
   "./js/final-recurrence-rules.js",
   "./js/frame-metrics.js",
@@ -82,6 +85,8 @@ const PRECACHE = [
   "./js/local-score-store.js",
   "./js/meet-phase-tax.js",
   "./js/meet-phase.js",
+  "./js/mindstream-choices.js",
+  "./js/mindstream-draw-cinematic.js",
   "./js/mindstream-extra.js",
   "./js/mindstream-supply.js",
   "./js/mindstream.js",
@@ -93,6 +98,7 @@ const PRECACHE = [
   "./js/opening-hook.js",
   "./js/panel-layout.js",
   "./js/pause-menu.js",
+  "./js/phase-opener-menu.js",
   "./js/phase-skip.js",
   "./js/play.js",
   "./js/pointer-gestures.js",
@@ -103,6 +109,7 @@ const PRECACHE = [
   "./js/quests.js",
   "./js/remote-save-store.js",
   "./js/remote-score-store.js",
+  "./js/resolution-effects.js",
   "./js/rng.js",
   "./js/rules.js",
   "./js/scoring.js",
@@ -111,6 +118,7 @@ const PRECACHE = [
   "./js/stat-tier.js",
   "./js/state.js",
   "./js/subconscious.js",
+  "./js/tutorial-advanced.js",
   "./js/tutorial-canonical.js",
   "./js/tutorial-mode.js",
   "./js/ui.js",

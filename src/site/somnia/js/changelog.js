@@ -6,10 +6,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "36.1";
+export const SOMNIA_VERSION = "37.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "37.0",
+    title: "Dev Auto Play Update",
+    notes: [
+      "Dev console: /ai start (aliases /watch, /autobot) runs an automated bot game you can watch. A yellow banner shows what the AI is thinking; /ai new starts a fresh Nap-length table; /ai stop · /ai step · /ai status.",
+      "Skilled and sloppy bots play smarter through Mindstream choices, Meet pressure, death-saves, and Final Recurrence (opposing-suit Psyche + earlier Archetype sacrifice). Instant dice for bots so phases never soft-lock.",
+      "Table flow from the unshipped 36.2 pass: Naked is now Scary Classroom; freshly Repressed cards cannot Return the same round; bright whose-turn plaque; fullscreen phase-opener menu that shows every hand; Next Phase glows when the phase budget is spent.",
+    ],
+  },
   {
     version: "36.1",
     title: "The Swooping Draw",

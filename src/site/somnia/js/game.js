@@ -243,8 +243,32 @@ function tutorialSuppressesMeetPass(state) {
   return !!(state.tutorialMode && !state.tutorialFlags?.meetPassLive);
 }
 
-function meetPassBlocks(state, actor) {
+function focusActionTurnHolder(state) {
+  if (!state.meetPassHolderId) return;
+  const idx = state.players.findIndex((p) => p.id === state.meetPassHolderId && p.alive);
+  if (idx >= 0) state.activePlayerIndex = idx;
+}
+
+/** True while a phase budget is open and Dreamers take turns spending actions. */
+export function actionTurnActive(state) {
   if (tutorialSuppressesMeetPass(state) || !state.meetPassHolderId) return false;
+  const phase = getPhase(state);
+  if (phase === "Meet") return (state.meetActionBudget || 0) > 0 && state.meetActionsUsed < state.meetActionBudget;
+  if (phase === "Explore") return !!state.exploreActivated && (state.exploreMovesLeft || 0) > 0;
+  if (phase === "Reveal") {
+    const mode = state.landscapePick?.mode;
+    return (mode === "reveal" || mode === "reveal-deck-tops") && (state.landscapePick?.remaining || 0) > 0;
+  }
+  return false;
+}
+
+export function actionTurnHolder(state) {
+  if (!actionTurnActive(state)) return null;
+  return state.players.find((p) => p.id === state.meetPassHolderId && p.alive) || null;
+}
+
+function meetPassBlocks(state, actor) {
+  if (!actionTurnActive(state)) return false;
   const holder = state.players.find((p) => p.id === state.meetPassHolderId);
   if (!holder?.alive) {
     state.meetPassHolderId = null;
@@ -263,20 +287,25 @@ function nextLivingClockwise(state, fromId) {
   return null;
 }
 
+/** Seat the action turn on the Dreamer who opened the phase (they act first). */
 function seatMeetPassToken(state, openerId) {
   if (tutorialSuppressesMeetPass(state)) {
     state.meetPassHolderId = null;
     return;
   }
   const alive = state.players.filter((p) => p.alive);
-  if (alive.length < 2) {
+  if (!alive.length) {
     state.meetPassHolderId = null;
     return;
   }
-  const head = alive.find((p) => p.isHead) || alive[0];
-  const holder = head.id !== openerId ? head : nextLivingClockwise(state, openerId);
+  const opener = alive.find((p) => p.id === openerId);
+  const holder = opener || alive.find((p) => p.isHead) || alive[0];
   state.meetPassHolderId = holder?.id || null;
-  if (holder) addLog(state, `Meet Pass Token starts with ${holder.name}. Take one Meet action, or pass.`);
+  focusActionTurnHolder(state);
+  if (holder) {
+    const phase = getPhase(state);
+    addLog(state, `${holder.name}'s turn (${phase}). Take one action, or pass.`);
+  }
 }
 
 export function passMeetToken(state) {
@@ -284,7 +313,17 @@ export function passMeetToken(state) {
   const next = nextLivingClockwise(state, state.meetPassHolderId);
   if (!next || next.id === state.meetPassHolderId) return;
   state.meetPassHolderId = next.id;
-  addLog(state, `Meet Pass Token moves to ${next.name}.`);
+  focusActionTurnHolder(state);
+  addLog(state, `${next.name}'s turn.`);
+}
+
+/** Alias used by Explore / Reveal turn passing. */
+export function passActionTurn(state) {
+  passMeetToken(state);
+}
+
+export function clearActionTurn(state) {
+  state.meetPassHolderId = null;
 }
 
 function dreamerCanPayOpener(player, suit) {
@@ -369,7 +408,7 @@ function meetActionHint(state, action, landscapeActionId, baseHint = "") {
   if (!actor) return "A Dreamer must stand on this Landscape.";
   if (meetPassBlocks(state, actor)) {
     const holder = state.players.find((p) => p.id === state.meetPassHolderId);
-    return `Meet Pass Token is with ${holder?.name || "another Dreamer"}.`;
+    return `It is ${holder?.name || "another Dreamer"}'s turn.`;
   }
   if (!isFreeQuestMeet(state, action) && state.meetActionsUsed >= state.meetActionBudget) return "No Meet actions remaining.";
   if (hasUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId))) {
@@ -391,7 +430,8 @@ function spendMeetAction(state, action, landscapeActionId = null) {
     state.freeQuestMeet = null;
     state.pendingFreeMeetRefund = true;
     markUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId));
-    passMeetToken(state);
+    if (state.meetActionsUsed >= state.meetActionBudget) clearActionTurn(state);
+    else passMeetToken(state);
     return true;
   }
   state.pendingFreeMeetRefund = false;
@@ -399,7 +439,8 @@ function spendMeetAction(state, action, landscapeActionId = null) {
   if (landscapeActionId !== "draw-mindstream") {
     markUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId));
   }
-  passMeetToken(state);
+  if (state.meetActionsUsed >= state.meetActionBudget) clearActionTurn(state);
+  else passMeetToken(state);
   return true;
 }
 
@@ -770,12 +811,12 @@ export function getPhaseActions(state, handlers) {
     actions.push(dreamerPowerAction());
     actions.push(...questActions());
     actions.push(...archetypePowerActions());
-    if (!tutorialSuppressesMeetPass(state) && state.meetPassHolderId === player.id && (state.meetActionBudget || 0) > 0) {
+  if (!tutorialSuppressesMeetPass(state) && state.meetPassHolderId === player.id && actionTurnActive(state)) {
       actions.push({
-        label: "Pass Meet",
+        label: getPhase(state) === "Meet" ? "Pass Turn" : "Pass Turn",
         kind: "meetPass",
         section: "actions",
-        hint: "Skip your Meet action. The Pass Token moves clockwise.",
+        hint: "Skip your turn. Focus moves clockwise to the next Dreamer.",
         onClick: () => passMeetToken(state),
       });
     }
@@ -831,15 +872,18 @@ export function phaseBudgetExhausted(state) {
   const phase = getPhase(state);
   if (state.tutorialMode) {
     if (phase === "Reveal") return Boolean(state.revealLandscapeUsed);
-    if (phase === "Explore") return Boolean(state.exploreActivated);
-    if (phase === "Meet") return (state.meetActionBudget || 0) > 0;
+    if (phase === "Explore") return Boolean(state.exploreActivated) && (state.exploreMovesLeft || 0) < 1;
+    if (phase === "Meet") {
+      const budget = state.meetActionBudget || 0;
+      return budget > 0 && (state.meetActionsUsed || 0) >= budget;
+    }
     return false;
   }
   if (phase === "Reveal") {
     return Boolean(state.dreamDrawn && state.revealLandscapeUsed && !state.landscapePick);
   }
   if (phase === "Explore") {
-    return Boolean(state.exploreActivated);
+    return Boolean(state.exploreActivated) && (state.exploreMovesLeft || 0) < 1;
   }
   if (phase === "Meet") {
     const budget = state.meetActionBudget || 0;
@@ -858,8 +902,9 @@ export function getPhaseAdvanceAction(state, handlers) {
     advance: true,
     primary: true,
     tint: upcomingPhaseTint(state),
+    budgetExhausted: spent,
     hint: spent
-      ? `${label} — or skip leftover work in this phase.`
+      ? `${label} — actions spent. Advance when ready.`
       : `${label} — skip this phase without spending Psyche.`,
     onClick: handlers.nextPhase,
   };
@@ -1042,6 +1087,7 @@ export function revealLandscape(state) {
   if (state.seedFlags?.rem && !state.remFree?.reveal && !state.revealLandscapeUsed && state.landscapePick?.mode !== "reveal") {
     state.remFree.reveal = true;
     beginRevealPicking(state, 1);
+    seatMeetPassToken(state, activePlayer(state)?.id);
     addLog(state, "REM cycle: the team takes 1 free Reveal — no Lucidity spent.");
     recordQuestEvent(state, "reveal_landscape", { count: 0 });
     playPhaseSpendFlash("lucidity");
@@ -1091,6 +1137,7 @@ export function revealLandscape(state) {
 
   beginRevealPicking(state, budget);
   recordPhaseOpener(state, player);
+  seatMeetPassToken(state, player.id);
   addLog(state, `${player.name} spends Lucidity — the team may reveal up to ${budget} Landscapes.`);
   recordQuestEvent(state, "reveal_landscape", { count: 0 });
   playPhaseSpendFlash("lucidity");
@@ -1101,7 +1148,8 @@ export function activateExplore(state) {
     state.remFree.explore = true;
     state.exploreMovesLeft = 1;
     state.exploreActivated = true;
-    addLog(state, "REM cycle: the team takes 1 free Explore move — no Elasticity spent. Click a Dreamer chip, then a highlighted hex.");
+    seatMeetPassToken(state, activePlayer(state)?.id);
+    addLog(state, "REM cycle: the team takes 1 free Explore move — no Elasticity spent. The opener moves first.");
     playPhaseSpendFlash("elasticity");
     return;
   }
@@ -1152,7 +1200,8 @@ export function activateExplore(state) {
     state.exploreMovesLeft += insulationBonus;
     addLog(state, `Insulation grants +${insulationBonus} Explore move${insulationBonus === 1 ? "" : "s"}, then is discarded.`);
   }
-  addLog(state, `${player?.name || "The team"} unlocks ${state.exploreMovesLeft} shared Explore moves. Click Dreamer chips to choose who moves.`);
+  seatMeetPassToken(state, player?.id);
+  addLog(state, `${player?.name || "The team"} unlocks ${state.exploreMovesLeft} Explore moves. Dreamers take turns moving.`);
   playPhaseSpendFlash("elasticity");
 }
 
@@ -1182,6 +1231,11 @@ export function moveDreamer(state, targetLandscapeId) {
       && !state.runnerFreeMoveUsed;
     if (!state.exploreActivated || (state.exploreMovesLeft < 1 && !runnerFree)) {
       addLog(state, "Activate Explore with Elasticity Psyche first.");
+      return;
+    }
+    if (meetPassBlocks(state, player)) {
+      const holder = actionTurnHolder(state);
+      addLog(state, `It is ${holder?.name || "another Dreamer"}'s turn to move.`);
       return;
     }
     if (!to || !to.revealed) {
@@ -1222,6 +1276,12 @@ export function moveDreamer(state, targetLandscapeId) {
       addLog(state, `${player.name} discards 1 Psyche on Wasteland.`);
     } else {
       addLog(state, `${player.name} moves to ${to.name}. (${state.exploreMovesLeft} moves left)`);
+    }
+
+    if (!runnerFree && (state.exploreMovesLeft || 0) > 0) {
+      passMeetToken(state);
+    } else if ((state.exploreMovesLeft || 0) < 1) {
+      clearActionTurn(state);
     }
 
     if (targetLandscapeId === "bed") checkVictory(state);
@@ -1584,7 +1644,10 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     : null;
   const teachStand = !!(state.tutorialMode && scriptedWinner === "beast" && (actor.powerTokens || 0) > 0);
 
-  if (instant || typeof document === "undefined") {
+  const forceInstant = instant
+    || typeof document === "undefined"
+    || !!globalThis.__SOMNIA_INSTANT_DICE__;
+  if (forceInstant) {
     finish(scriptedWinner !== "beast");
     return;
   }
@@ -1597,7 +1660,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     beastDice: beastPower,
     forceWinner: scriptedWinner,
     minBeastLead: teachStand ? 2 : 0,
-    instant: typeof document === "undefined",
+    instant: false,
     allowPostRollToken: teachStand || (!scriptedWinner && (actor.powerTokens || 0) > 0),
     postRollLead: teachStand
       ? "Mandrake leads by more than 1 success. Subtract 1 cannot flip this fight. Click Stand. In a closer fight, that same token can take one success. A tie still favors the beast."
@@ -2462,7 +2525,24 @@ export function handleBoardTileClick(state, tileId) {
     return false;
   }
   if (state.landscapePick) {
+    const pickMode = state.landscapePick.mode;
+    if ((pickMode === "reveal" || pickMode === "reveal-deck-tops") && actionTurnActive(state)) {
+      const holder = actionTurnHolder(state);
+      const actor = activePlayer(state);
+      if (holder && actor && holder.id !== actor.id) {
+        addLog(state, `It is ${holder.name}'s turn to reveal.`);
+        return false;
+      }
+    }
+    const beforeRemaining = state.landscapePick.remaining;
     const ok = handleLandscapeTilePick(state, tileId);
+    if (ok && (pickMode === "reveal" || pickMode === "reveal-deck-tops")) {
+      if (!state.landscapePick || (state.landscapePick.remaining || 0) < 1) {
+        clearActionTurn(state);
+      } else if ((state.landscapePick.remaining || 0) < beforeRemaining) {
+        passMeetToken(state);
+      }
+    }
     if (ok && state.pendingObjectFollowup) resumeObjectEffect(state, getEffectHelpers());
     return ok;
   }

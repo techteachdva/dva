@@ -162,6 +162,7 @@ const COMMANDS = {
       }
       const groups = {
         Meta: ["help", "status", "clear", "dev"],
+        AI: ["ai", "watch", "autobot"],
         Phase: ["phase", "advance", "round"],
         Cards: ["dream", "dreams", "psyche", "object", "objects", "beast-hand", "mindstream", "fill-sub"],
         Encounter: ["spawn", "beasts", "meet-budget", "explore-moves", "encounter-clear"],
@@ -192,6 +193,74 @@ const COMMANDS = {
     usage: "status",
     desc: "Print current game state summary.",
     run: (state) => ok(statusLines(state).join("\n"), statusLines(state)),
+  },
+
+  ai: {
+    usage: "ai <start|stop|step|status|new> [skilled|sloppy] [ms]",
+    desc: "Watch bots play. Yellow banner shows AI thoughts. /ai new starts a fresh automated game.",
+    aliases: ["watch", "autobot"],
+    run: (state, args, ctx) => {
+      const bot = ctx.getAiSpectator?.();
+      if (!bot) return fail("AI spectator not available. Reload play.html?dev=1");
+      const verb = (args[0] || "start").toLowerCase();
+      if (verb === "stop" || verb === "halt") {
+        bot.stop();
+        return ok("AI spectator stopped.");
+      }
+      if (verb === "status") {
+        return ok(`AI ${bot.isRunning() ? "running" : "idle"} · skill=${bot.getSkill()}`);
+      }
+      if (verb === "step") {
+        bot.step();
+        return ok(`AI stepped · ${state.botSpectatorThought || "ok"}`);
+      }
+      if (verb === "new" || verb === "fresh") {
+        let skill = "skilled";
+        let players = 4;
+        args.slice(1).forEach((token) => {
+          const t = String(token).toLowerCase();
+          if (t === "sloppy" || t === "skilled") skill = t;
+          else if (/^\d+$/.test(t)) players = Math.max(1, Math.min(6, Number(t)));
+        });
+        if (!ctx.startAiWatchGame) return fail("AI new-game helper unavailable.");
+        Promise.resolve(ctx.startAiWatchGame({ playerCount: players, skill })).then((okStart) => {
+          if (!okStart) console.warn("[AI] Could not start a fresh watch game.");
+        });
+        return ok(`Starting fresh AI game (${players}p, ${skill})…`, [
+          "New automated game launching.",
+          "Yellow banner shows current AI thought.",
+          "Commands: /ai stop · /ai step · /ai status",
+        ]);
+      }
+      if (verb === "start" || verb === "watch" || verb === "run") {
+        let skill = "skilled";
+        let ms = 750;
+        args.slice(1).forEach((token) => {
+          const t = String(token).toLowerCase();
+          if (t === "sloppy" || t === "skilled") skill = t;
+          else if (/^\d+$/.test(t)) ms = Math.max(120, Number(t));
+        });
+        // Also allow: /ai skilled 500
+        if (args[0] === "skilled" || args[0] === "sloppy") {
+          skill = args[0];
+          if (/^\d+$/.test(args[1] || "")) ms = Math.max(120, Number(args[1]));
+        }
+        if (!state || state.status !== "playing") {
+          if (!ctx.startAiWatchGame) {
+            return fail("No active game. Start one from the menu, or use /ai new.");
+          }
+          Promise.resolve(ctx.startAiWatchGame({ playerCount: 4, skill })).then(() => {});
+          return ok(`No live game — starting a fresh AI watch (${skill})…`);
+        }
+        bot.start({ skill, stepMs: ms });
+        return ok(`AI watching (${skill}, ${ms}ms/step). /ai stop to halt.`, [
+          `Watching bot play at ${ms}ms per action (${skill}).`,
+          "Yellow banner shows current AI thought.",
+          "Commands: /ai stop · /ai step · /ai status · /ai new",
+        ]);
+      }
+      return fail("Usage: ai start|new [skilled|sloppy] [ms|players] | ai stop | ai step | ai status");
+    },
   },
 
   clear: {

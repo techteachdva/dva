@@ -28,6 +28,15 @@ export function isDiceBattleOpen() {
   return !!activeBattle;
 }
 
+/** Force-close any in-flight dice UI (bots / Node sim recovery). */
+export function cancelDiceBattle() {
+  cancelBattleAnims();
+  const stage = typeof document !== "undefined" ? document.getElementById("dice-battle-stage") : null;
+  if (stage) clearStage(stage);
+  if (typeof document !== "undefined") document.body?.classList?.remove("dice-rolling");
+  activeBattle = null;
+}
+
 function reducedMotion() {
   return typeof window !== "undefined"
     && window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
@@ -269,7 +278,10 @@ export function playDiceBattle(opts) {
     onComplete?.(result());
   };
 
-  if (instant || typeof document === "undefined") {
+  const forceInstant = instant
+    || typeof document === "undefined"
+    || !!globalThis.__SOMNIA_INSTANT_DICE__;
+  if (forceInstant) {
     finish();
     return result();
   }

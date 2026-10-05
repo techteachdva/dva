@@ -12,11 +12,11 @@ npm run print:somnia
 
 That writes:
 
-- `print/Somnia-24.0-Rules-and-Setup.pdf` — rules bible, setup, card-tray backs, hex map
-- `print/Somnia-24.0-Cutouts-Identity-Psyche-Dreams.pdf` — Dreamers, Archetypes, Psyche, Dreams
-- `print/Somnia-24.0-Cutouts-Beasts-Objects.pdf` — Dreambeasts and Objects
-- `print/Somnia-24.0-Cutouts-Mindstream.pdf` — Mindstream Events, Power Token grant cards, Draw Dream
-- `print/Somnia-24.0-Cutouts-Landscapes.pdf` — hex faces and Wasteland backs
+- `print/Somnia-33.1-Rules-and-Setup.pdf` — rules bible, setup, card-tray backs, hex map
+- `print/Somnia-33.1-Cutouts-Identity-Psyche-Dreams.pdf` — Dreamers, Archetypes, Psyche, Dreams
+- `print/Somnia-33.1-Cutouts-Beasts-Objects.pdf` — Dreambeasts and Objects
+- `print/Somnia-33.1-Cutouts-Mindstream.pdf` — Mindstream Events, Power Token grant cards, Draw Dream
+- `print/Somnia-33.1-Cutouts-Landscapes.pdf` — hex faces and Wasteland backs
 
 Scratch HTML used by Playwright is written to `print/_html/` (also gitignored). The generator uses your installed Chrome or Edge.
 

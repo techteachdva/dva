@@ -36,7 +36,7 @@
     "repress": 12,
     "rejectSuit": "lucidity",
     "fail": "Forget 2 Landscapes. Repress 4 Psyche from hand.",
-    "effect": "Forget Day in the Life & Naked Classroom.",
+    "effect": "Forget Day in the Life & Scary Classroom.",
     "rejectReward": "Reveal 2 Landscapes.",
     "rejectEffect": {
       "type": "reveal-landscapes",

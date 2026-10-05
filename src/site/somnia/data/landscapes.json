@@ -18,7 +18,7 @@
   { "id": "sea-of-teeth", "name": "Sea of Teeth", "suit": "willpower", "image": "images/landscapes/sea-of-teeth.webp", "uniqueAction": "swap-dreambeasts" },
   { "id": "endless-ocean", "name": "Endless Ocean", "suit": "elasticity", "image": "images/landscapes/endless-ocean.webp", "uniqueAction": "draw-2-keep-1" },
   { "id": "candy-mountain", "name": "Candy Mountain", "suit": "elasticity", "image": "images/landscapes/candy-mountain.webp", "uniqueAction": "draw-psyche-equal-to-elasticity" },
-  { "id": "naked-classroom", "name": "Naked Classroom", "suit": "lucidity", "image": "images/landscapes/naked-classroom.webp", "uniqueAction": "cycle-psyche" },
+  { "id": "scary-classroom", "name": "Scary Classroom", "suit": "lucidity", "image": "images/landscapes/scary-classroom.webp", "uniqueAction": "cycle-psyche" },
   { "id": "tranquil-grove", "name": "Tranquil Grove", "suit": "lucidity", "image": "images/landscapes/tranquil-grove.webp", "uniqueAction": "return-psyche" },
   { "id": "day-in-the-life", "name": "Day in the Life", "suit": "lucidity", "image": "images/landscapes/day-in-the-life.webp", "uniqueAction": "replay-dream" },
   { "id": "insanity", "name": "Insanity", "suit": "willpower", "image": "images/landscapes/insanity.webp", "uniqueAction": "return-1" },

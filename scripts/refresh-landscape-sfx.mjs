@@ -36,7 +36,7 @@ const QUERIES = {
   "sea-of-teeth": "underwater ambience deep",
   "endless-ocean": "ocean waves beach",
   "candy-mountain": "music box chime sparkle",
-  "naked-classroom": "classroom school ambience",
+  "scary-classroom": "classroom school ambience",
   "tranquil-grove": "birds stream forest",
   "day-in-the-life": "morning birds city",
   insanity: "horror ambient drone",

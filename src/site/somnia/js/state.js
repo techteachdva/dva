@@ -220,6 +220,7 @@ export function createInitialState(data, options) {
     lastPhaseOpenerId: null,
     phaseOpenersThisRound: [],
     meetPassHolderId: null,
+    freshlyRepressedInstanceIds: [],
     visionaryPeekUsed: false,
     runnerFreeMoveUsed: false,
     immovableTaxUsed: false,
@@ -691,6 +692,7 @@ export function beginRoundReveal(state) {
   state.lastPhaseOpenerId = null;
   state.phaseOpenersThisRound = [];
   state.meetPassHolderId = null;
+  state.freshlyRepressedInstanceIds = [];
   state.visionaryPeekUsed = false;
   state.runnerFreeMoveUsed = false;
   state.immovableTaxUsed = false;

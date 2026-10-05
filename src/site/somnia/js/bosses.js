@@ -29,7 +29,7 @@ export function applyBossAcceptEffect(state, encounter, actor) {
       addLog(state, "Cerberus: Repress top 3 Psyche.");
       break;
     case "double":
-      ["day-in-the-life", "naked-classroom"].forEach((id) => {
+      ["day-in-the-life", "scary-classroom"].forEach((id) => {
         const tile = landscapeById(state, id);
         if (tile?.revealed) {
           tile.revealed = false;
@@ -38,7 +38,7 @@ export function applyBossAcceptEffect(state, encounter, actor) {
           clearEncountersOnLandscape(state, tile.id);
         }
       });
-      addLog(state, "Double: Forgot Day in the Life and Naked Classroom.");
+      addLog(state, "Double: Forgot Day in the Life and Scary Classroom.");
       break;
     case "leviathan":
       forgetLandscapes(state, 1);

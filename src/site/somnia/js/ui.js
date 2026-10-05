@@ -3171,6 +3171,46 @@ function renderCoopBanner(state) {
   el.textContent = "";
 }
 
+function renderTurnPlaque(state) {
+  const plaque = document.getElementById("turn-plaque");
+  const nameEl = document.getElementById("turn-plaque-name");
+  const phaseEl = document.getElementById("turn-plaque-phase");
+  if (!plaque || !nameEl) return;
+
+  const holderId = state.meetPassHolderId;
+  const holder = holderId ? state.players.find((p) => p.id === holderId && p.alive) : null;
+  const phase = getPhase(state);
+  let active = false;
+  let phaseNote = "";
+  if (holder) {
+    if (phase === "Meet" && (state.meetActionBudget || 0) > 0 && state.meetActionsUsed < state.meetActionBudget) {
+      active = true;
+      phaseNote = `Meet · ${Math.max(0, (state.meetActionBudget || 0) - (state.meetActionsUsed || 0))} left`;
+    } else if (phase === "Explore" && state.exploreActivated && (state.exploreMovesLeft || 0) > 0) {
+      active = true;
+      phaseNote = `Explore · ${state.exploreMovesLeft} move${state.exploreMovesLeft === 1 ? "" : "s"}`;
+    } else if (
+      phase === "Reveal"
+      && (state.landscapePick?.mode === "reveal" || state.landscapePick?.mode === "reveal-deck-tops")
+      && (state.landscapePick?.remaining || 0) > 0
+    ) {
+      active = true;
+      phaseNote = `Reveal · ${state.landscapePick.remaining} left`;
+    }
+  }
+
+  if (!active) {
+    plaque.classList.add("hidden");
+    nameEl.textContent = "—";
+    if (phaseEl) phaseEl.textContent = "";
+    return;
+  }
+
+  plaque.classList.remove("hidden");
+  nameEl.textContent = holder.name;
+  if (phaseEl) phaseEl.textContent = phaseNote;
+}
+
 export function renderHud(state, hint = "") {
   const goalEl = document.getElementById("hud-goal");
   const goalBar = document.getElementById("hud-goal-bar");
@@ -3179,6 +3219,7 @@ export function renderHud(state, hint = "") {
   const dreamsWrap = document.querySelector(".hud-dreams-wrap");
   const beastsWrap = document.getElementById("hud-beasts-wrap");
   const beastsEl = document.getElementById("hud-beasts");
+  renderTurnPlaque(state);
 
   if (state.finalRecurrence) {
     const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
@@ -3477,7 +3518,7 @@ export function renderPhaseAdvanceBar(advanceAction = null, undo = null, drawDre
   btn.hidden = false;
   btn.classList.remove("hidden");
   btn.setAttribute("aria-hidden", "false");
-  btn.classList.remove("tint-reveal", "tint-explore", "tint-meet");
+  btn.classList.remove("tint-reveal", "tint-explore", "tint-meet", "phase-exhausted-glow");
   const tint = advanceAction?.tint || "explore";
   btn.classList.add(`tint-${tint}`);
   if (!advanceAction) {
@@ -3492,6 +3533,8 @@ export function renderPhaseAdvanceBar(advanceAction = null, undo = null, drawDre
   btn.textContent = advanceAction.label.replace(/\s*→\s*$/, "").trim() || "Next";
   btn.title = advanceAction.hint || advanceAction.label;
   btn.setAttribute("aria-label", advanceAction.label);
+  const shouldGlow = !!advanceAction.budgetExhausted && !advanceAction.disabled;
+  btn.classList.toggle("phase-exhausted-glow", shouldGlow);
   btn.onclick = (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -4841,6 +4884,7 @@ export function hideUtilityModal(force = false) {
     "rules-reference-modal",
     "info-hub-modal",
     "fullscreen-browser",
+    "phase-opener-modal-wrap",
     "card-choice-modal-wrap",
     "trade-modal-wrap",
     "subconscious-binder-fullscreen",

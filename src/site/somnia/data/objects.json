@@ -1,6 +1,6 @@
 [
   { "id": "row-boat", "name": "Row Boat", "suit": "elasticity", "type": "object", "subtype": "persistent", "image": "images/objects/row-boat.webp", "text": "Persistent: Move a Dreambeast to Lava, Endless Ocean, or Sea of Teeth." },
-  { "id": "hourglass", "name": "Hourglass", "suit": "elasticity", "type": "object", "subtype": "persistent", "image": "images/objects/hourglass.webp", "text": "Persistent: Move a Dreambeast to Day in the Life, Insanity, or Naked Classroom." },
+  { "id": "hourglass", "name": "Hourglass", "suit": "elasticity", "type": "object", "subtype": "persistent", "image": "images/objects/hourglass.webp", "text": "Persistent: Move a Dreambeast to Day in the Life, Insanity, or Scary Classroom." },
   { "id": "conch-shell", "name": "Conch Shell", "suit": "elasticity", "type": "object", "subtype": "persistent", "image": "images/objects/conch-shell.webp", "text": "Persistent: Move a Dreambeast to Field of Broken Glass, Desert, or Black Void." },
   { "id": "rope", "name": "Rope", "suit": "elasticity", "type": "object", "subtype": "persistent", "image": "images/objects/rope.webp", "text": "Persistent: Move a Dreambeast to Endless Hallway, The Attic, or The Basement." },
   { "id": "marble-grid", "name": "Marble Grid", "suit": "elasticity", "type": "object", "subtype": "instant", "tags": ["chess", "3/3"], "image": "images/objects/marble-grid.webp", "text": "Instant [Chess 3/3]: Spawn 2 Dreambeasts on any Landscapes. Set: Return Dreamers+2 Cards. Repress 1 Psyche." },

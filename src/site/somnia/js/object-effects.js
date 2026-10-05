@@ -1115,7 +1115,7 @@ export const OBJECT_EFFECTS = {
 const BEAST_MOVERS = {
   "row-boat": { title: "Row Boat", destIds: ["lava", "endless-ocean", "sea-of-teeth"] },
   rope: { title: "Rope", destIds: ["endless-hallway", "the-attic", "the-basement"] },
-  hourglass: { title: "Hourglass", destIds: ["day-in-the-life", "insanity", "naked-classroom"] },
+  hourglass: { title: "Hourglass", destIds: ["day-in-the-life", "insanity", "scary-classroom"] },
   "conch-shell": { title: "Conch Shell", destIds: ["field-of-broken-glass", "desert", "black-void"] },
 };
 

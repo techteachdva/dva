@@ -29,7 +29,7 @@ const RECIPES = {
   "sea-of-teeth": { freq: 180, dur: 1.1, vol: 0.28, slide: -50 },
   "endless-ocean": { freq: 110, dur: 2.4, vol: 0.3, slide: 12 },
   "candy-mountain": { freq: 784, dur: 0.95, vol: 0.27, slide: 60 },
-  "naked-classroom": { freq: 420, dur: 0.65, vol: 0.2, slide: -80 },
+  "scary-classroom": { freq: 420, dur: 0.65, vol: 0.2, slide: -80 },
   "tranquil-grove": { freq: 262, dur: 2.0, vol: 0.26, slide: 20 },
   "day-in-the-life": { freq: 392, dur: 1.2, vol: 0.24, slide: 0 },
   insanity: { freq: 666, dur: 0.8, vol: 0.24, slide: 200 },

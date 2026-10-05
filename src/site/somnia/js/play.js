@@ -114,7 +114,12 @@ import {
   resolvePendingDeathDream,
   getEffectHelpers,
   canDreamerMeetOnLandscape,
+  actionTurnActive,
+  actionTurnHolder,
+  passMeetToken,
+  moveDreamer,
 } from "./game.js";
+import { createSpectatorBot } from "./bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel, isLeviathanCard } from "./dreambeasts.js";
 import { requestEndPhase } from "./phase-skip.js";
 import { initDevConsole } from "./dev-console.js";
@@ -122,7 +127,7 @@ import { enableDevMode } from "./dev-commands.js";
 import { narrate } from "./narrator.js";
 import { openingHookText, showOpeningHook } from "./opening-hook.js";
 import { cancelPendingReturn, pickRepressCard, confirmRepressStep } from "./subconscious.js";
-import { getLandscapePickHighlights, resolveStaleLandscapePick } from "./landscapes.js";
+import { getLandscapePickHighlights, resolveStaleLandscapePick, cancelLandscapePick } from "./landscapes.js";
 import {
   resolveDreamerPowerChoice,
   resolveDreamerPowerDeckPick,
@@ -137,6 +142,7 @@ import { resolveMindstreamChoice } from "./mindstream-choices.js";
 import { playMindstreamDrawCinematic } from "./mindstream-draw-cinematic.js";
 import { continueArchetypeQueues } from "./archetypes.js";
 import { phaseOpeningActive, encounterPayHint, actorOnLandscape } from "./rules.js";
+import { syncPhaseOpenerMenu, shouldShowPhaseOpenerMenu } from "./phase-opener-menu.js";
 import {
   TUTORIAL_STEPS,
   tutorialBriefHtml,
@@ -251,6 +257,48 @@ import {
 
 let gameData = null;
 let state = null;
+let spectatorBot = null;
+
+function getSpectatorBot() {
+  if (spectatorBot) return spectatorBot;
+  spectatorBot = createSpectatorBot({
+    getState: () => state,
+    renderAll: () => renderAll(),
+    skill: "skilled",
+    stepMs: 750,
+    onThought: (msg) => {
+      const banner = document.getElementById("ai-thought-banner");
+      if (!banner) return;
+      banner.textContent = msg;
+      banner.classList.remove("hidden");
+    },
+    api: {
+      getEffectHelpers: () => ({
+        ...getEffectHelpers(),
+        bot: true,
+        syncDice: true,
+        instant: true,
+      }),
+      drawDreamCard: (s) => drawDreamCard(s, showModal),
+      revealLandscape,
+      activateExplore,
+      gainMeetActions,
+      endPhase,
+      handleBoardTileClick,
+      moveDreamer,
+      passMeetToken,
+      meetEncounter: (s, mode, opts = {}) => meetEncounter(s, mode, { ...opts, instant: true }),
+      performLandscapeAction,
+      handleQuestComplete,
+      cancelLandscapePick,
+    },
+  });
+  return spectatorBot;
+}
+
+export function getAiSpectator() {
+  return getSpectatorBot();
+}
 let launchConfig = null;
 let autoSaveTimer = null;
 let devConsole = null;
@@ -350,6 +398,25 @@ async function init() {
     gameData,
     renderAll,
     endPhase,
+    getAiSpectator,
+    startAiWatchGame: async ({ playerCount = 4, skill = "skilled" } = {}) => {
+      const roster = [...(gameData.dreamers || [])];
+      if (!roster.length) return false;
+      // Prefer a mixed table; fall back to whatever dreamers exist.
+      const shuffled = roster.sort(() => Math.random() - 0.5);
+      const n = Math.max(1, Math.min(playerCount, shuffled.length));
+      const selectedDreamers = shuffled.slice(0, n);
+      await startGame({
+        lengthKey: "nap",
+        selectedDreamerIds: selectedDreamers.map((d) => d.id),
+        gentleStart: false,
+        seed: null,
+      });
+      document.body.classList.remove("opening-cinematic-pending");
+      getSpectatorBot().start({ skill, stepMs: 750 });
+      renderAll();
+      return true;
+    },
   }));
   devConsole?.refresh();
 }
@@ -1485,6 +1552,20 @@ function clearDockSelectTimer() {
   dockSelectTimer = null;
 }
 
+function tryFocusDreamer(playerIndex, { allowViewOnly = false } = {}) {
+  if (!actionTurnActive(state)) return true;
+  const holder = actionTurnHolder(state);
+  const target = state.players[playerIndex];
+  if (!holder || !target) return true;
+  if (holder.id === target.id) return true;
+  if (allowViewOnly) {
+    addLog(state, `It is ${holder.name}'s turn — viewing ${target.name} only.`);
+    return "view";
+  }
+  addLog(state, `It is ${holder.name}'s turn. Pass or act before switching Dreamers.`);
+  return false;
+}
+
 function zoomMaxOnDreamer(playerId, tileId) {
   clearDockSelectTimer();
   pendingDreamerFocusId = null;
@@ -1493,9 +1574,14 @@ function zoomMaxOnDreamer(playerId, tileId) {
   hideUtilityModal(true);
   suppressDreamerOverlay(800);
   const playerIndex = state.players.findIndex((p) => p.id === playerId);
-  if (playerIndex >= 0) state.activePlayerIndex = playerIndex;
+  const focusOk = tryFocusDreamer(playerIndex, { allowViewOnly: true });
+  if (focusOk === false) {
+    renderAll();
+    return;
+  }
+  if (focusOk === true && playerIndex >= 0) state.activePlayerIndex = playerIndex;
   if (getPhase(state) === "Meet" && tileId) state.selectedLandscapeId = tileId;
-  if (playerId && tileId) focusOnDreamer(playerId, tileId);
+  if (playerId && tileId && focusOk === true) focusOnDreamer(playerId, tileId);
   renderAll();
   suppressDreamerOverlay(800);
 }
@@ -1552,6 +1638,11 @@ function showDreamerBoardRadialMenu(playerId, tileId, player) {
 function openDreamerBoardRadial(anchorEl, playerId, tileId) {
   const playerIndex = state.players.findIndex((p) => p.id === playerId);
   if (playerIndex < 0) return;
+  const focusOk = tryFocusDreamer(playerIndex);
+  if (focusOk === false) {
+    renderAll();
+    return;
+  }
   clearDockSelectTimer();
   pendingDreamerFocusId = null;
   hideUtilityModal(true);
@@ -2266,6 +2357,10 @@ function renderAll() {
       return;
     }
     if (state.tradeMode && state.trade?.step === "select-offer") return;
+    if (tryFocusDreamer(index) === false) {
+      renderAll();
+      return;
+    }
     hideRadialMenu();
     const prevId = state.players[state.activePlayerIndex]?.id;
     state.activePlayerIndex = index;
@@ -2301,31 +2396,42 @@ function renderAll() {
     zoomMaxOnDreamer(player?.id, player?.landscapeId);
   });
 
-  if (phaseOpeningActive(state)) {
-    renderPhaseSpendHands(state, onHandCardClick);
-  } else if (getPhase(state) === "Meet" && state.meetActionBudget > 0) {
-    renderCoopMeetHands(state, onHandCardClick);
+  if (shouldShowPhaseOpenerMenu(state)) {
+    const tray = document.getElementById("spread-tray");
+    if (tray) {
+      tray.classList.add("hidden");
+      tray.setAttribute("hidden", "");
+      tray.innerHTML = "";
+    }
+    syncPhaseOpenerMenu(state, handlers, renderAll);
   } else {
-    renderMeetPoolGuide(state);
-    renderHand(state, onHandCardClick, getNewHandCardIds(state));
+    syncPhaseOpenerMenu(state, handlers, renderAll);
+    if (phaseOpeningActive(state)) {
+      renderPhaseSpendHands(state, onHandCardClick);
+    } else if (getPhase(state) === "Meet" && state.meetActionBudget > 0) {
+      renderCoopMeetHands(state, onHandCardClick);
+    } else {
+      renderMeetPoolGuide(state);
+      renderHand(state, onHandCardClick, getNewHandCardIds(state));
+    }
+    renderSpreadTray(state, onHandCardClick, (() => {
+      const opener = getPhaseOpenerAction(state, handlers);
+      if (!opener) return null;
+      const kind = opener.kind || "revealLandscape";
+      return {
+        ...opener,
+        disabled: opener.disabled || !isTutorialActionAllowed(state, kind),
+        onClick: () => {
+          if (!isTutorialActionAllowed(state, kind)) {
+            tutorialActionBlocked(state);
+            renderAll();
+            return;
+          }
+          opener.onClick?.();
+        },
+      };
+    })());
   }
-  renderSpreadTray(state, onHandCardClick, (() => {
-    const opener = getPhaseOpenerAction(state, handlers);
-    if (!opener) return null;
-    const kind = opener.kind || "revealLandscape";
-    return {
-      ...opener,
-      disabled: opener.disabled || !isTutorialActionAllowed(state, kind),
-      onClick: () => {
-        if (!isTutorialActionAllowed(state, kind)) {
-          tutorialActionBlocked(state);
-          renderAll();
-          return;
-        }
-        opener.onClick?.();
-      },
-    };
-  })());
   renderPowerTokens(state, {
     onTokenClick: (el) => openPowerTokenRadial(el),
   });

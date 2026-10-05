@@ -108,15 +108,15 @@ const QUEST_CHECKS = {
   "draw mindstream on the attic": (t) => t.mindstreamOnLandscape["the-attic"],
   "draw mindstream on the attic or the basement": (t) =>
     mindstreamOnAny(t, ["the-attic", "the-basement"]),
-  "draw mindstream on naked classroom or candy mountain": (t) =>
-    mindstreamOnAny(t, ["naked-classroom", "candy-mountain"]),
+  "draw mindstream on scary classroom or candy mountain": (t) =>
+    mindstreamOnAny(t, ["scary-classroom", "candy-mountain"]),
   "draw mindstream on desert or silver mist": (t) =>
     mindstreamOnAny(t, ["desert", "silver-mist"]),
   "draw mindstream on the basement": (t) => t.mindstreamOnLandscape["the-basement"],
   "meet a dreambeast on the attic or the basement": (t) =>
     meetOnAny(t, ["the-attic", "the-basement"]),
-  "meet a dreambeast on naked classroom or candy mountain": (t) =>
-    meetOnAny(t, ["naked-classroom", "candy-mountain"]),
+  "meet a dreambeast on scary classroom or candy mountain": (t) =>
+    meetOnAny(t, ["scary-classroom", "candy-mountain"]),
   "meet a dreambeast on desert or silver mist": (t) =>
     meetOnAny(t, ["desert", "silver-mist"]),
   "draw mindstream on awards or the party": (t) =>
@@ -127,7 +127,7 @@ const QUEST_CHECKS = {
     mindstreamOnAny(t, ["sea-of-teeth", "field-of-broken-glass"]),
   "meet a dreambeast on sea of teeth or field of broken glass": (t) =>
     meetOnAny(t, ["sea-of-teeth", "field-of-broken-glass"]),
-  "draw mindstream on naked classroom": (t) => t.mindstreamOnLandscape["naked-classroom"],
+  "draw mindstream on scary classroom": (t) => t.mindstreamOnLandscape["scary-classroom"],
   "draw mindstream on candy mountain": (t) => t.mindstreamOnLandscape["candy-mountain"],
   "draw mindstream on endless ocean or lava": (t) =>
     mindstreamOnAny(t, ["endless-ocean", "lava"]),
@@ -200,17 +200,17 @@ export function isQuestConditionMet(state, archetypeId, questText) {
 const QUEST_LANDSCAPE_HINTS = {
   "draw mindstream on the attic": ["the-attic"],
   "draw mindstream on the attic or the basement": ["the-attic", "the-basement"],
-  "draw mindstream on naked classroom or candy mountain": ["naked-classroom", "candy-mountain"],
+  "draw mindstream on scary classroom or candy mountain": ["scary-classroom", "candy-mountain"],
   "draw mindstream on desert or silver mist": ["desert", "silver-mist"],
   "draw mindstream on the basement": ["the-basement"],
   "meet a dreambeast on the attic or the basement": ["the-attic", "the-basement"],
-  "meet a dreambeast on naked classroom or candy mountain": ["naked-classroom", "candy-mountain"],
+  "meet a dreambeast on scary classroom or candy mountain": ["scary-classroom", "candy-mountain"],
   "meet a dreambeast on desert or silver mist": ["desert", "silver-mist"],
   "draw mindstream on awards or the party": ["awards", "the-party"],
   "meet a dreambeast on awards or the party": ["awards", "the-party"],
   "draw mindstream on sea of teeth or field of broken glass": ["sea-of-teeth", "field-of-broken-glass"],
   "meet a dreambeast on sea of teeth or field of broken glass": ["sea-of-teeth", "field-of-broken-glass"],
-  "draw mindstream on naked classroom": ["naked-classroom"],
+  "draw mindstream on scary classroom": ["scary-classroom"],
   "draw mindstream on candy mountain": ["candy-mountain"],
   "draw mindstream on endless ocean or lava": ["endless-ocean", "lava"],
   "meet a dreambeast on endless ocean or lava": ["endless-ocean", "lava"],

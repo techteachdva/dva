@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 36.1. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 37.0. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -657,7 +657,7 @@ export function rulesDetailsHtml() {
       <h3>Bosses</h3>
       <ul>
         <li><strong>Cerberus</strong> — Power 12. On Accept, Repress top 3 Psyche</li>
-        <li><strong>Double</strong> — Power 12. On Accept, Forget Day in the Life + Naked Classroom</li>
+        <li><strong>Double</strong> — Power 12. On Accept, Forget Day in the Life + Scary Classroom</li>
         <li><strong>Leviathan</strong> — Power 12, two sides. Awake, it stands on The Bed and can only be forced into Slumber: flip it Asleep and Repress it into the Subconscious. Flip Leviathan while it sleeps, and it wakes on The Bed again. Slumber Returns 6 Psyche</li>
         <li>Boss Dreams spawn the boss as an Encounter on <strong>The Bed</strong> (typically Reveal rounds <strong>3, 6, and 9</strong>)</li>
       </ul>
@@ -714,7 +714,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 36.1</p>
+          <p class="info-hub-kicker">Somnia v 37.0</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>

@@ -170,9 +170,9 @@
     "sourceUrl": "https://pixabay.com/sound-effects/nature-ocean-beach-waves-332383/",
     "license": "Pixabay Content License"
   },
-  "naked-classroom": {
-    "file": "audio/landscapes/naked-classroom.mp3",
-    "label": "naked classroom",
+  "scary-classroom": {
+    "file": "audio/landscapes/scary-classroom.mp3",
+    "label": "scary classroom",
     "title": "Book drop, Thick book, Classroom sound",
     "artist": "Pixabay",
     "artistUrl": "https://pixabay.com/sound-effects/",
