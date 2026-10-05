@@ -117,6 +117,7 @@ import {
   actionTurnActive,
   actionTurnHolder,
   passMeetToken,
+  passActionTurnTo,
   moveDreamer,
 } from "./game.js";
 import { createSpectatorBot } from "./bot-ai.js";
@@ -358,6 +359,7 @@ async function init() {
   gameData = await loadGameData();
   bindModal();
   bindHelp();
+  bindTurnPlaquePass();
   bindBoardResize();
   bindDeckColumnResize();
   initBoardZoom();
@@ -1552,17 +1554,34 @@ function clearDockSelectTimer() {
   dockSelectTimer = null;
 }
 
-function tryFocusDreamer(playerIndex, { allowViewOnly = false } = {}) {
+function bindTurnPlaquePass() {
+  const btn = document.getElementById("turn-plaque-pass");
+  if (!btn || btn.dataset.bound === "1") return;
+  btn.dataset.bound = "1";
+  btn.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!state || !actionTurnActive(state)) return;
+    if (passMeetToken(state)) renderAll();
+  });
+}
+
+function tryFocusDreamer(playerIndex, { allowViewOnly = false, passTurn = false } = {}) {
   if (!actionTurnActive(state)) return true;
   const holder = actionTurnHolder(state);
   const target = state.players[playerIndex];
   if (!holder || !target) return true;
   if (holder.id === target.id) return true;
+  if (passTurn && target.alive && !state.tutorialMode) {
+    // Hand the shared Explore/Meet budget to the Dreamer you tapped.
+    passActionTurnTo(state, target.id);
+    return true;
+  }
   if (allowViewOnly) {
-    addLog(state, `It is ${holder.name}'s turn — viewing ${target.name} only.`);
+    addLog(state, `It is ${holder.name}'s turn — viewing ${target.name} only. Tap Pass Turn or their token to let them act.`);
     return "view";
   }
-  addLog(state, `It is ${holder.name}'s turn. Pass or act before switching Dreamers.`);
+  addLog(state, `It is ${holder.name}'s turn. Pass Turn (or tap another Dreamer) to hand them the remaining actions.`);
   return false;
 }
 
@@ -1638,7 +1657,8 @@ function showDreamerBoardRadialMenu(playerId, tileId, player) {
 function openDreamerBoardRadial(anchorEl, playerId, tileId) {
   const playerIndex = state.players.findIndex((p) => p.id === playerId);
   if (playerIndex < 0) return;
-  const focusOk = tryFocusDreamer(playerIndex);
+  // Tapping another Dreamer during Explore/Meet passes the shared turn to them.
+  const focusOk = tryFocusDreamer(playerIndex, { passTurn: true });
   if (focusOk === false) {
     renderAll();
     return;
@@ -1838,7 +1858,15 @@ function maybeShowMindstreamChoice() {
 }
 
 function maybeShowObjectChoice() {
-  if (state?.pendingMindstreamChoice) return;
+  if (
+    state?.pendingMindstreamChoice
+    || state?.pendingDeathChoice
+    || state?.pendingNothingChoice
+    || state?.pendingRepress
+    || state?.pendingReturn
+  ) {
+    return;
+  }
   const pending = state?.pendingDreamChoice || state?.pendingEffectChoice || state?.pendingObjectChoice;
   const kind = state?.pendingDreamChoice ? "dream" : state?.pendingEffectChoice ? "effect" : "object";
   if (!pending) {
@@ -1885,7 +1913,8 @@ function maybeShowDeathChoice() {
     return;
   }
   const key = state.pendingDeathChoice.playerId;
-  if (key === lastDeathChoiceKey) return;
+  const showing = utilityModalShowing("#death-choice-avoid, #death-choice-accept, .death-choice");
+  if (key === lastDeathChoiceKey && showing) return;
   lastDeathChoiceKey = key;
   showDeathChoiceModal(
     state,
@@ -1968,23 +1997,42 @@ function maybeShowTradePanel() {
   );
 }
 
+function utilityModalShowing(selector) {
+  const modal = document.getElementById("utility-modal");
+  if (!modal || modal.classList.contains("hidden")) return false;
+  return !!modal.querySelector(selector);
+}
+
 function maybeShowRepressPicker() {
-  if (state?.pendingDreamChoice || state?.pendingEffectChoice || state?.pendingObjectChoice) return;
+  // Higher-priority fullscreen choices only — never yield to Dream/Object/Effect
+  // or the phase-opener (those used to steal this modal and soft-lock Meet tax).
+  if (state?.pendingDeathChoice || state?.pendingMindstreamChoice || state?.pendingNothingChoice) {
+    return;
+  }
   if (!state?.pendingRepress) {
     lastRepressPickerKey = null;
     return;
   }
   const pending = state.pendingRepress;
-  const key = `${pending.playerId}:${pending.picked.length}:${pending.remaining}:${pending.confirmEmpty}`;
-  if (key === lastRepressPickerKey) return;
+  const key = [
+    pending.collective ? "team" : pending.playerId,
+    pending.source,
+    pending.picked.length,
+    pending.remaining,
+    pending.confirmEmpty ? 1 : 0,
+    pending.toDiscard ? 1 : 0,
+  ].join(":");
+  const showing = utilityModalShowing("#repress-confirm");
+  if (key === lastRepressPickerKey && showing) return;
   lastRepressPickerKey = key;
 
   showRepressPicker(
     state,
     (instanceId) => {
-      pickRepressCard(state, instanceId);
+      const ok = pickRepressCard(state, instanceId);
       lastRepressPickerKey = null;
-      if (state.pendingRepress) {
+      if (!ok && state.pendingRepress) {
+        // Card already gone / invalid — refresh the picker so the UI unsticks.
         maybeShowRepressPicker();
       }
       renderAll();
@@ -1993,7 +2041,7 @@ function maybeShowRepressPicker() {
       confirmRepressStep(state);
       lastRepressPickerKey = null;
       renderAll();
-    }
+    },
   );
 }
 
@@ -2034,6 +2082,18 @@ function processDreamerPowerResult(result) {
 }
 
 function maybeShowDreamerPowerUI() {
+  if (
+    state?.pendingDeathChoice
+    || state?.pendingMindstreamChoice
+    || state?.pendingNothingChoice
+    || state?.pendingRepress
+    || state?.pendingReturn
+    || state?.pendingDreamChoice
+    || state?.pendingEffectChoice
+    || state?.pendingObjectChoice
+  ) {
+    return;
+  }
   const ui = state?.pendingDreamerPower?.ui;
   if (!ui) {
     dreamerPowerModalKey = null;
@@ -2046,14 +2106,22 @@ function maybeShowDreamerPowerUI() {
 }
 
 function maybeShowReturnPicker() {
-  if (state?.pendingObjectChoice || state?.pendingDreamChoice || state?.pendingEffectChoice) return;
+  if (
+    state?.pendingDeathChoice
+    || state?.pendingMindstreamChoice
+    || state?.pendingNothingChoice
+    || state?.pendingRepress
+  ) {
+    return;
+  }
   if (!state?.pendingReturn) {
     lastReturnPickerKey = null;
     return;
   }
   const pending = state.pendingReturn;
-  const key = `${pending.remaining}:${pending.picked.length}`;
-  if (key === lastReturnPickerKey) return;
+  const key = `${pending.remaining}:${pending.picked.length}:${pending.filter || ""}`;
+  const showing = utilityModalShowing("#return-skip, .subconscious-binder-fullscreen, [data-choice='return']");
+  if (key === lastReturnPickerKey && showing) return;
   lastReturnPickerKey = key;
   showSubconsciousPicker(state, {
     onConfirm: () => {
@@ -2148,6 +2216,11 @@ function renderBoardArea() {
       if (playerIndex < 0) return;
       if (isInteractiveTutorialActive(state)) {
         tutorialActionBlocked(state);
+        renderAll();
+        return;
+      }
+      // Picking another walker passes them the remaining Explore moves.
+      if (tryFocusDreamer(playerIndex, { passTurn: true }) === false) {
         renderAll();
         return;
       }
@@ -2357,7 +2430,7 @@ function renderAll() {
       return;
     }
     if (state.tradeMode && state.trade?.step === "select-offer") return;
-    if (tryFocusDreamer(index) === false) {
+    if (tryFocusDreamer(index, { passTurn: true }) === false) {
       renderAll();
       return;
     }
@@ -2396,7 +2469,8 @@ function renderAll() {
     zoomMaxOnDreamer(player?.id, player?.landscapeId);
   });
 
-  if (shouldShowPhaseOpenerMenu(state)) {
+  const blockingChoice = isBlockingGameChoice(state);
+  if (!blockingChoice && shouldShowPhaseOpenerMenu(state)) {
     const tray = document.getElementById("spread-tray");
     if (tray) {
       tray.classList.add("hidden");
@@ -2405,32 +2479,35 @@ function renderAll() {
     }
     syncPhaseOpenerMenu(state, handlers, renderAll);
   } else {
+    // Releases opener flag without dismissing a Repress/Return modal.
     syncPhaseOpenerMenu(state, handlers, renderAll);
-    if (phaseOpeningActive(state)) {
+    if (!blockingChoice && phaseOpeningActive(state)) {
       renderPhaseSpendHands(state, onHandCardClick);
-    } else if (getPhase(state) === "Meet" && state.meetActionBudget > 0) {
+    } else if (!blockingChoice && getPhase(state) === "Meet" && state.meetActionBudget > 0) {
       renderCoopMeetHands(state, onHandCardClick);
-    } else {
+    } else if (!blockingChoice) {
       renderMeetPoolGuide(state);
       renderHand(state, onHandCardClick, getNewHandCardIds(state));
     }
-    renderSpreadTray(state, onHandCardClick, (() => {
-      const opener = getPhaseOpenerAction(state, handlers);
-      if (!opener) return null;
-      const kind = opener.kind || "revealLandscape";
-      return {
-        ...opener,
-        disabled: opener.disabled || !isTutorialActionAllowed(state, kind),
-        onClick: () => {
-          if (!isTutorialActionAllowed(state, kind)) {
-            tutorialActionBlocked(state);
-            renderAll();
-            return;
-          }
-          opener.onClick?.();
-        },
-      };
-    })());
+    if (!blockingChoice) {
+      renderSpreadTray(state, onHandCardClick, (() => {
+        const opener = getPhaseOpenerAction(state, handlers);
+        if (!opener) return null;
+        const kind = opener.kind || "revealLandscape";
+        return {
+          ...opener,
+          disabled: opener.disabled || !isTutorialActionAllowed(state, kind),
+          onClick: () => {
+            if (!isTutorialActionAllowed(state, kind)) {
+              tutorialActionBlocked(state);
+              renderAll();
+              return;
+            }
+            opener.onClick?.();
+          },
+        };
+      })());
+    }
   }
   renderPowerTokens(state, {
     onTokenClick: (el) => openPowerTokenRadial(el),
@@ -2488,13 +2565,15 @@ function renderAll() {
   }
 
   resolvePendingDeathDream(state, showModal);
+  // Priority: death → nothing → mindstream → repress/return → object/dream/effect → powers.
+  // Repress before object/dream so Meet-tax discard cannot be buried under another modal.
   maybeShowDeathChoice();
   maybeShowNothingChoice();
   maybeShowMindstreamChoice();
-  maybeShowObjectChoice();
-  maybeShowRespawn();
   maybeShowRepressPicker();
   maybeShowReturnPicker();
+  maybeShowObjectChoice();
+  maybeShowRespawn();
   maybeShowDreamerPowerUI();
   if (!isBlockingGameChoice(state)) maybeShowTradePanel();
 

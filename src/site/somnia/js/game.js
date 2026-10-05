@@ -309,21 +309,68 @@ function seatMeetPassToken(state, openerId) {
 }
 
 export function passMeetToken(state) {
-  if (tutorialSuppressesMeetPass(state) || !state.meetPassHolderId) return;
+  if (tutorialSuppressesMeetPass(state) || !state.meetPassHolderId) return false;
   const next = nextLivingClockwise(state, state.meetPassHolderId);
-  if (!next || next.id === state.meetPassHolderId) return;
-  state.meetPassHolderId = next.id;
+  if (!next || next.id === state.meetPassHolderId) return false;
+  return passActionTurnTo(state, next.id);
+}
+
+/**
+ * Hand the current Explore / Meet / Reveal action turn to a specific Dreamer.
+ * Remaining moves/actions stay on the shared budget.
+ */
+export function passActionTurnTo(state, playerId) {
+  if (tutorialSuppressesMeetPass(state) || !actionTurnActive(state)) return false;
+  const target = state.players.find((p) => p.id === playerId && p.alive);
+  if (!target) return false;
+  if (state.meetPassHolderId === target.id) {
+    focusActionTurnHolder(state);
+    return true;
+  }
+  const from = state.players.find((p) => p.id === state.meetPassHolderId);
+  state.meetPassHolderId = target.id;
   focusActionTurnHolder(state);
-  addLog(state, `${next.name}'s turn.`);
+  const phase = getPhase(state);
+  const left = phase === "Explore"
+    ? `${state.exploreMovesLeft || 0} move(s) left`
+    : phase === "Meet"
+      ? `${Math.max(0, (state.meetActionBudget || 0) - (state.meetActionsUsed || 0))} action(s) left`
+      : "your turn";
+  addLog(
+    state,
+    from && from.id !== target.id
+      ? `${from.name} passes — ${target.name}'s turn (${left}).`
+      : `${target.name}'s turn (${left}).`,
+  );
+  return true;
 }
 
 /** Alias used by Explore / Reveal turn passing. */
 export function passActionTurn(state) {
-  passMeetToken(state);
+  return passMeetToken(state);
 }
 
 export function clearActionTurn(state) {
   state.meetPassHolderId = null;
+}
+
+function passTurnAction(state) {
+  if (tutorialSuppressesMeetPass(state) || !actionTurnActive(state)) return null;
+  const holder = actionTurnHolder(state);
+  const player = activePlayer(state);
+  if (!holder || !player || holder.id !== player.id) return null;
+  const aliveOthers = state.players.filter((p) => p.alive && p.id !== holder.id);
+  if (!aliveOthers.length) return null;
+  const phase = getPhase(state);
+  const noun = phase === "Explore" ? "moves" : phase === "Meet" ? "actions" : "reveals";
+  return {
+    label: "Pass Turn",
+    kind: "meetPass",
+    section: "actions",
+    primary: true,
+    hint: `Skip your turn. The next Dreamer clockwise may spend the remaining shared ${noun}.`,
+    onClick: () => passMeetToken(state),
+  };
 }
 
 function dreamerCanPayOpener(player, suit) {
@@ -663,6 +710,8 @@ export function getPhaseActions(state, handlers) {
           onClick: () => cashExplorePeek(state),
         });
       }
+      const explorePass = passTurnAction(state);
+      if (explorePass) actions.push(explorePass);
     }
     actions.push(...objectFreeActions());
     actions.push(dreamerPowerAction());
@@ -811,15 +860,8 @@ export function getPhaseActions(state, handlers) {
     actions.push(dreamerPowerAction());
     actions.push(...questActions());
     actions.push(...archetypePowerActions());
-  if (!tutorialSuppressesMeetPass(state) && state.meetPassHolderId === player.id && actionTurnActive(state)) {
-      actions.push({
-        label: getPhase(state) === "Meet" ? "Pass Turn" : "Pass Turn",
-        kind: "meetPass",
-        section: "actions",
-        hint: "Skip your turn. Focus moves clockwise to the next Dreamer.",
-        onClick: () => passMeetToken(state),
-      });
-    }
+    const meetPass = passTurnAction(state);
+    if (meetPass) actions.push(meetPass);
     if (
       (!state.tutorialMode || state.tutorialTrack === "advanced")
       && player.dreamer?.id === "the-weaver"
@@ -1222,20 +1264,24 @@ function consumeInsulationMoves(state) {
 }
 
 export function moveDreamer(state, targetLandscapeId) {
-  const player = activePlayer(state);
+  if (getPhase(state) === "Explore" && actionTurnActive(state)) {
+    focusActionTurnHolder(state);
+  }
+  const player = actionTurnHolder(state) || activePlayer(state);
   const to = landscapeById(state, targetLandscapeId);
 
   if (getPhase(state) === "Explore") {
     const runnerFree = !state.tutorialMode
-      && player.dreamer?.id === "the-runner"
+      && player?.dreamer?.id === "the-runner"
       && !state.runnerFreeMoveUsed;
+    if (!player) return;
     if (!state.exploreActivated || (state.exploreMovesLeft < 1 && !runnerFree)) {
       addLog(state, "Activate Explore with Elasticity Psyche first.");
       return;
     }
     if (meetPassBlocks(state, player)) {
       const holder = actionTurnHolder(state);
-      addLog(state, `It is ${holder?.name || "another Dreamer"}'s turn to move.`);
+      addLog(state, `It is ${holder?.name || "another Dreamer"}'s turn to move. Pass Turn or tap their token.`);
       return;
     }
     if (!to || !to.revealed) {
@@ -2550,7 +2596,8 @@ export function handleBoardTileClick(state, tileId) {
 
   const phase = getPhase(state);
   if (phase === "Explore" && state.exploreActivated) {
-    const player = activePlayer(state);
+    if (actionTurnActive(state)) focusActionTurnHolder(state);
+    const player = actionTurnHolder(state) || activePlayer(state);
     if (player && player.landscapeId !== tileId && canMoveTo(state, player, tileId)) {
       moveDreamer(state, tileId);
       return true;
@@ -2627,9 +2674,13 @@ export function getDeckTop(state, deckId) {
 }
 
 export function getLegalExploreTargets(state) {
-  const player = activePlayer(state);
   if (getPhase(state) !== "Explore" || !state.exploreActivated) return [];
   if ((state.exploreMovesLeft || 0) < 1) return [];
+  // Always highlight the Dreamer who holds the Explore turn.
+  const player = actionTurnHolder(state) || activePlayer(state);
+  if (player && actionTurnActive(state) && state.activePlayerIndex !== state.players.indexOf(player)) {
+    focusActionTurnHolder(state);
+  }
   return getLegalMoveTargets(state, player);
 }
 
@@ -2653,7 +2704,11 @@ export function getPhaseHint(state) {
     if (!state.exploreActivated) {
       return `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves.`;
     }
-    return `${COOP_PLAY_TIP} ${state.exploreMovesLeft} team move(s) · ${legal} hexes reachable. Tap Next Phase at the top-right of the map when you are done moving.`;
+    const holder = actionTurnHolder(state);
+    const turnNote = holder
+      ? `${holder.name}'s turn to move — Pass or tap another Dreamer to hand them the remaining moves.`
+      : "Tap a glowing hex to move.";
+    return `${COOP_PLAY_TIP} ${state.exploreMovesLeft} team move(s) · ${legal} hexes reachable. ${turnNote}`;
   }
   if (phase === "Meet") {
     if (state.meetActionBudget === 0) {

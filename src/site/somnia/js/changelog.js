@@ -6,10 +6,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "37.0";
+export const SOMNIA_VERSION = "37.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "37.1",
+    title: "Pass Turn & Choice Plumbing",
+    notes: [
+      "Explore and Meet: Pass Turn from the yellow plaque, the Dreamer radial, or by tapping another Dreamer — remaining shared moves/actions go to them.",
+      "Repress / Discard pickers no longer get buried under the phase-opener menu (Meet-start tax soft-lock). Blocking choices keep priority and re-open if another UI steals the modal.",
+      "Empty-hand mid-pick finishes cleanly instead of leaving the table stuck on Repress.",
+    ],
+  },
   {
     version: "37.0",
     title: "Dev Auto Play Update",

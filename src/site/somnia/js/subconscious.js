@@ -246,7 +246,9 @@ function beginReturnStep(state, step) {
     filter: step.filter || null,
     reason: step.reason,
   };
-  if (step.reason) flashMoment(step.reason);
+  if (step.reason) {
+    try { flashMoment(step.reason); } catch { /* DOM optional in sim */ }
+  }
 }
 
 export function pickReturnCard(state, instanceId) {
@@ -416,7 +418,9 @@ function beginRepressStep(state, step) {
       toDiscard: !!step.toDiscard,
       confirmEmpty: false,
     };
-    if (step.reason) flashMoment(step.reason);
+    if (step.reason) {
+      try { flashMoment(step.reason); } catch { /* DOM optional in sim */ }
+    }
     return;
   }
 
@@ -489,7 +493,9 @@ function beginRepressStep(state, step) {
     toDiscard: !!step.toDiscard,
     confirmEmpty: false,
   };
-  if (step.reason) flashMoment(step.reason);
+  if (step.reason) {
+    try { flashMoment(step.reason); } catch { /* DOM optional in sim */ }
+  }
 }
 
 function removeFromSource(player, source, instanceId) {
@@ -614,9 +620,25 @@ export function pickRepressCard(state, instanceId) {
       state.checkPsycheDeath(player);
     }
     advanceResolutionQueue(state);
-  } else if (pending.source === "hand" && !(player.hand || []).length) {
+    return true;
+  }
+
+  // No cards left to satisfy the rest of the demand — finish instead of soft-locking.
+  const poolLeft = pending.collective
+    ? collectiveHandPool(state).length
+    : sourceCards(player, pending.source).length;
+  if (poolLeft < 1) {
+    const verb = pending.toDiscard ? "Discarded" : "Repressed";
+    const subject = pending.collective ? "Team" : player.name;
+    logRepress(state, `${subject} ${verb} ${pending.picked.length}/${pending.remaining} (all available).`);
     state.pendingRepress = null;
-    if (state.checkPsycheDeath) state.checkPsycheDeath(player);
+    if (pending.source === "hand" && state.checkPsycheDeath) {
+      if (pending.collective) {
+        aliveHandOwners(state).forEach((p) => state.checkPsycheDeath(p));
+      } else {
+        state.checkPsycheDeath(player);
+      }
+    }
     advanceResolutionQueue(state);
   }
   return true;

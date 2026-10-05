@@ -10542,6 +10542,30 @@ html[data-touch="true"] .action-dock .btn-advance {
   opacity: 0.8;
 }
 
+.turn-plaque-pass {
+  pointer-events: auto;
+  margin-top: 0.2rem;
+  border: 1px solid rgba(40, 24, 0, 0.45);
+  border-radius: 999px;
+  background: rgba(26, 18, 4, 0.92);
+  color: #ffe9a8;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.7rem;
+  cursor: pointer;
+}
+
+.turn-plaque-pass:hover {
+  background: #1a1204;
+  color: #fff3c4;
+}
+
+.turn-plaque-pass.hidden {
+  display: none;
+}
+
 .ai-thought-banner {
   position: fixed;
   left: 50%;

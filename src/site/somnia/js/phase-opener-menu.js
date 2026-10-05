@@ -2,7 +2,7 @@
  * Fullscreen phase-opener: pick which Dreamer opens Reveal / Explore / Meet and with which card.
  * Shows every living Dreamer's hand so the table can switch focus without hunting chips.
  */
-import { getPhase, activePlayer } from "./state.js";
+import { getPhase, activePlayer, isBlockingGameChoice } from "./state.js";
 import {
   phaseOpeningActive,
   phaseSuitForOpening,
@@ -105,15 +105,20 @@ export function isPhaseOpenerMenuOpen() {
   return openerMenuOpen;
 }
 
-export function closePhaseOpenerMenu() {
+export function closePhaseOpenerMenu({ hideModal = true } = {}) {
   if (!openerMenuOpen) return;
   openerMenuOpen = false;
-  hideUtilityModal(true);
+  // When a blocking choice (Repress / Return / Mindstream) is about to claim the
+  // utility modal, skip hide — otherwise we flash-dismiss the required picker.
+  if (hideModal) hideUtilityModal(true);
 }
 
 export function shouldShowPhaseOpenerMenu(state) {
   if (!state || state.status !== "playing") return false;
   if (!phaseOpeningActive(state)) return false;
+  // Meet-start tax / Dream effects often open Repress while the phase is still
+  // "unopened". Never cover those pickers with the opener menu.
+  if (isBlockingGameChoice(state)) return false;
   if (state.tutorialMode && !state.tutorialFlags?.phaseOpenerMenu) {
     // Tutorial keeps the classic hand + spread tray unless flagged.
     return false;
@@ -295,6 +300,9 @@ export function syncPhaseOpenerMenu(state, handlers, renderAll) {
     showPhaseOpenerMenu(state, handlers, renderAll);
     return true;
   }
-  if (openerMenuOpen) closePhaseOpenerMenu();
+  if (openerMenuOpen) {
+    // Blocking pickers own the utility modal — release the opener flag only.
+    closePhaseOpenerMenu({ hideModal: !isBlockingGameChoice(state) });
+  }
   return false;
 }

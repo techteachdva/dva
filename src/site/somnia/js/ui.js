@@ -3175,6 +3175,7 @@ function renderTurnPlaque(state) {
   const plaque = document.getElementById("turn-plaque");
   const nameEl = document.getElementById("turn-plaque-name");
   const phaseEl = document.getElementById("turn-plaque-phase");
+  const passBtn = document.getElementById("turn-plaque-pass");
   if (!plaque || !nameEl) return;
 
   const holderId = state.meetPassHolderId;
@@ -3199,16 +3200,30 @@ function renderTurnPlaque(state) {
     }
   }
 
+  const canPass = active
+    && !state.tutorialMode
+    && state.players.some((p) => p.alive && p.id !== holder?.id);
+
   if (!active) {
     plaque.classList.add("hidden");
     nameEl.textContent = "—";
     if (phaseEl) phaseEl.textContent = "";
+    passBtn?.classList.add("hidden");
     return;
   }
 
   plaque.classList.remove("hidden");
   nameEl.textContent = holder.name;
   if (phaseEl) phaseEl.textContent = phaseNote;
+  if (passBtn) {
+    passBtn.classList.toggle("hidden", !canPass);
+    passBtn.textContent = "Pass";
+    passBtn.title = phase === "Explore"
+      ? "Pass Explore turn — next Dreamer uses the remaining moves"
+      : phase === "Meet"
+        ? "Pass Meet turn — next Dreamer uses the remaining actions"
+        : "Pass turn to the next Dreamer";
+  }
 }
 
 export function renderHud(state, hint = "") {
@@ -4732,7 +4747,7 @@ export function showRepressPicker(state, onPick, onConfirm) {
   const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
   const pending = state.pendingRepress;
-  if (!pending) return;
+  if (!pending || !modal || !body) return;
 
   const collective = !!pending.collective;
   const player = collective ? null : state.players.find((p) => p.id === pending.playerId);
@@ -4759,7 +4774,7 @@ export function showRepressPicker(state, onPick, onConfirm) {
   }
 
   body.innerHTML = `
-    <div class="card-choice-picker card-choice-picker-wide">
+    <div class="card-choice-picker card-choice-picker-wide" data-choice="repress">
       <h2>${discard ? "Discard Psyche" : "Repress to Subconscious"}</h2>
       <p class="card-choice-message">${pending.reason || instruction}</p>
       <p class="resolution-player">${playerName}</p>
@@ -4768,11 +4783,15 @@ export function showRepressPicker(state, onPick, onConfirm) {
       <div id="repress-pool" class="subconscious-piles card-choice-piles"></div>
       <p class="card-choice-status">${picked}/${needed} ${discard ? "discarded" : "repressed"}</p>
       <div class="utility-actions card-choice-actions">
+        <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">Minimize — view board</button>
         <button type="button" class="btn primary" id="repress-confirm">${isEmpty || pool.length === 0 ? "Continue" : picked >= needed ? "Done" : "Continue with selected"}</button>
       </div>
     </div>
   `;
   prepareCardChoiceModal();
+  // Ensure a prior phase-opener / landscape modal cannot leave us minimized.
+  modal?.classList.remove("utility-modal-minimized", "hidden");
+  document.body.classList.add("utility-modal-open");
 
   const container = body.querySelector("#repress-pool");
   const allCards = collective
@@ -4814,12 +4833,14 @@ export function showRepressPicker(state, onPick, onConfirm) {
     }
   }
 
-  body.querySelector("#repress-confirm").addEventListener("click", () => {
+  body.querySelector("#repress-confirm")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     hideUtilityModal(true);
-    onConfirm();
+    onConfirm?.();
   });
 
-  modal.classList.remove("hidden");
+  modal.classList.remove("hidden", "utility-modal-minimized");
 }
 
 export function showSubconsciousBrowse(state, onCardClick) {
