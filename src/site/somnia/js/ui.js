@@ -2604,11 +2604,15 @@ export function renderCoopMeetHands(state, onCardClick) {
     : "";
   renderMeetPoolGuide(state);
 
+  const msPrep = state.pendingMindstreamMeet;
+  const prepNote = msPrep
+    ? (msPrep.preferredMode === "reject" ? " · pick Psyche, then Repress" : " · pick Psyche, then Accept")
+    : "";
   renderActiveDreamerHand(state, onCardClick, {
-    title: `${player.name} — Meet Hand`,
+    title: msPrep ? `${player.name} — Mindstream Meet` : `${player.name} — Meet Hand`,
     statsText: meetActor
       ? (isActor
-        ? `Pool ${poolCount}/3 = ${poolTotal}${bonusText}${pending}${acceptBit}`
+        ? `Pool ${poolCount}/3 = ${poolTotal}${bonusText}${pending}${acceptBit}${prepNote}`
         : `${meetActor.name} may pool`)
       : "Pool 1–3",
     canClickCard: (card) => card.type === "psyche-power" || !meetActor || isActor,

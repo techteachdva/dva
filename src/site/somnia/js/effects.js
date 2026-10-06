@@ -194,6 +194,7 @@ export function onMeetPhaseEnd(state) {
   state.skipLandscapeActionsNextMeet = false;
   state.pickEncounterOnSpawn = false;
   state.freeQuestMeet = null;
+  state.pendingMindstreamMeet = null;
 }
 
 const DREAM_EFFECTS = {

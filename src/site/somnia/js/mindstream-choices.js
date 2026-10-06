@@ -211,7 +211,7 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
           role: "good",
           shape: "willpower",
           label: "Accept the Dreambeast",
-          hint: "Meet now — win to take it as an ally",
+          hint: "Open your hand — pick Psyche, then Accept to fight for an ally",
           disabled: false,
         },
         {
@@ -227,7 +227,7 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
           role: "bad",
           shape: "lucidity",
           label: "Repress the Dreambeast",
-          hint: "Meet now — win to Repress it",
+          hint: "Open your hand — pick Psyche, then Repress to fight",
           disabled: false,
         },
       ],
@@ -440,13 +440,23 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
       state.activeEncounterLandscapeId = pending.landscapeId;
       state.selectedLandscapeId = pending.landscapeId;
     }
-    if (h.meetEncounter) {
-      h.meetEncounter(state, choiceId === "repress" ? "reject" : "accept", {
+    const mode = choiceId === "repress" ? "reject" : "accept";
+    const instant = !!(h.bot || h.syncDice || h.instant);
+    if (h.prepareMindstreamMeet) {
+      h.prepareMindstreamMeet(state, {
+        mode,
+        landscapeId: pending.landscapeId,
+        playerId: pending.playerId || player?.id,
+        instant,
+        meetEncounterFn: h.meetEncounter,
+        onDone: () => h.onChoiceResolved?.(state),
+      });
+    } else if (h.meetEncounter) {
+      // Fallback for older helpers — still try to meet immediately.
+      h.meetEncounter(state, mode, {
         freeMeet: true,
         fromMindstreamDraw: true,
-        // Bots / sims must resolve synchronously — animated dice leaves
-        // activeBattle open and blocks endPhase forever under a stubbed DOM.
-        instant: !!(h.bot || h.syncDice || h.instant),
+        instant,
         onDone: () => h.onChoiceResolved?.(state),
       });
     } else {

@@ -279,6 +279,7 @@ export function createInitialState(data, options) {
     pendingDreamQueue: [],
     pendingEffectChoice: null,
     pendingMindstreamChoice: null,
+    pendingMindstreamMeet: null,
     skipNextDreamDraw: false,
     revealedDeckTops: {},
     encounterSpawnSeq: 0,

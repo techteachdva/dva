@@ -118,6 +118,7 @@ import {
   actionTurnHolder,
   passMeetToken,
   moveDreamer,
+  prepareMindstreamMeet,
 } from "./game.js";
 import { createSpectatorBot } from "./bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel, isLeviathanCard } from "./dreambeasts.js";
@@ -288,6 +289,11 @@ function getSpectatorBot() {
       moveDreamer,
       passMeetToken,
       meetEncounter: (s, mode, opts = {}) => meetEncounter(s, mode, { ...opts, instant: true }),
+      prepareMindstreamMeet: (s, opts = {}) => prepareMindstreamMeet(s, {
+        ...opts,
+        instant: true,
+        meetEncounterFn: (st, mode, o) => meetEncounter(st, mode, { ...o, instant: true }),
+      }),
       performLandscapeAction,
       handleQuestComplete,
       cancelLandscapePick,
@@ -1403,7 +1409,11 @@ function buildPhaseHandlers() {
     activateExplore: () => { activateExplore(state); renderAll(); },
     gainMeetActions: () => { gainMeetActions(state); renderAll(); },
     meetEncounter: (mode) => {
-      meetEncounter(state, mode, { onDone: () => renderAll() });
+      meetEncounter(state, mode, {
+        freeMeet: !!state.pendingMindstreamMeet,
+        fromMindstreamDraw: !!state.pendingMindstreamMeet,
+        onDone: () => renderAll(),
+      });
       renderAll();
     },
     drawMindstream: () => {
@@ -1820,6 +1830,7 @@ function maybeShowMindstreamChoice() {
       const helpers = {
         ...getEffectHelpers(),
         meetEncounter,
+        prepareMindstreamMeet,
         onChoiceResolved: () => {
           continueDeferredEventQueues(state);
           lastMindstreamChoiceKey = null;
@@ -2477,7 +2488,10 @@ function renderAll() {
     syncPhaseOpenerMenu(state, handlers, renderAll);
     if (!blockingChoice && phaseOpeningActive(state)) {
       renderPhaseSpendHands(state, onHandCardClick);
-    } else if (!blockingChoice && getPhase(state) === "Meet" && state.meetActionBudget > 0) {
+    } else if (!blockingChoice && (
+      (getPhase(state) === "Meet" && state.meetActionBudget > 0)
+      || state.pendingMindstreamMeet
+    )) {
       renderCoopMeetHands(state, onHandCardClick);
     } else if (!blockingChoice) {
       renderMeetPoolGuide(state);

@@ -54,6 +54,7 @@ import {
   cardCountsAsSuit,
   encounterPlayTotal,
   encounterPayHint,
+  encounterPaySuit,
   PHASE_OPENER_MAX_CARDS,
 } from "./rules.js";
 import {
@@ -410,12 +411,29 @@ function isFreeQuestMeet(state, action) {
   return !!actor && actor.landscapeId === free.landscapeId && !!encounterOnLandscape(state, free.landscapeId);
 }
 
+/** Free Accept/Repress after drawing a Dreambeast onto your own hex from the Mindstream. */
+export function isMindstreamMeetPrep(state, actor = null) {
+  const pending = state.pendingMindstreamMeet;
+  if (!pending?.landscapeId) return false;
+  const person = actor || meetActionActor(state, MEET_ACTIONS.MEET);
+  return !!person
+    && person.landscapeId === pending.landscapeId
+    && (!pending.playerId || person.id === pending.playerId)
+    && !!encounterOnLandscape(state, pending.landscapeId);
+}
+
+function isFreeMeet(state, action, actor = null) {
+  if (action !== MEET_ACTIONS.MEET) return false;
+  return isFreeQuestMeet(state, action) || isMindstreamMeetPrep(state, actor);
+}
+
 function canUseMeetActionForActor(state, actor, action, landscapeActionId = null) {
   if (!actor) return false;
-  if (meetPassBlocks(state, actor)) return false;
+  const freeMeet = isFreeMeet(state, action, actor);
+  if (!freeMeet && meetPassBlocks(state, actor)) return false;
   if (!canSpendMeetAction(state, actor, action, MEET_ACTIONS)) return false;
   if (landscapeActionId !== "draw-mindstream" && hasUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId))) return false;
-  if (!isFreeQuestMeet(state, action) && state.meetActionsUsed >= state.meetActionBudget) return false;
+  if (!freeMeet && state.meetActionsUsed >= state.meetActionBudget) return false;
   return true;
 }
 
@@ -443,10 +461,13 @@ export function canDreamerMeetOnLandscape(state, player, tileId) {
   if (state.forcedAccept && player.id === state.forcedAccept.playerId && tileId === state.forcedAccept.tileId) {
     return !!enc;
   }
-  const freeMeet = state.freeQuestMeet?.landscapeId === tileId && player.landscapeId === tileId;
+  const freeMeet = (state.freeQuestMeet?.landscapeId === tileId && player.landscapeId === tileId)
+    || (state.pendingMindstreamMeet?.landscapeId === tileId
+      && player.landscapeId === tileId
+      && (!state.pendingMindstreamMeet.playerId || state.pendingMindstreamMeet.playerId === player.id));
   if (!enc || getPhase(state) !== "Meet") return false;
   if (!freeMeet && (state.meetActionBudget < 1 || state.meetActionsUsed >= state.meetActionBudget)) return false;
-  if (meetPassBlocks(state, player)) return false;
+  if (!freeMeet && meetPassBlocks(state, player)) return false;
   if (hasUsedMeetAction(state, player, meetActionKey(MEET_ACTIONS.MEET))) return false;
   return canSpendMeetAction(state, player, MEET_ACTIONS.MEET, MEET_ACTIONS);
 }
@@ -454,11 +475,12 @@ export function canDreamerMeetOnLandscape(state, player, tileId) {
 function meetActionHint(state, action, landscapeActionId, baseHint = "") {
   const actor = meetActionActor(state, action);
   if (!actor) return "A Dreamer must stand on this Landscape.";
-  if (meetPassBlocks(state, actor)) {
+  const freeMeet = isFreeMeet(state, action, actor);
+  if (!freeMeet && meetPassBlocks(state, actor)) {
     const holder = state.players.find((p) => p.id === state.meetPassHolderId);
     return `It is ${holder?.name || "another Dreamer"}'s turn.`;
   }
-  if (!isFreeQuestMeet(state, action) && state.meetActionsUsed >= state.meetActionBudget) return "No Meet actions remaining.";
+  if (!freeMeet && state.meetActionsUsed >= state.meetActionBudget) return "No Meet actions remaining.";
   if (hasUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId))) {
     return isTableUniqueLandscapeAction(landscapeActionId)
       ? "Already used this Meet."
@@ -826,6 +848,10 @@ export function getPhaseActions(state, handlers) {
     if (meetEnc && !state.finalRecurrence) {
       const payHint = encounterPayHint(meetEnc, true);
       const slumberOnly = isLeviathanCard(meetEnc);
+      const preferReject = state.pendingMindstreamMeet?.preferredMode === "reject";
+      const prepHint = state.pendingMindstreamMeet
+        ? " Select Psyche in your hand, then confirm."
+        : "";
       if (!slumberOnly) actions.push({
         label: `${encounterPowerLabel(meetEnc, true)} — ${encounterAcceptSummary(meetEnc)}`,
         kind: "meetAccept",
@@ -834,9 +860,9 @@ export function getPhaseActions(state, handlers) {
           state,
           MEET_ACTIONS.MEET,
           null,
-          [payHint, meetEnc.effect ? `Effect: ${meetEnc.effect}` : encounterAcceptSummary(meetEnc)].filter(Boolean).join(" "),
+          [payHint, meetEnc.effect ? `Effect: ${meetEnc.effect}` : encounterAcceptSummary(meetEnc)].filter(Boolean).join(" ") + prepHint,
         ),
-        primary: true,
+        primary: !preferReject,
         disabled: !state.forcedAccept && !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("accept"),
       });
@@ -849,8 +875,9 @@ export function getPhaseActions(state, handlers) {
             state,
             MEET_ACTIONS.MEET,
             null,
-            [encounterPayHint(meetEnc, false), encounterRejectSummary(meetEnc)].filter(Boolean).join(" "),
+            [encounterPayHint(meetEnc, false), encounterRejectSummary(meetEnc)].filter(Boolean).join(" ") + prepHint,
           ),
+          primary: preferReject,
           disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
           onClick: () => handlers.meetEncounter("reject"),
         });
@@ -1648,6 +1675,82 @@ export function getPowerTokenRadialOptions(state) {
   return options;
 }
 
+/** Auto-pick a legal Psyche spread for bots / instant Mindstream meets. */
+function autoSelectMeetSpread(state, mode = "accept") {
+  const actor = meetActionActor(state, MEET_ACTIONS.MEET) || activePlayer(state);
+  const encounter = encounterForMeet(state) || encounterOnLandscape(state, actor?.landscapeId);
+  if (!actor || !encounter) return false;
+  const accept = mode !== "reject" && mode !== "repress";
+  const paySuit = encounterPaySuit(encounter, accept);
+  const candidates = (actor.hand || []).filter((card) => (
+    card
+    && card.type !== "psyche-power"
+    && card.type !== "object"
+    && !isDreambeastPsycheCard(card)
+  ));
+  if (!candidates.length) return false;
+  const suited = paySuit
+    ? candidates.filter((card) => isWildPsyche(card) || card.suit === paySuit)
+    : candidates;
+  const pick = [];
+  if (suited[0]) pick.push(suited[0]);
+  for (const card of candidates) {
+    if (pick.length >= 3) break;
+    if (!pick.some((c) => c.instanceId === card.instanceId)) pick.push(card);
+  }
+  state.selectedHand = pick.map((card) => card.instanceId);
+  return pick.length > 0;
+}
+
+/**
+ * After drawing a Dreambeast onto your hex: open the Meet hand to build a spread,
+ * then Accept / Repress for free. Bots resolve instantly.
+ */
+export function prepareMindstreamMeet(state, {
+  mode = "accept",
+  landscapeId,
+  playerId,
+  instant = false,
+  meetEncounterFn = null,
+  onDone = null,
+} = {}) {
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
+  if (playerIndex >= 0) state.activePlayerIndex = playerIndex;
+  if (landscapeId) {
+    state.selectedLandscapeId = landscapeId;
+    state.activeEncounterLandscapeId = landscapeId;
+    const enc = encounterOnLandscape(state, landscapeId);
+    if (enc) state.activeEncounter = enc;
+  }
+  if (actionTurnActive(state) && playerId) {
+    state.meetPassHolderId = playerId;
+    focusActionTurnHolder(state);
+  }
+
+  if (instant && typeof meetEncounterFn === "function") {
+    autoSelectMeetSpread(state, mode);
+    meetEncounterFn(state, mode, {
+      freeMeet: true,
+      fromMindstreamDraw: true,
+      instant: true,
+      onDone,
+    });
+    return true;
+  }
+
+  state.pendingMindstreamMeet = {
+    landscapeId,
+    playerId,
+    preferredMode: mode === "reject" || mode === "repress" ? "reject" : "accept",
+  };
+  state.selectedHand = [];
+  const beastName = encounterOnLandscape(state, landscapeId)?.name || "the Dreambeast";
+  const verb = mode === "reject" || mode === "repress" ? "Repress" : "Accept";
+  addLog(state, `Choose Psyche for your spread, then ${verb} ${beastName}.`);
+  logMoment(state, `${beastName} — select Psyche, then ${verb}.`);
+  return true;
+}
+
 export function meetEncounter(state, mode = "accept", { instant = false, onDone, freeMeet = false, fromMindstreamDraw = false } = {}) {
   if (isDiceBattleOpen() || state.diceBattle) {
     addLog(state, "Finish the dice battle first.");
@@ -1666,14 +1769,20 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     addLog(state, "Meet a Dreambeast on a Landscape you occupy.");
     return;
   }
-  if (!state.forcedAccept && !freeMeet && !spendMeetAction(state, MEET_ACTIONS.MEET)) return;
+  const actorEarly = actorOnLandscape(state, tile.id);
+  // Mindstream-on-hex prep is free (no Meet action). Quest free-meets still go through spendMeetAction.
+  const freeFromMindstreamPrep = isMindstreamMeetPrep(state, actorEarly);
+  const treatAsFree = !!freeMeet || freeFromMindstreamPrep || !!state.forcedAccept;
+  const fromMs = !!fromMindstreamDraw || !!state.pendingMindstreamMeet || !!encounter.drawnFromMindstream;
+  if (!state.forcedAccept && !treatAsFree && !spendMeetAction(state, MEET_ACTIONS.MEET)) return;
 
   state.activeEncounter = encounter;
   state.activeEncounterLandscapeId = tile.id;
   const actor = actorOnLandscape(state, tile.id);
   const abortMeet = (message) => {
     if (message) addLog(state, message);
-    if (state.forcedAccept || freeMeet) return;
+    // Keep Mindstream prep open so the Dreamer can fix their spread and try again.
+    if (state.forcedAccept || treatAsFree) return;
     refundMeetAction(state, actor || meetActionActor(state, MEET_ACTIONS.MEET), MEET_ACTIONS.MEET);
   };
   if (!actor) {
@@ -1704,6 +1813,8 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     abortMeet(shapeCheck.message);
     return;
   }
+  // Spread is locked in — clear Mindstream prep before dice.
+  if (state.pendingMindstreamMeet?.landscapeId === tile.id) state.pendingMindstreamMeet = null;
   const played = Math.max(1, encounterPlayTotal(state, { accept: !isReject }));
   const bonus = meetBonusBreakdown(state);
   const ctx = {
@@ -1715,7 +1826,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     selected,
     played,
     needed: beastPower,
-    fromMindstreamDraw: !!fromMindstreamDraw || !!encounter.drawnFromMindstream,
+    fromMindstreamDraw: fromMs,
   };
 
   const recNote = played < recommended
@@ -2673,6 +2784,7 @@ export function endPhase(state) {
   cancelLandscapePick(state);
   cancelDreamerPower(state);
   clearActionTurn(state);
+  state.pendingMindstreamMeet = null;
   const leaving = getPhase(state);
   if (leaving === "Reveal" && !state.dreamDrawn) {
     drawDreamCard(state);

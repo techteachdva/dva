@@ -297,6 +297,25 @@ function resolveSpectatorPendings(state, skill, helpers) {
       acted = true;
       continue;
     }
+    if (state.pendingMindstreamMeet) {
+      const pending = state.pendingMindstreamMeet;
+      const mode = pending.preferredMode === "reject" ? "reject" : "accept";
+      if (helpers.prepareMindstreamMeet) {
+        helpers.prepareMindstreamMeet(state, {
+          mode,
+          landscapeId: pending.landscapeId,
+          playerId: pending.playerId,
+          instant: true,
+          meetEncounterFn: helpers.meetEncounter,
+        });
+      } else if (helpers.meetEncounter) {
+        helpers.meetEncounter(state, mode, { freeMeet: true, fromMindstreamDraw: true, instant: true });
+        state.pendingMindstreamMeet = null;
+      }
+      state.botSpectatorThought = `Mindstream Meet: ${mode}`;
+      acted = true;
+      continue;
+    }
     if (state.pendingObjectChoice) {
       const pending = state.pendingObjectChoice;
       const enabled = (pending.choices || []).filter((c) => !c.disabled);
@@ -490,6 +509,11 @@ export function createSpectatorBot({
       instant: true,
       handleBoardTileClick: api.handleBoardTileClick,
       meetEncounter: (s, mode, opts = {}) => api.meetEncounter?.(s, mode, { ...opts, instant: true }),
+      prepareMindstreamMeet: (s, opts = {}) => prepareMindstreamMeet(s, {
+        ...opts,
+        instant: true,
+        meetEncounterFn: (st, mode, o) => api.meetEncounter?.(st, mode, { ...o, instant: true }),
+      }),
     };
 
     if (resolveSpectatorPendings(state, skill, helpers)) {

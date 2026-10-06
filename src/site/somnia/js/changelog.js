@@ -6,10 +6,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "37.2";
+export const SOMNIA_VERSION = "37.3";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "37.3",
+    title: "Mindstream Meet Spread",
+    notes: [
+      "Drawing a Dreambeast onto your hex from the Mindstream: Accept or Repress opens your hand so you can build a Psyche spread before the dice fight (free Meet on that Landscape).",
+      "Flee is unchanged. Bots still auto-pick a spread and resolve instantly.",
+    ],
+  },
   {
     version: "37.2",
     title: "Turn Token Clarity",
