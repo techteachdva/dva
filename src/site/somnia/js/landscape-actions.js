@@ -375,7 +375,11 @@ function drawTwoKeepOne(state, player, helpers) {
       helpers.spawnEncounter(state, player.landscapeId, keep);
     } else if (helpers.resolveCardEffect) {
       helpers.resolveCardEffect(state, keep, player, helpers);
-      if (keep.type !== "object" && keep.type !== "dreambeast") {
+      const pending = state.pendingMindstreamChoice;
+      const alreadyDiscarded = state.mindstreamDiscard[suit]?.some(
+        (c) => c === keep || (c.instanceId && c.instanceId === keep.instanceId),
+      );
+      if (!pending && keep.type !== "object" && keep.type !== "dreambeast" && !alreadyDiscarded) {
         state.mindstreamDiscard[suit].push(keep);
       }
     }
@@ -1004,6 +1008,17 @@ export function getLandscapeActionChoices(tile) {
   return choices;
 }
 
+/** A drawn Mindstream card opened a choice. Extra Dreams resolve immediately. */
+function handOffDrawnMindstream(state, suit) {
+  const pending = state.pendingMindstreamChoice;
+  if (!pending) return false;
+  cancelQueuedMindstreamDrawFx();
+  if (pending.kind === "dream") return true;
+  pending.needsDrawCinematic = true;
+  pending.suit = suit;
+  return true;
+}
+
 export function executeLandscapeActionChoice(state, tile, player, actionId, helpers = {}) {
   const landscapeName = tile.name;
 
@@ -1022,11 +1037,8 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       if (helpers.resolveCardEffect) {
         helpers.resolveCardEffect(state, card, player, helpers);
       }
-      // 36.0: Events / power-tokens / draw-dream wait for fullscreen choice before discard.
-      if (state.pendingMindstreamChoice) {
-        cancelQueuedMindstreamDrawFx();
-        state.pendingMindstreamChoice.needsDrawCinematic = true;
-        state.pendingMindstreamChoice.suit = suit;
+      // Events / power-tokens wait for the Mindstream cinematic. An extra Dream opens now.
+      if (handOffDrawnMindstream(state, suit)) {
         return { ok: true, card, pendingChoice: true };
       }
       if (card.type !== "object" && card.type !== "dreambeast") {
@@ -1207,10 +1219,7 @@ export function resolveLandscapeMindstreamPick(state, tile, player, suit, action
     if (helpers.resolveCardEffect) {
       helpers.resolveCardEffect(state, card, player, helpers);
     }
-    if (state.pendingMindstreamChoice) {
-      cancelQueuedMindstreamDrawFx();
-      state.pendingMindstreamChoice.needsDrawCinematic = true;
-      state.pendingMindstreamChoice.suit = suit;
+    if (handOffDrawnMindstream(state, suit)) {
       return { ok: true, card, pendingChoice: true };
     }
     if (card.type !== "object" && card.type !== "dreambeast") {

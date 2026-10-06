@@ -1525,6 +1525,7 @@ function buildPhaseHandlers() {
     defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
     sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
     nextPhase: () => { requestEndPhase(state, () => renderAll()); },
+    skipPhase: () => { requestEndPhase(state, () => renderAll()); },
   };
 }
 

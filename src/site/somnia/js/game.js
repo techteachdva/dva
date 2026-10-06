@@ -946,6 +946,7 @@ function phaseAdvanceBlockReason(state) {
   if (state.pendingNothingChoice) return "Resolve the Nothing Object choice before advancing.";
   if (state.pendingObjectChoice) return "Choose an Object effect before advancing.";
   if (state.pendingDreamChoice || state.pendingDreamQueue?.length) return "Choose a Dream effect before advancing.";
+  if (state.pendingMindstreamChoice) return "Choose Bright or Dim on the open card before advancing.";
   if (state.pendingEffectChoice) return "Choose an Event or Encounter effect before advancing.";
   if (state.pendingArchetypePower) return "Finish the Archetype Power before advancing.";
   if (state.pendingObjectFollowup) return "Finish the Object effect before advancing.";
@@ -1224,14 +1225,14 @@ export function revealLandscape(state) {
   const lucidityCards = selectedBySuit(state, player, "lucidity");
   const tokenValue = phaseTokenValue(state, player);
   if (lucidityCards.length > PHASE_OPENER_MAX_CARDS || (lucidityCards.length < 1 && tokenValue < 1)) {
-    narrate(state, "Select Lucidity or 1 Power Token", `Play 1 blue Psyche from ${player.name}, or spend 1 Power Token as 1 Lucidity.`);
+    narrate(state, "Select Lucidity or 1 Power Token", `Play 1 blue Psyche from ${player.name}, or spend 1 Power Token as 1 + Lucidity ${totalStat(player, "lucidity", state)}.`);
     return;
   }
 
   const lucidityDiscarded = discardSelected(state, player);
   trackPsycheDiscard(state, player, lucidityDiscarded);
   if (consumePhasePowerToken(state, player)) {
-    addLog(state, `${player.name} spends 1 Power Token as 1 Lucidity.`);
+    addLog(state, `${player.name} spends 1 Power Token as 1 + Lucidity ${totalStat(player, "lucidity", state)}.`);
   }
 
   beginRevealPicking(state, budget);
@@ -1280,7 +1281,7 @@ export function activateExplore(state) {
 
   const tokenValue = player ? phaseTokenValue(state, player) : 0;
   if (!freeRound && (elaCards.length > PHASE_OPENER_MAX_CARDS || (elaCards.length < 1 && tokenValue < 1))) {
-    addLog(state, `Play 1 ${SUIT_LABELS.elasticity} Psyche card, or spend 1 Power Token as 1 Elasticity.`);
+    addLog(state, `Play 1 ${SUIT_LABELS.elasticity} Psyche card, or spend 1 Power Token as 1 + Elasticity ${totalStat(player, "elasticity", state)}.`);
     return;
   }
 
@@ -1289,7 +1290,7 @@ export function activateExplore(state) {
     trackPsycheDiscard(state, player, discarded);
   }
   if (player && consumePhasePowerToken(state, player)) {
-    addLog(state, `${player.name} spends 1 Power Token as 1 Elasticity.`);
+    addLog(state, `${player.name} spends 1 Power Token as 1 + Elasticity ${totalStat(player, "elasticity", state)}.`);
   }
   if (player && (elaCards.length || tokenValue)) recordPhaseOpener(state, player);
   state.exploreMovesLeft = budget;
@@ -1444,14 +1445,14 @@ export function gainMeetActions(state) {
 
   const tokenValue = phaseTokenValue(state, player);
   if (wilCards.length > PHASE_OPENER_MAX_CARDS || (wilCards.length < 1 && tokenValue < 1)) {
-    addLog(state, `Play 1 ${SUIT_LABELS.willpower} Psyche card from ${player.name}, or spend 1 Power Token as 1 Willpower.`);
+    addLog(state, `Play 1 ${SUIT_LABELS.willpower} Psyche card from ${player.name}, or spend 1 Power Token as 1 + Willpower ${totalStat(player, "willpower", state)}.`);
     return;
   }
 
   const wilDiscarded = discardSelected(state, player);
   trackPsycheDiscard(state, player, wilDiscarded);
   if (consumePhasePowerToken(state, player)) {
-    addLog(state, `${player.name} spends 1 Power Token as 1 Willpower.`);
+    addLog(state, `${player.name} spends 1 Power Token as 1 + Willpower ${totalStat(player, "willpower", state)}.`);
   }
   state.meetActionBudget = budget;
   state.meetActionsUsed = 0;
@@ -1470,11 +1471,13 @@ export function togglePhasePowerToken(state) {
     return;
   }
   if (!canUsePhasePowerToken(state, player)) {
-    addLog(state, "Spend 1 Power Token as 1 suited Psyche for this phase opener (instead of a Psyche card).");
+    addLog(state, "Spend 1 Power Token as 1 + this Dreamer's suited stat (instead of a Psyche card).");
     return;
   }
   state.phaseTokenAsPsyche = player.id;
-  addLog(state, `${player.name} will spend 1 Power Token as 1 ${SUIT_LABELS[phaseSuitForOpening(getPhase(state))] || "Psyche"}.`);
+  const suit = phaseSuitForOpening(getPhase(state));
+  const bonus = suit ? totalStat(player, suit, state) : 0;
+  addLog(state, `${player.name} will spend 1 Power Token as 1 + ${SUIT_LABELS[suit] || "Psyche"} ${bonus}.`);
 }
 
 export function powerBonus(state) {
@@ -1659,10 +1662,10 @@ export function getPowerTokenRadialOptions(state) {
   options.push({
     id: "phasePsyche",
     kind: "phasePowerToken",
-    label: phaseOn ? `Cancel ${suitLabel}` : `As 1 ${suitLabel}`,
+    label: phaseOn ? `Cancel ${suitLabel}` : `1 + ${suitLabel}`,
     hint: phaseOn
-      ? "Stop using a Power Token as 1 suited Psyche for this phase opener."
-      : "Spend 1 Power Token in place of 1 suited Psyche for this phase opener (max 1).",
+      ? "Stop using a Power Token to open this phase."
+      : "Spend 1 Power Token as 1 plus this Dreamer's suited stat (instead of a Psyche card).",
     disabled: !phaseOn && !canUsePhasePowerToken(state, player),
   });
   options.push({

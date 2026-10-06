@@ -43,13 +43,14 @@ function openerTitle(phase, suitLabel) {
 }
 
 function openerLead(phase, suitLabel) {
+  const token = `A Power Token opens as 1 + that Dreamer's ${suitLabel}. Skip Phase leaves without spending.`;
   if (phase === "Reveal") {
-    return `Pick one Dreamer and spend 1 ${suitLabel} Psyche (or 1 Power Token). Their Lucidity bonus sets how many Landscapes the team may reveal.`;
+    return `Spend 1 ${suitLabel} Psyche, or 1 Power Token. Card value (or 1) plus Lucidity is how many Landscapes the team may reveal. ${token}`;
   }
   if (phase === "Explore") {
-    return `Pick one Dreamer and spend 1 ${suitLabel} Psyche (or 1 Power Token). Their Elasticity bonus sets shared Explore moves.`;
+    return `Spend 1 ${suitLabel} Psyche, or 1 Power Token. Card value (or 1) plus Elasticity is the team's shared moves. ${token}`;
   }
-  return `Pick one Dreamer and spend 1 ${suitLabel} Psyche (or 1 Power Token). Their Willpower bonus sets shared Meet actions.`;
+  return `Spend 1 ${suitLabel} Psyche, or 1 Power Token. Card value (or 1) plus Willpower is the team's shared Meet actions. ${token}`;
 }
 
 function confirmLabel(phase) {
@@ -198,8 +199,8 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
             ${isBest ? `<span class="phase-opener-badge">Best ${suitLabel}</span>` : ""}
             ${isOpener ? `<span class="phase-opener-badge opener">Opening</span>` : ""}
           </div>
-          <button type="button" class="btn btn-sm phase-opener-token${tokenOn ? " on" : ""}" data-token-id="${player.id}" ${tokenOk ? "" : "disabled"} title="Spend 1 Power Token as 1 ${suitLabel}">
-            ${tokenOn ? "Token selected" : `Use Power Token (${player.powerTokens || 0})`}
+          <button type="button" class="btn btn-sm phase-opener-token${tokenOn ? " on" : ""}" data-token-id="${player.id}" ${tokenOk ? "" : "disabled"} title="Spend 1 Power Token as 1 + ${suitLabel} ${bonus}">
+            ${tokenOn ? `Token · 1+${bonus}` : `Power Token · 1+${bonus} (${player.powerTokens || 0})`}
           </button>
         </header>
         <div class="phase-opener-hands">
@@ -221,12 +222,15 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
       <footer class="phase-opener-footer">
         <div class="phase-opener-summary" aria-live="polite">
           ${contributor
-            ? `<strong>${contributor.name}</strong> opens with ${phaseTokenValue(state, contributor) ? "1 Power Token" : "1 Psyche"} → <strong>${projected}</strong> for the team`
-            : `Select a matching ${suitLabel} card (or Power Token) from any Dreamer.`}
+            ? `<strong>${contributor.name}</strong> opens with ${phaseTokenValue(state, contributor) ? `1 Power Token (1 + ${suitLabel} ${totalStat(contributor, suit, state)})` : "1 Psyche"} → <strong>${projected}</strong> for the team`
+            : `Spend a matching ${suitLabel} card, a Power Token (1 + that Dreamer's ${suitLabel}), or skip.`}
         </div>
-        <button type="button" id="btn-spread-opener" class="btn primary btn-phase-opener-confirm tint-${phase === "Reveal" ? "reveal" : phase === "Explore" ? "explore" : "meet"}" data-tutorial-action="${kind}" ${canConfirm ? "" : "disabled"}>
-          ${confirmLabel(phase)}${canConfirm ? ` (${projected})` : ""}
-        </button>
+        <div class="phase-opener-actions">
+          ${state.tutorialMode ? "" : `<button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip">Skip Phase</button>`}
+          <button type="button" id="btn-spread-opener" class="btn primary btn-phase-opener-confirm tint-${phase === "Reveal" ? "reveal" : phase === "Explore" ? "explore" : "meet"}" data-tutorial-action="${kind}" ${canConfirm ? "" : "disabled"}>
+            ${confirmLabel(phase)}${canConfirm ? ` (${projected})` : ""}
+          </button>
+        </div>
       </footer>
     </div>
   `;
@@ -286,6 +290,14 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
     openerMenuOpen = false;
     hideUtilityModal(true);
     openerRenderAll?.();
+  });
+
+  body.querySelector("#btn-skip-phase")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openerMenuOpen = false;
+    hideUtilityModal(true);
+    openerHandlers?.skipPhase?.();
   });
 
   openerMenuOpen = true;

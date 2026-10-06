@@ -10575,11 +10575,79 @@ html[data-touch="true"] .action-dock .btn-advance {
   color: #e8e4f8;
 }
 
+.phase-opener-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.btn-phase-opener-skip {
+  min-width: 8.5rem;
+}
+
 .btn-phase-opener-confirm {
   min-width: 11rem;
   font-size: 1.05rem;
   font-weight: 700;
   padding: 0.7rem 1.2rem;
+}
+
+.game-card.choice-bright .art img,
+.modal-detail.choice-bright .modal-art,
+.modal-detail.choice-bright .modal-art-fallback {
+  filter: saturate(1.55) brightness(1.22) contrast(1.06);
+}
+
+.game-card.choice-dim .art img,
+.modal-detail.choice-dim .modal-art,
+.modal-detail.choice-dim .modal-art-fallback {
+  filter: saturate(0.18) brightness(0.52) contrast(0.92);
+}
+
+.game-card.choice-bright {
+  box-shadow: 0 0 0 2px rgba(255, 236, 170, 0.9), 0 0 18px rgba(255, 210, 110, 0.45);
+}
+
+.game-card.choice-dim {
+  box-shadow: inset 0 0 0 2px rgba(18, 16, 28, 0.85), 0 0 0 1px rgba(70, 64, 90, 0.8);
+}
+
+.choice-mark {
+  position: absolute;
+  left: 0.35rem;
+  bottom: 0.35rem;
+  z-index: 3;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.game-card.choice-bright .choice-mark {
+  background: #fff4c8;
+  color: #5a3b00;
+}
+
+.game-card.choice-dim .choice-mark {
+  background: #1a1724;
+  color: #b7b0c8;
+}
+
+.choice-resolution-banner {
+  margin: 0.35rem 0 0.6rem;
+  font-size: 1rem;
+}
+
+.modal-detail.choice-bright .choice-resolution-banner strong {
+  color: #ffe7a0;
+}
+
+.modal-detail.choice-dim .choice-resolution-banner strong {
+  color: #9a93ad;
 }
 
 .btn-phase-opener-confirm.tint-reveal {
@@ -11646,6 +11714,14 @@ html[data-viewport-width="narrow"] .top-bar-stepper {
   image-rendering: high-quality;
   transform: translateZ(0) scale(1.01);
   filter: saturate(1.04) contrast(1.03);
+}
+
+.game-card.choice-bright .art img.card-art-sharp {
+  filter: saturate(1.55) brightness(1.22) contrast(1.06);
+}
+
+.game-card.choice-dim .art img.card-art-sharp {
+  filter: saturate(0.18) brightness(0.52) contrast(0.92);
 }
 
 body.menu-window .menu-glass-panel {

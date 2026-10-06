@@ -10,7 +10,10 @@ import {
   revealWithAllSeeingEye,
   OBJECT_EFFECTS,
   rememberObjectHelpers,
+  persistentObjectCanActivate,
 } from "./object-effects.js";
+
+export { persistentObjectCanActivate };
 import { psycheHandCount, psycheCardValue } from "./psyche.js";
 import { pullObjectFromMindstream, objectForPlayer, discardToMindstream } from "./mindstream-supply.js";
 import { spendPowerTokens, grantPowerTokens } from "./power-tokens.js";

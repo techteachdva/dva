@@ -1119,6 +1119,17 @@ const BEAST_MOVERS = {
   "conch-shell": { title: "Conch Shell", destIds: ["field-of-broken-glass", "desert", "black-void"] },
 };
 
+export function persistentObjectCanActivate(card) {
+  if (!card) return false;
+  return Boolean(
+    BEAST_MOVERS[card.id]
+    || ELEMENT_MOVES[card.id]
+    || card.id === "mobius-crystal"
+    || card.id === "skeleton-key"
+    || card.id === "monkey-paw",
+  );
+}
+
 export function activatePersistentObjectEffect(state, player, card) {
   const mover = BEAST_MOVERS[card.id];
   if (mover) {

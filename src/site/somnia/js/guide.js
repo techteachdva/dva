@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 37.4. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 37.5. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -550,7 +550,7 @@ export function rulesRemHtml() {
       <h2>R.E.M. — Every Round</h2>
       <p class="rules-lead">Each round has three phases in order. One Dreamer spends 1 suited Psyche card to open each phase; the whole team shares the resulting budget.</p>
 
-      <p class="rules-formula"><strong>Budget formula:</strong> that 1 card's value + that Dreamer's matching stat, including Object and Acquired Archetype bonuses. You may spend <strong>1 Power Token as 1 suited Psyche</strong> instead of a card. Minimum 1 Psyche or 1 token.</p>
+      <p class="rules-formula"><strong>Budget formula:</strong> that 1 card's value + that Dreamer's matching stat, including Object and Acquired Archetype bonuses. A Power Token opens as <strong>1 + that Dreamer's suited stat</strong> instead of a card. You may also skip the phase without spending.</p>
 
       <section class="overview-block overview-phases">
         <div class="overview-phase suit-lucidity">
@@ -714,7 +714,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 37.4</p>
+          <p class="info-hub-kicker">Somnia v 37.5</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>

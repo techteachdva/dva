@@ -85,6 +85,17 @@ function finishMindstreamCard(state, card) {
   discardMindstreamCard(state, card);
 }
 
+const DIM_CHOICE_IDS = new Set(["bad", "discard", "repress", "return", "flee"]);
+
+/** Remember which either/or path was taken so discard views can show Bright or Dim. */
+function stampResolutionChoice(card, choiceId, pending) {
+  if (!card || !choiceId) return;
+  const picked = pending?.choices?.find((c) => c.id === choiceId);
+  const dim = DIM_CHOICE_IDS.has(choiceId) || picked?.role === "bad";
+  card.resolutionSide = dim ? "bad" : "good";
+  card.resolutionLabel = picked?.label || (dim ? "Dim" : "Bright");
+}
+
 function playerById(state, id) {
   return state.players.find((p) => p.id === id) || null;
 }
@@ -274,10 +285,9 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
   }
 
   if (card.type === "draw-dream") {
-    // Draw-dream: immediately open the next Dream as a choice (fixes missing Dream UI).
     finishMindstreamCard(state, card);
     if (helpers?.drawAdditionalDream) {
-      helpers.drawAdditionalDream(state, helpers.onShowDreamModal || null);
+      helpers.drawAdditionalDream(state);
     }
     return true;
   }
@@ -408,9 +418,11 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
         return false;
       }
       applyResolutionEffect(state, player, resolution.good, h, "good");
+      stampResolutionChoice(card, "good", pending);
       logMoment(state, `${card.name}: ${resolution.good.label}.`);
     } else {
       applyResolutionEffect(state, player, resolution.bad, h, "bad");
+      stampResolutionChoice(card, "bad", pending);
       logMoment(state, `${card.name}: ${resolution.bad.label}.`);
     }
     finishMindstreamCard(state, card);
@@ -420,8 +432,10 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
   if (pending.kind === "object") {
     state.pendingMindstreamChoice = null;
     if (choiceId === "take") {
+      stampResolutionChoice(card, "take", pending);
       onObjectDrawn(state, player, card, h);
     } else {
+      stampResolutionChoice(card, "discard", pending);
       discardToMindstream(state, card);
       const drawn = drawPsycheForPlayer(state, player, 3);
       addLog(state, `${player.name} discards ${card.name} and draws ${drawn.length} Psyche.`);
@@ -467,6 +481,7 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
 
   if (pending.kind === "power-token") {
     state.pendingMindstreamChoice = null;
+    stampResolutionChoice(card, choiceId, pending);
     if (choiceId === "take") {
       const n = card.powerTokens || 2;
       grantPowerTokens(state, player, n, {
@@ -492,6 +507,7 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
     state.pendingMindstreamChoice = null;
     if (!resolution || !player) return true;
     const side = choiceId === "good" ? resolution.good : resolution.bad;
+    stampResolutionChoice(card, choiceId === "good" ? "good" : "bad", pending);
     applyResolutionEffect(state, player, side, h, choiceId);
     logMoment(state, `${card.name}: ${side.label}.`);
     return true;

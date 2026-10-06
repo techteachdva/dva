@@ -6,10 +6,21 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "37.4";
+export const SOMNIA_VERSION = "37.5";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "37.5",
+    title: "Bright or Dim",
+    notes: [
+      "Skip Phase sits in the opener. Reveal, Explore, and Meet can end without spending Psyche or a Power Token.",
+      "A Power Token spent to open a phase counts as 1 plus that Dreamer's suited stat — Lucidity, Elasticity, or Willpower.",
+      "A Dream or Event in the discard remembers the path you chose. Bright is saturated and lit. Dim is grey and dark. The pile, the top card, and the zoomed card all show it. Only the chosen path resolves.",
+      "Draw 1 Additional Dream Card opens that Dream's choice immediately, the same way the Dream at the start of the round does.",
+      "Jewelry, sticks, and body Objects stay in play for their bonus. They no longer offer a Power Token button that does nothing.",
+    ],
+  },
   {
     version: "37.4",
     title: "The Swift Sparkle",

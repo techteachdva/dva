@@ -35,7 +35,7 @@ import {
   recommendedEncounterPower,
   encounterPowerLabel,
 } from "./dreambeasts.js";
-import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate } from "./objects.js";
+import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate, persistentObjectCanActivate } from "./objects.js";
 import { alliesInHand, psycheCardsInHand, allyHandCount, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue, tradablePsycheInHand, TRADE_OFFER_LIMIT } from "./psyche.js";
 import { getQuestStatus, activeQuestLandscapeIds, sacrificeQuestOpen, listSacrificableObjects } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
@@ -962,6 +962,8 @@ export function renderCard(card, options = {}) {
     dense ? "hand-dense" : "",
     selected ? "selected" : "",
     entering ? "card-enter" : "",
+    card.resolutionSide === "good" ? "choice-bright" : "",
+    card.resolutionSide === "bad" ? "choice-dim" : "",
   ].filter(Boolean).join(" ");
 
   const value = card.value != null ? `<span class="value">${card.value}</span>` : "";
@@ -1047,6 +1049,15 @@ export function renderCard(card, options = {}) {
       }
       el.appendChild(chips);
     }
+  }
+
+  if (card.resolutionSide === "good" || card.resolutionSide === "bad") {
+    const mark = document.createElement("span");
+    mark.className = "choice-mark";
+    const tone = card.resolutionSide === "good" ? "Bright" : "Dim";
+    mark.textContent = tone;
+    mark.title = card.resolutionLabel || tone;
+    el.appendChild(mark);
   }
 
   attachCardActions(el, { onClick, onInspect });
@@ -1160,8 +1171,11 @@ function fillModalObjectActions(card, options = {}) {
   const fate = objectUseFate(card);
   const hint = document.createElement("p");
   hint.className = "modal-object-fate";
-  if (zone === "persistent") {
+  const canActivate = zone === "persistent" && persistentObjectCanActivate(card);
+  if (zone === "persistent" && canActivate) {
     hint.textContent = "Spend 1 Power Token to activate this Persistent Object.";
+  } else if (zone === "persistent") {
+    hint.textContent = "This Object stays in play. Its bonus applies while it is on the table.";
   } else if (fate === "play") {
     hint.textContent = "Put this Persistent Object into play. It stays on the table until used.";
   } else if (fate === "repress") {
@@ -1179,7 +1193,9 @@ function fillModalObjectActions(card, options = {}) {
     : fate === "play"
       ? "Put into play"
       : "Use Object (Repress)";
-  if (zone === "persistent" && options.canSpendPower === false) {
+  if (zone === "persistent" && !canActivate) {
+    btn.hidden = true;
+  } else if (zone === "persistent" && options.canSpendPower === false) {
     btn.disabled = true;
     btn.title = "Need 1 Power Token";
   }
@@ -1269,6 +1285,16 @@ export function showModal(card, options = {}) {
   const title = document.createElement("h2");
   title.textContent = card.name;
   detail.appendChild(title);
+
+  if (card.resolutionSide === "good" || card.resolutionSide === "bad") {
+    const bright = card.resolutionSide === "good";
+    detail.classList.add(bright ? "choice-bright" : "choice-dim");
+    const banner = document.createElement("p");
+    banner.className = "choice-resolution-banner";
+    const tone = bright ? "Bright" : "Dim";
+    banner.innerHTML = `<strong>${tone}</strong>${card.resolutionLabel ? ` — ${card.resolutionLabel}` : ""}`;
+    detail.appendChild(banner);
+  }
 
   if (card.type === "event") {
     const info = uiRenderState
@@ -2837,6 +2863,7 @@ function deckColumnSignature(state) {
       draw.length,
       discard.length,
       topDiscard?.instanceId || topDiscard?.id || "",
+      topDiscard?.resolutionSide || "",
       peek.map((c) => c.instanceId || c.id).join(","),
     ].join(":");
   });
