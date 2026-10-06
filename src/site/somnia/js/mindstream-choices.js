@@ -13,7 +13,7 @@ import { isWildPsyche } from "./psyche.js";
 import { hasAffectedLandscapes, eventLandscapeNames } from "./event-landscapes.js";
 import { getEventResolution } from "./event-resolutions.js";
 import { getDreamResolution } from "./dream-resolutions.js";
-import { applyResolutionEffect, discardMindstreamCard } from "./resolution-effects.js";
+import { applyResolutionEffect, discardMindstreamCard, resolutionRulesText } from "./resolution-effects.js";
 import { onObjectDrawn } from "./objects.js";
 import { discardToMindstream, encounterFromDreambeastCard } from "./mindstream-supply.js";
 import { repressCard, requestReturnCards } from "./subconscious.js";
@@ -126,7 +126,7 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
       playerId: player.id,
       card,
       title: card.name,
-      message: card.text || "",
+      message: resolutionRulesText(resolution) || card.text || "",
       suit: resolution.suit,
       cost: resolution.cost,
       landscapeHint,
@@ -311,7 +311,7 @@ export function beginDreamCardChoice(state, card, player, helpers = {}) {
     playerId: player.id,
     card,
     title: card.name,
-    message: card.text || "The Dream demands a choice.",
+    message: resolutionRulesText(resolution) || card.text || "The Dream demands a choice.",
     suit: "lucidity",
     choices: [
       {

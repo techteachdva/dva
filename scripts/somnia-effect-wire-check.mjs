@@ -1,58 +1,81 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { EVENT_RESOLUTIONS } from "../src/site/somnia/js/event-resolutions.js";
+import { DREAM_RESOLUTIONS } from "../src/site/somnia/js/dream-resolutions.js";
+import { resolutionSideSteps } from "../src/site/somnia/js/resolution-effects.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const beasts = JSON.parse(readFileSync(join(root, "src/site/somnia/data/dreambeasts.json"), "utf8"));
-const events = JSON.parse(readFileSync(join(root, "src/site/somnia/data/mindstream.json"), "utf8"));
-const objects = JSON.parse(readFileSync(join(root, "src/site/somnia/data/objects.json"), "utf8"));
-const dreambeastsJs = readFileSync(join(root, "src/site/somnia/js/dreambeasts.js"), "utf8");
-const mindstreamJs = readFileSync(join(root, "src/site/somnia/js/mindstream.js"), "utf8")
-  + readFileSync(join(root, "src/site/somnia/js/mindstream-extra.js"), "utf8");
-const objectJs = readFileSync(join(root, "src/site/somnia/js/object-effects.js"), "utf8")
-  + readFileSync(join(root, "src/site/somnia/js/objects.js"), "utf8");
-const gameJs = readFileSync(join(root, "src/site/somnia/js/game.js"), "utf8");
-
 const problems = [];
 
-if (!gameJs.includes("applyAcceptEffect(")) problems.push("game.js does not call applyAcceptEffect");
-if (!gameJs.includes("pendingEffectChoice")) problems.push("game.js does not block on pendingEffectChoice");
-
-function beastMapWired(source, id) {
-  return source.includes(`${id}:`) || source.includes(`"${id}"`);
+function stepsOf(side) {
+  return resolutionSideSteps(side).map((step) => step.effect);
 }
 
-for (const beast of beasts) {
-  if (!beastMapWired(dreambeastsJs, beast.id)) {
-    problems.push(`Dreambeast ${beast.id} missing accept/fail map entry`);
+function verbsInHint(hint) {
+  const text = String(hint || "").toLowerCase();
+  const verbs = [];
+  if (/all draw|all dreamers draw/.test(text)) verbs.push("drawPsycheAll");
+  else if (/\bdraw\b/.test(text)) verbs.push("drawPsyche", "drawPsycheAll", "drawPsycheAndPT", "drawPsycheAndReturn", "drawObject");
+  if (/\breturn\b/.test(text)) verbs.push("returnCards", "returnCardsAll", "returnAndPT", "drawPsycheAndReturn");
+  if (/\bpt\b|power token/.test(text)) verbs.push("grantPT", "drawPsycheAndPT", "returnAndPT");
+  if (/\bmove\b/.test(text)) verbs.push("moveToNamed");
+  if (/free meet/.test(text)) verbs.push("freeMeetAction");
+  if (/\breveal\b/.test(text)) verbs.push("revealLandscapes");
+  if (/\bforget\b/.test(text)) verbs.push("forgetLandscapes");
+  if (/repress top/.test(text)) verbs.push("repressTopPsycheDeck", "repressTopMindstream");
+  if (/object or psyche/.test(text)) verbs.push("discardObjectOrPsyche");
+  else if (/\bdiscard\b/.test(text) && !/\bobject\b/.test(text)) {
+    verbs.push("discardPsyche", "discardPsycheAll", "discardHighestPsyche", "discardSuitPsyche", "discardDream", "discardObjectOrPsyche");
   }
-  if (beast.rejectEffect && !dreambeastsJs.includes(`case "${beast.rejectEffect.type}"`)) {
-    problems.push(`Reject type ${beast.rejectEffect.type} (${beast.id}) has no switch case`);
+  if (/\bspawn\b/.test(text)) verbs.push("spawnEncounter", "spawnEncountersOnDreamers");
+  if (/skip the next explore/.test(text)) verbs.push("skipNextExplore");
+  if (/meet is your only/.test(text)) verbs.push("meetOnlyThisRound");
+  return verbs;
+}
+
+function auditTable(name, table) {
+  for (const [id, spec] of Object.entries(table)) {
+    for (const sideName of ["good", "bad"]) {
+      const side = spec[sideName];
+      if (!side) {
+        problems.push(`${name} ${id} missing ${sideName}`);
+        continue;
+      }
+      const steps = stepsOf(side);
+      if (!steps.length) problems.push(`${name} ${id} ${sideName} has no steps`);
+      const hint = side.hint || "";
+      if (hint.includes(";") && (!side.steps || side.steps.length < 2)) {
+        problems.push(`${name} ${id} ${sideName} hint has two verbs but fewer than two steps: "${hint}"`);
+      }
+      const needed = verbsInHint(hint);
+      if (needed.length && !needed.some((verb) => steps.includes(verb))) {
+        problems.push(`${name} ${id} ${sideName} hint "${hint}" not covered by steps [${steps.join(", ")}]`);
+      }
+    }
   }
 }
 
-const eventIds = [...events.lucidity, ...events.elasticity, ...events.willpower].map((c) => c.id);
-for (const id of eventIds) {
-  if (!mindstreamJs.includes(`"${id}"`) && !mindstreamJs.includes(`${id}:`)) {
-    problems.push(`Event ${id} has no handler key`);
-  }
-}
+auditTable("event", EVENT_RESOLUTIONS);
+auditTable("dream", DREAM_RESOLUTIONS);
 
-for (const obj of objects) {
-  const id = obj.id;
-  const wired = objectJs.includes(`"${id}"`) || objectJs.includes(`${id}:`)
-    || objectJs.includes("the-nothing") && id.startsWith("the-nothing")
-    || ["severed-torso", "severed-legs", "severed-head", "severed-arms", "beating-heart",
-      "the-bottom-stick", "the-middle-stick", "the-top-stick",
-      "brass-emerald-bracelet", "golden-ruby-necklace", "silver-sapphire-ring",
-      "the-all-seeing-eye"].includes(id);
-  if (!wired) problems.push(`Object ${id} may not be wired`);
+const resolutionJs = readFileSync(join(root, "src/site/somnia/js/resolution-effects.js"), "utf8");
+if (resolutionJs.includes("state.skipNextExplore =")) {
+  problems.push("skipNextExplore still writes state.skipNextExplore");
+}
+if (!resolutionJs.includes("state.skipExploreNextRound = true")) {
+  problems.push("skipNextExplore does not set skipExploreNextRound");
+}
+if (resolutionJs.includes("state.meetOnlyThisRound =")) {
+  problems.push("meetOnlyThisRound still writes state.meetOnlyThisRound");
+}
+if (!resolutionJs.includes("state.meetOnlyRound = true")) {
+  problems.push("meetOnlyThisRound does not set meetOnlyRound");
 }
 
 console.log(JSON.stringify({
-  beasts: beasts.length,
-  events: eventIds.length,
-  objects: objects.length,
+  events: Object.keys(EVENT_RESOLUTIONS).length,
+  dreams: Object.keys(DREAM_RESOLUTIONS).length,
   problems,
 }, null, 2));
 if (problems.length) process.exit(1);

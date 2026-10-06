@@ -6,7 +6,6 @@ import {
   addLog,
   drawPsycheForPlayer,
   revealLandscapeTile,
-  allEncountersOnBoard,
 } from "./state.js";
 import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
@@ -15,6 +14,7 @@ import { discardToMindstream } from "./mindstream-supply.js";
 import { discardDreamCard } from "./dream-deck.js";
 import { flipLeviathan } from "./dreambeasts.js";
 import { requestChooseTile, forgetRandomLandscapes } from "./landscapes.js";
+import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -92,13 +92,88 @@ function repressTopPsyche(state, count = 1) {
   if (n) addLog(state, `Repress ${n} from top of Psyche deck.`);
 }
 
+export function resolutionSideSteps(sideSpec) {
+  if (!sideSpec) return [];
+  if (Array.isArray(sideSpec.steps) && sideSpec.steps.length) return sideSpec.steps;
+  if (sideSpec.effect) return [{ effect: sideSpec.effect, params: sideSpec.params || {} }];
+  return [];
+}
+
+export function resolutionRulesText(resolution) {
+  if (!resolution) return "";
+  const lines = [];
+  if (resolution.good?.hint) lines.push(`Bright: ${resolution.good.hint}.`);
+  if (resolution.bad?.hint) lines.push(`Dim: ${resolution.bad.hint}.`);
+  return lines.join(" ");
+}
+
+function discardOneObject(state, player) {
+  const obj = player.objects?.length ? player.objects.pop() : null;
+  if (!obj) return false;
+  discardToMindstream(state, obj);
+  addLog(state, `${player.name} discards ${obj.name}.`);
+  return true;
+}
+
+function discardObjectOrPsyche(state, player) {
+  const hasObject = Boolean(player.objects?.length);
+  const hasPsyche = Boolean(player.hand?.length);
+  if (hasObject && hasPsyche) {
+    offerEffectChoice(state, player, {
+      cardId: "discard-object-or-psyche",
+      title: "Discard 1 Object or Psyche",
+      message: `${player.name}: discard an Object, or a Psyche.`,
+      log: `${player.name} must discard 1 Object or 1 Psyche.`,
+      choices: [
+        { id: "object", label: "Discard an Object", hint: player.objects[player.objects.length - 1]?.name || "Object" },
+        { id: "psyche", label: "Discard a Psyche", hint: player.hand[0]?.name || "Psyche" },
+      ],
+    });
+    return;
+  }
+  if (hasObject) {
+    discardOneObject(state, player);
+    return;
+  }
+  if (!hasPsyche) {
+    addLog(state, `${player.name} has no Object and no Psyche to discard.`);
+    return;
+  }
+  discardPsycheCount(state, player, 1);
+}
+
+registerEffectResolver("discard-object-or-psyche", (state, choiceId) => {
+  const pending = state.pendingEffectChoice;
+  const player = state.players.find((p) => p.id === pending?.playerId);
+  state.pendingEffectChoice = null;
+  if (!player) return true;
+  if (choiceId === "object") {
+    if (!discardOneObject(state, player)) discardPsycheCount(state, player, 1);
+    return true;
+  }
+  if (!player.hand?.length) {
+    if (!discardOneObject(state, player)) {
+      addLog(state, `${player.name} has no Object and no Psyche to discard.`);
+    }
+    return true;
+  }
+  discardPsycheCount(state, player, 1);
+  return true;
+});
+
 /**
  * @param {"good"|"bad"} _side
  */
 export function applyResolutionEffect(state, player, sideSpec, helpers = {}, _side = "good") {
-  if (!sideSpec?.effect) return;
-  const effect = sideSpec.effect;
-  const p = sideSpec.params || {};
+  const steps = resolutionSideSteps(sideSpec);
+  if (!steps.length) return;
+  steps.forEach((step) => applyResolutionStep(state, player, step, helpers));
+}
+
+function applyResolutionStep(state, player, step, helpers = {}) {
+  const effect = step?.effect;
+  if (!effect) return;
+  const p = step.params || {};
 
   switch (effect) {
     case "drawPsyche": {
@@ -182,10 +257,8 @@ export function applyResolutionEffect(state, player, sideSpec, helpers = {}, _si
       break;
     }
     case "moveToNamed": {
-      const ids = (p.ids || []).filter((id) => {
-        const tile = state.board.find((t) => t.id === id);
-        return tile?.revealed && !tile.wasteland;
-      });
+      const named = (p.ids || []).map((id) => state.board.find((t) => t.id === id)).filter(Boolean);
+      const ids = named.filter((tile) => tile.revealed && !tile.wasteland).map((tile) => tile.id);
       if (ids.length) {
         requestChooseTile(state, {
           allowedIds: ids,
@@ -194,6 +267,9 @@ export function applyResolutionEffect(state, player, sideSpec, helpers = {}, _si
           title: `Move ${player.name}`,
           detail: "Choose a named Landscape.",
         });
+      } else {
+        const names = named.map((tile) => tile.name).join(" or ") || "those Landscapes";
+        addLog(state, `${names} ${named.length === 1 ? "is" : "are"} still Wasteland. The road stays closed.`);
       }
       break;
     }
@@ -202,6 +278,9 @@ export function applyResolutionEffect(state, player, sideSpec, helpers = {}, _si
       addLog(state, `Gain ${p.count || 1} free Meet Action${(p.count || 1) === 1 ? "" : "s"}.`);
       break;
     }
+    case "discardObjectOrPsyche":
+      discardObjectOrPsyche(state, player);
+      break;
     case "discardPsyche":
       discardPsycheCount(state, player, p.count || 1);
       break;
@@ -262,23 +341,15 @@ export function applyResolutionEffect(state, player, sideSpec, helpers = {}, _si
       flipLeviathan(state);
       break;
     case "skipNextExplore":
-      state.skipNextExplore = true;
+      state.skipExploreNextRound = true;
+      state.skipExploreReason = p.reason
+        || (state.activeDream?.name ? `${state.activeDream.name} Dream` : "drawn Dream");
       addLog(state, "Skip the next Explore Phase.");
       break;
     case "meetOnlyThisRound":
-      state.meetOnlyThisRound = true;
+      state.meetOnlyRound = true;
       addLog(state, "Dreamers may only Meet this round.");
       break;
-    case "clearEncounters": {
-      allEncountersOnBoard(state).forEach(({ tile, encounter }) => {
-        repressCard(state, encounter);
-        const list = tile.encounters || [];
-        tile.encounters = list.filter((e) => e.instanceId !== encounter.instanceId);
-        if (tile.encounter?.instanceId === encounter.instanceId) tile.encounter = null;
-      });
-      addLog(state, "All Encounters are Repressed.");
-      break;
-    }
     default:
       addLog(state, `Unresolved effect: ${effect}`);
   }

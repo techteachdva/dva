@@ -1337,7 +1337,7 @@ export function moveDreamer(state, targetLandscapeId) {
     }
     if (meetPassBlocks(state, player)) {
       const holder = actionTurnHolder(state);
-      addLog(state, `It is ${holder?.name || "another Dreamer"}'s turn to move. Pass Turn or tap their token.`);
+      addLog(state, `It is ${holder?.name || "another Dreamer"}'s turn to move. Pass Turn or Give Turn.`);
       return;
     }
     if (!to || !to.revealed) {
@@ -2820,7 +2820,7 @@ export function endPhase(state) {
       ? `${COOP_PLAY_TIP} Head Dreamer (★) draws the Dream once. One Dreamer spends Lucidity to set team reveals.`
       : phase === "Explore"
         ? `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves — then Dreamers take turns spending them (Pass Turn or Give Turn to hand off).`
-        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. Start: discard 1 Psyche per roaming Dreambeast on or beside you. End: Forget 1 random Landscape per remaining beast, then Fail costs in spawn order. Beasts stay until you win a dice battle.`,
+        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. Start: discard 1 Psyche per roaming Dreambeast on or beside you. End: Forget 1 random Landscape per remaining beast. Fail hits when Accept, Repress, or Flee fails. Beasts stay until you win a dice battle.`,
     [],
     { moment: `${phase} Phase begins.` },
   );

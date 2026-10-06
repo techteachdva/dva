@@ -8,7 +8,9 @@ const SPARKLE_COUNT = 12;
 let haloEl = null;
 let tracker = null;
 let targetEl = null;
+let haloPlayerId = null;
 let cameraRaf = 0;
+let cameraStage = null;
 
 function reducedMotion() {
   return typeof window !== "undefined"
@@ -65,14 +67,18 @@ function dreamerAnchor(playerId) {
   const safe = window.CSS?.escape ? CSS.escape(playerId) : playerId;
   const token = document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${safe}"]`);
   if (token) {
-    const rect = token.getBoundingClientRect();
-    if (rect.width > 8 && rect.height > 8) return token;
+    const style = window.getComputedStyle(token);
+    if (style.display !== "none" && style.visibility !== "hidden") return token;
   }
   return document.querySelector(`.player-chip[data-player-id="${safe}"]`);
 }
 
 export function positionTurnHalo() {
   if (!haloEl) return;
+  if (haloPlayerId) {
+    const live = dreamerAnchor(haloPlayerId);
+    if (live) targetEl = live;
+  }
   if (!targetEl?.isConnected) {
     haloEl.classList.add("hidden");
     return;
@@ -82,7 +88,7 @@ export function positionTurnHalo() {
     return;
   }
   const rect = targetEl.getBoundingClientRect();
-  if (rect.width < 4 || rect.height < 4) {
+  if (rect.width < 1 || rect.height < 1) {
     haloEl.classList.add("hidden");
     return;
   }
@@ -113,6 +119,7 @@ function startTracker() {
 export function syncTurnHalo(playerId) {
   if (typeof document === "undefined") return;
   ensureHalo();
+  haloPlayerId = playerId || null;
   const next = playerId ? dreamerAnchor(playerId) : null;
   if (!next) {
     targetEl = null;
@@ -129,7 +136,16 @@ export function syncTurnHalo(playerId) {
   }
 }
 
+function bindCameraStage() {
+  const stage = document.getElementById("board-zoom-stage");
+  if (stage === cameraStage) return;
+  if (cameraStage) cameraStage.removeEventListener("transitionend", positionTurnHalo);
+  cameraStage = stage;
+  cameraStage?.addEventListener("transitionend", positionTurnHalo);
+}
+
 export function trackTurnHaloWithCamera(durationMs = 480) {
+  bindCameraStage();
   if (cameraRaf) cancelAnimationFrame(cameraRaf);
   const end = performance.now() + durationMs;
   const frame = (now) => {

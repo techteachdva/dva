@@ -2746,13 +2746,16 @@ function renderAll() {
     if (!flushDreamerBoardFocus()) {
       maybeFocusTutorialLandscape();
     }
+    syncBoardZoomAfterRender();
     requestAnimationFrame(() => {
-      const active = syncTutorial(state)?.step;
-      if (active) {
-        applyTutorialHighlight(active, { animateIn: false });
-        trackTutorialSpotlightWithCamera(480);
-      }
-      positionTurnHalo();
+      requestAnimationFrame(() => {
+        const active = syncTutorial(state)?.step;
+        if (active) {
+          applyTutorialHighlight(active, { animateIn: false });
+          trackTutorialSpotlightWithCamera(480);
+        }
+        positionTurnHalo();
+      });
     });
   } else {
     flushDreamerBoardFocus();

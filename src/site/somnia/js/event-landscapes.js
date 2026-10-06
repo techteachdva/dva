@@ -9,6 +9,7 @@
 
 import { narrate, logMoment } from "./narrator.js";
 import { allDreamersDiscardPsyche } from "./psyche-pressure.js";
+import { getEventResolution } from "./event-resolutions.js";
 
 export function eventLandscapeIds(event) {
   if (!event) return [];
@@ -150,7 +151,7 @@ export function beginEventOrWaste(state, event) {
       state,
       `${event.name} fires`,
       `${formatNameList(info.activeNames)} ${info.activeNames.length === 1 ? "is" : "are"} Revealed, so this Event resolves. After it resolves it is discarded to the ${info.discardPile}.`,
-      [event.effectTop, event.effectBottom].filter(Boolean),
+      [eventDisplayText(event)].filter(Boolean),
     );
   }
   return true;
@@ -158,6 +159,13 @@ export function beginEventOrWaste(state, event) {
 
 export function eventDisplayText(event) {
   if (!event) return "";
+  const resolution = getEventResolution(event.refId || event.id);
+  if (resolution?.good?.hint || resolution?.bad?.hint) {
+    const lines = [];
+    if (resolution.good?.hint) lines.push(`Bright: ${resolution.good.hint}.`);
+    if (resolution.bad?.hint) lines.push(`Dim: ${resolution.bad.hint}.`);
+    return lines.join(" ");
+  }
   const parts = [event.effectTop, event.effectBottom].filter(Boolean);
   if (parts.length) return parts.join("\n\n");
   return event.text || "";

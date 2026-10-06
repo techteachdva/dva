@@ -1,4 +1,14 @@
 import { random } from "./rng.js";
+import { getEventResolution } from "./event-resolutions.js";
+import { getDreamResolution } from "./dream-resolutions.js";
+
+function resolutionCopy(resolution, fallback = "") {
+  if (!resolution) return fallback;
+  const lines = [];
+  if (resolution.good?.hint) lines.push(`Bright: ${resolution.good.hint}.`);
+  if (resolution.bad?.hint) lines.push(`Dim: ${resolution.bad.hint}.`);
+  return lines.length ? lines.join(" ") : fallback;
+}
 
 export async function loadGameData() {
   const files = [
@@ -22,6 +32,10 @@ export async function loadGameData() {
   );
 
   data.mindstream = enrichMindstreamEvents(data.mindstream, data["event-landscapes"] || {});
+  data.dreams = (data.dreams || []).map((dream) => ({
+    ...dream,
+    text: resolutionCopy(getDreamResolution(dream.id), dream.text || dream.effect || ""),
+  }));
   return data;
 }
 
@@ -33,12 +47,7 @@ function enrichMindstreamEvents(mindstream, catalog) {
       const landscapes = extra.landscapes ?? evt.landscapes ?? [];
       const effectTop = extra.effectTop ?? evt.effectTop;
       const effectBottom = extra.effectBottom ?? evt.effectBottom;
-      let text = evt.text;
-      if (effectTop && effectBottom) {
-        text = `${effectTop}\n\n${effectBottom}`;
-      } else if (effectTop) {
-        text = effectTop;
-      }
+      const text = resolutionCopy(getEventResolution(evt.id), evt.text || "");
       return { ...evt, landscapes, effectTop, effectBottom, text };
     });
   });

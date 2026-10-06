@@ -1375,7 +1375,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-penalty",
     round: 1,
     title: "Leave the Beast",
-    why: "A beast you leave standing spends a room. When Meet ends, the table Forgets 1 Landscape for each beast still roaming, then each beast Fails. Candy Mountain is about to shut. End the round and watch it.",
+    why: "A beast you leave standing spends a room. When Meet ends, the table Forgets 1 Landscape for each beast still roaming. Candy Mountain is about to shut. End the round and watch it.",
     targets: ["#btn-next-phase"],
     rail: [
       { kind: "advancePhase", toRound: 2, prompt: "Click End Round. Watch the leftover Mandrake punish the table." },
@@ -1426,7 +1426,7 @@ export const TUTORIAL_SCRIPT = [
       { kind: "handToggle", playerIndex: 0, cardId: "willpower-1-v-open", prompt: "Select the new Willpower 1 to open Meet." },
       { kind: "gainMeetActions", prompt: "Click Gain Actions." },
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable. They hold the Pass Token." },
-      { kind: "meetPass", playerIndex: 1, toPlayerIndex: 0, prompt: "Click The Immovable, then Pass Meet." },
+      { kind: "meetPass", playerIndex: 1, toPlayerIndex: 0, prompt: "Click The Immovable, then Pass Turn." },
     ],
     until: (s) => (s.meetActionBudget || 0) > 0 && s.meetPassHolderId === s.players[0]?.id,
   },
@@ -1459,7 +1459,7 @@ export const TUTORIAL_SCRIPT = [
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable. They hold the Pass Token after the fight." },
-      { kind: "meetPass", playerIndex: 1, toPlayerIndex: 0, prompt: "Click Pass Meet so The Visionary can draw." },
+      { kind: "meetPass", playerIndex: 1, toPlayerIndex: 0, prompt: "Click Pass Turn so The Visionary can draw." },
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
       {
         kind: "landscapeActionA",

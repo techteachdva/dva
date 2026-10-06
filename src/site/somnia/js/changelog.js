@@ -6,10 +6,21 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "37.7";
+export const SOMNIA_VERSION = "38.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "38.0",
+    title: "The Open Binder",
+    notes: [
+      "The sentence on the Bright or Dim button is the rule. If it names two verbs, both happen. Skip Explore and Meet-only now actually skip and restrict.",
+      "The old printed paragraph steps aside. You read Bright and Dim on the card, in the choice, and in Look.",
+      "Meet end Forgets Landscapes. Fail hits when Accept, Repress, or Flee fails. A Power Token opens a phase as 1 plus the suited stat. Tap a Dreamer only looks; Pass Turn and Give Turn hand the night on.",
+      "The sparkle ring follows the live target through the camera and the hand fan.",
+      "Every discard and the Subconscious open as one binder. Look lifts a single card. Left and Right walk the pile.",
+    ],
+  },
   {
     version: "37.7",
     title: "The iPad Table",

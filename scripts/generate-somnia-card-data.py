@@ -183,6 +183,8 @@ DREAMBEASTS = [
 IMAGE = "images/dreambeasts/{id}.webp"
 
 def event(suit, id_, name, text):
+    # Print/PDF helper. The live table stamps Bright/Dim from EVENT_RESOLUTIONS
+    # at load (Somnia 38), so this `text` is not the rules the player reads.
     slug = id_
     return {
         "id": slug,

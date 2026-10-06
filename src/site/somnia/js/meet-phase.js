@@ -133,8 +133,8 @@ export function applyMeetPhaseDreambeastTax(state) {
 }
 
 /**
- * Step 3 — end of Meet. Forget random Landscapes, then Fail in spawn order.
- * Beasts are not removed.
+ * Step 3 — end of Meet. Forget random Landscapes.
+ * Beasts are not removed. Fail already resolved on a failed Accept, Repress, or Flee.
  */
 function applyTutorialMeetEnd(state) {
   if (state.tutorialFlags?.meetPenaltyDone) return;
@@ -147,22 +147,14 @@ function applyTutorialMeetEnd(state) {
     forgetNamedLandscapes(state, ["candy-mountain"]);
   }
 
-  const visionary = state.players[0];
-  const spare = visionary?.hand?.find((c) => c.id === "elasticity-1-v-e1");
-  if (visionary && spare) {
-    visionary.hand = visionary.hand.filter((c) => c.instanceId !== spare.instanceId);
-    state.psycheDiscard.push(spare);
-    addLog(state, `${visionary.name} discards ${spare.name} — Mandrake's Fail.`);
-  }
-
   logMoment(
     state,
-    "Meet ends: Mandrake still roams. Candy Mountain is Forgotten, and a Fail tax hits The Visionary. Beasts stay until you win.",
+    "Meet ends: Mandrake still roams. Candy Mountain is Forgotten. Beasts stay until you win.",
     { forget: true, durationMs: 14000 },
   );
   addLog(
     state,
-    "Tutorial — leftover Dreambeasts Forget Landscapes and Fail. Mandrake stays on The Attic for next round.",
+    "Tutorial — leftover Dreambeasts Forget Landscapes. Mandrake stays on The Attic for next round.",
   );
 }
 

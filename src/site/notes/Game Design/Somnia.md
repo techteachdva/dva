@@ -16,15 +16,15 @@ A cooperative psychic adventure — escape the collapsing Dreamscape before time
 
 New players should start in **Tutorial Mode** (two guided rounds), then a **Daydream**.
 
-1. **Tutorial** — Visionary + Immovable, Quiet Dreams, The Innocent. Round 1 teaches Reveal / Explore / Meet and Accept. Round 2 teaches Landscape Action A, quest marks, and Acquire.
-2. **First Daydream** — 12 points, 14 Dreams. The first game pins Innocent and a Quiet opening Dream. Open ? for the Dream Feed and a concise rules hub.
-3. **Win** — Reach the point goal, then get every living Dreamer onto **The Bed**. **Lose** if the Dream Deck empties first.
+1. **Tutorial** — Visionary + Immovable, Heroism then Misunderstanding, The Innocent. Round 1 teaches Reveal / Explore / Meet. Round 2 teaches Landscape Action A, quest marks, and Acquire.
+2. **First Daydream** — 8 points (solo 4), 11 Dreams. Nap is 12 (solo 6). Deep Sleep is 24 (solo 12). Open ? for the Dream Feed and a concise rules hub.
+3. **Win** — Reach the point goal, then get every living Dreamer onto **The Bed**. **Lose** if the Dream Deck empties first. The Death Clock is 6.
 
 Recommended first pair: **The Visionary** (Lucidity) and **The Immovable** (Willpower). Elasticity comes from the cards in hand.
 
 Bosses, death, Objects, Trade, and Final Recurrence are in the ? Dream Guide. They are not on the required tutorial path.
 
-Live rules match Somnia **v 21.3** (`src/site/somnia/js/guide.js`). Play on the site or itch.io — same build. Add to Home Screen from the hosted table. Click a Dreamer on the board for phase actions.
+Live rules match Somnia **v 38.0** (`src/site/somnia/js/guide.js`). Play on the site or itch.io — same build. Add to Home Screen from the hosted table. Click a Dreamer on the board for phase actions.
 
 <iframe
     src="/somnia/"

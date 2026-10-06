@@ -71,6 +71,9 @@ import {
   consumeDreamFeedNudge,
   tileFlipElapsedMs,
 } from "./fx.js";
+import { getEventResolution } from "./event-resolutions.js";
+import { getDreamResolution } from "./dream-resolutions.js";
+import { resolutionRulesText } from "./resolution-effects.js";
 import { BOSS_DREAM_DECK_SLOTS } from "./data.js";
 import { consumeBoardClickSuppression, getBoardZoom, getBoardCamera, cancelPendingBoardGesture, suppressNextBoardClick, isBoardCameraBusy, TOUCH_TAP_SLOP } from "./board-zoom.js";
 import { getViewportRect } from "./frame-metrics.js";
@@ -276,7 +279,10 @@ function schedulePsycheFan(container) {
   if (!container) return;
   layoutPsycheFan(container);
   if (typeof requestAnimationFrame === "function") {
-    requestAnimationFrame(() => layoutPsycheFan(container));
+    requestAnimationFrame(() => {
+      layoutPsycheFan(container);
+      refreshTutorialSpotlight();
+    });
   }
   if (typeof ResizeObserver === "undefined") return;
   if (container._psycheFanObs) {
@@ -858,7 +864,7 @@ export function renderPowerTokens(state, { onTokenClick } = {}) {
   if (statsEl) {
     const pendingNote = pending ? `<span class="power-token-pending">+${pending} spread bonus</span>` : "";
     statsEl.innerHTML = `<span class="power-token-held">${held} held</span><span class="power-token-pool">${pool}/${MAX_POWER_TOKEN_POOL} in pool</span>${pendingNote}`;
-    statsEl.title = "Click a token to spend it on a quest, +1 spread, or 1 Psyche for the phase opener";
+    statsEl.title = "Click a token to spend it on a quest, +1 spread, or 1 plus the suited stat for the phase opener";
   }
 
   if (bonusBtn) {
@@ -1073,7 +1079,13 @@ function isDreamCard(card) {
 }
 
 function dreamCardEffectText(card) {
-  return card.text || card.effect || "";
+  const resolution = getDreamResolution(card?.refId || card?.id);
+  return resolutionRulesText(resolution) || card.text || card.effect || "";
+}
+
+function eventCardEffectText(card) {
+  const resolution = getEventResolution(card?.refId || card?.id);
+  return resolutionRulesText(resolution) || card.text || "";
 }
 
 function dreamCardKindLabel(card) {
@@ -1327,30 +1339,22 @@ export function showModal(card, options = {}) {
     }
     detail.appendChild(banner);
 
-    if (card.effectTop) {
+    const rules = eventCardEffectText(card);
+    if (rules) {
       const top = document.createElement("p");
       top.className = `event-effect-top${wasted ? " inactive" : " active"}`;
-      top.innerHTML = `<strong>Effect:</strong> ${card.effectTop}`;
+      top.innerHTML = `<strong>Effect:</strong> ${rules}`;
       detail.appendChild(top);
-    }
-    if (card.effectBottom) {
-      const bottom = document.createElement("p");
-      bottom.className = `event-effect-bottom${wasted ? " inactive" : " active"}`;
-      bottom.innerHTML = `<strong>Also:</strong> ${card.effectBottom}`;
-      detail.appendChild(bottom);
     }
     const icons = createEventLandscapeIconRow(card);
     if (icons) {
       icons.classList.add("event-landscape-icons--modal");
       detail.appendChild(icons);
     }
-    if (!card.effectTop && !card.effectBottom) {
-      const description = card.text || card.flavor || card.effect;
-      if (description) {
-        const p = document.createElement("p");
-        p.textContent = description;
-        detail.appendChild(p);
-      }
+    if (!rules && card.flavor) {
+      const p = document.createElement("p");
+      p.textContent = card.flavor;
+      detail.appendChild(p);
     }
   } else if (isDreambeastCard(card)) {
     appendDreambeastModalDetail(detail, card);
@@ -2710,6 +2714,266 @@ function discardPileForDeck(state, deckId) {
   }
 }
 
+function discardBinderPiles(state) {
+  return [
+    { id: "dream", label: "Dream", icon: "💤", cards: [...(state.dreamDiscard || [])].filter(Boolean).reverse() },
+    { id: "psyche", label: "Psyche", icon: "🃏", cards: [...(state.psycheDiscard || [])].filter(Boolean).reverse() },
+    { id: "mindstream-lucidity", label: "Lucidity", icon: "◉", cards: [...(state.mindstreamDiscard?.lucidity || [])].filter(Boolean).reverse() },
+    { id: "mindstream-elasticity", label: "Elasticity", icon: "⇄", cards: [...(state.mindstreamDiscard?.elasticity || [])].filter(Boolean).reverse() },
+    { id: "mindstream-willpower", label: "Willpower", icon: "✊", cards: [...(state.mindstreamDiscard?.willpower || [])].filter(Boolean).reverse() },
+  ];
+}
+
+function binderEntriesFromPiles(piles, tabId = "all") {
+  const selected = tabId === "all" ? piles : piles.filter((pile) => pile.id === tabId);
+  return selected.flatMap((pile) => (pile.cards || []).map((card) => ({
+    card,
+    pileLabel: pile.label,
+    pileIcon: pile.icon,
+    pileId: pile.id,
+  })));
+}
+
+function measureBinderFit(stage) {
+  const w = Math.max(280, stage?.clientWidth || 640);
+  const h = Math.max(180, stage?.clientHeight || 360);
+  const gap = 8;
+  const minW = 64;
+  const minH = 90;
+  const cols = Math.max(3, Math.min(12, Math.floor((w + gap) / (minW + gap))));
+  const rows = Math.max(2, Math.min(8, Math.floor((h + gap) / (minH + gap))));
+  return { cols, rows, pageSize: cols * rows };
+}
+
+function openCardBinder({
+  title,
+  lead,
+  piles,
+  tabs,
+  initialTab = "all",
+  emptyText = "This pile is empty.",
+}) {
+  const body = document.getElementById("utility-modal-body");
+  const modal = document.getElementById("utility-modal");
+  if (!body || !modal) return;
+
+  let tabId = initialTab;
+  let page = 0;
+  let lookIndex = 0;
+  let looking = false;
+
+  body.innerHTML = `
+    <div class="subconscious-binder-shell binder-browse-shell">
+      <header class="subconscious-binder-header">
+        <div class="subconscious-binder-header-copy">
+          <h2>${title}</h2>
+          <p class="card-choice-message">${lead}</p>
+        </div>
+        <div class="subconscious-binder-header-bar">
+          <button type="button" class="btn btn-sm primary" id="binder-open-look">Look</button>
+          <button type="button" class="btn subconscious-binder-close" id="binder-browse-close">Close</button>
+        </div>
+      </header>
+      <nav class="binder-tabs" id="binder-tabs" aria-label="Piles"></nav>
+      <div id="binder-browse-root" class="subconscious-binder-root"></div>
+    </div>
+  `;
+  prepareSubconsciousBinderModal();
+
+  const root = body.querySelector("#binder-browse-root");
+  const tabsEl = body.querySelector("#binder-tabs");
+  const lookBtn = body.querySelector("#binder-open-look");
+  const shell = body.querySelector(".subconscious-binder-shell");
+
+  const currentEntries = () => binderEntriesFromPiles(piles, tabId);
+
+  const paintTabs = () => {
+    tabsEl.innerHTML = "";
+    tabs.forEach((tab) => {
+      const count = tab.id === "all"
+        ? piles.reduce((n, pile) => n + (pile.cards?.length || 0), 0)
+        : (piles.find((pile) => pile.id === tab.id)?.cards?.length || 0);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `binder-tab${tab.id === tabId ? " is-active" : ""}`;
+      btn.textContent = `${tab.icon ? `${tab.icon} ` : ""}${tab.label} (${count})`;
+      btn.addEventListener("click", () => {
+        tabId = tab.id;
+        page = 0;
+        looking = false;
+        render();
+      });
+      tabsEl.appendChild(btn);
+    });
+  };
+
+  const renderLook = (entries) => {
+    looking = true;
+    lookIndex = Math.max(0, Math.min(lookIndex, entries.length - 1));
+    shell?.classList.add("is-binder-look");
+    root.innerHTML = "";
+    const entry = entries[lookIndex];
+    const look = document.createElement("div");
+    look.className = "binder-look";
+    look.tabIndex = -1;
+    look.innerHTML = `
+      <div class="binder-look-top">
+        <button type="button" class="btn btn-sm" id="binder-look-back">Back to binder</button>
+        <p class="binder-look-meta">${entry.pileIcon || ""} ${entry.pileLabel} · ${lookIndex + 1} / ${entries.length}</p>
+      </div>
+      <div class="binder-look-stage">
+        <button type="button" class="subconscious-binder-zoom-arrow" id="binder-look-prev" aria-label="Previous card">‹</button>
+        <div class="binder-look-card-wrap"></div>
+        <button type="button" class="subconscious-binder-zoom-arrow" id="binder-look-next" aria-label="Next card">›</button>
+      </div>
+    `;
+    const wrap = look.querySelector(".binder-look-card-wrap");
+    const psycheLike = entry.card.type === "psyche" || entry.card.type === "psyche-power" || isDreambeastPsycheCard(entry.card);
+    const cardEl = renderCard(entry.card, psycheLike ? {} : { portrait: true });
+    cardEl.classList.add("binder-look-card");
+    wrap.appendChild(cardEl);
+    root.appendChild(look);
+
+    const go = (delta) => {
+      lookIndex += delta;
+      renderLook(currentEntries());
+    };
+    look.querySelector("#binder-look-back")?.addEventListener("click", () => {
+      looking = false;
+      shell?.classList.remove("is-binder-look");
+      renderGrid();
+    });
+    const prev = look.querySelector("#binder-look-prev");
+    const next = look.querySelector("#binder-look-next");
+    if (prev) {
+      prev.disabled = lookIndex <= 0;
+      prev.addEventListener("click", () => go(-1));
+    }
+    if (next) {
+      next.disabled = lookIndex >= entries.length - 1;
+      next.addEventListener("click", () => go(1));
+    }
+    look.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        if (lookIndex > 0) go(-1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        if (lookIndex < entries.length - 1) go(1);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        looking = false;
+        shell?.classList.remove("is-binder-look");
+        renderGrid();
+      }
+    });
+    let swipeX = null;
+    look.addEventListener("pointerdown", (event) => {
+      swipeX = event.clientX;
+    });
+    look.addEventListener("pointerup", (event) => {
+      if (swipeX == null) return;
+      const dx = event.clientX - swipeX;
+      swipeX = null;
+      if (dx > 48 && lookIndex > 0) go(-1);
+      else if (dx < -48 && lookIndex < entries.length - 1) go(1);
+    });
+    look.focus({ preventScroll: true });
+  };
+
+  const renderGrid = () => {
+    looking = false;
+    shell?.classList.remove("is-binder-look");
+    const entries = currentEntries();
+    root.innerHTML = "";
+    if (!entries.length) {
+      root.innerHTML = `<p class="resolution-empty">${emptyText}</p>`;
+      lookBtn.disabled = true;
+      return;
+    }
+    lookBtn.disabled = false;
+    const fit = measureBinderFit(root);
+    const pageCount = Math.max(1, Math.ceil(entries.length / fit.pageSize));
+    page = Math.min(page, pageCount - 1);
+    const slice = entries.slice(page * fit.pageSize, (page + 1) * fit.pageSize);
+    const toolbar = document.createElement("div");
+    toolbar.className = "subconscious-binder-toolbar";
+    toolbar.innerHTML = `
+      <span class="subconscious-binder-page-label">${entries.length} card${entries.length === 1 ? "" : "s"} · Page ${page + 1} / ${pageCount}</span>
+      <div class="subconscious-binder-nav">
+        <button type="button" class="btn btn-sm" id="binder-prev-page" ${page <= 0 ? "disabled" : ""}>Previous</button>
+        <button type="button" class="btn btn-sm" id="binder-next-page" ${page >= pageCount - 1 ? "disabled" : ""}>Next</button>
+      </div>
+    `;
+    root.appendChild(toolbar);
+    const grid = document.createElement("div");
+    grid.className = "subconscious-binder-grid";
+    grid.style.setProperty("--binder-cols", String(fit.cols));
+    slice.forEach((entry, localIdx) => {
+      const globalIndex = page * fit.pageSize + localIdx;
+      const cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "subconscious-binder-cell";
+      const thumb = renderCard(entry.card, { mini: true });
+      thumb.classList.add("binder-thumb");
+      const deck = document.createElement("span");
+      deck.className = "subconscious-binder-deck-tag";
+      deck.textContent = `${entry.pileIcon || ""} ${entry.pileLabel}`.trim();
+      cell.appendChild(thumb);
+      cell.appendChild(deck);
+      cell.addEventListener("click", () => {
+        lookIndex = globalIndex;
+        renderLook(currentEntries());
+      });
+      grid.appendChild(cell);
+    });
+    root.appendChild(grid);
+    toolbar.querySelector("#binder-prev-page")?.addEventListener("click", () => {
+      if (page > 0) {
+        page -= 1;
+        renderGrid();
+      }
+    });
+    toolbar.querySelector("#binder-next-page")?.addEventListener("click", () => {
+      if (page < pageCount - 1) {
+        page += 1;
+        renderGrid();
+      }
+    });
+  };
+
+  const render = () => {
+    paintTabs();
+    if (looking) renderLook(currentEntries());
+    else renderGrid();
+  };
+
+  lookBtn.addEventListener("click", () => {
+    const entries = currentEntries();
+    if (!entries.length) return;
+    lookIndex = 0;
+    renderLook(entries);
+  });
+  body.querySelector("#binder-browse-close")?.addEventListener("click", () => hideUtilityModal(true));
+  render();
+}
+
+export function showDiscardPileModal(state, deckId, _onCardClick) {
+  const piles = discardBinderPiles(state);
+  const tabs = [
+    { id: "all", label: "All" },
+    ...piles.map((pile) => ({ id: pile.id, label: pile.label, icon: pile.icon })),
+  ];
+  openCardBinder({
+    title: "Discard piles",
+    lead: "Every deck's discard on one page. Look lifts a card so you can read it.",
+    piles,
+    tabs,
+    initialTab: "all",
+    emptyText: "Discard piles are empty.",
+  });
+}
+
 export function showRevealedTopsModal(state, deckId, onCardClick) {
   const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
@@ -2758,30 +3022,6 @@ export function showRevealDeckTopModal(onPickSuit) {
     btn.addEventListener("click", () => onPickSuit(entry.suit));
     grid.appendChild(btn);
   });
-  modal.classList.remove("hidden");
-}
-
-export function showDiscardPileModal(state, deckId, onCardClick) {
-  const modal = document.getElementById("utility-modal");
-  const body = document.getElementById("utility-modal-body");
-  const label = DECK_LABELS[deckId] || deckId;
-  const pile = [...discardPileForDeck(state, deckId)].filter(Boolean).reverse();
-  body.innerHTML = `
-    <h2>${label} — Discard</h2>
-    <p class="graveyard-total">${pile.length} card${pile.length === 1 ? "" : "s"} face-up in discard</p>
-    <div id="discard-browse" class="mini-card-row"></div>
-  `;
-  const container = body.querySelector("#discard-browse");
-  if (!pile.length) {
-    container.innerHTML = "<p>Discard pile is empty.</p>";
-  } else {
-    pile.forEach((card) => {
-      container.appendChild(renderCard(card, {
-        mini: true,
-        onClick: () => onCardClick(card),
-      }));
-    });
-  }
   modal.classList.remove("hidden");
 }
 
@@ -3655,7 +3895,7 @@ export function renderPhaseActions(_actions, _advanceAction = null, state = null
     }
     const toll = timelineTollPreview(state);
     if (toll && !beastCount) {
-      parts.push(`Meet end: Forget ${toll.forgetCount} Landscape${toll.forgetCount === 1 ? "" : "s"}, then Fail costs.`);
+      parts.push(`Meet end: Forget ${toll.forgetCount} Landscape${toll.forgetCount === 1 ? "" : "s"}.`);
     }
     if (parts.length) {
       cue.hidden = false;
@@ -4545,8 +4785,8 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
           <h2>Return from Subconscious</h2>
           <p class="card-choice-message">${pending?.reason || `Choose up to ${need} card(s) to Return to discard piles.`}</p>
           <p class="card-choice-hint">${prefersTouchUi()
-    ? "Tap a binder card to select · Zoom opens a scrollable row — double-tap there to select."
-    : "Click a binder card to select · Zoom opens a scrollable row — double-click a card there to select."}</p>
+    ? "Tap a binder card to select · Look lifts one card — swipe or use the arrows."
+    : "Click a binder card to select · Look lifts one card — Left and Right walk the pile."}</p>
         </div>
         <div class="subconscious-binder-header-bar">
           <span class="subconscious-binder-tally" id="subconscious-binder-tally" aria-live="polite">0/${need}</span>
@@ -4602,16 +4842,17 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
       return;
     }
 
-    const pageCount = Math.max(1, Math.ceil(entries.length / SUBCONSCIOUS_BINDER_PAGE));
+    const fit = measureBinderFit(root);
+    const pageCount = Math.max(1, Math.ceil(entries.length / fit.pageSize));
     page = Math.min(page, pageCount - 1);
-    const slice = entries.slice(page * SUBCONSCIOUS_BINDER_PAGE, (page + 1) * SUBCONSCIOUS_BINDER_PAGE);
+    const slice = entries.slice(page * fit.pageSize, (page + 1) * fit.pageSize);
 
     const toolbar = document.createElement("div");
     toolbar.className = "subconscious-binder-toolbar";
     toolbar.innerHTML = `
       <span class="subconscious-binder-page-label">Page ${page + 1} / ${pageCount}</span>
       <div class="subconscious-binder-nav">
-        <button type="button" class="btn btn-sm primary" id="binder-open-zoom">Zoom</button>
+        <button type="button" class="btn btn-sm primary" id="binder-open-zoom">Look</button>
         <button type="button" class="btn btn-sm" id="binder-prev-page" ${page <= 0 ? "disabled" : ""}>Previous</button>
         <button type="button" class="btn btn-sm" id="binder-next-page" ${page >= pageCount - 1 ? "disabled" : ""}>Next</button>
       </div>
@@ -4620,10 +4861,10 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
 
     const grid = document.createElement("div");
     grid.className = "subconscious-binder-grid";
-    grid.style.setProperty("--binder-cols", String(SUBCONSCIOUS_BINDER_COLS));
+    grid.style.setProperty("--binder-cols", String(fit.cols));
 
     slice.forEach((entry, localIdx) => {
-      const globalIndex = page * SUBCONSCIOUS_BINDER_PAGE + localIdx;
+      const globalIndex = page * fit.pageSize + localIdx;
       const cell = document.createElement("button");
       cell.type = "button";
       cell.className = "subconscious-binder-cell";
@@ -4668,11 +4909,6 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
     refreshStatus();
   };
 
-  const scrollZoomToFocus = (strip, smooth = true) => {
-    const item = strip?.querySelector(`.subconscious-binder-zoom-item[data-index="${focusIndex}"]`);
-    item?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "nearest", inline: "center" });
-  };
-
   const renderZoomView = () => {
     if (!entries.length) {
       renderBinderGrid();
@@ -4680,133 +4916,72 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
     }
     focusIndex = Math.max(0, Math.min(focusIndex, entries.length - 1));
     setZoomChrome(true);
+    shell?.classList.add("is-binder-look");
     root.innerHTML = "";
+    const entry = entries[focusIndex];
+    const look = document.createElement("div");
+    look.className = "binder-look";
+    look.tabIndex = -1;
+    look.innerHTML = `
+      <div class="binder-look-top">
+        <button type="button" class="btn btn-sm" id="binder-look-back">Back to binder</button>
+        <p class="binder-look-meta">${entry.pileIcon || ""} ${entry.pileLabel} · ${focusIndex + 1} / ${entries.length}</p>
+        <button type="button" class="btn btn-sm primary" id="binder-look-select">${isSelected(entry.card) ? "Selected" : "Select"}</button>
+      </div>
+      <div class="binder-look-stage">
+        <button type="button" class="subconscious-binder-zoom-arrow" id="binder-look-prev" aria-label="Previous card">‹</button>
+        <div class="binder-look-card-wrap"></div>
+        <button type="button" class="subconscious-binder-zoom-arrow" id="binder-look-next" aria-label="Next card">›</button>
+      </div>
+    `;
+    const wrap = look.querySelector(".binder-look-card-wrap");
+    const cardEl = renderBinderZoomCard(entry.card, isSelected(entry.card));
+    cardEl.classList.add("binder-look-card");
+    wrap.appendChild(cardEl);
+    root.appendChild(look);
 
-    const zoom = document.createElement("div");
-    zoom.className = "subconscious-binder-zoom";
-    zoom.tabIndex = -1;
-
-    const topRow = document.createElement("div");
-    topRow.className = "subconscious-binder-zoom-top";
-    const backBtn = document.createElement("button");
-    backBtn.type = "button";
-    backBtn.className = "btn btn-sm";
-    backBtn.textContent = "Back to binder";
-    backBtn.addEventListener("click", () => renderBinderGrid());
-    const meta = document.createElement("p");
-    meta.className = "subconscious-binder-zoom-meta";
-    topRow.appendChild(backBtn);
-    topRow.appendChild(meta);
-
-    const band = document.createElement("div");
-    band.className = "subconscious-binder-zoom-band";
-
-    const prevBtn = document.createElement("button");
-    prevBtn.type = "button";
-    prevBtn.className = "subconscious-binder-zoom-arrow";
-    prevBtn.setAttribute("aria-label", "Previous card");
-    prevBtn.textContent = "‹";
-
-    const stripWrap = document.createElement("div");
-    stripWrap.className = "subconscious-binder-zoom-strip-wrap";
-    const strip = document.createElement("div");
-    strip.className = "subconscious-binder-zoom-strip";
-    strip.setAttribute("role", "list");
-
-    const nextBtn = document.createElement("button");
-    nextBtn.type = "button";
-    nextBtn.className = "subconscious-binder-zoom-arrow";
-    nextBtn.setAttribute("aria-label", "Next card");
-    nextBtn.textContent = "›";
-
-    const syncZoomSelectionGlow = () => {
-      strip.querySelectorAll(".subconscious-binder-zoom-item").forEach((el) => {
-        const idx = Number(el.dataset.index);
-        const card = el.querySelector(".game-card");
-        if (card) card.classList.toggle("selected", isSelected(entries[idx]?.card));
-      });
+    const go = (delta) => {
+      focusIndex += delta;
+      renderZoomView();
     };
-
-    const updateZoomFocus = () => {
-      focusIndex = Math.max(0, Math.min(focusIndex, entries.length - 1));
-      strip.querySelectorAll(".subconscious-binder-zoom-item").forEach((el) => {
-        el.classList.toggle("is-focus", Number(el.dataset.index) === focusIndex);
-      });
-      const entry = entries[focusIndex];
-      meta.textContent = `${entry.pileIcon || ""} ${entry.pileLabel} · ${focusIndex + 1} / ${entries.length}`;
-      prevBtn.disabled = focusIndex <= 0;
-      nextBtn.disabled = focusIndex >= entries.length - 1;
-      scrollZoomToFocus(strip);
-    };
-
-    entries.forEach((entry, index) => {
-      const slide = document.createElement("button");
-      slide.type = "button";
-      slide.className = "subconscious-binder-zoom-item";
-      slide.dataset.index = String(index);
-      slide.setAttribute("role", "listitem");
-      if (index === focusIndex) slide.classList.add("is-focus");
-      const cardEl = renderBinderZoomCard(entry.card, isSelected(entry.card));
-      cardEl.classList.add("subconscious-binder-zoom-card");
-      const deck = document.createElement("span");
-      deck.className = "subconscious-binder-zoom-deck";
-      deck.textContent = `${entry.pileIcon || ""} ${entry.pileLabel}`.trim();
-      slide.appendChild(cardEl);
-      slide.appendChild(deck);
-      slide.addEventListener("click", () => {
-        focusIndex = index;
-        updateZoomFocus();
-      });
-      slide.addEventListener("dblclick", (event) => {
-        event.preventDefault();
-        toggleReturnPick(state, entry.card.instanceId);
-        syncZoomSelectionGlow();
-        refreshStatus();
-      });
-      strip.appendChild(slide);
+    look.querySelector("#binder-look-back")?.addEventListener("click", () => renderBinderGrid());
+    look.querySelector("#binder-look-select")?.addEventListener("click", () => {
+      toggleReturnPick(state, entry.card.instanceId);
+      refreshStatus();
+      renderZoomView();
     });
-
-    stripWrap.appendChild(strip);
-
-    band.appendChild(prevBtn);
-    band.appendChild(stripWrap);
-    band.appendChild(nextBtn);
-    zoom.appendChild(topRow);
-    zoom.appendChild(band);
-    root.appendChild(zoom);
-
-    const goPrev = () => {
-      if (focusIndex > 0) {
-        focusIndex -= 1;
-        updateZoomFocus();
-      }
-    };
-    const goNext = () => {
-      if (focusIndex < entries.length - 1) {
-        focusIndex += 1;
-        updateZoomFocus();
-      }
-    };
-
-    prevBtn.addEventListener("click", goPrev);
-    nextBtn.addEventListener("click", goNext);
-
-    const onZoomKey = (event) => {
+    const prev = look.querySelector("#binder-look-prev");
+    const next = look.querySelector("#binder-look-next");
+    if (prev) {
+      prev.disabled = focusIndex <= 0;
+      prev.addEventListener("click", () => go(-1));
+    }
+    if (next) {
+      next.disabled = focusIndex >= entries.length - 1;
+      next.addEventListener("click", () => go(1));
+    }
+    look.addEventListener("keydown", (event) => {
       if (event.key === "ArrowLeft") {
         event.preventDefault();
-        goPrev();
+        if (focusIndex > 0) go(-1);
       } else if (event.key === "ArrowRight") {
         event.preventDefault();
-        goNext();
+        if (focusIndex < entries.length - 1) go(1);
       } else if (event.key === "Escape") {
         event.preventDefault();
         renderBinderGrid();
       }
-    };
-    zoom.addEventListener("keydown", onZoomKey);
-    updateZoomFocus();
-    requestAnimationFrame(() => scrollZoomToFocus(strip, false));
-    zoom.focus({ preventScroll: true });
+    });
+    let swipeX = null;
+    look.addEventListener("pointerdown", (event) => { swipeX = event.clientX; });
+    look.addEventListener("pointerup", (event) => {
+      if (swipeX == null) return;
+      const dx = event.clientX - swipeX;
+      swipeX = null;
+      if (dx > 48 && focusIndex > 0) go(-1);
+      else if (dx < -48 && focusIndex < entries.length - 1) go(1);
+    });
+    look.focus({ preventScroll: true });
     refreshStatus();
   };
 
@@ -4925,41 +5100,26 @@ export function showRepressPicker(state, onPick, onConfirm) {
   modal.classList.remove("hidden", "utility-modal-minimized");
 }
 
-export function showSubconsciousBrowse(state, onCardClick) {
-  const modal = document.getElementById("utility-modal");
-  const content = modal?.querySelector(".utility-content");
-  const body = document.getElementById("utility-modal-body");
-  const count = subconsciousCount(state.subconscious);
-  content?.classList.remove("rules-reference-modal", "info-hub-modal", "dreamer-detail-modal");
-  content?.classList.add("fullscreen-browser");
-  body.innerHTML = `
-    <header class="fullscreen-browser-header">
-      <h2>☠ The Subconscious</h2>
-      <p class="fullscreen-browser-lead">Face-up graveyard — all Repressed cards. Choose cards here when an effect lets you <strong>Return</strong> cards to play.</p>
-      <p class="graveyard-total">${count} card${count === 1 ? "" : "s"} total</p>
-    </header>
-    <div id="subconscious-browse" class="subconscious-piles fullscreen-browser-body"></div>
-  `;
-  const container = body.querySelector("#subconscious-browse");
-  subconsciousPilesForUI(state).forEach((pile) => {
-    const section = document.createElement("div");
-    section.className = "subconscious-pile gallery-pile";
-    section.innerHTML = `<h4>${pile.label} <span class="gallery-pile-count">(${pile.cards.length})</span></h4>`;
-    const row = document.createElement("div");
-    row.className = "gallery-card-row";
-    pile.cards.forEach((card) => {
-      row.appendChild(renderCard(card, {
-        dense: true,
-        onClick: () => onCardClick(card),
-      }));
-    });
-    section.appendChild(row);
-    container.appendChild(section);
+export function showSubconsciousBrowse(state, _onCardClick) {
+  const source = subconsciousPilesForUI(state);
+  const piles = source.map((pile) => ({
+    id: pile.label.toLowerCase().replace(/\s+/g, "-"),
+    label: pile.label,
+    icon: pile.icon,
+    cards: pile.cards || [],
+  }));
+  const tabs = [
+    { id: "all", label: "All" },
+    ...piles.map((pile) => ({ id: pile.id, label: pile.label, icon: pile.icon })),
+  ];
+  openCardBinder({
+    title: "☠ The Subconscious",
+    lead: "Face-up exile — every Repressed card. Look lifts one so you can read it. Return still happens from an effect.",
+    piles,
+    tabs,
+    initialTab: "all",
+    emptyText: "Empty — no repressed cards.",
   });
-  if (!container.children.length) {
-    container.innerHTML = "<p class=\"dream-feed-empty\">Empty — no repressed cards.</p>";
-  }
-  modal.classList.remove("hidden");
 }
 
 export function hideUtilityModal(force = false) {
@@ -5591,6 +5751,7 @@ let tutorialSpotlightEl = null;
 let tutorialSparkleLayer = null;
 let tutorialSpotlightTracker = null;
 let tutorialSpotlightCameraTrackRaf = 0;
+let tutorialSpotlightCameraStage = null;
 let tutorialScrollBound = false;
 let activeTutorialStep = null;
 let lastUtilityModalSpotlightState = false;
@@ -5709,6 +5870,10 @@ function resolveTutorialElements(step) {
 }
 
 function resolvePrimarySpotlightElement(step) {
+  if (isUtilityModalOpen()) {
+    const modalEl = document.querySelector("#utility-modal .utility-content");
+    if (modalEl) return modalEl;
+  }
   const beat = step?.spotlightBeat;
 
   if (beat?.kind === "handToggle" && step?.spotlight?.includes("data-instance-id")) {
@@ -5797,11 +5962,8 @@ function resolvePrimarySpotlightElement(step) {
 function resolveSpotlightElements(step) {
   const el = resolvePrimarySpotlightElement(step);
   if (el) return [el];
-  const beat = step?.spotlightBeat;
-  if (beat?.kind && beat.kind !== "dreamerSelect") {
-    return [];
-  }
   return resolveTutorialElements(step);
+}
 }
 
 function inferTutorialCardDock(step) {
@@ -6443,6 +6605,12 @@ export function trackTutorialSpotlightWithCamera(durationMs = 480) {
     cancelAnimationFrame(tutorialSpotlightCameraTrackRaf);
     tutorialSpotlightCameraTrackRaf = 0;
   }
+  const stage = document.getElementById("board-zoom-stage");
+  if (stage !== tutorialSpotlightCameraStage) {
+    tutorialSpotlightCameraStage?.removeEventListener("transitionend", positionTutorialSpotlight);
+    tutorialSpotlightCameraStage = stage;
+    tutorialSpotlightCameraStage?.addEventListener("transitionend", positionTutorialSpotlight);
+  }
   const end = performance.now() + durationMs;
   const frame = (now) => {
     positionTutorialSpotlight();
@@ -6527,7 +6695,7 @@ export function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) 
 
   const scrollEl = tutorialSpotlightEls[0] || highlightTargets[0];
   if (scrollEl) {
-    scrollEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    scrollEl.scrollIntoView({ block: "nearest", behavior: "auto" });
   }
 }
 

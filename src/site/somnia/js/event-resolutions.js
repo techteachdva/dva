@@ -33,8 +33,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Breathe Together",
       hint: "All draw 1 Psyche; you gain 1 PT",
-      effect: "drawPsycheAndPT",
-      params: { draw: 1, pt: 1 },
+      steps: [
+        { effect: "drawPsycheAll", params: { count: 1 } },
+        { effect: "grantPT", params: { count: 1 } },
+      ],
     },
     bad: {
       label: "Scatter Focus",
@@ -213,8 +215,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Follow the Call",
       hint: "Gain 1 PT; move to Road or Hallway",
-      effect: "grantPT",
-      params: { count: 1 },
+      steps: [
+        { effect: "grantPT", params: { count: 1 } },
+        { effect: "moveToNamed", params: { ids: ["road", "endless-hallway"] } },
+      ],
     },
     bad: {
       label: "Siren Lies",
@@ -435,8 +439,10 @@ export const EVENT_RESOLUTIONS = {
     bad: {
       label: "World Warps",
       hint: "Forget 4 Landscapes; repress top 2 Psyche",
-      effect: "forgetLandscapes",
-      params: { count: 4 },
+      steps: [
+        { effect: "forgetLandscapes", params: { count: 4 } },
+        { effect: "repressTopPsycheDeck", params: { count: 2 } },
+      ],
     },
   },
 
@@ -649,8 +655,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Ride the Gale",
       hint: "Gain 2 PT; move to Mist or Ocean",
-      effect: "grantPT",
-      params: { count: 2 },
+      steps: [
+        { effect: "grantPT", params: { count: 2 } },
+        { effect: "moveToNamed", params: { ids: ["silver-mist", "endless-ocean"] } },
+      ],
     },
     bad: {
       label: "Wind Scours You",
@@ -703,8 +711,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Dance Toward It",
       hint: "Gain 1 PT; move to Awards or Party",
-      effect: "grantPT",
-      params: { count: 1 },
+      steps: [
+        { effect: "grantPT", params: { count: 1 } },
+        { effect: "moveToNamed", params: { ids: ["awards", "the-party"] } },
+      ],
     },
     bad: {
       label: "Discordant Note",
@@ -739,8 +749,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Sugar Rush",
       hint: "Draw 3 Psyche; move to Candy Mountain",
-      effect: "drawPsyche",
-      params: { count: 3 },
+      steps: [
+        { effect: "drawPsyche", params: { count: 3 } },
+        { effect: "moveToNamed", params: { ids: ["candy-mountain"] } },
+      ],
     },
     bad: {
       label: "Sticky Trap",
@@ -847,8 +859,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Step Through",
       hint: "All draw 1; free Meet Action",
-      effect: "freeMeetAction",
-      params: { count: 1 },
+      steps: [
+        { effect: "drawPsycheAll", params: { count: 1 } },
+        { effect: "freeMeetAction", params: { count: 1 } },
+      ],
     },
     bad: {
       label: "Doorway Snaps Shut",
@@ -1177,8 +1191,8 @@ export const EVENT_RESOLUTIONS = {
     bad: {
       label: "Sand Strips You Bare",
       hint: "Discard 1 Object or Psyche",
-      effect: "discardPsyche",
-      params: { count: 1 },
+      effect: "discardObjectOrPsyche",
+      params: {},
     },
   },
 
@@ -1189,8 +1203,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Walk Together",
       hint: "Reveal 2 Landscapes; free Meet",
-      effect: "revealLandscapes",
-      params: { count: 2 },
+      steps: [
+        { effect: "revealLandscapes", params: { count: 2 } },
+        { effect: "freeMeetAction", params: { count: 1 } },
+      ],
     },
     bad: {
       label: "Friendship Frays",
@@ -1207,8 +1223,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Climb to the Attic",
       hint: "Free Meet Action; move to Attic",
-      effect: "freeMeetAction",
-      params: { count: 1 },
+      steps: [
+        { effect: "freeMeetAction", params: { count: 1 } },
+        { effect: "moveToNamed", params: { ids: ["the-attic"] } },
+      ],
     },
     bad: {
       label: "Stumble on the Stairs",
@@ -1225,8 +1243,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Descend to Basement",
       hint: "Free Meet Action; move to Basement",
-      effect: "freeMeetAction",
-      params: { count: 1 },
+      steps: [
+        { effect: "freeMeetAction", params: { count: 1 } },
+        { effect: "moveToNamed", params: { ids: ["the-basement"] } },
+      ],
     },
     bad: {
       label: "Miss a Step",
@@ -1343,8 +1363,10 @@ export const EVENT_RESOLUTIONS = {
     bad: {
       label: "Doom Descends",
       hint: "Discard 2 Psyche; spawn Encounter",
-      effect: "spawnEncounter",
-      params: {},
+      steps: [
+        { effect: "discardPsyche", params: { count: 2 } },
+        { effect: "spawnEncounter", params: {} },
+      ],
     },
   },
 
@@ -1427,8 +1449,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Channel the Heat",
       hint: "Draw Psyche; free Meet",
-      effect: "freeMeetAction",
-      params: { count: 1 },
+      steps: [
+        { effect: "drawPsyche", params: { count: 1 } },
+        { effect: "freeMeetAction", params: { count: 1 } },
+      ],
     },
     bad: {
       label: "Boil Over",
@@ -1535,8 +1559,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Enter the Mist",
       hint: "Draw 2 Psyche; move to Silver Mist",
-      effect: "drawPsyche",
-      params: { count: 2 },
+      steps: [
+        { effect: "drawPsyche", params: { count: 2 } },
+        { effect: "moveToNamed", params: { ids: ["silver-mist"] } },
+      ],
     },
     bad: {
       label: "Lost in Grey",
@@ -1787,8 +1813,10 @@ export const EVENT_RESOLUTIONS = {
     good: {
       label: "Slip Through the Gap",
       hint: "Draw 2 Psyche; move to Candy or Ocean",
-      effect: "drawPsyche",
-      params: { count: 2 },
+      steps: [
+        { effect: "drawPsyche", params: { count: 2 } },
+        { effect: "moveToNamed", params: { ids: ["candy-mountain", "endless-ocean"] } },
+      ],
     },
     bad: {
       label: "Bite Closes",

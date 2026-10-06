@@ -20,13 +20,13 @@ const BASIC_TUTORIAL_KEY = "somnia_basic_tutorial_complete";
 const ADVANCED_TUTORIAL_KEY = "somnia_advanced_tutorial_complete";
 const GENTLE_START_KEY = "somnia_gentle_daydream_used";
 
-export const COOP_PLAY_TIP = "Discuss and plan together — there is no turn order within a phase. Act in whatever sequence helps the team.";
+export const COOP_PLAY_TIP = "Discuss and plan together. One Dreamer spends the shared budget, then Pass Turn or Give Turn hands the night on.";
 
 export const TUTORIAL_STEPS = [
   {
     id: "welcome",
     title: "Welcome to Somnia",
-    body: "You are Dreamers trapped in a collapsing Dreamscape. Cooperate to earn Archetype points before the Dream Deck runs out — or never wake up. Talk through each phase; there is no turn order.",
+    body: "You are Dreamers trapped in a collapsing Dreamscape. Cooperate to earn Archetype points before the Dream Deck runs out — or never wake up. Talk through each phase. One Dreamer spends, then Pass Turn or Give Turn.",
     target: null,
   },
   {
@@ -156,7 +156,7 @@ export function getCurrentObjective(state) {
       steps: [
         "A Dreamer lost all Psyche and died in the Dream.",
         "Top card of each Mindstream deck is Repressed; objects and Power Tokens are lost.",
-        "They return to The Bed with 4/3/2/1 Psyche (one fewer each death) and no new Power Tokens. The Bed's Draw 3 is available as normal.",
+        "They return to The Bed with 3 Psyche and no new Power Tokens. The Bed's Draw 3 is available as normal.",
       ],
     };
   }
@@ -527,7 +527,7 @@ export function rulesIntroHtml() {
             <li><strong>Round 1:</strong> each Dreamer starts with <strong>5 Psyche</strong></li>
             <li><strong>Round 2+:</strong> alive Dreamers draw <strong>2 Psyche</strong> at round start</li>
             <li><strong>One Dreamer per phase</strong> spends 1 suited card to set the team budget</li>
-            <li>Unresolved Dreambeasts stay on the map. At Meet end the table Forgets 1 random Landscape per remaining beast, then each beast's Fail cost resolves in spawn order</li>
+            <li>Unresolved Dreambeasts stay on the map. At Meet end the table Forgets 1 random Landscape per remaining beast. Fail hits when Accept, Repress, or Flee fails — not at Meet end</li>
           </ul>
         </div>
       </section>
@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 37.7. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 38.0. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -584,7 +584,7 @@ export function rulesRemHtml() {
           <ul>
             <li><strong>Start:</strong> each Dreamer discards 1 Psyche from hand per Dreambeast on their Landscape or an adjacent hex. Those cards go to the Psyche discard, not the Subconscious. Dreamers farther away pay nothing. Beasts stay on their Landscapes</li>
             <li><strong>Middle:</strong> action budget = that 1 card's value + Willpower bonuses. Spend on Encounters and Landscape actions. Accept and Repress are <strong>dice battles</strong>. You need at least 1 Psyche of the required suit (1–3 cards; allies extra). Beast Power = its dice. Recommended Dreamer Power is beast Power + 2 — you may play less and get lucky. +1d6 for matching Fantasy/Nightmare type and +1d6 for matching the beast's suit. Up to 3 Power Tokens add +1d6 each. 5s and 6s succeed</li>
-            <li><strong>End:</strong> if beasts remain, Forget 1 random Landscape per remaining beast, then each remaining beast's Fail cost resolves in the order they spawned. Beasts are not removed until Accepted or Repressed</li>
+            <li><strong>End:</strong> if beasts remain, Forget 1 random Landscape per remaining beast. Beasts are not removed until Accepted or Repressed. Fail hits when Accept, Repress, or Flee fails</li>
             <li>Each Landscape offers <strong>Draw Mindstream</strong> (repeatable) and one <strong>unique action</strong> (once per table this Meet). <strong>The Bed</strong> has Draw 3 Psyche, once per Dreamer this Meet</li>
             <li><strong>Pass Token:</strong> after Meet opens, it starts with a living Dreamer who did not open the phase (Head, if Head was not the opener). That Dreamer takes one Meet action or passes. Passing moves it clockwise. Next Phase can still end Meet early</li>
             <li>The same Dreamer cannot open two phases in a row this round, unless they are alone or nobody else can pay the suit</li>
@@ -640,9 +640,9 @@ export function rulesDetailsHtml() {
         <li><strong>Dice battle</strong> — at least 1 Psyche of the required suit. Beast <strong>Power</strong> is how many d6 it rolls (the old Accept/Repress cost). Recommended Dreamer Power is beast Power + 2; you may play less. Your Power is Psyche played (Nightmare/Fantasy and Suit bonuses included) plus matching Dreamer stat, +1d6 type, +1d6 suit, and +1d6 per Power Token on the spread (max 3). A 5 or 6 is a success. Most successes wins (ties favor the beast). Pools display up to 22d6</li>
         <li><strong>Accept</strong> (win) — beast joins hand as a 3-value ally</li>
         <li><strong>Repress</strong> (win) — same point cost as Accept, other suit; the beast goes to the Subconscious; resolve the Repress reward</li>
-        <li><strong>Lose the battle</strong> — Psyche and Power Tokens in the play are spent. The beast stays. Its Fail cost still hits at the end of Meet</li>
+        <li><strong>Lose the battle</strong> — Psyche and Power Tokens in the play are spent. The beast stays. Fail already resolved when Accept, Repress, or Flee failed</li>
         <li><strong>Meet start</strong> — each Dreamer discards 1 Psyche from hand per roaming Dreambeast on their tile or next door. One Dreamer ignores the first card. Fail costs still Repress</li>
-        <li><strong>Meet end</strong> — Forget 1 random Landscape per remaining Dreambeast, then Fail costs in spawn order. Default Fail Represses about half the Accept value to the Subconscious; many beasts also Forget Landscapes. Beasts remain until Accepted or Repressed</li>
+        <li><strong>Meet end</strong> — Forget 1 random Landscape per remaining Dreambeast. Default Fail Represses about half the Accept value to the Subconscious; many beasts also Forget Landscapes. Beasts remain until Accepted or Repressed</li>
         <li>Meet bonuses: +1d6 if fantasy/nightmare affinity matches; +1d6 if primary suit matches the Dreambeast's suit; jewelry/stick Objects +1 each; body tag doubles highest card</li>
         <li>Spent allies are Repressed to the Subconscious; spent Psyche goes to discard or Subconscious</li>
       </ul>
@@ -663,7 +663,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Power Tokens</h3>
-      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Spend 1 to commit an Archetype once both quests are already true, 1 on a Dreamer Power, 1 on an Archetype Power, 1 to activate a Persistent Object, <strong>1 as a suited Psyche</strong> for a Reveal / Explore / Meet opener (max 1 per opener), and <strong>+1d6 per token</strong> on a Psyche spread (max <strong>3</strong> tokens). Dying returns held tokens to the pool; respawn does not grant new ones.</p>
+      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Spend 1 to commit an Archetype once both quests are already true, 1 on a Dreamer Power, 1 on an Archetype Power, 1 to activate a Persistent Object, <strong>1 plus the suited stat</strong> for a Reveal / Explore / Meet opener (max 1 per opener), and <strong>+1d6 per token</strong> on a Psyche spread (max <strong>3</strong> tokens). Dying returns held tokens to the pool; respawn does not grant new ones.</p>
 
       <h3>Dreamer Powers</h3>
       <p>Each costs <strong>1 Power Token</strong> and can be used in any phase. Lucidity Dreamers help Reveal, Elasticity Dreamers help Explore, Willpower Dreamers help Meet.</p>
@@ -714,7 +714,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 37.7</p>
+          <p class="info-hub-kicker">Somnia v 38.0</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>
@@ -732,14 +732,14 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Play Together</h3>
-            <p>${COOP_PLAY_TIP} One Dreamer opens each phase with <strong>1 suited Psyche</strong> (or <strong>1 Power Token as 1 Psyche</strong>). Budget = that card's value + Dreamer, Object, and Acquired Archetype bonuses. The same Dreamer cannot open the next phase unless they are alone, or nobody else can pay the suit.</p>
+            <p>${COOP_PLAY_TIP} One Dreamer opens each phase with <strong>1 suited Psyche</strong> (or <strong>1 Power Token as 1 plus that suited stat</strong>). Budget = that card's value + Dreamer, Object, and Acquired Archetype bonuses. The same Dreamer cannot open the next phase unless they are alone, or nobody else can pay the suit. Bright is the paid path. Dim is free. The card remembers which one you chose.</p>
           </div>
           <div class="info-hub-rule info-hub-rem">
             <h3>R.E.M. — Every Round</h3>
             <ul>
               <li class="suit-lucidity"><strong>Reveal</strong> — Head (★) draws a Dream. Spend Lucidity to flip Wastelands, or Mindstream tops once the map is fully Revealed.</li>
               <li class="suit-elasticity"><strong>Explore</strong> — Spend Elasticity for shared moves. Entering Wasteland discards 1 Psyche. <strong>2 unused moves</strong> may peek the next Dream: leave it on top, or bury it ahead of Final Recurrence.</li>
-              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Start: discard 1 Psyche per Dreambeast on your tile or a neighboring hex (one Dreamer ignores the first). A Pass Token then moves around the table, one Meet action at a time. Dice battle to Accept or Repress. End: Forget 1 random Landscape per remaining beast, then Fail in spawn order. <strong>2 unused actions</strong> may Return 1 Dreambeast from the Subconscious, and you can do that again.</li>
+              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Start: discard 1 Psyche per Dreambeast on your tile or a neighboring hex (one Dreamer ignores the first). Pass Turn then moves around the table, one Meet action at a time. Dice battle to Accept or Repress. End: Forget 1 random Landscape per remaining beast. Fail hits when Accept, Repress, or Flee fails. <strong>2 unused actions</strong> may Return 1 Dreambeast from the Subconscious, and you can do that again.</li>
             </ul>
           </div>
           <div class="info-hub-rule">
@@ -772,7 +772,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Encounters</h3>
-            <p>Only the Dreamer on the tile may Meet and pool up to <strong>3 Psyche</strong> (allies extra). At least 1 card of the required suit. Beast <strong>Power</strong> is its dice; recommended Dreamer Power is that + 2. You may play less. +1d6 for matching type, +1d6 for matching suit, +1d6 per Power Token (max 3). 5–6 succeed. After the dice settle, spend 1 Power Token once to subtract 1 beast success, or stand. Ties favor the beast if you stand. Win to <strong>Accept</strong> (ally) or <strong>Repress</strong> (Subconscious + reward). Lose and the play is spent; the beast stays. Meet start taxes Dreamers on or beside a beast. Meet end Forgets 1 random Landscape per remaining beast, then Fail costs in spawn order.</p>
+            <p>Only the Dreamer on the tile may Meet and pool up to <strong>3 Psyche</strong> (allies extra). At least 1 card of the required suit. Beast <strong>Power</strong> is its dice; recommended Dreamer Power is that + 2. You may play less. +1d6 for matching type, +1d6 for matching suit, +1d6 per Power Token (max 3). 5–6 succeed. After the dice settle, spend 1 Power Token once to subtract 1 beast success, or stand. Ties favor the beast if you stand. Win to <strong>Accept</strong> (ally) or <strong>Repress</strong> (Subconscious + reward). Lose and the play is spent; the beast stays. Meet start taxes Dreamers on or beside a beast. Meet end Forgets 1 random Landscape per remaining beast. Fail hits when Accept, Repress, or Flee fails.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Hands, Tokens &amp; Objects</h3>

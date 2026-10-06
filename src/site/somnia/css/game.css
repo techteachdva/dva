@@ -7180,6 +7180,87 @@ body.card-detail-open .tutorial-card {
   color: var(--muted);
 }
 
+.binder-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0 1rem 0.65rem;
+}
+
+.binder-tab {
+  border: 1px solid rgba(180, 140, 255, 0.28);
+  background: rgba(18, 12, 36, 0.7);
+  color: var(--ink, #e8e4ff);
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.binder-tab.is-active {
+  background: rgba(123, 92, 255, 0.35);
+  border-color: rgba(201, 160, 255, 0.7);
+}
+
+.subconscious-binder-shell.is-binder-look .subconscious-binder-root {
+  overflow: hidden;
+}
+
+.binder-look {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  outline: none;
+}
+
+.binder-look-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.5rem 0.75rem;
+}
+
+.binder-look-meta {
+  margin: 0;
+  color: var(--muted);
+  flex: 1 1 auto;
+}
+
+.binder-look-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  perspective: 1400px;
+  padding: 0 0.5rem 1rem;
+}
+
+.binder-look-card-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+  height: 100%;
+}
+
+.binder-look-card.game-card {
+  width: min(22rem, 72vw);
+  max-height: min(70vh, 36rem);
+  transform: rotateY(-10deg) rotateX(6deg) translateZ(28px);
+  box-shadow:
+    18px 28px 48px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(201, 160, 255, 0.25);
+  transition: transform 0.28s ease;
+}
+
+::where(html:not([data-hover="false"])) .binder-look-card.game-card:hover {
+  transform: rotateY(-4deg) rotateX(2deg) translateZ(40px);
+}
+
 .subconscious-binder-grid {
   display: grid;
   grid-template-columns: repeat(var(--binder-cols, 12), minmax(64px, 1fr));

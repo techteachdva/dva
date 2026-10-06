@@ -128,8 +128,10 @@ export const DREAM_RESOLUTIONS = {
     good: {
       label: "Call Them Back",
       hint: "Discard 2 Psyche; free Meet Action",
-      effect: "freeMeetAction",
-      params: { count: 1 },
+      steps: [
+        { effect: "discardPsyche", params: { count: 2 } },
+        { effect: "freeMeetAction", params: { count: 1 } },
+      ],
     },
     bad: {
       label: "Alone on Empty Ground",
@@ -173,8 +175,10 @@ export const DREAM_RESOLUTIONS = {
     good: {
       label: "Pay the Price",
       hint: "Discard 4 Psyche; gain 1 PT",
-      effect: "grantPT",
-      params: { count: 1 },
+      steps: [
+        { effect: "discardPsyche", params: { count: 4 } },
+        { effect: "grantPT", params: { count: 1 } },
+      ],
     },
     bad: {
       label: "Deal Falls Through",
@@ -218,8 +222,10 @@ export const DREAM_RESOLUTIONS = {
     good: {
       label: "Chart the Open Road",
       hint: "Gain 1 PT; discard 1 Psyche",
-      effect: "grantPT",
-      params: { count: 1 },
+      steps: [
+        { effect: "grantPT", params: { count: 1 } },
+        { effect: "discardPsyche", params: { count: 1 } },
+      ],
     },
     bad: {
       label: "Roads Seal Shut",
@@ -308,8 +314,10 @@ export const DREAM_RESOLUTIONS = {
     good: {
       label: "Settle It Yourself",
       hint: "Discard 2 Psyche; free Meet Action",
-      effect: "freeMeetAction",
-      params: { count: 1 },
+      steps: [
+        { effect: "discardPsyche", params: { count: 2 } },
+        { effect: "freeMeetAction", params: { count: 1 } },
+      ],
     },
     bad: {
       label: "Rivals Flood The Bed",
@@ -415,8 +423,10 @@ export const DREAM_RESOLUTIONS = {
     good: {
       label: "Walk With Intent",
       hint: "Gain 1 PT; free Meet Action",
-      effect: "freeMeetAction",
-      params: { count: 1 },
+      steps: [
+        { effect: "grantPT", params: { count: 1 } },
+        { effect: "freeMeetAction", params: { count: 1 } },
+      ],
     },
     bad: {
       label: "Sleepwalk Into Danger",
