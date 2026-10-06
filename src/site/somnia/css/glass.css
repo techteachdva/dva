@@ -247,12 +247,13 @@ body.deck-pressure-critical .top-bar.play-top-bar {
 }
 
 @media (max-width: 1100px) {
-  html:not([data-form="phone"]) body.play-window .top-bar.play-top-bar {
+  /* Tablets have their own two-row bar. This wrap is for a short desktop window. */
+  html[data-form="desktop"] body.play-window .top-bar.play-top-bar {
     flex-wrap: wrap;
     height: auto;
     row-gap: 0.25rem;
   }
-  html:not([data-form="phone"]) body.play-window .top-bar.play-top-bar .hud {
+  html[data-form="desktop"] body.play-window .top-bar.play-top-bar .hud {
     flex: 1 1 100%;
     justify-content: flex-start;
   }

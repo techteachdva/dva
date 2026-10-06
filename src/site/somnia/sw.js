@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-37.6-follow-the-card";
-const RUNTIME_CACHE = "somnia-runtime-37.6-follow-the-card";
+const CACHE_NAME = "somnia-37.7-ipad-table";
+const RUNTIME_CACHE = "somnia-runtime-37.7-ipad-table";
 
 const PRECACHE = [
   "./",

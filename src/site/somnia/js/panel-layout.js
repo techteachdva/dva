@@ -23,6 +23,23 @@ function readViewport() {
   };
 }
 
+function readCssPx(name) {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name);
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Playable box after the home indicator and status bar. Menu screens keep the full viewport. */
+function insetPlayViewport(w, h) {
+  if (!document.body?.classList.contains("play-window")) return { w, h };
+  const insetX = readCssPx("--sal") + readCssPx("--sar");
+  const insetY = readCssPx("--sat") + readCssPx("--sab");
+  return {
+    w: Math.max(320, w - insetX),
+    h: Math.max(320, h - insetY),
+  };
+}
+
 function heightBand(h) {
   return h < 760 ? "short" : h < 960 ? "standard" : "tall";
 }
@@ -33,34 +50,43 @@ function widthBand(w) {
 
 /** Layout metrics derived from the actual CSS viewport (includes OS display scaling). */
 export function computeViewportMetrics() {
-  const { w, h, dpr } = readViewport();
+  const raw = readViewport();
   const { form, orientation } = getCapabilityProfile();
-  const compact = form === "phone" || form === "tablet";
   const phone = form === "phone";
+  const tablet = form === "tablet";
+  const play = phone || tablet ? insetPlayViewport(raw.w, raw.h) : { w: raw.w, h: raw.h };
+  const { w, h } = play;
+  const dpr = raw.dpr;
   const widthScale = w / 1600;
   const heightScale = h / 900;
-  // 30.2: phones already run a 12px root (game.css `html[data-form="phone"]`),
-  // so the extra 0.62 body scale produced 7.4px text across the whole table.
-  // Phone body text now stays at the root size; tablet/desktop keep the fit.
-  const uiScale = phone
+  // Phones and tablets read at the root size. Scaling a tablet off a 1600×900
+  // desktop made inherited type ~12px on an 11" iPad.
+  const uiScale = phone || tablet
     ? 1
     : Number(clamp(Math.min(widthScale, heightScale), 0.7, 1.08).toFixed(3));
 
-  const chromeH = Math.round(clamp(h * (phone ? 0.10 : 0.11), phone ? 76 : 88, phone ? 104 : 120));
-  const sidebarW = phone || (form === "tablet" && orientation === "portrait")
+  const landscape = orientation === "landscape";
+  const shortTablet = tablet && landscape && h < 780;
+  const chromeH = tablet
+    ? (landscape ? 92 : 100)
+    : Math.round(clamp(h * (phone ? 0.10 : 0.11), phone ? 76 : 88, phone ? 104 : 120));
+  const sidebarW = phone || (tablet && !landscape)
     ? 0
     : Math.round(clamp(
-      w * (form === "tablet" ? 0.34 : compact ? 0.22 : 0.22),
-      form === "tablet" ? 340 : compact ? 220 : 220,
-      form === "tablet" ? 460 : compact ? 320 : 380,
+      w * (tablet ? 0.24 : 0.22),
+      tablet ? 252 : 220,
+      tablet ? 328 : 380,
     ));
-  const maxHand = Math.round(h * (phone ? 0.34 : compact ? 0.34 : 0.36));
-  const minBoard = Math.round(h * (phone ? 0.48 : compact ? 0.46 : 0.40));
-  const handH = Math.round(clamp(
-    h * (phone ? 0.30 : compact ? 0.31 : 0.33),
-    phone ? 140 : compact ? 168 : 210,
-    Math.min(maxHand, h - chromeH - minBoard),
-  ));
+  // Tablet landscape used to give the hand 31% and leave the 7-hex map at or
+  // below the 44px floor (clipped on iPad mini). The map keeps ~60% of the height.
+  const handFrac = tablet ? (landscape ? (shortTablet ? 0.21 : 0.20) : 0.22) : (phone ? 0.30 : 0.33);
+  const handMin = tablet ? (landscape ? (shortTablet ? 152 : 168) : 240) : (phone ? 140 : 210);
+  const handMaxFrac = tablet ? (landscape ? 0.24 : 0.26) : (phone ? 0.34 : 0.36);
+  const minBoardFrac = tablet ? (landscape ? 0.60 : 0.54) : (phone ? 0.48 : 0.40);
+  const maxHand = Math.round(h * handMaxFrac);
+  const minBoard = Math.round(h * minBoardFrac);
+  const handCap = Math.max(handMin, Math.min(maxHand, h - chromeH - minBoard));
+  const handH = Math.round(clamp(h * handFrac, Math.min(handMin, handCap), handCap));
   const dockBudget = Math.round(handH * (phone ? 0.48 : 0.58));
   const btnH = Math.round(clamp((dockBudget - 36) / 3, phone ? 32 : 34, phone ? 44 : 64));
   const btnFs = Number(clamp(btnH / 40, 0.78, 1.55).toFixed(2));
@@ -119,7 +145,7 @@ export function computeMenuViewportMetrics() {
     form === "phone" ? 1.2 : menuLayout === "stack" ? 1.42 : menuLayout === "split" ? 1.15 : 1.35,
     form === "phone" ? 1.42 : menuLayout === "stack" ? 1.42 : menuLayout === "split" ? 1.28 : 1.9,
   ).toFixed(2));
-  const uiScale = form === "phone"
+  const uiScale = form === "phone" || form === "tablet"
     ? 1
     : Number(clamp(Math.min(w / 1600, h / 900), 0.75, 1.12).toFixed(3));
 

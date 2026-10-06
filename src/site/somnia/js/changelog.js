@@ -6,10 +6,17 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "37.6";
+export const SOMNIA_VERSION = "37.7";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "37.7",
+    title: "The iPad Table",
+    notes: [
+      "On an iPad the map keeps most of the screen. The top bar is two short rows, the hand is a readable card row, and the outer Landscapes stay on the table in landscape and in portrait.",
+    ],
+  },
   {
     version: "37.6",
     title: "Follow the Card",

@@ -1687,7 +1687,9 @@ const HEX_BASE = 58;
 const HEX_MIN = 44;
 /** ~1024px source art / sqrt(3) — keeps landscape faces sharp when zoomed in. */
 const HEX_MAX_NATIVE = 640;
-const HEX_MAX_COMPACT = 360;
+const HEX_MAX_PHONE = 360;
+/** iPad pinch-in: 2x displays stay sharp past the phone cap without the desktop 640 ceiling. */
+const HEX_MAX_TABLET = 520;
 let lastFitHexSize = 0;
 let lastBoardStructureKey = "";
 let lastBoardChromeKey = "";
@@ -1748,7 +1750,9 @@ function patchBoardGeometry(board, state, size) {
 
 function compactHexCap() {
   const form = getCapabilityProfile()?.form;
-  return form === "phone" || form === "tablet" ? HEX_MAX_COMPACT : HEX_MAX_NATIVE;
+  if (form === "phone") return HEX_MAX_PHONE;
+  if (form === "tablet") return HEX_MAX_TABLET;
+  return HEX_MAX_NATIVE;
 }
 
 /** 30.2: a 390px phone cannot show the 7-wide board at HEX_MIN 44 (534px), so
@@ -1756,9 +1760,16 @@ function compactHexCap() {
  *  (≈55px tiles, still a thumb target); pinch-zoom brings them back up. */
 function minHexSize() {
   const profile = getCapabilityProfile();
-  if (profile?.form !== "phone") return HEX_MIN;
-  // Landscape phones have ~330px of table height for 7 hex rows.
-  return profile.orientation === "landscape" ? 28 : 32;
+  if (profile?.form === "phone") {
+    // Landscape phones have ~330px of table height for 7 hex rows.
+    return profile.orientation === "landscape" ? 28 : 32;
+  }
+  // Short iPads (mini landscape) would clip the outer ring if held at 44.
+  if (profile?.form === "tablet" && profile.orientation === "landscape") {
+    const h = window.innerHeight || 0;
+    if (h < 800) return 36;
+  }
+  return HEX_MIN;
 }
 
 function fitHexSize(state) {
