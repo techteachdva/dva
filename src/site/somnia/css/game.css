@@ -1745,8 +1745,7 @@ body.in-game main {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(180, 160, 255, 0.22);
   color: var(--muted);
-  box-shadow: none;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.08s ease, box-shadow 0.08s ease;
 }
 
 .btn-advanced-menu {
@@ -2220,8 +2219,9 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
     menu-begin-beacon 1.6s ease-in-out infinite;
 }
 
-#btn-start.begin-dream-btn.begin-dream-ready:active {
-  transform: translateY(0) scale(0.99);
+#btn-start.begin-dream-btn.begin-dream-ready:active,
+#btn-start.begin-dream-btn.begin-dream-ready.is-pressed {
+  transform: translateY(3px) scale(0.985);
 }
 
 .deck-toggle {
@@ -3512,6 +3512,45 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   transform: scale(0.98);
 }
 
+.turn-halo-layer {
+  z-index: 620;
+}
+
+.tutorial-spotlight.turn-halo {
+  border-radius: 50%;
+  opacity: 0.78;
+}
+
+.turn-halo .tutorial-spotlight-glow {
+  opacity: 0.34;
+  inset: -2px;
+}
+
+.turn-halo .tutorial-spotlight-glow-alt {
+  opacity: 0.2;
+}
+
+.turn-halo .tutorial-spotlight-ring {
+  border-radius: 50%;
+}
+
+.turn-halo .tutorial-sparkle-star {
+  font-size: 8px;
+}
+
+.turn-halo .tutorial-sparkle-rays {
+  opacity: 0.42;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn-halo .tutorial-spotlight-sparkles,
+  .turn-halo .tutorial-sparkle,
+  .turn-halo .tutorial-sparkle-rays,
+  .turn-halo .tutorial-sparkle-star {
+    animation: none;
+  }
+}
+
 .tutorial-flyer {
   position: fixed;
   left: 0;
@@ -3973,8 +4012,10 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight:not(:disabled) {
 }
 
 .btn {
-  border: 1px solid var(--border);
-  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 42%),
+    var(--bg-card);
   color: var(--text);
   border-radius: 10px;
   padding: 0.65rem 1rem;
@@ -3982,7 +4023,11 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight:not(:disabled) {
   font: inherit;
   position: relative;
   overflow: hidden;
-  transition: transform 0.12s ease, border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 4px 0 rgba(16, 10, 32, 0.72),
+    0 8px 16px rgba(0, 0, 0, 0.28);
+  transition: transform 0.08s ease, border-color 0.15s, box-shadow 0.08s ease, background 0.15s, filter 0.12s;
 }
 
 .btn::after {
@@ -3999,10 +4044,26 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight:not(:disabled) {
   transition: opacity 0.35s ease;
 }
 
-:where(html:not([data-hover="false"])) .btn:hover:not(:disabled) { border-color: var(--accent); }
+:where(html:not([data-hover="false"])) .btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.48),
+    0 5px 0 rgba(16, 10, 32, 0.72),
+    0 12px 20px rgba(123, 92, 255, 0.28);
+}
 
-.btn:active:not(:disabled) {
-  transform: scale(0.96);
+.btn:active:not(:disabled),
+.btn.is-pressed:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.38),
+    0 1px 0 rgba(16, 10, 32, 0.65);
+}
+
+.btn:focus-visible {
+  outline: 2px solid rgba(255, 236, 186, 0.9);
+  outline-offset: 3px;
 }
 
 .btn.primary {
@@ -4572,6 +4633,15 @@ html[data-pointer="coarse"] .board-camera-controls button {
 .hex-tile .hex-occupant-dreamer:focus-visible {
   outline: 2px solid rgba(240, 201, 106, 0.9);
   outline-offset: 2px;
+}
+
+.hex-tile .hex-occupant-token.is-pressed {
+  transform: translateY(2px) scale(0.96);
+  filter: brightness(1.12) drop-shadow(0 1px 4px rgba(0, 0, 0, 0.8));
+}
+
+.hex-tile.is-pressed {
+  filter: brightness(1.08) saturate(1.05);
 }
 
 .hex-tile .hex-occupant-beast {
@@ -5264,8 +5334,12 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   }
 }
 
-.game-card:active {
-  transform: translateY(-2px) scale(0.98);
+.game-card:active,
+.game-card.is-pressed {
+  transform: translateY(3px) scale(0.98);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(12, 8, 24, 0.45);
 }
 
 .game-card.selected {
@@ -5733,8 +5807,28 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.deck-pile:active {
-  transform: translateY(0) scale(0.98);
+.deck-pile,
+.turn-plaque-pass {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 3px 0 rgba(12, 8, 24, 0.55),
+    0 8px 14px rgba(0, 0, 0, 0.22);
+}
+
+.deck-pile:active,
+.deck-pile.is-pressed,
+.turn-plaque-pass:active,
+.turn-plaque-pass.is-pressed {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.32),
+    0 1px 0 rgba(12, 8, 24, 0.45);
+}
+
+.player-chip:active,
+.player-chip.is-pressed {
+  filter: brightness(1.14);
+  transform: translateY(1px);
 }
 
 .modal-art {
@@ -8426,11 +8520,23 @@ html[data-form="tablet"][data-orientation="portrait"] body.sidebar-drawer-open #
 
 .fx-sparkle {
   position: absolute;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  margin-left: -3.5px;
-  margin-top: -3.5px;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  margin-top: -4.5px;
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+  filter: drop-shadow(0 0 4px rgba(255, 248, 220, 0.95));
   animation: sparkle-float 0.85s ease-out forwards;
 }
 
@@ -12608,8 +12714,9 @@ html[data-touch="true"] [role="button"] {
 }
 
 html[data-touch="true"] .btn:active:not(:disabled),
-html[data-touch="true"] button:active {
-  transform: none;
+html[data-touch="true"] .btn.is-pressed:not(:disabled),
+html[data-touch="true"] button:active:not(:disabled) {
+  transform: translateY(3px);
 }
 
 body.menu-window #screen-setup .btn,
@@ -13902,7 +14009,10 @@ html[data-embedded="true"] .pwa-install-hint {
   min-height: 5.2rem;
   font-family: var(--font-display);
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 5px 0 rgba(8, 4, 18, 0.62),
+    0 12px 28px rgba(0, 0, 0, 0.35);
 }
 .ms-choice-btn__label {
   font-size: clamp(0.95rem, 1.8vw, 1.15rem);
@@ -13922,6 +14032,13 @@ html[data-embedded="true"] .pwa-install-hint {
   transform: translateY(-2px) scale(1.02);
   border-color: rgba(255, 255, 255, 0.55);
   outline: none;
+}
+.ms-choice-btn:active:not(:disabled),
+.ms-choice-btn.is-pressed:not(:disabled) {
+  transform: translateY(3px) scale(0.98);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(8, 4, 16, 0.55);
 }
 .ms-choice-btn:disabled {
   opacity: 0.42;

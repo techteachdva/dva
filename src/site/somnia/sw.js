@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-37.3-mindstream-meet";
-const RUNTIME_CACHE = "somnia-runtime-37.3-mindstream-meet";
+const CACHE_NAME = "somnia-37.4-swift-sparkle";
+const RUNTIME_CACHE = "somnia-runtime-37.4-swift-sparkle";
 
 const PRECACHE = [
   "./",
@@ -121,6 +121,7 @@ const PRECACHE = [
   "./js/tutorial-advanced.js",
   "./js/tutorial-canonical.js",
   "./js/tutorial-mode.js",
+  "./js/turn-halo.js",
   "./js/ui.js",
   "./js/victory-celebration.js",
   "./js/viewport-sync.js",

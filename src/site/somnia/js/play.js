@@ -1,5 +1,6 @@
 import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, playSfx, playLandscapeSfx } from "./audio.js";
 import { initClickFeedback } from "./click-feedback.js";
+import { syncTurnHalo, positionTurnHalo, trackTurnHaloWithCamera } from "./turn-halo.js";
 import { syncGameCursor, flashRevealOpenCursor } from "./game-cursor.js";
 import { initDeviceMode } from "./device-mode.js";
 import { initInputQuarantine } from "./input-quarantine.js";
@@ -373,6 +374,8 @@ async function init() {
     repositionRadialMenu();
     refreshTutorialSpotlight();
     trackTutorialSpotlightWithCamera(480);
+    positionTurnHalo();
+    trackTurnHaloWithCamera(480);
   });
   // Called at most once per animation frame by board-zoom (see flushTransform).
   // Only an animated focus snap needs the 480 ms rAF tracker; a finger pan gets
@@ -381,7 +384,11 @@ async function init() {
   setBoardCameraMoveHandler((animated) => {
     repositionRadialMenu();
     refreshTutorialSpotlight();
-    if (animated) trackTutorialSpotlightWithCamera(480);
+    positionTurnHalo();
+    if (animated) {
+      trackTutorialSpotlightWithCamera(480);
+      trackTurnHaloWithCamera(480);
+    }
   });
   bindFullscreenPrompt();
   bindImageDragGuard();
@@ -2234,6 +2241,7 @@ function renderBoardArea() {
     },
   });
   syncBoardZoomAfterRender();
+  syncTurnHalo(actionTurnHolder(state)?.id || null);
 }
 
 function handleDrawPileClick(deckId) {
@@ -2300,6 +2308,7 @@ function renderAll() {
   }
 
   if (state.status === "won") {
+    syncTurnHalo(null);
     syncDeckPressure(state);
     clearAutosave();
     hideTutorial();
@@ -2361,6 +2370,7 @@ function renderAll() {
     if (state.tutorialMode && !state.tutorialComplete) {
       state.status = "playing";
     } else {
+      syncTurnHalo(null);
       syncDeckPressure(state);
       clearAutosave();
       stopVictoryCelebration();
@@ -2610,6 +2620,7 @@ function renderAll() {
         applyTutorialHighlight(active, { animateIn: false });
         trackTutorialSpotlightWithCamera(480);
       }
+      positionTurnHalo();
     });
   } else {
     flushDreamerBoardFocus();
@@ -2622,6 +2633,7 @@ function renderAll() {
     requestAnimationFrame(() => repositionRadialMenu());
   }
 
+  syncTurnHalo(actionTurnHolder(state)?.id || null);
   updateFinalRecurrenceAtmosphere(state);
   updateHandSnapshots(state);
   syncBoardMotion(state);

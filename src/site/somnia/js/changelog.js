@@ -6,10 +6,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "37.3";
+export const SOMNIA_VERSION = "37.4";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "37.4",
+    title: "The Swift Sparkle",
+    notes: [
+      "Every click throws a small star and a soft chime. Buttons stand off the glass and press down when you tap them. Choice buttons, decks, cards, Dreamers, and Pass Turn do the same.",
+      "The Dreamer who holds the turn wears a faint round sparkle — the same ring the tutorial uses — so you can see who is acting while the table moves.",
+    ],
+  },
   {
     version: "37.3",
     title: "Mindstream Meet Spread",

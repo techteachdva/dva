@@ -445,8 +445,10 @@ export function playSfx(name, opts = {}) {
   settings = loadSettings();
   switch (name) {
     case "click":
-      tone({ freq: 523, dur: 0.055, type: "triangle", vol: 0.055, echo: 0.11 });
-      tone({ freq: 784, dur: 0.04, type: "sine", vol: 0.028, delay: 0.008 });
+    case "ui-tap":
+      tone({ freq: 523, dur: 0.05, type: "triangle", vol: 0.042, echo: 0.1 });
+      tone({ freq: 784, dur: 0.04, type: "sine", vol: 0.022, delay: 0.006 });
+      tone({ freq: 1174 + Math.random() * 180, dur: 0.07, type: "sine", vol: 0.02, delay: 0.012, echo: 0.12 });
       break;
     case "select":
       tone({ freq: 659, dur: 0.07, type: "sine", vol: 0.07, slide: 90, echo: 0.1 });
@@ -532,7 +534,6 @@ export function bindButtonRipples() {
   document.addEventListener("click", (e) => {
     const btn = e.target.closest(".btn");
     if (!btn || btn.disabled) return;
-    if (!btn.hasAttribute("data-music-toggle")) playSfx("click");
     const rect = btn.getBoundingClientRect();
     btn.style.setProperty("--ripple-x", `${((e.clientX - rect.left) / rect.width) * 100}%`);
     btn.style.setProperty("--ripple-y", `${((e.clientY - rect.top) / rect.height) * 100}%`);

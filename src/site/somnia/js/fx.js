@@ -171,11 +171,12 @@ export function playPointRipple(x, y, className = "fx-point-ripple") {
   window.setTimeout(() => el.remove(), 900);
 }
 
-/** Soft UI click — ripple plus sparkle burst. */
-export function playClickFeedback(x, y, { color = "#c9a0ff", sparkles = 7 } = {}) {
+/** Soft UI click — ripple plus a gold-and-lilac sparkle burst. */
+export function playClickFeedback(x, y, { color = "#f6eeff", sparkles = 8 } = {}) {
   if (reducedMotion()) return;
   playPointRipple(x, y, "fx-click-ripple");
   burstSparkles(x, y, sparkles, color);
+  burstSparkles(x, y, 4, "#ffe7a8");
   const layer = document.getElementById("fx-layer");
   if (!layer) return;
   const shimmer = document.createElement("span");

@@ -1,4 +1,5 @@
 import { bindMusicToggle, startMenuTheme, bindButtonRipples } from "./audio.js";
+import { initClickFeedback } from "./click-feedback.js";
 import { initDeviceMode } from "./device-mode.js";
 import { initSomniaPwa } from "./pwa.js";
 import { writeLaunchConfig, readStoredLaunchConfig } from "./launch-store.js";
@@ -114,6 +115,7 @@ async function init() {
   initSomniaPwa();
   initDialogAccessibility();
   initFxLayer();
+  initClickFeedback();
   initPanelLayout();
   bindButtonRipples();
   startMenuTheme();
