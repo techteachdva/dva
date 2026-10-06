@@ -163,6 +163,12 @@ function setRequiredForTag(tag) {
   return 3;
 }
 
+function heldObjectSuit(player, cardId) {
+  const card = [...(player?.persistent || []), ...(player?.objects || [])].find((o) => o.id === cardId);
+  const suit = card?.mindstreamSuit || card?.suit;
+  return suit === "lucidity" || suit === "elasticity" || suit === "willpower" ? suit : null;
+}
+
 function spawnBeastOn(state, helpers, landscapeId, options = {}) {
   const pulled = pullDreambeastFromMindstream(state, options);
   if (!pulled) {
@@ -316,6 +322,7 @@ function continueFlow(state, follow, helpers) {
   if ((cardId === "ivory-pawn" || cardId === "ebony-pawn") && step === "spawned") {
     spawnBeastOn(state, helpers, lastTileId, {
       beastKind: cardId === "ivory-pawn" ? "fantasy" : "nightmare",
+      suit: heldObjectSuit(player, cardId),
     });
     trackChessPlay(state, player);
     return;
@@ -332,7 +339,9 @@ function continueFlow(state, follow, helpers) {
     return;
   }
   if (cardId === "marble-grid" && step === "spawned") {
-    pickedIds.forEach((id) => spawnBeastOn(state, helpers, id));
+    pickedIds.forEach((id) => spawnBeastOn(state, helpers, id, {
+      suit: heldObjectSuit(player, "marble-grid"),
+    }));
     const psyche = psycheSpendCards(player);
     if (!psyche.length) {
       trackChessPlay(state, player);

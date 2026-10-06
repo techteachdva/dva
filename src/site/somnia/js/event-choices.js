@@ -234,8 +234,10 @@ function offerBeastPick(state, player, cardId, pair, message, payload = {}) {
   offerEffectChoice(state, player, {
     cardId,
     ui: "cards",
-    title: payload.title || "Choose an Encounter",
-    message,
+    title: payload.title || "Choose a Dreambeast",
+    message: /discard/i.test(message || "")
+      ? message
+      : `${message || "Choose which Dreambeast to meet."} The other is discarded.`,
     cards,
     payload: { ...payload, first: pair.first, second: pair.second },
   });
@@ -245,7 +247,7 @@ function returnUnusedBeast(state, pending, chosen) {
   const extras = [pending.payload?.first, pending.payload?.second].filter(Boolean);
   extras.forEach((entry) => {
     if (entry.card && entry.card !== chosen && (entry.card.instanceId || entry.card.id) !== (chosen.instanceId || chosen.id)) {
-      if (entry.suit && state.mindstreamDecks[entry.suit]) state.mindstreamDecks[entry.suit].push(entry.card);
+      discardToMindstream(state, entry.card);
     }
   });
 }

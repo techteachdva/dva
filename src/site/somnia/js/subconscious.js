@@ -1,7 +1,7 @@
 import { recordQuestEvent } from "./quests.js";
 import { flashMoment } from "./moment-overlay.js";
 import { discardToMindstream, returnDreambeastToMindstreamDeck } from "./mindstream-supply.js";
-import { queueRepressFx } from "./board-fx.js";
+import { queueRepressFx, queueReturnFx } from "./board-fx.js";
 
 /** Face-up repressed card piles (The Subconscious / graveyard). */
 export function createSubconscious() {
@@ -75,12 +75,42 @@ export function maybeClearFreshlyRepressed(state) {
   clearFreshlyRepressed(state);
 }
 
+function inferRepressDeck(card) {
+  if (!card) return null;
+  if (card.type === "psyche" || card.type === "psyche-power" || card.type === "wild") return "psyche";
+  if (card.type === "dream" || card.type === "boss-dream" || card.type === "final") return "dream";
+  const suit = card.mindstreamSuit || card.suit;
+  if (suit === "lucidity" || suit === "elasticity" || suit === "willpower") return `mindstream-${suit}`;
+  return null;
+}
+
+function tileStillHolds(tile, card) {
+  const list = Array.isArray(tile?.encounters)
+    ? tile.encounters
+    : (tile?.encounter ? [tile.encounter] : []);
+  return list.some((enc) => enc === card || (card.instanceId && enc?.instanceId === card.instanceId));
+}
+
+function resolveRepressOrigin(state, card, origin = {}) {
+  if (origin.tileId || origin.playerId || origin.fromDeck) return origin;
+  for (const tile of state?.board || []) {
+    if (tileStillHolds(tile, card)) return { tileId: tile.id };
+  }
+  for (const player of state?.players || []) {
+    const held = [...(player.hand || []), ...(player.objects || []), ...(player.persistent || [])];
+    if (held.includes(card)) return { playerId: player.id };
+  }
+  return { fromDeck: inferRepressDeck(card) };
+}
+
 /** Repress: card goes face-up into the Subconscious. Spent allies go here, not back to Mindstream. */
-export function repressCard(state, card) {
+export function repressCard(state, card, origin = {}) {
   if (!card) return;
+  const from = resolveRepressOrigin(state, card, origin);
   state.subconscious = normalizeSubconscious(state.subconscious);
   pileForCard(state.subconscious, card).push(card);
   markFreshlyRepressed(state, card);
+  if (typeof document !== "undefined") queueRepressFx(card, from);
 }
 
 export function repressCards(state, cards) {
@@ -166,6 +196,7 @@ export function finalizeReturn(state, cards, { log = true } = {}) {
   cards.forEach((card) => {
     const removed = removeFromSubconscious(state, card.instanceId) || card;
     routeReturnedToDiscard(state, removed);
+    if (typeof document !== "undefined") queueReturnFx(removed);
     returned.push(removed);
   });
   if (returned.length) {
@@ -354,8 +385,7 @@ function commitHandLoss(state, player, card, toDiscard) {
     state.psycheDiscard.push(card);
     return "discard";
   }
-  queueRepressFx(card, { playerId: player.id });
-  repressCard(state, card);
+  repressCard(state, card, { playerId: player.id });
   return "repress";
 }
 

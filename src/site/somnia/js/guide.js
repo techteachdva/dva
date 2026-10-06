@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 37.5. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 37.6. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -714,7 +714,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 37.5</p>
+          <p class="info-hub-kicker">Somnia v 37.6</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>

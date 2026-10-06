@@ -250,6 +250,57 @@ export function activeQuestLandscapeIds(state) {
   return [...ids];
 }
 
+const BOSS_QUEST_IDS = ["cerberus", "double", "leviathan"];
+
+function bossIdFromQuest(text) {
+  const n = normalizeQuest(text);
+  if (!n.includes("defeat") && !n.includes("meet")) return null;
+  return BOSS_QUEST_IDS.find((id) => n.includes(id)) || null;
+}
+
+function listedEncounters(tile) {
+  if (Array.isArray(tile?.encounters) && tile.encounters.length) return tile.encounters;
+  if (tile?.encounter) return [tile.encounter];
+  return [];
+}
+
+function bossOnBoard(state, bossId) {
+  for (const tile of state.board || []) {
+    const hit = listedEncounters(tile).some((enc) => enc?.id === bossId || enc?.refId === bossId);
+    if (hit) return tile;
+  }
+  return null;
+}
+
+function bossAlreadyMet(state, bossId) {
+  const sub = state?.subconscious;
+  if (!sub) return false;
+  const piles = [
+    ...(sub.dreambeasts || []),
+    ...(sub.other || []),
+    ...(sub.psyche || []),
+    ...(sub.objects || []),
+  ];
+  if (piles.some((card) => card?.id === bossId || card?.refId === bossId)) return true;
+  return (state.players || []).some((player) => (player.hand || []).some(
+    (card) => (card?.id === bossId || card?.refId === bossId) && (card.isDreambeastPsyche || card.type === "psyche-dreambeast"),
+  ));
+}
+
+/** Where a boss quest's Dreambeast is, or how many turns until its dream is drawn. */
+export function bossQuestHint(state, questText) {
+  const bossId = bossIdFromQuest(questText);
+  if (!bossId || !state) return "";
+  const tile = bossOnBoard(state, bossId);
+  if (tile?.name) return `On ${tile.name}`;
+  if (bossAlreadyMet(state, bossId)) return "";
+  const index = (state.dreamDeck || []).findIndex((card) => card?.id === bossId);
+  if (index < 0) return "";
+  const turns = state.dreamDrawn ? index + 1 : index;
+  if (turns <= 0) return "Spawns this turn";
+  return turns === 1 ? "Spawns in 1 turn" : `Spawns in ${turns} turns`;
+}
+
 export function getQuestStatus(state, archetype) {
   if (!archetype?.quests) return [];
   return archetype.quests.map((q, i) => {
@@ -261,6 +312,7 @@ export function getQuestStatus(state, archetype) {
       tokenSpent,
       done: tokenSpent,
       ready: conditionMet && !tokenSpent,
+      hint: conditionMet ? "" : bossQuestHint(state, q),
       index: i,
     };
   });

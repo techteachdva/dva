@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-37.5-bright-or-dim";
-const RUNTIME_CACHE = "somnia-runtime-37.5-bright-or-dim";
+const CACHE_NAME = "somnia-37.6-follow-the-card";
+const RUNTIME_CACHE = "somnia-runtime-37.6-follow-the-card";
 
 const PRECACHE = [
   "./",
@@ -41,6 +41,7 @@ const PRECACHE = [
   "./js/archetypes.js",
   "./js/audio-settings.js",
   "./js/audio.js",
+  "./js/beast-mill-cinematic.js",
   "./js/board-fx.js",
   "./js/board-zoom.js",
   "./js/bosses.js",

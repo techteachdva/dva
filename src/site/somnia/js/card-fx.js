@@ -121,6 +121,12 @@ function deckEl(id) {
   return document.querySelector(`[data-deck-id="${id}"]`);
 }
 
+function pileZone(deckId, pile) {
+  const row = document.querySelector(`.deck-rail-row[data-deck-id="${deckId}"]`);
+  if (!row) return deckEl(deckId);
+  return row.querySelector(pile === "discard" ? ".deck-rail-discard" : ".deck-rail-draw") || row;
+}
+
 function handCardEl(playerId, instanceId) {
   return document.querySelector(
     `.game-card[data-instance-id="${instanceId}"][data-player-id="${playerId}"], #hand .game-card[data-instance-id="${instanceId}"]`,
@@ -150,7 +156,7 @@ function ghostCard(card, kind) {
     : card.isWild
       ? `<span class="fx-card-value">★</span>`
       : `<span class="fx-card-value">${card.value ?? ""}</span>`;
-  if (kind === "draw") {
+  if (kind === "draw" || kind === "discard" || kind === "repress") {
     el.classList.add("fx-flip-card");
     const back = card.back || cardBackForCard(card);
     const art = card.image ? ` style="background-image:url('${card.image}')"` : "";
@@ -171,8 +177,10 @@ function flyCard(from, to, card, kind, delay = 0) {
   if (!layer || !from || !to) return;
 
   const ghost = ghostCard(card, kind);
-  const w = 44;
-  const h = 62;
+  const tarot = kind === "draw" || kind === "discard" || kind === "repress";
+  if (tarot) ghost.classList.add("fx-flying-tarot");
+  const w = tarot ? 86 : 44;
+  const h = tarot ? 120 : 62;
   ghost.style.width = `${w}px`;
   ghost.style.height = `${h}px`;
   ghost.style.left = `${from.x - w / 2}px`;
@@ -191,7 +199,7 @@ function flyCard(from, to, card, kind, delay = 0) {
     if (kind === "draw" || kind === "spend" || kind === "trade") {
       burstSparkles(to.x, to.y, kind === "draw" ? 8 : 6, kind === "draw" ? "#6dffb0" : "#c9a0ff");
     }
-  }, 650 + delay);
+  }, (tarot ? 1080 : 650) + delay);
 }
 
 function floatLabel(x, y, text, className, delay = 0) {
@@ -232,7 +240,7 @@ export function runPendingCardFx(state) {
 
   items.forEach((evt) => {
     if (evt.type === "draw") {
-      const source = deckEl(evt.source || "psyche");
+      const source = pileZone(evt.source || "psyche", "draw");
       const target = handCardEl(evt.playerId, evt.card.instanceId)
         || centerOf(handAreaEl(evt.playerId));
       const from = centerOf(source) || { x: window.innerWidth * 0.12, y: window.innerHeight * 0.55 };
@@ -247,7 +255,8 @@ export function runPendingCardFx(state) {
     } else if (evt.type === "discard") {
       const from = centerOf(handAreaEl(evt.playerId)) || { x: window.innerWidth * 0.5, y: window.innerHeight * 0.85 };
       const targetId = evt.target === "subconscious" ? "subconscious" : "psyche";
-      const to = centerOf(deckEl(targetId)) || { x: window.innerWidth * 0.12, y: window.innerHeight * 0.7 };
+      const to = centerOf(targetId === "subconscious" ? deckEl(targetId) : pileZone(targetId, "discard"))
+        || { x: window.innerWidth * 0.12, y: window.innerHeight * 0.7 };
       const kind = evt.reason === "spend" ? "spend" : evt.reason === "repress" ? "repress" : "discard";
       flyCard(from, to, evt.card, kind, delay);
       pulseDeck(targetId, kind === "repress" ? "deck-pulse-repress" : "deck-pulse-loss");

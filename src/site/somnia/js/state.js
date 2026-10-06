@@ -3,7 +3,7 @@ import { buildHexBoard, adjacentTiles, hexDistance } from "./hex.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
 import { playSfx } from "./audio.js";
 import { markTileRevealed, markTileForgotten, markDreamFeedNudge } from "./fx.js";
-import { queueTileRevealFx, queueEncounterSpawnFx, queueDreamerDeathFx } from "./board-fx.js";
+import { queueTileRevealFx, queueEncounterSpawnFx, queueDreamerDeathFx, queueReshuffleFx } from "./board-fx.js";
 import { queueCardDraw, queueHandDelta } from "./card-fx.js";
 import {
   createSubconscious,
@@ -34,7 +34,7 @@ import {
   uid,
   PSYCHE_STARTING_HAND,
 } from "./data.js";
-import { discardToMindstream, pullObjectFromMindstream, objectForPlayer, reshuffleMindstreamDiscardIfNeeded, goneMindstreamSuit } from "./mindstream-supply.js";
+import { discardToMindstream, pullObjectFromMindstream, objectForPlayer, reshuffleMindstreamDiscardIfNeeded, goneMindstreamSuit, stampBeastMillTile } from "./mindstream-supply.js";
 import { psycheHandCount, hasPsycheHealth } from "./psyche.js";
 import {
   grantPowerTokens,
@@ -417,6 +417,7 @@ export function refillPsycheDeckFromDiscard(state) {
   state.psycheDeck = shuffle(state.psycheDiscard);
   state.psycheDiscard = [];
   clearRevealedTops(state, "psyche");
+  queueReshuffleFx("psyche");
   addLog(state, "Psyche discard pile shuffled into a new deck.");
   return true;
 }
@@ -429,7 +430,7 @@ export function repressTopPsycheFromDeck(state, count = 5) {
     if (!state.psycheDeck.length) break;
     const card = state.psycheDeck.shift();
     consumeRevealedTop(state, "psyche");
-    repressCard(state, card);
+    repressCard(state, card, { fromDeck: "psyche" });
     taken += 1;
   }
   if (taken) {
@@ -575,6 +576,7 @@ export function addEncounterOnLandscape(state, landscapeId, encounter) {
   tileEncounters(tile).push(card);
   state.activeEncounter = card;
   state.activeEncounterLandscapeId = landscapeId;
+  stampBeastMillTile(state, landscapeId, card);
   queueEncounterSpawnFx(landscapeId, card, tile.suit || card.suit);
   return card;
 }

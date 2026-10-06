@@ -14354,3 +14354,200 @@ body.ms-draw-cinematic-active {
     transition: none;
   }
 }
+
+.quest-boss-hint {
+  color: #f0c96a;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.quest-boss-hint::before {
+  content: "· ";
+  opacity: 0.7;
+}
+
+.fx-flying-card.fx-flying-tarot.fx-flying-active {
+  animation-name: fx-card-fly-tarot;
+  animation-duration: 1.05s;
+}
+.fx-flying-face {
+  background-size: cover;
+  background-position: center;
+  justify-content: flex-end;
+  padding-bottom: 0.35rem;
+}
+.fx-flying-face .fx-card-name {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.08rem 0.28rem;
+  border-radius: 4px;
+}
+@keyframes fx-card-fly-tarot {
+  0% { opacity: 0.15; transform: translate(0, 0) scale(0.8) rotate(-8deg); }
+  16% { opacity: 1; }
+  46% {
+    transform: translate(calc(var(--fx-tx, 0) * 0.42), calc(var(--fx-ty, 0) * 0.28 - 72px)) scale(1.55) rotate(5deg);
+  }
+  100% {
+    opacity: 0.2;
+    transform: translate(var(--fx-tx, 0), var(--fx-ty, 0)) scale(0.62) rotate(0deg);
+  }
+}
+
+.fx-shuffle-card {
+  position: fixed;
+  width: 68px;
+  height: 96px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  background-color: #1a1430;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  z-index: 4;
+  animation: fx-riffle 0.98s cubic-bezier(0.18, 0.72, 0.2, 1) forwards;
+  pointer-events: none;
+}
+@keyframes fx-riffle {
+  0% { opacity: 0.15; transform: translate(0, 0) rotate(-10deg) scale(0.85); }
+  38% {
+    opacity: 1;
+    transform: translate(calc(var(--fx-tx) * 0.4), calc(var(--fx-ty) * 0.12 - 78px + var(--riffle, 0px))) rotate(14deg) scale(1.2);
+  }
+  100% { opacity: 0; transform: translate(var(--fx-tx), var(--fx-ty)) rotate(-2deg) scale(0.5); }
+}
+
+.fx-table-banner {
+  position: fixed;
+  left: 50%;
+  top: 12%;
+  z-index: 6;
+  margin: 0;
+  padding: 0.55rem 1.05rem;
+  border-radius: 999px;
+  background: rgba(10, 7, 20, 0.9);
+  color: #f6edd8;
+  border: 1px solid rgba(240, 201, 106, 0.7);
+  font-family: var(--font-display, inherit);
+  font-size: 1.02rem;
+  letter-spacing: 0.02em;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+  animation: fx-banner-in 1.65s ease forwards;
+  pointer-events: none;
+}
+@keyframes fx-banner-in {
+  0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  14% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  76% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+}
+
+.beast-mill {
+  position: fixed;
+  inset: 0;
+  z-index: 12050;
+  pointer-events: auto;
+  background: radial-gradient(ellipse at center, rgba(8, 4, 18, 0.18), rgba(8, 4, 18, 0.55));
+}
+.beast-mill--out { opacity: 0; transition: opacity 0.28s ease; }
+.beast-mill-caption {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: min(40rem, 92vw);
+  text-align: center;
+  color: #f6edd8;
+  font-family: var(--font-display, inherit);
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+.beast-mill-pass,
+.beast-mill-beast {
+  position: fixed;
+  width: 78px;
+  height: 112px;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  perspective: 900px;
+  z-index: 2;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.5));
+}
+.beast-mill-pass { animation: beast-mill-pass 0.64s ease forwards; }
+.beast-mill-card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+.beast-mill-pass .beast-mill-card-inner {
+  transform: rotateY(180deg);
+}
+.beast-mill-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.45rem;
+  backface-visibility: hidden;
+  background-size: cover;
+  background-position: center;
+  background-color: #161022;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.beast-mill-face--front {
+  transform: rotateY(180deg);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.beast-mill-face-title {
+  margin: 0 0 0.3rem;
+  padding: 0.08rem 0.3rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #f4eefc;
+  font-size: 0.62rem;
+  text-align: center;
+}
+.beast-mill-beast--fly {
+  animation: beast-mill-fly 0.92s cubic-bezier(0.16, 0.78, 0.2, 1) forwards;
+}
+.beast-mill-beast--fly .beast-mill-card-inner {
+  animation: beast-mill-flip 0.92s ease forwards;
+}
+@keyframes beast-mill-pass {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7) rotate(-8deg); }
+  30% { opacity: 1; transform: translate(-50%, -70%) scale(1.05) rotate(4deg); }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--pass-x, 40px)), calc(-50% + var(--pass-y, 20px))) scale(0.4) rotate(0deg);
+  }
+}
+@keyframes beast-mill-fly {
+  0% {
+    left: var(--from-x);
+    top: var(--from-y);
+    transform: translate(-50%, -50%) scale(0.85) rotate(-6deg);
+  }
+  58% {
+    left: var(--peak-x, 50%);
+    top: var(--peak-y, 44%);
+    transform: translate(-50%, -50%) scale(var(--peak-scale, 3.2)) rotate(0deg);
+  }
+  100% {
+    left: var(--to-x);
+    top: var(--to-y);
+    transform: translate(-50%, -50%) scale(var(--to-scale, 2.4)) rotate(0deg);
+  }
+}
+@keyframes beast-mill-flip {
+  0% { transform: rotateY(0deg); }
+  38% { transform: rotateY(180deg); }
+  100% { transform: rotateY(180deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .beast-mill { display: none !important; }
+  .fx-shuffle-card,
+  .fx-table-banner { display: none !important; }
+}

@@ -6,10 +6,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "37.5";
+export const SOMNIA_VERSION = "37.6";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "37.6",
+    title: "Follow the Card",
+    notes: [
+      "View board closes the phase opener so you can look at the table. A dock brings the opener back. Back parks that menu, closes the layer in front of you, or undoes the last action.",
+      "Defeat Cerberus, Defeat Double, and Defeat Leviathan say how many turns until that boss is drawn. If the boss is already on the map and was never Accepted or Repressed, the quest names its landscape.",
+      "Spawn 1 Dreambeast draws that Mindstream until a Dreambeast, discards the rest, and the card flies onto the map. An Object mills the suit it came from, unless the effect names another. Draw 2 Dreambeasts brings both cards up. Choose which one to meet. The other is discarded.",
+      "A card returning from the Subconscious flies to its discard. When a deck runs out, the discard riffles into a new draw pile. Represses and draws are large enough to see which card moved.",
+    ],
+  },
   {
     version: "37.5",
     title: "Bright or Dim",

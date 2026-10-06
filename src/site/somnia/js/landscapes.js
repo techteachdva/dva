@@ -21,7 +21,7 @@ import { narrate, logMoment } from "./narrator.js";
 import { recordQuestEvent, activeQuestLandscapeIds } from "./quests.js";
 import { isEdgeLandscape } from "./hex.js";
 import { markTileForgotten } from "./fx.js";
-import { queueTileForgetFx, queueRepressFx } from "./board-fx.js";
+import { queueTileForgetFx } from "./board-fx.js";
 import { recordCancellableMove } from "./dreamer-powers.js";
 
 /** Revealed outer Landscapes — The Bed can never be forgotten. */
@@ -100,8 +100,7 @@ function forgetTile(state, tile) {
   tile.wasteland = true;
   tile.forgotten = true;
   tileEncounters(tile).forEach((enc) => {
-    queueRepressFx(enc, { tileId: tile.id });
-    repressCard(state, enc);
+    repressCard(state, enc, { tileId: tile.id });
   });
   clearEncountersOnLandscape(state, tile.id);
   state.players
@@ -109,8 +108,7 @@ function forgetTile(state, tile) {
     .forEach((p) => {
       if (p.hand.length) {
         const card = p.hand.pop();
-        queueRepressFx(card, { playerId: p.id, tileId: tile.id });
-        repressCard(state, card);
+        repressCard(state, card, { playerId: p.id, tileId: tile.id });
         addLog(state, `${p.name} on ${tile.name} discards 1 Psyche to the Subconscious.`);
       }
     });

@@ -8,6 +8,7 @@ const SKIP_KEYS = new Set([
   "onResolutionIdle",
   "tutorialSnapshots",
   "actionHistory",
+  "pendingBeastMill",
 ]);
 
 let undoStack = [];

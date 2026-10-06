@@ -18,9 +18,11 @@ import {
   suitIconHtml,
 } from "./rules.js";
 import { isDreambeastPsycheCard } from "./subconscious.js";
-import { renderCard, hideUtilityModal } from "./ui.js";
+import { renderCard, hideUtilityModal, isUtilityModalMinimized } from "./ui.js";
 
 let openerMenuOpen = false;
+let openerParked = false;
+let parkedPhaseKey = null;
 let openerHandlers = null;
 let openerRenderAll = null;
 
@@ -102,8 +104,60 @@ function focusDreamerRow(state, player) {
   openerRenderAll?.();
 }
 
+function phaseParkKey(state) {
+  return `${state?.round ?? 0}:${state?.phaseIndex ?? 0}`;
+}
+
 export function isPhaseOpenerMenuOpen() {
   return openerMenuOpen;
+}
+
+export function isPhaseOpenerParked() {
+  return openerParked;
+}
+
+export function resetPhaseOpenerChrome() {
+  openerMenuOpen = false;
+  openerParked = false;
+  parkedPhaseKey = null;
+  hideOpenerReturnDock();
+}
+
+function showOpenerReturnDock(state) {
+  if (isUtilityModalMinimized()) return;
+  const dock = document.getElementById("utility-choice-dock");
+  const label = document.getElementById("utility-choice-dock-label");
+  const btn = document.getElementById("utility-choice-restore");
+  if (!dock) return;
+  dock.dataset.dock = "phase-opener";
+  dock.classList.remove("hidden");
+  const phase = getPhase(state);
+  if (label) label.textContent = `${phase} opener is waiting`;
+  if (btn) btn.textContent = "Return to opener";
+}
+
+function hideOpenerReturnDock() {
+  const dock = document.getElementById("utility-choice-dock");
+  if (!dock || dock.dataset.dock !== "phase-opener") return;
+  dock.dataset.dock = "";
+  dock.classList.add("hidden");
+  const btn = document.getElementById("utility-choice-restore");
+  if (btn) btn.textContent = "Resume choice";
+}
+
+/** Leave the opener up, but let the table see the board. The dock brings it back. */
+export function parkPhaseOpenerMenu(state) {
+  openerParked = true;
+  parkedPhaseKey = phaseParkKey(state);
+  openerMenuOpen = false;
+  showOpenerReturnDock(state);
+  hideUtilityModal(true);
+}
+
+export function restorePhaseOpenerMenu() {
+  openerParked = false;
+  parkedPhaseKey = null;
+  hideOpenerReturnDock();
 }
 
 export function closePhaseOpenerMenu({ hideModal = true } = {}) {
@@ -173,7 +227,11 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   content.classList.add("fullscreen-browser", "phase-opener-modal-wrap");
 
   const closeBtn = modal.querySelector(".utility-close");
-  if (closeBtn) closeBtn.hidden = true;
+  if (closeBtn) {
+    closeBtn.hidden = false;
+    closeBtn.setAttribute("aria-label", "View board");
+    closeBtn.title = "View the board. Return to opener brings this menu back.";
+  }
 
   const rows = (state.players || []).filter((p) => p.alive).map((player) => {
     const isBest = best?.id === player.id;
@@ -226,6 +284,7 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
             : `Spend a matching ${suitLabel} card, a Power Token (1 + that Dreamer's ${suitLabel}), or skip.`}
         </div>
         <div class="phase-opener-actions">
+          <button type="button" id="btn-view-board" class="btn btn-phase-opener-skip">View board</button>
           ${state.tutorialMode ? "" : `<button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip">Skip Phase</button>`}
           <button type="button" id="btn-spread-opener" class="btn primary btn-phase-opener-confirm tint-${phase === "Reveal" ? "reveal" : phase === "Explore" ? "explore" : "meet"}" data-tutorial-action="${kind}" ${canConfirm ? "" : "disabled"}>
             ${confirmLabel(phase)}${canConfirm ? ` (${projected})` : ""}
@@ -282,12 +341,22 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
     });
   });
 
+  body.querySelector("#btn-view-board")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    parkPhaseOpenerMenu(state);
+    openerRenderAll?.();
+  });
+
   body.querySelector("#btn-spread-opener")?.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
     if (!canConfirm) return;
     runOpener(state);
+    openerParked = false;
+    parkedPhaseKey = null;
     openerMenuOpen = false;
+    hideOpenerReturnDock();
     hideUtilityModal(true);
     openerRenderAll?.();
   });
@@ -295,7 +364,10 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   body.querySelector("#btn-skip-phase")?.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    openerParked = false;
+    parkedPhaseKey = null;
     openerMenuOpen = false;
+    hideOpenerReturnDock();
     hideUtilityModal(true);
     openerHandlers?.skipPhase?.();
   });
@@ -308,10 +380,27 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
 
 /** Keep the menu in sync during phase opening; close it once the phase is unlocked. */
 export function syncPhaseOpenerMenu(state, handlers, renderAll) {
+  const key = phaseParkKey(state);
+  if (openerParked && parkedPhaseKey !== key) {
+    openerParked = false;
+    parkedPhaseKey = null;
+  }
+
+  if (shouldShowPhaseOpenerMenu(state) && openerParked) {
+    openerHandlers = handlers;
+    openerRenderAll = renderAll;
+    if (openerMenuOpen) closePhaseOpenerMenu({ hideModal: !isUtilityModalMinimized() });
+    showOpenerReturnDock(state);
+    return false;
+  }
+
+  hideOpenerReturnDock();
   if (shouldShowPhaseOpenerMenu(state)) {
     showPhaseOpenerMenu(state, handlers, renderAll);
     return true;
   }
+  openerParked = false;
+  parkedPhaseKey = null;
   if (openerMenuOpen) {
     // Blocking pickers own the utility modal — release the opener flag only.
     closePhaseOpenerMenu({ hideModal: !isBlockingGameChoice(state) });

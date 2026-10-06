@@ -91,26 +91,67 @@ function discardRestOfMindstream(state, suit, extra = []) {
   reshuffleMindstreamDiscardIfNeeded(state, suit);
 }
 
+function noteBeastMill(state, found) {
+  if (!state || typeof document === "undefined" || !found?.card) return;
+  if (!state.pendingBeastMill || state.pendingBeastMill.playing) {
+    state.pendingBeastMill = { steps: [] };
+  }
+  state.pendingBeastMill.steps.push({
+    suit: found.suit,
+    passed: found.passed || [],
+    milledRest: found.milledRest || 0,
+    beast: found.card,
+    tileId: null,
+    encounterId: null,
+    discarded: false,
+  });
+}
+
+/** The Dreambeast just placed on a landscape. The mill cinematic flies it there. */
+export function stampBeastMillTile(state, tileId, encounter) {
+  const steps = state?.pendingBeastMill?.steps;
+  if (!steps?.length || !tileId) return;
+  for (let i = steps.length - 1; i >= 0; i -= 1) {
+    const step = steps[i];
+    if (step.tileId || step.discarded) continue;
+    const beastId = step.beast?.id;
+    const encId = encounter?.id || encounter?.refId;
+    if (beastId && encId && beastId !== encId && step.beast?.instanceId !== encounter?.instanceId) continue;
+    step.tileId = tileId;
+    step.encounterId = encounter?.instanceId || null;
+    return;
+  }
+}
+
+/** The drawn Dreambeast could not stay on the map, so it joins the discard. */
+export function stampBeastMillDiscard(state) {
+  const steps = state?.pendingBeastMill?.steps;
+  const last = steps?.[steps.length - 1];
+  if (!last || last.tileId) return;
+  last.discarded = true;
+}
+
 /**
- * Cycle a suit from the top until a matching Dreambeast.
- * On a hit, discard the rest of that Mindstream and reshuffle.
- * If this suit has no match, restore the cards and leave the pile intact.
+ * Draw from the top until a matching Dreambeast.
+ * Spawn (millRest) discards every other card in that suit, then reshuffles.
+ * A two-beast draw discards only the cards turned over before the hit.
+ * If this suit has no match, the cards go back and the pile is unchanged.
  */
 function cycleSuitForDreambeast(state, suit, options, millRest) {
   reshuffleMindstreamDiscardIfNeeded(state, suit);
   const deck = state.mindstreamDecks[suit];
-  if (!millRest) {
-    const idx = deck.findIndex((card) => matchesSpawnBeast(card, options));
-    if (idx < 0) return null;
-    const [card] = deck.splice(idx, 1);
-    return { card, suit };
-  }
   const skipped = [];
   while (deck.length) {
     const card = deck.shift();
     if (matchesSpawnBeast(card, options)) {
-      discardRestOfMindstream(state, suit, skipped);
-      return { card, suit };
+      let milledRest = 0;
+      if (millRest) {
+        milledRest = deck.length;
+        discardRestOfMindstream(state, suit, skipped);
+      } else if (skipped.length && state.mindstreamDiscard[suit]) {
+        skipped.forEach((passed) => state.mindstreamDiscard[suit].push(passed));
+      }
+      return { card, suit, passed: skipped.slice(), milledRest };
     }
     skipped.push(card);
   }
@@ -141,15 +182,18 @@ export function pullFromMindstreamByType(state, type, { suit = null, filter = nu
  * Spawn-a-Dreambeast search: flip from the top of a Mindstream until a (non-boss) Dreambeast,
  * optionally matching beastKind (fantasy / nightmare). With millRest (the printed "Spawn a
  * Dreambeast" effect), cards passed and the rest of that draw pile go to discard, which then
- * reshuffles into a new draw pile. Two-beast draws pass millRest: false so they pull beasts
- * without milling the suit.
+ * reshuffles into a new draw pile. A two-beast draw passes millRest: false so only the cards
+ * turned over before each Dreambeast are discarded — the rest of the suit stays.
  */
 export function pullDreambeastFromMindstream(state, options = {}) {
   const { suit = null, beastKind = null, filter = null, millRest = true } = options;
   const opts = { beastKind, filter };
   for (const s of suitsToSearch(suit)) {
     const found = cycleSuitForDreambeast(state, s, opts, millRest);
-    if (found) return found;
+    if (found) {
+      noteBeastMill(state, found);
+      return found;
+    }
   }
   return null;
 }
@@ -176,7 +220,7 @@ export function pullTwoDreambeastsForChoice(state, { suit = null, autoPick = tru
   }
   const pick = (pair.second.card.accept || 0) > (pair.first.card.accept || 0) ? pair.second : pair.first;
   const alt = pick === pair.second ? pair.first : pair.second;
-  state.mindstreamDecks[alt.suit].push(alt.card);
+  discardToMindstream(state, alt.card);
   return { pick: pick.card, alt: alt.card, suit: pick.suit };
 }
 

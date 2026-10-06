@@ -28,7 +28,7 @@ import {
   updateHandSnapshots,
   resetHandSnapshots,
 } from "./card-fx.js";
-import { runPendingBoardFx, syncBoardMotion, resetBoardMotion } from "./board-fx.js";
+import { runPendingBoardFx, syncBoardMotion, resetBoardMotion, cancelQueuedEncounterSpawn } from "./board-fx.js";
 import { playOpeningCinematic } from "./opening-cinematic.js";
 import { calculateFinalScore } from "./scoring.js";
 import { seedRandomness } from "./rng.js";
@@ -142,9 +142,18 @@ import { resolveEffectChoice } from "./effect-choices.js";
 import { continueDeferredEventQueues } from "./event-choices.js";
 import { resolveMindstreamChoice } from "./mindstream-choices.js";
 import { playMindstreamDrawCinematic } from "./mindstream-draw-cinematic.js";
+import { playBeastMillSequence } from "./beast-mill-cinematic.js";
 import { continueArchetypeQueues } from "./archetypes.js";
 import { phaseOpeningActive, encounterPayHint, actorOnLandscape } from "./rules.js";
-import { syncPhaseOpenerMenu, shouldShowPhaseOpenerMenu } from "./phase-opener-menu.js";
+import {
+  syncPhaseOpenerMenu,
+  shouldShowPhaseOpenerMenu,
+  isPhaseOpenerMenuOpen,
+  isPhaseOpenerParked,
+  parkPhaseOpenerMenu,
+  restorePhaseOpenerMenu,
+  resetPhaseOpenerChrome,
+} from "./phase-opener-menu.js";
 import {
   TUTORIAL_STEPS,
   tutorialBriefHtml,
@@ -229,6 +238,9 @@ import {
   handleUtilityModalDismiss,
   setUtilityModalRequired,
   restoreUtilityModal,
+  isUtilityModalMinimized,
+  utilityModalPresence,
+  isRadialMenuOpen,
   showSubconsciousPicker,
   showSubconsciousBrowse,
   showDiscardPileModal,
@@ -807,9 +819,24 @@ function bindModal() {
   document.querySelector("#card-modal .modal-close").addEventListener("click", hideModal);
   document.querySelector("#utility-modal .utility-backdrop")?.addEventListener("click", dismissUtilityModal);
   document.querySelector("#utility-modal .utility-close")?.addEventListener("click", dismissUtilityModal);
-  document.getElementById("utility-choice-restore")?.addEventListener("click", restoreUtilityModal);
+  document.getElementById("utility-choice-restore")?.addEventListener("click", () => {
+    if (isUtilityModalMinimized()) {
+      restoreUtilityModal();
+      return;
+    }
+    if (isPhaseOpenerParked()) {
+      restorePhaseOpenerMenu();
+      renderAll();
+    }
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
+    if (isPhaseOpenerMenuOpen()) {
+      event.preventDefault();
+      parkPhaseOpenerMenu(state);
+      renderAll();
+      return;
+    }
     const utilityModal = document.getElementById("utility-modal");
     if (!utilityModal || utilityModal.classList.contains("hidden")) return;
     if (utilityModal.classList.contains("utility-modal-minimized")) {
@@ -930,6 +957,7 @@ function buildPauseSaveHooks() {
 
 function applyLoadedGame(loaded) {
   clearActionHistory();
+  resetPhaseOpenerChrome();
   state = reattachGameRuntime(loaded.state);
   seedRandomness(state?.seed || null);
   recoverLegacySilver(state);
@@ -985,6 +1013,7 @@ function clearAutosave() {
 async function startGame(config) {
   launchConfig = config;
   clearActionHistory();
+  resetPhaseOpenerChrome();
 
   if (config.resumeSaveId) {
     const loaded = await loadGameLocal(config.resumeSaveId);
@@ -1870,7 +1899,22 @@ function maybeShowMindstreamChoice() {
   openChoice();
 }
 
+function maybePlayBeastMill() {
+  const job = state?.pendingBeastMill;
+  if (!job?.steps?.length || job.playing) return;
+  job.playing = true;
+  const steps = job.steps.slice();
+  steps.forEach((step) => {
+    if (step.tileId && step.encounterId) cancelQueuedEncounterSpawn(step.encounterId);
+  });
+  playBeastMillSequence(steps).then(() => {
+    if (state?.pendingBeastMill === job) state.pendingBeastMill = null;
+    renderAll();
+  });
+}
+
 function maybeShowObjectChoice() {
+  if (state?.pendingBeastMill?.steps?.length) return;
   if (
     state?.pendingMindstreamChoice
     || state?.pendingDeathChoice
@@ -1954,7 +1998,88 @@ function maybeShowRespawn() {
 
 let lastTradePanelKey = null;
 
+function applyBackButton(back) {
+  const backBtn = document.getElementById("btn-map-back");
+  if (!backBtn || !back) return;
+  backBtn.disabled = !back.enabled;
+  backBtn.title = back.title;
+  backBtn.setAttribute("aria-label", back.title);
+  backBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (backBtn.disabled) return;
+    back.run?.();
+  };
+}
+
+function describeBackAction() {
+  const cardModal = document.getElementById("card-modal");
+  if (cardModal && !cardModal.classList.contains("hidden")) {
+    return {
+      enabled: true,
+      title: "Close this card.",
+      run: () => hideModal(),
+    };
+  }
+  if (isRadialMenuOpen()) {
+    return {
+      enabled: true,
+      title: "Close this menu.",
+      run: () => hideRadialMenu(),
+    };
+  }
+  if (isPhaseOpenerMenuOpen()) {
+    return {
+      enabled: true,
+      title: "View the board. Return to opener brings this menu back.",
+      run: () => {
+        parkPhaseOpenerMenu(state);
+        renderAll();
+      },
+    };
+  }
+  const utility = utilityModalPresence();
+  if (utility === "minimized") {
+    return {
+      enabled: true,
+      title: "Return to the open choice.",
+      run: () => restoreUtilityModal(),
+    };
+  }
+  if (utility === "required") {
+    return {
+      enabled: true,
+      title: "View the board. Resume choice brings this back.",
+      run: () => dismissUtilityModal(),
+    };
+  }
+  if (utility === "panel") {
+    return {
+      enabled: true,
+      title: "Close this panel and return to the board.",
+      run: () => hideUtilityModal(true),
+    };
+  }
+  if (canUndoAction()) {
+    return {
+      enabled: true,
+      title: "Undo the most recent action and restore the table.",
+      run: () => undoLastTableAction(),
+    };
+  }
+  return {
+    enabled: false,
+    title: "No action to undo yet.",
+    run: () => {},
+  };
+}
+
 function dismissUtilityModal() {
+  if (isPhaseOpenerMenuOpen()) {
+    parkPhaseOpenerMenu(state);
+    renderAll();
+    return;
+  }
   if (state?.tradeMode) {
     cancelTrade(state);
     hideUtilityModal(true);
@@ -2409,10 +2534,13 @@ function renderAll() {
   }
   renderNarratorPanel(state);
   renderGuidePanel(state, phaseActions);
+  const back = describeBackAction();
   renderPhaseAdvanceBar(advanceAction, {
     canUndo: canUndoAction(),
+    enabled: back.enabled,
+    title: back.title,
     stackSize: undoStackSize(),
-    onUndo: undoLastTableAction,
+    onUndo: back.run,
   }, {
     visible: getPhase(state) === "Reveal",
     disabled: !!state.dreamDrawn || !isTutorialActionAllowed(state, "drawDream"),
@@ -2486,7 +2614,8 @@ function renderAll() {
   });
 
   const blockingChoice = isBlockingGameChoice(state);
-  if (!blockingChoice && shouldShowPhaseOpenerMenu(state)) {
+  const openerCovering = !blockingChoice && shouldShowPhaseOpenerMenu(state) && !isPhaseOpenerParked();
+  if (openerCovering) {
     const tray = document.getElementById("spread-tray");
     if (tray) {
       tray.classList.add("hidden");
@@ -2591,10 +2720,12 @@ function renderAll() {
   maybeShowMindstreamChoice();
   maybeShowRepressPicker();
   maybeShowReturnPicker();
+  maybePlayBeastMill();
   maybeShowObjectChoice();
   maybeShowRespawn();
   maybeShowDreamerPowerUI();
   if (!isBlockingGameChoice(state)) maybeShowTradePanel();
+  applyBackButton(describeBackAction());
 
   const blocking = isBlockingGameChoice(state);
   setUtilityModalRequired(blocking, blockingChoiceLabel(state));

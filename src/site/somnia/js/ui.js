@@ -663,6 +663,10 @@ function onRadialMenuKey(event) {
 
 let radialResolveAnchor = null;
 
+export function isRadialMenuOpen() {
+  return !!radialMenuRoot;
+}
+
 export function hideRadialMenu() {
   if (radialDismissHook) {
     document.removeEventListener("pointerdown", radialDismissHook, true);
@@ -1375,10 +1379,19 @@ export function showModal(card, options = {}) {
   if (card.quests) {
     const ul = document.createElement("ul");
     ul.className = "quest-list";
-    card.quests.forEach((q, i) => {
+    const statuses = uiRenderState
+      ? getQuestStatus(uiRenderState, card)
+      : card.quests.map((text) => ({ text, hint: "" }));
+    statuses.forEach((q, i) => {
       const li = document.createElement("li");
-      li.textContent = q;
-      if (card.questProgress?.[i]) li.classList.add("done");
+      li.textContent = q.text;
+      if (q.hint) {
+        const hint = document.createElement("span");
+        hint.className = "quest-boss-hint";
+        hint.textContent = q.hint;
+        li.appendChild(hint);
+      }
+      if (card.questProgress?.[i] || q.done) li.classList.add("done");
       ul.appendChild(li);
     });
     const h = document.createElement("p");
@@ -1577,6 +1590,18 @@ export function isUtilityModalMinimized() {
   return utilityModalMinimized;
 }
 
+/** What the utility modal is doing, so Back can close or resume the top layer. */
+export function utilityModalPresence() {
+  const modal = document.getElementById("utility-modal");
+  const open = modal
+    && !modal.classList.contains("hidden")
+    && !modal.classList.contains("utility-modal-minimized");
+  if (open && utilityModalRequired) return "required";
+  if (open) return "panel";
+  if (utilityModalMinimized) return "minimized";
+  return null;
+}
+
 export function setUtilityModalRequired(required, label = "Required choice") {
   utilityModalRequired = !!required;
   utilityModalRequiredLabel = label || "Required choice";
@@ -1623,10 +1648,18 @@ export function handleUtilityModalDismiss() {
 function syncUtilityChoiceDock() {
   const dock = document.getElementById("utility-choice-dock");
   const label = document.getElementById("utility-choice-dock-label");
+  const btn = document.getElementById("utility-choice-restore");
   if (!dock) return;
   const show = utilityModalRequired && utilityModalMinimized;
-  dock.classList.toggle("hidden", !show);
-  if (label) label.textContent = `${utilityModalRequiredLabel} — paused (board visible)`;
+  if (show) {
+    dock.dataset.dock = "choice";
+    dock.classList.remove("hidden");
+    if (label) label.textContent = `${utilityModalRequiredLabel} — paused (board visible)`;
+    if (btn) btn.textContent = "Resume choice";
+    return;
+  }
+  if (dock.dataset.dock === "phase-opener") return;
+  dock.classList.add("hidden");
 }
 
 function ensureChoiceMinimizeChrome() {
@@ -3066,6 +3099,12 @@ function renderQuestProgressList(statuses, onQuestClick = null) {
       <span class="quest-seg ${q.tokenSpent ? "done" : ""}" title="Power token spent"></span>
     `;
     li.innerHTML = `<span class="quest-text">${q.index + 1}. ${q.text}</span>`;
+    if (q.hint) {
+      const hint = document.createElement("span");
+      hint.className = "quest-boss-hint";
+      hint.textContent = q.hint;
+      li.appendChild(hint);
+    }
     li.appendChild(bar);
     if (q.ready) {
       const mark = document.createElement("span");
@@ -3503,20 +3542,21 @@ export function renderPhaseAdvanceBar(advanceAction = null, undo = null, drawDre
     backBtn.textContent = "Back";
     viewport.appendChild(backBtn);
   }
-  const canUndo = !!undo?.canUndo;
+  const canBack = undo?.enabled != null ? !!undo.enabled : !!undo?.canUndo;
   backBtn.hidden = false;
   backBtn.classList.remove("hidden");
-  backBtn.disabled = !canUndo;
+  backBtn.disabled = !canBack;
   backBtn.dataset.stackSize = String(undo?.stackSize || 0);
   backBtn.setAttribute("aria-hidden", "false");
-  backBtn.title = canUndo
-    ? "Undo the most recent action and restore the table."
-    : "No action to undo yet.";
-  backBtn.setAttribute("aria-label", "Back one action");
+  backBtn.title = undo?.title
+    || (canBack
+      ? "Undo the most recent action and restore the table."
+      : "No action to undo yet.");
+  backBtn.setAttribute("aria-label", backBtn.title);
   backBtn.onclick = (event) => {
     event.preventDefault();
     event.stopPropagation();
-    if (!canUndo) return;
+    if (backBtn.disabled) return;
     undo.onUndo?.();
   };
 

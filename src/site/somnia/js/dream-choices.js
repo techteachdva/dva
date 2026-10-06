@@ -571,10 +571,10 @@ export function beginTransformationPick(state, landscapeId, first, second) {
     ui: "cards",
     step: "pick-beast",
     title: "Transformation",
-    message: "Draw the top 2 Encounters and pick 1.",
+    message: "Two Dreambeasts were drawn. Choose which one to meet. The other is discarded.",
     cards: [first.card, second.card],
     payload: { landscapeId, first, second },
-    log: "Transformation: pick 1 Encounter. The other returns to its Mindstream.",
+    log: "Transformation: choose 1 Dreambeast to meet. The other is discarded.",
   });
   return null;
 }
@@ -866,9 +866,7 @@ function finishTransformation(state, picked, payload) {
   const other = chosen === first ? second : first;
   const beast = encounterFromDreambeastCard(chosen.card);
   setEncounterOnLandscape(state, landscapeId, beast);
-  if (other?.suit && other.card) {
-    state.mindstreamDecks[other.suit].push(other.card);
-  }
-  addLog(state, `Transformation: ${beast.name} appears on ${tileName(state, landscapeId)}.`);
+  if (other?.card) discardToMindstream(state, other.card);
+  addLog(state, `Transformation: ${beast.name} appears on ${tileName(state, landscapeId)}. ${other?.card?.name || "The other"} is discarded.`);
   state.pickEncounterOnSpawn = false;
 }

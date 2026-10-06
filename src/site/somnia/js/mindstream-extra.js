@@ -13,6 +13,7 @@ import {
   removeEncounterFromLandscape,
 } from "./state.js";
 import { shuffle, uid } from "./data.js";
+import { queueReshuffleFx } from "./board-fx.js";
 import { recordQuestEvent } from "./quests.js";
 import { logMoment } from "./narrator.js";
 import { grantPowerTokens } from "./power-tokens.js";
@@ -238,6 +239,7 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
       state.psycheDiscard.push(lowest);
     }
     state.psycheDeck = shuffle([...state.psycheDeck, ...state.psycheDiscard.splice(0)]);
+    queueReshuffleFx("psyche");
     drawPsycheForPlayer(state, player, 1);
     logAffectedStatus(state, event, "Feel, Deal, Heal");
     drawPsycheForPlayer(state, player, countAffectedLandscapes(state, event));

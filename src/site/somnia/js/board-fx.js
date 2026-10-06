@@ -2,6 +2,7 @@
 
 import { burstSparkles, playDreamRipple, playMeetFlash, playPointRipple, playDreamWarble, playBossFlash } from "./fx.js";
 import { playSfx, playLandscapeSfx, playBossStinger } from "./audio.js";
+import { cardBackForDeckId } from "./card-backs.js";
 
 const queue = [];
 const prevDreamerTiles = new Map();
@@ -25,6 +26,32 @@ function centerOf(el) {
 function deckEl(id) {
   return document.querySelector(`[data-deck-id="${id}"]`)
     || document.querySelector(`[data-deck="${id}"]`);
+}
+
+function pileZone(deckId, pile) {
+  const row = document.querySelector(`.deck-rail-row[data-deck-id="${deckId}"]`);
+  if (!row) return deckEl(deckId);
+  const zone = row.querySelector(pile === "discard" ? ".deck-rail-discard" : ".deck-rail-draw");
+  return zone || row;
+}
+
+function deckTitle(deckId) {
+  if (deckId === "psyche") return "Psyche";
+  if (deckId === "dream") return "Dream";
+  if (deckId === "mindstream-lucidity") return "Lucidity";
+  if (deckId === "mindstream-elasticity") return "Elasticity";
+  if (deckId === "mindstream-willpower") return "Willpower";
+  return "Mindstream";
+}
+
+function tableBanner(text) {
+  const layer = document.getElementById("fx-layer");
+  if (!layer || !text) return;
+  const el = document.createElement("div");
+  el.className = "fx-table-banner";
+  el.textContent = text;
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), 1700);
 }
 
 function hexTileEl(tileId) {
@@ -203,8 +230,14 @@ function pulseDeck(deckId, className) {
 function ghostCard(card, kind) {
   const el = document.createElement("div");
   const type = card?.type || "psyche";
-  const suit = card?.suit || "lucidity";
+  const suit = card?.suit || card?.mindstreamSuit || "lucidity";
   el.className = `fx-flying-card fx-flying-${kind} fx-card-${type} suit-${suit}`;
+  if (card?.image && (kind === "repress" || kind === "return" || kind === "spawn" || kind === "discard")) {
+    el.classList.add("fx-flying-face");
+    el.style.backgroundImage = `url("${String(card.image).replace(/["\\]/g, "")}")`;
+    el.innerHTML = `<span class="fx-card-name">${(card.name || "Card").slice(0, 18)}</span>`;
+    return el;
+  }
 
   if (type === "dream" || kind === "dream") {
     el.classList.add("fx-flying-dream");
@@ -225,11 +258,12 @@ function ghostCard(card, kind) {
   return el;
 }
 
-function flyCard(from, to, card, kind, delay = 0, size = { w: 44, h: 62 }) {
+function flyCard(from, to, card, kind, delay = 0, size = { w: 44, h: 62 }, extraClass = "") {
   const layer = document.getElementById("fx-layer");
   if (!layer || !from || !to) return;
 
   const ghost = ghostCard(card, kind);
+  if (extraClass) ghost.classList.add(...extraClass.split(" ").filter(Boolean));
   ghost.style.width = `${size.w}px`;
   ghost.style.height = `${size.h}px`;
   ghost.style.left = `${from.x - size.w / 2}px`;
@@ -243,7 +277,8 @@ function flyCard(from, to, card, kind, delay = 0, size = { w: 44, h: 62 }) {
     ghost.classList.add("fx-flying-active");
   });
 
-  setTimeout(() => ghost.remove(), 680 + delay);
+  const life = extraClass.includes("tarot") ? 1080 : 680;
+  setTimeout(() => ghost.remove(), life + delay);
 }
 
 function floatLabel(x, y, text, className, delay = 0) {
@@ -294,8 +329,37 @@ export function queuePowerTokensFx(playerId, count) {
   if (count > 0) queue.push({ type: "power-tokens", playerId, count });
 }
 
-export function queueRepressFx(card, { playerId = null, tileId = null } = {}) {
-  queue.push({ type: "repress", card, playerId, tileId });
+export function queueRepressFx(card, { playerId = null, tileId = null, fromDeck = null } = {}) {
+  if (!card) return;
+  queue.push({ type: "repress", card, playerId, tileId, fromDeck });
+}
+
+export function queueReturnFx(card) {
+  if (!card || typeof document === "undefined") return;
+  const suit = card.mindstreamSuit || card.suit;
+  let deckId = "psyche";
+  let pile = "discard";
+  if (card.type === "psyche-dreambeast" || card.isDreambeastPsyche) {
+    deckId = `mindstream-${suit || "lucidity"}`;
+    pile = "draw";
+  } else if (card.type === "dream" || card.type === "boss-dream" || card.type === "final") {
+    deckId = "dream";
+  } else if (card.type === "psyche" || card.type === "psyche-power" || card.type === "wild") {
+    deckId = "psyche";
+  } else if (suit === "lucidity" || suit === "elasticity" || suit === "willpower") {
+    deckId = `mindstream-${suit}`;
+  }
+  queue.push({ type: "return", card, deckId, pile });
+}
+
+export function cancelQueuedEncounterSpawn(instanceId) {
+  if (!instanceId) return;
+  for (let i = queue.length - 1; i >= 0; i -= 1) {
+    const evt = queue[i];
+    if (evt.type === "encounter-spawn" && (evt.encounter?.instanceId === instanceId)) {
+      queue.splice(i, 1);
+    }
+  }
 }
 
 export function queueObjectDrawFx(playerId, card, suit = "lucidity") {
@@ -316,8 +380,12 @@ export function queuePsycheSwirlFx(cards, tileId) {
   queue.push({ type: "psyche-swirl", cards, tileId });
 }
 
-export function queueReshuffleFx(suit) {
-  queue.push({ type: "reshuffle", suit });
+export function queueReshuffleFx(suitOrId) {
+  const raw = suitOrId || "lucidity";
+  const deckId = raw === "psyche" || raw === "dream" || String(raw).startsWith("mindstream-")
+    ? raw
+    : `mindstream-${raw}`;
+  queue.push({ type: "reshuffle", deckId });
 }
 
 export function queuePowerTokenSpendFx(playerId, count = 1) {
@@ -338,6 +406,31 @@ export function queueArchetypePowerFx(archetype) {
 
 export function queueBossStingerFx(bossId, tileId = "bed") {
   queue.push({ type: "boss-stinger", bossId, tileId });
+}
+
+function playRailShuffle(deckId) {
+  const from = centerOf(pileZone(deckId, "discard")) || centerOf(deckEl(deckId));
+  const to = centerOf(pileZone(deckId, "draw")) || from;
+  const layer = document.getElementById("fx-layer");
+  if (!from || !to || !layer) return;
+  const back = cardBackForDeckId(deckId);
+  for (let i = 0; i < 7; i += 1) {
+    const card = document.createElement("div");
+    card.className = "fx-shuffle-card";
+    card.style.backgroundImage = `url("${String(back).replace(/["\\]/g, "")}")`;
+    card.style.left = `${from.x - 34}px`;
+    card.style.top = `${from.y - 48}px`;
+    card.style.setProperty("--fx-tx", `${to.x - from.x}px`);
+    card.style.setProperty("--fx-ty", `${to.y - from.y}px`);
+    card.style.setProperty("--riffle", `${(i - 3) * 16}px`);
+    card.style.animationDelay = `${i * 68}ms`;
+    layer.appendChild(card);
+    setTimeout(() => card.remove(), 1280 + i * 68);
+  }
+  flashEl(pileZone(deckId, "draw"), "deck-shuffle", 1100);
+  flashEl(pileZone(deckId, "discard"), "deck-shuffle", 1100);
+  tableBanner(`${deckTitle(deckId)} discard shuffled into a new deck`);
+  playSfx("flip");
 }
 
 export function runPendingBoardFx() {
@@ -483,14 +576,16 @@ export function runPendingBoardFx() {
       }
       delay += step;
     } else if (evt.type === "repress") {
-      const to = centerOf(deckEl("subconscious"));
-      let from = centerOf(handAreaEl(evt.playerId));
+      const to = centerOf(deckEl("subconscious")) || { x: window.innerWidth * 0.5, y: 48 };
+      let from = evt.playerId ? centerOf(handAreaEl(evt.playerId)) : null;
       if (evt.tileId) from = centerOf(hexTileEl(evt.tileId)) || from;
-      if (from && to) {
-        flyCard(from, to, evt.card, "repress", delay);
-        pulseDeck("subconscious", "deck-pulse-repress");
-      }
-      delay += step;
+      if (evt.fromDeck) from = centerOf(pileZone(evt.fromDeck, "draw")) || centerOf(deckEl(evt.fromDeck)) || from;
+      if (!from) from = boardCenter();
+      flyCard(from, to, evt.card, "repress", delay, { w: 86, h: 120 }, "fx-flying-tarot");
+      pulseDeck("subconscious", "deck-pulse-repress");
+      const name = (evt.card?.name || "Card").slice(0, 22);
+      floatLabel(to.x, Math.max(36, to.y - 36), `Repressed · ${name}`, "fx-return-label", delay + 60);
+      delay += 140;
     } else if (evt.type === "meet-flash") {
       playMeetFlash(evt.mode);
       playDreamWarble(evt.mode === "reject" ? 0.85 : 0.7);
@@ -554,17 +649,22 @@ export function runPendingBoardFx() {
         }
       }
       delay += step;
-    } else if (evt.type === "reshuffle") {
-      const deckKey = `mindstream-${evt.suit || "lucidity"}`;
-      const deck = deckEl(deckKey);
-      flashEl(deck, "deck-shuffle", 850);
-      const c = centerOf(deck);
-      if (c) {
-        burstSparkles(c.x, c.y, 10, "#9ad4ff");
-        floatLabel(c.x, c.y - 30, "Reshuffled", "fx-reshuffle-label", delay);
-      }
+    } else if (evt.type === "return") {
+      const from = centerOf(deckEl("subconscious")) || { x: window.innerWidth * 0.5, y: 48 };
+      const to = centerOf(pileZone(evt.deckId, evt.pile || "discard"))
+        || centerOf(deckEl(evt.deckId))
+        || boardCenter();
+      flyCard(from, to, evt.card, "return", delay, { w: 86, h: 120 }, "fx-flying-tarot");
+      flashEl(pileZone(evt.deckId, evt.pile || "discard"), "deck-pulse-gain", 800);
+      const name = (evt.card?.name || "Card").slice(0, 22);
+      const where = evt.pile === "draw" ? `${deckTitle(evt.deckId)} deck` : `${deckTitle(evt.deckId)} discard`;
+      floatLabel(to.x, to.y - 40, `Returned to ${where}`, "fx-return-label", delay + 40);
+      floatLabel(from.x, from.y + 18, name, "fx-return-label", delay);
       playSfx("flip");
-      delay += step * 0.6;
+      delay += 160;
+    } else if (evt.type === "reshuffle") {
+      playRailShuffle(evt.deckId || `mindstream-${evt.suit || "lucidity"}`);
+      delay += 200;
     } else if (evt.type === "power-spend") {
       const from = centerOf(powerTokensEl());
       const to = boardCenter();

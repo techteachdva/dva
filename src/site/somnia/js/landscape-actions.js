@@ -31,6 +31,7 @@ import {
   reshuffleMindstreamDiscardIfNeeded,
   reorderMindstreamTop,
   pullDreambeastFromMindstream,
+  stampBeastMillDiscard,
 } from "./mindstream-supply.js";
 import { recordQuestEvent } from "./quests.js";
 import { shuffle } from "./data.js";
@@ -309,6 +310,7 @@ function spawnDreambeastFromMindstream(state, suit) {
   const targets = revealedLandscapeTiles(state, { suit });
   if (!targets.length) {
     state.mindstreamDiscard[suit].push(beast);
+    stampBeastMillDiscard(state);
     addLog(state, `No open ${SUIT_LABELS[suit]} Landscape for ${beast.name}.`);
     return null;
   }
