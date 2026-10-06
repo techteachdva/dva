@@ -5964,7 +5964,6 @@ function resolveSpotlightElements(step) {
   if (el) return [el];
   return resolveTutorialElements(step);
 }
-}
 
 function inferTutorialCardDock(step) {
   if (step?.cardDock) return step.cardDock;
