@@ -2724,6 +2724,21 @@ function discardBinderPiles(state) {
   ];
 }
 
+function decorateBinderLookCard(cardEl, card) {
+  cardEl.classList.add("binder-look-card");
+  const body = cardEl.querySelector(".body");
+  if (!body || body.querySelector(".dream-card-teaser, .binder-look-rules")) return cardEl;
+  const text = card?.type === "event"
+    ? eventCardEffectText(card)
+    : (card?.text || card?.effect || "");
+  if (!text) return cardEl;
+  const rules = document.createElement("p");
+  rules.className = "binder-look-rules";
+  rules.textContent = text;
+  body.appendChild(rules);
+  return cardEl;
+}
+
 function binderEntriesFromPiles(piles, tabId = "all") {
   const selected = tabId === "all" ? piles : piles.filter((pile) => pile.id === tabId);
   return selected.flatMap((pile) => (pile.cards || []).map((card) => ({
@@ -2828,9 +2843,7 @@ function openCardBinder({
       </div>
     `;
     const wrap = look.querySelector(".binder-look-card-wrap");
-    const psycheLike = entry.card.type === "psyche" || entry.card.type === "psyche-power" || isDreambeastPsycheCard(entry.card);
-    const cardEl = renderCard(entry.card, psycheLike ? {} : { portrait: true });
-    cardEl.classList.add("binder-look-card");
+    const cardEl = decorateBinderLookCard(renderCard(entry.card, { portrait: true }), entry.card);
     wrap.appendChild(cardEl);
     root.appendChild(look);
 
@@ -4826,11 +4839,7 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
   const isSelected = (card) => pending?.picked?.some((c) => c.instanceId === card.instanceId);
 
   const renderBinderZoomCard = (card, selected) => {
-    const psycheLike = card.type === "psyche" || card.type === "psyche-power" || isDreambeastPsycheCard(card);
-    return renderCard(
-      card,
-      psycheLike ? { selected } : { portrait: true, selected },
-    );
+    return decorateBinderLookCard(renderCard(card, { portrait: true, selected }), card);
   };
 
   const renderBinderGrid = () => {
@@ -4936,7 +4945,6 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
     `;
     const wrap = look.querySelector(".binder-look-card-wrap");
     const cardEl = renderBinderZoomCard(entry.card, isSelected(entry.card));
-    cardEl.classList.add("binder-look-card");
     wrap.appendChild(cardEl);
     root.appendChild(look);
 

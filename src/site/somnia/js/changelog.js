@@ -6,10 +6,17 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "38.0";
+export const SOMNIA_VERSION = "38.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "38.1",
+    title: "Look, Full Size",
+    notes: [
+      "Look centers one large card so Bright, Dim, and the art are readable. Back and the arrows stay small. Pile tabs no longer stretch into tall pills.",
+    ],
+  },
   {
     version: "38.0",
     title: "The Open Binder",
