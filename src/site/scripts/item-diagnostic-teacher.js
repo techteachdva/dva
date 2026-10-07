@@ -734,7 +734,7 @@
     renderTeacherViews();
   }
 
-  const BANK_URL = "/api/item-diagnostic-bank";
+  const BANK_URL = "/api/item-diagnostic-submissions?bank=1";
   let pendingBank = null;
 
   function bankMeta() {

@@ -4,7 +4,7 @@
  */
 import { ALL_QUESTIONS } from "/tech-escape/js/data/questions.js";
 
-const BANK_URL = "/api/item-diagnostic-bank";
+const BANK_URL = "/api/item-diagnostic-submissions?bank=1";
 
 function topicFromId(id) {
   if (id.startsWith("DES-")) return "design";

@@ -16,7 +16,7 @@
     { "source": "/api/somnia-saves", "destination": "/api/somnia-highscores?somniaApi=saves" },
     { "source": "/api/diagnostic-writing/submissions", "destination": "/api/diagnostic-writing-submissions" },
     { "source": "/api/item-diagnostic/submissions", "destination": "/api/item-diagnostic-submissions" },
-    { "source": "/api/item-diagnostic/bank", "destination": "/api/item-diagnostic-bank" },
+    { "source": "/api/item-diagnostic/bank", "destination": "/api/item-diagnostic-submissions?bank=1" },
     { "source": "/api/writeflow/submissions", "destination": "/api/writeflow-submissions" },
     { "source": "/api/tech-trail/submissions", "destination": "/api/tech-trail-submissions" },
     { "source": "/api/tech-trail/roster", "destination": "/api/tech-trail-submissions" },
