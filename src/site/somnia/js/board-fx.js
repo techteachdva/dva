@@ -25,23 +25,30 @@ function centerOf(el) {
 
 function rippleAcrossBoard(origin, tone) {
   if (!origin || reducedMotion()) return;
-  const ringClass = tone === "forget" ? "fx-forget-ripple" : "fx-reveal-ripple";
-  const tileClass = tone === "forget" ? "hex-ripple-forget" : "hex-ripple-reveal";
-  const rings = tone === "forget" ? 2 : 3;
+  const forget = tone === "forget";
+  const ringClass = forget ? "fx-forget-ripple" : "fx-reveal-ripple";
+  const tileClass = forget ? "hex-ripple-forget" : "hex-ripple-reveal";
+  const rings = forget ? 2 : 3;
+  const stagger = forget ? 160 : 180;
+  const life = forget ? 1100 : 1720;
+  const reach = forget ? 240 : 300;
+  const travel = forget ? 900 : 1360;
   for (let i = 0; i < rings; i += 1) {
-    window.setTimeout(() => playPointRipple(origin.x, origin.y, ringClass), i * 150);
+    window.setTimeout(() => playPointRipple(origin.x, origin.y, ringClass, life), i * stagger);
   }
   document.querySelectorAll(".hex-tile").forEach((el) => {
     if (el.classList.contains("just-revealed") || el.classList.contains("just-forgotten")) return;
     const c = centerOf(el);
     if (!c) return;
-    const delay = Math.min(860, Math.round(Math.hypot(c.x - origin.x, c.y - origin.y) * 0.42));
+    const dist = Math.hypot(c.x - origin.x, c.y - origin.y);
+    if (dist > reach) return;
+    const delay = Math.round((dist / reach) * travel);
     el.style.setProperty("--ripple-delay", `${delay}ms`);
     el.classList.add(tileClass);
     window.setTimeout(() => {
       el.classList.remove(tileClass);
       el.style.removeProperty("--ripple-delay");
-    }, delay + 520);
+    }, delay + 620);
   });
 }
 

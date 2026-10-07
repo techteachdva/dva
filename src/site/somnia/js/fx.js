@@ -3,7 +3,7 @@ let forgottenTiles = new Set();
 let phasePulse = false;
 let dreamFeedNudge = false;
 
-const FLIP_LINGER_MS = 1200;
+const FLIP_LINGER_MS = 1600;
 const flipLinger = new Map();
 
 function nowMs() {
@@ -178,7 +178,7 @@ export function playMeetFlash(mode = "accept") {
 }
 
 /** Ripple that expands from a point — used when a Dreambeast lands. */
-export function playPointRipple(x, y, className = "fx-point-ripple") {
+export function playPointRipple(x, y, className = "fx-point-ripple", lifeMs = 900) {
   const layer = document.getElementById("fx-layer");
   if (!layer || reducedMotion()) return;
   const el = document.createElement("span");
@@ -186,7 +186,7 @@ export function playPointRipple(x, y, className = "fx-point-ripple") {
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
   layer.appendChild(el);
-  window.setTimeout(() => el.remove(), 900);
+  window.setTimeout(() => el.remove(), lifeMs);
 }
 
 /** Soft UI click — ripple plus a gold-and-lilac sparkle burst. */

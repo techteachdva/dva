@@ -2624,12 +2624,12 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 
 .hex-tile.just-revealed .hex-mat-from {
   filter: grayscale(0.55) brightness(0.78);
-  animation: hex-mist-out 0.62s ease both;
+  animation: hex-mist-out 1.24s ease both;
   animation-delay: var(--hex-flip-elapsed, 0ms);
 }
 
 .hex-tile.just-revealed .hex-mat-to {
-  animation: hex-art-in 0.68s cubic-bezier(0.16, 0.84, 0.28, 1) both;
+  animation: hex-art-in 1.36s cubic-bezier(0.33, 0.05, 0.2, 1) both;
   animation-delay: var(--hex-flip-elapsed, 0ms);
 }
 
@@ -2645,17 +2645,17 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 }
 
 .hex-tile.just-revealed .name {
-  animation: hex-name-in 0.9s cubic-bezier(0.16, 0.84, 0.24, 1) both;
+  animation: hex-name-in 1.36s cubic-bezier(0.33, 0.05, 0.2, 1) both;
   animation-delay: var(--hex-flip-elapsed, 0ms);
 }
 
 .hex-tile.just-revealed .hex-overlay {
-  animation: hex-overlay-in 0.9s ease both;
+  animation: hex-overlay-in 1.36s ease both;
   animation-delay: var(--hex-flip-elapsed, 0ms);
 }
 
 .hex-tile.just-revealed .hex-mist {
-  animation: hex-mist-settle 0.95s ease both;
+  animation: hex-mist-settle 1.36s ease both;
   animation-delay: var(--hex-flip-elapsed, 0ms);
 }
 
@@ -2691,7 +2691,7 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 .hex-tile.just-revealed::after {
   background: linear-gradient(180deg, rgba(232, 250, 255, 0.72), transparent 46%);
   mix-blend-mode: screen;
-  animation: hex-reveal-wash 0.62s ease both;
+  animation: hex-reveal-wash 1.24s ease both;
   animation-delay: var(--hex-flip-elapsed, 0ms);
 }
 
@@ -2702,7 +2702,7 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 }
 
 .hex-tile.hex-ripple-reveal {
-  animation: hex-tile-ripple 0.36s ease-out var(--ripple-delay, 0ms) both;
+  animation: hex-tile-ripple 0.52s ease-out var(--ripple-delay, 0ms) both;
 }
 
 .hex-tile.hex-ripple-forget {
@@ -2710,7 +2710,8 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 }
 
 @keyframes hex-art-in {
-  0% { opacity: 0; filter: brightness(1.9) saturate(0.15); }
+  0% { opacity: 0; filter: brightness(1.7) saturate(0.25); }
+  42% { opacity: 0.22; filter: brightness(1.35) saturate(0.55); }
   100% { opacity: 1; }
 }
 
@@ -9944,23 +9945,25 @@ button.end-game-id {
 .fx-reveal-ripple {
   border: 1.5px solid rgba(214, 246, 255, 0.92);
   box-shadow: 0 0 0 1px rgba(120, 210, 235, 0.28);
-  animation: fx-board-ripple 0.82s cubic-bezier(0.12, 0.55, 0.2, 1) forwards;
+  animation: fx-board-ripple 1.36s cubic-bezier(0.22, 0.4, 0.2, 1) forwards;
 }
 
 .fx-forget-ripple {
   border: 1.5px solid rgba(196, 106, 128, 0.8);
   box-shadow: 0 0 0 1px rgba(90, 24, 40, 0.35);
-  animation: fx-board-ripple-forget 0.86s cubic-bezier(0.12, 0.55, 0.2, 1) forwards;
+  animation: fx-board-ripple-forget 0.9s cubic-bezier(0.22, 0.4, 0.2, 1) forwards;
 }
 
 @keyframes fx-board-ripple {
-  0% { transform: scale(0.15); opacity: 0.95; }
-  100% { transform: scale(38); opacity: 0; }
+  0% { transform: scale(0.35); opacity: 0; }
+  14% { opacity: 0.92; }
+  100% { transform: scale(14); opacity: 0; }
 }
 
 @keyframes fx-board-ripple-forget {
-  0% { transform: scale(0.15); opacity: 0.8; }
-  100% { transform: scale(30); opacity: 0; }
+  0% { transform: scale(0.35); opacity: 0; }
+  16% { opacity: 0.8; }
+  100% { transform: scale(11); opacity: 0; }
 }
 
 @keyframes fx-psyche-swirl {

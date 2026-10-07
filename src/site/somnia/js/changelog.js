@@ -6,10 +6,17 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "38.4";
+export const SOMNIA_VERSION = "38.5";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "38.5",
+    title: "The Same Beat",
+    notes: [
+      "Revealing a Landscape fades the picture and the name in more slowly, and a smaller ring crosses the nearby tiles on the same beat.",
+    ],
+  },
   {
     version: "38.4",
     title: "Into Focus",
