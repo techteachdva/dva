@@ -32,7 +32,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "goal",
     title: "How You Win",
-    body: "Complete quests on the Active Archetype (right panel), acquire it for points, and repeat until you reach your goal. The Head Dreamer draws a new Dream card each round.",
+    body: "Complete quests on the Active Archetype (right panel), acquire it for points, and repeat until you reach your goal. Round 1's Dream is already drawn. Later rounds, the Head Dreamer draws a new Dream.",
     target: "#active-archetype",
   },
   {
@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 38.5. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 38.6. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -630,7 +630,7 @@ export function rulesDetailsHtml() {
         <li>Tap or click to select · double-tap, long-press, or right-click to inspect · play 1 suited card per phase opener</li>
         <li>Max <strong>10 cards</strong> in hand, including accepted allies (+2 with Persistent Severed Torso); overflow discards to the Psyche discard pile</li>
         <li><strong>Wild Psyche</strong> (value 5) counts as any suit</li>
-        <li><strong>Power Psyche</strong> (Power Surge, yellowish-purple) stays in hand — click it anytime, any phase, for 1 Power Token</li>
+        <li>Power Tokens are not in the Psyche deck. A Mindstream Power Token card offers <strong>Take 1 Power Token</strong>, or <strong>Return one Subconscious card for each Dreamer</strong></li>
         <li>Psyche is health. Allies do not pay a cost. With no Psyche left when a payment is due, you die and respawn on The Bed</li>
       </ul>
 
@@ -663,7 +663,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Power Tokens</h3>
-      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Spend 1 to commit an Archetype once both quests are already true, 1 on a Dreamer Power, 1 on an Archetype Power, 1 to activate a Persistent Object, <strong>1 plus the suited stat</strong> for a Reveal / Explore / Meet opener (max 1 per opener), and <strong>+1d6 per token</strong> on a Psyche spread (max <strong>3</strong> tokens). Dying returns held tokens to the pool; respawn does not grant new ones.</p>
+      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Cards grant tokens only from Mindstream: take 1, or Return one Subconscious card per Dreamer. Other effects can still grant tokens. Spend 1 to commit an Archetype once both quests are already true, 1 on a Dreamer Power, 1 on an Archetype Power, 1 to activate a Persistent Object, <strong>1 plus the suited stat</strong> for a Reveal / Explore / Meet opener (max 1 per opener), and <strong>+1d6 per token</strong> on a Psyche spread (max <strong>3</strong> tokens). Dying returns held tokens to the pool; respawn does not grant new ones.</p>
 
       <h3>Dreamer Powers</h3>
       <p>Each costs <strong>1 Power Token</strong> and can be used in any phase. Lucidity Dreamers help Reveal, Elasticity Dreamers help Explore, Willpower Dreamers help Meet.</p>
@@ -696,7 +696,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Mindstream &amp; Dreams</h3>
-      <p>Three 70-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, Power cards, Draw-Dream cards. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Dreams are drawn once per round by the Head Dreamer. Bright always costs a Repress, a discarded Psyche, or a Forgotten Landscape, and it opens only when that Dream's condition is met. Dim is free. A banner stays up at <strong>10%</strong> remaining and tells the table to <strong>Return</strong> cards from the Subconscious; it flashes at <strong>5%</strong>; at <strong>1%</strong> the Dreamscape turns unstable and the nightmare closes in. Each low deck is tagged on the rail.</p>
+      <p>Three 72-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, 8 Power Token cards, Draw-Dream cards. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Round 1 draws its Dream immediately and rolls 1d6: even resolves Bright, odd resolves Dim, and the die is the choice. Later Dreams are drawn once per round by the Head Dreamer. Bright then costs a Repress, a discarded Psyche, or a Forgotten Landscape, and it opens only when that Dream's condition is met. Dim is free. A banner stays up at <strong>10%</strong> remaining and tells the table to <strong>Return</strong> cards from the Subconscious; it flashes at <strong>5%</strong>; at <strong>1%</strong> the Dreamscape turns unstable and the nightmare closes in. Each low deck is tagged on the rail.</p>
 
       <h3>Death</h3>
       <p>A Dreamer with <strong>no Psyche</strong> who must pay even one dies. Objects go to Mindstream discards. Power Tokens return to the pool. They respawn on <strong>The Bed</strong> and draw <strong>3 Psyche</strong>. The <strong>Death Clock</strong> at the top of the table ticks once. The <strong>sixth death</strong>, shared by the whole table, ends the night at once.</p>
@@ -714,7 +714,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 38.5</p>
+          <p class="info-hub-kicker">Somnia v 38.6</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>
@@ -776,7 +776,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Hands, Tokens &amp; Objects</h3>
-            <p>Max <strong>10 cards</strong> in hand, allies included. Round 1 starts at 5. From round 2, each living Dreamer draws 2 at Reveal. Wild (5) is any suit. Power Surge is yellowish-purple. Click it anytime for 1 Power Token. Instant Objects are free, then Repressed. Persistent Objects stay and activate for 1 token. Must-play Objects resolve on draw. Trade is free during Meet with a Dreamer on the same hex or next door, up to 3 Psyche. Spent allies Repress to the Subconscious.</p>
+            <p>Max <strong>10 cards</strong> in hand, allies included. Round 1 starts at 5. From round 2, each living Dreamer draws 2 at Reveal. Wild (5) is any suit. Power Tokens from cards come from Mindstream, not the Psyche deck. Instant Objects are free, then Repressed. Persistent Objects stay and activate for 1 token. Must-play Objects resolve on draw. Trade is free during Meet with a Dreamer on the same hex or next door, up to 3 Psyche. Spent allies Repress to the Subconscious.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Bosses</h3>

@@ -9,6 +9,8 @@ import fs from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
 import { fileURLToPath, pathToFileURL } from "url";
+import { getDreamResolution } from "../src/site/somnia/js/dream-resolutions.js";
+import { getEventResolution } from "../src/site/somnia/js/event-resolutions.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(__dirname, "..");
@@ -16,7 +18,7 @@ const SOMNIA = path.join(REPO, "src/site/somnia");
 const DATA = path.join(SOMNIA, "data");
 const PRINT = path.join(REPO, "print");
 const HTML_DIR = path.join(PRINT, "_html");
-const VERSION = "33.1";
+const VERSION = "38.6";
 
 const SUIT_LABELS = {
   lucidity: "Lucidity",
@@ -74,12 +76,24 @@ const MINDSTREAM_COMPOSITION = {
   dreambeasts: 10,
   objects: 16,
   events: 35,
-  powerToken: 6,
+  powerToken: 8,
   drawDream: 3,
 };
-const PSYCHE_DISTRIBUTION = { 1: 5, 2: 4, 3: 3, 4: 2, 5: 1 };
+const PSYCHE_DISTRIBUTION = { 1: 6, 2: 5, 3: 3, 4: 2, 5: 1 };
 const PSYCHE_WILD = 6;
-const PSYCHE_POWER = 6;
+const PSYCHE_POWER = 0;
+
+function choiceLines(resolution) {
+  if (!resolution?.good && !resolution?.bad) return "";
+  const good = resolution.good;
+  const bad = resolution.bad;
+  const toll = good?.toll
+    ? ` Costs a ${good.toll.kind === "psyche" ? "Psyche discard" : good.toll.kind === "repress" ? "Repress" : "Forgotten Landscape"}${good.toll.count > 1 ? ` ×${good.toll.count}` : ""}.`
+    : "";
+  const gate = good?.gate?.label ? ` Opens only if: ${good.gate.label}.` : "";
+  return `<p><strong>Good / Bright:</strong> ${esc(good?.label || "—")}. ${esc(good?.hint || "")}${esc(toll)}${esc(gate)}</p>
+    <p><strong>Bad / Dim:</strong> ${esc(bad?.label || "—")}. ${esc(bad?.hint || "Free.")}</p>`;
+}
 
 function loadJson(name) {
   return JSON.parse(fs.readFileSync(path.join(DATA, `${name}.json`), "utf8"));
@@ -593,14 +607,14 @@ function rulesHtml(data) {
 <body>
   <section class="cover">
     <div>
-      <p class="kicker">Physical prototype · Somnia v ${VERSION} · Mirror Mirror</p>
+      <p class="kicker">Physical prototype · Somnia v ${VERSION} · The Opening Die</p>
       <h1>Somnia</h1>
       <p class="lead">A cooperative dream-escape. Dreamers trapped in a collapsing Dreamscape earn Archetype points and wake on The Bed before the Dream Deck runs out.</p>
     </div>
     ${boxArt ? `<img class="cover-art" src="${boxArt}" alt="Somnia box art" />` : ""}
     <div class="meta">
       <p>Rules bible and table setup for cardstock playtesting. Cutouts are in the companion PDFs. Power Tokens = US quarters.</p>
-      <p>This document matches digital Somnia ${VERSION}: the Mirror Mirror walk, Meet tax, Pass Token, free passives, and the current death and leftover rules. Do not upload these prototype PDFs with the website.</p>
+      <p>This document matches digital Somnia ${VERSION}. Round 1 draws a Dream and rolls 1d6 before play. Even resolves Good (Bright). Odd resolves Bad (Dim). Power Token cards are Mindstream only. Do not upload these prototype PDFs with the website.</p>
     </div>
   </section>
 
@@ -635,17 +649,17 @@ function rulesHtml(data) {
       <tr><td>Landscape hexes</td><td>${playable.length}</td><td>Faces in the cutout PDF. Glue Wasteland backs to the 24 outer tiles. The Bed never forgets.</td></tr>
       <tr><td>Dreamer cards</td><td>${dreamers.length}</td><td>${dreamers.map((d) => d.name).join(", ")}</td></tr>
       <tr><td>Archetypes</td><td>${archetypes.length}</td><td>Shuffle; reveal one Active Archetype.</td></tr>
-      <tr><td>Psyche</td><td>57</td><td>15 per suit (values 1–5), 6 Wild (value 5, any suit), 6 Power Surge. Hand limit 10, allies included.</td></tr>
+      <tr><td>Psyche</td><td>57</td><td>17 per suit (six 1s, five 2s, then 3 / 2 / 1), 6 Wild (value 5, any suit). No Power Surge cards. Hand limit 10, allies included.</td></tr>
       <tr><td>Pass Token</td><td>1</td><td>Any small marker. It moves around the table during Meet.</td></tr>
       <tr><td>Dreams</td><td>${dreams.filter((d) => d.type === "dream").length} unique + copies · 10 Final · 3 bosses</td><td>Build the length you chose; bosses go in slots for Reveal rounds 3 / 6 / 9.</td></tr>
       <tr><td>Dreambeasts</td><td>${dreambeasts.length} unique</td><td>Bosses Cerberus, Double, Leviathan. 10 copies per Mindstream suit from non-boss beasts.</td></tr>
       <tr><td>Objects</td><td>${objects.length}</td><td>16 per suit in each Mindstream.</td></tr>
-      <tr><td>Mindstream Events</td><td>${eventCount} (L/E/W)</td><td>35 Events + 6 Power Token cards + 3 Draw Dream cards per suit, plus beasts and objects, for 70 cards each.</td></tr>
+      <tr><td>Mindstream Events</td><td>${eventCount} (L/E/W)</td><td>35 Events + 8 Power Token cards + 3 Draw Dream cards per suit, plus beasts and objects, for 72 cards each.</td></tr>
       <tr><td>Power Tokens</td><td>US quarters, pool cap 24</td><td>Do not print coins. Start with 1 quarter per Dreamer.</td></tr>
     </tbody>
   </table>
   <div class="callout">
-    <strong>Power Tokens = US quarters</strong> (about 0.955" / 24.26 mm). Keep a spare dish of up to 24. Spent quarters return to the dish. Power Surge cards and Mindstream “Power Token” cards grant a quarter from the dish — they are not the tokens themselves.
+    <strong>Power Tokens = US quarters</strong> (about 0.955" / 24.26 mm). Keep a spare dish of up to 24. Spent quarters return to the dish. Only Mindstream Power Token cards grant a quarter from a draw: take 1, or Return one Subconscious card for each Dreamer. They are not the tokens themselves. Dreams, Events, Landscape actions, and powers can still grant quarters.
   </div>
 
   <h2 class="page-break">Setup</h2>
@@ -654,7 +668,7 @@ function rulesHtml(data) {
     <li>Each player picks a Dreamer card. Seat 2–6. Give each Dreamer <strong>5 Psyche</strong> and <strong>1 quarter</strong>.</li>
     <li>Shuffle all 25 Landscapes. Place <strong>The Bed face-up</strong> in the center. Deal the remaining hexes into the 24 outer slots (6 touching The Bed, then ring 2, then 6 corners).</li>
     <li>Flip <strong>exactly one</strong> Landscape that touches The Bed face-up. All other outer hexes stay Wasteland-side up (forgotten).</li>
-    <li>Build three 70-card Mindstream decks (Lucidity / Elasticity / Willpower) from the cutouts. Keep discards separate; empty draw piles reshuffle their discard.</li>
+    <li>Build three 72-card Mindstream decks (Lucidity / Elasticity / Willpower) from the cutouts. Keep discards separate; empty draw piles reshuffle their discard.</li>
     <li>Shuffle Archetypes; reveal the top as the Active Archetype. Shuffle Psyche. Build the Dream deck for your length, insert the three boss Dreams at rounds 3/6/9, then the Final Recurrence packet (The Final Recurrence, eight effect cards, You Never Wake Up on the bottom).</li>
     <li>Put leftover quarters in a dish (the Power pool, cap 24). Place repressed piles nearby as the Subconscious (Psyche, Dreambeasts, Mindstream by suit, Objects). Return effects put cards back on the matching discard.</li>
     <li>The first Head Dreamer is any agreed player (★). Head rotates clockwise at round end. Set the Pass Token aside until Meet.</li>
@@ -665,8 +679,8 @@ function rulesHtml(data) {
   <p>There is no turn order inside a phase. Talk, then act. Phases always run <strong>Reveal → Explore → Meet</strong>. One Dreamer spends <strong>1 suited Psyche</strong> (or 1 quarter as 1 suited Psyche) to open the phase. Budget = that card’s value + that Dreamer’s matching stat, including Object and Acquired Archetype bonuses. The same Dreamer cannot open the next phase this round unless they are alone, or nobody else can pay the suit.</p>
   <h3>Reveal — Lucidity</h3>
   <ul>
-    <li>The Head Dreamer (★) draws and resolves 1 Dream. Draw the Dream and spend Lucidity in either order.</li>
-    <li><strong>Round 1:</strong> each Dreamer already has 5 Psyche. <strong>Round 2+:</strong> each living Dreamer draws 2 Psyche at the start of Reveal.</li>
+    <li><strong>Round 1, before Reveal:</strong> draw the top Dream and roll 1d6. Even resolves its Good / Bright path. Odd resolves its Bad / Dim path. The die is the choice, so nobody pays Bright's usual toll and nobody is asked. Then open on Reveal. Each Dreamer already has 5 Psyche.</li>
+    <li><strong>Later rounds:</strong> the Head Dreamer (★) draws and resolves 1 Dream. Bright costs a Repress, a discarded Psyche, or a Forgotten Landscape, and it opens only when that Dream's condition is met. Dim is free. Draw the Dream and spend Lucidity in either order. Each living Dreamer draws 2 Psyche at the start of Reveal.</li>
     <li>One Dreamer spends 1 Lucidity. Flip that many Wasteland hexes face-up.</li>
     <li>When every Landscape is Revealed, leftover Reveals flip the next facedown card of a Mindstream. Flipped cards stay face-up on that pile.</li>
   </ul>
@@ -699,7 +713,7 @@ function rulesHtml(data) {
   <ul>
     <li>Max <strong>10 cards</strong> in hand, allies included (+2 with Persistent Severed Torso). Overflow goes to the Psyche discard.</li>
     <li><strong>Wild</strong> (value 5) counts as any suit. When spent, Repress that card to the Subconscious.</li>
-    <li><strong>Power Surge</strong> (yellowish-purple) may be played any phase for 1 quarter, then discarded.</li>
+    <li>The Psyche deck has no Power Token cards. A Mindstream Power Token card is a choice: <strong>Take 1 quarter</strong>, or <strong>Return one Subconscious card for each Dreamer</strong> at the table.</li>
     <li><strong>Instant</strong> Objects are free during Meet, then Repressed. <strong>Persistent</strong> Objects stay in play and activate for 1 quarter. <strong>Must-play</strong> Objects resolve on draw, then Repress.</li>
     <li>Spent allies are Repressed. Spent Psyche goes to the discard, unless it is Wild or an ally.</li>
     <li>Spawn a Dreambeast: cycle the chosen Mindstream from the top until a beast appears, place it (on a matching-suit Landscape when the effect asks you to choose; otherwise on the acting Dreamer’s Landscape), <strong>discard the rest of that suit</strong>, then reshuffle the discard into a new draw pile. Ebony Pawn spawns a Nightmare; Ivory Pawn a Fantasy. Bosses spawn on The Bed.</li>
@@ -744,9 +758,9 @@ function cardTrayHtml() {
     { label: "Psyche", note: "Stack the Psyche deck on this back.", art: "images/backs/psyche.webp" },
     { label: "Archetypes", note: "Stack unused Archetypes here.", art: "images/backs/archetype.webp" },
     { label: "Dreams", note: "Dream deck — official wordmark.", art: "images/somnia-logo.png" },
-    { label: "Lucidity Mindstream", note: "Blue. Place that 70-card pile here.", art: "images/backs/mindstream-lucidity.webp" },
-    { label: "Elasticity Mindstream", note: "Yellow. Place that 70-card pile here.", art: "images/backs/mindstream-elasticity.webp" },
-    { label: "Willpower Mindstream", note: "Red. Place that 70-card pile here.", art: "images/backs/mindstream-willpower.webp" },
+    { label: "Lucidity Mindstream", note: "Blue. Place that 72-card pile here.", art: "images/backs/mindstream-lucidity.webp" },
+    { label: "Elasticity Mindstream", note: "Yellow. Place that 72-card pile here.", art: "images/backs/mindstream-elasticity.webp" },
+    { label: "Willpower Mindstream", note: "Red. Place that 72-card pile here.", art: "images/backs/mindstream-willpower.webp" },
   ].map((slot) => {
     const src = artUrl(slot.art);
     return `<div class="card-tray-slot">
@@ -835,6 +849,7 @@ function cutoutsHtml(data) {
   const dreamCards = [];
   dreams.forEach((d) => {
     const copies = d.copies || 1;
+    const paths = choiceLines(getDreamResolution(d.id));
     for (let i = 0; i < copies; i += 1) {
       dreamCards.push(cardHtml({
         kind: d.type === "final" ? "Final Recurrence" : "Dream",
@@ -842,8 +857,8 @@ function cutoutsHtml(data) {
         art: d.image,
         bannerLeft: d.type === "final" ? "Final" : "Dream",
         bannerRight: copies > 1 ? `${i + 1}/${copies}` : "",
-        body: `<p>${esc(d.text)}</p>`,
-        footLeft: d.type === "final" ? "Endgame packet" : "Head Dreamer draws 1 / round",
+        body: paths || `<p>${esc(d.text || d.effect || "")}</p>`,
+        footLeft: d.type === "final" ? "Endgame packet" : "Round 1: die. Later: Head draws 1 / round",
       }));
     }
   });
@@ -879,7 +894,7 @@ function cutoutsHtml(data) {
     art: o.image,
     bannerLeft: o.subtype || "Object",
     bannerRight: suitChip(o.suit),
-    body: `<p>${esc(o.text)}</p>`,
+    body: `<p>${esc(o.text)}</p>${o.subtype === "must-play" ? "" : "<p><strong>Good:</strong> Take the Object.</p><p><strong>Bad:</strong> Discard it and draw 3 Psyche.</p>"}`,
     footLeft: (o.tags || []).join(" · "),
     footRight: SUIT_LABELS[o.suit] || "",
   }));
@@ -887,13 +902,14 @@ function cutoutsHtml(data) {
   const eventCards = [];
   ["lucidity", "elasticity", "willpower"].forEach((suit) => {
     (mindstream[suit] || []).forEach((evt) => {
+      const paths = choiceLines(getEventResolution(evt.id));
       eventCards.push(cardHtml({
         kind: "Event",
         name: evt.name,
         art: evt.image,
         bannerLeft: "Mindstream Event",
         bannerRight: suitChip(suit),
-        body: `<p>${esc(evt.text)}</p>`,
+        body: paths || `<p>${esc(evt.text)}</p>`,
         footLeft: SUIT_LABELS[suit],
       }));
     });
@@ -909,7 +925,7 @@ function cutoutsHtml(data) {
         art: `images/cards/mindstream/${suit}/power-token.webp`,
         bannerLeft: "Mindstream",
         bannerRight: suitChip(suit),
-        body: "<p>Take 1 Power Token (US quarter) from the dish.</p>",
+        body: "<p><strong>Good:</strong> Take 1 Power Token (US quarter) from the dish.</p><p><strong>Bad:</strong> Return one card from the Subconscious for each Dreamer at the table.</p>",
         footLeft: `${i} of ${MINDSTREAM_COMPOSITION.powerToken}`,
       }));
     }

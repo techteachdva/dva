@@ -195,7 +195,7 @@ export function resolveCardEffect(state, card, player, helpers) {
   }
 
   if (card.type === "power-token") {
-    const n = card.powerTokens || 2;
+    const n = 1;
     grantPowerTokens(state, player, n, {
       reason: `${player.name} takes ${n} Power Token${n === 1 ? "" : "s"}.`,
       logQuest: false,

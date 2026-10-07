@@ -89,7 +89,27 @@ function sentenceLines(sentence) {
     .map((line) => [plain(line)]);
 }
 
-/** Credit lines. Variable spans are Dreamer names, the first Landscape, and the Archetype. */
+function openingDreamLines(state) {
+  const omen = state?.openingOmen;
+  if (!omen?.name) return [];
+  if (omen.side === "boss") {
+    return [
+      [plain("Before anyone can speak, a boss Dream is already awake.")],
+      [variable(omen.name, "Dream"), plain(" stands on The Bed.")],
+    ];
+  }
+  const even = omen.roll % 2 === 0;
+  const way = even ? "the Bright way" : "the Dim way";
+  const lines = [
+    [plain("A die turns before anyone can choose.")],
+    [plain(`It shows ${numberWord(omen.roll)}, ${even ? "even" : "odd"}.`)],
+    [plain("The Dream "), variable(omen.name, "Dream"), plain(` opens ${way}.`)],
+  ];
+  if (omen.label) lines.push([plain(`${omen.label}.`)]);
+  return lines;
+}
+
+/** Credit lines. Variable spans are Dreamer names, the first Landscape, the Archetype, and the opening Dream. */
 export function openingHookLines(state) {
   const names = dreamerNames(state);
   const call = archetypeCall(state?.activeArchetype?.name);
@@ -140,6 +160,7 @@ export function openingHookLines(state) {
     [plain("You could flip the script and light them up with your hands.")],
     ...sentenceLines(waste),
     [plain("You look to your friends,")],
+    ...openingDreamLines(state),
     [plain("and the stage is yours to play at.")],
   ];
 }
@@ -218,10 +239,21 @@ export function showOpeningHook(state) {
     });
     reel.appendChild(line);
   });
-  const seconds = Math.max(28, Math.round(lines.length * 2.15));
+  const seconds = Math.max(19, Math.round((lines.length * 2.15) / 1.5));
   reel.style.animationDuration = `${seconds}s`;
   crawl.appendChild(reel);
-  requestAnimationFrame(() => fitOpeningReel(reel, crawl));
+  requestAnimationFrame(() => {
+    fitOpeningReel(reel, crawl);
+    const anim = reel.getAnimations()[0];
+    if (!anim) return;
+    crawl.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const duration = Number(anim.effect?.getComputedTiming?.().duration) || seconds * 1000;
+      const delta = event.deltaY * 8;
+      anim.currentTime = Math.min(duration, Math.max(0, (anim.currentTime || 0) + delta));
+    }, { passive: false });
+  });
 
   const actions = document.createElement("div");
   actions.className = "opening-hook-actions";

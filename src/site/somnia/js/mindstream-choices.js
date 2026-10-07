@@ -355,31 +355,31 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
   }
 
   if (card.type === "power-token") {
-    const tokens = card.powerTokens || 2;
+    const dreamers = Math.max(1, state.players?.length || 1);
     state.pendingMindstreamChoice = {
       kind: "power-token",
       ui: "mindstream-fullscreen",
       cardId: card.id,
       playerId: player.id,
       card,
-      title: card.name || "Power Tokens",
-      message: "Claim the tokens, or pull what was buried back into discard.",
+      title: card.name || "Power Token",
+      message: "Take 1 Power Token, or pull one buried card back for each Dreamer.",
       suit: card.mindstreamSuit || card.suit || "willpower",
       choices: [
         {
           id: "take",
           role: "good",
           shape: card.mindstreamSuit || "willpower",
-          label: "Take the Power Token",
-          hint: `Gain ${tokens} Power Token${tokens === 1 ? "" : "s"}`,
+          label: "Take 1 Power Token",
+          hint: "Gain 1 Power Token",
           disabled: false,
         },
         {
           id: "return",
           role: "bad",
           shape: card.mindstreamSuit || "willpower",
-          label: "Return 2 Repressed Cards",
-          hint: "Return 2 cards from the Subconscious to discard",
+          label: `Return ${dreamers} Card${dreamers === 1 ? "" : "s"}`,
+          hint: `Return ${dreamers} from the Subconscious — one for each Dreamer`,
           disabled: false,
         },
       ],
@@ -590,19 +590,19 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
     state.pendingMindstreamChoice = null;
     stampResolutionChoice(card, choiceId, pending);
     if (choiceId === "take") {
-      const n = card.powerTokens || 2;
-      grantPowerTokens(state, player, n, {
-        reason: `${player.name} takes ${n} Power Token${n === 1 ? "" : "s"}.`,
+      grantPowerTokens(state, player, 1, {
+        reason: `${player.name} takes 1 Power Token.`,
         logQuest: false,
       });
     } else {
-      const result = requestReturnCards(state, 2, player);
+      const dreamers = Math.max(1, state.players?.length || 1);
+      const result = requestReturnCards(state, dreamers, player);
       if (result?.pending) {
-        addLog(state, `${player.name} forgoes Power Tokens to Return 2 from the Subconscious.`);
+        addLog(state, `${player.name} forgoes the Power Token to Return ${dreamers} from the Subconscious.`);
       } else if (Array.isArray(result) && result.length) {
-        addLog(state, `${player.name} forgoes Power Tokens and Returns ${result.length} from the Subconscious.`);
+        addLog(state, `${player.name} forgoes the Power Token and Returns ${result.length} from the Subconscious.`);
       } else {
-        addLog(state, `${player.name} forgoes Power Tokens — nothing left to Return.`);
+        addLog(state, `${player.name} forgoes the Power Token — nothing left to Return.`);
       }
     }
     finishMindstreamCard(state, card);

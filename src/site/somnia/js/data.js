@@ -115,12 +115,12 @@ export const SUIT_COLORS = {
 
 const MINDSTREAM_SUITS = ["lucidity", "elasticity", "willpower"];
 
-/** Canonical Mindstream deck: 70 cards per suit. */
+/** Canonical Mindstream deck: 72 cards per suit. */
 export const MINDSTREAM_COMPOSITION = {
   dreambeasts: 10,
   objects: 16,
   events: 35,
-  powerToken: 6,
+  powerToken: 8,
   drawDream: 3,
 };
 export const MINDSTREAM_DECK_SIZE = Object.values(MINDSTREAM_COMPOSITION).reduce((sum, n) => sum + n, 0);
@@ -138,10 +138,10 @@ export function uid(prefix = "id") {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-/** Canonical Psyche deck: 45 suited + 6 Wild + 6 Power = 57. */
-export const PSYCHE_DISTRIBUTION = { 1: 5, 2: 4, 3: 3, 4: 2, 5: 1 };
+/** Canonical Psyche deck: 51 suited + 6 Wild = 57. The old 6 Power Surge cards are now one 1 and one 2 in each suit. */
+export const PSYCHE_DISTRIBUTION = { 1: 6, 2: 5, 3: 3, 4: 2, 5: 1 };
 export const PSYCHE_WILD_COUNT = 6;
-export const PSYCHE_POWER_TOKEN_COUNT = 6;
+export const PSYCHE_POWER_TOKEN_COUNT = 0;
 export const PSYCHE_POWER_GRANT = 1;
 export const PSYCHE_STARTING_HAND = 5;
 export const PSYCHE_HAND_LIMIT = 10;
@@ -295,7 +295,7 @@ function powerTokenCard(suit, index) {
     suit,
     mindstreamSuit: suit,
     powerTokens: 1,
-    text: "Take 1 Power Token.",
+    text: "Take 1 Power Token, or Return one card from the Subconscious for each Dreamer.",
     image: `images/cards/mindstream/${suit}/power-token.webp`,
     instanceId: uid("mind"),
   };
@@ -348,8 +348,8 @@ function dreambeastsForSuit(dreambeasts, suit) {
 }
 
 /**
- * Build 70-card Mindstream decks: 10 Dreambeasts, 16 Objects, 35 Events,
- * 6 Power Token cards, 3 Draw Additional Dream cards per suit.
+ * Build 72-card Mindstream decks: 10 Dreambeasts, 16 Objects, 35 Events,
+ * 8 Power Token cards, 3 Draw Additional Dream cards per suit.
  */
 export function buildMindstreamDecks(mindstreamData, dreambeasts = [], objects = []) {
   const decks = { lucidity: [], elasticity: [], willpower: [] };

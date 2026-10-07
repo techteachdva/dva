@@ -222,6 +222,10 @@ export function requestReturnCards(state, count, player = null, { filter = null 
 
   const toReturn = Math.min(count, available.length);
 
+  if (state.openingFateAuto) {
+    return finalizeReturn(state, available.slice(0, toReturn));
+  }
+
   if (toReturn === 1 && available.length === 1) {
     return finalizeReturn(state, [available[0]]);
   }
@@ -259,6 +263,13 @@ export function enqueueReturnCards(state, count, player = null, { reason = "", f
 }
 
 function beginReturnStep(state, step) {
+  if (state.openingFateAuto) {
+    const available = cardsForReturn(state, step.filter);
+    const toReturn = Math.min(step.count || 0, available.length);
+    if (toReturn > 0) finalizeReturn(state, available.slice(0, toReturn));
+    advanceResolutionQueue(state);
+    return;
+  }
   const available = cardsForReturn(state, step.filter);
   if (!available.length || step.count <= 0) {
     advanceResolutionQueue(state);
@@ -398,7 +409,46 @@ function dieIfUnpaidPsyche(state, player) {
   return !!(state.checkPsycheDeath && state.checkPsycheDeath(player, { unpaid: true }));
 }
 
+function autoCommitOpeningRepress(state, step) {
+  const takeOne = (player, card) => {
+    removeFromSource(player, step.source, card.instanceId);
+    const kind = commitHandLoss(state, player, card, !!step.toDiscard);
+    if (step.source === "hand") {
+      recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
+    }
+    logRepress(state, kind === "discard"
+      ? `${player.name} Discarded ${card.name}.`
+      : `${player.name} Repressed ${card.name} → Subconscious.`);
+    if (step.source === "hand" && state.checkPsycheDeath) state.checkPsycheDeath(player);
+  };
+
+  let left = step.count || 0;
+  if (step.collective && step.source === "hand") {
+    while (left > 0) {
+      const available = collectiveHandPool(state);
+      if (!available.length) break;
+      takeOne(available[0].player, available[0].card);
+      left -= 1;
+    }
+    return;
+  }
+
+  const player = playerById(state, step.playerId);
+  if (!player) return;
+  while (left > 0) {
+    const available = sourceCards(player, step.source);
+    if (!available.length) break;
+    takeOne(player, available[0]);
+    left -= 1;
+  }
+}
+
 function beginRepressStep(state, step) {
+  if (state.openingFateAuto) {
+    autoCommitOpeningRepress(state, step);
+    advanceResolutionQueue(state);
+    return;
+  }
   if (step.collective && step.source === "hand" && (step.count || 0) >= 1) {
     const owners = aliveHandOwners(state);
     if (!owners.some((player) => psycheAvailable(player) > 0)) {

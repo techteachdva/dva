@@ -72,6 +72,8 @@ import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjac
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard, isSubconsciousDreambeast, enqueueReturnCards } from "./subconscious.js";
 import { queueCardTrade } from "./card-fx.js";
 import { random } from "./rng.js";
+import { getDreamResolution } from "./dream-resolutions.js";
+import { applyResolutionEffect } from "./resolution-effects.js";
 import { spendPowerTokens, grantPowerTokens, playPsychePowerFromHand } from "./power-tokens.js";
 import {
   beginDreamerPower,
@@ -1176,6 +1178,79 @@ export function drawDreamCard(state, onShowModal) {
   playSfx("dream");
   queueDreamDrawFx(card);
   if (onShowModal) onShowModal(card);
+  return card;
+}
+
+/**
+ * Round 1 draws its Dream before anyone acts. A seeded 1d6 picks the path:
+ * even opens Bright, odd opens Dim. The die is the choice, so Bright's usual
+ * toll is not charged and no one is asked. Later Dreams still offer the choice.
+ */
+export function resolveOpeningDream(state, helpers = {}) {
+  if (!state || state.tutorialMode || state.openingOmen || state.dreamDrawn) return null;
+  const head = headPlayer(state);
+  if (!head) return null;
+
+  const card = state.dreamDeck.shift();
+  consumeRevealedTop(state, "dream");
+  if (!card) {
+    checkDefeat(state);
+    return null;
+  }
+
+  state.activeDream = card;
+  state.dreamDrawn = true;
+  if (!state.dreamDiscard) state.dreamDiscard = [];
+  state.dreamDiscard.push(card);
+
+  if (isBossDreamCard(card)) {
+    spawnBossEncounterOnBed(state, card);
+    state.openingOmen = {
+      name: card.name,
+      roll: null,
+      side: "boss",
+      label: "awakens on The Bed",
+      hint: "",
+    };
+    addLog(state, `${head.name} (Head ★) draws the opening Dream: ${card.name}. It awakens on The Bed.`);
+    logMoment(state, `${card.name} awakens before the night begins.`);
+    checkDefeat(state);
+    return card;
+  }
+
+  const roll = 1 + Math.floor(random() * 6);
+  const sideId = roll % 2 === 0 ? "good" : "bad";
+  const resolution = getDreamResolution(card.refId || card.id);
+  const side = resolution?.[sideId];
+  const sideWord = sideId === "good" ? "Bright" : "Dim";
+
+  state.openingOmen = {
+    name: card.name,
+    roll,
+    side: sideId,
+    label: side?.label || sideWord,
+    hint: side?.hint || "",
+  };
+  card.resolutionSide = sideId;
+  card.resolutionLabel = side?.label || sideWord;
+
+  addLog(state, `${head.name} (Head ★) draws the opening Dream: ${card.name}.`);
+  if (side) {
+    state.openingFateAuto = true;
+    try {
+      applyResolutionEffect(state, head, side, helpers, sideId);
+    } finally {
+      state.openingFateAuto = false;
+    }
+    logMoment(state, `${card.name} opens ${sideWord}: ${side.label}. The die showed ${roll}.`);
+    addLog(state, `Opening die ${roll} (${roll % 2 === 0 ? "even" : "odd"}) — ${card.name} resolves ${sideWord}. ${side.label}.`);
+  } else {
+    logMoment(state, `${card.name} opens ${sideWord}. The die showed ${roll}.`);
+    addLog(state, `Opening die ${roll} (${roll % 2 === 0 ? "even" : "odd"}) — ${card.name} resolves ${sideWord}.`);
+  }
+
+  checkDefeat(state);
+  applySkeletonKeyAfterDream(state);
   return card;
 }
 

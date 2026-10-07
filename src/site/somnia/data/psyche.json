@@ -1,12 +1,12 @@
 {
   "suits": ["lucidity", "elasticity", "willpower"],
   "distribution": {
-    "1": 5,
-    "2": 4,
+    "1": 6,
+    "2": 5,
     "3": 3,
     "4": 2,
     "5": 1
   },
   "wildCount": 6,
-  "powerTokenCount": 6
+  "powerTokenCount": 0
 }

@@ -6,10 +6,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "38.5";
+export const SOMNIA_VERSION = "38.6";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "38.6",
+    title: "The Opening Die",
+    notes: [
+      "A new game draws the first Dream and rolls 1d6 before the credits. Even opens Bright, odd opens Dim, and the die is the choice. The credits name that Dream, run faster, and the mouse wheel scrubs them. Play then opens on Reveal.",
+      "Power Token cards live only in the Mindstream. Each offers Take 1 Power Token, or Return one Subconscious card for each Dreamer. The old Psyche Power Surge cards are now 1s and 2s, one of each suit.",
+    ],
+  },
   {
     version: "38.5",
     title: "The Same Beat",

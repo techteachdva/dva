@@ -78,6 +78,7 @@ import {
   getPhaseAdvanceAction,
   getPhaseOpenerAction,
   drawDreamCard,
+  resolveOpeningDream,
   revealLandscape,
   activateExplore,
   handleBoardTileClick,
@@ -1068,6 +1069,7 @@ async function startGame(config) {
       gentleStart: !!config.gentleStart,
       seed: config.seed || null,
     });
+    resolveOpeningDream(state, getEffectHelpers());
     // Hide the table until the opening deal plays (removed when it starts/skips).
     if (!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
       document.body.classList.add("opening-cinematic-pending");
@@ -1077,7 +1079,7 @@ async function startGame(config) {
       state,
       "You are dreaming",
       openingHookText(state),
-      ["The Head Dreamer draws the Dream when the group is ready."],
+      ["The opening Dream has already turned. Reveal is yours."],
     );
   }
 
