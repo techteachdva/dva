@@ -132,11 +132,11 @@ layout: false
           <section class="dw-card idt-bank" id="questionBankPanel">
             <h3 class="dw-h3">Question bank</h3>
             <p class="dw-muted" id="questionBankStatus">Checking which questions the test is using…</p>
-            <p class="dw-muted dw-tiny">Upload a spreadsheet to change the live quiz. The built-in Tech Escape bank stays on the site, and you can restore it whenever you want. Students get the new questions the next time they open the diagnostic.</p>
-            <p class="dw-muted dw-tiny">Use columns for ID, Standard code, Question, A, B, C, D, Correct, and Why this is right. A row marked No under “In diagnostic pool” stays out of the quiz. Download the current bank, edit it in Google Sheets, then upload the new file.</p>
+            <p class="dw-muted dw-tiny">Upload a CSV to change the quiz questions in this browser. The built-in Tech Escape bank stays available, and you can restore it here whenever you want.</p>
+            <p class="dw-muted dw-tiny">Download the current bank, edit it in Google Sheets, then use File → Download → CSV and upload that file. Columns: ID, Standard code, Question, A, B, C, D, Correct, and Why this is right.</p>
             <div class="dw-row dw-row-wrap">
-              <label class="dw-btn dw-btn-secondary" for="questionBankFile">Choose spreadsheet</label>
-              <input id="questionBankFile" class="idt-bank-file" type="file" accept=".xlsx,.xls,.csv,.json,text/csv,application/json" />
+              <label class="dw-btn dw-btn-secondary" for="questionBankFile">Choose CSV</label>
+              <input id="questionBankFile" class="idt-bank-file" type="file" accept=".csv,.json,text/csv,application/json" />
               <button id="questionBankDownload" class="dw-btn dw-btn-ghost" type="button">Download current bank</button>
               <button id="questionBankRestore" class="dw-btn dw-btn-ghost dw-hidden" type="button">Restore built-in bank</button>
             </div>
@@ -225,6 +225,7 @@ layout: false
     <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
     <script src="/scripts/write-analysis-engine.js" defer></script>
     <script src="/scripts/item-diagnostic-questions.js" defer></script>
+    <script src="/scripts/item-diagnostic-bank-format.js" defer></script>
     <script type="module" src="/scripts/item-diagnostic-loader.js"></script>
     <script src="/scripts/item-diagnostic-app.js" defer></script>
     <script src="/scripts/item-diagnostic-teacher.js" defer></script>

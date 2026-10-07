@@ -547,7 +547,7 @@
 
     const meta = window.ITEMDiagnosticBankMeta || { source: "builtin" };
     const sourceLine = meta.source === "upload"
-      ? `Uploaded bank${meta.label ? ` · ${meta.label}` : ""}.`
+      ? `Custom bank on this browser${meta.label ? ` · ${meta.label}` : ""}.`
       : "Built-in Tech Escape bank.";
     teacherAnswerKeyWrap.innerHTML = `
       <div class="dw-card">
@@ -734,7 +734,7 @@
     renderTeacherViews();
   }
 
-  const BANK_URL = "/api/item-diagnostic-submissions?bank=1";
+  const LOCAL_BANK_KEY = "item-diagnostic-question-bank";
   let pendingBank = null;
 
   function bankMeta() {
@@ -773,12 +773,9 @@
     if (status) {
       if (meta.source === "upload") {
         const when = formatBankTime(meta.updatedAt);
-        status.textContent = `Uploaded bank${meta.label ? ` · ${meta.label}` : ""} · ${count} question${count === 1 ? "" : "s"} on the quiz${when ? ` · ${when}` : ""}`;
+        status.textContent = `Custom bank on this browser${meta.label ? ` · ${meta.label}` : ""} · ${count} question${count === 1 ? "" : "s"}${when ? ` · ${when}` : ""}`;
       } else {
-        const stored = window.ITEMDiagnosticBankStorage === "unavailable"
-          ? " A replacement bank cannot be saved on this site yet."
-          : "";
-        status.textContent = `Built-in Tech Escape bank · ${count} question${count === 1 ? "" : "s"} on the quiz.${stored}`;
+        status.textContent = `Built-in Tech Escape bank · ${count} question${count === 1 ? "" : "s"} on the quiz`;
       }
     }
     restore?.classList.toggle("dw-hidden", meta.source !== "upload");
@@ -843,27 +840,18 @@
     URL.revokeObjectURL(a.href);
   }
 
-  function fileToBase64(file) {
-    return file.arrayBuffer().then((buffer) => {
-      const bytes = new Uint8Array(buffer);
-      let binary = "";
-      const size = 0x8000;
-      for (let i = 0; i < bytes.length; i += size) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + size));
-      }
-      return btoa(binary);
-    });
+  function saveLocalBank(record) {
+    localStorage.setItem(LOCAL_BANK_KEY, JSON.stringify(record));
   }
 
-  function applyPublishedBank(data) {
+  function applyLocalBank(data) {
     window.ITEMDiagnosticBank = data.questions;
     window.ITEMDiagnosticBankMeta = {
       source: "upload",
-      label: data.label || "Uploaded spreadsheet",
+      label: data.label || "Uploaded CSV",
       updatedAt: data.updatedAt || Date.now(),
       count: data.questions.length,
     };
-    window.ITEMDiagnosticBankStorage = "ready";
     pendingBank = null;
     document.getElementById("questionBankPreview")?.classList.add("dw-hidden");
     renderQuestionBankStatus();
@@ -873,6 +861,7 @@
   function restoreBuiltinBank() {
     const builtin = window.ITEMDiagnosticBuiltinBank;
     if (!Array.isArray(builtin) || !builtin.length) return;
+    localStorage.removeItem(LOCAL_BANK_KEY);
     window.ITEMDiagnosticBank = builtin.map((q) => ({
       ...q,
       a: Array.isArray(q.a) ? [...q.a] : [],
@@ -910,86 +899,51 @@
     document.getElementById("questionBankPublish")?.addEventListener("click", publishQuestionBank);
   }
 
-  async function previewQuestionBank(file) {
+  function previewQuestionBank(file) {
     if (!file) return;
-    if (file.size > 2_000_000) {
-      setBankMessage("Choose a spreadsheet under 2 MB.", "error");
+    if (!window.ITEMDiagnosticBankFormat?.parseBankText) {
+      setBankMessage("The question reader is not loaded yet. Refresh and try again.", "error");
       return;
     }
-    setBankMessage("Reading the spreadsheet…");
-    try {
-      const fileBase64 = await fileToBase64(file);
-      const res = await fetch(BANK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          password: TEACHER_PASSWORD,
-          action: "preview",
-          filename: file.name,
-          fileBase64,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "The spreadsheet could not be read.");
+    if (file.size > 2_000_000) {
+      setBankMessage("Choose a CSV under 2 MB.", "error");
+      return;
+    }
+    setBankMessage("Reading the file…");
+    const reader = new FileReader();
+    reader.onload = () => {
+      const parsed = window.ITEMDiagnosticBankFormat.parseBankText(String(reader.result || ""), file.name);
+      const data = { ...parsed, count: parsed.questions.length, filename: file.name };
       renderBankPreview(data);
-      if (!data.questions?.length) {
-        setBankMessage(data.errors?.[0] || "No usable questions were found in that file.", "error");
+      if (!parsed.questions.length) {
+        setBankMessage(parsed.errors?.[0] || "No usable questions were found in that file.", "error");
         return;
       }
-      setBankMessage("Check the preview, then update the test. Nothing changes until you do.");
-    } catch (error) {
-      pendingBank = null;
-      setBankMessage(error.message || "The spreadsheet could not be read.", "error");
-    }
+      setBankMessage("Check the preview, then update the quiz on this browser.");
+    };
+    reader.onerror = () => setBankMessage("That file could not be read.", "error");
+    reader.readAsText(file);
   }
 
-  async function publishQuestionBank() {
+  function publishQuestionBank() {
     if (!pendingBank?.questions?.length) return;
     const count = pendingBank.questions.length;
-    const label = pendingBank.filename || "Uploaded spreadsheet";
-    if (!window.confirm(`Replace the live diagnostic with ${count} questions from ${label}? Students who open the page after this will get the new bank.`)) {
-      return;
-    }
-    const button = document.getElementById("questionBankPublish");
-    if (button) button.disabled = true;
-    setBankMessage("Updating the test…");
-    try {
-      const res = await fetch(BANK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          password: TEACHER_PASSWORD,
-          action: "publish",
-          label,
-          questions: pendingBank.questions,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "The test could not be updated.");
-      applyPublishedBank(data);
-      setBankMessage("The live quiz is using this spreadsheet. Students see it the next time they open the diagnostic.");
-    } catch (error) {
-      if (button) button.disabled = false;
-      setBankMessage(error.message || "The test could not be updated.", "error");
-    }
+    const label = pendingBank.filename || "Uploaded CSV";
+    if (!window.confirm(`Use ${count} questions from ${label} for quizzes in this browser?`)) return;
+    const record = {
+      label,
+      updatedAt: Date.now(),
+      questions: pendingBank.questions,
+    };
+    saveLocalBank(record);
+    applyLocalBank(record);
+    setBankMessage("This browser will use the uploaded questions. Restore brings back the built-in bank.");
   }
 
-  async function revertQuestionBank() {
-    if (!window.confirm("Restore the built-in Tech Escape question bank for every new quiz?")) return;
-    setBankMessage("Restoring the built-in bank…");
-    try {
-      const res = await fetch(BANK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: TEACHER_PASSWORD, action: "revert" }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "The built-in bank could not be restored.");
-      restoreBuiltinBank();
-      setBankMessage("The built-in Tech Escape bank is active again.");
-    } catch (error) {
-      setBankMessage(error.message || "The built-in bank could not be restored.", "error");
-    }
+  function revertQuestionBank() {
+    if (!window.confirm("Restore the built-in Tech Escape questions in this browser?")) return;
+    restoreBuiltinBank();
+    setBankMessage("The built-in Tech Escape bank is active again.");
   }
 
   function bindEvents() {

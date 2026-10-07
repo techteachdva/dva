@@ -1,10 +1,10 @@
 /**
- * Loads the Tech Escape question bank, then replaces it when a teacher has
- * published a spreadsheet. The built-in bank stays available for restore.
+ * Loads the Tech Escape question bank. A teacher CSV saved in this browser
+ * replaces it for quizzes opened here. The built-in bank stays available.
  */
 import { ALL_QUESTIONS } from "/tech-escape/js/data/questions.js";
 
-const BANK_URL = "/api/item-diagnostic-submissions?bank=1";
+const LOCAL_KEY = "item-diagnostic-question-bank";
 
 function topicFromId(id) {
   if (id.startsWith("DES-")) return "design";
@@ -42,36 +42,20 @@ const mapped = ALL_QUESTIONS.map((q) => ({
 window.ITEMDiagnosticBuiltinBank = cloneBank(mapped);
 window.ITEMDiagnosticBank = cloneBank(mapped);
 window.ITEMDiagnosticBankMeta = { source: "builtin" };
-window.ITEMDiagnosticBankStorage = "ready";
 
-let readySent = false;
-
-function finishBankLoad() {
-  const name = readySent ? "item-diagnostic-bank-updated" : "item-diagnostic-ready";
-  readySent = true;
-  window.dispatchEvent(new CustomEvent(name));
-}
-
-async function loadPublishedBank() {
-  const res = await fetch(BANK_URL, { cache: "no-store" });
-  if (!res.ok) return;
-  const data = await res.json();
-  window.ITEMDiagnosticBankStorage = data.storage || "ready";
-  if (data.source === "upload" && Array.isArray(data.questions) && data.questions.length) {
-    window.ITEMDiagnosticBank = data.questions;
+try {
+  const saved = JSON.parse(localStorage.getItem(LOCAL_KEY) || "null");
+  if (saved && Array.isArray(saved.questions) && saved.questions.length) {
+    window.ITEMDiagnosticBank = saved.questions;
     window.ITEMDiagnosticBankMeta = {
       source: "upload",
-      label: data.label || "Uploaded spreadsheet",
-      updatedAt: data.updatedAt || null,
-      count: data.questions.length,
+      label: saved.label || "Uploaded CSV",
+      updatedAt: saved.updatedAt || null,
+      count: saved.questions.length,
     };
   }
+} catch {
+  /* keep the built-in bank */
 }
 
-const giveUp = setTimeout(finishBankLoad, 4000);
-loadPublishedBank()
-  .catch(() => {})
-  .finally(() => {
-    clearTimeout(giveUp);
-    finishBankLoad();
-  });
+window.dispatchEvent(new CustomEvent("item-diagnostic-ready"));
