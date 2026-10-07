@@ -9,7 +9,7 @@
  */
 
 import { VALID_CLASSROOMS, resolveClassroom, verifyClassroomCode, CLASSROOM_CODES } from "./diagnostic-writing/classrooms.js";
-import { parseBankFile, normalizeQuestionList } from "./item-diagnostic/parse-bank.mjs";
+import { parseBankFile, normalizeQuestionList } from "../lib/item-diagnostic-parse-bank.mjs";
 
 const TEACHER_PASSWORD = "studentsfirst";
 
