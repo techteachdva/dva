@@ -6,10 +6,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "38.1";
+export const SOMNIA_VERSION = "38.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "38.2",
+    title: "The Feast",
+    notes: [
+      "Reveal blooms out of the mist. Forget unravels instead of flipping. Accept carries the beast into your hand. Repress drains into the Subconscious.",
+      "Dice tumble longer, tick as they land, and the winning faces keep glowing. Dreamers leave a gold thread. Beasts leave a crack.",
+      "The nightmare hellscape fades in as the Death Clock nears 6, or as a lose-condition deck nears 1%. Low decks stay tagged: Return cards from the Subconscious.",
+    ],
+  },
   {
     version: "38.1",
     title: "Look, Full Size",

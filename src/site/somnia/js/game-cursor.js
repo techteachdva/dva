@@ -78,8 +78,34 @@ export function syncGameCursor(state) {
   if (document.body.dataset.gameCursor !== "reveal-open") {
     document.body.dataset.gameCursor = mode;
   }
-  applyCursorRules(mode);
+  applyCursorRules(document.body.dataset.gameCursor || mode);
+  bindCursorTrail();
   syncPsychePlayCursor(state);
+}
+
+let trailBound = false;
+let lastTrail = 0;
+
+function bindCursorTrail() {
+  if (trailBound || typeof window === "undefined") return;
+  trailBound = true;
+  if (window.matchMedia("(pointer: coarse)").matches) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  window.addEventListener("pointermove", (event) => {
+    const mode = document.body.dataset.gameCursor;
+    if (!mode) return;
+    const now = performance.now();
+    if (now - lastTrail < 46) return;
+    lastTrail = now;
+    const layer = document.getElementById("fx-layer");
+    if (!layer) return;
+    const dot = document.createElement("span");
+    dot.className = `fx-cursor-mote mote-${mode.split("-")[0]}`;
+    dot.style.left = `${event.clientX}px`;
+    dot.style.top = `${event.clientY}px`;
+    layer.appendChild(dot);
+    window.setTimeout(() => dot.remove(), 420);
+  }, { passive: true });
 }
 
 function applyCursorRules(mode) {

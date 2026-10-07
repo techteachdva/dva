@@ -114,6 +114,24 @@ function reducedMotion() {
     && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+const HAPTIC = {
+  tap: 12,
+  die: [10, 28, 16],
+  accept: [14, 36, 22],
+  repress: [28, 24, 46],
+  forget: [36, 28, 70],
+  reveal: [12, 22, 18],
+  land: 18,
+};
+
+/** Short vibration on a coarse pointer. Skipped when motion is reduced. */
+export function playHaptic(kind = "tap") {
+  if (typeof navigator === "undefined" || reducedMotion()) return;
+  if (typeof window !== "undefined" && !window.matchMedia?.("(pointer: coarse)")?.matches) return;
+  const pattern = HAPTIC[kind] || HAPTIC.tap;
+  try { navigator.vibrate?.(pattern); } catch { /* unsupported */ }
+}
+
 function ensureOverlay(id, className) {
   let el = document.getElementById(id);
   if (el) return el;

@@ -4,11 +4,12 @@
  * Dice spin freely, then brake onto a face. 5s and 6s light up.
  */
 import { playSfx } from "./audio.js";
+import { playHaptic } from "./fx.js";
 
 const SUCCESS_MIN = 5;
 const MAX_SHOWN = 22;
-const SPIN_MS = 300;
-const SETTLE_MS = 180;
+const SPIN_MS = 780;
+const SETTLE_MS = 460;
 const RESULT_HOLD_MS = 4200;
 const CAM_X = -24;
 const CAM_Y = 32;
@@ -138,7 +139,7 @@ function finishDiePose(el, end, face, onLand) {
   onLand?.();
 }
 
-function rollOneDie(el, face, delay, quiet, onLand) {
+function rollOneDie(el, face, delay, quiet, onLand, spinScale = 1) {
   const rot = FACE_ROT[face] || FACE_ROT[1];
   const spinX = (2 + Math.floor(Math.random() * 2)) * 360;
   const spinY = (3 + Math.floor(Math.random() * 2)) * 360;
@@ -162,7 +163,7 @@ function rollOneDie(el, face, delay, quiet, onLand) {
   const spin = el.animate(
     [{ transform: from }, { transform: mid }],
     {
-      duration: SPIN_MS,
+      duration: Math.round(SPIN_MS * spinScale),
       delay,
       easing: "linear",
       fill: "forwards",
@@ -177,8 +178,8 @@ function rollOneDie(el, face, delay, quiet, onLand) {
     const settle = el.animate(
       [{ transform: mid }, { transform: end }],
       {
-        duration: SETTLE_MS,
-        easing: "cubic-bezier(0.12, 1.12, 0.18, 1)",
+        duration: Math.round(SETTLE_MS * (spinScale > 1 ? 1.35 : 1)),
+        easing: "cubic-bezier(0.12, 1.35, 0.2, 1)",
         fill: "forwards",
       },
     );
@@ -335,8 +336,21 @@ export function playDiceBattle(opts) {
   const banner = stage.querySelector("[data-banner]");
 
   const quiet = reducedMotion();
-  const tumbleMs = quiet ? 0 : SPIN_MS + SETTLE_MS;
   const stagger = staggerMs(totalDice);
+  const close = Math.abs(countSuccesses(dreamerFaces) - countSuccesses(beastFaces)) <= 1;
+  if (close) stage.classList.add("dice-close");
+
+  const diePlan = (index, count, base) => {
+    const late = close && count > 1 && index >= count - 2;
+    const delay = base + index * stagger * (late ? 2.35 : 1);
+    const spinScale = late ? 1.55 : 1;
+    const settleScale = late ? 1.35 : 1;
+    return {
+      delay,
+      spinScale,
+      end: delay + Math.round(SPIN_MS * spinScale + SETTLE_MS * settleScale),
+    };
+  };
 
   let landedD = 0;
   let landedB = 0;
@@ -351,23 +365,30 @@ export function playDiceBattle(opts) {
     if (compare) compare.textContent = `${dHits} – ${bHits}`;
   };
 
+  const onDieLand = (face, bump) => {
+    bump();
+    updateScores();
+    playSfx("dice-tick", { face, success: face >= SUCCESS_MIN });
+    if (face >= SUCCESS_MIN) playHaptic("die");
+  };
+
   dreamerDiceEls.forEach((el, i) => {
-    rollOneDie(el, shownDreamerFaces[i], i * stagger, quiet, () => {
-      landedD += 1;
-      updateScores();
-    });
+    const plan = diePlan(i, shownD, 0);
+    rollOneDie(el, shownDreamerFaces[i], plan.delay, quiet, () => {
+      onDieLand(shownDreamerFaces[i], () => { landedD += 1; });
+    }, plan.spinScale);
   });
   beastDiceEls.forEach((el, i) => {
-    rollOneDie(el, shownBeastFaces[i], 28 + i * stagger, quiet, () => {
-      landedB += 1;
-      updateScores();
-    });
+    const plan = diePlan(i, shownB, 28);
+    rollOneDie(el, shownBeastFaces[i], plan.delay, quiet, () => {
+      onDieLand(shownBeastFaces[i], () => { landedB += 1; });
+    }, plan.spinScale);
   });
 
-  const lastDelay = Math.max(
-    Math.max(0, shownD - 1) * stagger,
-    28 + Math.max(0, shownB - 1) * stagger,
-  ) + tumbleMs + 50;
+  const lastDelay = quiet ? 40 : Math.max(
+    shownD ? diePlan(shownD - 1, shownD, 0).end : 0,
+    shownB ? diePlan(shownB - 1, shownB, 28).end : 0,
+  ) + 80;
 
   const recount = () => {
     dreamerSuccesses = countSuccesses(dreamerFaces);
@@ -432,7 +453,16 @@ export function playDiceBattle(opts) {
         if (postRollSpent || !onPostRoll("subtract")) return;
         postRollSpent = true;
         const index = beastFaces.findIndex((face) => face >= SUCCESS_MIN);
-        if (index >= 0) beastFaces[index] = 1;
+        if (index >= 0) {
+          beastFaces[index] = 1;
+          const die = beastDiceEls[index];
+          die?.classList.remove("success");
+          die?.querySelector(".die-face.hit")?.classList.remove("hit");
+          const slot = die?.closest(".battle-die-slot");
+          slot?.classList.remove("success");
+          slot?.classList.add("plucked");
+          playHaptic("repress");
+        }
         recount();
         presentWinner();
       });

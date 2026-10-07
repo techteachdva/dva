@@ -469,6 +469,18 @@ export function playSfx(name, opts = {}) {
     case "repress":
       tone({ freq: 175, dur: 0.22, type: "sawtooth", vol: 0.05, slide: -80, echo: 0.16 });
       organ({ freq: 110, dur: 0.28, vol: 0.04, delay: 0.04 });
+      tone({ freq: 90, dur: 0.42, type: "sine", vol: 0.05, slide: -40, delay: 0.08, echo: 0.18 });
+      break;
+    case "accept":
+      organ({ freq: 262, dur: 0.22, vol: 0.065 });
+      organ({ freq: 330, dur: 0.24, vol: 0.06, delay: 0.1 });
+      organ({ freq: 392, dur: 0.32, vol: 0.07, delay: 0.2 });
+      tone({ freq: 784, dur: 0.42, type: "triangle", vol: 0.05, delay: 0.28, echo: 0.18 });
+      break;
+    case "forget":
+      tone({ freq: 340, dur: 0.5, type: "sine", vol: 0.055, slide: -210, echo: 0.22 });
+      organ({ freq: 98, dur: 0.55, vol: 0.05, delay: 0.06 });
+      tone({ freq: 180, dur: 0.36, type: "triangle", vol: 0.03, slide: -90, delay: 0.12, echo: 0.16 });
       break;
     case "dream":
       organ({ freq: 220, dur: 0.42, vol: 0.075 });
@@ -480,10 +492,23 @@ export function playSfx(name, opts = {}) {
       organ({ freq: 262, dur: 0.32, vol: 0.065 });
       tone({ freq: 784, dur: 0.22, type: "triangle", vol: 0.05, slide: 140, delay: 0.08, echo: 0.14 });
       break;
-    case "move":
-      tone({ freq: 196, dur: 0.18, type: "sine", vol: 0.05, slide: 220, echo: 0.12 });
-      tone({ freq: 523, dur: 0.16, type: "triangle", vol: 0.04, delay: 0.1, echo: 0.14 });
+    case "move": {
+      const dist = Math.max(40, Number(opts.dist) || 180);
+      const beast = !!opts.beast;
+      const base = beast ? 128 : 196;
+      const dur = Math.min(0.42, 0.14 + dist / 1800);
+      const slide = (beast ? -40 : 80) + Math.min(160, dist * 0.12);
+      tone({ freq: base, dur, type: beast ? "triangle" : "sine", vol: 0.05, slide, echo: 0.14 });
+      tone({
+        freq: beast ? 90 : 523,
+        dur: dur * 0.8,
+        type: beast ? "sawtooth" : "triangle",
+        vol: beast ? 0.035 : 0.04,
+        delay: 0.08,
+        echo: 0.16,
+      });
       break;
+    }
     case "phase":
       organ({ freq: 220, dur: 0.2, vol: 0.055 });
       organ({ freq: 277, dur: 0.2, vol: 0.05, delay: 0.1 });
@@ -508,6 +533,15 @@ export function playSfx(name, opts = {}) {
         tone({ freq: 180 + i * 40, dur: 0.05, type: "triangle", vol: 0.045, delay: i * 0.05, echo: 0.08 });
       }
       break;
+    case "dice-tick": {
+      const face = Math.max(1, Math.min(6, Number(opts.face) || 1));
+      const freq = 160 + face * 78;
+      tone({ freq, dur: 0.045, type: "triangle", vol: opts.success ? 0.07 : 0.038, echo: 0.06 });
+      if (opts.success) {
+        tone({ freq: freq * 1.5, dur: 0.09, type: "sine", vol: 0.035, delay: 0.02, echo: 0.1 });
+      }
+      break;
+    }
     case "dice-win":
       [392, 523, 659, 784].forEach((freq, i) => {
         organ({ freq, dur: 0.18, vol: 0.07, delay: i * 0.09 });

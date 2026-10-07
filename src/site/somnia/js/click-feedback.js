@@ -1,4 +1,4 @@
-import { playClickFeedback } from "./fx.js";
+import { playHaptic } from "./fx.js";
 import { playSfx } from "./audio.js";
 
 const PRESSABLE = [
@@ -37,13 +37,12 @@ function releasePress() {
   pressed = null;
 }
 
-/** Sparkle, chime, and a press on every click that is actually a control. */
+/** Press and a soft chime on controls. Sparkle stays on the dream's own verbs. */
 export function initClickFeedback() {
   if (typeof document === "undefined") return;
   document.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     if (shouldSkipClickFeedback(event.target)) return;
-    playClickFeedback(event.clientX, event.clientY);
 
     const control = pressableOf(event.target);
     if (!control) return;
@@ -60,6 +59,7 @@ export function initClickFeedback() {
     if (now - lastTapAt > 70) {
       lastTapAt = now;
       playSfx("ui-tap");
+      playHaptic("tap");
     }
   }, { capture: true, passive: true });
 

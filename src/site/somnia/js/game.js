@@ -86,7 +86,7 @@ import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPl
 import { spawnBossEncounterOnBed, isBossDreamCard } from "./dream-deck.js";
 import { resumeObjectEffect } from "./object-effects.js";
 import { hasPsycheHealth, allyHandCount, isWildPsyche, isTradablePsyche, TRADE_OFFER_LIMIT } from "./psyche.js";
-import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx } from "./board-fx.js";
+import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx, queueAcceptAllyFx } from "./board-fx.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "./archetypes.js";
 import { getActivatableArchetypePowers } from "./archetype-stats.js";
 import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
@@ -1910,6 +1910,7 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
 
     const handCard = dreambeastToHandCard(encounter);
     actor.hand.push(handCard);
+    queueAcceptAllyFx(actor.id, tile.id, handCard);
     addLog(state, `${encounter.name} joins ${actor.name}'s hand as a 3 ${SUIT_LABELS[encounter.suit] || encounter.suit} Psyche ally.`);
   } else {
     if (isLeviathanCard(encounter)) {

@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 38.1. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 38.2. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -696,7 +696,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Mindstream &amp; Dreams</h3>
-      <p>Three 70-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, Power cards, Draw-Dream cards. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Dreams are drawn once per round by the Head Dreamer. A fading banner warns at <strong>10%</strong> remaining; a flashing banner stays at <strong>5%</strong>; at <strong>1%</strong> the Dreamscape turns unstable.</p>
+      <p>Three 70-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, Power cards, Draw-Dream cards. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Dreams are drawn once per round by the Head Dreamer. A banner stays up at <strong>10%</strong> remaining and tells the table to <strong>Return</strong> cards from the Subconscious; it flashes at <strong>5%</strong>; at <strong>1%</strong> the Dreamscape turns unstable and the nightmare closes in. Each low deck is tagged on the rail.</p>
 
       <h3>Death</h3>
       <p>A Dreamer with <strong>no Psyche</strong> who must pay even one dies. Objects go to Mindstream discards. Power Tokens return to the pool. They respawn on <strong>The Bed</strong> and draw <strong>3 Psyche</strong>. The <strong>Death Clock</strong> at the top of the table ticks once. The <strong>sixth death</strong>, shared by the whole table, ends the night at once.</p>
@@ -714,7 +714,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 38.1</p>
+          <p class="info-hub-kicker">Somnia v 38.2</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>

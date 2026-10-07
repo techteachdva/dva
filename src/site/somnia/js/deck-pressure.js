@@ -20,7 +20,6 @@ const LABELS = {
   elasticity: "the Elasticity Mindstream",
   willpower: "the Willpower Mindstream",
 };
-const SOFT_FADE_MS = 8000;
 const SOFT_RESET_RATIO = 0.12;
 
 let forcedReadings = null;
@@ -129,12 +128,12 @@ function bannerCopy(rows, tier) {
     ? list[0]
     : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
   if (tier === "severe") {
-    return `The Dreamscape is unstable — ${joined}. If these run out, the table loses.`;
+    return `The Dreamscape is unstable — ${joined}. About 1% remains. Return cards from the Subconscious or the table loses.`;
   }
   if (tier === "critical") {
-    return `Critical — ${joined}. If these decks run out, the table loses.`;
+    return `Critical — ${joined}. Return cards from the Subconscious before these decks run out.`;
   }
-  return `${joined.charAt(0).toUpperCase()}${joined.slice(1)} ${list.length === 1 ? "is" : "are"} running low.`;
+  return `${joined.charAt(0).toUpperCase()}${joined.slice(1)} ${list.length === 1 ? "is" : "are"} running low. Return cards from the Subconscious to refill ${list.length === 1 ? "it" : "them"}.`;
 }
 
 function ensureBanner() {
@@ -160,28 +159,10 @@ function trackSoftWarnings(state, readings) {
   if (!state.deckPressureSoftFaded) state.deckPressureSoftFaded = {};
   readings.forEach((row) => {
     const ratio = row.cap > 0 ? row.remaining / row.cap : 1;
-    if (ratio > SOFT_RESET_RATIO) {
-      delete state.deckPressureSoftFaded[row.id];
-    }
+    if (ratio > SOFT_RESET_RATIO) delete state.deckPressureSoftFaded[row.id];
   });
-  const visibleSoft = readings.filter((row) => row.tier === "soft" && !state.deckPressureSoftFaded[row.id]);
-  const highest = highestTier(readings.filter((row) => row.tier && !(row.tier === "soft" && state.deckPressureSoftFaded[row.id])));
-  if (highest !== "soft") {
-    clearSoftTimer();
-    lastSoftSig = "";
-    return;
-  }
-  const sig = visibleSoft.map((row) => row.id).sort().join(",");
-  if (!sig || sig === lastSoftSig) return;
-  lastSoftSig = sig;
   clearSoftTimer();
-  softFadeTimer = window.setTimeout(() => {
-    visibleSoft.forEach((row) => {
-      state.deckPressureSoftFaded[row.id] = true;
-    });
-    softFadeTimer = null;
-    syncDeckPressure(state);
-  }, SOFT_FADE_MS);
+  lastSoftSig = "";
 }
 
 function applyHudDreamUrgency(reading) {
@@ -206,6 +187,11 @@ export function syncDeckPressure(state) {
     banner.className = "deck-pressure-banner hidden";
     banner.textContent = "";
     banner.dataset.sig = "";
+    banner.dataset.tier = "";
+    banner.dataset.sources = "";
+    banner.dataset.remaining = "";
+    banner.dataset.returnHint = "";
+    body.dataset.deckPressure = "";
     body.classList.remove(
       "deck-pressure-active",
       "deck-pressure-soft",
@@ -219,17 +205,19 @@ export function syncDeckPressure(state) {
 
   const readings = readDeckPressure(state);
   trackSoftWarnings(state, readings);
-  const visible = readings.filter((row) => (
-    row.tier && !(row.tier === "soft" && state.deckPressureSoftFaded?.[row.id])
-  ));
+  const visible = readings.filter((row) => row.tier);
   const tier = highestTier(visible);
   const message = bannerCopy(visible, tier);
-  const sig = `${tier || "none"}:${visible.map((row) => `${row.id}:${row.tier}`).join(",")}`;
+  const sig = `${tier || "none"}:${visible.map((row) => `${row.id}:${row.tier}:${row.remaining}`).join(",")}`;
 
   if (!tier) {
     banner.className = "deck-pressure-banner hidden";
     banner.textContent = "";
     banner.dataset.sig = "";
+    banner.dataset.tier = "";
+    banner.dataset.sources = "";
+    banner.dataset.remaining = "";
+    banner.dataset.returnHint = "";
   } else {
     if (banner.dataset.sig !== sig) {
       banner.className = `deck-pressure-banner tier-${tier}`;
@@ -237,14 +225,68 @@ export function syncDeckPressure(state) {
     }
     banner.classList.remove("hidden");
     banner.textContent = message;
+    banner.dataset.tier = tier;
+    banner.dataset.sources = visible.map((row) => row.id).join(" ");
+    banner.dataset.remaining = visible.map((row) => `${row.id}:${row.remaining}/${row.cap}`).join(" ");
+    banner.dataset.returnHint = "Return cards from the Subconscious.";
   }
 
+  body.dataset.deckPressure = tier || "safe";
   body.classList.toggle("deck-pressure-active", !!tier);
   body.classList.toggle("deck-pressure-soft", tier === "soft");
   body.classList.toggle("deck-pressure-critical", tier === "critical");
   body.classList.toggle("deck-pressure-severe", tier === "severe");
   body.classList.toggle("dreamscape-unstable", tier === "severe");
   applyHudDreamUrgency(readings.find((row) => row.id === "dream"));
+  paintDeckRails(readings);
+}
+
+const RAIL_SOURCE = {
+  dream: "dream",
+  psyche: "psyche",
+  "mindstream-lucidity": "lucidity",
+  "mindstream-elasticity": "elasticity",
+  "mindstream-willpower": "willpower",
+};
+
+function paintDeckRails(readings) {
+  if (typeof document === "undefined") return;
+  const byId = new Map((readings || []).map((row) => [row.id, row]));
+  document.querySelectorAll(".deck-rail-row").forEach((row) => {
+    const source = RAIL_SOURCE[row.dataset.deckId];
+    const reading = source ? byId.get(source) : null;
+    if (!reading) return;
+    row.dataset.remaining = String(reading.remaining);
+    row.dataset.cap = String(reading.cap);
+    row.dataset.pct = reading.pct.toFixed(1);
+    row.dataset.pressure = reading.tier || "safe";
+    row.dataset.loseDeck = "true";
+    row.classList.remove("deck-pressure", "deck-pressure-soft", "deck-pressure-critical", "deck-pressure-severe");
+    const old = row.querySelector(".deck-return-tag");
+    if (!reading.tier) {
+      delete row.dataset.returnHint;
+      old?.remove();
+      return;
+    }
+    row.dataset.returnHint = "Return cards from the Subconscious before this deck runs out.";
+    row.classList.add("deck-pressure", `deck-pressure-${reading.tier}`);
+  const label = reading.tier === "severe"
+    ? "Return now"
+    : reading.tier === "critical"
+      ? "Return cards"
+      : "Running low";
+    if (old) {
+      old.className = `deck-return-tag tier-${reading.tier}`;
+      old.dataset.pressure = reading.tier;
+      old.textContent = label;
+      return;
+    }
+    const tag = document.createElement("span");
+    tag.className = `deck-return-tag tier-${reading.tier}`;
+    tag.dataset.pressure = reading.tier;
+    tag.textContent = label;
+    row.querySelector(".deck-rail-head")?.appendChild(tag);
+  });
 }
 
 export function pressureStatusLines(state) {

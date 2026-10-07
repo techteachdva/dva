@@ -75,6 +75,7 @@ import { getEventResolution } from "./event-resolutions.js";
 import { getDreamResolution } from "./dream-resolutions.js";
 import { resolutionRulesText } from "./resolution-effects.js";
 import { BOSS_DREAM_DECK_SLOTS } from "./data.js";
+import { readDeckPressure } from "./deck-pressure.js";
 import { consumeBoardClickSuppression, getBoardZoom, getBoardCamera, cancelPendingBoardGesture, suppressNextBoardClick, isBoardCameraBusy, TOUCH_TAP_SLOP } from "./board-zoom.js";
 import { getViewportRect } from "./frame-metrics.js";
 import { armBoardTapShield, consumeBoardTapShield } from "./input-quarantine.js";
@@ -229,7 +230,7 @@ function psychePipHtml(valueHtml, suitHtml, suitClassName = "", suitTitle = "") 
 }
 
 function bindHoloParallax(el) {
-  if (!el?.classList.contains("selected")) return el;
+  if (!el) return el;
   const apply = (clientX, clientY) => {
     const r = el.getBoundingClientRect();
     const px = ((clientX - r.left) / Math.max(r.width, 1)) * 2 - 1;
@@ -312,8 +313,8 @@ function renderPsycheDreambeastCard(card, { selected, onClick, onInspect, mini, 
   const symbol = suitIconHtml(card.suit, { size: mini ? 12 : 14 });
 
   el.innerHTML = `
-    ${selected ? `<span class="psyche-holo psyche-holo-${card.suit}" aria-hidden="true"></span>
-    <span class="psyche-quanta psyche-quanta-${card.suit}" aria-hidden="true"></span>` : ""}
+    <span class="psyche-holo psyche-holo-${card.suit || "wild"}" aria-hidden="true"></span>
+    ${selected ? `<span class="psyche-quanta psyche-quanta-${card.suit}" aria-hidden="true"></span>` : ""}
     ${psychePipHtml("3", symbol, suitClass(card.suit))}
     <span class="psyche-dreambeast-badge" title="Accepted Dreambeast">⚔</span>
     <span class="psyche-label">${card.name.split(" ")[0]}</span>
@@ -351,8 +352,8 @@ function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini,
       mini ? "mini" : "",
     ].filter(Boolean).join(" ");
     el.innerHTML = `
-      ${selected ? `<span class="psyche-holo psyche-holo-gold" aria-hidden="true"></span>
-      <span class="psyche-quanta psyche-quanta-gold" aria-hidden="true"></span>
+      <span class="psyche-holo psyche-holo-gold" aria-hidden="true"></span>
+      ${selected ? `<span class="psyche-quanta psyche-quanta-gold" aria-hidden="true"></span>
       <span class="psyche-sparkle" aria-hidden="true"></span>` : ""}
       ${psychePipHtml("⚡", `+${card.powerTokens ?? 1}`)}
       <span class="psyche-label">Power</span>
@@ -376,8 +377,8 @@ function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini,
 
   if (isWild) {
     el.innerHTML = `
-      ${selected ? `<span class="psyche-holo psyche-holo-wild" aria-hidden="true"></span>
-      <span class="psyche-quanta" aria-hidden="true"></span>` : ""}
+      <span class="psyche-holo psyche-holo-wild" aria-hidden="true"></span>
+      ${selected ? `<span class="psyche-quanta" aria-hidden="true"></span>` : ""}
       ${psychePipHtml("5", "★", "wild-gradient", "Wild — any suit")}
       <span class="psyche-label">Wild</span>
     `;
@@ -385,8 +386,8 @@ function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini,
     const symbol = suitIconHtml(card.suit, { size: mini ? 12 : 14 });
     const label = SUIT_LABELS[card.suit] || card.suit;
     el.innerHTML = `
-      ${selected ? `<span class="psyche-holo psyche-holo-${card.suit}" aria-hidden="true"></span>
-      <span class="psyche-quanta psyche-quanta-${card.suit}" aria-hidden="true"></span>` : ""}
+      <span class="psyche-holo psyche-holo-${card.suit}" aria-hidden="true"></span>
+      ${selected ? `<span class="psyche-quanta psyche-quanta-${card.suit}" aria-hidden="true"></span>` : ""}
       ${psychePipHtml(card.value, symbol, suitClass(card.suit))}
       <span class="psyche-label">${label}</span>
     `;
@@ -3149,6 +3150,37 @@ export function syncDeckColumnFit() {
   column.style.setProperty("--deck-face-w", `${faceW}px`);
 }
 
+function pressureSourceId(deckId) {
+  return String(deckId || "").startsWith("mindstream-")
+    ? deckId.slice("mindstream-".length)
+    : deckId;
+}
+
+function deckPressureFor(state, deckId) {
+  return readDeckPressure(state).find((row) => row.id === pressureSourceId(deckId)) || null;
+}
+
+function tagDeckPressure(row, reading) {
+  if (!row || !reading) return;
+  row.dataset.remaining = String(reading.remaining);
+  row.dataset.cap = String(reading.cap);
+  row.dataset.pct = reading.pct.toFixed(1);
+  row.dataset.pressure = reading.tier || "safe";
+  row.dataset.loseDeck = "true";
+  if (!reading.tier) return;
+  row.dataset.returnHint = "Return cards from the Subconscious before this deck runs out.";
+  row.classList.add("deck-pressure", `deck-pressure-${reading.tier}`);
+  const tag = document.createElement("span");
+  tag.className = `deck-return-tag tier-${reading.tier}`;
+  tag.dataset.pressure = reading.tier;
+  tag.textContent = reading.tier === "severe"
+    ? "Return now"
+    : reading.tier === "critical"
+      ? "Return cards"
+      : "Running low";
+  row.querySelector(".deck-rail-head")?.appendChild(tag);
+}
+
 function deckColumnSignature(state) {
   const parts = DECK_COLUMN_DEFS.map((deck) => {
     const draw = drawPileForDeck(state, deck.id);
@@ -3206,6 +3238,7 @@ export function renderDecks(state, onViewDiscard, onViewPeek = null, onDrawPile 
     meta.textContent = `${drawCount} · ${discardCount} disc`;
     head.append(label, meta);
     row.appendChild(head);
+    tagDeckPressure(row, deckPressureFor(state, deck.id));
 
     const piles = document.createElement("div");
     piles.className = "deck-rail-piles";

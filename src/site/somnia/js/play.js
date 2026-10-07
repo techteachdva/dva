@@ -2670,6 +2670,7 @@ function renderAll() {
   }, (deckId) => {
     handleDrawPileClick(deckId);
   });
+  syncDeckPressure(state);
   renderActiveSlots(state, (card) => showModal(card), (questIndex) => {
     const kind = questIndex === 0 ? "completeQuest0" : "completeQuest1";
     if (!isTutorialActionAllowed(state, kind)) {

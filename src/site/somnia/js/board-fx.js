@@ -1,6 +1,6 @@
 /** Board & special card flow animations — dreams, mindstream, tiles, encounters, repress. */
 
-import { burstSparkles, playDreamRipple, playMeetFlash, playPointRipple, playDreamWarble, playBossFlash } from "./fx.js";
+import { burstSparkles, playDreamRipple, playMeetFlash, playPointRipple, playDreamWarble, playBossFlash, playHaptic } from "./fx.js";
 import { playSfx, playLandscapeSfx, playBossStinger } from "./audio.js";
 import { cardBackForDeckId } from "./card-backs.js";
 
@@ -150,6 +150,33 @@ function revealArriving(kind, id) {
   }
 }
 
+function holdBodyClass(name, ms) {
+  document.body.classList.add(name);
+  window.setTimeout(() => document.body.classList.remove(name), ms);
+}
+
+function layWake(from, to, kind) {
+  const layer = document.getElementById("fx-layer");
+  if (!layer || !from || !to) return;
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 8) return;
+  const el = document.createElement("div");
+  el.className = kind === "beast" ? "fx-beast-crack" : "fx-dreamer-thread";
+  el.style.left = `${from.x}px`;
+  el.style.top = `${from.y}px`;
+  el.style.width = `${dist}px`;
+  el.style.transform = `rotate(${(Math.atan2(dy, dx) * 180) / Math.PI}deg)`;
+  layer.appendChild(el);
+  window.setTimeout(() => el.remove(), 980);
+}
+
+function flightMs(from, to) {
+  const dist = from && to ? Math.hypot(to.x - from.x, to.y - from.y) : 180;
+  return Math.round(Math.min(1320, 520 + dist * 0.38));
+}
+
 function flyDriftSnap(from, to, { html, className = "", duration = FLY_MS } = {}) {
   const layer = document.getElementById("fx-layer");
   if (!layer || !from || !to) return;
@@ -232,7 +259,7 @@ function ghostCard(card, kind) {
   const type = card?.type || "psyche";
   const suit = card?.suit || card?.mindstreamSuit || "lucidity";
   el.className = `fx-flying-card fx-flying-${kind} fx-card-${type} suit-${suit}`;
-  if (card?.image && (kind === "repress" || kind === "return" || kind === "spawn" || kind === "discard")) {
+  if (card?.image && (kind === "repress" || kind === "return" || kind === "spawn" || kind === "discard" || kind === "accept")) {
     el.classList.add("fx-flying-face");
     el.style.backgroundImage = `url("${String(card.image).replace(/["\\]/g, "")}")`;
     el.innerHTML = `<span class="fx-card-name">${(card.name || "Card").slice(0, 18)}</span>`;
@@ -375,6 +402,12 @@ export function queueMeetFlashFx(mode, tileId, cards = []) {
   queue.push({ type: "meet-flash", mode, tileId, cards });
 }
 
+/** Accepted beast leaves the hex and settles into the Dreamer's hand. */
+export function queueAcceptAllyFx(playerId, tileId, card) {
+  if (!card) return;
+  queue.push({ type: "accept-ally", playerId, tileId, card });
+}
+
 export function queuePsycheSwirlFx(cards, tileId) {
   if (!cards?.length) return;
   queue.push({ type: "psyche-swirl", cards, tileId });
@@ -491,18 +524,22 @@ export function runPendingBoardFx() {
       const img = evt.image
         ? `<img src="${evt.image}" alt="">`
         : `<span class="fx-board-flyer-fallback">${(evt.name || "?").slice(0, 1)}</span>`;
+      const duration = flightMs(from, to);
+      layWake(from, to, "dreamer");
       flyDriftSnap(from, to, {
         className: "fx-dreamer-flyer",
         html: `<span class="fx-board-flyer-trail"></span>${img}`,
+        duration,
       });
       burstSparkles(from.x, from.y, 8, "#c9a0ff");
       window.setTimeout(() => {
         burstSparkles(to.x, to.y, 10, "#f0c96a");
         playPointRipple(to.x, to.y, "fx-land-ripple");
+        playHaptic("land");
         revealArriving("dreamer", evt.playerId);
-      }, FLY_MS - 60);
+      }, duration - 60);
       playDreamWarble(0.4);
-      playSfx("move");
+      playSfx("move", { dist: Math.hypot(to.x - from.x, to.y - from.y) });
       delay += 40;
     } else if (evt.type === "encounter-move") {
       const from = centerOf(hexTileEl(evt.fromId)) || boardCenter();
@@ -511,19 +548,23 @@ export function runPendingBoardFx() {
       const img = evt.encounter?.image
         ? `<img src="${evt.encounter.image}" alt="">`
         : `<span class="fx-board-flyer-fallback">⚔</span>`;
+      const duration = flightMs(from, to);
+      layWake(from, to, "beast");
       flyDriftSnap(from, to, {
         className: "fx-beast-flyer",
         html: `<span class="fx-board-flyer-trail"></span>${img}`,
+        duration,
       });
       burstSparkles(from.x, from.y, 8, "#ff6b9d");
       window.setTimeout(() => {
         burstSparkles(to.x, to.y, 12, "#e84848");
         playPointRipple(to.x, to.y, "fx-summon-ripple");
         flashEl(hexTileEl(evt.toId), "hex-encounter-spawn", 700);
+        playHaptic("land");
         revealArriving("beast", key);
-      }, FLY_MS - 60);
+      }, duration - 60);
       playDreamWarble(0.5);
-      playSfx("move");
+      playSfx("move", { dist: Math.hypot(to.x - from.x, to.y - from.y), beast: true });
       delay += 40;
     } else if (evt.type === "encounter-spawn") {
       if (movedEncKeys.has(encounterKey(evt.encounter))) return;
@@ -542,20 +583,25 @@ export function runPendingBoardFx() {
     } else if (evt.type === "tile-reveal") {
       const tile = hexTileEl(evt.tileId);
       const c = centerOf(tile);
-      flashEl(tile, "hex-flash-reveal", 800);
-      if (c) burstSparkles(c.x, c.y, 14, "#4ad4ff");
+      flashEl(tile, "hex-flash-reveal", 1100);
+      if (c) burstSparkles(c.x, c.y, 18, "#4ad4ff");
+      holdBodyClass("dream-revealing", 1200);
       playDreamWarble(0.55);
       playSfx("flip");
+      playHaptic("reveal");
       playLandscapeSfx(evt.tileId);
       delay += step * 0.5;
     } else if (evt.type === "tile-forget") {
       const tile = hexTileEl(evt.tileId);
       const c = centerOf(tile);
-      flashEl(tile, "hex-flash-forget", 900);
+      flashEl(tile, "hex-flash-forget", 1100);
+      holdBodyClass("dream-forgetting", 1200);
       if (c) {
-        burstSparkles(c.x, c.y, 10, "#ff6b6b");
+        burstSparkles(c.x, c.y, 8, "#8a3048");
         floatLabel(c.x, c.y, "Forgotten", "fx-loss", delay);
       }
+      playSfx("forget");
+      playHaptic("forget");
       delay += step;
     } else if (evt.type === "power-tokens") {
       const target = centerOf(powerTokensEl());
@@ -581,17 +627,41 @@ export function runPendingBoardFx() {
       if (evt.tileId) from = centerOf(hexTileEl(evt.tileId)) || from;
       if (evt.fromDeck) from = centerOf(pileZone(evt.fromDeck, "draw")) || centerOf(deckEl(evt.fromDeck)) || from;
       if (!from) from = boardCenter();
-      flyCard(from, to, evt.card, "repress", delay, { w: 86, h: 120 }, "fx-flying-tarot");
+      flyCard(from, to, evt.card, "repress", delay, { w: 86, h: 120 }, "fx-flying-tarot fx-repress-spiral");
       pulseDeck("subconscious", "deck-pulse-repress");
       const name = (evt.card?.name || "Card").slice(0, 22);
       floatLabel(to.x, Math.max(36, to.y - 36), `Repressed · ${name}`, "fx-return-label", delay + 60);
+      playSfx("repress");
+      playHaptic("repress");
       delay += 140;
     } else if (evt.type === "meet-flash") {
       playMeetFlash(evt.mode);
       playDreamWarble(evt.mode === "reject" ? 0.85 : 0.7);
       const tile = hexTileEl(evt.tileId);
-      flashEl(tile, evt.mode === "reject" ? "hex-meet-reject" : "hex-meet-accept", 700);
+      flashEl(tile, evt.mode === "reject" ? "hex-meet-reject" : "hex-meet-accept", 900);
       delay += step;
+    } else if (evt.type === "accept-ally") {
+      const from = centerOf(hexTileEl(evt.tileId)) || boardCenter();
+      const to = centerOf(handAreaEl(evt.playerId)) || boardCenter();
+      flyCard(
+        from,
+        to,
+        { ...evt.card, type: "dreambeast" },
+        "accept",
+        delay,
+        { w: 92, h: 128 },
+        "fx-flying-accept",
+      );
+      burstSparkles(from.x, from.y, 16, "#f0c96a");
+      window.setTimeout(() => {
+        burstSparkles(to.x, to.y, 18, "#ffe7a8");
+        playPointRipple(to.x, to.y, "fx-land-ripple");
+        floatLabel(to.x, to.y - 24, `${(evt.card?.name || "Ally").slice(0, 18)} joins`, "fx-gain");
+        playHaptic("accept");
+      }, 780);
+      playSfx("accept");
+      flashEl(hexTileEl(evt.tileId), "hex-meet-accept", 1000);
+      delay += 180;
     } else if (evt.type === "psyche-swirl") {
       const tile = hexTileEl(evt.tileId);
       const to = centerOf(tile) || boardCenter();
