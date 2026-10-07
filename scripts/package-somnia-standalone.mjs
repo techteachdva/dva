@@ -27,8 +27,8 @@ const FONT_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const HTML_FILES = [
-  { file: "index.html", module: "js/setup.js" },
-  { file: "play.html", module: "js/play.js" },
+  { file: "index.html", module: "js/app/setup.js" },
+  { file: "play.html", module: "js/app/play.js" },
 ];
 
 const FILE_PROTOCOL_WARNING = String.raw`<div id="file-protocol-warning" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#0b0a14;color:#e8e4ff;font-family:system-ui,sans-serif;text-align:center">
@@ -241,7 +241,7 @@ async function downloadFonts(outDir) {
 }
 
 function readSomniaVersion() {
-  const changelog = fs.readFileSync(path.join(SOURCE, "js/changelog.js"), "utf8");
+  const changelog = fs.readFileSync(path.join(SOURCE, "js/meta/changelog.js"), "utf8");
   const match = changelog.match(/export const SOMNIA_VERSION = "([^"]+)"/);
   return match ? match[1] : "0";
 }

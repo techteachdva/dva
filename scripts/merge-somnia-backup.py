@@ -16,8 +16,8 @@ SANKET_PRESERVE = {
     "audio/ethereal-relaxation.mp3",
     "audio/magic-escape-room.mp3",
     "audio/that-zen-moment.mp3",
-    "js/dialog-a11y.js",
-    "js/phase-skip.js",
+    "js/ui/dialog-a11y.js",
+    "js/flow/phase-skip.js",
 }
 
 VERSION_LABEL = "Somnia v 13.0"
@@ -44,9 +44,9 @@ def webp_asset_references() -> list[str]:
     updated: list[str] = []
     targets = list((CURRENT / "data").glob("*.json"))
     targets += [
-        CURRENT / "js/data.js",
-        CURRENT / "js/ui.js",
-        CURRENT / "js/event-landscapes.js",
+        CURRENT / "js/core/data.js",
+        CURRENT / "js/ui/ui.js",
+        CURRENT / "js/board/event-landscapes.js",
     ]
     for path in targets:
         if not path.exists():
@@ -72,7 +72,7 @@ def remove_png_duplicates() -> int:
 
 
 def patch_dialog_a11y() -> None:
-    for rel in ("js/play.js", "js/setup.js"):
+    for rel in ("js/app/play.js", "js/app/setup.js"):
         path = CURRENT / rel
         text = path.read_text(encoding="utf-8")
         if "dialog-a11y.js" not in text:
@@ -102,13 +102,13 @@ def patch_version_labels() -> None:
         )
         path.write_text(text, encoding="utf-8", newline="\n")
 
-    rules = CURRENT / "js/rules.js"
+    rules = CURRENT / "js/core/rules.js"
     lines = rules.read_text(encoding="utf-8").splitlines()
     if lines:
         lines[0] = VERSION_RULES
     rules.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    guide = CURRENT / "js/guide.js"
+    guide = CURRENT / "js/meta/guide.js"
     guide_text = guide.read_text(encoding="utf-8")
     guide_text = re.sub(
         r'<p class="overview-footer">[^<]*</p>',

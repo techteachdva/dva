@@ -253,7 +253,7 @@ def audit_dreamers():
 
 def audit_mindstream_events():
     ms = load_json("mindstream")
-    handlers = set(re.findall(r'"([a-z0-9-]+)":\s*\(', (SOMNIA / "js/mindstream.js").read_text(encoding="utf-8")))
+    handlers = set(re.findall(r'"([a-z0-9-]+)":\s*\(', (SOMNIA / "js/cards/mindstream.js").read_text(encoding="utf-8")))
 
     suits = {}
     for suit in ("lucidity", "elasticity", "willpower"):
