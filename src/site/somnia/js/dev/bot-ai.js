@@ -586,6 +586,8 @@ export function createSpectatorBot({
       if (tile) {
         think(`Reveal ${tile.name}`);
         api.handleBoardTileClick?.(state, tile.id);
+      } else if (api.spendExcessPsycheDraw?.(state)) {
+        think("Draw Psyche with a leftover Reveal");
       } else {
         think("No tiles left — cancel reveal pick");
         cancelLandscapePick(state);
@@ -609,6 +611,11 @@ export function createSpectatorBot({
             renderAll?.();
             return true;
           }
+        }
+        if (api.spendExcessPsycheDraw?.(state)) {
+          think(`${holder.name} draws Psyche with an unused move`);
+          renderAll?.();
+          return true;
         }
         if (api.passMeetToken && state.meetPassHolderId) {
           think(`${holder.name} passes Explore turn`);
@@ -676,6 +683,12 @@ export function createSpectatorBot({
           renderAll?.();
           return true;
         }
+      }
+
+      if (api.spendExcessPsycheDraw?.(state)) {
+        think(`${holder?.name || "Dreamer"} draws Psyche with an unused Meet action`);
+        renderAll?.();
+        return true;
       }
 
       if (api.passMeetToken && state.meetPassHolderId) {

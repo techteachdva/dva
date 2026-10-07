@@ -111,6 +111,7 @@ import {
   handleDefeatFinalArchetype,
   handleSacrificeForFinal,
   endPhase,
+  spendExcessPsycheDraw,
   getPhaseHint,
   getLegalExploreTargets,
   resolvePendingDeathDream,
@@ -221,6 +222,7 @@ import {
   hideModal,
   showMindstreamPicker,
   showLandscapeActionPicker,
+  maybeShowExcessPsycheIntro,
   showLandscapeDetail,
   showDreamerDetailOverlay,
   showDreamerDetail,
@@ -302,6 +304,7 @@ function getSpectatorBot() {
       activateExplore,
       gainMeetActions,
       endPhase,
+      spendExcessPsycheDraw,
       handleBoardTileClick,
       moveDreamer,
       passMeetToken,
@@ -1431,13 +1434,6 @@ function buildPhaseHandlers() {
     },
     revealLandscape: () => {
       revealLandscape(state);
-      if (state.landscapePick?.mode === "reveal-deck-tops") {
-        showRevealDeckTopModal((suit) => {
-          hideUtilityModal(true);
-          spendLucidityRevealOnDeck(state, suit);
-          renderAll();
-        });
-      }
       renderAll();
     },
     revealDeckTop: () => {
@@ -2442,20 +2438,6 @@ function handleDrawPileClick(deckId) {
   if (!state || !deckId) return;
   if (state.tradeMode && deckId.startsWith("mindstream-")) return;
 
-  if (state.landscapePick?.mode === "reveal-deck-tops" && deckId.startsWith("mindstream-")) {
-    const suit = deckId.replace("mindstream-", "");
-    const flipped = spendLucidityRevealOnDeck(state, suit);
-    if (!flipped) {
-      showRevealDeckTopModal((nextSuit) => {
-        hideUtilityModal(true);
-        spendLucidityRevealOnDeck(state, nextSuit);
-        renderAll();
-      });
-    }
-    renderAll();
-    return;
-  }
-
   if (deckId.startsWith("mindstream-")) {
     const suit = deckId.replace("mindstream-", "");
     const result = tryDrawMindstreamFromDeck(state, suit, {
@@ -2802,6 +2784,13 @@ function renderAll() {
 
   const blocking = isBlockingGameChoice(state);
   setUtilityModalRequired(blocking, blockingChoiceLabel(state));
+  if (!state.tutorialMode && !state.excessPsycheIntroShown) {
+    requestAnimationFrame(() => {
+      const modal = document.getElementById("utility-modal");
+      if (modal && !modal.classList.contains("hidden") && !modal.classList.contains("utility-modal-minimized")) return;
+      maybeShowExcessPsycheIntro(state);
+    });
+  }
   const utilityModal = document.getElementById("utility-modal");
   document.body.classList.toggle(
     "utility-modal-open",

@@ -42,18 +42,18 @@ export function revealableTiles(state) {
   return state.board.filter((t) => !t.center && (!t.revealed || t.wasteland));
 }
 
-function beginDeckTopRevealPicking(state, budget, extra = {}) {
+function markExcessReveals(state, budget, extra = {}) {
   state.landscapePick = {
-    mode: "reveal-deck-tops",
+    mode: "reveal",
     remaining: budget,
     picked: extra.picked || [],
-    flipped: extra.flipped || [],
+    excessOnly: true,
   };
   narrate(
     state,
-    `Reveal budget: ${budget} — flip Mindstream tops.`,
-    `Every Landscape is already face-up. Spend leftover Lucidity Reveals to flip the next facedown card of a Mindstream. Click a Mindstream card back, or use Reveal Deck Top.`,
-    [`${budget} deck flip(s) left`, "Click a Mindstream draw pile"],
+    `Reveal budget: ${budget} — draw Psyche.`,
+    `Every Landscape is already face-up. Each leftover Reveal draws 1 Psyche. The Dreamer whose turn it is draws, then the turn passes clockwise.`,
+    [`${budget} Psyche draw(s) left`],
   );
   return true;
 }
@@ -61,13 +61,13 @@ function beginDeckTopRevealPicking(state, budget, extra = {}) {
 export function beginRevealPicking(state, budget) {
   if (budget <= 0) return false;
   if (revealableTiles(state).length === 0 && allLandscapesRevealed(state)) {
-    return beginDeckTopRevealPicking(state, budget);
+    return markExcessReveals(state, budget);
   }
   state.landscapePick = { mode: "reveal", remaining: budget, picked: [] };
   narrate(
     state,
     `Reveal budget: ${budget} — click map tiles.`,
-    `You spent Lucidity Psyche. Click up to ${budget} hex tiles on the map that show the Wasteland back to flip them to active Landscapes. If the map finishes first, leftover Reveals flip Mindstream tops.`,
+    `You spent Lucidity Psyche. Click up to ${budget} hex tiles on the map that show the Wasteland back to flip them to active Landscapes. Unused Reveals draw 1 Psyche each, one Dreamer at a time.`,
     [`${budget} tile(s) to reveal`, "Click the hex map in the center table"],
   );
   return true;
@@ -346,7 +346,7 @@ export function handleLandscapeTilePick(state, tileId) {
       recordQuestEvent(state, "reveal_landscape", { count: pick.picked.length });
       if (pick.followup) state.pendingObjectFollowup = pick.followup;
     } else if (revealableTiles(state).length === 0 && !pick.freeReveal && allLandscapesRevealed(state)) {
-      beginDeckTopRevealPicking(state, pick.remaining, { picked: pick.picked });
+      markExcessReveals(state, pick.remaining, { picked: pick.picked });
     }
     return true;
   }
@@ -404,7 +404,7 @@ export function resolveStaleLandscapePick(state) {
 
   if (pick.mode === "reveal" && pick.remaining > 0 && revealableTiles(state).length === 0) {
     if (!pick.freeReveal && allLandscapesRevealed(state)) {
-      beginDeckTopRevealPicking(state, pick.remaining, { picked: pick.picked });
+      markExcessReveals(state, pick.remaining, { picked: pick.picked });
       return;
     }
     if (pick.picked.length > 0 && !pick.freeReveal) state.revealLandscapeUsed = true;

@@ -434,6 +434,8 @@ function isRailBeatComplete(state, beat) {
       return !!state.exploreActivated;
     case "exploreMove":
       return exploreMoveBeatComplete(state, beat);
+    case "excessPsyche":
+      return !!state.tutorialFlags?.excessPsycheDrawn;
     case "gainMeetActions":
       return state.meetActionBudget > 0;
     case "meetAccept":
@@ -542,6 +544,9 @@ function railBeatAllows(state, beat, kind, detail = {}) {
     case "exploreMove":
       if (kind !== "exploreMove" && kind !== "boardClick") return false;
       return exploreMoveAllowed(state, detail.tileId, [beat.tileId], beat.playerIndex);
+    case "excessPsyche":
+      return kind === "excessPsyche"
+        || (kind === "dreamerSelect" && (detail.playerIndex == null || detail.playerIndex === (beat.playerIndex ?? 0)));
     case "playObject":
       return kind === "playObject" || kind === "dreamerSelect";
     case "activateObject":
@@ -612,6 +617,18 @@ function settleTutorialRail(state) {
   if (!state.tutorialFlags) state.tutorialFlags = {};
   state.tutorialFlags.meetPassLive = MEET_PASS_STEPS.has(step.id);
   if (step.id === "r2-pass") ensureTutorialPassOpener(state);
+  const lessonBeat = currentRailBeat(state);
+  if (lessonBeat?.kind === "excessPsyche") {
+    state.tutorialFlags.excessPsycheLesson = true;
+    if (state.exploreActivated && (state.exploreMovesLeft || 0) < 1 && !state.tutorialFlags.excessPsycheDrawn) {
+      state.exploreMovesLeft = 1;
+    }
+    if (!state.tutorialFlags.excessPsycheDrawn && state.players[lessonBeat.playerIndex ?? 0]) {
+      state.activePlayerIndex = lessonBeat.playerIndex ?? 0;
+    }
+  } else {
+    state.tutorialFlags.excessPsycheLesson = false;
+  }
   if (step.id === "r2-acquire" && !state.tutorialFlags.acquirePowerPrimed && !innocentAcquired(state)) {
     primeTutorialAcquirePower(state);
     state.tutorialFlags.acquirePowerPrimed = true;
@@ -870,6 +887,8 @@ function railHighlight(state, step, beat) {
         ],
         spotlight: `.hex-tile[data-tile-id="${beat.tileId}"]`,
       };
+    case "excessPsyche":
+      return radialOrDreamerHighlight(state, beat, "excessPsyche");
     case "advancePhase":
       return {
         targets: ["#btn-next-phase", "#board-viewport"],
@@ -1311,7 +1330,7 @@ export const TUTORIAL_SCRIPT = [
     id: "explore-r1",
     round: 1,
     title: "Explore: Walk to the Beast",
-    why: "The Visionary opened Reveal, so The Immovable opens Explore. One yellow Elasticity card buys steps for everyone. Walk The Visionary onto Mandrake. You have to stand on a beast to fight it.",
+    why: "The Visionary opened Reveal, so The Immovable opens Explore. One yellow Elasticity card buys steps for everyone. Walk The Visionary onto Mandrake. You have to stand on a beast to fight it. One step is left over. That unused move draws 1 Psyche for the Dreamer whose turn it is. In a real dream, ending the phase draws whatever is left, one card at a time around the table. Reveal and Meet work the same way.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Bed." },
@@ -1320,6 +1339,7 @@ export const TUTORIAL_SCRIPT = [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary. The moves belong to the whole team." },
       { kind: "exploreMove", playerIndex: 0, tileId: "house", prompt: "Click the glowing House hex." },
       { kind: "exploreMove", playerIndex: 0, tileId: "the-attic", prompt: "Click the glowing Attic hex. Mandrake's picture is that same hex." },
+      { kind: "excessPsyche", playerIndex: 0, prompt: "Click The Visionary, then Draw 1 Psyche. One unused move becomes one card." },
       { kind: "advancePhase", toPhase: "Meet", prompt: "Click Next: Meet in the top-right of the map." },
     ],
     until: (s) => getPhase(s) === "Meet",
@@ -1406,7 +1426,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-skip",
     round: 2,
     title: "Skip Reveal and Explore",
-    why: "Do not spend Lucidity. You are not opening a room. Do not spend Elasticity. Leaving The Attic abandons the fight. Next Phase skips the rest. Two unused moves could peek the next Dream. A skip spends nothing, so there is nothing to peek.",
+    why: "Do not spend Lucidity. You are not opening a room. Do not spend Elasticity. Leaving The Attic abandons the fight. Next Phase skips a phase you never opened, so there is no unused budget to turn into Psyche. You already drew with a leftover move.",
     closeRevealPick: true,
     targets: ["#btn-next-phase"],
     rail: [
@@ -1489,7 +1509,7 @@ export const TUTORIAL_SCRIPT = [
     round: 2,
     title: "Archetype Power",
     objective: "Bring back what Misunderstanding exiled.",
-    why: "The Innocent spends 1 Power Token and Returns 4 cards from the Subconscious. Repress is not destruction. Those cards go back to their discards. A Repressed beast can come back the same way, for 2 unused Meet actions. Use the power.",
+    why: "The Innocent spends 1 Power Token and Returns 4 cards from the Subconscious. Repress is not destruction. Those cards go back to their discards. Use the power.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary." },

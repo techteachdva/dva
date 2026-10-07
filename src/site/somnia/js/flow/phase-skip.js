@@ -1,5 +1,4 @@
-import { getPhase, addLog, countEncountersOnBoard } from "../core/state.js";
-import { logMoment } from "../core/narrator.js";
+import { addLog, countEncountersOnBoard } from "../core/state.js";
 import { endPhase } from "../core/game.js";
 import { meetEndPreview } from "../encounters/meet-phase.js";
 
@@ -31,40 +30,11 @@ function finishPhaseAdvance(state, onComplete) {
   onComplete?.();
 }
 
-function forfeitRemainingExploreMoves(state) {
-  const left = state.exploreMovesLeft || 0;
-  if (left <= 0) return;
-  state.exploreMovesLeft = 0;
-  logMoment(
-    state,
-    left >= 2
-      ? `Explore ends early — ${left} unused moves forfeited. 2 could have peeked the next Dream.`
-      : `Explore ends early — ${left} unused team move${left === 1 ? "" : "s"} forfeited.`,
-  );
-}
-
-function forfeitRemainingMeetActions(state) {
-  const budget = state.meetActionBudget || 0;
-  const used = state.meetActionsUsed || 0;
-  const left = Math.max(0, budget - used);
-  if (left <= 0) return;
-  state.meetActionsUsed = budget;
-  logMoment(
-    state,
-    left >= 2
-      ? `Meet ends early — ${left} unused actions forfeited. 2 could have Returned 1 Dreambeast.`
-      : `Meet ends early — ${left} unused team action${left === 1 ? "" : "s"} forfeited.`,
-  );
-}
-
 /**
- * Advance immediately. Players may skip a phase without spending Psyche.
- * Leftover Explore moves / Meet actions are forfeited with a log line.
+ * Advance immediately. Players may skip a phase without spending the opener Psyche.
+ * Unused Reveal, Explore, and Meet actions draw Psyche as the phase ends.
  */
 export function requestEndPhase(state, onComplete = () => {}) {
-  const phase = getPhase(state);
-  if (phase === "Explore") forfeitRemainingExploreMoves(state);
-  if (phase === "Meet") forfeitRemainingMeetActions(state);
   finishPhaseAdvance(state, onComplete);
   return true;
 }

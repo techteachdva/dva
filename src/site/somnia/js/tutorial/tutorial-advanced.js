@@ -72,7 +72,7 @@ export const ADVANCED_TUTORIAL_SCRIPT = [
     id: "adv-passives",
     round: 1,
     title: "Six Quiet Gifts",
-    why: "Once a round, and free. The Visionary peeks one leftover Mindstream flip. The Runner's first step is free. The Immovable ignores one discarded Meet card. The Hunter may shove a beast one hex after a fight. The Rested draws if they opened nothing. The Weaver swaps 1 Psyche with a neighbor. You will use that swap. The ? button keeps the list.",
+    why: "Once a round, and free. The Runner's first step is free. The Immovable ignores one discarded Meet card. The Hunter may shove a beast one hex after a fight. The Rested draws if they opened nothing. The Weaver swaps 1 Psyche with a neighbor. You will use that swap. The ? button keeps the list.",
     objective: "Click Continue. Then swap with The Hunter.",
     targets: ["#board-viewport"],
     spotlight: "#board-viewport",

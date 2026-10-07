@@ -3623,6 +3623,9 @@ function phaseBudgetChipLabel(state) {
     if (state.landscapePick?.mode === "reveal" && state.landscapePick.remaining > 0) {
       return `${state.landscapePick.remaining} reveal${state.landscapePick.remaining === 1 ? "" : "s"}`;
     }
+    if (state.landscapePick?.excessOnly && state.landscapePick.remaining > 0) {
+      return `${state.landscapePick.remaining} psyche`;
+    }
     if (state.landscapePick?.mode === "reveal-deck-tops" && state.landscapePick.remaining > 0) {
       return `${state.landscapePick.remaining} deck flip${state.landscapePick.remaining === 1 ? "" : "s"}`;
     }
@@ -4332,6 +4335,34 @@ function renderEndGameId(dream) {
       }
     });
   }
+}
+
+/** Once per dream, when a shared budget first opens. */
+export function maybeShowExcessPsycheIntro(state) {
+  if (!state || state.tutorialMode || state.status !== "playing" || state.excessPsycheIntroShown) return;
+  const phase = getPhase(state);
+  const open = (phase === "Reveal"
+      && state.landscapePick
+      && !state.landscapePick.freeReveal
+      && (state.landscapePick.remaining || 0) > 0)
+    || (phase === "Explore" && state.exploreActivated && (state.exploreMovesLeft || 0) > 0)
+    || (phase === "Meet" && (state.meetActionBudget || 0) > (state.meetActionsUsed || 0));
+  if (!open) return;
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  if (!modal || !body || !modal.classList.contains("hidden")) return;
+  state.excessPsycheIntroShown = true;
+  body.innerHTML = `
+    <h2>Unused actions draw Psyche</h2>
+    <p>Any Reveal, move, or Meet action you do not spend draws <strong>1 Psyche</strong>.</p>
+    <p>The Dreamer whose turn it is draws that card. Then the turn passes clockwise, one card at a time.</p>
+    <p>Open that Dreamer and choose <strong>Draw 1 Psyche</strong>. Or end the phase, and the table draws whatever is left the same way.</p>
+    <div class="utility-actions">
+      <button type="button" class="btn primary" data-excess-intro-ok>Got it</button>
+    </div>
+  `;
+  body.querySelector("[data-excess-intro-ok]")?.addEventListener("click", () => hideUtilityModal(true));
+  modal.classList.remove("hidden", "utility-modal-minimized");
 }
 
 export function showLandscapeActionPicker(tile, choices, onPick) {

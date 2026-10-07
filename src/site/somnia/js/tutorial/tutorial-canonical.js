@@ -17,6 +17,7 @@ import {
   handleBoardTileClick,
   performLandscapeAction,
   endPhase,
+  spendExcessPsycheDraw,
   handleQuestComplete,
   getLegalExploreTargets,
   useDreamerPower,
@@ -337,6 +338,11 @@ export function applyCanonicalTutorialStep(state, step) {
       }
       placePlayerOnLandscape(state, 0, "house");
       placePlayerOnLandscape(state, 0, "the-attic");
+      if (!state.tutorialFlags) state.tutorialFlags = {};
+      state.tutorialFlags.excessPsycheLesson = true;
+      if ((state.exploreMovesLeft || 0) < 1) state.exploreMovesLeft = 1;
+      state.activePlayerIndex = 0;
+      spendExcessPsycheDraw(state);
       advanceToPhase(state, "Meet");
       return;
 

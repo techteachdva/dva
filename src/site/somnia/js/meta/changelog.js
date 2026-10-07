@@ -6,10 +6,18 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "39.1";
+export const SOMNIA_VERSION = "39.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "39.2",
+    title: "Psyche for Unused Actions",
+    notes: [
+      "Unused Reveals, moves, and Meet actions draw 1 Psyche each. The Dreamer whose turn it is draws, then the turn passes. Ending the phase deals whatever is left, one card at a time around the table.",
+      "The guided tutorial walks that draw. A real dream explains it the first time a budget opens.",
+    ],
+  },
   {
     version: "39.1",
     title: "Warnings Under the Table",

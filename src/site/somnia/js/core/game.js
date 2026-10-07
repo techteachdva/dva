@@ -69,7 +69,7 @@ import {
   isLeviathanCard,
 } from "../encounters/dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
-import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard, isSubconsciousDreambeast, enqueueReturnCards } from "../dreamers/subconscious.js";
+import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "../dreamers/subconscious.js";
 import { queueCardTrade } from "../cards/card-fx.js";
 import { random } from "./rng.js";
 import { getDreamResolution } from "../cards/dream-resolutions.js";
@@ -355,6 +355,126 @@ export function passActionTurn(state) {
 
 export function clearActionTurn(state) {
   state.meetPassHolderId = null;
+}
+
+function excessBudgetLeft(state) {
+  const phase = getPhase(state);
+  if (phase === "Explore" && state.exploreActivated) return state.exploreMovesLeft || 0;
+  if (phase === "Meet" && (state.meetActionBudget || 0) > 0) {
+    return Math.max(0, (state.meetActionBudget || 0) - (state.meetActionsUsed || 0));
+  }
+  if (phase === "Reveal") {
+    const pick = state.landscapePick;
+    const revealBudgetOpen = pick
+      && !pick.freeReveal
+      && (pick.mode === "reveal" || pick.mode === "reveal-deck-tops")
+      && (pick.remaining || 0) > 0;
+    if (revealBudgetOpen) return pick.remaining;
+  }
+  return 0;
+}
+
+function excessNoun(phase) {
+  if (phase === "Explore") return "move";
+  if (phase === "Meet") return "Meet action";
+  return "Reveal";
+}
+
+/** Spend 1 shared Reveal, move, or Meet action so the turn holder draws 1 Psyche. */
+export function spendExcessPsycheDraw(state, { quiet = false } = {}) {
+  const tutorialLesson = !!(state.tutorialMode && state.tutorialFlags?.excessPsycheLesson);
+  if (state.tutorialMode && !tutorialLesson) return false;
+  const phase = getPhase(state);
+  if (excessBudgetLeft(state) < 1) return false;
+  const holder = actionTurnHolder(state) || activePlayer(state);
+  if (!holder) return false;
+  if (!quiet && meetPassBlocks(state, activePlayer(state))) {
+    addLog(state, `It is ${actionTurnHolder(state)?.name || "another Dreamer"}'s turn to draw.`);
+    return false;
+  }
+
+  if (phase === "Explore") {
+    state.exploreMovesLeft = Math.max(0, (state.exploreMovesLeft || 0) - 1);
+  } else if (phase === "Meet") {
+    state.meetActionsUsed = (state.meetActionsUsed || 0) + 1;
+  } else if (phase === "Reveal") {
+    const pick = state.landscapePick;
+    pick.remaining -= 1;
+    if (pick.remaining <= 0) {
+      const revealedCount = (pick.picked || []).length;
+      if (!pick.freeReveal) state.revealLandscapeUsed = true;
+      state.landscapePick = null;
+      if (revealedCount) recordQuestEvent(state, "reveal_landscape", { count: revealedCount });
+    }
+  } else {
+    return false;
+  }
+
+  const before = (state.psycheDeck?.length || 0) + (state.psycheDiscard?.length || 0);
+  const drawn = drawPsycheForPlayer(state, holder, 1);
+  const card = drawn[0];
+  const noun = excessNoun(phase);
+  if (card) {
+    addLog(state, `${holder.name} spends 1 unused ${noun} and draws ${card.name || "a Psyche card"}.`);
+    if (tutorialLesson && state.tutorialFlags) state.tutorialFlags.excessPsycheDrawn = true;
+  } else if (before < 1) {
+    addLog(state, `${holder.name} spends 1 unused ${noun}, but the Psyche deck is empty.`);
+  } else {
+    addLog(state, `${holder.name} spends 1 unused ${noun}, but their hand is full.`);
+  }
+
+  if (!quiet) afterSharedBudgetSpend(state);
+  else if (!actionTurnActive(state)) clearActionTurn(state);
+  else {
+    const next = nextLivingClockwise(state, state.meetPassHolderId);
+    if (next && next.id !== state.meetPassHolderId) {
+      state.meetPassHolderId = next.id;
+      focusActionTurnHolder(state);
+    }
+  }
+  return true;
+}
+
+/** Turn every unused phase action into a Psyche draw, one Dreamer at a time. */
+export function convertExcessActionsToPsyche(state) {
+  if (state.tutorialMode) return 0;
+  const phase = getPhase(state);
+  const start = excessBudgetLeft(state);
+  if (start < 1) return 0;
+  let drawn = 0;
+  let guard = start + 2;
+  while (guard-- > 0 && excessBudgetLeft(state) > 0) {
+    if (!spendExcessPsycheDraw(state, { quiet: true })) break;
+    drawn += 1;
+  }
+  if (drawn) {
+    const noun = excessNoun(phase);
+    logMoment(
+      state,
+      `${drawn} unused ${noun}${drawn === 1 ? "" : "s"} drew Psyche, one card at a time around the table.`,
+    );
+  }
+  return drawn;
+}
+
+function excessPsycheAction(state) {
+  const tutorialLesson = !!(state.tutorialMode && state.tutorialFlags?.excessPsycheLesson);
+  if ((state.tutorialMode && !tutorialLesson) || excessBudgetLeft(state) < 1) return null;
+  const holder = actionTurnHolder(state);
+  const player = activePlayer(state);
+  const blocked = !!(holder && player && holder.id !== player.id);
+  const noun = excessNoun(getPhase(state));
+  return {
+    label: "Draw 1 Psyche",
+    kind: "excessPsyche",
+    section: "actions",
+    primary: true,
+    hint: blocked
+      ? `It is ${holder.name}'s turn.`
+      : `Spend 1 unused ${noun} to draw 1 Psyche. The next Dreamer clockwise takes the next action.`,
+    disabled: blocked,
+    onClick: () => spendExcessPsycheDraw(state),
+  };
 }
 
 function passTurnAction(state) {
@@ -658,13 +778,13 @@ export function getPhaseActions(state, handlers) {
     const best = bestPhaseContributor(state);
     const stat = statForPhaseBudget("Reveal", state);
     const mapOpen = allLandscapesRevealed(state);
-    const deckTopPick = state.landscapePick?.mode === "reveal-deck-tops";
-    const remFreeReveal = !!state.seedFlags?.rem && !state.remFree?.reveal && !state.revealLandscapeUsed && !deckTopPick;
+    const excessOpen = !!state.landscapePick?.excessOnly || state.landscapePick?.mode === "reveal-deck-tops";
+    const remFreeReveal = !!state.seedFlags?.rem && !state.remFree?.reveal && !state.revealLandscapeUsed && !excessOpen;
     actions.push({
-      label: deckTopPick
-        ? `Reveal Deck Tops (${state.landscapePick.remaining} left)`
+      label: excessOpen
+        ? `Draw Psyche (${state.landscapePick.remaining} left)`
         : mapOpen
-          ? (budget >= 1 ? `Reveal Deck Tops (${budget})` : "Reveal Deck Tops (select Lucidity)")
+          ? (budget >= 1 ? `Spend Lucidity (${budget} Psyche draws)` : "Spend Lucidity (select cards)")
           : budget >= 1
             ? `Reveal Landscapes (${budget} for team)`
             : remFreeReveal
@@ -675,26 +795,17 @@ export function getPhaseActions(state, handlers) {
         ? "Draw & Resolve the Dream first, then spend Lucidity."
         : remFreeReveal && budget < 1
           ? "REM cycle: the first Reveal each round is free — no Lucidity needed."
-          : deckTopPick
-          ? "Click a Mindstream card back to flip its next facedown card, or open Reveal Deck Top."
-          : mapOpen
-            ? "The map is fully Revealed. Lucidity now flips Mindstream tops — click a card back or this action."
-            : best
-              ? `One Dreamer spends 1 Lucidity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus). Leftover Reveals flip Mindstream tops once the map is finished.`
-              : "One Dreamer spends Lucidity to set everyone's reveal budget.",
+          : excessOpen
+            ? "Each leftover Reveal draws 1 Psyche. The turn passes clockwise after every card."
+            : mapOpen
+              ? "The map is fully Revealed. Lucidity now draws Psyche, one card at a time around the table."
+              : best
+                ? `One Dreamer spends 1 Lucidity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus). Unused Reveals draw 1 Psyche each.`
+                : "One Dreamer spends Lucidity to set everyone's reveal budget.",
       section: "main",
-      disabled: !state.dreamDrawn || state.revealLandscapeUsed || (budget < 1 && !deckTopPick && !remFreeReveal),
+      disabled: !state.dreamDrawn || state.revealLandscapeUsed || !!state.landscapePick || (budget < 1 && !remFreeReveal),
       onClick: handlers.revealLandscape,
     });
-    if (deckTopPick) {
-      actions.push({
-        label: "Choose Mindstream to flip",
-        kind: "revealDeckTop",
-        section: "main",
-        hint: "Open the three Mindstream backs and flip the next facedown card of one suit.",
-        onClick: handlers.revealDeckTop,
-      });
-    }
     if (state.dreamDrawn && !state.revealLandscapeUsed) actions.push(phaseTokenAction("Lucidity"));
     actions.push(...objectFreeActions());
     actions.push(dreamerPowerAction());
@@ -734,20 +845,6 @@ export function getPhaseActions(state, handlers) {
         disabled: true,
         onClick: () => {},
       });
-      if (!state.tutorialMode && (state.exploreMovesLeft || 0) >= 2 && state.dreamDeck?.length) {
-        const peekHolder = actionTurnHolder(state);
-        const peekBlocked = meetPassBlocks(state, player);
-        actions.push({
-          label: "Peek next Dream (2 moves)",
-          kind: "clockPeek",
-          section: "actions",
-          hint: peekBlocked
-            ? `It is ${peekHolder?.name || "another Dreamer"}'s turn to spend Explore moves.`
-            : "Spend 2 unused moves to see the next Dream. Leave it on top, or bury it ahead of Final Recurrence.",
-          disabled: peekBlocked,
-          onClick: () => cashExplorePeek(state),
-        });
-      }
       const explorePass = passTurnAction(state);
       if (explorePass) actions.push(explorePass);
     }
@@ -881,15 +978,6 @@ export function getPhaseActions(state, handlers) {
       });
     });
     actions.push(...objectFreeActions());
-    if (!state.tutorialMode && meetActionsLeft(state) >= 2 && subconsciousDreambeastCount(state) > 0 && !meetPassBlocks(state, player)) {
-      actions.push({
-        label: "Return 1 Dreambeast (2 actions)",
-        kind: "clockReturn",
-        section: "actions",
-        hint: "Spend 2 unused Meet actions to Return 1 Dreambeast from the Subconscious. Repeatable.",
-        onClick: () => cashMeetReturn(state),
-      });
-    }
     actions.push({
       label: "Trade",
       kind: "trade",
@@ -920,6 +1008,9 @@ export function getPhaseActions(state, handlers) {
       });
     }
   }
+
+  const excess = excessPsycheAction(state);
+  if (excess) actions.push(excess);
 
   return actions;
 }
@@ -983,6 +1074,8 @@ export function getPhaseAdvanceAction(state, handlers) {
   if (!handlers?.nextPhase) return null;
   const label = phaseAdvanceLabel(state);
   const spent = phaseBudgetExhausted(state);
+  const leftover = excessBudgetLeft(state);
+  const noun = excessNoun(getPhase(state));
   const action = {
     label,
     section: "phase",
@@ -992,7 +1085,9 @@ export function getPhaseAdvanceAction(state, handlers) {
     budgetExhausted: spent,
     hint: spent
       ? `${label} — actions spent. Advance when ready.`
-      : `${label} — skip this phase without spending Psyche.`,
+      : leftover > 0
+        ? `${label} — ${leftover} unused ${noun}${leftover === 1 ? "" : "s"} draw Psyche around the table.`
+        : `${label} — skip this phase without spending Psyche.`,
     onClick: handlers.nextPhase,
   };
   const blockReason = phaseAdvanceBlockReason(state);
@@ -1023,7 +1118,7 @@ export function getPhaseOpenerAction(state, handlers) {
   const action = getPhaseActions(state, handlers).find((item) => item.kind === kind);
   if (!action) return null;
   const shortLabel = phase === "Reveal"
-    ? (/Deck Tops/i.test(action.label) ? "Reveal Deck Tops" : "Reveal Landscapes")
+    ? (/Psyche draws/i.test(action.label) ? "Draw Psyche" : "Reveal Landscapes")
     : phase === "Explore"
       ? "Spend Elasticity"
       : "Gain Actions";
@@ -1046,8 +1141,7 @@ const DREAMER_RADIAL_KINDS = new Set([
   "drawMindstream",
   "defeatFinalArchetype",
   "sacrificeForFinal",
-  "clockPeek",
-  "clockReturn",
+  "excessPsyche",
   "meetPass",
   "weaverSwap",
 ]);
@@ -1062,8 +1156,7 @@ const DREAMER_RADIAL_ORDER = [
   "trade",
   "archetypePower",
   "drawMindstream",
-  "clockPeek",
-  "clockReturn",
+  "excessPsyche",
   "meetPass",
   "weaverSwap",
   "defeatFinalArchetype",
@@ -2204,16 +2297,6 @@ export function activateObject(state) {
   return playObject(state, card.instanceId, { usePower: true });
 }
 
-function meetActionsLeft(state) {
-  return Math.max(0, (state.meetActionBudget || 0) - (state.meetActionsUsed || 0));
-}
-
-function spendLeftoverMeetActions(state, count) {
-  if (meetActionsLeft(state) < count) return false;
-  state.meetActionsUsed += count;
-  return true;
-}
-
 /** Move the top Dream to just before Final Recurrence. You Never Wake Up stays last. */
 function buryDreamTop(deck) {
   const card = deck.shift();
@@ -2226,40 +2309,6 @@ function buryDreamTop(deck) {
   if (finaleAt < 0) deck.push(card);
   else deck.splice(finaleAt, 0, card);
   return card;
-}
-
-export function cashExplorePeek(state) {
-  if (state.tutorialMode || getPhase(state) !== "Explore") return false;
-  const player = actionTurnHolder(state) || activePlayer(state);
-  if (meetPassBlocks(state, player)) {
-    const holder = actionTurnHolder(state);
-    addLog(state, `It is ${holder?.name || "another Dreamer"}'s turn to spend Explore moves.`);
-    return false;
-  }
-  if ((state.exploreMovesLeft || 0) < 2) {
-    addLog(state, "Need 2 unused Explore moves to peek the Dream Deck.");
-    return false;
-  }
-  const top = state.dreamDeck?.[0];
-  if (!top) {
-    addLog(state, "The Dream Deck is empty.");
-    return false;
-  }
-  state.exploreMovesLeft -= 2;
-  addLog(state, `Spent 2 moves to peek the next Dream: ${top.name}.`);
-  offerEffectChoice(state, player, {
-    cardId: "clock-peek",
-    ui: "peek",
-    title: "Next Dream",
-    message: "Leave it on top, or bury it ahead of Final Recurrence.",
-    cards: [top],
-    choices: [
-      { id: "keep", label: "Leave on top", hint: "It will be drawn next." },
-      { id: "bury", label: "Bury it", hint: "Slide it down, just before the Final Recurrence." },
-    ],
-  });
-  afterSharedBudgetSpend(state);
-  return true;
 }
 
 registerEffectResolver("clock-peek", (state, choiceId) => {
@@ -2337,34 +2386,6 @@ registerEffectResolver("hunter-shove", (state, choiceId) => {
   });
   return true;
 });
-
-function subconsciousDreambeastCount(state) {
-  return listSubconsciousCards(state).filter(isSubconsciousDreambeast).length;
-}
-
-export function cashMeetReturn(state) {
-  if (state.tutorialMode) return false;
-  if (meetPassBlocks(state, activePlayer(state))) {
-    addLog(state, "The Meet Pass Token is with another Dreamer.");
-    return false;
-  }
-  if (!subconsciousDreambeastCount(state)) {
-    addLog(state, "No Dreambeast in the Subconscious to Return.");
-    return false;
-  }
-  if (!spendLeftoverMeetActions(state, 2)) {
-    addLog(state, "Need 2 unused Meet actions to Return a Dreambeast.");
-    return false;
-  }
-  const player = activePlayer(state);
-  enqueueReturnCards(state, 1, player, {
-    filter: "dreambeast",
-    reason: `${player.name} spends 2 Meet actions to Return 1 Dreambeast from the Subconscious.`,
-  });
-  addLog(state, `${player.name} cashes 2 Meet actions: Return 1 Dreambeast.`);
-  afterSharedBudgetSpend(state);
-  return true;
-}
 
 function psycheCardsForSwap(player) {
   return (player?.hand || []).filter(isSwappablePsyche);
@@ -2825,6 +2846,7 @@ export function endPhase(state) {
     addLog(state, "Finish the dice battle before ending the phase.");
     return;
   }
+  convertExcessActionsToPsyche(state);
   cancelLandscapePick(state);
   cancelDreamerPower(state);
   clearActionTurn(state);

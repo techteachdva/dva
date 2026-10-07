@@ -328,7 +328,7 @@ export function getCurrentObjective(state) {
         title: "Move on the board",
         steps: [
           `Click a **green dashed hex** to move ${player.name}.`,
-          `${state.exploreMovesLeft} team move(s) remaining — use them, or click **Next: Meet** in the top-right.`,
+          `${state.exploreMovesLeft} team move(s) remaining. Spend one to move, or open the Dreamer and choose **Draw 1 Psyche**. **Next: Meet** turns whatever is left into Psyche draws around the table.`,
         ],
         tip: "Click a Dreamer on the board to open their actions, or a dock chip to focus them.",
       };
@@ -337,7 +337,7 @@ export function getCurrentObjective(state) {
       phase: "Explore",
       suit: "elasticity",
       title: "Exploration done",
-      steps: ["Click **Next: Meet** in the top-right of the map whenever you are ready. Unused moves are forfeited."],
+      steps: ["Click **Next: Meet** in the top-right of the map whenever you are ready. Unused moves draw Psyche around the table."],
     };
   }
 
@@ -378,14 +378,14 @@ export function getCurrentObjective(state) {
       const enc = state.activeEncounter;
       lines.push(`Encounter **${enc.name}**: Accept (${enc.accept}) or Repress (${enc.reject ?? enc.repress}).`);
     } else {
-      lines.push("Open a Dreamer on the board for Landscape actions, Trade, Dreamer Powers, or Quests. Next Phase is always on the map — skip leftover actions whenever you are ready.");
+      lines.push("Open a Dreamer on the board for Landscape actions, Trade, Dreamer Powers, or Quests. **Draw 1 Psyche** spends one Meet action. Next Phase turns unused actions into Psyche draws around the table.");
     }
     return {
       phase: "Meet",
       suit: "willpower",
       title: state.activeEncounter ? "Meet the Encounter" : "Spend Meet actions",
       steps: lines,
-        tip: "Draw Mindstream as often as you have actions. Unique Landscape actions are once per table this Meet. Trade is free. The Pass Token holder takes one Meet action or passes. Dreamer Powers and Archetype Powers cost 1 Power Token. Two leftover actions can Return 1 Dreambeast from the Subconscious, and you can do that again.",
+        tip: "Draw Mindstream as often as you have actions. Unique Landscape actions are once per table this Meet. Trade is free. The turn holder takes one Meet action, draws 1 Psyche, or passes. Dreamer Powers and Archetype Powers cost 1 Power Token. Unused actions draw Psyche around the table when Meet ends.",
     };
   }
 
@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 39.1. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 39.2. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -559,7 +559,7 @@ export function rulesRemHtml() {
           <ul>
             <li><strong>Setup:</strong> every Landscape is shuffled. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten</li>
             <li><strong>Reveal budget</strong> = that 1 card's value + Lucidity bonuses (Dreamer, Objects, Acquired Archetypes) → click that many Wasteland hexes to flip Landscapes face-up</li>
-            <li><strong>Map fully Revealed:</strong> leftover Lucidity Reveals flip the next facedown card of a Mindstream (click the card back). Flipped cards stay face-up on that pile</li>
+            <li><strong>Unused Reveals</strong> draw 1 Psyche each, one Dreamer at a time, clockwise. If the map is already face-up, the whole Lucidity budget draws Psyche this way</li>
             <li>Draw the Dream and spend Lucidity in either order during Reveal</li>
             <li><strong>Round 1:</strong> each Dreamer already has 5 Psyche — no round-start draw</li>
             <li><strong>Round 2+:</strong> each alive Dreamer draws <strong>2 Psyche</strong> at the start of Reveal</li>
@@ -574,7 +574,7 @@ export function rulesRemHtml() {
             <li>Click a Dreamer chip to choose who walks, then click a glowing Landscape. Each click is one adjacent hex</li>
             <li>While moves remain, green hexes are the only steps. A picture on a green hex is that hex</li>
             <li>Entering the <strong>Wasteland</strong> during Explore discards 1 Psyche (can trigger death)</li>
-            <li><strong>2 unused moves</strong> may peek the next Dream: leave it on top, or bury it ahead of Final Recurrence. Otherwise leftovers are forfeited</li>
+            <li><strong>Unused moves</strong> draw 1 Psyche each. Open the Dreamer and choose Draw 1 Psyche, or end Explore and the table draws whatever is left, one card at a time, clockwise</li>
           </ul>
         </div>
 
@@ -588,8 +588,8 @@ export function rulesRemHtml() {
             <li>Each Landscape offers <strong>Draw Mindstream</strong> (repeatable) and one <strong>unique action</strong> (once per table this Meet). <strong>The Bed</strong> has Draw 3 Psyche, once per Dreamer this Meet</li>
             <li><strong>Opening:</strong> any Dreamer may spend the suited Psyche, no matter whose turn it was. The Dreamer who opens takes the first action</li>
             <li><strong>Pass Token:</strong> after that first action, Pass Turn or Give Turn moves clockwise through the remaining shared actions. Next Phase can still end Meet early</li>
-            <li><strong>Dreamer passives,</strong> once a round, free: Visionary peeks the first leftover Mindstream flip (it stays facedown). Runner's first move costs no team move. Immovable ignores 1 Meet-tax card. Hunter may shove the beast 1 hex after their first battle if it stays. Rested draws 1 Psyche at round end if they opened no phase. Weaver swaps 1 Psyche with an adjacent Dreamer once per Meet</li>
-            <li><strong>2 unused actions</strong> may Return 1 Dreambeast from the Subconscious. This can be repeated. Otherwise leftovers are forfeited</li>
+            <li><strong>Dreamer passives,</strong> once a round, free: Runner's first move costs no team move. Immovable ignores 1 Meet-tax card. Hunter may shove the beast 1 hex after their first battle if it stays. Rested draws 1 Psyche at round end if they opened no phase. Weaver swaps 1 Psyche with an adjacent Dreamer once per Meet</li>
+            <li><strong>Unused Meet actions</strong> draw 1 Psyche each, one Dreamer at a time. Ending Meet draws whatever is left the same way</li>
             <li>Nine Archetypes name two Landscapes for Draw Mindstream and two for Meeting a Dreambeast. Reveal that hex, move onto it, and take the action. A forgotten tile does not move the quest to another hex of the same suit. Magician, Warrior, and Sage require defeating their boss and one Dreamer sacrificing one Object</li>
             <li><strong>Free during Meet:</strong> Trade up to 3 Psyche with a Dreamer on the same or adjacent hex, place up to 3 Power Tokens for +1d6 each on a Psyche spread, activate an Object (Persistent costs 1 token), use a Dreamer or Archetype Power (1 token), or commit an Archetype once both quests are already true (1 token). These do not spend the action budget</li>
             <li><strong>After the dice land</strong>, if you hold a Power Token, spend 1 once to subtract 1 from the Dreambeast's successes, or stand. Ties still favor the beast if you stand. The tutorial's first battle is too far behind for Subtract 1 to flip it, so the lesson is to Stand.</li>
@@ -605,7 +605,7 @@ export function rulesRemHtml() {
 
       <section class="overview-block">
         <h3>Round End</h3>
-        <p>A circular <strong>Next Phase</strong> button stays in the top-right of the map, with <strong>Draw Dream</strong> to its left during Reveal. You may press Next after the budget is spent, or early to skip leftover Reveals, moves, or Meet actions without spending Psyche. It is tinted the color of the phase you are about to enter (yellow Explore, red Meet, blue Reveal). <strong>Back</strong> sits in the top-left of the map, just right of the deck rail, and undoes the last action. Head Dreamer rotates clockwise at round end. Dreamer radials do not advance the phase.</p>
+        <p>A circular <strong>Next Phase</strong> button stays in the top-right of the map, with <strong>Draw Dream</strong> to its left during Reveal. You may press Next after the budget is spent, or early. Unused Reveals, moves, and Meet actions draw 1 Psyche each, one Dreamer at a time, clockwise. Skipping a phase you never opened spends no Psyche. It is tinted the color of the phase you are about to enter (yellow Explore, red Meet, blue Reveal). <strong>Back</strong> sits in the top-left of the map, just right of the deck rail, and undoes the last action. Head Dreamer rotates clockwise at round end. Dreamer radials do not advance the phase.</p>
       </section>
     </div>
   `;
@@ -714,7 +714,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 39.1</p>
+          <p class="info-hub-kicker">Somnia v 39.2</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>
@@ -737,9 +737,9 @@ export function infoHubHtml(options = {}) {
           <div class="info-hub-rule info-hub-rem">
             <h3>R.E.M. — Every Round</h3>
             <ul>
-              <li class="suit-lucidity"><strong>Reveal</strong> — Head (★) draws a Dream. Spend Lucidity to flip Wastelands, or Mindstream tops once the map is fully Revealed.</li>
-              <li class="suit-elasticity"><strong>Explore</strong> — Spend Elasticity for shared moves. Entering Wasteland discards 1 Psyche. <strong>2 unused moves</strong> may peek the next Dream: leave it on top, or bury it ahead of Final Recurrence.</li>
-              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Start: discard 1 Psyche per Dreambeast on your tile or a neighboring hex (one Dreamer ignores the first). Pass Turn then moves around the table, one Meet action at a time. Dice battle to Accept or Repress. End: Forget 1 random Landscape per remaining beast. Fail hits when Accept, Repress, or Flee fails. <strong>2 unused actions</strong> may Return 1 Dreambeast from the Subconscious, and you can do that again.</li>
+              <li class="suit-lucidity"><strong>Reveal</strong> — Head (★) draws a Dream. Spend Lucidity to flip Wastelands. Unused Reveals draw 1 Psyche each, around the table.</li>
+              <li class="suit-elasticity"><strong>Explore</strong> — Spend Elasticity for shared moves. Entering Wasteland discards 1 Psyche. Unused moves draw 1 Psyche each, one Dreamer at a time.</li>
+              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Start: discard 1 Psyche per Dreambeast on your tile or a neighboring hex (one Dreamer ignores the first). Pass Turn then moves around the table, one Meet action at a time. Dice battle to Accept or Repress. End: Forget 1 random Landscape per remaining beast. Fail hits when Accept, Repress, or Flee fails. Unused Meet actions draw 1 Psyche each, around the table.</li>
             </ul>
           </div>
           <div class="info-hub-rule">
@@ -750,7 +750,6 @@ export function infoHubHtml(options = {}) {
             <h3>Free Passives</h3>
             <p>Once a round, and free:</p>
             <ul>
-              <li><strong>Visionary</strong> peeks the first leftover Mindstream flip. It stays facedown.</li>
               <li><strong>Runner</strong>'s first move costs no team move.</li>
               <li><strong>Immovable</strong> ignores 1 Meet-tax card.</li>
               <li><strong>Hunter</strong> may shove the beast 1 hex after their first battle, if it stays.</li>
