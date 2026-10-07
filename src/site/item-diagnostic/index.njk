@@ -129,6 +129,21 @@ layout: false
             </div>
           </div>
 
+          <section class="dw-card idt-bank" id="questionBankPanel">
+            <h3 class="dw-h3">Question bank</h3>
+            <p class="dw-muted" id="questionBankStatus">Checking which questions the test is using…</p>
+            <p class="dw-muted dw-tiny">Upload a spreadsheet to change the live quiz. The built-in Tech Escape bank stays on the site, and you can restore it whenever you want. Students get the new questions the next time they open the diagnostic.</p>
+            <p class="dw-muted dw-tiny">Use columns for ID, Standard code, Question, A, B, C, D, Correct, and Why this is right. A row marked No under “In diagnostic pool” stays out of the quiz. Download the current bank, edit it in Google Sheets, then upload the new file.</p>
+            <div class="dw-row dw-row-wrap">
+              <label class="dw-btn dw-btn-secondary" for="questionBankFile">Choose spreadsheet</label>
+              <input id="questionBankFile" class="idt-bank-file" type="file" accept=".xlsx,.xls,.csv,.json,text/csv,application/json" />
+              <button id="questionBankDownload" class="dw-btn dw-btn-ghost" type="button">Download current bank</button>
+              <button id="questionBankRestore" class="dw-btn dw-btn-ghost dw-hidden" type="button">Restore built-in bank</button>
+            </div>
+            <div id="questionBankPreview" class="idt-bank-preview dw-hidden"></div>
+            <p id="questionBankMessage" class="dw-tiny dw-hidden" role="status"></p>
+          </section>
+
           <details class="dw-card dw-class-codes" id="classCodesPanel" open>
             <summary class="dw-h3 dw-class-codes__summary">Class codes for students</summary>
             <p class="dw-muted dw-tiny">Share the matching code when students start the diagnostic.</p>

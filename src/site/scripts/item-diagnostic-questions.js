@@ -74,8 +74,22 @@
   const TYPING_DURATION = 120;
   const GLYPHS = ["A", "B", "C", "D", "E"];
 
+  function bankSource() {
+    return window.ITEMDiagnosticBankMeta?.source || "builtin";
+  }
+
   function getQuestions() {
     const pool = window.ITEMDiagnosticBank || [];
+    if (bankSource() === "upload") {
+      return pool.filter((q) => (
+        q?.id
+        && q.std
+        && Array.isArray(q.a)
+        && q.a.length >= 2
+        && Array.isArray(q.correct)
+        && q.correct.length > 0
+      ));
+    }
     return pool.filter((q) => q?.std && DIAGNOSTIC_CODE_SET.has(q.std));
   }
 
@@ -120,9 +134,7 @@
     if (!pool.length || count <= 0) return [];
 
     const byStd = groupByStandard(pool);
-    const canonicalCodes = ITEM_STANDARDS.map((s) => s.code).filter((code) => byStd.has(code));
-
-    const stdOrder = Core.shuffle([...canonicalCodes]);
+    const stdOrder = Core.shuffle([...byStd.keys()]);
     const picked = [];
     const usedIds = new Set();
 

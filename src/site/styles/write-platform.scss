@@ -948,6 +948,42 @@ $wp-sheet-min-height: 1056px;
     color: var(--dw-muted);
     font-family: ui-monospace, Consolas, monospace;
   }
+
+  .idt-bank-file {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .idt-bank-preview {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(52, 211, 153, 0.28);
+    background: rgba(16, 185, 129, 0.08);
+  }
+
+  .idt-bank-preview ul {
+    margin: 8px 0 0;
+    padding-left: 1.2rem;
+  }
+
+  .idt-bank-preview li + li {
+    margin-top: 4px;
+  }
+
+  .idt-bank-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
 }
 
 /* Global Tech Gauntlet — display typography */

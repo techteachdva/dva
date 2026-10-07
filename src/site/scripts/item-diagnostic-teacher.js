@@ -59,6 +59,7 @@
   let classFilter = "all";
   let typingFilter = "all";
   let teacherViewMode = "table";
+  let submissionsError = "";
   let tableSort = { col: "submitted", dir: "desc" };
 
   const teacherMeta = document.getElementById("teacherMeta");
@@ -535,13 +536,22 @@
 
     for (const [code, questions] of byStd.entries()) {
       if (!ordered.find((s) => s.code === code)) {
-        ordered.push({ code, title: questions[0]?.stdLabel || "Standard", strand: "", questions });
+        ordered.push({
+          code,
+          title: questions[0]?.stdLabel || "Standard",
+          strand: questions[0]?.strand || "",
+          questions,
+        });
       }
     }
 
+    const meta = window.ITEMDiagnosticBankMeta || { source: "builtin" };
+    const sourceLine = meta.source === "upload"
+      ? `Uploaded bank${meta.label ? ` · ${meta.label}` : ""}.`
+      : "Built-in Tech Escape bank.";
     teacherAnswerKeyWrap.innerHTML = `
       <div class="dw-card">
-        <p class="dw-muted">Full question bank (${pool.length} questions) grouped by ITEM standard. Use for lesson planning, grading reference, and re-teaching missed concepts.</p>
+        <p class="dw-muted">Full question bank (${pool.length} questions) grouped by ITEM standard. ${escapeHtml(sourceLine)} Use for lesson planning, grading reference, and re-teaching missed concepts.</p>
       </div>
       ${ordered.map((std) => `
         <section class="dw-card idt-answer-key-std">
@@ -575,6 +585,12 @@
   }
 
   function updateTeacherMeta() {
+    if (submissionsError) {
+      teacherMeta.textContent = submissionsError;
+      teacherMeta.classList.add("dw-error");
+      return;
+    }
+    teacherMeta.classList.remove("dw-error");
     const rows = filteredSubmissions();
     const typingNote = typingFilter !== "all" ? ` · ${typingLabel(typingFilter)}` : "";
     const classNote = classFilter !== "all" ? ` · ${classFilter}` : "";
@@ -696,16 +712,18 @@
   async function loadTeacherDashboard() {
     teacherMeta.textContent = "Loading submissions…";
     teacherMeta.classList.remove("dw-error");
+    show("teacher");
+    renderQuestionBankStatus();
     try {
       allSubmissions = await fetchSubmissions();
-      renderClassCodesPanel();
-      populateClassFilter();
-      setTeacherViewMode(teacherViewMode);
-      show("teacher");
+      submissionsError = "";
     } catch (err) {
-      teacherMeta.textContent = err.message || "Could not load submissions.";
-      teacherMeta.classList.add("dw-error");
+      allSubmissions = [];
+      submissionsError = err.message || "Could not load submissions.";
     }
+    renderClassCodesPanel();
+    populateClassFilter();
+    setTeacherViewMode(teacherViewMode);
   }
 
   function setTypingFilter(value) {
@@ -714,6 +732,264 @@
       btn.classList.toggle("dw-filter--active", btn.dataset.typingFilter === typingFilter);
     });
     renderTeacherViews();
+  }
+
+  const BANK_URL = "/api/item-diagnostic-bank";
+  let pendingBank = null;
+
+  function bankMeta() {
+    return window.ITEMDiagnosticBankMeta || { source: "builtin" };
+  }
+
+  function formatBankTime(value) {
+    const time = Number(value);
+    if (!time) return "";
+    try {
+      return new Date(time).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    } catch {
+      return "";
+    }
+  }
+
+  function setBankMessage(text, kind) {
+    const el = document.getElementById("questionBankMessage");
+    if (!el) return;
+    el.textContent = text || "";
+    el.classList.toggle("dw-hidden", !text);
+    el.classList.toggle("dw-error", kind === "error");
+    el.classList.toggle("dw-muted", kind !== "error");
+  }
+
+  function renderQuestionBankStatus() {
+    const status = document.getElementById("questionBankStatus");
+    const restore = document.getElementById("questionBankRestore");
+    const meta = bankMeta();
+    const count = Bank?.getQuestions?.().length || 0;
+    if (status && !count && !(window.ITEMDiagnosticBank || []).length) {
+      status.textContent = "Checking which questions the test is using…";
+      restore?.classList.add("dw-hidden");
+      return;
+    }
+    if (status) {
+      if (meta.source === "upload") {
+        const when = formatBankTime(meta.updatedAt);
+        status.textContent = `Uploaded bank${meta.label ? ` · ${meta.label}` : ""} · ${count} question${count === 1 ? "" : "s"} on the quiz${when ? ` · ${when}` : ""}`;
+      } else {
+        const stored = window.ITEMDiagnosticBankStorage === "unavailable"
+          ? " A replacement bank cannot be saved on this site yet."
+          : "";
+        status.textContent = `Built-in Tech Escape bank · ${count} question${count === 1 ? "" : "s"} on the quiz.${stored}`;
+      }
+    }
+    restore?.classList.toggle("dw-hidden", meta.source !== "upload");
+  }
+
+  function csvCell(value) {
+    const text = String(value ?? "");
+    if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+    return text;
+  }
+
+  function levelLabel(level) {
+    if (Number(level) === 1) return "1 · Approachable";
+    if (Number(level) === 3) return "3 · Challenging";
+    return "2 · Core";
+  }
+
+  function terminalName(topic) {
+    if (topic === "design") return "Design Lab";
+    if (topic === "systems") return "Network Closet";
+    if (topic === "data" || topic === "citizenship") return "Data Vault";
+    if (topic === "code") return "Code Bay";
+    return "";
+  }
+
+  function downloadQuestionBank() {
+    const pool = Bank?.getQuestions?.() || [];
+    if (!pool.length) {
+      setBankMessage("The question bank is not loaded yet.", "error");
+      return;
+    }
+    const headers = ["ID", "Terminal", "Topic", "Standard code", "Standard", "Strand", "Level", "Answer type", "Question", "A", "B", "C", "D", "E", "Correct", "Why this is right", "In diagnostic pool"];
+    const lines = [headers.join(",")];
+    for (const q of pool) {
+      const options = Array.isArray(q.a) ? q.a : [];
+      const letters = (q.correct || []).map((index) => "ABCDE"[index] || "").filter(Boolean).join(", ");
+      lines.push([
+        q.id,
+        terminalName(q.topic),
+        q.topic || "",
+        q.std,
+        q.stdLabel || "",
+        q.strand || "",
+        levelLabel(q.level),
+        (q.correct || []).length > 1 ? "Select all that apply" : "One answer",
+        q.q,
+        options[0] || "",
+        options[1] || "",
+        options[2] || "",
+        options[3] || "",
+        options[4] || "",
+        letters,
+        q.why || "",
+        "Yes",
+      ].map(csvCell).join(","));
+    }
+    const blob = new Blob([`\uFEFF${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "item-diagnostic-question-bank.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function fileToBase64(file) {
+    return file.arrayBuffer().then((buffer) => {
+      const bytes = new Uint8Array(buffer);
+      let binary = "";
+      const size = 0x8000;
+      for (let i = 0; i < bytes.length; i += size) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + size));
+      }
+      return btoa(binary);
+    });
+  }
+
+  function applyPublishedBank(data) {
+    window.ITEMDiagnosticBank = data.questions;
+    window.ITEMDiagnosticBankMeta = {
+      source: "upload",
+      label: data.label || "Uploaded spreadsheet",
+      updatedAt: data.updatedAt || Date.now(),
+      count: data.questions.length,
+    };
+    window.ITEMDiagnosticBankStorage = "ready";
+    pendingBank = null;
+    document.getElementById("questionBankPreview")?.classList.add("dw-hidden");
+    renderQuestionBankStatus();
+    if (teacherViewMode === "answerkey") renderAnswerKey();
+  }
+
+  function restoreBuiltinBank() {
+    const builtin = window.ITEMDiagnosticBuiltinBank;
+    if (!Array.isArray(builtin) || !builtin.length) return;
+    window.ITEMDiagnosticBank = builtin.map((q) => ({
+      ...q,
+      a: Array.isArray(q.a) ? [...q.a] : [],
+      correct: Array.isArray(q.correct) ? [...q.correct] : [],
+    }));
+    window.ITEMDiagnosticBankMeta = { source: "builtin" };
+    pendingBank = null;
+    document.getElementById("questionBankPreview")?.classList.add("dw-hidden");
+    renderQuestionBankStatus();
+    if (teacherViewMode === "answerkey") renderAnswerKey();
+  }
+
+  function renderBankPreview(data) {
+    const preview = document.getElementById("questionBankPreview");
+    if (!preview) return;
+    pendingBank = data.questions?.length ? data : null;
+    const standards = new Map();
+    for (const q of data.questions || []) {
+      standards.set(q.std, (standards.get(q.std) || 0) + 1);
+    }
+    const standardLines = [...standards.entries()].slice(0, 8).map(([code, count]) => (
+      `<li>ITEM ${escapeHtml(code)} · ${count} question${count === 1 ? "" : "s"}</li>`
+    )).join("");
+    const moreStandards = standards.size > 8 ? `<li>and ${standards.size - 8} more standards</li>` : "";
+    const problems = [...(data.errors || []), ...(data.warnings || [])].slice(0, 6);
+    const hiddenProblems = (data.errors || []).length + (data.warnings || []).length - problems.length;
+    preview.classList.remove("dw-hidden");
+    preview.innerHTML = `
+      <p><strong>${data.count || 0} question${data.count === 1 ? "" : "s"}</strong> ready${data.sheetName ? ` from ${escapeHtml(data.sheetName)}` : ""}${data.filename ? ` · ${escapeHtml(data.filename)}` : ""}.</p>
+      <p class="dw-muted dw-tiny">${data.excluded || 0} row${data.excluded === 1 ? "" : "s"} left out of the quiz. ${standards.size} standard${standards.size === 1 ? "" : "s"} covered.</p>
+      ${standardLines ? `<ul>${standardLines}${moreStandards}</ul>` : ""}
+      ${problems.length ? `<ul>${problems.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}${hiddenProblems > 0 ? `<li>and ${hiddenProblems} more notes</li>` : ""}</ul>` : ""}
+      ${pendingBank ? `<div class="idt-bank-actions"><button id="questionBankPublish" class="dw-btn" type="button">Update the test</button></div>` : ""}
+    `;
+    document.getElementById("questionBankPublish")?.addEventListener("click", publishQuestionBank);
+  }
+
+  async function previewQuestionBank(file) {
+    if (!file) return;
+    if (file.size > 2_000_000) {
+      setBankMessage("Choose a spreadsheet under 2 MB.", "error");
+      return;
+    }
+    setBankMessage("Reading the spreadsheet…");
+    try {
+      const fileBase64 = await fileToBase64(file);
+      const res = await fetch(BANK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: TEACHER_PASSWORD,
+          action: "preview",
+          filename: file.name,
+          fileBase64,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "The spreadsheet could not be read.");
+      renderBankPreview(data);
+      if (!data.questions?.length) {
+        setBankMessage(data.errors?.[0] || "No usable questions were found in that file.", "error");
+        return;
+      }
+      setBankMessage("Check the preview, then update the test. Nothing changes until you do.");
+    } catch (error) {
+      pendingBank = null;
+      setBankMessage(error.message || "The spreadsheet could not be read.", "error");
+    }
+  }
+
+  async function publishQuestionBank() {
+    if (!pendingBank?.questions?.length) return;
+    const count = pendingBank.questions.length;
+    const label = pendingBank.filename || "Uploaded spreadsheet";
+    if (!window.confirm(`Replace the live diagnostic with ${count} questions from ${label}? Students who open the page after this will get the new bank.`)) {
+      return;
+    }
+    const button = document.getElementById("questionBankPublish");
+    if (button) button.disabled = true;
+    setBankMessage("Updating the test…");
+    try {
+      const res = await fetch(BANK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: TEACHER_PASSWORD,
+          action: "publish",
+          label,
+          questions: pendingBank.questions,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "The test could not be updated.");
+      applyPublishedBank(data);
+      setBankMessage("The live quiz is using this spreadsheet. Students see it the next time they open the diagnostic.");
+    } catch (error) {
+      if (button) button.disabled = false;
+      setBankMessage(error.message || "The test could not be updated.", "error");
+    }
+  }
+
+  async function revertQuestionBank() {
+    if (!window.confirm("Restore the built-in Tech Escape question bank for every new quiz?")) return;
+    setBankMessage("Restoring the built-in bank…");
+    try {
+      const res = await fetch(BANK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: TEACHER_PASSWORD, action: "revert" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "The built-in bank could not be restored.");
+      restoreBuiltinBank();
+      setBankMessage("The built-in Tech Escape bank is active again.");
+    } catch (error) {
+      setBankMessage(error.message || "The built-in bank could not be restored.", "error");
+    }
   }
 
   function bindEvents() {
@@ -740,6 +1016,13 @@
     document.getElementById("refreshBtn")?.addEventListener("click", loadTeacherDashboard);
     document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
     document.getElementById("answerKeyBtn")?.addEventListener("click", () => setTeacherViewMode("answerkey"));
+    document.getElementById("questionBankFile")?.addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      previewQuestionBank(file);
+    });
+    document.getElementById("questionBankDownload")?.addEventListener("click", downloadQuestionBank);
+    document.getElementById("questionBankRestore")?.addEventListener("click", revertQuestionBank);
     document.getElementById("closeDetailBtn")?.addEventListener("click", () => detailPanel?.classList.add("dw-hidden"));
 
     document.getElementById("teacherTabTable")?.addEventListener("click", () => setTeacherViewMode("table"));
@@ -755,11 +1038,13 @@
       btn.addEventListener("click", () => setTypingFilter(btn.dataset.typingFilter));
     });
 
-    if (!Bank?.getQuestions?.()?.length) {
-      window.addEventListener("item-diagnostic-ready", () => {
-        if (teacherViewMode === "answerkey") renderAnswerKey();
-      }, { once: true });
-    }
+    const refreshBankView = () => {
+      renderQuestionBankStatus();
+      if (teacherViewMode === "answerkey") renderAnswerKey();
+    };
+    window.addEventListener("item-diagnostic-ready", refreshBankView);
+    window.addEventListener("item-diagnostic-bank-updated", refreshBankView);
+    renderQuestionBankStatus();
   }
 
   bindEvents();
