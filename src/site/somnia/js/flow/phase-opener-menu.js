@@ -233,7 +233,8 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
     closeBtn.title = "View the board. Return to opener brings this menu back.";
   }
 
-  const rows = (state.players || []).filter((p) => p.alive).map((player) => {
+  const alive = (state.players || []).filter((p) => p.alive);
+  const rows = alive.map((player) => {
     const isBest = best?.id === player.id;
     const isFocus = activePlayer(state)?.id === player.id;
     const isOpener = contributor?.id === player.id;
@@ -241,8 +242,6 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
     const ifSpend = projectedPhaseBudget(state, player);
     const tokenOn = state.phaseTokenAsPsyche === player.id;
     const tokenOk = canUsePhasePowerToken(state, player) || tokenOn;
-    const suited = (player.hand || []).filter((c) => isOpenerCard(c, state));
-    const other = (player.hand || []).filter((c) => !isOpenerCard(c, state));
 
     return `
       <section class="phase-opener-dreamer${isFocus ? " is-focus" : ""}${isOpener ? " is-opener" : ""}${isBest ? " is-best" : ""}" data-player-id="${player.id}">
@@ -252,31 +251,30 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
             <span class="phase-opener-name">${player.name}${player.isHead ? " ★" : ""}</span>
           </button>
           <div class="phase-opener-meta">
-            <span class="phase-opener-stat">${suitIconHtml(suit, { size: 14 })} +${bonus}</span>
-            <span class="phase-opener-budget">→ ${ifSpend} for team</span>
-            ${isBest ? `<span class="phase-opener-badge">Best ${suitLabel}</span>` : ""}
+            <span class="phase-opener-stat">${suitIconHtml(suit, { size: 12 })} +${bonus}</span>
+            <span class="phase-opener-budget">→ ${ifSpend}</span>
+            ${isBest ? `<span class="phase-opener-badge">Best</span>` : ""}
             ${isOpener ? `<span class="phase-opener-badge opener">Opening</span>` : ""}
           </div>
           <button type="button" class="btn btn-sm phase-opener-token${tokenOn ? " on" : ""}" data-token-id="${player.id}" ${tokenOk ? "" : "disabled"} title="Spend 1 Power Token as 1 + ${suitLabel} ${bonus}">
-            ${tokenOn ? `Token · 1+${bonus}` : `Power Token · 1+${bonus} (${player.powerTokens || 0})`}
+            ${tokenOn ? `Token · 1+${bonus}` : `Token · 1+${bonus} (${player.powerTokens || 0})`}
           </button>
         </header>
         <div class="phase-opener-hands">
-          <div class="phase-opener-suited" data-hand-for="${player.id}"></div>
-          ${other.length ? `<div class="phase-opener-other" data-other-for="${player.id}"></div>` : ""}
+          <div class="phase-opener-hand-row" data-hand-for="${player.id}"></div>
         </div>
       </section>
     `;
   }).join("");
 
   body.innerHTML = `
-    <div id="phase-opener-menu" class="phase-opener-menu" data-phase="${phase}" data-suit="${suit || ""}">
+    <div id="phase-opener-menu" class="phase-opener-menu" data-phase="${phase}" data-suit="${suit || ""}" data-count="${alive.length}">
       <header class="phase-opener-header fullscreen-browser-header">
-        <p class="phase-opener-kicker">${suitIconHtml(suit, { size: 18 })} ${suitLabel}</p>
+        <p class="phase-opener-kicker">${suitIconHtml(suit, { size: 16 })} ${suitLabel}</p>
         <h2>${openerTitle(phase, suitLabel)}</h2>
         <p class="fullscreen-browser-lead">${openerLead(phase, suitLabel)}</p>
       </header>
-      <div class="phase-opener-grid fullscreen-browser-body">${rows}</div>
+      <div class="phase-opener-grid fullscreen-browser-body" data-count="${alive.length}">${rows}</div>
       <footer class="phase-opener-footer">
         <div class="phase-opener-summary" aria-live="polite">
           ${contributor
@@ -294,37 +292,39 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
     </div>
   `;
 
-  (state.players || []).filter((p) => p.alive).forEach((player) => {
-    const suitedEl = body.querySelector(`[data-hand-for="${player.id}"]`);
-    const otherEl = body.querySelector(`[data-other-for="${player.id}"]`);
+  alive.forEach((player) => {
+    const handEl = body.querySelector(`[data-hand-for="${player.id}"]`);
+    if (!handEl) return;
     const suited = (player.hand || []).filter((c) => isOpenerCard(c, state));
     const other = (player.hand || []).filter((c) => !isOpenerCard(c, state));
 
-    if (suitedEl) {
-      if (!suited.length) {
-        suitedEl.innerHTML = `<p class="phase-opener-empty">No ${suitLabel} Psyche</p>`;
-      } else {
-        suited.forEach((card) => {
-          const selected = state.selectedHand.includes(card.instanceId);
-          suitedEl.appendChild(renderCard(card, {
-            mini: true,
-            selected,
-            playerId: player.id,
-            onClick: () => selectOpenerCard(state, player, card),
-          }));
-        });
-      }
+    if (!suited.length && !other.length) {
+      handEl.innerHTML = `<p class="phase-opener-empty">Empty hand</p>`;
+      return;
     }
-    if (otherEl) {
-      other.forEach((card) => {
-        otherEl.appendChild(renderCard(card, {
-          mini: true,
-          dense: true,
-          playerId: player.id,
-          onClick: () => focusDreamerRow(state, player),
-        }));
-      });
+    if (!suited.length) {
+      const note = document.createElement("p");
+      note.className = "phase-opener-empty";
+      note.textContent = `No ${suitLabel}`;
+      handEl.appendChild(note);
     }
+    suited.forEach((card) => {
+      const selected = state.selectedHand.includes(card.instanceId);
+      handEl.appendChild(renderCard(card, {
+        mini: true,
+        selected,
+        playerId: player.id,
+        onClick: () => selectOpenerCard(state, player, card),
+      }));
+    });
+    other.forEach((card) => {
+      handEl.appendChild(renderCard(card, {
+        mini: true,
+        dense: true,
+        playerId: player.id,
+        onClick: () => focusDreamerRow(state, player),
+      }));
+    });
   });
 
   body.querySelectorAll("[data-focus-id]").forEach((btn) => {

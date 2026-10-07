@@ -6,10 +6,17 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "39.2";
+export const SOMNIA_VERSION = "39.3";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "39.3",
+    title: "Phase Opener Table View",
+    notes: [
+      "The phase opener is a full-screen 2×3 table: every living Dreamer's hand (up to 10 cards) fits on one screen with compact overlapping Psyche, so six Dreamers no longer clip out of reach.",
+    ],
+  },
   {
     version: "39.2",
     title: "Psyche for Unused Actions",
