@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { EVENT_RESOLUTIONS } from "../src/site/somnia/js/event-resolutions.js";
-import { DREAM_RESOLUTIONS } from "../src/site/somnia/js/dream-resolutions.js";
-import { resolutionSideSteps } from "../src/site/somnia/js/resolution-effects.js";
+import { EVENT_RESOLUTIONS } from "../src/site/somnia/js/effects/event-resolutions.js";
+import { DREAM_RESOLUTIONS } from "../src/site/somnia/js/cards/dream-resolutions.js";
+import { resolutionSideSteps } from "../src/site/somnia/js/effects/resolution-effects.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const problems = [];
@@ -59,7 +59,7 @@ function auditTable(name, table) {
 auditTable("event", EVENT_RESOLUTIONS);
 auditTable("dream", DREAM_RESOLUTIONS);
 
-const resolutionJs = readFileSync(join(root, "src/site/somnia/js/resolution-effects.js"), "utf8");
+const resolutionJs = readFileSync(join(root, "src/site/somnia/js/effects/resolution-effects.js"), "utf8");
 if (resolutionJs.includes("state.skipNextExplore =")) {
   problems.push("skipNextExplore still writes state.skipNextExplore");
 }

@@ -1,0 +1,584 @@
+/** SOMNIA 18.5.1 rules helpers */
+
+import {
+  repressCard,
+  isDreambeastPsycheCard,
+} from "../dreamers/subconscious.js";
+import { dreamerMeetBonuses, encounterRejectCost, encounterPower, recommendedEncounterPower, isLeviathanCard } from "../encounters/dreambeasts.js";
+import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
+import { persistentMeetBonus, sumEffectivePsycheValue } from "../effects/objects.js";
+import { effectiveDreamerStat } from "../dreamers/archetype-stats.js";
+import { PHASES } from "./data.js";
+import { isWildPsyche, psycheCardValue } from "../cards/psyche.js";
+import { playSfx } from "../audio/audio.js";
+import { queueCardDiscard, queueHandDelta } from "../cards/card-fx.js";
+
+export { isWildPsyche, psycheCardValue };
+
+/** Wild Psyche counts as the active phase suit when played for phase actions. */
+export function cardCountsAsSuit(card, suit, state) {
+  if (!isWildPsyche(card)) return card.suit === suit;
+  const phase = PHASES[state.phaseIndex];
+  if (phase === "Reveal") return suit === "lucidity";
+  if (phase === "Explore") return suit === "elasticity";
+  if (phase === "Meet" && !state.meetActionBudget) return suit === "willpower";
+  return true;
+}
+export const SUIT_LABELS = {
+  lucidity: "Lucidity",
+  elasticity: "Elasticity",
+  willpower: "Willpower",
+};
+
+/** Phase opener: one Psyche card (or 1 Power Token as that card). Meet encounter spreads still allow 1–3. */
+export const PHASE_OPENER_MAX_CARDS = 1;
+
+/** @deprecated Use suitIconHtml() in UI; kept for non-HTML fallbacks. */
+export const SUIT_SYMBOLS = {
+  lucidity: "◉",
+  elasticity: "⇄",
+  willpower: "✊",
+};
+
+export const SUIT_COLORS = {
+  lucidity: "#4a9eff",
+  elasticity: "#f0c830",
+  willpower: "#e84848",
+};
+
+const SUIT_ICON_PATHS = {
+  lucidity: '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm0-7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/>',
+  elasticity: '<path d="M16 5l-1.42 1.42L18.17 10H7v2h11.17l-3.59 3.58L16 17l6-6-6-6zM8 19l1.42-1.42L5.83 14H17v-2H5.83l3.59-3.58L8 7l-6 6 6 6z"/>',
+  willpower: '<path d="M17 8V6h-2V4h-2v2h-2V4H9v2H7v2H5v8c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4V8h-2zm-2 8H9v-6h6v6z"/>',
+};
+
+export function suitIconHtml(suit, { className = "suit-icon", size = 14 } = {}) {
+  const label = SUIT_LABELS[suit] || suit;
+  const path = SUIT_ICON_PATHS[suit];
+  if (!path) return "";
+  return `<span class="${className} suit-${suit}" role="img" aria-label="${label}" title="${label}"><svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true">${path}</svg></span>`;
+}
+
+export function dreamerStatsHtml(dreamer) {
+  return `
+    <div class="dreamer-stats">
+      <span class="stat suit-lucidity" title="Lucidity">${suitIconHtml("lucidity", { size: 12 })}${dreamer.lucidity}</span>
+      <span class="stat suit-elasticity" title="Elasticity">${suitIconHtml("elasticity", { size: 12 })}${dreamer.elasticity}</span>
+      <span class="stat suit-willpower" title="Willpower">${suitIconHtml("willpower", { size: 12 })}${dreamer.willpower}</span>
+    </div>
+  `;
+}
+
+export function formatDreamerStatsText(dreamer) {
+  return `${SUIT_LABELS.lucidity} ${dreamer.lucidity} · ${SUIT_LABELS.elasticity} ${dreamer.elasticity} · ${SUIT_LABELS.willpower} ${dreamer.willpower}`;
+}
+
+export const MEET_ACTIONS = {
+  MEET: "meet",
+  LANDSCAPE: "landscape",
+  TRADE: "trade",
+  ARCHETYPE: "archetype-power",
+  DREAMER: "dreamer-power",
+};
+
+export function dreamerStat(dreamer, stat) {
+  return dreamer[stat] ?? 0;
+}
+
+/** Dreamer stat for phase budgets, including team-wide Quintessential Archetype bonuses. */
+export function totalStat(player, stat, state = null) {
+  if (state) return effectiveDreamerStat(state, player.dreamer, stat);
+  return dreamerStat(player.dreamer, stat);
+}
+
+export function phaseSuitForOpening(phase) {
+  if (phase === "Reveal") return "lucidity";
+  if (phase === "Explore") return "elasticity";
+  if (phase === "Meet") return "willpower";
+  return null;
+}
+
+/** True while the table is still waiting for one Dreamer to spend Psyche and set the phase budget. */
+export function phaseOpeningActive(state) {
+  const phase = PHASES[state.phaseIndex];
+  if (phase === "Reveal") return state.dreamDrawn && !state.revealLandscapeUsed && !state.landscapePick;
+  if (phase === "Explore") return !state.exploreActivated;
+  if (phase === "Meet") return !state.meetActionBudget;
+  return false;
+}
+
+export function statForPhaseBudget(phase, _state) {
+  return phaseSuitForOpening(phase);
+}
+
+export function phaseTokenPlayer(state) {
+  if (!state.phaseTokenAsPsyche) return null;
+  return state.players.find((p) => p.alive && p.id === state.phaseTokenAsPsyche) || null;
+}
+
+export function phaseTokenValue(state, player) {
+  if (!player || state.phaseTokenAsPsyche !== player.id) return 0;
+  const phase = PHASES[state.phaseIndex];
+  const suit = phaseSuitForOpening(phase);
+  const cards = suit ? selectedBySuit(state, player, suit) : selectedCards(state, player);
+  if (cards.length >= PHASE_OPENER_MAX_CARDS) return 0;
+  return 1;
+}
+
+export function canUsePhasePowerToken(state, player) {
+  if (!player?.alive || (player.powerTokens || 0) < 1) return false;
+  if (!phaseOpeningActive(state)) return false;
+  const phase = PHASES[state.phaseIndex];
+  const suit = phaseSuitForOpening(phase);
+  const cards = suit ? selectedBySuit(state, player, suit) : selectedCards(state, player);
+  return cards.length < PHASE_OPENER_MAX_CARDS;
+}
+
+/** Dreamer whose selected Psyche (or 1 Power Token) will open the current phase. */
+export function findPhaseContributor(state) {
+  if (!phaseOpeningActive(state)) return null;
+  const ids = new Set(state.selectedHand);
+  const owners = [];
+  state.players.forEach((player) => {
+    if (!player.alive) return;
+    const has = player.hand.some((c) => ids.has(c.instanceId));
+    if (has) owners.push(player);
+  });
+
+  if (owners.length === 1) return owners[0];
+  if (!ids.size) return phaseTokenPlayer(state);
+  return null;
+}
+
+/** Alive Dreamer with the highest stat bonus for the current phase opening. */
+export function bestPhaseContributor(state) {
+  const phase = PHASES[state.phaseIndex];
+  const stat = statForPhaseBudget(phase, state);
+  let best = null;
+  let bestValue = -1;
+  state.players.forEach((player) => {
+    if (!player.alive) return;
+    const value = totalStat(player, stat, state);
+    if (value > bestValue) {
+      bestValue = value;
+      best = player;
+    }
+  });
+  return best;
+}
+
+export function projectedPhaseBudget(state, player) {
+  const phase = PHASES[state.phaseIndex];
+  if (phase === "Reveal") return revealBudget(state, player);
+  if (phase === "Explore") return exploreBudget(state, player);
+  if (phase === "Meet") return meetActionBudgetFromWillpower(state, player);
+  return 0;
+}
+
+export function selectedCards(state, player) {
+  return player.hand.filter((c) => state.selectedHand.includes(c.instanceId));
+}
+
+/** All Psyche cards selected across every Dreamer (cooperative Meet pool). */
+export function allSelectedCards(state) {
+  const ids = new Set(state.selectedHand);
+  const cards = [];
+  state.players.forEach((player) => {
+    player.hand.forEach((card) => {
+      if (ids.has(card.instanceId)) cards.push(card);
+    });
+  });
+  return cards;
+}
+
+/** Live breakdown of selected Psyche for the cursor HUD. */
+export function psycheCursorBreakdown(state) {
+  const cards = allSelectedCards(state);
+  if (!cards.length) return null;
+
+  const bySuit = { lucidity: 0, elasticity: 0, willpower: 0 };
+  let wild = 0;
+  cards.forEach((card) => {
+    if (card.type === "psyche-power") return;
+    const value = psycheCardValue(card);
+    if (isWildPsyche(card)) wild += value;
+    else if (card.suit && bySuit[card.suit] != null) bySuit[card.suit] += value;
+  });
+  const cardTotal = bySuit.lucidity + bySuit.elasticity + bySuit.willpower + wild;
+  const extras = [];
+  const phase = PHASES[state.phaseIndex];
+
+  if (phaseOpeningActive(state)) {
+    const player = findPhaseContributor(state);
+    const suit = phaseSuitForOpening(phase);
+    const statKey = statForPhaseBudget(phase, state);
+    if (player && suit) {
+      const stat = totalStat(player, statKey, state);
+      extras.push({ suit, value: stat, label: player.name });
+      return {
+        bySuit,
+        wild,
+        cardTotal,
+        extras,
+        total: projectedPhaseBudget(state, player),
+      };
+    }
+  }
+
+  if (phase === "Meet" && state.meetActionBudget > 0) {
+    const { encounter, actor } = currentMeetEncounter(state);
+    const selected = actor ? selectedCards(state, actor) : cards;
+    ["accept", "reject"].forEach((mode) => {
+      const accept = mode === "accept";
+      const suit = encounterPaySuit(encounter, accept);
+      if (!suit || !selectedHasPaySuit(selected, suit) || !actor) return;
+      extras.push({
+        suit,
+        value: totalStat(actor, suit, state),
+        label: accept ? "Accept" : "Repress",
+      });
+    });
+    const affinity = meetBonusBreakdown(state);
+    if (affinity.total) {
+      extras.push({ suit: null, value: affinity.total, label: affinity.parts.join(", ") });
+    }
+    if (state.pendingPowerBonus) {
+      extras.push({ suit: null, value: state.pendingPowerBonus, label: "Power spread" });
+    }
+    if (state.anchorMeetSpreadBonus) {
+      extras.push({ suit: null, value: state.anchorMeetSpreadBonus, label: "Hold the Line" });
+    }
+    return {
+      bySuit,
+      wild,
+      cardTotal,
+      extras,
+      total: encounterPlayTotal(state, { accept: selectedHasPaySuit(selected, encounterPaySuit(encounter, true)) }),
+      acceptTotal: encounter ? encounterPlayTotal(state, { accept: true }) : null,
+      rejectTotal: encounter ? encounterPlayTotal(state, { accept: false }) : null,
+      acceptNeed: encounter ? encounterPower(encounter, true) : null,
+      rejectNeed: encounter ? encounterPower(encounter, false) : null,
+      acceptRec: encounter ? recommendedEncounterPower(encounter, true) : null,
+      rejectRec: encounter ? recommendedEncounterPower(encounter, false) : null,
+    };
+  }
+
+  return { bySuit, wild, cardTotal, extras, total: cardTotal };
+}
+
+/** Psyche cards in the Meet pool that count toward the 3-card spread limit. */
+export function spreadPsycheCount(state) {
+  return allSelectedCards(state).filter((c) => !isDreambeastPsycheCard(c)).length;
+}
+
+/** Accepted Dreambeast allies in the Meet pool (bonus cards, no spread limit). */
+export function allyPsycheCount(state) {
+  return allSelectedCards(state).filter((c) => isDreambeastPsycheCard(c)).length;
+}
+
+/** Alive Dreamers standing on a Landscape. */
+export function occupantsOnLandscape(state, landscapeId) {
+  if (!landscapeId) return [];
+  return (state.players || []).filter((p) => p.alive && p.landscapeId === landscapeId);
+}
+
+/**
+ * Dreamer acting on a Landscape. Prefers the focused Dreamer if they occupy it,
+ * so sharing a tile (The Bed) does not lock play to the Head.
+ */
+export function actorOnLandscape(state, landscapeId) {
+  const onTile = occupantsOnLandscape(state, landscapeId);
+  if (!onTile.length) return null;
+  const active = state.players?.[state.activePlayerIndex];
+  if (active && onTile.some((p) => p.id === active.id)) return active;
+  return onTile[0];
+}
+
+export function meetEncounterActor(state) {
+  const tileId = state.activeEncounterLandscapeId;
+  if (tileId) return actorOnLandscape(state, tileId);
+  const tile = state.board?.find((t) => {
+    if (t.wasteland || !t.revealed) return false;
+    const encounters = t.encounters || (t.encounter ? [t.encounter] : []);
+    if (!encounters.length) return false;
+    return occupantsOnLandscape(state, t.id).length > 0;
+  });
+  if (!tile) return null;
+  return actorOnLandscape(state, tile.id);
+}
+
+export function currentMeetEncounter(state) {
+  if (state.activeEncounter) {
+    return { encounter: state.activeEncounter, actor: meetEncounterActor(state) };
+  }
+  const tile = state.board?.find((t) => {
+    if (t.wasteland || !t.revealed) return false;
+    const encounters = t.encounters || (t.encounter ? [t.encounter] : []);
+    if (!encounters.length) return false;
+    return occupantsOnLandscape(state, t.id).length > 0;
+  });
+  if (!tile) return { encounter: null, actor: null };
+  const actor = actorOnLandscape(state, tile.id);
+  const encounters = tile.encounters || (tile.encounter ? [tile.encounter] : []);
+  return { encounter: encounters[0] || null, actor };
+}
+
+export function meetBonusBreakdown(state) {
+  const { encounter, actor } = currentMeetEncounter(state);
+  if (!encounter || !actor) return { total: 0, parts: [] };
+  return dreamerMeetBonuses(actor.dreamer, encounter);
+}
+
+export function cardOwner(state, card) {
+  return state.players.find((p) => p.hand.some((c) => c.instanceId === card.instanceId)) || null;
+}
+
+export function selectedBySuit(state, player, suit) {
+  return selectedCards(state, player).filter((c) => cardCountsAsSuit(c, suit, state));
+}
+
+export function sumSelectedValue(state, player, suit = null) {
+  const cards = suit ? selectedBySuit(state, player, suit) : selectedCards(state, player);
+  return cards.reduce((sum, c) => sum + psycheCardValue(c), 0);
+}
+
+export function canSelectCard(state, card, phase, player = null) {
+  const active = player || state.players[state.activePlayerIndex];
+  const selected = selectedCards(state, active);
+  if (state.selectedHand.includes(card.instanceId)) return true;
+
+  if (phaseOpeningActive(state)) {
+    if (!active.alive || !active.hand.some((c) => c.instanceId === card.instanceId)) return false;
+    const suit = phaseSuitForOpening(phase);
+    if (!cardCountsAsSuit(card, suit, state)) return false;
+    const suited = selectedBySuit(state, active, suit);
+    if (suited.length >= PHASE_OPENER_MAX_CARDS) return false;
+    return true;
+  }
+
+  if (phase === "Meet" && state.meetActionBudget > 0) {
+    if (!active.alive || !active.hand.some((c) => c.instanceId === card.instanceId)) return false;
+    const actor = meetPsycheActor(state);
+    if (!actor || active.id !== actor.id) return false;
+    if (!isDreambeastPsycheCard(card) && spreadPsycheCount(state) >= 3) return false;
+    return true;
+  }
+
+  if (phase === "Reveal") {
+    if (selected.length >= PHASE_OPENER_MAX_CARDS) return false;
+    return card.suit === "lucidity" || isWildPsyche(card);
+  }
+  if (phase === "Explore") {
+    if (selected.length >= PHASE_OPENER_MAX_CARDS) return false;
+    return card.suit === "elasticity" || isWildPsyche(card);
+  }
+  if (phase === "Meet") {
+    if (state.meetActionBudget > 0 && state.meetActionsUsed < state.meetActionBudget) {
+      if (!isDreambeastPsycheCard(card) && spreadPsycheCount(state) >= 3) return false;
+      return true;
+    }
+    if (state.meetActionBudget === 0) {
+      if (selected.length >= PHASE_OPENER_MAX_CARDS) return false;
+      return card.suit === "willpower" || isWildPsyche(card);
+    }
+    return selected.length < 3;
+  }
+  return selected.length < 3;
+}
+
+export function revealBudget(state, player) {
+  const played = sumSelectedValue(state, player, "lucidity") + phaseTokenValue(state, player);
+  if (played < 1) return 0;
+  return played + totalStat(player, "lucidity", state);
+}
+
+export function exploreBudget(state, player) {
+  const played = sumSelectedValue(state, player, "elasticity") + phaseTokenValue(state, player);
+  if (played < 1) return 0;
+  return played + totalStat(player, "elasticity", state);
+}
+
+export function meetActionBudgetFromWillpower(state, player) {
+  const played = sumSelectedValue(state, player, "willpower") + phaseTokenValue(state, player);
+  if (played < 1) return 0;
+  return played + totalStat(player, "willpower", state);
+}
+
+export function meetPlayTotal(state, player) {
+  const selected = selectedCards(state, player);
+  const base = sumEffectivePsycheValue(state, player, selected);
+  return base + (state.pendingPowerBonus || 0) + persistentMeetBonus(state, player);
+}
+
+/** Focused Dreamer on the selected Landscape — they may spend Psyche for Meet plays there. */
+export function meetPsycheActor(state) {
+  const tileId = state.selectedLandscapeId;
+  if (!tileId) return null;
+  const tile = state.board?.find((t) => t.id === tileId);
+  if (!tile || tile.wasteland || !tile.revealed) return null;
+  return actorOnLandscape(state, tileId);
+}
+
+/** Suit the Accept/Reject icon demands: Accept uses the beast's suit, Reject uses rejectSuit. */
+export function encounterPaySuit(encounter, accept = true) {
+  if (!encounter) return null;
+  return accept ? (encounter.suit || null) : (encounter.rejectSuit || encounter.suit || null);
+}
+
+export function selectedHasPaySuit(cards, suit) {
+  if (!suit) return true;
+  return (cards || []).some((c) => isWildPsyche(c) || c.suit === suit);
+}
+
+export function encounterPayHint(encounter, accept = true) {
+  const suit = encounterPaySuit(encounter, accept);
+  if (!suit) return "";
+  const verb = accept ? "Accept" : (isLeviathanCard(encounter) ? "Slumber" : "Repress");
+  const power = encounterPower(encounter, accept);
+  return `${verb} needs at least 1 ${SUIT_LABELS[suit]} Psyche (1–3 cards; allies extra). Beast Power ${power}, recommended ${power + 2}. You may play less and still roll. Matching ${SUIT_LABELS[suit]} is added to your Power.`;
+}
+
+/** Meet pay total for Accept or Reject, including matching Dreamer stat when the required color is played. */
+export function encounterPlayTotal(state, { accept = true } = {}) {
+  const actor = meetPsycheActor(state);
+  if (!actor) return state.pendingPowerBonus || 0;
+  const selected = selectedCards(state, actor);
+  let total = state.pendingPowerBonus || 0;
+  total += sumEffectivePsycheValue(state, actor, selected);
+  total += persistentMeetBonus(state, actor);
+  const bonus = meetBonusBreakdown(state);
+  total += bonus.total;
+  const { encounter } = currentMeetEncounter(state);
+  const suit = encounterPaySuit(encounter, accept);
+  if (suit && selectedHasPaySuit(selected, suit)) {
+    total += totalStat(actor, suit, state);
+  }
+  total += state.anchorMeetSpreadBonus || 0;
+  return total;
+}
+
+/** Psyche total for Meet Accept — only the Dreamer on the Encounter Landscape may pay. */
+export function meetPsychePlayTotal(state) {
+  return encounterPlayTotal(state, { accept: true });
+}
+
+/** Meet pool total — Final Recurrence may still pool from multiple Dreamers; Encounters are local. */
+export function coopMeetPlayTotal(state) {
+  if (state.finalRecurrence) {
+    const selected = allSelectedCards(state);
+    if (!selected.length) return state.pendingPowerBonus || 0;
+
+    let total = state.pendingPowerBonus || 0;
+    const owners = new Set();
+    selected.forEach((card) => {
+      const owner = cardOwner(state, card);
+      if (owner) owners.add(owner.id);
+    });
+    owners.forEach((ownerId) => {
+      const owner = state.players.find((p) => p.id === ownerId);
+      if (!owner) return;
+      const cards = selected.filter((c) => cardOwner(state, c)?.id === ownerId);
+      total += sumEffectivePsycheValue(state, owner, cards);
+      total += persistentMeetBonus(state, owner);
+    });
+
+    const bonus = meetBonusBreakdown(state);
+    total += bonus.total;
+    return total;
+  }
+  return meetPsychePlayTotal(state);
+}
+
+function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {
+  const wild = isWildPsyche(card);
+  const isAlly = isDreambeastPsycheCard(card);
+  const toSub = toRepress || wild || isAlly;
+  const target = toSub ? "subconscious" : "discard";
+  const reason = toSub ? "repress" : "spend";
+  queueCardDiscard(player.id, card, target, reason);
+  queueHandDelta(player.id, -1);
+
+  if (wild) {
+    repressCard(state, card);
+    playSfx("repress");
+    return;
+  }
+  if (isAlly) {
+    repressCard(state, card);
+    playSfx("repress");
+    return;
+  }
+  if (toRepress) {
+    repressCard(state, card);
+    playSfx("repress");
+  } else {
+    state.psycheDiscard.push(card);
+    playSfx("discard");
+  }
+}
+
+export function discardSelected(state, player, { toRepress = false } = {}) {
+  const selected = selectedCards(state, player);
+  player.hand = player.hand.filter((c) => !state.selectedHand.includes(c.instanceId));
+  selected.forEach((card) => routeSpentHandCard(state, player, card, { toRepress }));
+  state.selectedHand = [];
+  state.pendingPowerBonus = 0;
+  state.pendingPowerBonusTokens = 0;
+  if (state.checkPsycheDeath) state.checkPsycheDeath(player);
+  return selected;
+}
+
+/** Discard the cooperative Meet pool from every contributing Dreamer. */
+export function discardAllSelected(state, { toRepress = false } = {}) {
+  const ids = new Set(state.selectedHand);
+  const byPlayer = [];
+  state.players.forEach((player) => {
+    const selected = player.hand.filter((c) => ids.has(c.instanceId));
+    if (!selected.length) return;
+    player.hand = player.hand.filter((c) => !ids.has(c.instanceId));
+    selected.forEach((card) => routeSpentHandCard(state, player, card, { toRepress }));
+    byPlayer.push({ player, cards: selected });
+    if (state.checkPsycheDeath) state.checkPsycheDeath(player);
+  });
+  state.selectedHand = [];
+  state.pendingPowerBonus = 0;
+  state.pendingPowerBonusTokens = 0;
+  return byPlayer;
+}
+
+export function consumePhasePowerToken(state, player) {
+  if (!player || phaseTokenValue(state, player) < 1) {
+    state.phaseTokenAsPsyche = null;
+    return 0;
+  }
+  const spent = player.powerTokens > 0 ? 1 : 0;
+  if (spent) player.powerTokens -= 1;
+  state.phaseTokenAsPsyche = null;
+  return spent;
+}
+
+export function canTradeBetween(state, landscapeA, landscapeB) {
+  return hexCanTradeBetween(state, landscapeA, landscapeB);
+}
+
+export function opposingSuit(suit) {
+  const cycle = { lucidity: "willpower", willpower: "elasticity", elasticity: "lucidity" };
+  return cycle[suit] || null;
+}
+
+export function validateEncounterPlayShape(encounter, cards, { accept = true } = {}) {
+  if (!(cards || []).length) {
+    return {
+      ok: false,
+      message: "Play 1 to 3 Psyche (allies extra). Include at least 1 of the required suit.",
+    };
+  }
+  const paySuit = encounterPaySuit(encounter, accept);
+  if (paySuit && !selectedHasPaySuit(cards, paySuit)) {
+    return {
+      ok: false,
+      message: encounterPayHint(encounter, accept),
+    };
+  }
+  return { ok: true };
+}

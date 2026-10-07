@@ -10133,20 +10133,20 @@ button.end-game-id {
 
 .fx-cursor-mote {
   position: fixed;
-  width: 7px;
-  height: 7px;
-  margin: -3px 0 0 -3px;
+  width: var(--mote-size, 6px);
+  height: var(--mote-size, 6px);
+  margin-left: calc(var(--mote-size, 6px) / -2);
+  margin-top: calc(var(--mote-size, 6px) / -2);
   border-radius: 50%;
   pointer-events: none;
   z-index: 8700;
-  background: rgba(201, 160, 255, 0.85);
-  animation: fx-cursor-mote 0.42s ease forwards;
+  background: hsl(var(--mote-hue, 280), 92%, 64%);
+  box-shadow: 0 0 8px hsl(var(--mote-hue, 280), 95%, 68%);
+  animation: fx-cursor-mote 0.72s ease-out forwards;
 }
-.fx-cursor-mote.mote-reveal { background: rgba(74, 212, 255, 0.9); }
-.fx-cursor-mote.mote-explore { background: rgba(240, 201, 106, 0.9); }
-.fx-cursor-mote.mote-meet { background: rgba(232, 72, 72, 0.85); }
 @keyframes fx-cursor-mote {
-  to { transform: scale(0.2); opacity: 0; }
+  0% { opacity: 0.95; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--mote-dx, 0px), var(--mote-dy, 12px)) scale(0.2); }
 }
 
 @keyframes fx-card-fly {

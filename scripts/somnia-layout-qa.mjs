@@ -49,8 +49,8 @@ function installWindow({
 
 installWindow({ w: 1280, h: 800, touch: 0, dpr: 1 });
 
-const { detectDeviceMode, getCapabilityProfile } = await import("../src/site/somnia/js/device-mode.js");
-const { computeMenuViewportMetrics, computeViewportMetrics } = await import("../src/site/somnia/js/panel-layout.js");
+const { detectDeviceMode, getCapabilityProfile } = await import("../src/site/somnia/js/app/device-mode.js");
+const { computeMenuViewportMetrics, computeViewportMetrics } = await import("../src/site/somnia/js/ui/panel-layout.js");
 
 const failures = [];
 

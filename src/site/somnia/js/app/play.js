@@ -1,0 +1,2812 @@
+import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, playSfx, playLandscapeSfx } from "../audio/audio.js";
+import { initClickFeedback } from "../ui/click-feedback.js";
+import { syncTurnHalo, positionTurnHalo, trackTurnHaloWithCamera } from "../board/turn-halo.js";
+import { syncGameCursor, flashRevealOpenCursor } from "../ui/game-cursor.js";
+import { initDeviceMode } from "./device-mode.js";
+import { initInputQuarantine } from "../flow/input-quarantine.js";
+import { onViewportSettled, requestRender } from "../ui/viewport-sync.js";
+import { initCompactChrome } from "../ui/compact-chrome.js";
+import { initSomniaPwa } from "./pwa.js";
+import { writeLaunchConfig, readStoredLaunchConfig } from "./launch-store.js";
+import { initDialogAccessibility } from "../ui/dialog-a11y.js";
+import { initPanelLayout } from "../ui/panel-layout.js";
+import {
+  initBoardZoom,
+  syncBoardZoomAfterRender,
+  fitBoardToViewport,
+  setBoardZoomChangeHandler,
+  setBoardCameraMoveHandler,
+  focusOnLandscape,
+  focusOnDreamer,
+} from "../board/board-zoom.js";
+import { initPauseMenu, openPauseMenu } from "../ui/pause-menu.js";
+import { initFxLayer, burstSparklesAtElement } from "../ui/fx.js";
+import { initMomentOverlay, resetMomentOverlay } from "../ui/moment-overlay.js";
+import {
+  runPendingCardFx,
+  syncHandRemovals,
+  updateHandSnapshots,
+  resetHandSnapshots,
+} from "../cards/card-fx.js";
+import { runPendingBoardFx, syncBoardMotion, resetBoardMotion, cancelQueuedEncounterSpawn } from "../board/board-fx.js";
+import { playOpeningCinematic } from "../flow/opening-cinematic.js";
+import { calculateFinalScore } from "../core/scoring.js";
+import { seedRandomness } from "../core/rng.js";
+import { fetchHighScores, submitHighScore, validateScoreName, isStandaloneMode } from "../save/highscores.js";
+import {
+  canSaveGame,
+  buildSaveLabel,
+  saveGameLocal,
+  loadGameLocal,
+  saveGameCloud,
+  listCloudSaves,
+  loadCloudSave,
+  deleteCloudSave,
+  deleteLocalSave,
+  reattachGameRuntime,
+  listLocalSaves,
+} from "../save/game-save.js";
+import {
+  clearActionHistory,
+  recordActionCheckpoint,
+  canUndoAction,
+  popActionCheckpoint,
+  restorePlayState,
+  undoStackSize,
+} from "../flow/action-history.js";
+import { recoverLegacySilver } from "../effects/event-choices.js";
+import { updateFinalRecurrenceAtmosphere } from "../dreamers/final-recurrence-atmosphere.js";
+import { syncDeckPressure } from "../cards/deck-pressure.js";
+import { startVictoryCelebration, stopVictoryCelebration } from "../ui/victory-celebration.js";
+import { LENGTHS, loadGameData } from "../core/data.js";
+import {
+  createInitialState,
+  addLog,
+  respawnDreamer,
+  getPhase,
+  activePlayer,
+  avoidDreamerDeath,
+  acceptDreamerDeath,
+  isBlockingGameChoice,
+  blockingChoiceLabel,
+  encounterKey,
+  checkDefeat,
+} from "../core/state.js";
+import { sacrificeHeldObject } from "../dreamers/quests.js";
+import {
+  getPhaseActions,
+  getPhaseAdvanceAction,
+  getPhaseOpenerAction,
+  drawDreamCard,
+  resolveOpeningDream,
+  revealLandscape,
+  activateExplore,
+  handleBoardTileClick,
+  gainMeetActions,
+  meetEncounter,
+  landscapeAction,
+  drawMindstreamOnLandscape,
+  performLandscapeAction,
+  uniqueLandscapeAction,
+  finishLandscapeMindstreamPick,
+  finishLandscapeDeckFlip,
+  spendLucidityRevealOnDeck,
+  tryDrawMindstreamFromDeck,
+  tradeAction,
+  selectTradePartner,
+  toggleTradeOffer,
+  confirmTrade,
+  cancelTrade,
+  playObject,
+  activateObject,
+  powerBonus,
+  refundPowerBonus,
+  togglePhasePowerToken,
+  getPowerTokenRadialOptions,
+  getDreamerBoardRadialOptions,
+  useDreamerPower,
+  toggleHandCard,
+  handleQuestComplete,
+  handleUseArchetypePower,
+  handleDefeatFinalArchetype,
+  handleSacrificeForFinal,
+  endPhase,
+  getPhaseHint,
+  getLegalExploreTargets,
+  resolvePendingDeathDream,
+  getEffectHelpers,
+  canDreamerMeetOnLandscape,
+  actionTurnActive,
+  actionTurnHolder,
+  passMeetToken,
+  moveDreamer,
+  prepareMindstreamMeet,
+} from "../core/game.js";
+import { createSpectatorBot } from "../dev/bot-ai.js";
+import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel, isLeviathanCard } from "../encounters/dreambeasts.js";
+import { requestEndPhase } from "../flow/phase-skip.js";
+import { initDevConsole } from "../dev/dev-console.js";
+import { enableDevMode } from "../dev/dev-commands.js";
+import { narrate } from "../core/narrator.js";
+import { openingHookText, showOpeningHook } from "../flow/opening-hook.js";
+import { cancelPendingReturn, pickRepressCard, confirmRepressStep } from "../dreamers/subconscious.js";
+import { getLandscapePickHighlights, resolveStaleLandscapePick, cancelLandscapePick } from "../board/landscapes.js";
+import {
+  resolveDreamerPowerChoice,
+  resolveDreamerPowerDeckPick,
+  resolveDreamerPowerHandPick,
+} from "../dreamers/dreamer-powers.js";
+import { resolveNothingChoice } from "../effects/objects.js";
+import { resolveObjectChoice } from "../effects/object-effects.js";
+import { resolveDreamChoice } from "../cards/dream-choices.js";
+import { resolveEffectChoice } from "../effects/effect-choices.js";
+import { continueDeferredEventQueues } from "../effects/event-choices.js";
+import { resolveMindstreamChoice } from "../cards/mindstream-choices.js";
+import { playMindstreamDrawCinematic } from "../cards/mindstream-draw-cinematic.js";
+import { playBeastMillSequence } from "../encounters/beast-mill-cinematic.js";
+import { continueArchetypeQueues } from "../dreamers/archetypes.js";
+import { phaseOpeningActive, encounterPayHint, actorOnLandscape } from "../core/rules.js";
+import {
+  syncPhaseOpenerMenu,
+  shouldShowPhaseOpenerMenu,
+  isPhaseOpenerMenuOpen,
+  isPhaseOpenerParked,
+  parkPhaseOpenerMenu,
+  restorePhaseOpenerMenu,
+  resetPhaseOpenerChrome,
+} from "../flow/phase-opener-menu.js";
+import {
+  TUTORIAL_STEPS,
+  tutorialBriefHtml,
+  advancedTutorialBriefHtml,
+  markTutorialSeen,
+  markBasicTutorialComplete,
+  markAdvancedTutorialComplete,
+  markGentleStartUsed,
+} from "../meta/guide.js";
+import {
+  createTutorialState,
+  syncTutorial,
+  advanceTutorialStep,
+  retreatTutorialStep,
+  jumpTutorialToStep,
+  completeTutorialGame,
+  releaseTutorialToPractice,
+  graduateTutorialToPlay,
+  notifyTutorialDreamDrawn,
+  notifyTutorialArchetypeAcquired,
+  isInteractiveTutorialActive,
+  getTutorialStep,
+  isTutorialActionAllowed,
+  tutorialActionBlocked,
+  applyTutorialPhaseGates,
+  classifyPhaseAction,
+  getTutorialPickHighlights,
+  getTutorialExploreLegalMoveIds,
+  getTutorialCameraFocus,
+  currentRailBeat,
+  exploreMoveLockActive,
+  RECOMMENDED_STARTER_IDS,
+} from "../tutorial/tutorial-mode.js";
+import {
+  renderBoard,
+  renderPlayers,
+  renderHand,
+  renderSpreadTray,
+  playDreamerHandSparkle,
+  renderPowerTokens,
+  showPowerTokenRadial,
+  showRadialMenu,
+  hideRadialMenu,
+  repositionRadialMenu,
+  renderMeetPoolGuide,
+  renderPhaseSpendHands,
+  renderCoopMeetHands,
+  renderObjects,
+  renderDecks,
+  resetDeckColumnRender,
+  syncDeckColumnFit,
+  renderActiveSlots,
+  renderHud,
+  renderLog,
+  renderPhaseActions,
+  renderPhaseStepper,
+  renderGuidePanel,
+  renderNarratorPanel,
+  renderPhaseAdvanceBar,
+  showScreen,
+  showEndScreen,
+  showModal,
+  hideModal,
+  showMindstreamPicker,
+  showLandscapeActionPicker,
+  showLandscapeDetail,
+  showDreamerDetailOverlay,
+  showDreamerDetail,
+  hideDreamerDetailTooltip,
+  showDreamerPowerChoice,
+  showMindstreamChoiceFullscreen,
+  showObjectCardPicker,
+  showObjectReorderPicker,
+  showObjectSpendPicker,
+  showDreamerPowerDeckPicker,
+  showDeckFlipPicker,
+  showTradeControls,
+  showRespawnPicker,
+  showDeathChoiceModal,
+  showNothingChoiceModal,
+  hideUtilityModal,
+  handleUtilityModalDismiss,
+  setUtilityModalRequired,
+  restoreUtilityModal,
+  isUtilityModalMinimized,
+  utilityModalPresence,
+  isRadialMenuOpen,
+  showSubconsciousPicker,
+  showSubconsciousBrowse,
+  showDiscardPileModal,
+  showRevealedTopsModal,
+  showCardPeekStage,
+  showRevealDeckTopModal,
+  showRepressPicker,
+  renderSubconsciousButton,
+  renderActionMomentBanner,
+  showRulesModal,
+  showDreamFeedModal,
+  showMomentHistoryModal,
+  showOverviewModal,
+  resetQuestReadyFlashes,
+  hideDreamerDetailOverlay,
+  suppressDreamerOverlay,
+  showTutorialStep,
+  showTutorialBrief,
+  hideTutorialBrief,
+  updateTutorialStepUI,
+  hideTutorial,
+  getTutorialSpotlightRect,
+  refreshTutorialSpotlight,
+  trackTutorialSpotlightWithCamera,
+  applyTutorialHighlight,
+  bindUiRenderState,
+  ensureTutorialStepTargetsVisible,
+} from "../ui/ui.js";
+
+let gameData = null;
+let state = null;
+let spectatorBot = null;
+
+function getSpectatorBot() {
+  if (spectatorBot) return spectatorBot;
+  spectatorBot = createSpectatorBot({
+    getState: () => state,
+    renderAll: () => renderAll(),
+    skill: "skilled",
+    stepMs: 750,
+    onThought: (msg) => {
+      const banner = document.getElementById("ai-thought-banner");
+      if (!banner) return;
+      banner.textContent = msg;
+      banner.classList.remove("hidden");
+    },
+    api: {
+      getEffectHelpers: () => ({
+        ...getEffectHelpers(),
+        bot: true,
+        syncDice: true,
+        instant: true,
+      }),
+      drawDreamCard: (s) => drawDreamCard(s, showModal),
+      revealLandscape,
+      activateExplore,
+      gainMeetActions,
+      endPhase,
+      handleBoardTileClick,
+      moveDreamer,
+      passMeetToken,
+      meetEncounter: (s, mode, opts = {}) => meetEncounter(s, mode, { ...opts, instant: true }),
+      prepareMindstreamMeet: (s, opts = {}) => prepareMindstreamMeet(s, {
+        ...opts,
+        instant: true,
+        meetEncounterFn: (st, mode, o) => meetEncounter(st, mode, { ...o, instant: true }),
+      }),
+      performLandscapeAction,
+      handleQuestComplete,
+      cancelLandscapePick,
+    },
+  });
+  return spectatorBot;
+}
+
+export function getAiSpectator() {
+  return getSpectatorBot();
+}
+let launchConfig = null;
+let autoSaveTimer = null;
+let devConsole = null;
+let tutorialIndex = -1;
+let interactiveTutorialActive = false;
+let tutorialBriefPending = false;
+let lastTutorialSyncKey = null;
+let lastTutorialStepId = null;
+let lastTutorialCameraKey = null;
+let pendingDreamerFocusId = null;
+let pendingDreamerRadial = null;
+let dockSelectTimer = null;
+const DOCK_SELECT_DELAY_MS = 280;
+let tutorialAutoAdvanceTimer = null;
+let fullscreenReady = false;
+const lastCardClick = { id: null, time: 0 };
+let lastRepressPickerKey = null;
+let lastReturnPickerKey = null;
+let prevHandIds = new Set();
+let pendingScoreResult = null;
+let scoreSubmitted = false;
+let victoryShown = false;
+
+/** Game ID + seed for the end screen; the tutorial's fixed layout has neither. */
+function endScreenDream() {
+  if (!state || state.tutorialMode || state.tutorialVictory) return null;
+  return { gameId: state.gameId || "", seed: state.seed || "" };
+}
+
+function getNewHandCardIds(state) {
+  const player = activePlayer(state);
+  const current = new Set(player.hand.map((c) => c.instanceId));
+  const fresh = new Set();
+  if (prevHandIds.size) {
+    for (const id of current) {
+      if (!prevHandIds.has(id)) fresh.add(id);
+    }
+  }
+  prevHandIds = current;
+  return fresh;
+}
+
+async function init() {
+  initDeviceMode(); // also starts viewport-sync (measure phase)
+  initInputQuarantine(); // seal overlays + Safari gesture guard before any UI mounts
+  initSomniaPwa();
+  initCompactChrome();
+  initDialogAccessibility();
+  initFxLayer();
+  initMomentOverlay();
+  bindButtonRipples();
+  initClickFeedback();
+  initGameAudio();
+  bindMusicToggle();
+  initPanelLayout();
+  initPauseMenu({ gameSaveHooks: buildPauseSaveHooks() });
+  gameData = await loadGameData();
+  bindModal();
+  bindHelp();
+  bindTurnPlaquePass();
+  bindBoardResize();
+  bindDeckColumnResize();
+  initBoardZoom();
+  setBoardZoomChangeHandler(() => {
+    renderBoardArea();
+    repositionRadialMenu();
+    refreshTutorialSpotlight();
+    trackTutorialSpotlightWithCamera(480);
+    positionTurnHalo();
+    trackTurnHaloWithCamera(480);
+  });
+  // Called at most once per animation frame by board-zoom (see flushTransform).
+  // Only an animated focus snap needs the 480 ms rAF tracker; a finger pan gets
+  // one reposition per frame — the old code restarted the tracker on every
+  // pointermove, spawning overlapping rAF loops that re-measured the spotlight.
+  setBoardCameraMoveHandler((animated) => {
+    repositionRadialMenu();
+    refreshTutorialSpotlight();
+    positionTurnHalo();
+    if (animated) {
+      trackTutorialSpotlightWithCamera(480);
+      trackTurnHaloWithCamera(480);
+    }
+  });
+  bindFullscreenPrompt();
+  bindImageDragGuard();
+  bindRestart();
+  bindEndLeaderboard();
+  bindPowerBonus();
+
+  if (new URLSearchParams(window.location.search).get("dev") === "1") {
+    enableDevMode();
+  }
+
+  const config = readLaunchConfig();
+  if (!config) {
+    window.location.replace("index.html");
+    return;
+  }
+
+  await startGame(config);
+  devConsole = initDevConsole(() => ({
+    state,
+    gameData,
+    renderAll,
+    endPhase,
+    getAiSpectator,
+    startAiWatchGame: async ({ playerCount = 4, skill = "skilled" } = {}) => {
+      const roster = [...(gameData.dreamers || [])];
+      if (!roster.length) return false;
+      // Prefer a mixed table; fall back to whatever dreamers exist.
+      const shuffled = roster.sort(() => Math.random() - 0.5);
+      const n = Math.max(1, Math.min(playerCount, shuffled.length));
+      const selectedDreamers = shuffled.slice(0, n);
+      await startGame({
+        lengthKey: "nap",
+        selectedDreamerIds: selectedDreamers.map((d) => d.id),
+        gentleStart: false,
+        seed: null,
+      });
+      document.body.classList.remove("opening-cinematic-pending");
+      getSpectatorBot().start({ skill, stepMs: 750 });
+      renderAll();
+      return true;
+    },
+  }));
+  devConsole?.refresh();
+}
+
+function readLaunchConfig() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const launchParam = params.get("launch");
+    if (launchParam) {
+      const config = JSON.parse(atob(decodeURIComponent(launchParam)));
+      const validResume = Boolean(config?.resumeSaveId || config?.resumeCloudSaveId);
+      const validNewGame = config?.lengthKey
+        && Array.isArray(config.selectedDreamerIds)
+        && config.selectedDreamerIds.length;
+      if (validResume || validNewGame) {
+        writeLaunchConfig(config);
+        const clean = new URL(window.location.href);
+        clean.searchParams.delete("launch");
+        history.replaceState(null, "", `${clean.pathname}${clean.search}${clean.hash}`);
+        return config;
+      }
+    }
+
+    const stored = readStoredLaunchConfig();
+    if (stored) return stored;
+    const playing = listLocalSaves().filter((save) => save.status === "playing");
+    const autosave = playing.find((save) => save.id === "autosave") || playing[0];
+    if (!autosave) return null;
+    const resume = { resumeSaveId: autosave.id, launchedAt: Date.now() };
+    writeLaunchConfig(resume);
+    return resume;
+  } catch {
+    return null;
+  }
+}
+
+/* ---- Screen wake lock -------------------------------------------------------
+   A co-op turn can take minutes; without this an iPad dims and locks
+   mid-discussion. Safari 16.4+ supports screen wake locks (gesture required,
+   auto-released when the page is hidden, so re-request on return). */
+let wakeLock = null;
+let wakeLockWanted = false;
+let wakeLockPending = false;
+
+async function requestWakeLock() {
+  if (!wakeLockWanted || !("wakeLock" in navigator)) return;
+  if (wakeLockPending || (wakeLock && !wakeLock.released)) return;
+  if (document.visibilityState !== "visible") return;
+  wakeLockPending = true;
+  try {
+    const sentinel = await navigator.wakeLock.request("screen");
+    if (!wakeLockWanted) {
+      sentinel.release().catch(() => {});
+      return;
+    }
+    wakeLock = sentinel;
+    sentinel.addEventListener("release", () => {
+      if (wakeLock === sentinel) wakeLock = null;
+    });
+  } catch {
+    wakeLock = null;
+  } finally {
+    wakeLockPending = false;
+  }
+}
+
+function keepScreenAwake() {
+  if (wakeLockWanted) return;
+  wakeLockWanted = true;
+  requestWakeLock();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") requestWakeLock();
+  });
+}
+
+function releaseWakeLock() {
+  wakeLockWanted = false;
+  wakeLock?.release?.().catch?.(() => {});
+  wakeLock = null;
+}
+
+/** iPadOS starts a native image drag on long-press; that cancels our
+ *  long-press-to-inspect pointer, so refuse drags from table art. */
+function bindImageDragGuard() {
+  document.addEventListener("dragstart", (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement) event.preventDefault();
+  });
+}
+
+function bindFullscreenPrompt() {
+  const prompt = document.getElementById("fullscreen-prompt");
+  if (!prompt) return;
+
+  const enter = async () => {
+    if (fullscreenReady) return;
+    fullscreenReady = true;
+    prompt.classList.add("hidden");
+    startGameRadio();
+    keepScreenAwake();
+    const wantsCinematic = state && !launchConfig?.resumeSaveId && !state.tutorialMode;
+    try {
+      if (document.fullscreenEnabled && !document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      /* fullscreen denied or unsupported — game still runs */
+    }
+    if (wantsCinematic) {
+      // If fullscreen actually engaged, the viewport resize trails the
+      // promise — wait until the size goes quiet before measuring tiles.
+      if (document.fullscreenElement) {
+        await new Promise((resolve) => {
+          let lastW = window.innerWidth;
+          let lastH = window.innerHeight;
+          let lastChange = Date.now();
+          const t0 = lastChange;
+          const noteChange = () => { lastChange = Date.now(); };
+          window.addEventListener("resize", noteChange);
+          const tick = () => {
+            if (window.innerWidth !== lastW || window.innerHeight !== lastH) {
+              lastW = window.innerWidth;
+              lastH = window.innerHeight;
+              noteChange();
+            }
+            const quietFor = Date.now() - lastChange;
+            if (quietFor >= 300 || Date.now() - t0 >= 1500) {
+              window.removeEventListener("resize", noteChange);
+              resolve();
+              return;
+            }
+            window.setTimeout(tick, 60);
+          };
+          tick();
+        });
+      }
+      fitBoardToViewport();
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      if (playOpeningCinematic(state) === 0) {
+        document.body.classList.remove("opening-cinematic-pending");
+        showOpeningHook(state);
+      }
+    } else {
+      document.body.classList.remove("opening-cinematic-pending");
+    }
+    prompt.remove();
+  };
+
+  prompt.addEventListener("pointerdown", (event) => {
+    if (event.button != null && event.button !== 0) return;
+    enter();
+  });
+  prompt.addEventListener("click", enter);
+  prompt.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      enter();
+    }
+  });
+}
+
+function applyPowerTokenUse(id) {
+  if (!state) return;
+  if (id === "quest0") {
+    const result = handleQuestComplete(state, 0);
+    if (result === "acquired") {
+      notifyTutorialArchetypeAcquired(state);
+      playSfx("acquire");
+      requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
+    }
+    renderAll();
+    return;
+  }
+  if (id === "quest1") {
+    const result = handleQuestComplete(state, 1);
+    if (result === "acquired") {
+      notifyTutorialArchetypeAcquired(state);
+      playSfx("acquire");
+      requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
+    }
+    renderAll();
+    return;
+  }
+  if (id === "spreadPlus") {
+    powerBonus(state);
+    renderAll();
+    return;
+  }
+  if (id === "spreadMinus") {
+    refundPowerBonus(state);
+    renderAll();
+    return;
+  }
+  if (id === "phasePsyche") {
+    togglePhasePowerToken(state);
+    renderAll();
+    return;
+  }
+  if (id === "activatePersistent") {
+    activateObject(state);
+    renderAll();
+  }
+}
+
+function openPowerTokenRadial(anchorEl) {
+  if (!state) return;
+  const options = getPowerTokenRadialOptions(state).map((opt) => ({
+    ...opt,
+    disabled: opt.disabled || !isTutorialActionAllowed(state, opt.kind),
+  }));
+  showPowerTokenRadial(anchorEl, options, (opt) => {
+    if (!isTutorialActionAllowed(state, opt.kind)) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    applyPowerTokenUse(opt.id);
+  });
+}
+
+function bindPowerBonus() {
+  document.getElementById("btn-power-bonus")?.addEventListener("click", () => {
+    if (!state) return;
+    if (!isTutorialActionAllowed(state, "powerBonus")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    powerBonus(state);
+    renderAll();
+  });
+  document.getElementById("btn-power-bonus-undo")?.addEventListener("click", () => {
+    if (!state) return;
+    if (!isTutorialActionAllowed(state, "refundPowerBonus")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    refundPowerBonus(state);
+    renderAll();
+  });
+}
+
+function bindEndLeaderboard() {
+  document.getElementById("end-score-submit")?.addEventListener("click", async () => {
+    if (!pendingScoreResult || scoreSubmitted) return;
+    const first = document.getElementById("end-score-first")?.value || "";
+    const last = document.getElementById("end-score-last")?.value || "";
+    const status = document.getElementById("end-score-status");
+    const valid = validateScoreName(first, last);
+    if (!valid.ok) {
+      if (status) status.textContent = valid.message;
+      return;
+    }
+    try {
+      if (status) status.textContent = "Saving score…";
+      const result = await submitHighScore({
+        name: valid.name,
+        score: pendingScoreResult.breakdown.total,
+        won: true,
+        seconds: pendingScoreResult.seconds,
+        difficulty: pendingScoreResult.difficulty,
+        breakdown: pendingScoreResult.breakdown,
+      });
+      scoreSubmitted = true;
+      if (status) {
+        const boardLabel = isStandaloneMode() ? "local high scores" : "the leaderboard";
+        status.textContent = result.inTop
+          ? `Saved! Rank #${result.rank} on ${boardLabel}.`
+          : "Score saved!";
+      }
+      renderLeaderboardList(result.scores || []);
+    } catch (err) {
+      if (status) status.textContent = err.message || "Could not save score.";
+    }
+  });
+}
+
+function renderLeaderboardList(scores) {
+  const list = document.getElementById("end-score-list");
+  if (!list) return;
+  if (!scores.length) {
+    list.innerHTML = "<li>No scores yet.</li>";
+    return;
+  }
+  list.innerHTML = scores.slice(0, 20).map((entry) =>
+    `<li><strong>${entry.rank}.</strong> ${entry.name} — ${entry.score} pts</li>`).join("");
+}
+
+async function loadLeaderboardPreview() {
+  try {
+    const { scores, setupRequired } = await fetchHighScores();
+    const status = document.getElementById("end-score-status");
+    if (isStandaloneMode() && status) {
+      status.textContent = scores.length
+        ? "Scores saved on this device only."
+        : "No scores yet — be the first on this device.";
+    } else if (setupRequired && status) {
+      status.textContent = "Leaderboard not configured yet. See google-apps-script/somnia-highscores-backend.gs";
+    }
+    renderLeaderboardList(scores);
+  } catch {
+    /* optional */
+  }
+}
+
+function bindRestart() {
+  document.getElementById("btn-restart").addEventListener("click", () => {
+    returnToMainMenu();
+  });
+
+  document.getElementById("btn-replay-tutorial")?.addEventListener("click", () => {
+    launchReplayTutorial(state?.tutorialTrack === "advanced" ? "advanced" : "basic");
+  });
+  document.getElementById("btn-replay-basic")?.addEventListener("click", () => {
+    launchReplayTutorial("basic");
+  });
+  document.getElementById("btn-advanced-tutorial")?.addEventListener("click", () => {
+    launchReplayTutorial("advanced");
+  });
+  document.getElementById("btn-start-daydream")?.addEventListener("click", () => {
+    stopVictoryCelebration();
+    launchGentleDaydream();
+  });
+}
+
+function bindHeaderDropdowns() {
+  /* Dreamers / Overview / Tips left the header in 21.3. */
+}
+
+function bindHelp() {
+  document.getElementById("btn-moment-history")?.addEventListener("click", () => {
+    if (!isTutorialActionAllowed(state, "headerMomentHistory")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    showMomentHistoryModal();
+  });
+  document.getElementById("btn-dream-feed")?.addEventListener("click", () => {
+    if (!isTutorialActionAllowed(state, "headerDreamFeed")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    showDreamFeedModal(state);
+    if (state?.tutorialFlags && state.tutorialTrack === "advanced") {
+      state.tutorialFlags.guideOpened = true;
+      renderAll();
+    }
+  });
+  document.getElementById("btn-header-subconscious")?.addEventListener("click", () => {
+    if (!isTutorialActionAllowed(state, "headerSubconscious")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    showSubconsciousBrowse(state, (card) => showModal(card));
+  });
+  document.getElementById("btn-end-overview")?.addEventListener("click", showOverviewModal);
+  document.getElementById("btn-pause")?.addEventListener("click", () => {
+    if (!isTutorialActionAllowed(state, "headerPause")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    openPauseMenu();
+  });
+  bindHeaderDropdowns();
+}
+
+function bindModal() {
+  document.querySelector("#card-modal .modal-backdrop").addEventListener("click", hideModal);
+  document.querySelector("#card-modal .modal-close").addEventListener("click", hideModal);
+  document.querySelector("#utility-modal .utility-backdrop")?.addEventListener("click", dismissUtilityModal);
+  document.querySelector("#utility-modal .utility-close")?.addEventListener("click", dismissUtilityModal);
+  document.getElementById("utility-choice-restore")?.addEventListener("click", () => {
+    if (isUtilityModalMinimized()) {
+      restoreUtilityModal();
+      return;
+    }
+    if (isPhaseOpenerParked()) {
+      restorePhaseOpenerMenu();
+      renderAll();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    if (isPhaseOpenerMenuOpen()) {
+      event.preventDefault();
+      parkPhaseOpenerMenu(state);
+      renderAll();
+      return;
+    }
+    const utilityModal = document.getElementById("utility-modal");
+    if (!utilityModal || utilityModal.classList.contains("hidden")) return;
+    if (utilityModal.classList.contains("utility-modal-minimized")) {
+      event.preventDefault();
+      restoreUtilityModal();
+      return;
+    }
+    if (isBlockingGameChoice(state) || state?.tradeMode) {
+      event.preventDefault();
+      dismissUtilityModal();
+    }
+  });
+}
+
+/**
+ * VIEWPORT SYNC: the board re-renders exactly once per settle. The ResizeObserver
+ * (which fires after panel-layout's CSS variables resize #board-viewport) and the
+ * settle lane's render phase both funnel into requestRender(), which coalesces to a
+ * single renderAll() in the next animation frame. Previously the observer's own
+ * 80 ms timer and board-zoom's refit each produced a full board build.
+ */
+function bindBoardResize() {
+  const vp = document.getElementById("board-viewport");
+  if (!vp || vp.dataset.resizeBound) return;
+  vp.dataset.resizeBound = "1";
+  let renderedW = -1;
+  let renderedH = -1;
+  const renderForViewport = () => {
+    if (!state) return;
+    renderedW = vp.clientWidth;
+    renderedH = vp.clientHeight;
+    renderAll();
+  };
+  const observer = new ResizeObserver((entries) => {
+    if (!state) return;
+    const box = entries[0]?.contentRect;
+    // The settle render already measured this exact box — nothing new to draw.
+    if (box && Math.round(box.width) === renderedW && Math.round(box.height) === renderedH) return;
+    requestRender();
+  });
+  observer.observe(vp);
+  onViewportSettled("render", renderForViewport);
+}
+
+function bindDeckColumnResize() {
+  const column = document.getElementById("deck-column");
+  const table = document.getElementById("table-surface");
+  if (!column || column.dataset.resizeBound) return;
+  column.dataset.resizeBound = "1";
+  const sync = () => syncDeckColumnFit();
+  const observer = new ResizeObserver(sync);
+  observer.observe(column);
+  if (table) observer.observe(table);
+  window.addEventListener("resize", sync);
+}
+
+function buildPauseSaveHooks() {
+  return {
+    canSave: () => canSaveGame(state),
+    saveLabel: () => (state ? buildSaveLabel(state) : ""),
+    isStandalone: () => isStandaloneMode(),
+    // The guided tutorial is a fixed layout, not a real dream: no seed to share.
+    isTutorial: () => !!state?.tutorialMode,
+    getGameId: () => (state && !state.tutorialMode ? state.gameId || null : null),
+    getSeed: () => (state && !state.tutorialMode ? state.seed || null : null),
+    exitToMenu: () => {
+      window.location.href = "index.html";
+    },
+    saveLocal: async () => {
+      if (!canSaveGame(state)) throw new Error("Cannot save right now.");
+      await saveGameLocal(state, launchConfig, { id: "autosave" });
+    },
+    saveCloud: async (name) => {
+      if (!canSaveGame(state)) throw new Error("Cannot save right now.");
+      const valid = name?.ok ? name : validateScoreName(name?.first, name?.last);
+      if (!valid.ok) throw new Error(valid.message);
+      await saveGameCloud(state, launchConfig, { playerName: valid.name });
+    },
+    loadLocal: async () => {
+      const loaded = await loadGameLocal("autosave");
+      if (!loaded) throw new Error("No device save found.");
+      applyLoadedGame(loaded);
+    },
+    listLocal: () => listLocalSaves(),
+    loadLocalById: async (id) => {
+      const loaded = await loadGameLocal(id);
+      if (!loaded) throw new Error("Device save not found.");
+      applyLoadedGame(loaded);
+    },
+    deleteLocal: (id) => {
+      deleteLocalSave(id);
+    },
+    saveAndExit: async () => {
+      if (canSaveGame(state)) {
+        await saveGameLocal(state, launchConfig, { id: "autosave" });
+      }
+      window.location.href = "index.html";
+    },
+    listCloud: async (name) => {
+      const valid = name?.ok ? name : validateScoreName(name?.first, name?.last);
+      if (!valid.ok) throw new Error(valid.message);
+      const result = await listCloudSaves(valid.name);
+      if (result.setupRequired) {
+        throw new Error("Cloud saves are not configured on this server yet.");
+      }
+      return result.saves || [];
+    },
+    loadCloud: async (id) => {
+      const loaded = await loadCloudSave(id);
+      if (!loaded) throw new Error("Save not found.");
+      applyLoadedGame(loaded);
+    },
+    deleteCloud: async (id) => {
+      await deleteCloudSave(id);
+    },
+  };
+}
+
+function applyLoadedGame(loaded) {
+  clearActionHistory();
+  resetPhaseOpenerChrome();
+  state = reattachGameRuntime(loaded.state);
+  seedRandomness(state?.seed || null);
+  recoverLegacySilver(state);
+  launchConfig = {
+    ...loaded.launchConfig,
+    launchedAt: Date.now(),
+    resumeSaveId: "autosave",
+  };
+  interactiveTutorialActive = false;
+  document.body.classList.remove("tutorial-mode-active");
+  hideTutorial();
+  showScreen("screen-game");
+  fitBoardToViewport();
+  resetHandSnapshots(state);
+  resetDeckColumnRender();
+  resetBoardMotion(state);
+  renderAll();
+  narrate(state, "Dream resumed", loaded.label || "Your saved dream continues.");
+}
+
+function undoLastTableAction() {
+  const prev = popActionCheckpoint();
+  if (!prev || !state) return;
+  hideRadialMenu();
+  hideUtilityModal(true);
+  restorePlayState(state, prev);
+  reattachGameRuntime(state);
+  recoverLegacySilver(state);
+  resetHandSnapshots(state);
+  resetDeckColumnRender();
+  resetBoardMotion(state);
+  lastTutorialSyncKey = null;
+  lastTutorialStepId = null;
+  lastTutorialCameraKey = null;
+  pendingDreamerRadial = null;
+  addLog(state, "Back — the last action was undone.");
+  renderAll();
+}
+
+function scheduleAutoSave() {
+  if (!canSaveGame(state)) return;
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    saveGameLocal(state, launchConfig, { id: "autosave" }).catch(() => {});
+  }, 1500);
+}
+
+function clearAutosave() {
+  clearTimeout(autoSaveTimer);
+  deleteLocalSave("autosave");
+}
+
+async function startGame(config) {
+  launchConfig = config;
+  clearActionHistory();
+  resetPhaseOpenerChrome();
+
+  if (config.resumeSaveId) {
+    const loaded = await loadGameLocal(config.resumeSaveId);
+    if (!loaded) {
+      window.location.replace("index.html");
+      return;
+    }
+    applyLoadedGame(loaded);
+    return;
+  }
+
+  if (config.resumeCloudSaveId) {
+    try {
+      const loaded = await loadCloudSave(config.resumeCloudSaveId);
+      if (!loaded) throw new Error("Save not found.");
+      applyLoadedGame(loaded);
+    } catch {
+      window.location.replace("index.html");
+    }
+    return;
+  }
+
+  const selectedDreamers = config.selectedDreamerIds
+    .map((id) => gameData.dreamers.find((d) => d.id === id))
+    .filter(Boolean);
+
+  if (!selectedDreamers.length) {
+    window.location.replace("index.html");
+    return;
+  }
+
+  if (config.tutorialMode) {
+    const track = config.tutorialTrack === "advanced" ? "advanced" : "basic";
+    state = createTutorialState(gameData, { track });
+    interactiveTutorialActive = true;
+    tutorialBriefPending = true;
+    document.body.classList.add("tutorial-mode-active");
+    document.body.dataset.tutorialTrack = track;
+    narrate(
+      state,
+      track === "advanced" ? "The longer night" : "You are dreaming",
+      track === "advanced"
+        ? "The Weaver and The Hunter are already in Meet. The sparkles lead the rest."
+        : openingHookText(state),
+      ["Click Continue. The sparkles lead the way."],
+    );
+  } else {
+    state = createInitialState(gameData, {
+      lengthKey: config.lengthKey,
+      selectedDreamers,
+      gentleStart: !!config.gentleStart,
+      seed: config.seed || null,
+    });
+    resolveOpeningDream(state, getEffectHelpers());
+    // Hide the table until the opening deal plays (removed when it starts/skips).
+    if (!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+      document.body.classList.add("opening-cinematic-pending");
+    }
+    if (config.gentleStart) markGentleStartUsed();
+    narrate(
+      state,
+      "You are dreaming",
+      openingHookText(state),
+      ["The opening Dream has already turned. Reveal is yours."],
+    );
+  }
+
+  showScreen("screen-game");
+  resetMomentOverlay();
+  resetQuestReadyFlashes();
+  fitBoardToViewport();
+  resetHandSnapshots(state);
+  resetDeckColumnRender();
+  resetBoardMotion(state);
+  renderAll();
+  if (config.tutorialMode) {
+    const track = state?.tutorialTrack === "advanced" ? "advanced" : "basic";
+    const title = document.getElementById("tutorial-brief-title");
+    const sub = document.querySelector(".tutorial-brief-header p");
+    if (title) title.textContent = track === "advanced" ? "Advanced Tutorial" : "Guided Tutorial";
+    const beginBtn = document.getElementById("tutorial-brief-begin");
+    if (beginBtn) beginBtn.textContent = track === "advanced" ? "Begin the Longer Night" : "Begin Guided Tutorial";
+    if (sub) {
+      sub.textContent = track === "advanced"
+        ? "The longer night. The sparkles show every click."
+        : "Two practice rounds. The sparkles show every click.";
+    }
+    showTutorialBrief(track === "advanced" ? advancedTutorialBriefHtml() : tutorialBriefHtml(), () => {
+      tutorialBriefPending = false;
+      syncInteractiveTutorial();
+    });
+  }
+}
+
+function startTutorial() {
+  tutorialIndex = 0;
+  showTutorialAt(tutorialIndex);
+}
+
+function showTutorialAt(index) {
+  const step = TUTORIAL_STEPS[index];
+  if (!step) {
+    finishTutorial();
+    return;
+  }
+  showTutorialStep(step, index, TUTORIAL_STEPS.length, {
+    onNext: () => {
+      tutorialIndex += 1;
+      if (tutorialIndex >= TUTORIAL_STEPS.length) finishTutorial();
+      else showTutorialAt(tutorialIndex);
+    },
+    onSkip: finishTutorial,
+    onBack: handleTutorialBack,
+  });
+}
+
+function handleTutorialJump(stepIndex) {
+  if (!state?.tutorialMode || !isInteractiveTutorialActive(state)) return;
+  if (stepIndex === state.tutorialStepIndex) return;
+  jumpTutorialToStep(state, stepIndex);
+  lastTutorialSyncKey = null;
+  lastTutorialStepId = null;
+  lastTutorialCameraKey = null;
+  renderAll();
+  const sync = syncTutorial(state);
+  if (!sync || sync.complete) return;
+  showTutorialStep(sync.step, sync.stepIndex, sync.total, {
+    canAdvance: sync.canAdvance,
+    roundLabel: sync.round,
+    objective: sync.objective,
+    onNext: handleTutorialNext,
+    onSkip: handleTutorialSkip,
+    onBack: handleTutorialBack,
+    onJump: handleTutorialJump,
+  });
+  lastTutorialSyncKey = `${sync.stepIndex}:${sync.canAdvance}:${sync.step.id}`;
+}
+
+function handleTutorialBack() {
+  if (state?.tutorialMode && isInteractiveTutorialActive(state)) {
+    if (!retreatTutorialStep(state)) return;
+    lastTutorialSyncKey = null;
+    lastTutorialStepId = null;
+    lastTutorialCameraKey = null;
+    renderAll();
+    const sync = syncTutorial(state);
+    if (!sync || sync.complete) return;
+    showTutorialStep(sync.step, sync.stepIndex, sync.total, {
+      canAdvance: sync.canAdvance,
+      roundLabel: sync.round,
+      objective: sync.objective,
+      onNext: handleTutorialNext,
+      onSkip: handleTutorialSkip,
+      onBack: handleTutorialBack,
+      onJump: handleTutorialJump,
+    });
+    lastTutorialSyncKey = `${sync.stepIndex}:${sync.canAdvance}:${sync.step.id}`;
+    return;
+  }
+
+  if (tutorialIndex > 0) {
+    tutorialIndex -= 1;
+    showTutorialAt(tutorialIndex);
+  }
+}
+
+function finishTutorial() {
+  hideTutorial();
+  tutorialIndex = -1;
+  markTutorialSeen();
+  renderAll();
+}
+
+function confirmLeaveTutorial() {
+  const advanced = state?.tutorialTrack === "advanced";
+  const message = advanced
+    ? "Leave the longer night? You can replay it from the menu."
+    : "Leave the guided steps? The Advanced Tutorial stays locked until you finish this lesson. You can keep practicing, or return later.";
+  return confirm(message);
+}
+
+function handleTutorialSkip() {
+  if (!confirmLeaveTutorial()) return;
+  clearTimeout(tutorialAutoAdvanceTimer);
+  tutorialAutoAdvanceTimer = null;
+  releaseTutorialToPractice(state);
+  hideTutorial();
+  interactiveTutorialActive = false;
+  document.body.classList.remove("tutorial-mode-active");
+  markTutorialSeen();
+  lastTutorialSyncKey = null;
+  lastTutorialStepId = null;
+  lastTutorialCameraKey = null;
+  narrate(
+    state,
+    "Practice table",
+    "Open ? for the Dream Guide anytime. Return to the menu when you want a real Daydream.",
+  );
+  renderAll();
+}
+
+function scheduleTutorialAutoAdvance() {
+  clearTimeout(tutorialAutoAdvanceTimer);
+  tutorialAutoAdvanceTimer = setTimeout(() => {
+    tutorialAutoAdvanceTimer = null;
+    if (!isInteractiveTutorialActive(state)) return;
+    const latest = syncTutorial(state);
+    if (!latest?.step?.until || !latest.canAdvance) return;
+    handleTutorialNext();
+  }, 650);
+}
+
+function showTutorialGraduationPanel() {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  if (!modal || !body) return;
+
+  body.innerHTML = `
+    <div class="tutorial-graduate-panel">
+      <h2>Tutorial complete</h2>
+      <p>You finished the guided walkthrough. Replay it or return to the main menu.</p>
+      <div class="utility-actions tutorial-graduate-actions">
+        <button type="button" class="btn primary" id="tutorial-graduate-replay">Replay Tutorial</button>
+        <button type="button" class="btn" id="tutorial-graduate-menu">Main Menu</button>
+      </div>
+    </div>
+  `;
+
+  body.querySelector("#tutorial-graduate-replay")?.addEventListener("click", () => {
+    hideUtilityModal(true);
+    launchReplayTutorial();
+  });
+  body.querySelector("#tutorial-graduate-menu")?.addEventListener("click", () => {
+    hideUtilityModal(true);
+    returnToMainMenu();
+  });
+
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function finishTutorialGuidance() {
+  graduateTutorialToPlay(state);
+  hideTutorial();
+  interactiveTutorialActive = false;
+  document.body.classList.remove("tutorial-mode-active");
+  markTutorialSeen();
+  lastTutorialSyncKey = null;
+  lastTutorialStepId = null;
+  lastTutorialCameraKey = null;
+  renderAll();
+  showTutorialGraduationPanel();
+}
+
+function showTutorialGraduation() {
+  finishTutorialGuidance();
+}
+
+function launchGentleDaydream() {
+  writeLaunchConfig({
+    lengthKey: "daydream",
+    selectedDreamerIds: [...RECOMMENDED_STARTER_IDS],
+    gentleStart: true,
+    launchedAt: Date.now(),
+  });
+  const playUrl = new URL("play.html", window.location.href);
+  if (new URLSearchParams(window.location.search).get("dev") === "1") {
+    playUrl.searchParams.set("dev", "1");
+  }
+  window.location.href = playUrl.href;
+}
+
+function launchReplayTutorial(track = "basic") {
+  writeLaunchConfig({
+    lengthKey: "daydream",
+    selectedDreamerIds: track === "advanced"
+      ? ["the-weaver", "the-hunter"]
+      : [...RECOMMENDED_STARTER_IDS],
+    tutorialMode: true,
+    tutorialTrack: track,
+    launchedAt: Date.now(),
+  });
+  window.location.href = "play.html";
+}
+
+function returnToMainMenu() {
+  stopVictoryCelebration();
+  releaseWakeLock();
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+  window.location.href = "index.html";
+}
+
+function handleTutorialNext() {
+  const current = syncTutorial(state);
+  if (current?.step?.until && !current.canAdvance) return;
+
+  const fromRect = getTutorialSpotlightRect();
+  advanceTutorialStep(state);
+  if (state.tutorialComplete) {
+    completeTutorialGame(state);
+    renderAll();
+    return;
+  }
+  lastTutorialSyncKey = null;
+  lastTutorialStepId = null;
+  lastTutorialCameraKey = null;
+  renderAll();
+  const nextSync = syncTutorial(state);
+  if (!nextSync || nextSync.complete) return;
+  showTutorialStep(nextSync.step, nextSync.stepIndex, nextSync.total, {
+    canAdvance: nextSync.canAdvance,
+    roundLabel: nextSync.round,
+    objective: nextSync.objective,
+    fromRect,
+    onNext: handleTutorialNext,
+    onSkip: handleTutorialSkip,
+    onBack: handleTutorialBack,
+    onJump: handleTutorialJump,
+  });
+  lastTutorialSyncKey = `${nextSync.stepIndex}:${nextSync.canAdvance}:${nextSync.step.id}:${nextSync.step.spotlightBeat?.kind || "none"}:${nextSync.objective}`;
+}
+
+function syncInteractiveTutorial() {
+  if (tutorialBriefPending) {
+    hideTutorial();
+    return;
+  }
+  if (!isInteractiveTutorialActive(state)) {
+    hideTutorial();
+    document.body.classList.remove("tutorial-mode-active");
+    return;
+  }
+
+  const sync = syncTutorial(state);
+  if (!sync) return;
+
+  if (sync.complete) {
+    completeTutorialGame(state);
+    renderAll();
+    return;
+  }
+
+  const { step, stepIndex, total, canAdvance, round, objective } = sync;
+  const beatKind = step.spotlightBeat?.kind || "none";
+  const syncKey = `${stepIndex}:${canAdvance}:${step.id}:${beatKind}:${objective}`;
+  const overlayOpen = !document.getElementById("tutorial-overlay")?.classList.contains("hidden");
+
+  if (syncKey === lastTutorialSyncKey) {
+    ensureTutorialStepTargetsVisible(step);
+    refreshTutorialSpotlight();
+    return;
+  }
+
+  if (overlayOpen && lastTutorialStepId === step.id) {
+    updateTutorialStepUI({ step, stepIndex, total, canAdvance, roundLabel: round, objective });
+    ensureTutorialStepTargetsVisible(step);
+    refreshTutorialSpotlight();
+    lastTutorialSyncKey = syncKey;
+    if (step.until && canAdvance && step.id !== "adv-guide") scheduleTutorialAutoAdvance();
+    return;
+  }
+
+  lastTutorialSyncKey = syncKey;
+  lastTutorialStepId = step.id;
+
+  showTutorialStep(step, stepIndex, total, {
+    canAdvance,
+    roundLabel: round,
+    objective,
+    onNext: handleTutorialNext,
+    onSkip: handleTutorialSkip,
+    onBack: handleTutorialBack,
+    onJump: handleTutorialJump,
+  });
+}
+
+function queueDreamerBoardFocus(landscapeId) {
+  if (!landscapeId) return;
+  pendingDreamerFocusId = landscapeId;
+  lastTutorialCameraKey = null;
+}
+
+function flushDreamerBoardFocus() {
+  if (!pendingDreamerFocusId) return false;
+  const tileId = pendingDreamerFocusId;
+  pendingDreamerFocusId = null;
+  focusOnLandscape(tileId);
+  return true;
+}
+
+function maybeFocusTutorialLandscape() {
+  if (!isInteractiveTutorialActive(state)) {
+    lastTutorialCameraKey = null;
+    return;
+  }
+  const focus = getTutorialCameraFocus(state);
+  if (!focus?.tileId) return;
+  if (focus.key === lastTutorialCameraKey) return;
+  lastTutorialCameraKey = focus.key;
+  focusOnLandscape(focus.tileId, { zoom: focus.zoom });
+}
+
+function buildPhaseHandlers() {
+  return {
+    drawDream: () => {
+      const card = drawDreamCard(state, showModal);
+      if (card) notifyTutorialDreamDrawn(state);
+      renderAll();
+    },
+    revealLandscape: () => {
+      revealLandscape(state);
+      if (state.landscapePick?.mode === "reveal-deck-tops") {
+        showRevealDeckTopModal((suit) => {
+          hideUtilityModal(true);
+          spendLucidityRevealOnDeck(state, suit);
+          renderAll();
+        });
+      }
+      renderAll();
+    },
+    revealDeckTop: () => {
+      showRevealDeckTopModal((suit) => {
+        hideUtilityModal(true);
+        spendLucidityRevealOnDeck(state, suit);
+        renderAll();
+      });
+    },
+    activateExplore: () => { activateExplore(state); renderAll(); },
+    gainMeetActions: () => { gainMeetActions(state); renderAll(); },
+    meetEncounter: (mode) => {
+      meetEncounter(state, mode, {
+        freeMeet: !!state.pendingMindstreamMeet,
+        fromMindstreamDraw: !!state.pendingMindstreamMeet,
+        onDone: () => renderAll(),
+      });
+      renderAll();
+    },
+    drawMindstream: () => {
+      drawMindstreamOnLandscape(state, {
+        onResult: (card) => showDrawnMindstreamCard(card),
+      });
+      renderAll();
+    },
+    landscapeAction: (actionId) => {
+      const result = performLandscapeAction(state, actionId, {
+        onResult: (card) => showDrawnMindstreamCard(card),
+      });
+      if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
+        const { tile, player, actionId: pendingActionId } = result;
+        showMindstreamPicker((suit) => {
+          finishLandscapeMindstreamPick(state, tile, player, pendingActionId, suit, (card) => showDrawnMindstreamCard(card));
+          renderAll();
+        });
+        return;
+      }
+      if (result?.pending === "flip-top-3-pick-deck") {
+        showDeckFlipPicker((deckKey) => {
+          finishLandscapeDeckFlip(state, deckKey);
+          renderAll();
+        });
+        return;
+      }
+      renderAll();
+    },
+    uniqueLandscapeAction: () => {
+      uniqueLandscapeAction(state, {
+        onChoose: (choices, tile, player) => {
+          showLandscapeActionPicker(tile, choices, (actionId) => {
+            const result = performLandscapeAction(state, actionId, {
+              onResult: (card) => showDrawnMindstreamCard(card),
+            });
+            if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
+              showMindstreamPicker((suit) => {
+                finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showDrawnMindstreamCard(card));
+                renderAll();
+              });
+              return;
+            }
+            if (result?.pending === "flip-top-3-pick-deck") {
+              showDeckFlipPicker((deckKey) => {
+                finishLandscapeDeckFlip(state, deckKey);
+                renderAll();
+              });
+              return;
+            }
+            renderAll();
+          });
+        },
+        onResult: (card) => showDrawnMindstreamCard(card),
+      });
+      renderAll();
+    },
+    playObject: () => {
+      const card = playObject(state);
+      if (card) showModal(card);
+      renderAll();
+    },
+    activateObject: () => {
+      activateObject(state);
+      renderAll();
+    },
+    tradeAction: () => {
+      tradeAction(state);
+      renderAll();
+    },
+    completeQuest: (i) => {
+      const result = handleQuestComplete(state, i);
+      if (result === "acquired") {
+        notifyTutorialArchetypeAcquired(state);
+        playSfx("acquire");
+        requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
+      }
+      renderAll();
+    },
+    useArchetypePower: (id) => {
+      handleUseArchetypePower(state, id);
+      if (state.tutorialMode) state.tutorialFlags.archetypePowerUsed = true;
+      renderAll();
+    },
+    useDreamerPower: () => {
+      const result = useDreamerPower(state);
+      if (result?.ui) processDreamerPowerResult(result);
+      else renderAll();
+    },
+    togglePhasePowerToken: () => {
+      togglePhasePowerToken(state);
+      renderAll();
+    },
+    powerBonus: () => {
+      powerBonus(state);
+      renderAll();
+    },
+    refundPowerBonus: () => {
+      refundPowerBonus(state);
+      renderAll();
+    },
+    defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
+    sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
+    nextPhase: () => { requestEndPhase(state, () => renderAll()); },
+    skipPhase: () => { requestEndPhase(state, () => renderAll()); },
+  };
+}
+
+let lastDreamerTokenTap = { id: null, time: 0 };
+
+function onObjectCardClick(card, zone) {
+  const player = activePlayer(state);
+  showModal(card, {
+    objectZone: zone,
+    canSpendPower: (player?.powerTokens || 0) >= 1,
+    onUse: () => {
+      hideModal();
+      playObject(state, card.instanceId || card.id, { usePower: zone === "persistent" });
+      renderAll();
+    },
+  });
+}
+
+function shortenRadialLabel(text, max = 20) {
+  const raw = (text || "").trim();
+  if (!raw) return "";
+  const aliases = [
+    [/^Draw & Resolve Dream$/i, "Draw Dream"],
+    [/^Reveal Landscapes \(select Lucidity\)$/i, "Reveal"],
+    [/^Reveal Landscapes \((\d+) for team\)$/i, "Reveal ($1)"],
+    [/^Power Token as 1 (.+) \(on\)$/i, "Token as $1"],
+    [/^Power Token as 1 (.+)$/i, "Token as $1"],
+  ];
+  let label = raw;
+  for (const [pattern, replacement] of aliases) {
+    if (pattern.test(label)) {
+      label = label.replace(pattern, replacement);
+      break;
+    }
+  }
+  if (label.length <= max) return label;
+  return `${label.slice(0, max - 1)}…`;
+}
+
+function clearDockSelectTimer() {
+  if (!dockSelectTimer) return;
+  clearTimeout(dockSelectTimer);
+  dockSelectTimer = null;
+}
+
+function bindTurnPlaquePass() {
+  const btn = document.getElementById("turn-plaque-pass");
+  if (!btn || btn.dataset.bound === "1") return;
+  btn.dataset.bound = "1";
+  btn.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!state || !actionTurnActive(state)) return;
+    if (passMeetToken(state)) renderAll();
+  });
+}
+
+function tryFocusDreamer(playerIndex, { allowViewOnly = false } = {}) {
+  if (!actionTurnActive(state)) return true;
+  const holder = actionTurnHolder(state);
+  const target = state.players[playerIndex];
+  if (!holder || !target) return true;
+  if (holder.id === target.id) return true;
+  // Focusing another Dreamer is view-only — use Pass Turn / Give Turn to hand off the budget.
+  if (allowViewOnly) {
+    addLog(state, `It is ${holder.name}'s turn — viewing ${target.name}. Pass Turn or Give Turn on their radial to let them act.`);
+    return "view";
+  }
+  return true;
+}
+
+function zoomMaxOnDreamer(playerId, tileId) {
+  clearDockSelectTimer();
+  pendingDreamerFocusId = null;
+  pendingDreamerRadial = null;
+  hideRadialMenu();
+  hideUtilityModal(true);
+  suppressDreamerOverlay(800);
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
+  const focusOk = tryFocusDreamer(playerIndex, { allowViewOnly: true });
+  if (focusOk === false) {
+    renderAll();
+    return;
+  }
+  if (playerIndex >= 0) state.activePlayerIndex = playerIndex;
+  if (getPhase(state) === "Meet" && tileId) state.selectedLandscapeId = tileId;
+  if (playerId && tileId) focusOnDreamer(playerId, tileId);
+  renderAll();
+  suppressDreamerOverlay(800);
+}
+
+function showDreamerBoardRadialMenu(playerId, tileId, player) {
+  if (isInteractiveTutorialActive(state)) {
+    syncTutorial(state);
+  }
+  const handlers = buildPhaseHandlers();
+  const options = getDreamerBoardRadialOptions(state, player, tileId, handlers)
+    .map((opt) => {
+      const kind = opt.kind || classifyPhaseAction({ label: opt.label });
+      const allowed = !isInteractiveTutorialActive(state)
+        || !kind
+        || kind === "other"
+        || isTutorialActionAllowed(state, kind, { action: opt, tileId });
+      return {
+        ...opt,
+        label: shortenRadialLabel(opt.label),
+        kind,
+        disabled: !!opt.disabled || !allowed,
+      };
+    });
+
+  options.unshift({
+    id: "view",
+    label: "View",
+    hint: "Zoomed character details and hand",
+    disabled: false,
+    primary: options.length === 0,
+    onPick: () => {},
+  });
+
+  const liveToken = document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`)
+    || document.querySelector(`.hex-tile[data-tile-id="${tileId}"]`);
+  showRadialMenu(liveToken, options, (opt) => {
+    if (opt.kind && !isTutorialActionAllowed(state, opt.kind, { action: opt.action, tileId })) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    opt.onPick?.();
+    renderAll();
+    if (opt.id === "view") {
+      showDreamerDetail(player.dreamer, { player, state });
+    }
+  }, {
+    ariaLabel: `${player.name} actions`,
+    resolveAnchor: () => document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`)
+      || document.querySelector(`.hex-tile[data-tile-id="${tileId}"]`),
+  });
+}
+
+function openDreamerBoardRadial(anchorEl, playerId, tileId) {
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
+  if (playerIndex < 0) return;
+  // Focus/view only — Give Turn on the radial hands off the shared budget.
+  const focusOk = tryFocusDreamer(playerIndex);
+  if (focusOk === false) {
+    renderAll();
+    return;
+  }
+  clearDockSelectTimer();
+  pendingDreamerFocusId = null;
+  hideUtilityModal(true);
+  const player = state.players[playerIndex];
+  const sameDreamer = state.activePlayerIndex === playerIndex;
+  const sameMeetTile = getPhase(state) !== "Meet" || state.selectedLandscapeId === tileId;
+  state.activePlayerIndex = playerIndex;
+  if (getPhase(state) === "Meet") state.selectedLandscapeId = tileId;
+  const liveToken = document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`);
+  if (sameDreamer && sameMeetTile && liveToken?.isConnected) {
+    showDreamerBoardRadialMenu(playerId, tileId, player);
+    requestAnimationFrame(() => repositionRadialMenu());
+    return;
+  }
+  pendingDreamerRadial = {
+    playerId,
+    tileId,
+    player,
+  };
+  renderAll();
+}
+
+function openBeastBoardRadial(anchorEl, encounter, tileId) {
+  const occupant = actorOnLandscape(state, tileId);
+  if (occupant) {
+    const idx = state.players.findIndex((p) => p.id === occupant.id);
+    if (idx >= 0) state.activePlayerIndex = idx;
+  }
+  state.selectedLandscapeId = tileId;
+  state.activeEncounter = encounter;
+  state.activeEncounterLandscapeId = tileId;
+
+  const handlers = buildPhaseHandlers();
+  const canMeet = occupant && canDreamerMeetOnLandscape(state, occupant, tileId);
+
+  const slumberOnly = isLeviathanCard(encounter);
+  const options = [
+    !slumberOnly && {
+      id: "accept",
+      label: encounterPowerLabel(encounter, true),
+      hint: `${encounterPayHint(encounter, true)} ${encounterAcceptSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
+      disabled: !canMeet || (isInteractiveTutorialActive(state) && !isTutorialActionAllowed(state, "meetAccept", { tileId })),
+      primary: true,
+      kind: "meetAccept",
+      onPick: () => handlers.meetEncounter("accept"),
+    },
+    !state.forcedAccept && {
+      id: "reject",
+      label: encounterPowerLabel(encounter, false),
+      hint: `${encounterPayHint(encounter, false)} ${encounterRejectSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
+      disabled: !canMeet || (isInteractiveTutorialActive(state) && !isTutorialActionAllowed(state, "meetReject", { tileId })),
+      kind: "meetReject",
+      onPick: () => handlers.meetEncounter("reject"),
+    },
+    {
+      id: "view",
+      label: "View",
+      hint: "Dreambeast details, costs, and rewards",
+      disabled: false,
+      onPick: () => showModal(encounter),
+    },
+  ].filter(Boolean);
+
+  showRadialMenu(anchorEl, options, (opt) => {
+    if (opt.kind && !isTutorialActionAllowed(state, opt.kind, { tileId, encounterId: encounter?.id })) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    opt.onPick?.();
+    renderAll();
+  }, {
+    ariaLabel: `${encounter.name} encounter`,
+    resolveAnchor: () => document.querySelector(`.hex-occupant-beast[data-encounter-key="${encounterKey(encounter)}"]`)
+      || document.querySelector(`.hex-tile[data-tile-id="${tileId}"] .hex-occupant-beast`)
+      || document.querySelector(`.hex-tile[data-tile-id="${tileId}"]`),
+  });
+}
+
+function onHandCardClick(card, owner) {
+  const now = Date.now();
+  const id = card.instanceId || card.id;
+  if (lastCardClick.id === id && now - lastCardClick.time < 400) {
+    showModal(card);
+    lastCardClick.id = null;
+    return;
+  }
+  lastCardClick.id = id;
+  lastCardClick.time = now;
+
+  const wasSelected = state.selectedHand.includes(id);
+  if (!wasSelected && !isTutorialActionAllowed(state, "handToggle", { card, owner })) {
+    tutorialActionBlocked(state);
+    renderAll();
+    return;
+  }
+  toggleHandCard(state, card, owner);
+  const isSelected = state.selectedHand.includes(id);
+  if (isSelected && !wasSelected) playSfx("select");
+  else if (!isSelected && wasSelected) playSfx("deselect");
+  if (state.tradeMode && state.trade?.step === "select-offer") {
+    renderAll();
+    maybeShowTradePanel();
+    return;
+  }
+  renderAll();
+}
+
+let lastDeathChoiceKey = null;
+
+function maybeShowNothingChoice() {
+  if (!state?.pendingNothingChoice) {
+    lastNothingChoiceKey = null;
+    return;
+  }
+  const key = state.pendingNothingChoice.playerId;
+  if (key === lastNothingChoiceKey) return;
+  lastNothingChoiceKey = key;
+  showNothingChoiceModal(
+    state,
+    () => {
+      resolveNothingChoice(state, "token");
+      lastNothingChoiceKey = null;
+      renderAll();
+    },
+    () => {
+      resolveNothingChoice(state, "repress");
+      lastNothingChoiceKey = null;
+      renderAll();
+    },
+  );
+}
+
+let lastNothingChoiceKey = null;
+let lastObjectChoiceKey = null;
+let lastMindstreamChoiceKey = null;
+
+/** Mindstream draws use the fullscreen choice UI — do not open the old card modal first. */
+function showDrawnMindstreamCard(card) {
+  if (!card || state?.pendingMindstreamChoice) return;
+  showModal(card);
+}
+
+function maybeShowMindstreamChoice() {
+  const pending = state?.pendingMindstreamChoice;
+  if (!pending || pending.ui !== "mindstream-fullscreen") {
+    lastMindstreamChoiceKey = null;
+    return;
+  }
+  const key = `${pending.kind}:${pending.cardId}:${(pending.choices || []).map((c) => `${c.id}:${c.disabled}`).join(",")}`;
+  const modalHidden = document.getElementById("utility-modal")?.classList.contains("hidden");
+  if (key === lastMindstreamChoiceKey && !modalHidden) return;
+  if (pending._cinematicPlaying) return;
+  lastMindstreamChoiceKey = key;
+  hideModal();
+
+  const openChoice = () => {
+    if (!state?.pendingMindstreamChoice) return;
+    showMindstreamChoiceFullscreen(state.pendingMindstreamChoice, (choiceId) => {
+      hideUtilityModal(true);
+      const helpers = {
+        ...getEffectHelpers(),
+        meetEncounter,
+        prepareMindstreamMeet,
+        onChoiceResolved: () => {
+          continueDeferredEventQueues(state);
+          lastMindstreamChoiceKey = null;
+          renderAll();
+        },
+      };
+      resolveMindstreamChoice(state, choiceId, helpers);
+      continueDeferredEventQueues(state);
+      lastMindstreamChoiceKey = null;
+      renderAll();
+    });
+  };
+
+  if (pending.needsDrawCinematic) {
+    pending.needsDrawCinematic = false;
+    pending._cinematicPlaying = true;
+    playMindstreamDrawCinematic({
+      card: pending.card,
+      suit: pending.suit || pending.card?.mindstreamSuit || pending.card?.suit,
+    }).then(() => {
+      if (state?.pendingMindstreamChoice) {
+        state.pendingMindstreamChoice._cinematicPlaying = false;
+      }
+      openChoice();
+    });
+    return;
+  }
+
+  openChoice();
+}
+
+function maybePlayBeastMill() {
+  const job = state?.pendingBeastMill;
+  if (!job?.steps?.length || job.playing) return;
+  job.playing = true;
+  const steps = job.steps.slice();
+  steps.forEach((step) => {
+    if (step.tileId && step.encounterId) cancelQueuedEncounterSpawn(step.encounterId);
+  });
+  playBeastMillSequence(steps).then(() => {
+    if (state?.pendingBeastMill === job) state.pendingBeastMill = null;
+    renderAll();
+  });
+}
+
+function maybeShowObjectChoice() {
+  if (state?.pendingBeastMill?.steps?.length) return;
+  if (
+    state?.pendingMindstreamChoice
+    || state?.pendingDeathChoice
+    || state?.pendingNothingChoice
+    || state?.pendingRepress
+    || state?.pendingReturn
+  ) {
+    return;
+  }
+  const pending = state?.pendingDreamChoice || state?.pendingEffectChoice || state?.pendingObjectChoice;
+  const kind = state?.pendingDreamChoice ? "dream" : state?.pendingEffectChoice ? "effect" : "object";
+  if (!pending) {
+    lastObjectChoiceKey = null;
+    return;
+  }
+  const key = `${kind}:${pending.cardId || pending.dreamId}:${pending.step}:${pending.ui}:${(pending.choices || []).map((c) => c.id).join(",")}:${(pending.order || []).length}:${(pending.cards || []).length}`;
+  const modalHidden = document.getElementById("utility-modal")?.classList.contains("hidden");
+  if (key === lastObjectChoiceKey && !modalHidden) return;
+  lastObjectChoiceKey = key;
+  const finish = (choiceId) => {
+    hideUtilityModal(true);
+    if (kind === "dream") resolveDreamChoice(state, choiceId, getEffectHelpers());
+    else if (kind === "effect") resolveEffectChoice(state, choiceId, getEffectHelpers());
+    else resolveObjectChoice(state, choiceId, getEffectHelpers());
+    continueDeferredEventQueues(state);
+    continueArchetypeQueues(state);
+    lastObjectChoiceKey = null;
+    renderAll();
+  };
+  if (pending.ui === "cards") {
+    showObjectCardPicker(pending, finish);
+    return;
+  }
+  if (pending.ui === "reorder") {
+    showObjectReorderPicker(pending, finish);
+    return;
+  }
+  if (pending.ui === "peek") {
+    showCardPeekStage({
+      title: pending.title,
+      message: pending.message,
+      cards: pending.cards,
+      choices: pending.choices,
+      required: true,
+      onPick: finish,
+    });
+    return;
+  }
+  if (pending.ui === "spend") {
+    const toggleSpend = (choiceId) => {
+      if (kind === "dream") resolveDreamChoice(state, choiceId, getEffectHelpers());
+      else if (kind === "effect") resolveEffectChoice(state, choiceId, getEffectHelpers());
+      else resolveObjectChoice(state, choiceId, getEffectHelpers());
+    };
+    showObjectSpendPicker(pending, toggleSpend, () => finish("confirm"));
+    return;
+  }
+  showDreamerPowerChoice(pending, finish);
+}
+
+function maybeShowDeathChoice() {
+  if (!state?.pendingDeathChoice) {
+    lastDeathChoiceKey = null;
+    return;
+  }
+  const key = state.pendingDeathChoice.playerId;
+  const showing = utilityModalShowing("#death-choice-avoid, #death-choice-accept, .death-choice");
+  if (key === lastDeathChoiceKey && showing) return;
+  lastDeathChoiceKey = key;
+  showDeathChoiceModal(
+    state,
+    () => {
+      avoidDreamerDeath(state);
+      lastDeathChoiceKey = null;
+      renderAll();
+    },
+    () => {
+      acceptDreamerDeath(state);
+      lastDeathChoiceKey = null;
+      renderAll();
+    },
+  );
+}
+
+function maybeShowRespawn() {
+  if (!state?.pendingRespawn || !state.availableDreamers.length) return;
+  showRespawnPicker(state.availableDreamers, (dreamerId) => {
+    respawnDreamer(state, state.pendingRespawn, dreamerId);
+    renderAll();
+  });
+}
+
+let lastTradePanelKey = null;
+
+function applyBackButton(back) {
+  const backBtn = document.getElementById("btn-map-back");
+  if (!backBtn || !back) return;
+  backBtn.disabled = !back.enabled;
+  backBtn.title = back.title;
+  backBtn.setAttribute("aria-label", back.title);
+  backBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (backBtn.disabled) return;
+    back.run?.();
+  };
+}
+
+function describeBackAction() {
+  const cardModal = document.getElementById("card-modal");
+  if (cardModal && !cardModal.classList.contains("hidden")) {
+    return {
+      enabled: true,
+      title: "Close this card.",
+      run: () => hideModal(),
+    };
+  }
+  if (isRadialMenuOpen()) {
+    return {
+      enabled: true,
+      title: "Close this menu.",
+      run: () => hideRadialMenu(),
+    };
+  }
+  if (isPhaseOpenerMenuOpen()) {
+    return {
+      enabled: true,
+      title: "View the board. Return to opener brings this menu back.",
+      run: () => {
+        parkPhaseOpenerMenu(state);
+        renderAll();
+      },
+    };
+  }
+  const utility = utilityModalPresence();
+  if (utility === "minimized") {
+    return {
+      enabled: true,
+      title: "Return to the open choice.",
+      run: () => restoreUtilityModal(),
+    };
+  }
+  if (utility === "required") {
+    return {
+      enabled: true,
+      title: "View the board. Resume choice brings this back.",
+      run: () => dismissUtilityModal(),
+    };
+  }
+  if (utility === "panel") {
+    return {
+      enabled: true,
+      title: "Close this panel and return to the board.",
+      run: () => hideUtilityModal(true),
+    };
+  }
+  if (canUndoAction()) {
+    return {
+      enabled: true,
+      title: "Undo the most recent action and restore the table.",
+      run: () => undoLastTableAction(),
+    };
+  }
+  return {
+    enabled: false,
+    title: "No action to undo yet.",
+    run: () => {},
+  };
+}
+
+function dismissUtilityModal() {
+  if (isPhaseOpenerMenuOpen()) {
+    parkPhaseOpenerMenu(state);
+    renderAll();
+    return;
+  }
+  if (state?.tradeMode) {
+    cancelTrade(state);
+    hideUtilityModal(true);
+    lastTradePanelKey = null;
+    renderAll();
+    return;
+  }
+  handleUtilityModalDismiss();
+}
+
+function maybeShowTradePanel() {
+  if (!state?.tradeMode || !state.trade) {
+    lastTradePanelKey = null;
+    return;
+  }
+  if (isBlockingGameChoice(state)) return;
+  const trade = state.trade;
+  const key = [
+    trade.step,
+    trade.partnerId || "",
+    (trade.offerPsycheIds || []).join(","),
+    (trade.partnerOfferIds || []).join(","),
+  ].join("|");
+  const modalHidden = document.getElementById("utility-modal")?.classList.contains("hidden");
+  if (key === lastTradePanelKey && !modalHidden) return;
+  lastTradePanelKey = key;
+  showTradeControls(
+    state,
+    () => {
+      const ok = confirmTrade(state);
+      if (ok) {
+        hideUtilityModal(true);
+        lastTradePanelKey = null;
+      }
+      renderAll();
+    },
+    () => {
+      cancelTrade(state);
+      hideUtilityModal(true);
+      lastTradePanelKey = null;
+      renderAll();
+    },
+    (card, owner) => {
+      toggleTradeOffer(state, card, owner);
+      lastTradePanelKey = null;
+      maybeShowTradePanel();
+    },
+    (index) => {
+      if (!selectTradePartner(state, index)) return;
+      lastTradePanelKey = null;
+      renderAll();
+    },
+  );
+}
+
+function utilityModalShowing(selector) {
+  const modal = document.getElementById("utility-modal");
+  if (!modal || modal.classList.contains("hidden")) return false;
+  return !!modal.querySelector(selector);
+}
+
+function maybeShowRepressPicker() {
+  // Higher-priority fullscreen choices only — never yield to Dream/Object/Effect
+  // or the phase-opener (those used to steal this modal and soft-lock Meet tax).
+  if (state?.pendingDeathChoice || state?.pendingMindstreamChoice || state?.pendingNothingChoice) {
+    return;
+  }
+  if (!state?.pendingRepress) {
+    lastRepressPickerKey = null;
+    return;
+  }
+  const pending = state.pendingRepress;
+  const key = [
+    pending.collective ? "team" : pending.playerId,
+    pending.source,
+    pending.picked.length,
+    pending.remaining,
+    pending.confirmEmpty ? 1 : 0,
+    pending.toDiscard ? 1 : 0,
+  ].join(":");
+  const showing = utilityModalShowing("#repress-confirm");
+  if (key === lastRepressPickerKey && showing) return;
+  lastRepressPickerKey = key;
+
+  showRepressPicker(
+    state,
+    (instanceId) => {
+      const ok = pickRepressCard(state, instanceId);
+      lastRepressPickerKey = null;
+      if (!ok && state.pendingRepress) {
+        // Card already gone / invalid — refresh the picker so the UI unsticks.
+        maybeShowRepressPicker();
+      }
+      renderAll();
+    },
+    () => {
+      confirmRepressStep(state);
+      lastRepressPickerKey = null;
+      renderAll();
+    },
+  );
+}
+
+let dreamerPowerModalKey = null;
+
+function presentDreamerPowerUI(ui) {
+  if (ui.type === "choice") {
+    showDreamerPowerChoice(ui, (choiceId) => {
+      dreamerPowerModalKey = null;
+      processDreamerPowerResult(resolveDreamerPowerChoice(state, choiceId));
+    });
+    return;
+  }
+  if (ui.type === "hand") {
+    showObjectCardPicker(ui, (cardKey) => {
+      dreamerPowerModalKey = null;
+      processDreamerPowerResult(resolveDreamerPowerHandPick(state, cardKey));
+    });
+    return;
+  }
+  if (ui.type === "deck") {
+    showDreamerPowerDeckPicker(ui, (deckKey) => {
+      dreamerPowerModalKey = null;
+      processDreamerPowerResult(resolveDreamerPowerDeckPick(state, deckKey));
+    });
+    return;
+  }
+  if (ui.type === "peek") {
+    showCardPeekStage({
+      title: ui.title,
+      message: ui.message,
+      cards: ui.cards,
+      choices: ui.choices,
+      required: true,
+      onPick: (choiceId) => {
+        dreamerPowerModalKey = null;
+        processDreamerPowerResult(resolveDreamerPowerChoice(state, choiceId));
+      },
+    });
+  }
+}
+
+function processDreamerPowerResult(result) {
+  if (result?.card) showModal(result.card);
+  if (result?.ui) {
+    const pending = state.pendingDreamerPower;
+    if (pending) pending.ui = result.ui;
+    presentDreamerPowerUI(result.ui);
+    return;
+  }
+  renderAll();
+}
+
+function maybeShowDreamerPowerUI() {
+  if (
+    state?.pendingDeathChoice
+    || state?.pendingMindstreamChoice
+    || state?.pendingNothingChoice
+    || state?.pendingRepress
+    || state?.pendingReturn
+    || state?.pendingDreamChoice
+    || state?.pendingEffectChoice
+    || state?.pendingObjectChoice
+  ) {
+    return;
+  }
+  const ui = state?.pendingDreamerPower?.ui;
+  if (!ui) {
+    dreamerPowerModalKey = null;
+    return;
+  }
+  const key = JSON.stringify(ui);
+  if (key === dreamerPowerModalKey) return;
+  dreamerPowerModalKey = key;
+  presentDreamerPowerUI(ui);
+}
+
+function maybeShowReturnPicker() {
+  if (
+    state?.pendingDeathChoice
+    || state?.pendingMindstreamChoice
+    || state?.pendingNothingChoice
+    || state?.pendingRepress
+  ) {
+    return;
+  }
+  if (!state?.pendingReturn) {
+    lastReturnPickerKey = null;
+    return;
+  }
+  const pending = state.pendingReturn;
+  const key = `${pending.remaining}:${pending.picked.length}:${pending.filter || ""}`;
+  const showing = utilityModalShowing("#return-skip, .subconscious-binder-fullscreen, [data-choice='return']");
+  if (key === lastReturnPickerKey && showing) return;
+  lastReturnPickerKey = key;
+  showSubconsciousPicker(state, {
+    onConfirm: () => {
+      lastReturnPickerKey = null;
+      renderAll();
+    },
+    onSkip: () => {
+      cancelPendingReturn(state);
+      lastReturnPickerKey = null;
+      renderAll();
+    },
+  });
+}
+
+function renderBoardArea() {
+  if (!state) return;
+  const pickHighlights = getTutorialPickHighlights(state, getLandscapePickHighlights(state));
+  let legalMoves = getLegalExploreTargets(state).map((t) => t.id);
+  if (isInteractiveTutorialActive(state)) {
+    legalMoves = getTutorialExploreLegalMoveIds(state, legalMoves);
+  }
+  const commitLandscape = (id) => {
+    if (!isTutorialActionAllowed(state, "boardClick", { tileId: id })) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    if (exploreMoveLockActive(state) && !legalMoves.includes(id)) {
+      addLog(state, "Glowing Landscapes are the steps you can take.");
+      renderAll();
+      return;
+    }
+    if (pickHighlights.reveal?.includes(id) || pickHighlights.choose?.includes(id)) {
+      flashRevealOpenCursor();
+    }
+    const beat = currentRailBeat(state);
+    if (isInteractiveTutorialActive(state) && beat?.kind === "exploreMove" && beat.playerIndex != null) {
+      state.activePlayerIndex = beat.playerIndex;
+    }
+    const result = handleBoardTileClick(state, id);
+    renderAll();
+    if (result && typeof result === "object" && result.openRadial) {
+      openDreamerBoardRadial(null, result.playerId, result.tileId);
+    }
+  };
+  renderBoard(state, commitLandscape, legalMoves, pickHighlights, (id) => {
+    const tile = state.board.find((t) => t.id === id);
+    if (tile?.revealed && !tile.wasteland) playLandscapeSfx(id);
+    showLandscapeDetail(state, id, {
+      onDreamerClick: (playerId, tileId) => {
+        hideUtilityModal(true);
+        openDreamerBoardRadial(null, playerId, tileId);
+      },
+      onBeastClick: (encounter, tileId) => {
+        hideUtilityModal(true);
+        openBeastBoardRadial(null, encounter, tileId);
+      },
+    });
+  }, {
+    onDreamerTokenClick: (playerId, tileId, anchorEl, event) => {
+      const playerIndex = state.players.findIndex((p) => p.id === playerId);
+      if (playerIndex < 0) return;
+      if (!isTutorialActionAllowed(state, "dreamerSelect", { playerIndex })) {
+        tutorialActionBlocked(state);
+        return;
+      }
+      if (state.tradeMode && state.trade?.step === "pick-partner") {
+        if (selectTradePartner(state, playerIndex)) {
+          lastTradePanelKey = null;
+          renderAll();
+        }
+        return;
+      }
+      if (state.tradeMode && state.trade?.step === "select-offer") return;
+      if (event?.detail >= 2) {
+        lastDreamerTokenTap = { id: null, time: 0 };
+        zoomMaxOnDreamer(playerId, tileId);
+        return;
+      }
+      lastDreamerTokenTap = { id: playerId, time: Date.now() };
+      openDreamerBoardRadial(anchorEl, playerId, tileId);
+    },
+    onBeastTokenClick: (encounter, tileId, anchorEl) => {
+      if (exploreMoveLockActive(state) && tileId) {
+        commitLandscape(tileId);
+        return;
+      }
+      openBeastBoardRadial(anchorEl, encounter, tileId);
+    },
+    onExploreWalkerPick: (playerId) => {
+      const playerIndex = state.players.findIndex((p) => p.id === playerId);
+      if (playerIndex < 0) return;
+      if (isInteractiveTutorialActive(state)) {
+        tutorialActionBlocked(state);
+        renderAll();
+        return;
+      }
+      // Focus the walker to view them; hex moves still spend the turn holder's move.
+      if (tryFocusDreamer(playerIndex) === false) {
+        renderAll();
+        return;
+      }
+      state.activePlayerIndex = playerIndex;
+      renderAll();
+    },
+  });
+  syncBoardZoomAfterRender();
+  syncTurnHalo(actionTurnHolder(state)?.id || null);
+}
+
+function handleDrawPileClick(deckId) {
+  if (!state || !deckId) return;
+  if (state.tradeMode && deckId.startsWith("mindstream-")) return;
+
+  if (state.landscapePick?.mode === "reveal-deck-tops" && deckId.startsWith("mindstream-")) {
+    const suit = deckId.replace("mindstream-", "");
+    const flipped = spendLucidityRevealOnDeck(state, suit);
+    if (!flipped) {
+      showRevealDeckTopModal((nextSuit) => {
+        hideUtilityModal(true);
+        spendLucidityRevealOnDeck(state, nextSuit);
+        renderAll();
+      });
+    }
+    renderAll();
+    return;
+  }
+
+  if (deckId.startsWith("mindstream-")) {
+    const suit = deckId.replace("mindstream-", "");
+    const result = tryDrawMindstreamFromDeck(state, suit, {
+      onResult: (card) => showDrawnMindstreamCard(card),
+    });
+    if (result?.ok) {
+      renderAll();
+      return;
+    }
+    if (result?.reason === "meet") {
+      narrate(state, "Meet first", "Open the Meet phase, then click a Mindstream card back from a matching Landscape.");
+      return;
+    }
+    if (result?.reason === "suit" || result?.reason === "landscape") {
+      const tile = result.tile;
+      narrate(
+        state,
+        "Stand on the matching Landscape",
+        tile
+          ? `${state.players[state.activePlayerIndex]?.name || "That Dreamer"} is on ${tile.name}. Draw ${suit} Mindstream from a matching Landscape, or Forest's Draw Any Mindstream.`
+          : "Select a Dreamer standing on a revealed Landscape, then click that Mindstream's card back.",
+      );
+    }
+  }
+
+  const peeked = state.revealedDeckTops?.[deckId] || [];
+  if (peeked.length) {
+    showRevealedTopsModal(state, deckId, (card) => showModal(card));
+    return;
+  }
+  if (deckId === "dream" || deckId === "psyche") {
+    showRevealedTopsModal(state, deckId, (card) => showModal(card));
+  }
+}
+
+function renderAll() {
+  if (!state) return;
+  document.body.classList.toggle("seed-dmzemo", !!state.seedFlags?.dmzemo);
+  bindUiRenderState(state);
+  resolveStaleLandscapePick(state);
+  checkDefeat(state);
+  if (isInteractiveTutorialActive(state)) {
+    syncTutorial(state);
+  }
+
+  if (state.status === "won") {
+    syncTurnHalo(null);
+    syncDeckPressure(state);
+    clearAutosave();
+    hideTutorial();
+    interactiveTutorialActive = false;
+    document.body.classList.remove("tutorial-mode-active");
+    if (!pendingScoreResult) {
+      const breakdown = calculateFinalScore(state);
+      const lengthLabel = state.tutorialVictory
+        ? "Tutorial"
+        : (state.lengthKey && LENGTHS[state.lengthKey]
+          ? LENGTHS[state.lengthKey].label
+          : `${state.goalPoints} pts`);
+      const seconds = Math.max(0, Math.round((Date.now() - (state.gameStartedAt || Date.now())) / 1000));
+      pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel };
+    }
+    const msg = state.tutorialVictory
+      ? `You collected ${state.acquiredPoints} Archetype point${state.acquiredPoints === 1 ? "" : "s"} and woke on The Bed — the same escape as a real Daydream.`
+      : (state.finalRecurrence
+        ? "All Remaining Archetypes defeated in the Final Recurrence!"
+        : `You collected ${state.acquiredPoints} Archetype points and all Dreamers returned to the Bed!`);
+    showEndScreen(
+      true,
+      msg,
+      state.tutorialVictory ? { breakdown: pendingScoreResult.breakdown } : pendingScoreResult,
+      endScreenDream(),
+    );
+    document.getElementById("btn-start-daydream")?.classList.toggle("hidden", !state.tutorialVictory);
+    document.getElementById("end-leaderboard")?.classList.toggle("hidden", !!state.tutorialVictory);
+    const advancedEnd = document.getElementById("btn-advanced-tutorial");
+    const replayBasic = document.getElementById("btn-replay-basic");
+    const replay = document.getElementById("btn-replay-tutorial");
+    if (state.tutorialVictory) {
+      const longer = state.tutorialTrack === "advanced";
+      if (longer) markAdvancedTutorialComplete();
+      else markBasicTutorialComplete();
+      advancedEnd?.classList.toggle("hidden", longer);
+      replayBasic?.classList.toggle("hidden", !longer);
+      if (replay) replay.textContent = longer ? "Replay Advanced" : "Replay Tutorial";
+      const wake = document.getElementById("end-message");
+      if (wake && !longer) {
+        wake.textContent = "You woke on The Bed. The Advanced Tutorial is unlocked on this screen and on the main menu. It teaches trade, objects, powers, death, and the boss.";
+      }
+      if (wake && longer) {
+        wake.textContent = "You woke from the longer night. Replay either lesson from the menu, or begin a real Daydream.";
+      }
+    } else {
+      advancedEnd?.classList.add("hidden");
+      replayBasic?.classList.add("hidden");
+    }
+    if (!victoryShown) {
+      victoryShown = true;
+      startVictoryCelebration();
+      playSfx("victory");
+      if (!state.tutorialVictory) loadLeaderboardPreview();
+    }
+    return;
+  }
+  if (state.status === "lost") {
+    if (state.tutorialMode && !state.tutorialComplete) {
+      state.status = "playing";
+    } else {
+      syncTurnHalo(null);
+      syncDeckPressure(state);
+      clearAutosave();
+      stopVictoryCelebration();
+      showEndScreen(false, state.log[0] || "The Dreamscape collapses.", null, endScreenDream());
+      return;
+    }
+  }
+
+  recordActionCheckpoint(state);
+
+  syncHandRemovals(state);
+
+  renderHud(state, getPhaseHint(state));
+  syncDeckPressure(state);
+  renderPhaseStepper(state);
+
+  const handlers = buildPhaseHandlers();
+  const phaseActions = applyTutorialPhaseGates(state, getPhaseActions(state, handlers));
+  let advanceAction = getPhaseAdvanceAction(state, handlers);
+  if (advanceAction && isInteractiveTutorialActive(state)) {
+    const advanceAllowed = isTutorialActionAllowed(state, "advancePhase");
+    const onClick = advanceAction.onClick;
+    advanceAction = {
+      ...advanceAction,
+      disabled: advanceAction.disabled || !advanceAllowed,
+      onClick: () => {
+        if (!isTutorialActionAllowed(state, "advancePhase")) {
+          tutorialActionBlocked(state);
+          renderAll();
+          return;
+        }
+        onClick();
+      },
+    };
+  }
+  renderNarratorPanel(state);
+  renderGuidePanel(state, phaseActions);
+  const back = describeBackAction();
+  renderPhaseAdvanceBar(advanceAction, {
+    canUndo: canUndoAction(),
+    enabled: back.enabled,
+    title: back.title,
+    stackSize: undoStackSize(),
+    onUndo: back.run,
+  }, {
+    visible: getPhase(state) === "Reveal",
+    disabled: !!state.dreamDrawn || !isTutorialActionAllowed(state, "drawDream"),
+    label: "Draw Dream",
+    hint: state.dreamDrawn
+      ? "This round's Dream is already drawn."
+      : "Head Dreamer (★) draws and resolves this round's Dream.",
+    onClick: () => {
+      if (!isTutorialActionAllowed(state, "drawDream")) {
+        tutorialActionBlocked(state);
+        renderAll();
+        return;
+      }
+      handlers.drawDream();
+    },
+  });
+  renderPhaseActions(phaseActions, advanceAction, state);
+
+  renderBoardArea();
+  renderPlayers(state, (index) => {
+    if (!isTutorialActionAllowed(state, "dreamerSelect", { playerIndex: index })) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    if (state.tradeMode && state.trade?.step === "pick-partner") {
+      if (selectTradePartner(state, index)) {
+        lastTradePanelKey = null;
+        renderAll();
+      }
+      return;
+    }
+    if (state.tradeMode && state.trade?.step === "select-offer") return;
+    if (tryFocusDreamer(index) === false) {
+      renderAll();
+      return;
+    }
+    hideRadialMenu();
+    const prevId = state.players[state.activePlayerIndex]?.id;
+    state.activePlayerIndex = index;
+    const player = state.players[index];
+    if (getPhase(state) === "Meet" && player?.landscapeId) {
+      state.selectedLandscapeId = player.landscapeId;
+    }
+    const nextId = state.players[index]?.id;
+    if (prevId && nextId && prevId !== nextId) {
+      playDreamerHandSparkle(prevId, nextId);
+    }
+    if (prevId && nextId && prevId === nextId && player?.alive && player.landscapeId) {
+      openDreamerBoardRadial(null, player.id, player.landscapeId);
+      return;
+    }
+    renderAll();
+    clearDockSelectTimer();
+    dockSelectTimer = window.setTimeout(() => {
+      dockSelectTimer = null;
+      const focused = state.players[index];
+      if (focused?.alive && focused.landscapeId) {
+        queueDreamerBoardFocus(focused.landscapeId);
+        flushDreamerBoardFocus();
+      }
+    }, DOCK_SELECT_DELAY_MS);
+  }, (index) => {
+    if (!isTutorialActionAllowed(state, "dreamerSelect", { playerIndex: index })) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    const player = state.players[index];
+    zoomMaxOnDreamer(player?.id, player?.landscapeId);
+  });
+
+  const blockingChoice = isBlockingGameChoice(state);
+  const openerCovering = !blockingChoice && shouldShowPhaseOpenerMenu(state) && !isPhaseOpenerParked();
+  if (openerCovering) {
+    const tray = document.getElementById("spread-tray");
+    if (tray) {
+      tray.classList.add("hidden");
+      tray.setAttribute("hidden", "");
+      tray.innerHTML = "";
+    }
+    syncPhaseOpenerMenu(state, handlers, renderAll);
+  } else {
+    // Releases opener flag without dismissing a Repress/Return modal.
+    syncPhaseOpenerMenu(state, handlers, renderAll);
+    if (!blockingChoice && phaseOpeningActive(state)) {
+      renderPhaseSpendHands(state, onHandCardClick);
+    } else if (!blockingChoice && (
+      (getPhase(state) === "Meet" && state.meetActionBudget > 0)
+      || state.pendingMindstreamMeet
+    )) {
+      renderCoopMeetHands(state, onHandCardClick);
+    } else if (!blockingChoice) {
+      renderMeetPoolGuide(state);
+      renderHand(state, onHandCardClick, getNewHandCardIds(state));
+    }
+    if (!blockingChoice) {
+      renderSpreadTray(state, onHandCardClick, (() => {
+        const opener = getPhaseOpenerAction(state, handlers);
+        if (!opener) return null;
+        const kind = opener.kind || "revealLandscape";
+        return {
+          ...opener,
+          disabled: opener.disabled || !isTutorialActionAllowed(state, kind),
+          onClick: () => {
+            if (!isTutorialActionAllowed(state, kind)) {
+              tutorialActionBlocked(state);
+              renderAll();
+              return;
+            }
+            opener.onClick?.();
+          },
+        };
+      })());
+    }
+  }
+  renderPowerTokens(state, {
+    onTokenClick: (el) => openPowerTokenRadial(el),
+  });
+
+  renderObjects(state, onObjectCardClick);
+  renderDecks(state, (deckId) => {
+    if (deckId.startsWith("mindstream-") && state.tradeMode) return;
+    showDiscardPileModal(state, deckId, (card) => showModal(card));
+  }, (deckId) => {
+    showRevealedTopsModal(state, deckId, (card) => showModal(card));
+  }, (deckId) => {
+    handleDrawPileClick(deckId);
+  });
+  syncDeckPressure(state);
+  renderActiveSlots(state, (card) => showModal(card), (questIndex) => {
+    const kind = questIndex === 0 ? "completeQuest0" : "completeQuest1";
+    if (!isTutorialActionAllowed(state, kind)) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    const result = handleQuestComplete(state, questIndex);
+    if (result === "acquired") {
+      notifyTutorialArchetypeAcquired(state);
+      playSfx("acquire");
+      requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
+    }
+    renderAll();
+  }, (row) => {
+    if (isBlockingGameChoice(state)) {
+      addLog(state, blockingChoiceLabel(state) || "Finish the current choice first.");
+      renderAll();
+      return;
+    }
+    const result = sacrificeHeldObject(state, row.playerId, row.instanceId);
+    if (!result.ok) addLog(state, result.reason);
+    else {
+      addLog(state, result.log);
+      playSfx("discard");
+    }
+    renderAll();
+  });
+  renderSubconsciousButton(state);
+  renderActionMomentBanner(state);
+  renderLog(state);
+
+  if (state.pendingEventModal) {
+    if (state.pendingMindstreamChoice) {
+      state.pendingEventModal = null;
+    } else {
+      const eventCard = state.pendingEventModal;
+      state.pendingEventModal = null;
+      showModal(eventCard);
+    }
+  }
+
+  resolvePendingDeathDream(state, showModal);
+  // Priority: death → nothing → mindstream → repress/return → object/dream/effect → powers.
+  // Repress before object/dream so Meet-tax discard cannot be buried under another modal.
+  maybeShowDeathChoice();
+  maybeShowNothingChoice();
+  maybeShowMindstreamChoice();
+  maybeShowRepressPicker();
+  maybeShowReturnPicker();
+  maybePlayBeastMill();
+  maybeShowObjectChoice();
+  maybeShowRespawn();
+  maybeShowDreamerPowerUI();
+  if (!isBlockingGameChoice(state)) maybeShowTradePanel();
+  applyBackButton(describeBackAction());
+
+  const blocking = isBlockingGameChoice(state);
+  setUtilityModalRequired(blocking, blockingChoiceLabel(state));
+  const utilityModal = document.getElementById("utility-modal");
+  document.body.classList.toggle(
+    "utility-modal-open",
+    utilityModal && !utilityModal.classList.contains("hidden") && !utilityModal.classList.contains("utility-modal-minimized")
+  );
+
+  if (isInteractiveTutorialActive(state)) {
+    const step = getTutorialStep(state);
+    if (step) ensureTutorialStepTargetsVisible(step);
+    const tutorialSync = syncTutorial(state);
+    if (typeof window !== "undefined") {
+      window.__lastTutorialDecoratedStep = tutorialSync?.step || null;
+    }
+    syncInteractiveTutorial();
+    if (!flushDreamerBoardFocus()) {
+      maybeFocusTutorialLandscape();
+    }
+    syncBoardZoomAfterRender();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const active = syncTutorial(state)?.step;
+        if (active) {
+          applyTutorialHighlight(active, { animateIn: false });
+          trackTutorialSpotlightWithCamera(480);
+        }
+        positionTurnHalo();
+      });
+    });
+  } else {
+    flushDreamerBoardFocus();
+  }
+
+  if (pendingDreamerRadial) {
+    const radial = pendingDreamerRadial;
+    pendingDreamerRadial = null;
+    showDreamerBoardRadialMenu(radial.playerId, radial.tileId, radial.player);
+    requestAnimationFrame(() => repositionRadialMenu());
+  }
+
+  syncTurnHalo(actionTurnHolder(state)?.id || null);
+  updateFinalRecurrenceAtmosphere(state);
+  updateHandSnapshots(state);
+  syncBoardMotion(state);
+  syncGameCursor(state);
+  scheduleAutoSave();
+  requestAnimationFrame(() => {
+    runPendingCardFx(state);
+    runPendingBoardFx();
+  });
+}
+
+init();

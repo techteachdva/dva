@@ -9,8 +9,8 @@ import fs from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
 import { fileURLToPath, pathToFileURL } from "url";
-import { getDreamResolution } from "../src/site/somnia/js/dream-resolutions.js";
-import { getEventResolution } from "../src/site/somnia/js/event-resolutions.js";
+import { getDreamResolution } from "../src/site/somnia/js/cards/dream-resolutions.js";
+import { getEventResolution } from "../src/site/somnia/js/effects/event-resolutions.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(__dirname, "..");
@@ -79,7 +79,7 @@ const MINDSTREAM_COMPOSITION = {
   powerToken: 8,
   drawDream: 3,
 };
-const PSYCHE_DISTRIBUTION = { 1: 6, 2: 5, 3: 3, 4: 2, 5: 1 };
+const PSYCHE_DISTRIBUTION = { 1: 6, 2: 5, 3: 4, 4: 3, 5: 2 };
 const PSYCHE_WILD = 6;
 const PSYCHE_POWER = 0;
 

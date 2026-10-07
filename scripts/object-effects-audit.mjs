@@ -12,7 +12,7 @@ const objects = JSON.parse(
   fs.readFileSync(path.join(REPO, "src/site/somnia/data/objects.json"), "utf8"),
 );
 
-const oe = await import(pathToFileURL(path.join(REPO, "src/site/somnia/js/object-effects.js")).href);
+const oe = await import(pathToFileURL(path.join(REPO, "src/site/somnia/js/effects/object-effects.js")).href);
 
 const PERSISTENT_HANDLED = new Set([
   "row-boat", "hourglass", "conch-shell", "rope",
