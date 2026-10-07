@@ -20,7 +20,7 @@ import {
   focusOnDreamer,
 } from "../board/board-zoom.js";
 import { initPauseMenu, openPauseMenu } from "../ui/pause-menu.js";
-import { initFxLayer, burstSparklesAtElement } from "../ui/fx.js";
+import { initFxLayer, burstSparklesAtElement, playSubconsciousClearSparkle } from "../ui/fx.js";
 import { initMomentOverlay, resetMomentOverlay } from "../ui/moment-overlay.js";
 import {
   runPendingCardFx,
@@ -129,7 +129,8 @@ import { initDevConsole } from "../dev/dev-console.js";
 import { enableDevMode } from "../dev/dev-commands.js";
 import { narrate } from "../core/narrator.js";
 import { openingHookText, showOpeningHook } from "../flow/opening-hook.js";
-import { cancelPendingReturn, pickRepressCard, confirmRepressStep } from "../dreamers/subconscious.js";
+import { cancelPendingReturn, toggleRepressPick, confirmRepressStep } from "../dreamers/subconscious.js";
+import { replayChosenDream } from "../cards/dream-replay.js";
 import { getLandscapePickHighlights, resolveStaleLandscapePick, cancelLandscapePick } from "../board/landscapes.js";
 import {
   resolveDreamerPowerChoice,
@@ -249,6 +250,7 @@ import {
   showCardPeekStage,
   showRevealDeckTopModal,
   showRepressPicker,
+  showDreamReplayPicker,
   renderSubconsciousButton,
   renderActionMomentBanner,
   showRulesModal,
@@ -2181,17 +2183,14 @@ function maybeShowRepressPicker() {
   showRepressPicker(
     state,
     (instanceId) => {
-      const ok = pickRepressCard(state, instanceId);
+      toggleRepressPick(state, instanceId);
       lastRepressPickerKey = null;
-      if (!ok && state.pendingRepress) {
-        // Card already gone / invalid — refresh the picker so the UI unsticks.
-        maybeShowRepressPicker();
-      }
       renderAll();
     },
     () => {
-      confirmRepressStep(state);
+      const paid = confirmRepressStep(state);
       lastRepressPickerKey = null;
+      if (paid) hideUtilityModal(true);
       renderAll();
     },
   );
@@ -2269,6 +2268,47 @@ function maybeShowDreamerPowerUI() {
   if (key === dreamerPowerModalKey) return;
   dreamerPowerModalKey = key;
   presentDreamerPowerUI(ui);
+}
+
+let dreamReplayKey = null;
+
+function maybeShowDreamReplay() {
+  if (!state?.pendingDreamReplay) {
+    dreamReplayKey = null;
+    return;
+  }
+  if (
+    state.pendingDeathChoice
+    || state.pendingMindstreamChoice
+    || state.pendingNothingChoice
+    || state.pendingRepress
+    || state.pendingReturn
+    || state.pendingEffectChoice
+  ) {
+    return;
+  }
+  if (!state.pendingDreamReplay.ready) {
+    if (state.pendingDreamReplay.sparkling) return;
+    state.pendingDreamReplay.sparkling = true;
+    playSubconsciousClearSparkle().then(() => {
+      if (!state?.pendingDreamReplay) return;
+      state.pendingDreamReplay.ready = true;
+      state.pendingDreamReplay.sparkling = false;
+      renderAll();
+    });
+    return;
+  }
+  const key = `replay:${(state.dreamDiscard || []).length}`;
+  const showing = utilityModalShowing("#dream-replay-search");
+  if (key === dreamReplayKey && showing) return;
+  dreamReplayKey = key;
+  showDreamReplayPicker(state, (card) => {
+    if (card) replayChosenDream(state, card, getEffectHelpers());
+    state.pendingDreamReplay = null;
+    dreamReplayKey = null;
+    hideUtilityModal(true);
+    renderAll();
+  });
 }
 
 function maybeShowReturnPicker() {
@@ -2749,7 +2789,11 @@ function renderAll() {
   maybeShowMindstreamChoice();
   maybeShowRepressPicker();
   maybeShowReturnPicker();
+  maybeShowDreamReplay();
   maybePlayBeastMill();
+  if (!state.pendingRepress && !state.pendingReturn && !state.pendingDreamReplay && !(state.resolutionQueue?.length)) {
+    continueDeferredEventQueues(state);
+  }
   maybeShowObjectChoice();
   maybeShowRespawn();
   maybeShowDreamerPowerUI();

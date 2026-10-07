@@ -9,7 +9,13 @@ import {
 } from "../core/state.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { grantPowerTokens } from "../cards/power-tokens.js";
-import { repressCard, requestReturnCards, enqueueRepressFromHand } from "../dreamers/subconscious.js";
+import {
+  repressCard,
+  requestReturnCards,
+  enqueueRepressFromHand,
+  enqueueDiscardFromHand,
+  enqueueRepressObjects,
+} from "../dreamers/subconscious.js";
 import { discardToMindstream } from "../cards/mindstream-supply.js";
 import { discardDreamCard } from "../cards/dream-deck.js";
 import { flipLeviathan } from "../encounters/dreambeasts.js";
@@ -20,58 +26,20 @@ function alive(state) {
   return state.players.filter((p) => p.alive);
 }
 
-function discardPsycheCount(state, player, count) {
-  let n = 0;
-  for (let i = 0; i < count; i += 1) {
-    if (!player.hand?.length) break;
-    const card = player.hand.shift();
-    state.psycheDiscard.push(card);
-    n += 1;
-  }
-  if (n) {
-    recordQuestEvent(state, "discard_psyche", { count: n, landscapeId: player.landscapeId });
-    addLog(state, `${player.name} discards ${n} Psyche.`);
-  }
-  return n;
-}
-
 function discardHighest(state, player) {
-  if (!player.hand?.length) return;
-  const card = player.hand.reduce((best, c) =>
-    ((c.value || 0) > (best.value || 0) ? c : best));
-  player.hand = player.hand.filter((c) => c.instanceId !== card.instanceId);
-  state.psycheDiscard.push(card);
-  recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
-  addLog(state, `${player.name} discards ${card.name}.`);
+  enqueueDiscardFromHand(state, player, 1, {
+    reason: `${player.name}: choose your highest Psyche to discard.`,
+    strict: true,
+    cardFilter: { highest: true },
+  });
 }
 
 function discardSuit(state, player, suit, count) {
-  let n = 0;
-  for (let i = 0; i < count; i += 1) {
-    const idx = (player.hand || []).findIndex((c) => c.suit === suit || c.wild);
-    if (idx < 0) break;
-    state.psycheDiscard.push(player.hand.splice(idx, 1)[0]);
-    n += 1;
-  }
-  if (n) {
-    recordQuestEvent(state, "discard_psyche", { count: n, landscapeId: player.landscapeId });
-    addLog(state, `${player.name} discards ${n} ${suit} Psyche.`);
-  }
-  return n;
-}
-
-function repressObjectsCount(state, player, count) {
-  const pool = [...(player.objects || []), ...(player.persistent || [])];
-  let n = 0;
-  for (let i = 0; i < count && pool.length; i += 1) {
-    const card = pool.shift();
-    player.objects = (player.objects || []).filter((c) => c.instanceId !== card.instanceId);
-    player.persistent = (player.persistent || []).filter((c) => c.instanceId !== card.instanceId);
-    repressCard(state, card);
-    n += 1;
-  }
-  if (n) addLog(state, `${player.name} represses ${n} Object(s).`);
-  return n;
+  enqueueDiscardFromHand(state, player, count, {
+    reason: `${player.name}: choose ${count} ${suit} Psyche to discard.`,
+    strict: true,
+    cardFilter: { suit },
+  });
 }
 
 function repressTopMindstream(state, suit, count = 1) {
@@ -107,14 +75,6 @@ export function resolutionRulesText(resolution) {
   return lines.join(" ");
 }
 
-function discardOneObject(state, player) {
-  const obj = player.objects?.length ? player.objects.pop() : null;
-  if (!obj) return false;
-  discardToMindstream(state, obj);
-  addLog(state, `${player.name} discards ${obj.name}.`);
-  return true;
-}
-
 function discardObjectOrPsyche(state, player) {
   const hasObject = Boolean(player.objects?.length);
   const hasPsyche = Boolean(player.hand?.length);
@@ -125,21 +85,28 @@ function discardObjectOrPsyche(state, player) {
       message: `${player.name}: discard an Object, or a Psyche.`,
       log: `${player.name} must discard 1 Object or 1 Psyche.`,
       choices: [
-        { id: "object", label: "Discard an Object", hint: player.objects[player.objects.length - 1]?.name || "Object" },
-        { id: "psyche", label: "Discard a Psyche", hint: player.hand[0]?.name || "Psyche" },
+        { id: "object", label: "Discard an Object", hint: "Choose which Object" },
+        { id: "psyche", label: "Discard a Psyche", hint: "Choose which Psyche" },
       ],
     });
     return;
   }
   if (hasObject) {
-    discardOneObject(state, player);
+    enqueueRepressObjects(state, player, 1, {
+      reason: `${player.name}: choose an Object to discard.`,
+      strict: true,
+      toMindstream: true,
+    });
     return;
   }
   if (!hasPsyche) {
     addLog(state, `${player.name} has no Object and no Psyche to discard.`);
     return;
   }
-  discardPsycheCount(state, player, 1);
+  enqueueDiscardFromHand(state, player, 1, {
+    reason: `${player.name}: choose a Psyche to discard.`,
+    strict: true,
+  });
 }
 
 registerEffectResolver("discard-object-or-psyche", (state, choiceId) => {
@@ -148,16 +115,36 @@ registerEffectResolver("discard-object-or-psyche", (state, choiceId) => {
   state.pendingEffectChoice = null;
   if (!player) return true;
   if (choiceId === "object") {
-    if (!discardOneObject(state, player)) discardPsycheCount(state, player, 1);
-    return true;
-  }
-  if (!player.hand?.length) {
-    if (!discardOneObject(state, player)) {
-      addLog(state, `${player.name} has no Object and no Psyche to discard.`);
+    if (player.objects?.length) {
+      enqueueRepressObjects(state, player, 1, {
+        reason: `${player.name}: choose an Object to discard.`,
+        strict: true,
+        toMindstream: true,
+      });
+    } else {
+      enqueueDiscardFromHand(state, player, 1, {
+        reason: `${player.name}: choose a Psyche to discard.`,
+        strict: true,
+      });
     }
     return true;
   }
-  discardPsycheCount(state, player, 1);
+  if (player.hand?.length) {
+    enqueueDiscardFromHand(state, player, 1, {
+      reason: `${player.name}: choose a Psyche to discard.`,
+      strict: true,
+    });
+    return true;
+  }
+  if (player.objects?.length) {
+    enqueueRepressObjects(state, player, 1, {
+      reason: `${player.name}: choose an Object to discard.`,
+      strict: true,
+      toMindstream: true,
+    });
+    return true;
+  }
+  addLog(state, `${player.name} has no Object and no Psyche to discard.`);
   return true;
 });
 
@@ -282,10 +269,18 @@ function applyResolutionStep(state, player, step, helpers = {}) {
       discardObjectOrPsyche(state, player);
       break;
     case "discardPsyche":
-      discardPsycheCount(state, player, p.count || 1);
+      enqueueDiscardFromHand(state, player, p.count || 1, {
+        reason: `${player.name}: choose ${p.count || 1} Psyche to discard.`,
+        strict: true,
+      });
       break;
     case "discardPsycheAll":
-      alive(state).forEach((pl) => discardPsycheCount(state, pl, p.count || 1));
+      alive(state).forEach((pl) => {
+        enqueueDiscardFromHand(state, pl, p.count || 1, {
+          reason: `${pl.name}: choose ${p.count || 1} Psyche to discard.`,
+          strict: true,
+        });
+      });
       break;
     case "discardHighestPsyche":
       discardHighest(state, player);
@@ -296,7 +291,7 @@ function applyResolutionStep(state, player, step, helpers = {}) {
     case "repressPsyche":
       enqueueRepressFromHand(state, player, p.count || 1, {
         reason: `${player.name}: Repress ${p.count || 1} Psyche.`,
-        strict: !!p.strict,
+        strict: true,
       });
       break;
     case "repressPsycheAll":
@@ -307,7 +302,10 @@ function applyResolutionStep(state, player, step, helpers = {}) {
       });
       break;
     case "repressObjects":
-      repressObjectsCount(state, player, p.count || 1);
+      enqueueRepressObjects(state, player, p.count || 1, {
+        reason: `${player.name}: choose ${p.count || 1} Object${(p.count || 1) === 1 ? "" : "s"} to repress.`,
+        strict: true,
+      });
       break;
     case "discardDream": {
       for (let i = 0; i < (p.count || 1); i += 1) {

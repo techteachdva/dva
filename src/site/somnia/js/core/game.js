@@ -85,7 +85,7 @@ import {
   recordCancellableMove,
 } from "../dreamers/dreamer-powers.js";
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "../effects/objects.js";
-import { spawnBossEncounterOnBed, isBossDreamCard } from "../cards/dream-deck.js";
+import { isBossDreamCard } from "../cards/dream-deck.js";
 import { resumeObjectEffect } from "../effects/object-effects.js";
 import { hasPsycheHealth, allyHandCount, isWildPsyche, isTradablePsyche, TRADE_OFFER_LIMIT } from "../cards/psyche.js";
 import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx, queueAcceptAllyFx } from "../board/board-fx.js";
@@ -374,22 +374,6 @@ function passTurnAction(state) {
     hint: `Skip your turn. The next Dreamer clockwise may spend the remaining shared ${noun}. Or open another Dreamer's radial and choose Give Turn.`,
     onClick: () => passMeetToken(state),
   };
-}
-
-function dreamerCanPayOpener(player, suit) {
-  if ((player.powerTokens || 0) >= 1) return true;
-  return (player.hand || []).some((card) => {
-    if (isDreambeastPsycheCard(card) || card.type === "psyche-power") return false;
-    return isWildPsyche(card) || card.suit === suit;
-  });
-}
-
-function openerRotationBlocks(state, player) {
-  if (!player || state.lastPhaseOpenerId !== player.id) return false;
-  const alive = state.players.filter((p) => p.alive);
-  if (alive.length <= 1) return false;
-  const suit = phaseSuitForOpening(getPhase(state));
-  return alive.some((other) => other.id !== player.id && dreamerCanPayOpener(other, suit));
 }
 
 function recordPhaseOpener(state, player) {
@@ -944,6 +928,7 @@ function phaseAdvanceBlockReason(state) {
   if (isDiceBattleOpen() || state.diceBattle) return "Finish the dice battle before advancing.";
   if (state.pendingRepress) return "Complete Repress selection before advancing.";
   if (state.pendingReturn) return "Complete Return selection before advancing.";
+  if (state.pendingDreamReplay) return "Replay a Dream from the discard before advancing.";
   if (state.pendingDeathChoice) return "Resolve the death choice before advancing.";
   if (state.pendingNothingChoice) return "Resolve the Nothing Object choice before advancing.";
   if (state.pendingObjectChoice) return "Choose an Object effect before advancing.";
@@ -1109,22 +1094,17 @@ export function drawAdditionalDream(state, onShowModal) {
   if (!state.dreamDiscard) state.dreamDiscard = [];
   state.dreamDiscard.push(card);
 
+  const boss = isBossDreamCard(card);
   narrate(
     state,
     `Additional Dream: ${card.name}`,
     card.text || "The Dreamscape shifts again.",
-    ["Resolve this Dream effect before continuing"],
+    boss
+      ? [`${card.name} awakens on The Bed`]
+      : ["Resolve this Dream effect before continuing"],
   );
 
-  if (isBossDreamCard(card)) {
-    spawnBossEncounterOnBed(state, card);
-  } else if (card.type === "final" && card.id === "you-never-wake") {
-    resolveCardEffect(state, card, head, getEffectHelpers());
-  } else if (card.type === "final" && card.id === "final-recurrence") {
-    resolveCardEffect(state, card, head, getEffectHelpers());
-  } else {
-    resolveCardEffect(state, card, head, getEffectHelpers());
-  }
+  resolveCardEffect(state, card, head, getEffectHelpers());
 
   checkDefeat(state);
   applySkeletonKeyAfterDream(state);
@@ -1166,12 +1146,8 @@ export function drawDreamCard(state, onShowModal) {
       : ["Resolve the Dream effect before continuing"],
   );
 
-  if (isBossDreamCard(card)) {
-    spawnBossEncounterOnBed(state, card);
-    if (state.tutorialFlags) state.tutorialFlags.bossDrawn = true;
-  } else {
-    resolveCardEffect(state, card, head, getEffectHelpers());
-  }
+  resolveCardEffect(state, card, head, getEffectHelpers());
+  if (isBossDreamCard(card) && state.tutorialFlags) state.tutorialFlags.bossDrawn = true;
 
   checkDefeat(state);
   applySkeletonKeyAfterDream(state);
@@ -1204,7 +1180,7 @@ export function resolveOpeningDream(state, helpers = {}) {
   state.dreamDiscard.push(card);
 
   if (isBossDreamCard(card)) {
-    spawnBossEncounterOnBed(state, card);
+    resolveCardEffect(state, card, head, getEffectHelpers());
     state.openingOmen = {
       name: card.name,
       roll: null,
@@ -1281,10 +1257,6 @@ export function revealLandscape(state) {
     );
     return;
   }
-  if (openerRotationBlocks(state, player)) {
-    narrate(state, "Someone else opens this phase", `${player.name} opened the last phase. Another Dreamer who can pay Lucidity opens Reveal, unless nobody else can.`);
-    return;
-  }
   const budget = revealBudget(state, player);
   if (budget < 1) {
     narrate(
@@ -1344,11 +1316,6 @@ export function activateExplore(state) {
     addLog(state, best
       ? `Select 1 Elasticity card from a Dreamer's hand. ${best.name} has the best Elasticity bonus (+${totalStat(best, stat, state)}).`
       : `Select 1 ${SUIT_LABELS.elasticity} Psyche card from any Dreamer to set team moves.`);
-    return;
-  }
-
-  if (player && openerRotationBlocks(state, player)) {
-    addLog(state, `${player.name} opened the last phase. Another Dreamer who can pay Elasticity must open Explore.`);
     return;
   }
 
@@ -1509,10 +1476,6 @@ export function gainMeetActions(state) {
     addLog(state, best
       ? `Select 1 Willpower card from a Dreamer's hand. ${best.name} has the best Willpower bonus (+${totalStat(best, stat, state)}).`
       : `Play 1 ${SUIT_LABELS.willpower} Psyche card from any Dreamer for shared Meet Actions.`);
-    return;
-  }
-  if (openerRotationBlocks(state, player)) {
-    addLog(state, `${player.name} opened the last phase. Another Dreamer who can pay Willpower must open Meet.`);
     return;
   }
   const budget = meetActionBudgetFromWillpower(state, player);

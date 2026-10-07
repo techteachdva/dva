@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-38.7-cursor";
-const RUNTIME_CACHE = "somnia-runtime-38.7-cursor";
+const CACHE_NAME = "somnia-39.0-clear";
+const RUNTIME_CACHE = "somnia-runtime-39.0-clear";
 
 const PRECACHE = [
   "./",
@@ -61,6 +61,7 @@ const PRECACHE = [
   "./js/cards/dream-choices.js",
   "./js/cards/dream-deck.js",
   "./js/cards/dream-resolutions.js",
+  "./js/cards/dream-replay.js",
   "./js/encounters/dreambeasts.js",
   "./js/dreamers/dreamer-powers.js",
   "./js/effects/effect-choices.js",

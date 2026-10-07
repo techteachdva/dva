@@ -946,7 +946,7 @@ export function advancePhase(state) {
       t.revealed && tileHasEncounters(t) && state.players.some((p) => p.alive && p.landscapeId === t.id),
     );
     if (meetHere) state.selectedLandscapeId = meetHere.id;
-    addLog(state, "Meet Phase — spend Willpower for shared Actions. Roaming Dreambeasts stay until Accepted or Repressed.");
+    addLog(state, "Meet Phase — spend Willpower for shared Actions. Bosses step toward the nearest Dreamer. Other Dreambeasts stay until Accepted or Repressed.");
   }
 }
 
@@ -1136,6 +1136,7 @@ export function isBlockingGameChoice(state) {
     || state.pendingRespawn
     || state.landscapePick
     || state.pendingDreamerPower?.ui
+    || state.pendingDreamReplay
   );
 }
 
@@ -1147,7 +1148,12 @@ export function blockingChoiceLabel(state) {
     || state.pendingObjectChoice;
   if (pending?.title) return pending.title;
   if (state.pendingReturn) return "Return from Subconscious";
-  if (state.pendingRepress) return "Repress to Subconscious";
+  if (state.pendingDreamReplay) return "Replay a Dream";
+  if (state.pendingRepress) {
+    return state.pendingRepress.toDiscard || state.pendingRepress.toMindstream
+      ? "Discard for this effect"
+      : "Repress to Subconscious";
+  }
   if (state.pendingDeathChoice) return "Psyche death choice";
   if (state.pendingNothingChoice) return "The Nothing";
   if (state.pendingRespawn) return "Choose a new Dreamer";

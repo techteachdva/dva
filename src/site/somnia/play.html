@@ -35,7 +35,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 38.7</span>
+        <span class="version-label">v 39.0</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -44,12 +44,6 @@
         <span id="death-clock-count">0/6</span>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
-      <div id="turn-plaque" class="turn-plaque hidden" role="status" aria-live="polite">
-        <span class="turn-plaque-label">Turn</span>
-        <span id="turn-plaque-name" class="turn-plaque-name">—</span>
-        <span id="turn-plaque-phase" class="turn-plaque-phase"></span>
-        <button type="button" id="turn-plaque-pass" class="turn-plaque-pass hidden" title="Pass your turn — next Dreamer uses the remaining moves/actions">Pass</button>
-      </div>
       <div id="ai-thought-banner" class="ai-thought-banner hidden" role="status" aria-live="polite"></div>
       <div id="hud-suits" class="hud-suits" aria-label="Focused Dreamer">
         <span class="hud-pill hud-pill-lucidity" title="Lucidity"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Lucidity</span><span id="hud-lucidity">0</span></span>
@@ -58,8 +52,7 @@
         <span class="hud-pill hud-pill-power" title="Power Tokens"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Power</span><span id="hud-power">0</span></span>
       </div>
       <div id="hud" class="hud">
-        <div class="hud-item hud-goal-wrap"><span class="label">Goal</span><span id="hud-goal">8 pts</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span><div id="hud-escape-banner" class="hud-escape-banner hidden" role="status" aria-live="polite"></div></div>
-        <div class="hud-item"><span class="label">Points</span><span id="hud-points">0</span></div>
+        <div class="hud-item hud-goal-wrap" title="Archetype points scored / points required to wake."><span class="label">Goal:</span><span id="hud-goal">0/8</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span><div id="hud-escape-banner" class="hud-escape-banner hidden" role="status" aria-live="polite"></div></div>
         <div class="hud-item hud-dreams-wrap"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
         <div class="hud-item hud-beasts-wrap hidden" id="hud-beasts-wrap"><span class="label">Roaming</span><span id="hud-beasts">0</span></div>
         <div class="hud-item hud-round-wrap"><span class="label">Round</span><span id="hud-round">1</span><span id="hud-boss-rounds" class="hud-boss-rounds" aria-hidden="true"></span></div>
@@ -95,6 +88,12 @@
           <div id="dice-battle-stage" class="dice-battle-stage" hidden aria-hidden="true"></div>
           <div id="guide-panel" class="guide-panel" hidden></div>
           <div class="board-viewport" id="board-viewport" title="Scroll to zoom · pinch to zoom · drag or Space+drag to pan">
+            <div id="turn-plaque" class="turn-plaque hidden" role="status" aria-live="polite">
+              <span class="turn-plaque-label">Turn</span>
+              <span id="turn-plaque-name" class="turn-plaque-name">—</span>
+              <span id="turn-plaque-phase" class="turn-plaque-phase"></span>
+              <button type="button" id="turn-plaque-pass" class="turn-plaque-pass hidden" title="Pass your turn — next Dreamer uses the remaining moves/actions">Pass</button>
+            </div>
             <div class="board-zoom-stage" id="board-zoom-stage">
               <div id="hex-board" class="hex-board"></div>
             </div>

@@ -30,7 +30,9 @@ import {
   enqueueRepressFromHand,
   listSubconsciousCards,
   subconsciousCount,
+  createSubconscious,
 } from "../dreamers/subconscious.js";
+import { discardDreamCard, isBossDreamCard, takeDreamFromDeck } from "../cards/dream-deck.js";
 import {
   beginRevealPicking,
   triggerBedFinalRecurrence,
@@ -167,7 +169,7 @@ const COMMANDS = {
         Cards: ["dream", "dreams", "psyche", "object", "objects", "beast-hand", "mindstream", "fill-sub"],
         Encounter: ["spawn", "beasts", "meet-budget", "explore-moves", "encounter-clear"],
         Map: ["reveal", "forget", "tile", "landscapes", "reveal-all", "wasteland-all", "bed-final", "final"],
-        Subconscious: ["return", "repress"],
+        Subconscious: ["return", "repress", "clear-sub"],
         Warnings: ["pressure", "warn", "unstable"],
         Dice: ["dice"],
         Player: ["player", "head", "move", "power", "points", "kill"],
@@ -618,6 +620,32 @@ const COMMANDS = {
         return ok(`Repress hand picker · ${n} for ${player.name}.`);
       }
       return fail("Usage: repress objects|hand <count>");
+    },
+  },
+
+  "clear-sub": {
+    usage: "clear-sub",
+    aliases: ["sub-clear", "empty-sub"],
+    desc: "Empty the Subconscious and open the Dream discard replay.",
+    run: (state) => {
+      const hasDream = (state.dreamDiscard || []).some((card) => card && !isBossDreamCard(card));
+      if (!hasDream) {
+        let moved = 0;
+        while (moved < 3 && state.dreamDeck?.length) {
+          const card = takeDreamFromDeck(state);
+          if (!card) break;
+          discardDreamCard(state, card);
+          moved += 1;
+        }
+      }
+      state.subconscious = createSubconscious();
+      state.pendingDreamReplay = {
+        reason: "The Subconscious is clear. Search the Dream discard and replay one Dream.",
+      };
+      const replayable = (state.dreamDiscard || []).filter((card) => (
+        card && (card.type === "dream" || card.type === "final" || card.type === "boss-dream" || isBossDreamCard(card))
+      )).length;
+      return ok(`Subconscious emptied. ${replayable} Dream(s) can be replayed.`);
     },
   },
 

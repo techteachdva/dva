@@ -20,13 +20,13 @@ const BASIC_TUTORIAL_KEY = "somnia_basic_tutorial_complete";
 const ADVANCED_TUTORIAL_KEY = "somnia_advanced_tutorial_complete";
 const GENTLE_START_KEY = "somnia_gentle_daydream_used";
 
-export const COOP_PLAY_TIP = "Discuss and plan together. One Dreamer spends the shared budget, then Pass Turn or Give Turn hands the night on.";
+export const COOP_PLAY_TIP = "Discuss and plan together. Any Dreamer may open a phase and takes the first action. After that, Pass Turn or Give Turn hands the night on.";
 
 export const TUTORIAL_STEPS = [
   {
     id: "welcome",
     title: "Welcome to Somnia",
-    body: "You are Dreamers trapped in a collapsing Dreamscape. Cooperate to earn Archetype points before the Dream Deck runs out — or never wake up. Talk through each phase. One Dreamer spends, then Pass Turn or Give Turn.",
+    body: "You are Dreamers trapped in a collapsing Dreamscape. Cooperate to earn Archetype points before the Dream Deck runs out — or never wake up. Any Dreamer may open a phase and acts first. Then Pass Turn or Give Turn.",
     target: null,
   },
   {
@@ -38,7 +38,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "suits",
     title: "Three Suits of Psyche",
-    body: "Each phase, one Dreamer spends 1 suited Psyche to set the team's budget. Pick the Dreamer with the highest matching stat. Dreamer, Object, and Acquired Archetype bonuses still add. The table may discuss and act in any order before advancing.",
+    body: "Any Dreamer may open a phase by spending 1 suited Psyche. That Dreamer takes the first action. Afterward, Pass Turn moves clockwise. Pick a high matching stat when you can. Dreamer, Object, and Acquired Archetype bonuses still add.",
     target: "#hand-bar",
   },
   {
@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 38.7. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 39.0. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -582,12 +582,12 @@ export function rulesRemHtml() {
           <div class="overview-phase-head">${suitIconHtml("willpower", { size: 16 })} <strong>Meet</strong> — ${SUIT_LABELS.willpower}</div>
           <p><strong>One Dreamer</strong> spends 1 Willpower card to gain <strong>shared Meet actions</strong> for the team.</p>
           <ul>
-            <li><strong>Start:</strong> each Dreamer discards 1 Psyche from hand per Dreambeast on their Landscape or an adjacent hex. Those cards go to the Psyche discard, not the Subconscious. Dreamers farther away pay nothing. Beasts stay on their Landscapes</li>
+            <li><strong>Start:</strong> each Boss steps 1 hex toward the nearest Dreamer, unless a Dreamer already shares its hex. Then each Dreamer discards 1 Psyche from hand per Dreambeast on their Landscape or an adjacent hex. Those cards go to the Psyche discard, not the Subconscious. Dreamers farther away pay nothing. Other beasts stay on their Landscapes</li>
             <li><strong>Middle:</strong> action budget = that 1 card's value + Willpower bonuses. Spend on Encounters and Landscape actions. Accept and Repress are <strong>dice battles</strong>. You need at least 1 Psyche of the required suit (1–3 cards; allies extra). Beast Power = its dice. Recommended Dreamer Power is beast Power + 2 — you may play less and get lucky. +1d6 for matching Fantasy/Nightmare type and +1d6 for matching the beast's suit. Up to 3 Power Tokens add +1d6 each. 5s and 6s succeed</li>
             <li><strong>End:</strong> if beasts remain, Forget 1 random Landscape per remaining beast. Beasts are not removed until Accepted or Repressed. Fail hits when Accept, Repress, or Flee fails</li>
             <li>Each Landscape offers <strong>Draw Mindstream</strong> (repeatable) and one <strong>unique action</strong> (once per table this Meet). <strong>The Bed</strong> has Draw 3 Psyche, once per Dreamer this Meet</li>
-            <li><strong>Pass Token:</strong> after Meet opens, it starts with a living Dreamer who did not open the phase (Head, if Head was not the opener). That Dreamer takes one Meet action or passes. Passing moves it clockwise. Next Phase can still end Meet early</li>
-            <li>The same Dreamer cannot open two phases in a row this round, unless they are alone or nobody else can pay the suit</li>
+            <li><strong>Opening:</strong> any Dreamer may spend the suited Psyche, no matter whose turn it was. The Dreamer who opens takes the first action</li>
+            <li><strong>Pass Token:</strong> after that first action, Pass Turn or Give Turn moves clockwise through the remaining shared actions. Next Phase can still end Meet early</li>
             <li><strong>Dreamer passives,</strong> once a round, free: Visionary peeks the first leftover Mindstream flip (it stays facedown). Runner's first move costs no team move. Immovable ignores 1 Meet-tax card. Hunter may shove the beast 1 hex after their first battle if it stays. Rested draws 1 Psyche at round end if they opened no phase. Weaver swaps 1 Psyche with an adjacent Dreamer once per Meet</li>
             <li><strong>2 unused actions</strong> may Return 1 Dreambeast from the Subconscious. This can be repeated. Otherwise leftovers are forfeited</li>
             <li>Nine Archetypes name two Landscapes for Draw Mindstream and two for Meeting a Dreambeast. Reveal that hex, move onto it, and take the action. A forgotten tile does not move the quest to another hex of the same suit. Magician, Warrior, and Sage require defeating their boss and one Dreamer sacrificing one Object</li>
@@ -688,7 +688,7 @@ export function rulesDetailsHtml() {
 
       <h3>Subconscious, Trade &amp; Landscapes</h3>
       <ul>
-        <li><strong>Subconscious</strong> — face-up Repressed piles (Psyche, Dreambeasts, Mindstream by suit, Objects). Return puts those cards back into their discards so they can be drawn again. A Mindstream suit left entirely in the Subconscious ends the dream</li>
+        <li><strong>Subconscious</strong> — face-up Repressed piles (Psyche, Dreambeasts, Mindstream by suit, Objects). Return puts those cards back into their discards so they can be drawn again. Clearing every card sparks the table, then the Head Dreamer may search the Dream discard and replay one Dream. It stays in the discard and does not spend the round's draw. A Mindstream suit left entirely in the Subconscious ends the dream</li>
         <li><strong>Trade</strong>: free during Meet. Partner stands on the same or adjacent hex. The trade window shows both hands, and each Dreamer offers up to 3 Psyche.</li>
         <li><strong>Landscape actions</strong> — Draw matching Mindstream as often as you have Meet actions. Each unique Landscape action is once per table this Meet. <strong>The Bed:</strong> Draw 3 Psyche, once per Dreamer this Meet. Quests still name their Landscape even if it is forgotten</li>
         <li><strong>Map setup</strong> — shuffle every Landscape. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten. Further Reveals require 1 Lucidity Psyche</li>
@@ -696,7 +696,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Mindstream &amp; Dreams</h3>
-      <p>Three 72-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, 8 Power Token cards, Draw-Dream cards. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Round 1 draws its Dream immediately and rolls 1d6: even resolves Bright, odd resolves Dim, and the die is the choice. Later Dreams are drawn once per round by the Head Dreamer. Bright then costs a Repress, a discarded Psyche, or a Forgotten Landscape, and it opens only when that Dream's condition is met. Dim is free. A banner stays up at <strong>10%</strong> remaining and tells the table to <strong>Return</strong> cards from the Subconscious; it flashes at <strong>5%</strong>; at <strong>1%</strong> the Dreamscape turns unstable and the nightmare closes in. Each low deck is tagged on the rail.</p>
+      <p>Three 72-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, 8 Power Token cards, Draw-Dream cards. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Round 1 draws its Dream immediately and rolls 1d6: even resolves Bright, odd resolves Dim, and the die is the choice. Later Dreams are drawn once per round by the Head Dreamer. Bright then costs a Repress, a discarded Psyche, or a Forgotten Landscape. You choose which cards to discard or repress. It opens only when that Dream's condition is met. Dim is free. A banner stays up at <strong>10%</strong> remaining and tells the table to <strong>Return</strong> cards from the Subconscious; it flashes at <strong>5%</strong>; at <strong>1%</strong> the Dreamscape turns unstable and the nightmare closes in. Each low deck is tagged on the rail.</p>
 
       <h3>Death</h3>
       <p>A Dreamer with <strong>no Psyche</strong> who must pay even one dies. Objects go to Mindstream discards. Power Tokens return to the pool. They respawn on <strong>The Bed</strong> and draw <strong>3 Psyche</strong>. The <strong>Death Clock</strong> at the top of the table ticks once. The <strong>sixth death</strong>, shared by the whole table, ends the night at once.</p>
@@ -714,7 +714,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 38.7</p>
+          <p class="info-hub-kicker">Somnia v 39.0</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>
@@ -732,7 +732,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Play Together</h3>
-            <p>${COOP_PLAY_TIP} One Dreamer opens each phase with <strong>1 suited Psyche</strong> (or <strong>1 Power Token as 1 plus that suited stat</strong>). Budget = that card's value + Dreamer, Object, and Acquired Archetype bonuses. The same Dreamer cannot open the next phase unless they are alone, or nobody else can pay the suit. Bright is the paid path. Dim is free. The card remembers which one you chose.</p>
+            <p>${COOP_PLAY_TIP} Opening costs <strong>1 suited Psyche</strong> (or <strong>1 Power Token as 1 plus that suited stat</strong>). Budget = that card's value + Dreamer, Object, and Acquired Archetype bonuses. Bright is the paid path. Dim is free. The card remembers which one you chose.</p>
           </div>
           <div class="info-hub-rule info-hub-rem">
             <h3>R.E.M. — Every Round</h3>

@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "38.7";
+export const SOMNIA_VERSION = "39.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "39.0",
+    title: "A Clear Subconscious",
+    notes: [
+      "Any Dreamer may open a phase, and that opener takes the first action. The turn plaque floats on the table under the top bar. Bright and Dim buttons hold the full choice.",
+      "Discard and repress costs stay pending until they are paid, including the last card. Closing the menu cannot skip a cost that can still be paid.",
+      "Clearing the Subconscious sparks the screen. The table then searches the Dream discard and replays one Dream. It stays in the discard and does not spend the round's draw.",
+      "The top bar shows Goal as points scored / points required to wake.",
+      "An extra Dream draw spawns a boss on The Bed, the same as a normal draw. At the start of Meet, each boss steps one hex toward the nearest Dreamer unless a Dreamer already shares its hex.",
+    ],
+  },
   {
     version: "38.7",
     title: "Phase Cursors",

@@ -17,10 +17,9 @@ import { getDreamResolution } from "./dream-resolutions.js";
 import { applyResolutionEffect, discardMindstreamCard, resolutionRulesText } from "../effects/resolution-effects.js";
 import { onObjectDrawn } from "../effects/objects.js";
 import { discardToMindstream, encounterFromDreambeastCard } from "./mindstream-supply.js";
-import { repressCard, requestReturnCards, subconsciousCount } from "../dreamers/subconscious.js";
+import { repressCard, requestReturnCards, subconsciousCount, enqueueDiscardFromHand } from "../dreamers/subconscious.js";
 import { applyFailEffect } from "../encounters/dreambeasts.js";
 import { playDiceBattle, rollD6, countSuccesses } from "../encounters/dice-battle.js";
-import { recordQuestEvent } from "../dreamers/quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
 import { uid } from "../core/data.js";
 
@@ -164,24 +163,17 @@ export function payEventGoodCost(state, player, resolution) {
     );
     return true;
   }
-  const pool = psycheOfSuit(player, resolution.suit)
-    .slice()
-    .sort((a, b) => (a.value || 0) - (b.value || 0));
-  if (pool.length < need) return false;
-  const spent = pool.slice(0, need);
-  spent.forEach((card) => {
-    player.hand = player.hand.filter((c) => c.instanceId !== card.instanceId);
-    state.psycheDiscard.push(card);
-  });
-  recordQuestEvent(state, "discard_psyche", { count: spent.length, landscapeId: player.landscapeId });
+  if (psycheOfSuit(player, resolution.suit).length < need) return "short";
   const stat = totalStat(player, resolution.suit, state);
-  addLog(
-    state,
-    `${player.name} pays ${need} ${SUIT_LABELS[resolution.suit]} Psyche`
-      + (stat ? ` (${stat} covered by base ${SUIT_LABELS[resolution.suit]})` : "")
-      + ` for the Good path.`,
-  );
-  return true;
+  const suitName = SUIT_LABELS[resolution.suit] || resolution.suit;
+  enqueueDiscardFromHand(state, player, need, {
+    reason: `${player.name}: choose ${need} ${suitName} Psyche to pay the Bright cost`
+      + (stat ? ` (${stat} already covered by base ${suitName})` : "")
+      + ".",
+    strict: true,
+    cardFilter: { suit: resolution.suit, payablePsyche: true },
+  });
+  return "queued";
 }
 
 function finishMindstreamCard(state, card) {
@@ -519,11 +511,26 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
         state.pendingMindstreamChoice = pending;
         return false;
       }
-      if (!payEventGoodCost(state, player, resolution)) {
+      const need = eventGoodCardsNeeded(state, player, resolution);
+      if (need > 0 && psycheOfSuit(player, resolution.suit).length < need) {
         addLog(state, "Not enough Psyche for the Good path.");
         state.pendingMindstreamChoice = pending;
         return false;
       }
+      if (need > 0) {
+        const prevIdle = state.onResolutionIdle;
+        state.onResolutionIdle = (s) => {
+          applyResolutionEffect(s, player, resolution.good, h, "good");
+          stampResolutionChoice(card, "good", pending);
+          logMoment(s, `${card.name}: ${resolution.good.label}.`);
+          finishMindstreamCard(s, card);
+          if (typeof prevIdle === "function") prevIdle(s);
+          h.onChoiceResolved?.(s);
+        };
+        payEventGoodCost(state, player, resolution);
+        return true;
+      }
+      payEventGoodCost(state, player, resolution);
       applyResolutionEffect(state, player, resolution.good, h, "good");
       stampResolutionChoice(card, "good", pending);
       logMoment(state, `${card.name}: ${resolution.good.label}.`);
@@ -626,7 +633,7 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
     state.pendingMindstreamChoice = null;
     const side = sideId === "good" ? resolution.good : resolution.bad;
     stampResolutionChoice(card, sideId, pending);
-    if (sideId === "good" && resolution.good.toll?.kind === "repress") {
+    if (sideId === "good" && (resolution.good.toll?.kind === "repress" || resolution.good.toll?.kind === "psyche")) {
       const prevIdle = state.onResolutionIdle;
       state.onResolutionIdle = (s) => {
         applyResolutionEffect(s, player, side, h, "good");

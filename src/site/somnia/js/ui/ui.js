@@ -47,7 +47,9 @@ import {
   isDreambeastPsycheCard,
   toggleReturnPick,
   completeReturnSelection,
+  repressPickerCards,
 } from "../dreamers/subconscious.js";
+import { dreamReplayOptions } from "../cards/dream-replay.js";
 import {
   activeTutorialSections,
   getTutorialSpotlightSelector,
@@ -3714,14 +3716,22 @@ export function renderHud(state, hint = "") {
     const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
     if (goalEl) goalEl.textContent = `Final: ${left} left`;
     if (goalBar) goalBar.style.width = "0%";
+    document.querySelector(".hud-goal-wrap")?.setAttribute(
+      "title",
+      "Final Recurrence — Remaining Archetypes left to defeat.",
+    );
   } else {
     const goal = state.goalPoints || 0;
     const pts = state.acquiredPoints || 0;
-    if (goalEl) goalEl.textContent = `${pts}/${goal} pts`;
+    if (goalEl) goalEl.textContent = `${pts}/${goal}`;
     if (goalBar) {
       const pct = goal > 0 ? Math.min(100, Math.round((pts / goal) * 100)) : 0;
       goalBar.style.width = `${pct}%`;
     }
+    document.querySelector(".hud-goal-wrap")?.setAttribute(
+      "title",
+      `${pts} archetype point${pts === 1 ? "" : "s"} scored. ${goal} required to wake.`,
+    );
   }
 
   if (pointsEl) pointsEl.textContent = String(state.acquiredPoints);
@@ -5148,6 +5158,85 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
   });
 }
 
+export function showDreamReplayPicker(state, onReplay) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  if (!modal || !body) return;
+
+  const options = dreamReplayOptions(state);
+  let query = "";
+  let selectedId = options[0]?.instanceId || options[0]?.id || null;
+
+  const render = () => {
+    const q = query.trim().toLowerCase();
+    const shown = options.filter((card) => {
+      if (!q) return true;
+      const hay = `${card.name || ""} ${card.text || ""} ${card.id || ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+    const row = body.querySelector("#dream-replay-row");
+    const status = body.querySelector("#dream-replay-status");
+    const confirm = body.querySelector("#dream-replay-confirm");
+    if (!row || !status || !confirm) return;
+    row.replaceChildren();
+    if (!options.length) {
+      row.innerHTML = "<p class='resolution-empty'>The Dream discard has nothing to replay.</p>";
+      status.textContent = "Nothing to replay.";
+      confirm.disabled = false;
+      confirm.textContent = "Continue";
+      return;
+    }
+    if (!shown.length) {
+      row.innerHTML = "<p class='resolution-empty'>No Dream matches that search.</p>";
+    } else {
+      shown.forEach((card) => {
+        const key = card.instanceId || card.id;
+        mountChoicePickerCard(row, card, {
+          cards: shown,
+          selected: key === selectedId,
+          onSelect: () => {
+            selectedId = key;
+            render();
+          },
+        });
+      });
+    }
+    const picked = options.find((card) => (card.instanceId || card.id) === selectedId);
+    status.textContent = picked ? `${picked.name} is ready to replay.` : "Choose a Dream.";
+    confirm.disabled = !picked;
+    confirm.textContent = picked ? "Replay this Dream" : "Choose a Dream";
+  };
+
+  body.innerHTML = `
+    <div class="card-choice-picker card-choice-picker-wide" data-choice="dream-replay">
+      <h2>Search the Dream Discard</h2>
+      <p class="card-choice-message">${state.pendingDreamReplay?.reason || "The Subconscious is clear. Replay one Dream."}</p>
+      <p class="card-choice-hint">The card stays in the discard. This does not spend the round's Dream draw.</p>
+      <input id="dream-replay-search" class="dream-replay-search" type="search" placeholder="Search Dreams" aria-label="Search the Dream discard">
+      <div id="dream-replay-row" class="card-choice-row"></div>
+      <p class="card-choice-status" id="dream-replay-status"></p>
+      <div class="utility-actions card-choice-actions">
+        <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">Minimize — view board</button>
+        <button type="button" class="btn primary" id="dream-replay-confirm">Replay this Dream</button>
+      </div>
+    </div>
+  `;
+  prepareCardChoiceModal();
+  modal.classList.remove("utility-modal-minimized", "hidden");
+  document.body.classList.add("utility-modal-open");
+  body.querySelector("#dream-replay-search")?.addEventListener("input", (event) => {
+    query = event.target.value || "";
+    render();
+  });
+  body.querySelector("#dream-replay-confirm")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const picked = options.find((card) => (card.instanceId || card.id) === selectedId) || null;
+    onReplay?.(picked);
+  });
+  render();
+}
+
 export function showRepressPicker(state, onPick, onConfirm) {
   const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
@@ -5158,38 +5247,46 @@ export function showRepressPicker(state, onPick, onConfirm) {
   const player = collective ? null : state.players.find((p) => p.id === pending.playerId);
   const playerName = collective ? "All Dreamers" : (player?.name || "Dreamer");
   const sourceLabel = pending.source === "objects" ? "Objects" : "Psyche cards";
-  const pool = collective
-    ? state.players.filter((p) => p.alive).flatMap((p) => p.hand || [])
-    : (pending.source === "objects" ? (player?.objects || []) : (player?.hand || []));
+  const pool = repressPickerCards(state);
   const picked = pending.picked.length;
   const needed = pending.remaining;
   const isEmpty = pending.confirmEmpty;
+  const unpicked = Math.max(0, pool.length - picked);
+  const owesMore = !isEmpty && picked < needed && unpicked > 0;
 
-  const discard = !!pending.toDiscard;
+  const discard = !!pending.toDiscard || !!pending.toMindstream;
   const verb = discard ? "Discard" : "Repress";
+  const title = pending.source === "objects"
+    ? `${verb} an Object`
+    : (discard ? "Discard Psyche" : "Repress to Subconscious");
   let instruction;
   if (isEmpty && needed <= 0) {
     instruction = `No cards to ${verb} for this effect.`;
-  } else if (isEmpty && pool.length === 0) {
+  } else if (isEmpty || pool.length === 0) {
     instruction = `No ${sourceLabel} available to ${verb} (${needed} required).`;
+  } else if (picked >= needed) {
+    instruction = `${picked} ${sourceLabel} pending. Confirm to pay this cost.`;
   } else {
     instruction = collective
-      ? `Choose ${needed - picked} more Psyche from any hand (${picked}/${needed} selected).`
-      : `Choose ${needed - picked} more ${sourceLabel} to ${verb} (${picked}/${needed} selected).`;
+      ? `Choose ${needed - picked} more Psyche from any hand (${picked}/${needed} pending).`
+      : `Choose ${needed - picked} more ${sourceLabel} to ${verb} (${picked}/${needed} pending).`;
   }
+  const confirmLabel = owesMore
+    ? `Choose ${needed - picked} more`
+    : (isEmpty || pool.length === 0 ? "Continue" : `${verb} these`);
 
   body.innerHTML = `
     <div class="card-choice-picker card-choice-picker-wide" data-choice="repress">
-      <h2>${discard ? "Discard Psyche" : "Repress to Subconscious"}</h2>
+      <h2>${title}</h2>
       <p class="card-choice-message">${pending.reason || instruction}</p>
       <p class="resolution-player">${playerName}</p>
       <p class="resolution-instruction">${instruction}</p>
       <p class="card-choice-hint">${cardChoiceHint()}</p>
       <div id="repress-pool" class="subconscious-piles card-choice-piles"></div>
-      <p class="card-choice-status">${picked}/${needed} ${discard ? "discarded" : "repressed"}</p>
+      <p class="card-choice-status">${picked}/${needed} pending</p>
       <div class="utility-actions card-choice-actions">
         <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">Minimize — view board</button>
-        <button type="button" class="btn primary" id="repress-confirm"${pending.strict && picked < needed && pool.length > 0 ? " disabled" : ""}>${isEmpty || pool.length === 0 ? "Continue" : picked >= needed ? "Done" : "Continue with selected"}</button>
+        <button type="button" class="btn primary" id="repress-confirm"${owesMore ? " disabled" : ""}>${confirmLabel}</button>
       </div>
     </div>
   `;
@@ -5199,41 +5296,37 @@ export function showRepressPicker(state, onPick, onConfirm) {
   document.body.classList.add("utility-modal-open");
 
   const container = body.querySelector("#repress-pool");
-  const allCards = collective
-    ? state.players.filter((p) => p.alive).flatMap((p) => p.hand || [])
-    : pool;
+  const mountPoolCard = (row, card) => {
+    const order = pending.picked.findIndex((entry) => entry.instanceId === card.instanceId);
+    mountChoicePickerCard(row, card, {
+      cards: pool,
+      selected: order >= 0,
+      orderIndex: order >= 0 ? order : null,
+      disabled: order < 0 && picked >= needed,
+      onSelect: () => onPick(card.instanceId),
+    });
+  };
 
   if (!pool.length) {
-    container.innerHTML = "<p class='resolution-empty'>Nothing in hand to choose — click Continue.</p>";
+    container.innerHTML = "<p class='resolution-empty'>Nothing left to choose — click Continue.</p>";
   } else if (!isEmpty) {
     if (collective) {
       state.players.filter((p) => p.alive).forEach((p) => {
-        if (!p.hand?.length) return;
+        const cards = pool.filter((card) => (p.hand || []).some((held) => held.instanceId === card.instanceId));
+        if (!cards.length) return;
         const section = document.createElement("div");
         section.className = "repress-player-section";
         section.innerHTML = `<h4>${p.name}</h4>`;
         const row = document.createElement("div");
         row.className = "card-choice-row";
-        p.hand.forEach((card) => {
-          mountChoicePickerCard(row, card, {
-            cards: allCards,
-            selected: pending.picked.some((c) => c.instanceId === card.instanceId),
-            onSelect: () => onPick(card.instanceId),
-          });
-        });
+        cards.forEach((card) => mountPoolCard(row, card));
         section.appendChild(row);
         container.appendChild(section);
       });
     } else {
       const row = document.createElement("div");
       row.className = "card-choice-row";
-      pool.forEach((card) => {
-        mountChoicePickerCard(row, card, {
-          cards: allCards,
-          selected: pending.picked.some((c) => c.instanceId === card.instanceId),
-          onSelect: () => onPick(card.instanceId),
-        });
-      });
+      pool.forEach((card) => mountPoolCard(row, card));
       container.appendChild(row);
     }
   }
@@ -5241,7 +5334,7 @@ export function showRepressPicker(state, onPick, onConfirm) {
   body.querySelector("#repress-confirm")?.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    hideUtilityModal(true);
+    if (event.currentTarget?.disabled) return;
     onConfirm?.();
   });
 

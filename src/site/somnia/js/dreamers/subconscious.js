@@ -148,8 +148,18 @@ function cardsForReturn(state, filter) {
   return cards;
 }
 
+function noteSubconsciousCleared(state, before) {
+  if (before <= 0) return;
+  if (subconsciousCount(state.subconscious) > 0) return;
+  if (state.tutorialMode || state.status !== "playing" || state.pendingDreamReplay) return;
+  state.pendingDreamReplay = {
+    reason: "The Subconscious is clear. Search the Dream discard and replay one Dream.",
+  };
+}
+
 export function removeFromSubconscious(state, instanceId) {
   state.subconscious = normalizeSubconscious(state.subconscious);
+  const before = subconsciousCount(state.subconscious);
   const sub = state.subconscious;
   const piles = [
     sub.psyche,
@@ -163,7 +173,9 @@ export function removeFromSubconscious(state, instanceId) {
   for (const pile of piles) {
     const idx = pile.findIndex((c) => c.instanceId === instanceId);
     if (idx >= 0) {
-      return pile.splice(idx, 1)[0];
+      const removed = pile.splice(idx, 1)[0];
+      noteSubconsciousCleared(state, before);
+      return removed;
     }
   }
   return null;
@@ -363,23 +375,55 @@ function logRepress(state, message) {
 }
 
 function sourceCards(player, source) {
-  if (source === "objects") return player.objects || [];
+  if (source === "objects") return [...(player.objects || []), ...(player.persistent || [])];
   if (source === "hand") return player.hand || [];
   return [];
+}
+
+function cardMatchesFilter(card, filter) {
+  if (!filter || !card) return true;
+  if (filter.payablePsyche && (card.type === "psyche-power" || card.type === "object")) return false;
+  if (filter.suit && card.suit !== filter.suit && !(card.wild || card.id?.startsWith("wild-"))) return false;
+  return true;
+}
+
+function applyCardFilter(cards, filter) {
+  let pool = (cards || []).filter((card) => cardMatchesFilter(card, filter));
+  if (filter?.highest && pool.length) {
+    const max = pool.reduce((best, card) => Math.max(best, card.value || 0), 0);
+    pool = pool.filter((card) => (card.value || 0) === max);
+  }
+  return pool;
 }
 
 function aliveHandOwners(state) {
   return state.players.filter((p) => p.alive);
 }
 
-function collectiveHandPool(state) {
+function collectiveHandPool(state, filter = null) {
   const pool = [];
   aliveHandOwners(state).forEach((player) => {
     (player.hand || []).forEach((card) => {
-      pool.push({ player, card });
+      if (cardMatchesFilter(card, filter)) pool.push({ player, card });
     });
   });
+  if (filter?.highest && pool.length) {
+    const max = pool.reduce((best, entry) => Math.max(best, entry.card.value || 0), 0);
+    return pool.filter((entry) => (entry.card.value || 0) === max);
+  }
   return pool;
+}
+
+/** Cards still in hand that this repress/discard step is allowed to take. */
+export function repressPickerCards(state) {
+  const pending = state?.pendingRepress;
+  if (!pending || pending.confirmEmpty) return [];
+  if (pending.collective) {
+    return collectiveHandPool(state, pending.cardFilter).map((entry) => entry.card);
+  }
+  const player = playerById(state, pending.playerId);
+  if (!player) return [];
+  return applyCardFilter(sourceCards(player, pending.source), pending.cardFilter);
 }
 
 function findCollectiveHandCard(state, instanceId) {
@@ -390,7 +434,11 @@ function findCollectiveHandCard(state, instanceId) {
   return null;
 }
 
-function commitHandLoss(state, player, card, toDiscard) {
+function commitHandLoss(state, player, card, toDiscard, toMindstream = false) {
+  if (toMindstream) {
+    discardToMindstream(state, card);
+    return "discard";
+  }
   if (toDiscard && !isDreambeastPsycheCard(card)) {
     if (!state.psycheDiscard) state.psycheDiscard = [];
     state.psycheDiscard.push(card);
@@ -412,7 +460,7 @@ function dieIfUnpaidPsyche(state, player) {
 function autoCommitOpeningRepress(state, step) {
   const takeOne = (player, card) => {
     removeFromSource(player, step.source, card.instanceId);
-    const kind = commitHandLoss(state, player, card, !!step.toDiscard);
+    const kind = commitHandLoss(state, player, card, !!step.toDiscard, !!step.toMindstream);
     if (step.source === "hand") {
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
     }
@@ -425,7 +473,7 @@ function autoCommitOpeningRepress(state, step) {
   let left = step.count || 0;
   if (step.collective && step.source === "hand") {
     while (left > 0) {
-      const available = collectiveHandPool(state);
+      const available = collectiveHandPool(state, step.cardFilter);
       if (!available.length) break;
       takeOne(available[0].player, available[0].card);
       left -= 1;
@@ -436,7 +484,7 @@ function autoCommitOpeningRepress(state, step) {
   const player = playerById(state, step.playerId);
   if (!player) return;
   while (left > 0) {
-    const available = sourceCards(player, step.source);
+    const available = applyCardFilter(sourceCards(player, step.source), step.cardFilter);
     if (!available.length) break;
     takeOne(player, available[0]);
     left -= 1;
@@ -458,7 +506,7 @@ function beginRepressStep(state, step) {
     }
   }
   if (step.collective && step.source === "hand") {
-    const available = collectiveHandPool(state);
+    const available = collectiveHandPool(state, step.cardFilter);
     const needed = step.count;
 
     if (needed <= 0 || available.length === 0) {
@@ -470,6 +518,8 @@ function beginRepressStep(state, step) {
         picked: [],
         reason: step.reason,
         toDiscard: !!step.toDiscard,
+        toMindstream: !!step.toMindstream,
+        cardFilter: step.cardFilter || null,
         confirmEmpty: true,
       };
       return;
@@ -478,7 +528,7 @@ function beginRepressStep(state, step) {
     if (needed === 1 && available.length === 1) {
       const { player, card } = available[0];
       removeFromSource(player, step.source, card.instanceId);
-      const kind = commitHandLoss(state, player, card, !!step.toDiscard);
+      const kind = commitHandLoss(state, player, card, !!step.toDiscard, !!step.toMindstream);
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
       logRepress(state, kind === "discard"
         ? `Team Discarded ${card.name}.`
@@ -496,6 +546,8 @@ function beginRepressStep(state, step) {
       picked: [],
       reason: step.reason,
       toDiscard: !!step.toDiscard,
+      toMindstream: !!step.toMindstream,
+      cardFilter: step.cardFilter || null,
       confirmEmpty: false,
     };
     if (step.reason) {
@@ -514,7 +566,7 @@ function beginRepressStep(state, step) {
     return;
   }
 
-  const available = sourceCards(player, step.source);
+  const available = applyCardFilter(sourceCards(player, step.source), step.cardFilter);
   const needed = step.count;
 
   if (needed <= 0 || available.length === 0) {
@@ -525,6 +577,8 @@ function beginRepressStep(state, step) {
       picked: [],
       reason: step.reason,
       toDiscard: !!step.toDiscard,
+      toMindstream: !!step.toMindstream,
+      cardFilter: step.cardFilter || null,
       confirmEmpty: true,
     };
     return;
@@ -533,7 +587,7 @@ function beginRepressStep(state, step) {
   if (state.tutorialMode && needed === 1 && available.length >= 1) {
     const card = available.find((c) => c.type === "psyche" && !isDreambeastPsycheCard(c)) || available[0];
     removeFromSource(player, step.source, card.instanceId);
-    const kind = commitHandLoss(state, player, card, !!step.toDiscard);
+    const kind = commitHandLoss(state, player, card, !!step.toDiscard, !!step.toMindstream);
     if (step.source === "hand") {
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
     }
@@ -550,7 +604,7 @@ function beginRepressStep(state, step) {
   if (needed === 1 && available.length === 1) {
     const card = available[0];
     removeFromSource(player, step.source, card.instanceId);
-    const kind = commitHandLoss(state, player, card, !!step.toDiscard);
+    const kind = commitHandLoss(state, player, card, !!step.toDiscard, !!step.toMindstream);
     if (step.source === "hand") {
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
     }
@@ -571,6 +625,8 @@ function beginRepressStep(state, step) {
     picked: [],
     reason: step.reason,
     toDiscard: !!step.toDiscard,
+    toMindstream: !!step.toMindstream,
+    cardFilter: step.cardFilter || null,
     confirmEmpty: false,
     strict: !!step.strict,
   };
@@ -581,19 +637,22 @@ function beginRepressStep(state, step) {
 
 function removeFromSource(player, source, instanceId) {
   if (source === "objects") {
-    player.objects = player.objects.filter((c) => c.instanceId !== instanceId);
+    player.objects = (player.objects || []).filter((c) => c.instanceId !== instanceId);
+    player.persistent = (player.persistent || []).filter((c) => c.instanceId !== instanceId);
   } else if (source === "hand") {
     player.hand = player.hand.filter((c) => c.instanceId !== instanceId);
   }
 }
 
-export function enqueueRepressObjects(state, player, count, { reason = "" } = {}) {
+export function enqueueRepressObjects(state, player, count, { reason = "", strict = false, toMindstream = false } = {}) {
   state.resolutionQueue = state.resolutionQueue || [];
   state.resolutionQueue.push({
     type: "repress",
     source: "objects",
     playerId: player.id,
     count,
+    strict: !!strict,
+    toMindstream: !!toMindstream,
     reason: reason || `${player.name}: Repress ${count} Object(s).`,
   });
   if (!state.pendingRepress && !state.pendingReturn) {
@@ -601,7 +660,7 @@ export function enqueueRepressObjects(state, player, count, { reason = "" } = {}
   }
 }
 
-export function enqueueDiscardFromHand(state, player, count, { reason = "" } = {}) {
+export function enqueueDiscardFromHand(state, player, count, { reason = "", strict = false, cardFilter = null } = {}) {
   state.resolutionQueue = state.resolutionQueue || [];
   state.resolutionQueue.push({
     type: "repress",
@@ -609,6 +668,8 @@ export function enqueueDiscardFromHand(state, player, count, { reason = "" } = {
     playerId: player.id,
     count,
     toDiscard: true,
+    strict: !!strict,
+    cardFilter: cardFilter || null,
     reason: reason || `${player.name}: Discard ${count} Psyche card(s).`,
   });
   if (!state.pendingRepress && !state.pendingReturn) {
@@ -631,13 +692,15 @@ export function enqueueRepressFromHand(state, player, count, { reason = "", stri
   }
 }
 
-export function enqueueCollectiveRepressFromHand(state, count, { reason = "" } = {}) {
+export function enqueueCollectiveRepressFromHand(state, count, { reason = "", toDiscard = false } = {}) {
   state.resolutionQueue = state.resolutionQueue || [];
   state.resolutionQueue.push({
     type: "repress",
     source: "hand",
     collective: true,
     count,
+    toDiscard: !!toDiscard,
+    strict: true,
     reason: reason || `Team: Repress ${count} Psyche card(s).`,
   });
   if (!state.pendingRepress && !state.pendingReturn) {
@@ -661,109 +724,115 @@ function advanceResolutionQueue(state) {
   else if (next.type === "return") beginReturnStep(state, next);
 }
 
+function unpaidRepressCards(state, pending) {
+  const pickedIds = new Set((pending.picked || []).map((card) => card.instanceId));
+  return repressPickerCards(state).filter((card) => !pickedIds.has(card.instanceId));
+}
+
+/** Stage or unstage a card. Nothing leaves the hand until the cost is confirmed. */
+export function toggleRepressPick(state, instanceId) {
+  const pending = state.pendingRepress;
+  if (!pending || pending.confirmEmpty) return false;
+  const pool = repressPickerCards(state);
+  const card = pool.find((entry) => entry.instanceId === instanceId);
+  if (!card) return false;
+  const idx = pending.picked.findIndex((entry) => entry.instanceId === instanceId);
+  if (idx >= 0) {
+    pending.picked.splice(idx, 1);
+    return true;
+  }
+  if (pending.picked.length >= pending.remaining) return false;
+  pending.picked.push(card);
+  return true;
+}
+
+function commitStagedRepress(state, pending) {
+  const touched = [];
+  pending.picked.forEach((card) => {
+    let player = null;
+    if (pending.collective) {
+      player = findCollectiveHandCard(state, card.instanceId)?.player || null;
+    } else {
+      player = playerById(state, pending.playerId);
+    }
+    if (!player) return;
+    removeFromSource(player, pending.source, card.instanceId);
+    commitHandLoss(state, player, card, !!pending.toDiscard, !!pending.toMindstream);
+    if (pending.source === "hand") {
+      recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
+    }
+    touched.push(player);
+  });
+  if (pending.source === "hand" && state.checkPsycheDeath) {
+    const seen = new Set();
+    touched.forEach((player) => {
+      if (seen.has(player.id)) return;
+      seen.add(player.id);
+      state.checkPsycheDeath(player);
+    });
+  }
+}
+
+/**
+ * Bots pick one card at a time and expect a full set to resolve immediately.
+ * The menu uses toggleRepressPick so the last card stays visible as pending.
+ */
 export function pickRepressCard(state, instanceId) {
   const pending = state.pendingRepress;
   if (!pending || pending.confirmEmpty) return false;
-  if (pending.picked.length >= pending.remaining) return false;
-  if (pending.picked.some((c) => c.instanceId === instanceId)) return false;
-
-  let player;
-  let card;
-  if (pending.collective) {
-    const found = findCollectiveHandCard(state, instanceId);
-    if (!found) return false;
-    player = found.player;
-    card = found.card;
-  } else {
-    player = playerById(state, pending.playerId);
-    if (!player) return false;
-    const pool = sourceCards(player, pending.source);
-    card = pool.find((c) => c.instanceId === instanceId);
-    if (!card) return false;
+  if (!pending.picked.some((card) => card.instanceId === instanceId)) {
+    if (!toggleRepressPick(state, instanceId)) return false;
   }
-
-  removeFromSource(player, pending.source, instanceId);
-  commitHandLoss(state, player, card, !!pending.toDiscard);
-  pending.picked.push(card);
-  if (pending.source === "hand") {
-    recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
-  }
-
-  if (pending.picked.length >= pending.remaining) {
-    const names = pending.picked.map((c) => c.name).join(", ");
-    const verb = pending.toDiscard ? "Discarded" : "Repressed";
-    if (pending.collective) {
-      logRepress(state, `Team ${verb} ${pending.picked.length} Psyche card(s): ${names}.`);
-    } else {
-      logRepress(state, `${player.name} ${verb} ${pending.picked.length} card(s): ${names}.`);
-    }
-    state.pendingRepress = null;
-    if (pending.source === "hand" && state.checkPsycheDeath) {
-      state.checkPsycheDeath(player);
-    }
-    advanceResolutionQueue(state);
-    return true;
-  }
-
-  // No cards left to satisfy the rest of the demand — finish instead of soft-locking.
-  const poolLeft = pending.collective
-    ? collectiveHandPool(state).length
-    : sourceCards(player, pending.source).length;
-  if (poolLeft < 1) {
-    const verb = pending.toDiscard ? "Discarded" : "Repressed";
-    const subject = pending.collective ? "Team" : player.name;
-    logRepress(state, `${subject} ${verb} ${pending.picked.length}/${pending.remaining} (all available).`);
-    state.pendingRepress = null;
-    if (pending.source === "hand" && state.checkPsycheDeath) {
-      if (pending.collective) {
-        aliveHandOwners(state).forEach((p) => state.checkPsycheDeath(p));
-      } else {
-        state.checkPsycheDeath(player);
-      }
-    }
-    advanceResolutionQueue(state);
+  if (pending.picked.length >= pending.remaining || unpaidRepressCards(state, pending).length < 1) {
+    return confirmRepressStep(state);
   }
   return true;
 }
 
 export function confirmRepressStep(state) {
   const pending = state.pendingRepress;
-  if (!pending) return;
+  if (!pending) return false;
 
   const player = pending.collective ? null : playerById(state, pending.playerId);
   const subject = pending.collective ? "Team" : player?.name;
-  const verb = pending.toDiscard ? "Discard" : "Repress";
-  if (pending.strict && pending.picked.length < pending.remaining) {
-    const owner = pending.collective ? null : playerById(state, pending.playerId);
-    const poolLeft = pending.collective
-      ? collectiveHandPool(state).length
-      : sourceCards(owner, pending.source).length;
-    if (poolLeft > 0) {
-      const left = pending.remaining - pending.picked.length;
-      logRepress(state, `${subject || "The Dreamer"} still owes ${left} Repress${left === 1 ? "" : "es"}.`);
-      return;
-    }
+  const verb = pending.toMindstream || pending.toDiscard ? "Discard" : "Repress";
+  const stillOwed = pending.picked.length < pending.remaining;
+  const canStillPay = !pending.confirmEmpty && unpaidRepressCards(state, pending).length > 0;
+  if (stillOwed && canStillPay) {
+    return false;
   }
-  if (pending.confirmEmpty && subject) {
-    if (pending.remaining <= 0) {
-      logRepress(state, `${subject}: nothing to ${verb} — continuing.`);
-    } else {
-      logRepress(state, `${subject}: no ${pending.source === "objects" ? "Objects" : "Psyche"} to ${verb} (${pending.picked.length}/${pending.remaining} chosen).`);
+
+  if (!pending.confirmEmpty && pending.picked.length) {
+    commitStagedRepress(state, pending);
+    const names = pending.picked.map((card) => card.name).join(", ");
+    const done = verb === "Discard" ? "Discarded" : "Repressed";
+    const where = pending.toMindstream
+      ? ""
+      : (pending.toDiscard ? "" : " → Subconscious");
+    if (subject) {
+      const short = pending.picked.length < pending.remaining
+        ? ` (${pending.picked.length}/${pending.remaining}, all available)`
+        : "";
+      logRepress(state, `${subject} ${done} ${names}${where}${short}.`);
     }
-  } else if (subject && pending.picked.length < pending.remaining) {
+  } else if (pending.confirmEmpty && subject) {
+    if (pending.remaining <= 0) {
+      logRepress(state, `${subject}: nothing to ${verb.toLowerCase()} — continuing.`);
+    } else {
+      logRepress(state, `${subject}: no ${pending.source === "objects" ? "Objects" : "Psyche"} to ${verb.toLowerCase()} (${pending.picked.length}/${pending.remaining} chosen).`);
+    }
+  } else if (subject && stillOwed) {
     logRepress(state, `${subject} ${verb === "Discard" ? "Discarded" : "Repressed"} ${pending.picked.length}/${pending.remaining} (all available).`);
   }
 
   state.pendingRepress = null;
-  if (player && pending.source === "hand" && state.checkPsycheDeath) {
-    state.checkPsycheDeath(player);
-  }
   advanceResolutionQueue(state);
+  return true;
 }
 
 export function cancelPendingRepress(state) {
-  state.pendingRepress = null;
-  advanceResolutionQueue(state);
+  if (!state?.pendingRepress) return false;
+  return confirmRepressStep(state);
 }
 
 export function repressFromMindstreamSetup(state, suit, playerCount) {

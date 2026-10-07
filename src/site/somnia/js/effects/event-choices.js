@@ -129,7 +129,16 @@ function applyMindstreamDraw(state, player, suit) {
 }
 
 export function continueDeferredEventQueues(state) {
-  if (state.pendingEffectChoice || state.landscapePick || state.pendingDreamChoice || state.pendingMindstreamChoice) return;
+  if (
+    state.pendingEffectChoice
+    || state.landscapePick
+    || state.pendingDreamChoice
+    || state.pendingMindstreamChoice
+    || state.pendingRepress
+    || state.pendingReturn
+    || state.pendingDreamReplay
+    || state.resolutionQueue?.length
+  ) return;
   if (state._mindstreamDrawQueue) {
     presentAnyMindstreamDraw(state);
     return;

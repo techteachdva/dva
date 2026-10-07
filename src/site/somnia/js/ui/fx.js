@@ -156,6 +156,35 @@ function playOverlay(id, className, ms) {
   }, ms);
 }
 
+/** Rainbow sparkle across the whole screen. Resolves when the burst is done. */
+export function playSubconsciousClearSparkle() {
+  return new Promise((resolve) => {
+    if (typeof document === "undefined" || reducedMotion()) {
+      resolve();
+      return;
+    }
+    const layer = ensureOverlay("fx-sub-clear", "fx-screen-overlay fx-sub-clear");
+    layer.replaceChildren();
+    for (let i = 0; i < 56; i += 1) {
+      const mote = document.createElement("span");
+      mote.className = "fx-sub-clear-mote";
+      mote.style.setProperty("--mote-hue", String((i * 27) % 360));
+      mote.style.left = `${(i * 17) % 100}%`;
+      mote.style.top = `${(i * 29) % 100}%`;
+      mote.style.animationDelay = `${(i % 8) * 0.04}s`;
+      layer.appendChild(mote);
+    }
+    layer.classList.remove("hidden");
+    layer.classList.add("is-playing");
+    window.setTimeout(() => {
+      layer.classList.remove("is-playing");
+      layer.classList.add("hidden");
+      layer.replaceChildren();
+      resolve();
+    }, 1600);
+  });
+}
+
 /** Brief full-screen blink when a Dream is drawn — eyelids closing between dreams. */
 export function playDreamRipple() {
   playOverlay("fx-dream-ripple", "fx-screen-overlay fx-dream-ripple", 640);

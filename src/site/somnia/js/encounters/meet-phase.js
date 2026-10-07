@@ -1,10 +1,11 @@
 /**
  * Canonical Meet Phase flow (Somnia 26+) — one source of truth.
  *
- * 1) Start of Meet — each Dreamer discards 1 Psyche per Dreambeast on their
- *    tile or an adjacent hex. Those cards go to the Psyche discard, not the
- *    Subconscious. One Dreamer ignores the first tax card each Meet.
- *    Roaming beasts stay where they are.
+ * 1) Start of Meet — each Boss steps 1 hex toward the nearest Dreamer, unless
+ *    a Dreamer already shares its hex. Then each Dreamer discards 1 Psyche per
+ *    Dreambeast on their tile or an adjacent hex. Those cards go to the Psyche
+ *    discard, not the Subconscious. One Dreamer ignores the first tax card
+ *    each Meet. Other roaming beasts stay where they are.
  * 2) Middle of Meet — one Dreamer may spend 1 Willpower Psyche to unlock
  *    shared Meet Actions. Dreamers take Actions (Meet / Landscape / Trade /
  *    Powers) as they wish. Accept and Repress need 1 Psyche of the required
@@ -22,8 +23,9 @@ import {
   countEncountersOnBoard,
   landscapeById,
   headPlayer,
+  moveEncounterBetweenLandscapes,
 } from "../core/state.js";
-import { areHexAdjacent } from "../core/hex.js";
+import { adjacentTiles, areHexAdjacent, hexDistance } from "../core/hex.js";
 import { logMoment } from "../core/narrator.js";
 import { enqueueDiscardFromHand } from "../dreamers/subconscious.js";
 import { forgetRandomLandscapes, forgetNamedLandscapes } from "../board/landscapes.js";
@@ -72,9 +74,61 @@ function beastsPressuringDreamer(state, player, beasts) {
   return beasts.filter(({ tile }) => tile?.id === here.id || areHexAdjacent(here, tile)).length;
 }
 
+const BOSS_IDS = new Set(["cerberus", "double", "leviathan"]);
+
+function isBossEncounter(encounter) {
+  if (!encounter) return false;
+  const id = encounter.refId || encounter.id;
+  return !!(encounter.boss || encounter.type === "boss-dream" || BOSS_IDS.has(id));
+}
+
+function dreamerSharesTile(state, tileId) {
+  return (state.players || []).some((player) => player.alive && player.landscapeId === tileId);
+}
+
+function nearestDreamerTile(state, fromTile) {
+  let nearest = null;
+  let nearestDist = Infinity;
+  (state.players || []).forEach((player) => {
+    if (!player.alive) return;
+    const tile = landscapeById(state, player.landscapeId);
+    if (!tile) return;
+    const dist = hexDistance(fromTile, tile);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearest = tile;
+    }
+  });
+  return nearest;
+}
+
+/** Bosses hunt at the opening of Meet. A boss already sharing a hex stays. */
+function stepBossesTowardDreamers(state) {
+  const bosses = allEncountersOnBoard(state).filter(({ encounter }) => (
+    isBossEncounter(encounter) && encounter.awake !== false
+  ));
+  bosses.forEach(({ tile, encounter }) => {
+    if (!tile || dreamerSharesTile(state, tile.id)) return;
+    const target = nearestDreamerTile(state, tile);
+    if (!target) return;
+    const steps = adjacentTiles(state, tile.id).filter((next) => next.revealed && !next.wasteland);
+    const closer = steps
+      .filter((next) => hexDistance(next, target) < hexDistance(tile, target))
+      .sort((a, b) => hexDistance(a, target) - hexDistance(b, target));
+    const dest = closer[0];
+    if (!dest) {
+      addLog(state, `${encounter.name} holds. No open step toward the nearest Dreamer.`);
+      return;
+    }
+    moveEncounterBetweenLandscapes(state, tile.id, dest.id, encounter);
+    addLog(state, `${encounter.name} stalks toward the nearest Dreamer and steps onto ${dest.name}.`);
+  });
+}
+
 /** Step 1 — start of Meet. Tutorial skips the tax. Only nearby beasts tax. */
 export function applyMeetStartTax(state) {
   if (state.tutorialMode) return;
+  stepBossesTowardDreamers(state);
   const beasts = roamingDreambeastsInSpawnOrder(state);
   if (!beasts.length) return;
 

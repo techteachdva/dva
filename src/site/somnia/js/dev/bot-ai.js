@@ -36,6 +36,7 @@ import { revealableTiles, forgettableTiles, cancelLandscapePick } from "../board
 import { getEventResolution } from "../effects/event-resolutions.js";
 import { resolveMindstreamChoice, canPayEventGood, assessDreamGood } from "../cards/mindstream-choices.js";
 import { getDreamResolution } from "../cards/dream-resolutions.js";
+import { dreamReplayOptions, replayChosenDream } from "../cards/dream-replay.js";
 import { hasAffectedLandscapes } from "../board/event-landscapes.js";
 import { getLegalMoveTargets, hexDistance } from "../core/hex.js";
 import { getLandscapeActionChoices } from "../board/landscape-actions.js";
@@ -320,6 +321,13 @@ function resolveSpectatorPendings(state, skill, helpers) {
   while (guard-- > 0) {
     if (state.pendingMindstreamChoice) {
       botResolveMindstream(state, skill, helpers);
+      acted = true;
+      continue;
+    }
+    if (state.pendingDreamReplay) {
+      const card = dreamReplayOptions(state)[0];
+      if (card) replayChosenDream(state, card, helpers);
+      state.pendingDreamReplay = null;
       acted = true;
       continue;
     }

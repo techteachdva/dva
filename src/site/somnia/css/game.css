@@ -9662,6 +9662,38 @@ button.end-game-id {
   display: block;
 }
 
+.fx-sub-clear.is-playing {
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.18), transparent 62%);
+}
+
+.dream-replay-search {
+  width: min(28rem, 100%);
+  margin: 0.4rem auto 0.8rem;
+  display: block;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(8, 6, 18, 0.72);
+  color: inherit;
+  font: inherit;
+}
+
+.fx-sub-clear-mote {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: hsl(var(--mote-hue, 200) 95% 68%);
+  box-shadow: 0 0 12px hsl(var(--mote-hue, 200) 95% 70%);
+  animation: fx-sub-clear-mote 1.45s ease-out forwards;
+}
+
+@keyframes fx-sub-clear-mote {
+  0% { transform: scale(0.2); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translateY(-28px) scale(1.4); opacity: 0; }
+}
+
 .fx-dream-ripple.is-playing {
   animation: fx-dream-blink 0.64s ease-in-out forwards;
   background: #05030c;
@@ -11219,13 +11251,13 @@ html[data-touch="true"] .action-dock .btn-advance {
   border-color: #f0bf70;
 }
 
-/* Top-center turn plaque */
+/* Turn plaque floats on the table, under the top bar. */
 .turn-plaque {
   position: absolute;
   left: 50%;
-  top: 0.35rem;
+  top: 0.55rem;
   transform: translateX(-50%);
-  z-index: 650;
+  z-index: 40;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -11319,7 +11351,7 @@ html[data-touch="true"] .action-dock .btn-advance {
 
 @media (max-width: 720px) {
   .turn-plaque {
-    top: 0.2rem;
+    top: 0.4rem;
     min-width: 8.5rem;
     max-width: 55vw;
     padding: 0.28rem 0.7rem 0.35rem;
@@ -14689,12 +14721,13 @@ html[data-embedded="true"] .pwa-install-hint {
 .ms-choice-stage {
   position: relative;
   z-index: 2;
-  width: 100%;
+  width: min(100%, 90rem);
   height: 100%;
   min-height: 100vh;
   min-height: 100dvh;
+  margin-inline: auto;
   display: grid;
-  grid-template-columns: minmax(9.5rem, 1fr) minmax(0, auto) minmax(9.5rem, 1fr);
+  grid-template-columns: minmax(17rem, 22rem) minmax(0, 1fr) minmax(17rem, 22rem);
   align-items: center;
   justify-items: center;
   gap: 0.75rem;
@@ -14705,15 +14738,15 @@ html[data-embedded="true"] .pwa-install-hint {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
+  width: min(22rem, 100%);
+  height: auto;
   min-width: 0;
   padding: 0.5rem;
   box-sizing: border-box;
   z-index: 3;
 }
-.ms-choice-rail--left { justify-content: flex-end; }
-.ms-choice-rail--right { justify-content: flex-start; }
+.ms-choice-rail--left { justify-content: flex-end; justify-self: end; }
+.ms-choice-rail--right { justify-content: flex-start; justify-self: start; }
 .ms-choice-center {
   position: relative;
   z-index: 2;
@@ -14745,7 +14778,7 @@ html[data-embedded="true"] .pwa-install-hint {
 .ms-choice-card {
   display: block;
   max-height: 100%;
-  max-width: min(56vw, 100%);
+  max-width: min(46vw, 100%);
   width: auto;
   height: auto;
   object-fit: contain;
@@ -14961,10 +14994,12 @@ html[data-embedded="true"] .pwa-install-hint {
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  padding: 0.95rem 1rem;
-  width: min(13.5rem, 100%);
+  padding: 1.15rem 1.25rem 1.25rem;
+  width: min(22rem, 100%);
+  max-width: 22rem;
   min-width: 0;
-  min-height: 5.2rem;
+  height: auto;
+  min-height: 8.5rem;
   font-family: var(--font-display);
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
   box-shadow:
@@ -14973,17 +15008,20 @@ html[data-embedded="true"] .pwa-install-hint {
     0 12px 28px rgba(0, 0, 0, 0.35);
 }
 .ms-choice-btn__label {
-  font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
+  text-align: center;
   text-wrap: balance;
+  max-width: 100%;
 }
 .ms-choice-btn__hint {
   font-family: var(--font-body);
-  font-size: 0.8rem;
-  line-height: 1.3;
-  color: rgba(230, 222, 255, 0.82);
-  max-width: 12rem;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  color: rgba(230, 222, 255, 0.9);
+  text-align: center;
+  max-width: 100%;
 }
 .ms-choice-btn:hover:not(:disabled),
 .ms-choice-btn:focus-visible:not(:disabled) {
@@ -15023,18 +15061,19 @@ html[data-embedded="true"] .pwa-install-hint {
 .ms-choice-btn--square { border-radius: 0.55rem; }
 .ms-choice-btn--circle { border-radius: 999px; }
 .ms-choice-btn--triangle {
-  border-radius: 0.85rem 0.85rem 1.4rem 1.4rem;
-  clip-path: polygon(50% 0%, 100% 88%, 0% 88%);
-  padding: 1.9rem 0.9rem 1.1rem;
-  min-height: 6.2rem;
-  border: 0;
+  border-radius: 1.15rem 1.15rem 2.6rem 2.6rem;
+  clip-path: none;
+  padding: 1.35rem 1.3rem 1.5rem;
+  min-height: 9.5rem;
+  border: 2px solid rgba(255, 214, 120, 0.55);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-  background: linear-gradient(180deg, rgba(90, 70, 20, 0.92), rgba(28, 18, 8, 0.88));
+  background: linear-gradient(180deg, rgba(90, 70, 20, 0.94), rgba(28, 18, 8, 0.9));
 }
 .ms-choice-btn--triangle.ms-choice-btn--bad {
-  background: linear-gradient(180deg, rgba(90, 30, 30, 0.92), rgba(28, 10, 12, 0.88));
+  border-color: rgba(255, 140, 140, 0.55);
+  background: linear-gradient(180deg, rgba(90, 30, 30, 0.94), rgba(28, 10, 12, 0.9));
 }
-.ms-choice-btn--triangle .ms-choice-btn__hint { max-width: 10rem; }
+.ms-choice-btn--triangle .ms-choice-btn__hint { max-width: none; }
 .ms-choice-btn--spiral { border-radius: 50%; position: relative; }
 .ms-choice-btn--spiral::before {
   content: "";
@@ -15081,7 +15120,7 @@ html[data-embedded="true"] .pwa-install-hint {
   .ms-choice-card { max-width: min(92vw, 100%); }
   .ms-choice-btn {
     width: min(22rem, 92vw);
-    min-height: 4.4rem;
+    min-height: 7.5rem;
   }
   .ms-choice-btn--flee {
     width: min(22rem, 92vw);

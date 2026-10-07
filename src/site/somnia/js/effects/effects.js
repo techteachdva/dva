@@ -11,12 +11,15 @@ import { opposingSuit } from "../core/rules.js";
 import {
   requestReturnCards,
   enqueueRepressFromHand,
+  enqueueDiscardFromHand,
+  enqueueCollectiveRepressFromHand,
 } from "../dreamers/subconscious.js";
 import { FINAL_RECURRENCE_PSYCHE_REQUIRED } from "../dreamers/final-recurrence-rules.js";
 import { logMoment } from "../core/narrator.js";
 import { onObjectDrawn } from "./objects.js";
 import { beginMindstreamCardChoice, beginDreamCardChoice } from "../cards/mindstream-choices.js";
 import { beginEventOrWaste } from "../board/event-landscapes.js";
+import { isBossDreamCard, spawnBossEncounterOnBed } from "../cards/dream-deck.js";
 
 function alivePlayers(state) {
   return state.players.filter((p) => p.alive);
@@ -103,15 +106,12 @@ export function onMeetPhaseEnd(state) {
   applyMeetEndConsequences(state);
 
   if (state.rivalryLeftover > 0) {
-    let cost = state.rivalryLeftover;
-    alivePlayers(state).forEach((p) => {
-      while (cost > 0 && p.hand.length) {
-        state.psycheDiscard.push(p.hand.pop());
-        cost -= 1;
-      }
+    const cost = state.rivalryLeftover;
+    enqueueCollectiveRepressFromHand(state, cost, {
+      toDiscard: true,
+      reason: `Rivalry — the table chooses ${cost} Psyche to discard.`,
     });
-    recordQuestEvent(state, "discard_psyche", { count: state.rivalryLeftover });
-    logMoment(state, `Rivalry — leftover Encounters cost ${state.rivalryLeftover} Psyche.`);
+    logMoment(state, `Rivalry — leftover Encounters cost ${cost} Psyche.`);
   }
   state.rivalryLeftover = 0;
   state.rivalryEncountersOnBed = 0;
@@ -161,7 +161,10 @@ const DREAM_EFFECTS = {
     forgetEdgeLandscapes(state, state.finalRecurrence ? 6 : 4);
     alivePlayers(state).forEach((p) => {
       if (state.finalRecurrence) {
-        for (let i = 0; i < 2 && p.hand.length; i += 1) state.psycheDiscard.push(p.hand.pop());
+        enqueueDiscardFromHand(state, p, 2, {
+          reason: `${p.name}: Beta — choose 2 Psyche to discard.`,
+          strict: true,
+        });
       } else {
         drawPsycheForPlayer(state, p, 1);
       }
@@ -180,6 +183,11 @@ const DREAM_EFFECTS = {
 
 export function resolveCardEffect(state, card, player, helpers) {
   if (!card) return;
+
+  if (isBossDreamCard(card)) {
+    spawnBossEncounterOnBed(state, card);
+    return;
+  }
 
   const id = (card.refId || card.id || "").toLowerCase();
 
