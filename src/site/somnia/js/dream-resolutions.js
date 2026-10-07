@@ -1,15 +1,17 @@
 /**
- * Somnia 36.0 — Dream Good/Bad resolution pairs.
- * Dreams are mini-quests: strive (good) or suffer the consequence (bad).
+ * Somnia 38.3 — Dream Bright / Dim pairs.
+ * Dim is free. Bright always costs a Repress, a Psyche discard, or a Forgotten
+ * Landscape, and it stays shut until its gate is true. The toll is steep enough
+ * that Dim is the right call a good share of the time.
  */
 
 export const DREAM_RESOLUTIONS = {
   betrayal: {
     good: {
       label: "Catch the Thief",
-      hint: "Discard 3 Psyche to keep your Objects",
-      effect: "discardPsyche",
-      params: { count: 3 },
+      hint: "Discard 3 Psyche if you hold an Object — your Objects stay",
+      toll: { kind: "psyche", count: 3 },
+      gate: { kind: "object", label: "You hold an Object" },
     },
     bad: {
       label: "They Vanish With Everything",
@@ -22,9 +24,9 @@ export const DREAM_RESOLUTIONS = {
   chase: {
     good: {
       label: "Outrun the Pack",
-      hint: "Discard 2 Psyche to escape",
-      effect: "discardPsyche",
-      params: { count: 2 },
+      hint: "Forget 1 Landscape if you hold Elasticity — you escape",
+      toll: { kind: "forget", count: 1 },
+      gate: { kind: "suit", suit: "elasticity", count: 1, label: "Hold an Elasticity Psyche" },
     },
     bad: {
       label: "Cornered",
@@ -37,7 +39,9 @@ export const DREAM_RESOLUTIONS = {
   heroism: {
     good: {
       label: "Stand Over the Fallen",
-      hint: "All Dreamers draw 2 Psyche",
+      hint: "Forget 1 Landscape if an Encounter is on the Dreamscape — all Dreamers draw 2 Psyche",
+      toll: { kind: "forget", count: 1 },
+      gate: { kind: "encounter", label: "An Encounter is on the Dreamscape" },
       effect: "drawPsycheAll",
       params: { count: 2 },
     },
@@ -52,9 +56,9 @@ export const DREAM_RESOLUTIONS = {
   injury: {
     good: {
       label: "Bind the Wound",
-      hint: "Discard 2 Psyche to stay whole",
-      effect: "discardPsyche",
-      params: { count: 2 },
+      hint: "Repress 1 Psyche if you hold Lucidity — you stay whole",
+      toll: { kind: "repress", count: 1 },
+      gate: { kind: "suit", suit: "lucidity", count: 1, label: "Hold a Lucidity Psyche" },
     },
     bad: {
       label: "Bleed Out",
@@ -67,9 +71,9 @@ export const DREAM_RESOLUTIONS = {
   judgement: {
     good: {
       label: "Face the Tribunal",
-      hint: "Discard 4 Psyche to stay the verdict",
-      effect: "discardPsyche",
-      params: { count: 4 },
+      hint: "Discard 3 Psyche if you hold Willpower — the verdict holds",
+      toll: { kind: "psyche", count: 3 },
+      gate: { kind: "suit", suit: "willpower", count: 1, label: "Hold a Willpower Psyche" },
     },
     bad: {
       label: "Leviathan Awakens",
@@ -82,9 +86,9 @@ export const DREAM_RESOLUTIONS = {
   loss: {
     good: {
       label: "Hold the Corners",
-      hint: "Discard 3 Psyche to keep the map",
-      effect: "discardPsyche",
-      params: { count: 3 },
+      hint: "Discard 3 Psyche if at least 3 Landscapes are awake — the map holds",
+      toll: { kind: "psyche", count: 3 },
+      gate: { kind: "revealed", count: 3, label: "At least 3 Landscapes are awake" },
     },
     bad: {
       label: "The Edges Unmake",
@@ -97,9 +101,9 @@ export const DREAM_RESOLUTIONS = {
   misunderstanding: {
     good: {
       label: "Speak Plainly",
-      hint: "Discard 2 Psyche to clear the air",
-      effect: "discardPsyche",
-      params: { count: 2 },
+      hint: "Discard 2 Psyche if you hold Lucidity — the air clears",
+      toll: { kind: "psyche", count: 2 },
+      gate: { kind: "suit", suit: "lucidity", count: 1, label: "Hold a Lucidity Psyche" },
     },
     bad: {
       label: "Words Twist Back",
@@ -112,9 +116,9 @@ export const DREAM_RESOLUTIONS = {
   mortality: {
     good: {
       label: "Bargain With Death",
-      hint: "Discard 5 Psyche to buy another breath",
-      effect: "discardPsyche",
-      params: { count: 5 },
+      hint: "Repress 2 Psyche if you hold Willpower — you buy another breath",
+      toll: { kind: "repress", count: 2 },
+      gate: { kind: "suit", suit: "willpower", count: 1, label: "Hold a Willpower Psyche" },
     },
     bad: {
       label: "The Reaper Takes Relics",
@@ -127,11 +131,11 @@ export const DREAM_RESOLUTIONS = {
   abandonment: {
     good: {
       label: "Call Them Back",
-      hint: "Discard 2 Psyche; free Meet Action",
-      steps: [
-        { effect: "discardPsyche", params: { count: 2 } },
-        { effect: "freeMeetAction", params: { count: 1 } },
-      ],
+      hint: "Discard 2 Psyche if you hold Willpower — gain a free Meet Action",
+      toll: { kind: "psyche", count: 2 },
+      gate: { kind: "suit", suit: "willpower", count: 1, label: "Hold a Willpower Psyche" },
+      effect: "freeMeetAction",
+      params: { count: 1 },
     },
     bad: {
       label: "Alone on Empty Ground",
@@ -144,9 +148,9 @@ export const DREAM_RESOLUTIONS = {
   abduction: {
     good: {
       label: "Break the Grip",
-      hint: "Discard 3 Psyche to tear free",
-      effect: "discardPsyche",
-      params: { count: 3 },
+      hint: "Discard 3 Psyche if you hold an Object — you tear free",
+      toll: { kind: "psyche", count: 3 },
+      gate: { kind: "object", label: "You hold an Object" },
     },
     bad: {
       label: "Dragged Into Shadow",
@@ -159,7 +163,9 @@ export const DREAM_RESOLUTIONS = {
   absurdity: {
     good: {
       label: "Laugh Until It Breaks",
-      hint: "Draw 2 Psyche",
+      hint: "Repress 2 Psyche if you hold Elasticity — draw 2 Psyche",
+      toll: { kind: "repress", count: 2 },
+      gate: { kind: "suit", suit: "elasticity", count: 1, label: "Hold an Elasticity Psyche" },
       effect: "drawPsyche",
       params: { count: 2 },
     },
@@ -174,11 +180,11 @@ export const DREAM_RESOLUTIONS = {
   bargaining: {
     good: {
       label: "Pay the Price",
-      hint: "Discard 4 Psyche; gain 1 PT",
-      steps: [
-        { effect: "discardPsyche", params: { count: 4 } },
-        { effect: "grantPT", params: { count: 1 } },
-      ],
+      hint: "Discard 3 Psyche if you hold a Power Token — gain 1 PT",
+      toll: { kind: "psyche", count: 3 },
+      gate: { kind: "token", label: "You hold a Power Token" },
+      effect: "grantPT",
+      params: { count: 1 },
     },
     bad: {
       label: "Deal Falls Through",
@@ -191,7 +197,9 @@ export const DREAM_RESOLUTIONS = {
   recovery: {
     good: {
       label: "Sun Through the Mist",
-      hint: "All Dreamers Return 1 Card",
+      hint: "Discard 2 Psyche if the Subconscious holds a card — all Dreamers Return 1",
+      toll: { kind: "psyche", count: 2 },
+      gate: { kind: "subconscious", label: "The Subconscious holds a card" },
       effect: "returnCardsAll",
       params: { count: 1 },
     },
@@ -206,9 +214,9 @@ export const DREAM_RESOLUTIONS = {
   responsibility: {
     good: {
       label: "Carry the Weight",
-      hint: "Discard 3 Psyche and own it",
-      effect: "discardPsyche",
-      params: { count: 3 },
+      hint: "Discard 3 Psyche if you hold Willpower — you own it",
+      toll: { kind: "psyche", count: 3 },
+      gate: { kind: "suit", suit: "willpower", count: 1, label: "Hold a Willpower Psyche" },
     },
     bad: {
       label: "Everyone Pays",
@@ -221,11 +229,11 @@ export const DREAM_RESOLUTIONS = {
   travel: {
     good: {
       label: "Chart the Open Road",
-      hint: "Gain 1 PT; discard 1 Psyche",
-      steps: [
-        { effect: "grantPT", params: { count: 1 } },
-        { effect: "discardPsyche", params: { count: 1 } },
-      ],
+      hint: "Forget 1 Landscape if at least 2 Landscapes are awake — gain 1 PT",
+      toll: { kind: "forget", count: 1 },
+      gate: { kind: "revealed", count: 2, label: "At least 2 Landscapes are awake" },
+      effect: "grantPT",
+      params: { count: 1 },
     },
     bad: {
       label: "Roads Seal Shut",
@@ -238,7 +246,9 @@ export const DREAM_RESOLUTIONS = {
   wanderlust: {
     good: {
       label: "Walk Until Dawn",
-      hint: "All Dreamers draw 2 Psyche",
+      hint: "Forget 1 Landscape if you hold Elasticity — all Dreamers draw 2 Psyche",
+      toll: { kind: "forget", count: 1 },
+      gate: { kind: "suit", suit: "elasticity", count: 1, label: "Hold an Elasticity Psyche" },
       effect: "drawPsycheAll",
       params: { count: 2 },
     },
@@ -253,7 +263,9 @@ export const DREAM_RESOLUTIONS = {
   transformation: {
     good: {
       label: "Choose Your Shape",
-      hint: "Draw 1 Object",
+      hint: "Discard 2 Psyche if you hold Willpower — draw 1 Object",
+      toll: { kind: "psyche", count: 2 },
+      gate: { kind: "suit", suit: "willpower", count: 1, label: "Hold a Willpower Psyche" },
       effect: "drawObject",
       params: {},
     },
@@ -268,9 +280,9 @@ export const DREAM_RESOLUTIONS = {
   trapped: {
     good: {
       label: "Force the Latch",
-      hint: "Discard 3 Psyche to break free",
-      effect: "discardPsyche",
-      params: { count: 3 },
+      hint: "Repress 2 Psyche if you hold Willpower — you break free",
+      toll: { kind: "repress", count: 2 },
+      gate: { kind: "suit", suit: "willpower", count: 1, label: "Hold a Willpower Psyche" },
     },
     bad: {
       label: "Walls Close In",
@@ -283,9 +295,9 @@ export const DREAM_RESOLUTIONS = {
   lost: {
     good: {
       label: "Find the Bed Again",
-      hint: "Discard 3 Psyche to keep your bearings",
-      effect: "discardPsyche",
-      params: { count: 3 },
+      hint: "Discard 3 Psyche if at least 3 Landscapes are awake — you keep your bearings",
+      toll: { kind: "psyche", count: 3 },
+      gate: { kind: "revealed", count: 3, label: "At least 3 Landscapes are awake" },
     },
     bad: {
       label: "Home Unmakes Itself",
@@ -298,9 +310,9 @@ export const DREAM_RESOLUTIONS = {
   misplaced: {
     good: {
       label: "Hunt Every Pocket",
-      hint: "Discard 2 Psyche to save your relics",
-      effect: "discardPsyche",
-      params: { count: 2 },
+      hint: "Discard 2 Psyche if you hold an Object — your relics stay",
+      toll: { kind: "psyche", count: 2 },
+      gate: { kind: "object", label: "You hold an Object" },
     },
     bad: {
       label: "Relics Sink Away",
@@ -313,11 +325,11 @@ export const DREAM_RESOLUTIONS = {
   rivalry: {
     good: {
       label: "Settle It Yourself",
-      hint: "Discard 2 Psyche; free Meet Action",
-      steps: [
-        { effect: "discardPsyche", params: { count: 2 } },
-        { effect: "freeMeetAction", params: { count: 1 } },
-      ],
+      hint: "Discard 2 Psyche if an Encounter is on the Dreamscape — gain a free Meet Action",
+      toll: { kind: "psyche", count: 2 },
+      gate: { kind: "encounter", label: "An Encounter is on the Dreamscape" },
+      effect: "freeMeetAction",
+      params: { count: 1 },
     },
     bad: {
       label: "Rivals Flood The Bed",
@@ -330,9 +342,9 @@ export const DREAM_RESOLUTIONS = {
   temptation: {
     good: {
       label: "Refuse the Bait",
-      hint: "Discard 2 Psyche to resist",
-      effect: "discardPsyche",
-      params: { count: 2 },
+      hint: "Repress 2 Psyche if you hold an Object — you resist",
+      toll: { kind: "repress", count: 2 },
+      gate: { kind: "object", label: "You hold an Object" },
     },
     bad: {
       label: "Bite Down Hard",
@@ -345,7 +357,13 @@ export const DREAM_RESOLUTIONS = {
   paradox: {
     good: {
       label: "Hold Both Truths",
-      hint: "Return 2 Cards",
+      hint: "Repress 1 Psyche if you hold Lucidity and Willpower — Return 2 Cards",
+      toll: { kind: "repress", count: 1 },
+      gate: {
+        kind: "suits",
+        suits: ["lucidity", "willpower"],
+        label: "Hold a Lucidity Psyche and a Willpower Psyche",
+      },
       effect: "returnCards",
       params: { count: 2 },
     },
@@ -360,9 +378,9 @@ export const DREAM_RESOLUTIONS = {
   powerlessness: {
     good: {
       label: "Claim One Inch of Ground",
-      hint: "Discard 3 Psyche to hold the line",
-      effect: "discardPsyche",
-      params: { count: 3 },
+      hint: "Discard 3 Psyche if you hold Willpower — you hold the line",
+      toll: { kind: "psyche", count: 3 },
+      gate: { kind: "suit", suit: "willpower", count: 1, label: "Hold a Willpower Psyche" },
     },
     bad: {
       label: "Edges Swarm",
@@ -375,7 +393,9 @@ export const DREAM_RESOLUTIONS = {
   "well-being": {
     good: {
       label: "Breathe Deep",
-      hint: "All Dreamers draw 3 Psyche",
+      hint: "Forget 1 Landscape if your Landscape is clear — all Dreamers draw 3 Psyche",
+      toll: { kind: "forget", count: 1 },
+      gate: { kind: "clear", label: "No Encounter stands on your Landscape" },
       effect: "drawPsycheAll",
       params: { count: 3 },
     },
@@ -390,7 +410,9 @@ export const DREAM_RESOLUTIONS = {
   quiet: {
     good: {
       label: "Keep the Silence",
-      hint: "Gain 1 PT",
+      hint: "Discard 2 Psyche if your Landscape is clear — gain 1 PT",
+      toll: { kind: "psyche", count: 2 },
+      gate: { kind: "clear", label: "No Encounter stands on your Landscape" },
       effect: "grantPT",
       params: { count: 1 },
     },
@@ -402,12 +424,12 @@ export const DREAM_RESOLUTIONS = {
     },
   },
 
-  // ── Final Recurrence choice dreams ────────────────────────────────────────
-
   circadia: {
     good: {
       label: "Reset the Clock",
-      hint: "All Dreamers Return 2 Cards",
+      hint: "Discard 3 Psyche if at least 4 Landscapes are awake — all Dreamers Return 2",
+      toll: { kind: "psyche", count: 3 },
+      gate: { kind: "revealed", count: 4, label: "At least 4 Landscapes are awake" },
       effect: "returnCardsAll",
       params: { count: 2 },
     },
@@ -422,7 +444,9 @@ export const DREAM_RESOLUTIONS = {
   somnambulance: {
     good: {
       label: "Walk With Intent",
-      hint: "Gain 1 PT; free Meet Action",
+      hint: "Repress 1 Psyche if you hold Elasticity — gain 1 PT and a free Meet Action",
+      toll: { kind: "repress", count: 1 },
+      gate: { kind: "suit", suit: "elasticity", count: 1, label: "Hold an Elasticity Psyche" },
       steps: [
         { effect: "grantPT", params: { count: 1 } },
         { effect: "freeMeetAction", params: { count: 1 } },
@@ -439,7 +463,13 @@ export const DREAM_RESOLUTIONS = {
   homeostasis: {
     good: {
       label: "Balance the Scales",
-      hint: "All Dreamers draw 2 Psyche",
+      hint: "Discard 2 Psyche if you hold Lucidity and Elasticity — all Dreamers draw 2 Psyche",
+      toll: { kind: "psyche", count: 2 },
+      gate: {
+        kind: "suits",
+        suits: ["lucidity", "elasticity"],
+        label: "Hold a Lucidity Psyche and an Elasticity Psyche",
+      },
       effect: "drawPsycheAll",
       params: { count: 2 },
     },
@@ -454,9 +484,9 @@ export const DREAM_RESOLUTIONS = {
   "pineal-purge": {
     good: {
       label: "Burn the Residue",
-      hint: "Discard 3 Psyche to cleanse",
-      effect: "discardPsyche",
-      params: { count: 3 },
+      hint: "Discard 3 Psyche if you hold Lucidity — the residue burns",
+      toll: { kind: "psyche", count: 3 },
+      gate: { kind: "suit", suit: "lucidity", count: 1, label: "Hold a Lucidity Psyche" },
     },
     bad: {
       label: "Gland Overloads",

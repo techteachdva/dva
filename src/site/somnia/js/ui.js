@@ -5082,7 +5082,7 @@ export function showRepressPicker(state, onPick, onConfirm) {
       <p class="card-choice-status">${picked}/${needed} ${discard ? "discarded" : "repressed"}</p>
       <div class="utility-actions card-choice-actions">
         <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">Minimize — view board</button>
-        <button type="button" class="btn primary" id="repress-confirm">${isEmpty || pool.length === 0 ? "Continue" : picked >= needed ? "Done" : "Continue with selected"}</button>
+        <button type="button" class="btn primary" id="repress-confirm"${pending.strict && picked < needed && pool.length > 0 ? " disabled" : ""}>${isEmpty || pool.length === 0 ? "Continue" : picked >= needed ? "Done" : "Continue with selected"}</button>
       </div>
     </div>
   `;

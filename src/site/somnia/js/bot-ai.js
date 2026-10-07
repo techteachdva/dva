@@ -34,7 +34,8 @@ import { activeQuestLandscapeIds } from "./quests.js";
 import { handLimitForPlayer, resolveNothingChoice } from "./objects.js";
 import { revealableTiles, forgettableTiles, cancelLandscapePick } from "./landscapes.js";
 import { getEventResolution } from "./event-resolutions.js";
-import { resolveMindstreamChoice, canPayEventGood } from "./mindstream-choices.js";
+import { resolveMindstreamChoice, canPayEventGood, assessDreamGood } from "./mindstream-choices.js";
+import { getDreamResolution } from "./dream-resolutions.js";
 import { hasAffectedLandscapes } from "./event-landscapes.js";
 import { getLegalMoveTargets, hexDistance } from "./hex.js";
 import { getLandscapeActionChoices } from "./landscape-actions.js";
@@ -126,8 +127,33 @@ export function pickMindstreamChoice(state, skill = "skilled") {
   }
 
   if (pending.kind === "dream") {
-    // Good only when the table can clearly afford it; otherwise take free Bad.
-    if (has("good") && !sloppy && teamTokens(state) >= 2 && psycheHandCount(player) >= 4) return "good";
+    const resolution = getDreamResolution(card?.refId || card?.id);
+    const bright = resolution ? assessDreamGood(state, player, resolution) : { ok: false };
+    if (has("good") && bright.ok && resolution) {
+      if (
+        resolution.bad?.effect === "repressObjects"
+        && !((player.objects?.length || 0) + (player.persistent?.length || 0))
+      ) {
+        return has("bad") ? "bad" : choices[0] || null;
+      }
+      const toll = resolution.good.toll;
+      const hand = psycheHandCount(player);
+      const disaster = [
+        "spawnEncountersOnDreamers",
+        "flipLeviathan",
+        "forgetLandscapes",
+        "skipNextExplore",
+        "meetOnlyThisRound",
+        "discardDream",
+        "discardPsycheAll",
+        "repressPsycheAll",
+      ].includes(resolution.bad?.effect);
+      const surplus = toll?.kind === "forget"
+        ? true
+        : hand >= (toll?.count || 1) + 2;
+      if (disaster && (!sloppy || Math.random() < 0.75)) return "good";
+      if (surplus && (!sloppy || Math.random() < 0.5)) return "good";
+    }
     return has("bad") ? "bad" : (has("good") ? "good" : choices[0] || null);
   }
 

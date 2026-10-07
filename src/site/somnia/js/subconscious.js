@@ -522,6 +522,7 @@ function beginRepressStep(state, step) {
     reason: step.reason,
     toDiscard: !!step.toDiscard,
     confirmEmpty: false,
+    strict: !!step.strict,
   };
   if (step.reason) {
     try { flashMoment(step.reason); } catch { /* DOM optional in sim */ }
@@ -565,13 +566,14 @@ export function enqueueDiscardFromHand(state, player, count, { reason = "" } = {
   }
 }
 
-export function enqueueRepressFromHand(state, player, count, { reason = "" } = {}) {
+export function enqueueRepressFromHand(state, player, count, { reason = "", strict = false } = {}) {
   state.resolutionQueue = state.resolutionQueue || [];
   state.resolutionQueue.push({
     type: "repress",
     source: "hand",
     playerId: player.id,
     count,
+    strict: !!strict,
     reason: reason || `${player.name}: Repress ${count} Psyche card(s).`,
   });
   if (!state.pendingRepress && !state.pendingReturn) {
@@ -681,6 +683,17 @@ export function confirmRepressStep(state) {
   const player = pending.collective ? null : playerById(state, pending.playerId);
   const subject = pending.collective ? "Team" : player?.name;
   const verb = pending.toDiscard ? "Discard" : "Repress";
+  if (pending.strict && pending.picked.length < pending.remaining) {
+    const owner = pending.collective ? null : playerById(state, pending.playerId);
+    const poolLeft = pending.collective
+      ? collectiveHandPool(state).length
+      : sourceCards(owner, pending.source).length;
+    if (poolLeft > 0) {
+      const left = pending.remaining - pending.picked.length;
+      logRepress(state, `${subject || "The Dreamer"} still owes ${left} Repress${left === 1 ? "" : "es"}.`);
+      return;
+    }
+  }
   if (pending.confirmEmpty && subject) {
     if (pending.remaining <= 0) {
       logRepress(state, `${subject}: nothing to ${verb} — continuing.`);

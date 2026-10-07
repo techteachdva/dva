@@ -6,10 +6,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "38.2";
+export const SOMNIA_VERSION = "38.3";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "38.3",
+    title: "The Toll",
+    notes: [
+      "Single track can loop Dreamer's Awakening, the main menu song.",
+      "A Dream's Bright path always costs a Repress, a Psyche discard, or a Forgotten Landscape, and it stays shut until its condition is met. Dim stays free.",
+    ],
+  },
   {
     version: "38.2",
     title: "The Feast",

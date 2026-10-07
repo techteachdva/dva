@@ -67,7 +67,7 @@ export function loadSettings() {
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
-      trackId: MUSIC_TRACKS.some((t) => t.id === parsed.trackId)
+      trackId: parsed.trackId === MENU_THEME_TRACK.id || MUSIC_TRACKS.some((t) => t.id === parsed.trackId)
         ? parsed.trackId
         : DEFAULT_SETTINGS.trackId,
       panels: { ...DEFAULT_SETTINGS.panels, ...(parsed.panels || {}) },
@@ -102,7 +102,7 @@ export function musicCreditHtml() {
 }
 
 export function menuThemeCreditHtml() {
-  return `<p class="music-credit">Theme: "Dreamer's Awakening" — a five-minute loop composed with <a href="https://beepbox.co" rel="noopener noreferrer">BeepBox</a> by Cursor AI, directed by Philip Carroll. Plays on the main menu and closes every radio rotation.</p>`;
+  return `<p class="music-credit">Theme: "Dreamer's Awakening" — a five-minute loop composed with <a href="https://beepbox.co" rel="noopener noreferrer">BeepBox</a> by Cursor AI, directed by Philip Carroll. Plays on the main menu, closes every radio rotation, and can be chosen as the single track.</p>`;
 }
 
 export function artCreditHtml() {

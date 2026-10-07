@@ -1,4 +1,4 @@
-import { MUSIC_TRACKS, footerCreditsHtml } from "./audio-settings.js";
+import { MENU_THEME_TRACK, MUSIC_TRACKS, footerCreditsHtml } from "./audio-settings.js";
 import {
   applyAudioSettings,
   getAudioState,
@@ -44,7 +44,7 @@ function panLabel(value) {
 
 function renderAudioTab() {
   const s = getAudioState();
-  const trackOptions = MUSIC_TRACKS.map(
+  const trackOptions = [MENU_THEME_TRACK, ...MUSIC_TRACKS].map(
     (t) => `<option value="${t.id}" ${s.trackId === t.id ? "selected" : ""}>${t.title}</option>`,
   ).join("");
 

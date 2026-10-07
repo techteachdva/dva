@@ -3,10 +3,11 @@
  * Events: Good (paid, landscape-gated) vs Bad (free).
  * Objects: Take vs Discard + Draw 3 Psyche.
  * Dreambeasts: Accept / Flee / Repress.
- * Dreams: Strive vs Suffer.
+ * Dreams: Bright costs a Repress, a Psyche, or a Forgotten Landscape, and a gate.
+ * Dim is free.
  */
 
-import { addLog, drawPsycheForPlayer, setEncounterOnLandscape, landscapeById } from "./state.js";
+import { addLog, drawPsycheForPlayer, setEncounterOnLandscape, landscapeById, tileHasEncounters } from "./state.js";
 import { logMoment } from "./narrator.js";
 import { totalStat } from "./rules.js";
 import { isWildPsyche } from "./psyche.js";
@@ -16,7 +17,7 @@ import { getDreamResolution } from "./dream-resolutions.js";
 import { applyResolutionEffect, discardMindstreamCard, resolutionRulesText } from "./resolution-effects.js";
 import { onObjectDrawn } from "./objects.js";
 import { discardToMindstream, encounterFromDreambeastCard } from "./mindstream-supply.js";
-import { repressCard, requestReturnCards } from "./subconscious.js";
+import { repressCard, requestReturnCards, subconsciousCount } from "./subconscious.js";
 import { applyFailEffect } from "./dreambeasts.js";
 import { playDiceBattle, rollD6, countSuccesses } from "./dice-battle.js";
 import { recordQuestEvent } from "./quests.js";
@@ -47,6 +48,110 @@ export function canPayEventGood(state, player, resolution) {
   const need = eventGoodCardsNeeded(state, player, resolution);
   if (need <= 0) return true;
   return psycheOfSuit(player, resolution.suit).length >= need;
+}
+
+function awakeLandscapes(state) {
+  return (state.board || []).filter((t) => !t.center && t.id !== "bed" && t.revealed && !t.wasteland);
+}
+
+function forgettableForToll(state) {
+  return awakeLandscapes(state).filter((t) => !tileHasEncounters(t));
+}
+
+function heldObjects(player) {
+  return (player?.objects?.length || 0) + (player?.persistent?.length || 0);
+}
+
+function dreamGateMet(state, player, gate) {
+  if (!gate) return { ok: false, reason: "Bright has no condition." };
+  const label = gate.label || "its condition";
+  if (gate.kind === "suit") {
+    const have = psycheOfSuit(player, gate.suit).length;
+    if (have >= (gate.count || 1)) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright needs ${label}.` };
+  }
+  if (gate.kind === "suits") {
+    const missing = (gate.suits || []).some((suit) => psycheOfSuit(player, suit).length < 1);
+    if (!missing) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright needs ${label}.` };
+  }
+  if (gate.kind === "object") {
+    if (heldObjects(player) >= 1) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright needs ${label}.` };
+  }
+  if (gate.kind === "token") {
+    if ((player?.powerTokens || 0) >= 1) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright needs ${label}.` };
+  }
+  if (gate.kind === "encounter") {
+    const found = (state.board || []).some((t) => tileHasEncounters(t));
+    if (found) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright needs ${label}.` };
+  }
+  if (gate.kind === "clear") {
+    const tile = landscapeById(state, player?.landscapeId);
+    if (tile && !tileHasEncounters(tile)) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright needs ${label}.` };
+  }
+  if (gate.kind === "revealed") {
+    if (awakeLandscapes(state).length >= (gate.count || 1)) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright needs ${label}.` };
+  }
+  if (gate.kind === "subconscious") {
+    if (subconsciousCount(state.subconscious) >= 1) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright needs ${label}.` };
+  }
+  return { ok: false, reason: "Bright has no condition." };
+}
+
+function dreamTollAffordable(state, player, toll) {
+  if (!toll?.kind || !(toll.count > 0)) {
+    return { ok: false, reason: "Bright has no cost." };
+  }
+  const hand = player?.hand?.length || 0;
+  if (toll.kind === "psyche") {
+    if (hand >= toll.count) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright costs ${toll.count} Psyche, and the hand is short.` };
+  }
+  if (toll.kind === "repress") {
+    if (hand >= toll.count) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright costs Repress ${toll.count}, and the hand is short.` };
+  }
+  if (toll.kind === "forget") {
+    if (forgettableForToll(state).length >= toll.count) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright costs Forget ${toll.count} Landscape${toll.count === 1 ? "" : "s"}, and not enough are awake.` };
+  }
+  return { ok: false, reason: "Bright has no cost." };
+}
+
+/** Bright opens only when the gate is met and the toll can be paid. */
+export function assessDreamGood(state, player, resolution) {
+  const good = resolution?.good;
+  if (!good?.toll || !good?.gate) {
+    return { ok: false, reason: "This Dream has no Bright path." };
+  }
+  const gate = dreamGateMet(state, player, good.gate);
+  if (!gate.ok) return { ok: false, reason: gate.reason };
+  const toll = dreamTollAffordable(state, player, good.toll);
+  if (!toll.ok) return { ok: false, reason: toll.reason };
+  return { ok: true, reason: "" };
+}
+
+function payDreamToll(state, player, toll, helpers) {
+  if (toll.kind === "psyche") {
+    applyResolutionEffect(state, player, { effect: "discardPsyche", params: { count: toll.count } }, helpers, "good");
+    return;
+  }
+  if (toll.kind === "repress") {
+    applyResolutionEffect(state, player, {
+      effect: "repressPsyche",
+      params: { count: toll.count, strict: true },
+    }, helpers, "good");
+    return;
+  }
+  if (toll.kind === "forget") {
+    applyResolutionEffect(state, player, { effect: "forgetLandscapes", params: { count: toll.count } }, helpers, "good");
+  }
 }
 
 export function payEventGoodCost(state, player, resolution) {
@@ -302,6 +407,7 @@ export function beginDreamCardChoice(state, card, player, helpers = {}) {
 
   const resolution = getDreamResolution(card.refId || card.id);
   if (!resolution) return false;
+  const bright = assessDreamGood(state, player, resolution);
 
   state.pendingMindstreamChoice = {
     kind: "dream",
@@ -320,14 +426,15 @@ export function beginDreamCardChoice(state, card, player, helpers = {}) {
         shape: "lucidity",
         label: resolution.good.label,
         hint: resolution.good.hint,
-        disabled: false,
+        disabled: !bright.ok,
+        disabledReason: bright.reason,
       },
       {
         id: "bad",
         role: "bad",
         shape: "willpower",
         label: resolution.bad.label,
-        hint: resolution.bad.hint,
+        hint: `${resolution.bad.hint} · Free`,
         disabled: false,
       },
     ],
@@ -504,11 +611,33 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
 
   if (pending.kind === "dream") {
     const resolution = getDreamResolution(card.refId || card.id);
+    if (!resolution || !player) {
+      state.pendingMindstreamChoice = null;
+      return true;
+    }
+    const sideId = choiceId === "good" ? "good" : "bad";
+    if (sideId === "good") {
+      const bright = assessDreamGood(state, player, resolution);
+      if (!bright.ok) {
+        addLog(state, bright.reason || `${card.name}: Bright stays shut.`);
+        return false;
+      }
+    }
     state.pendingMindstreamChoice = null;
-    if (!resolution || !player) return true;
-    const side = choiceId === "good" ? resolution.good : resolution.bad;
-    stampResolutionChoice(card, choiceId === "good" ? "good" : "bad", pending);
-    applyResolutionEffect(state, player, side, h, choiceId);
+    const side = sideId === "good" ? resolution.good : resolution.bad;
+    stampResolutionChoice(card, sideId, pending);
+    if (sideId === "good" && resolution.good.toll?.kind === "repress") {
+      const prevIdle = state.onResolutionIdle;
+      state.onResolutionIdle = (s) => {
+        applyResolutionEffect(s, player, side, h, "good");
+        logMoment(s, `${card.name}: ${side.label}.`);
+        if (typeof prevIdle === "function") prevIdle(s);
+      };
+      payDreamToll(state, player, resolution.good.toll, h);
+      return true;
+    }
+    if (sideId === "good") payDreamToll(state, player, resolution.good.toll, h);
+    applyResolutionEffect(state, player, side, h, sideId);
     logMoment(state, `${card.name}: ${side.label}.`);
     return true;
   }

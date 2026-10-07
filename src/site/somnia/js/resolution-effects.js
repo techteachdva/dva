@@ -296,6 +296,7 @@ function applyResolutionStep(state, player, step, helpers = {}) {
     case "repressPsyche":
       enqueueRepressFromHand(state, player, p.count || 1, {
         reason: `${player.name}: Repress ${p.count || 1} Psyche.`,
+        strict: !!p.strict,
       });
       break;
     case "repressPsycheAll":
