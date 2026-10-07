@@ -23,6 +23,28 @@ function centerOf(el) {
   return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 }
 
+function rippleAcrossBoard(origin, tone) {
+  if (!origin || reducedMotion()) return;
+  const ringClass = tone === "forget" ? "fx-forget-ripple" : "fx-reveal-ripple";
+  const tileClass = tone === "forget" ? "hex-ripple-forget" : "hex-ripple-reveal";
+  const rings = tone === "forget" ? 2 : 3;
+  for (let i = 0; i < rings; i += 1) {
+    window.setTimeout(() => playPointRipple(origin.x, origin.y, ringClass), i * 150);
+  }
+  document.querySelectorAll(".hex-tile").forEach((el) => {
+    if (el.classList.contains("just-revealed") || el.classList.contains("just-forgotten")) return;
+    const c = centerOf(el);
+    if (!c) return;
+    const delay = Math.min(860, Math.round(Math.hypot(c.x - origin.x, c.y - origin.y) * 0.42));
+    el.style.setProperty("--ripple-delay", `${delay}ms`);
+    el.classList.add(tileClass);
+    window.setTimeout(() => {
+      el.classList.remove(tileClass);
+      el.style.removeProperty("--ripple-delay");
+    }, delay + 520);
+  });
+}
+
 function deckEl(id) {
   return document.querySelector(`[data-deck-id="${id}"]`)
     || document.querySelector(`[data-deck="${id}"]`);
@@ -583,22 +605,21 @@ export function runPendingBoardFx() {
     } else if (evt.type === "tile-reveal") {
       const tile = hexTileEl(evt.tileId);
       const c = centerOf(tile);
-      flashEl(tile, "hex-flash-reveal", 1100);
-      if (c) burstSparkles(c.x, c.y, 18, "#4ad4ff");
-      holdBodyClass("dream-revealing", 1200);
+      if (c) {
+        burstSparkles(c.x, c.y, 6, "#d8f6ff");
+        rippleAcrossBoard(c, "reveal");
+      }
       playDreamWarble(0.55);
-      playSfx("flip");
       playHaptic("reveal");
       playLandscapeSfx(evt.tileId);
       delay += step * 0.5;
     } else if (evt.type === "tile-forget") {
       const tile = hexTileEl(evt.tileId);
       const c = centerOf(tile);
-      flashEl(tile, "hex-flash-forget", 1100);
-      holdBodyClass("dream-forgetting", 1200);
       if (c) {
-        burstSparkles(c.x, c.y, 8, "#8a3048");
-        floatLabel(c.x, c.y, "Forgotten", "fx-loss", delay);
+        burstSparkles(c.x, c.y, 4, "#c46a80");
+        floatLabel(c.x, c.y - 42, "Forgotten", "fx-loss", delay);
+        rippleAcrossBoard(c, "forget");
       }
       playSfx("forget");
       playHaptic("forget");

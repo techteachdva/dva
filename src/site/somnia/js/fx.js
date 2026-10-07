@@ -3,7 +3,7 @@ let forgottenTiles = new Set();
 let phasePulse = false;
 let dreamFeedNudge = false;
 
-const FLIP_LINGER_MS = 980;
+const FLIP_LINGER_MS = 1200;
 const flipLinger = new Map();
 
 function nowMs() {

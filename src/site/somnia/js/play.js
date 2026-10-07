@@ -245,6 +245,7 @@ import {
   showSubconsciousBrowse,
   showDiscardPileModal,
   showRevealedTopsModal,
+  showCardPeekStage,
   showRevealDeckTopModal,
   showRepressPicker,
   renderSubconsciousButton,
@@ -1952,6 +1953,17 @@ function maybeShowObjectChoice() {
     showObjectReorderPicker(pending, finish);
     return;
   }
+  if (pending.ui === "peek") {
+    showCardPeekStage({
+      title: pending.title,
+      message: pending.message,
+      cards: pending.cards,
+      choices: pending.choices,
+      required: true,
+      onPick: finish,
+    });
+    return;
+  }
   if (pending.ui === "spend") {
     const toggleSpend = (choiceId) => {
       if (kind === "dream") resolveDreamChoice(state, choiceId, getEffectHelpers());
@@ -2204,6 +2216,20 @@ function presentDreamerPowerUI(ui) {
     showDreamerPowerDeckPicker(ui, (deckKey) => {
       dreamerPowerModalKey = null;
       processDreamerPowerResult(resolveDreamerPowerDeckPick(state, deckKey));
+    });
+    return;
+  }
+  if (ui.type === "peek") {
+    showCardPeekStage({
+      title: ui.title,
+      message: ui.message,
+      cards: ui.cards,
+      choices: ui.choices,
+      required: true,
+      onPick: (choiceId) => {
+        dreamerPowerModalKey = null;
+        processDreamerPowerResult(resolveDreamerPowerChoice(state, choiceId));
+      },
     });
   }
 }

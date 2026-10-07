@@ -2211,8 +2211,10 @@ export function cashExplorePeek(state) {
   addLog(state, `Spent 2 moves to peek the next Dream: ${top.name}.`);
   offerEffectChoice(state, player, {
     cardId: "clock-peek",
+    ui: "peek",
     title: "Next Dream",
-    message: `${top.name}. Leave it on top, or bury it ahead of Final Recurrence.`,
+    message: "Leave it on top, or bury it ahead of Final Recurrence.",
+    cards: [top],
     choices: [
       { id: "keep", label: "Leave on top", hint: "It will be drawn next." },
       { id: "bury", label: "Bury it", hint: "Slide it down, just before the Final Recurrence." },

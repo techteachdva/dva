@@ -379,15 +379,16 @@ function advanceVisionaryPeek(state) {
 
 function showVisionaryPeekChoice(state, deckKey, card, dreamerName) {
   rememberRevealedTops(state, deckKey, card);
-  setChoiceUI(
-    state,
-    `The Visionary — ${dreamerName}`,
-    `Top of ${formatDeckLabel(deckKey)}: ${card.name}${card.text ? ` — ${card.text}` : ""}`,
-    [
+  state.pendingDreamerPower.ui = {
+    type: "peek",
+    title: `The Visionary — ${dreamerName}`,
+    message: `Top of ${formatDeckLabel(deckKey)}. Leave it, or send it to the bottom.`,
+    cards: [card],
+    choices: [
       { id: "peek-keep", label: "Leave on top", hint: "Keep this card on top of the deck." },
       { id: "peek-bottom", label: "Send to bottom", hint: "Move this card to the bottom of the deck." },
     ],
-  );
+  };
   state.pendingDreamerPower.step = "peek-resolve";
   state.pendingDreamerPower.peekDeckKey = deckKey;
   return { ui: state.pendingDreamerPower.ui };

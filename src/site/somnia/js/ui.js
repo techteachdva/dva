@@ -2311,6 +2311,7 @@ export function renderBoard(
       + Math.round(y + bounds.offsetY)
     );
     if (justRevealed.has(tile.id) || justForgotten.has(tile.id)) {
+      el.style.zIndex = String(8000 + Math.round(y + bounds.offsetY));
       el.style.setProperty("--hex-flip-elapsed", `${-tileFlipElapsedMs(tile.id)}ms`);
     }
 
@@ -2325,13 +2326,13 @@ export function renderBoard(
     }
     const reduceMotion = typeof window !== "undefined"
       && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const flippingOver = !reduceMotion && justRevealed.has(tile.id) && showFace && !!tile.image;
-    const flippingBack = !reduceMotion && justForgotten.has(tile.id) && !!tile.image;
-    const backImage = flippingBack ? `url('${tile.image}')` : `url('${wastelandSrc}')`;
-    const frontImage = flippingBack ? `url('${wastelandSrc}')` : faceImage;
-    const faceHtml = (flippingOver || flippingBack)
-      ? `<div class="hex-flip" aria-hidden="true"><div class="hex-flip-inner"><div class="hex-face hex-face-hd hex-flip-back" style="background-image: ${backImage}"></div><div class="hex-face hex-face-hd hex-flip-front" style="background-image: ${frontImage}"></div></div></div>`
-      : `<div class="hex-face hex-face-hd" style="background-image: ${faceImage}"></div>`;
+    const materializing = !reduceMotion && justRevealed.has(tile.id) && showFace && !!tile.image;
+    const forgetting = !reduceMotion && justForgotten.has(tile.id) && !!tile.image;
+    const faceHtml = materializing
+      ? `<div class="hex-materialize" aria-hidden="true"><div class="hex-face hex-face-hd hex-mat-from" style="background-image: url('${wastelandSrc}')"></div><div class="hex-face hex-face-hd hex-mat-to" style="background-image: ${faceImage}"></div></div>`
+      : forgetting
+        ? `<div class="hex-materialize" aria-hidden="true"><div class="hex-face hex-face-hd hex-mat-to" style="background-image: url('${wastelandSrc}')"></div><div class="hex-face hex-face-hd hex-forget-from" style="background-image: url('${tile.image}')"></div></div>`
+        : `<div class="hex-face hex-face-hd" style="background-image: ${faceImage}"></div>`;
 
     const isWastelandFace = tile.wasteland || !tile.revealed;
     const mistHtml = isWastelandFace
@@ -2394,7 +2395,9 @@ export function renderBoard(
       ${mistHtml}
       ${occupantsHtml}
       ${revealCueHtml}
-      <div class="name">${displayName}</div>
+      ${forgetting
+        ? `<div class="name name-leaving">${tile.name}</div><div class="name name-arriving">Wasteland</div>`
+        : `<div class="name">${displayName}</div>`}
       <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounters.length ? ` ${encounters.map((e) => e.name.split(" ")[0]).join(" · ")}` : ""}${finalMark}${finalArch && !finalArch.defeated ? ` ${finalArch.name.split(" ")[0]}` : ""}</div>
     `;
 
@@ -2988,28 +2991,132 @@ export function showDiscardPileModal(state, deckId, _onCardClick) {
   });
 }
 
-export function showRevealedTopsModal(state, deckId, onCardClick) {
+function escapePeekText(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function peekCardFaceHtml(card) {
+  const name = escapePeekText(card?.name || "Card");
+  if (card?.image) {
+    return `<img class="card-peek-art" src="${escapePeekText(card.image)}" alt="${name}">`;
+  }
+  const psyche = card?.type === "psyche" || card?.type === "psyche-power" || card?.isWild || card?.isDreambeast;
+  if (psyche) {
+    const value = card.isWild ? "5" : (card.type === "psyche-power" ? `+${card.powerTokens ?? 1}` : (card.value ?? ""));
+    const suit = card.isWild ? "wild" : (card.suit || "plain");
+    const mark = card.isWild
+      ? "★"
+      : (card.type === "psyche-power" ? "⚡" : (card.suit ? suitIconHtml(card.suit, { size: 72 }) : ""));
+    return `<div class="card-peek-face card-peek-face--${escapePeekText(suit)}"><span class="card-peek-value">${escapePeekText(value)}</span><span class="card-peek-suit">${mark}</span><span class="card-peek-name">${name}</span></div>`;
+  }
+  const text = card?.text ? `<p class="card-peek-text">${escapePeekText(card.text)}</p>` : "";
+  return `<div class="card-peek-face card-peek-face--plain"><span class="card-peek-name">${name}</span>${text}</div>`;
+}
+
+/** Full-card peek. One card fills the screen; extra cards step through at the same size. */
+export function showCardPeekStage({
+  title = "Peek",
+  message = "",
+  cards = [],
+  choices = [],
+  onPick,
+  required = false,
+} = {}) {
   const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
+  const content = modal?.querySelector(".utility-content");
+  const list = (cards || []).filter(Boolean);
+  let index = 0;
+
+  const paint = () => {
+    const card = list[index] || null;
+    const count = list.length;
+    const kicker = count > 1
+      ? `${title} · ${index + 1} of ${count}`
+      : title;
+    const face = card
+      ? peekCardFaceHtml(card)
+      : `<div class="card-peek-face card-peek-face--plain"><span class="card-peek-name">No card</span></div>`;
+    const nav = count > 1
+      ? `<button type="button" class="card-peek-nav card-peek-nav--prev" data-peek-nav="-1" aria-label="Previous card">‹</button><button type="button" class="card-peek-nav card-peek-nav--next" data-peek-nav="1" aria-label="Next card">›</button>`
+      : "";
+    const actions = (choices || []).map((choice) => `
+      <button type="button" class="btn card-peek-choice" data-choice="${escapePeekText(choice.id)}"${choice.disabled ? " disabled" : ""}>
+        <strong>${escapePeekText(choice.label)}</strong>
+        ${choice.hint ? `<span class="landscape-action-desc">${escapePeekText(choice.hint)}</span>` : ""}
+      </button>
+    `).join("");
+    body.innerHTML = `
+      <div class="card-peek-stage">
+        <p class="card-peek-kicker">${escapePeekText(kicker)}</p>
+        ${message ? `<p class="card-peek-message">${escapePeekText(message)}</p>` : ""}
+        <div class="card-peek-frame">${face}</div>
+        ${nav}
+        ${actions ? `<div class="card-peek-actions">${actions}</div>` : ""}
+      </div>
+    `;
+    body.querySelectorAll("[data-peek-nav]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const step = Number(btn.dataset.peekNav) || 0;
+        index = (index + step + count) % count;
+        paint();
+      });
+    });
+    body.querySelectorAll("[data-choice]").forEach((btn) => {
+      if (btn.disabled) return;
+      btn.addEventListener("click", () => {
+        clearCardPeekStage();
+        hideUtilityModal(true);
+        onPick?.(btn.dataset.choice);
+      });
+    });
+  };
+
+  content?.classList.remove(
+    "dreamer-power-modal-wrap",
+    "card-choice-modal-wrap",
+    "ms-choice-modal-wrap",
+  );
+  content?.classList.add("card-peek-modal-wrap", "fullscreen-browser");
+  modal?.classList.add("card-peek-modal");
+  modal?.classList.remove("hidden");
+  document.body.classList.add("utility-modal-open");
+  setUtilityModalRequired(required, title);
+  const closeBtn = modal?.querySelector(".utility-close");
+  if (closeBtn) closeBtn.hidden = !!required;
+  paint();
+}
+
+function clearCardPeekStage() {
+  const modal = document.getElementById("utility-modal");
+  const content = modal?.querySelector(".utility-content");
+  content?.classList.remove("card-peek-modal-wrap", "fullscreen-browser");
+  modal?.classList.remove("card-peek-modal");
+}
+
+export function showRevealedTopsModal(state, deckId, _onCardClick) {
   const label = DECK_LABELS[deckId] || deckId;
   const pile = state.revealedDeckTops?.[deckId] || [];
-  body.innerHTML = `
-    <h2>${label} — Revealed top</h2>
-    <p class="graveyard-total">${pile.length} card${pile.length === 1 ? "" : "s"} face-up on this draw pile</p>
-    <div id="peek-browse" class="mini-card-row"></div>
-  `;
-  const container = body.querySelector("#peek-browse");
   if (!pile.length) {
-    container.innerHTML = "<p>No revealed top cards. Peek effects and Lucidity deck-flips stay face-up here.</p>";
-  } else {
-    pile.forEach((card) => {
-      container.appendChild(renderCard(card, {
-        mini: true,
-        onClick: () => onCardClick(card),
-      }));
-    });
+    const modal = document.getElementById("utility-modal");
+    const body = document.getElementById("utility-modal-body");
+    body.innerHTML = `
+      <h2>${escapePeekText(label)} — Revealed top</h2>
+      <p>No revealed top cards. Peek effects and Lucidity deck-flips stay face-up here.</p>
+    `;
+    modal.classList.remove("hidden");
+    return;
   }
-  modal.classList.remove("hidden");
+  showCardPeekStage({
+    title: `${label} — top`,
+    message: pile.length > 1 ? "These cards are face-up on the draw pile." : "This card is face-up on the draw pile.",
+    cards: pile,
+    required: false,
+  });
 }
 
 export function showRevealDeckTopModal(onPickSuit) {
@@ -5194,8 +5301,10 @@ export function hideUtilityModal(force = false) {
     "subconscious-binder-fullscreen",
     "somnia-changelog-modal-wrap",
     "ms-choice-modal-wrap",
+    "card-peek-modal-wrap",
   );
   modal?.classList.remove("ms-choice-modal");
+  modal?.classList.remove("card-peek-modal");
   modal?.classList.remove("ms-choice-modal--enter", "ms-choice-modal--visible");
   const closeBtn = modal?.querySelector(".utility-close");
   if (closeBtn) closeBtn.hidden = false;

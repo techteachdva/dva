@@ -6,10 +6,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "38.3";
+export const SOMNIA_VERSION = "38.4";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "38.4",
+    title: "Into Focus",
+    notes: [
+      "Revealing a Landscape fades the picture and the name into place, then a ring travels across the board. Forgetting unravels the picture into Wasteland.",
+      "Peeking the next Dream with leftover Explore moves, or the top of a deck, shows the whole card as large as the screen.",
+    ],
+  },
   {
     version: "38.3",
     title: "The Toll",
