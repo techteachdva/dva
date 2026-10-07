@@ -2341,8 +2341,11 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 }
 
 .hud-forget-banner {
-  margin: 0.35rem 0 0.5rem;
+  margin: 0;
+  width: 100%;
+  max-width: 42rem;
   padding: 0.55rem 0.75rem;
+  text-align: center;
   font-size: 0.92rem;
   font-weight: 700;
   line-height: 1.35;
@@ -3476,7 +3479,7 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 }
 
 /* Play stacking (root):
-   deck-pressure banner        560  (top strip; under every dialog)
+   deck-pressure banner        table bottom dock
    HUD / board / hand          auto–152
    play top-bar                600  (in-bar dropdowns stay in this context)
    portaled more menu          790  (escapes the bar; under dialogs)
@@ -4549,17 +4552,14 @@ html[data-pointer="coarse"] .board-camera-controls button {
 }
 
 .moment-overlay-stack {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0.45rem;
-  z-index: 420;
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.38rem;
+  width: 100%;
   pointer-events: none;
-  padding: 0 0.5rem;
 }
 
 .moment-toast {
@@ -7752,12 +7752,10 @@ html:not([data-hover="false"]) .binder-look-card.game-card:hover,
 }
 
 .action-moment-banner {
-  position: absolute;
-  top: 0.35rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 120;
-  max-width: min(92%, 42rem);
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 42rem;
   padding: 0.45rem 0.85rem;
   border-radius: 12px;
   background: rgba(12, 8, 28, 0.92);
@@ -10605,12 +10603,10 @@ html[data-device="mobile"] .player-chip {
 }
 
 .table-action-cue {
-  position: absolute;
-  top: 0.45rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 8;
-  max-width: min(36rem, 82%);
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 42rem;
   margin: 0;
   padding: 0.28rem 0.75rem;
   border-radius: 999px;
@@ -10625,6 +10621,45 @@ html[data-device="mobile"] .player-chip {
 
 .table-action-cue[hidden] {
   display: none !important;
+}
+
+/* Warnings share one dock at the bottom of the board, under the turn plaque. */
+.table-bottom {
+  position: absolute;
+  left: 50%;
+  bottom: 0.5rem;
+  transform: translateX(-50%);
+  z-index: 36;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: min(44rem, calc(100% - 1.6rem));
+  pointer-events: none;
+}
+
+.table-notices {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  pointer-events: none;
+}
+
+.table-notices:empty {
+  display: none;
+}
+
+.table-bottom > .spread-tray {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  top: auto;
+  transform: none;
+  z-index: auto;
+  max-width: 100%;
 }
 
 .action-dock-wrap,
@@ -11327,12 +11362,10 @@ html[data-touch="true"] .action-dock .btn-advance {
 }
 
 .ai-thought-banner {
-  position: fixed;
-  left: 50%;
-  top: calc(var(--topbar-h, 3.6rem) + 0.45rem);
-  transform: translateX(-50%);
-  z-index: 640;
-  max-width: min(70vw, 36rem);
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 36rem;
   padding: 0.4rem 0.85rem;
   border-radius: 8px;
   border: 1px solid rgba(255, 220, 120, 0.65);
@@ -13368,21 +13401,21 @@ body.dice-rolling #screen-game .table-surface::after {
   body.dreamscape-unstable #screen-game .table-surface::before { animation: none; }
 }
 
-/* ── Deck remaining warnings (Somnia 28.0) ── */
+/* ── Deck remaining warnings sit in the table-bottom dock ── */
 .deck-pressure-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 560;
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.4rem;
-  padding: 0.42rem 1.4rem;
+  width: 100%;
+  max-width: 42rem;
+  min-height: 0;
+  padding: 0.42rem 0.9rem;
+  border-radius: 12px;
   font-family: var(--font-display);
-  font-size: 0.98rem;
-  letter-spacing: 0.04em;
+  font-size: 0.92rem;
+  letter-spacing: 0.03em;
   text-align: center;
   pointer-events: none;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
@@ -13391,10 +13424,7 @@ body.dice-rolling #screen-game .table-surface::after {
   display: none;
 }
 body.deck-pressure-active {
-  --deck-pressure-h: 2.45rem;
-}
-body.deck-pressure-active .top-bar.play-top-bar {
-  margin-top: var(--deck-pressure-h);
+  --deck-pressure-h: 0px;
 }
 
 .deck-pressure-banner.tier-soft {
@@ -15339,10 +15369,10 @@ body.ms-draw-cinematic-active {
 }
 
 .fx-table-banner {
-  position: fixed;
-  left: 50%;
-  top: 12%;
-  z-index: 6;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 42rem;
   margin: 0;
   padding: 0.55rem 1.05rem;
   border-radius: 999px;
@@ -15352,15 +15382,16 @@ body.ms-draw-cinematic-active {
   font-family: var(--font-display, inherit);
   font-size: 1.02rem;
   letter-spacing: 0.02em;
+  text-align: center;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
   animation: fx-banner-in 1.65s ease forwards;
   pointer-events: none;
 }
 @keyframes fx-banner-in {
-  0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
-  14% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  0% { opacity: 0; transform: translateY(10px); }
+  14% { opacity: 1; transform: translateY(0); }
   76% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  100% { opacity: 0; transform: translateY(-6px); }
 }
 
 .beast-mill {

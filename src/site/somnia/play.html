@@ -35,7 +35,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 39.0</span>
+        <span class="version-label">v 39.1</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -44,7 +44,6 @@
         <span id="death-clock-count">0/6</span>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
-      <div id="ai-thought-banner" class="ai-thought-banner hidden" role="status" aria-live="polite"></div>
       <div id="hud-suits" class="hud-suits" aria-label="Focused Dreamer">
         <span class="hud-pill hud-pill-lucidity" title="Lucidity"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Lucidity</span><span id="hud-lucidity">0</span></span>
         <span class="hud-pill hud-pill-elasticity" title="Elasticity"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Elasticity</span><span id="hud-elasticity">0</span></span>
@@ -71,8 +70,6 @@
         </div>
       </div>
     </header>
-    <div id="deck-pressure-banner" class="deck-pressure-banner hidden" role="alert" aria-live="assertive"></div>
-
     <main>
       <section id="screen-game" class="screen active">
         <div class="table-surface" id="table-surface">
@@ -80,11 +77,7 @@
           <button type="button" id="btn-deck-drawer" class="chrome-edge-toggle chrome-edge-toggle-deck" aria-expanded="false" aria-controls="deck-column">Decks</button>
           <aside id="deck-column" class="deck-column" aria-label="Game decks"></aside>
           <div id="coop-play-banner" class="coop-play-banner hidden" aria-live="polite"></div>
-          <div id="hud-forget-banner" class="hud-forget-banner hidden" role="status" aria-live="assertive"></div>
           <div id="phase-banner" class="phase-banner" aria-live="polite"></div>
-          <div id="action-moment-banner" class="action-moment-banner hidden" role="status" aria-live="polite" hidden></div>
-          <p id="table-action-cue" class="table-action-cue" hidden></p>
-          <div id="moment-overlay-stack" class="moment-overlay-stack" role="status" aria-live="polite"></div>
           <div id="dice-battle-stage" class="dice-battle-stage" hidden aria-hidden="true"></div>
           <div id="guide-panel" class="guide-panel" hidden></div>
           <div class="board-viewport" id="board-viewport" title="Scroll to zoom · pinch to zoom · drag or Space+drag to pan">
@@ -100,7 +93,17 @@
             <button type="button" id="btn-map-back" class="btn-map-back" data-tutorial-action="mapBack" aria-label="Back one action" disabled>Back</button>
             <button type="button" id="btn-draw-dream" class="btn-draw-dream" data-tutorial-action="drawDream" hidden aria-label="Draw Dream">Draw Dream</button>
             <button type="button" id="btn-next-phase" class="btn-next-phase" data-tutorial-action="advancePhase" aria-label="Next phase"></button>
-            <div id="spread-tray" class="spread-tray hidden" hidden aria-label="Selected Psyche spread"></div>
+            <div id="table-bottom" class="table-bottom">
+              <div id="table-notices" class="table-notices">
+                <div id="moment-overlay-stack" class="moment-overlay-stack" role="status" aria-live="polite"></div>
+                <div id="ai-thought-banner" class="ai-thought-banner hidden" role="status" aria-live="polite"></div>
+                <div id="action-moment-banner" class="action-moment-banner hidden" role="status" aria-live="polite" hidden></div>
+                <div id="hud-forget-banner" class="hud-forget-banner hidden" role="status" aria-live="assertive"></div>
+                <div id="deck-pressure-banner" class="deck-pressure-banner hidden" role="alert" aria-live="assertive"></div>
+                <p id="table-action-cue" class="table-action-cue" hidden></p>
+              </div>
+              <div id="spread-tray" class="spread-tray hidden" hidden aria-label="Selected Psyche spread"></div>
+            </div>
           </div>
         </div>
 

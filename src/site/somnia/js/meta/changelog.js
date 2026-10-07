@@ -6,10 +6,17 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "39.0";
+export const SOMNIA_VERSION = "39.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "39.1",
+    title: "Warnings Under the Table",
+    notes: [
+      "Table warnings sit at the bottom of the board, so the turn plaque stays clear. That includes the Meet-end note, action prompts, Forget, a deck running low, a bot's thought, and moment notices.",
+    ],
+  },
   {
     version: "39.0",
     title: "A Clear Subconscious",

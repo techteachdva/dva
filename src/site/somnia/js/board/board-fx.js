@@ -74,12 +74,12 @@ function deckTitle(deckId) {
 }
 
 function tableBanner(text) {
-  const layer = document.getElementById("fx-layer");
-  if (!layer || !text) return;
+  const host = document.getElementById("table-notices") || document.getElementById("fx-layer");
+  if (!host || !text) return;
   const el = document.createElement("div");
   el.className = "fx-table-banner";
   el.textContent = text;
-  layer.appendChild(el);
+  host.appendChild(el);
   setTimeout(() => el.remove(), 1700);
 }
 

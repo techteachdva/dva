@@ -1,4 +1,4 @@
-/** Brief HUD toasts stacked at the top of the table viewport — up to 6 at once. */
+/** Brief notices stacked at the bottom of the table viewport — up to 6 at once. */
 
 const DEFAULT_DURATION_MS = 14000;
 const MAX_VISIBLE = 6;
@@ -21,13 +21,15 @@ function ensureStack() {
   let stack = document.getElementById("moment-overlay-stack");
   if (stack) return stack;
 
-  const surface = document.getElementById("table-surface");
   stack = document.createElement("div");
   stack.id = "moment-overlay-stack";
   stack.className = "moment-overlay-stack";
   stack.setAttribute("role", "status");
   stack.setAttribute("aria-live", "polite");
-  (surface || document.body).appendChild(stack);
+  const host = document.getElementById("table-notices")
+    || document.getElementById("board-viewport")
+    || document.getElementById("table-surface");
+  (host || document.body).appendChild(stack);
   return stack;
 }
 

@@ -145,7 +145,8 @@ function ensureBanner() {
   el.className = "deck-pressure-banner hidden";
   el.setAttribute("role", "alert");
   el.setAttribute("aria-live", "assertive");
-  document.body.prepend(el);
+  const host = document.getElementById("table-notices") || document.body;
+  host.appendChild(el);
   return el;
 }
 
