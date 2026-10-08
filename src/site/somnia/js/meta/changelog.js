@@ -6,10 +6,17 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "39.3";
+export const SOMNIA_VERSION = "39.4";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "39.4",
+    title: "Hex Corner Snap",
+    notes: [
+      "Each Landscape has six corners. Dreamers and Dreambeasts stand on those corners, so six people on The Bed are separate portraits you can click. A seventh piece is drawn on the next Landscape that still has an open corner, with a gold ring, and still counts as standing on the crowded hex.",
+    ],
+  },
   {
     version: "39.3",
     title: "Phase Opener Table View",

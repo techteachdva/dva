@@ -39,7 +39,7 @@ import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate, persistentObj
 import { alliesInHand, psycheCardsInHand, allyHandCount, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue, tradablePsycheInHand, TRADE_OFFER_LIMIT } from "../cards/psyche.js";
 import { getQuestStatus, activeQuestLandscapeIds, sacrificeQuestOpen, listSacrificableObjects } from "../dreamers/quests.js";
 import { effectiveDreamerStat } from "../dreamers/archetype-stats.js";
-import { hexToPixel, boardPixelBounds, pixelToHex, hexKey, canTradeBetween } from "../core/hex.js";
+import { hexToPixel, boardPixelBounds, pixelToHex, hexKey, canTradeBetween, adjacentTiles } from "../core/hex.js";
 import {
   subconsciousCount,
   subconsciousPilesForUI,
@@ -2007,7 +2007,12 @@ function resolveExploreMoveHit(event, fallbackEl, legalIds) {
   if (tokenTileId && legal.has(tokenTileId)) return { kind: "move", tileId: tokenTileId };
 
   if (token?.classList.contains("hex-occupant-dreamer") && token.dataset.dreamerId) {
-    return { kind: "walker", dreamerId: token.dataset.dreamerId, tileId: tokenTileId, token };
+    return {
+      kind: "walker",
+      dreamerId: token.dataset.dreamerId,
+      tileId: token.dataset.homeTile || tokenTileId,
+      token,
+    };
   }
   return { kind: "hex", tileId: hexId || tokenTileId };
 }
@@ -2031,12 +2036,14 @@ function activateBoardTarget(event, fallbackEl = null) {
   const token = tokenUnderPoint(event.clientX, event.clientY);
   if (token?.classList.contains("hex-occupant-dreamer") && token.dataset.dreamerId) {
     const tileEl = token.closest(".hex-tile");
-    ctx.boardOptions.onDreamerTokenClick?.(token.dataset.dreamerId, tileEl?.dataset.tileId, token, event);
+    const homeId = token.dataset.homeTile || tileEl?.dataset.tileId;
+    ctx.boardOptions.onDreamerTokenClick?.(token.dataset.dreamerId, homeId, token, event);
     return;
   }
   if (token?.classList.contains("hex-occupant-beast") && token.dataset.encounterKey) {
     const tileEl = token.closest(".hex-tile");
-    const tile = ctx.state.board.find((entry) => entry.id === tileEl?.dataset.tileId);
+    const homeId = token.dataset.homeTile || tileEl?.dataset.tileId;
+    const tile = ctx.state.board.find((entry) => entry.id === homeId);
     const enc = tile
       ? tileEncounters(tile).find((entry) => encounterKey(entry) === token.dataset.encounterKey)
       : null;
@@ -2221,6 +2228,85 @@ function patchBoardChrome(state, legalMoveIds, pickHighlights, size) {
   return patched === state.board.length;
 }
 
+/** Pointy-top hex corners, inset so a portrait sits on the vertex and stays inside the clip. */
+const HEX_VERTEX_PCT = [
+  [50, 0],
+  [100, 25],
+  [100, 75],
+  [50, 100],
+  [0, 75],
+  [0, 25],
+];
+const VERTEX_SNAP_INSET = 0.64;
+const VERTEX_SNAP = HEX_VERTEX_PCT.map(([vx, vy]) => ({
+  x: (50 + (vx - 50) * VERTEX_SNAP_INSET).toFixed(2),
+  y: (50 + (vy - 50) * VERTEX_SNAP_INSET).toFixed(2),
+}));
+
+/**
+ * Six corners per Landscape. Dreamers fill their own hex first, then beasts.
+ * A seventh piece is drawn on the next Landscape that still has an open corner.
+ * Game position does not change — data-home-tile keeps clicks on the real hex.
+ */
+function assignVertexOccupants(state) {
+  const byTile = new Map();
+  state.board.forEach((tile) => byTile.set(tile.id, []));
+
+  const queue = [];
+  (state.players || []).forEach((player) => {
+    if (!player.alive || !player.dreamer?.image || !player.landscapeId) return;
+    queue.push({ kind: "dreamer", homeId: player.landscapeId, player });
+  });
+  state.board.forEach((tile) => {
+    tileEncounters(tile).forEach((encounter) => {
+      if (!encounter?.image) return;
+      queue.push({ kind: "beast", homeId: tile.id, encounter });
+    });
+  });
+
+  const pending = [];
+  queue.forEach((occ) => {
+    const list = byTile.get(occ.homeId);
+    if (list && list.length < 6) {
+      list.push({ ...occ, slot: list.length, overflow: false });
+    } else {
+      pending.push(occ);
+    }
+  });
+
+  pending.forEach((occ) => {
+    const home = state.board.find((tile) => tile.id === occ.homeId);
+    if (!home || !placeOverflowOccupant(state, byTile, home, occ, new Set([home.id]))) {
+      const list = byTile.get(occ.homeId);
+      if (list) list.push({ ...occ, slot: list.length % 6, overflow: false });
+    }
+  });
+  return byTile;
+}
+
+function placeOverflowOccupant(state, byTile, from, occ, seen) {
+  const neighbors = adjacentTiles(state, from.id);
+  for (const neighbor of neighbors) {
+    const list = byTile.get(neighbor.id);
+    if (list && list.length < 6) {
+      list.push({ ...occ, slot: list.length, overflow: true });
+      return true;
+    }
+  }
+  for (const neighbor of neighbors) {
+    if (seen.has(neighbor.id)) continue;
+    seen.add(neighbor.id);
+    if (placeOverflowOccupant(state, byTile, neighbor, occ, seen)) return true;
+  }
+  return false;
+}
+
+function vertexSnapStyle(slot, count) {
+  if (count <= 1) return "--snap-x:50%;--snap-y:62%";
+  const snap = VERTEX_SNAP[slot] || VERTEX_SNAP[0];
+  return `--snap-x:${snap.x}%;--snap-y:${snap.y}%`;
+}
+
 export function renderBoard(
   state,
   onSelectLandscape,
@@ -2291,6 +2377,8 @@ export function renderBoard(
     tutorialRevealId,
     walkerTileId: moveLock ? (activePlayer(state)?.landscapeId || "") : "",
   };
+
+  const vertexOccupants = assignVertexOccupants(state);
 
   state.board.forEach((tile) => {
     const { x, y } = hexToPixel(tile.q, tile.r, size);
@@ -2369,23 +2457,29 @@ export function renderBoard(
       ? `<div class="hex-reveal-cue" aria-hidden="true">Reveal</div>`
       : "";
 
-    const occupantTokens = [];
-    occupants.forEach((p) => {
-      if (!p.dreamer?.image) return;
-      const hidden = isDreamerTokenHidden(p.id);
-      const arriving = hidden ? " is-arriving is-departing" : "";
-      occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-dreamer${arriving}" data-dreamer-id="${p.id}" src="${p.dreamer.image}" alt="${p.dreamer.name}" title="${p.name} — click for actions · double-click to zoom" role="button" tabindex="0" decoding="async" draggable="false" onerror="this.remove()">`
-      );
-    });
-    encounters.forEach((encounter, encIndex) => {
-      if (!encounter?.image) return;
+    const placed = vertexOccupants.get(tile.id) || [];
+    const occupantTokens = placed.map((entry) => {
+      const snap = vertexSnapStyle(entry.slot, placed.length);
+      const home = state.board.find((item) => item.id === entry.homeId);
+      const homeName = home?.name || "that Landscape";
+      if (entry.kind === "dreamer") {
+        const player = entry.player;
+        const hidden = isDreamerTokenHidden(player.id);
+        const arriving = hidden ? " is-arriving is-departing" : "";
+        const overflow = entry.overflow ? " is-overflow" : "";
+        const title = entry.overflow
+          ? `${player.name} stands on ${homeName}. Shown on the next Landscape because that hex's six corners are full.`
+          : `${player.name} — click for actions · double-click to zoom`;
+        return `<img class="hex-occupant-token hex-occupant-dreamer${arriving}${overflow}" style="${snap}" data-dreamer-id="${player.id}" data-home-tile="${entry.homeId}" src="${player.dreamer.image}" alt="${player.dreamer.name}" title="${title}" role="button" tabindex="0" decoding="async" draggable="false" onerror="this.remove()">`;
+      }
+      const encounter = entry.encounter;
       const encKey = encounterKey(encounter);
       const arriving = encKey && isBeastTokenHidden(encKey) ? " is-arriving" : "";
-      const offset = encIndex > 0 ? ` style="--beast-stack: ${encIndex}"` : "";
-      occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-beast${arriving}" data-encounter-key="${encKey}"${offset} src="${encounter.image}" alt="${encounter.name}" title="${encounter.name} — Accept, Repress, or View" decoding="async" draggable="false" onerror="this.remove()">`
-      );
+      const overflow = entry.overflow ? " is-overflow" : "";
+      const title = entry.overflow
+        ? `${encounter.name} is on ${homeName}. Shown on the next Landscape because that hex's six corners are full.`
+        : `${encounter.name} — Accept, Repress, or View`;
+      return `<img class="hex-occupant-token hex-occupant-beast${arriving}${overflow}" style="${snap}" data-encounter-key="${encKey}" data-home-tile="${entry.homeId}" src="${encounter.image}" alt="${encounter.name}" title="${title}" decoding="async" draggable="false" onerror="this.remove()">`;
     });
     const occupantsHtml = occupantTokens.length
       ? `<div class="hex-occupants">${occupantTokens.join("")}</div>`
@@ -2411,11 +2505,17 @@ export function renderBoard(
       event.stopPropagation();
       if (boardTouchCtx?.moveLock) {
         const legal = new Set(boardTouchCtx.legalMoveIds || []);
+        const homeId = dreamerEl.dataset.homeTile || tile.id;
         if (legal.has(tile.id)) boardTouchCtx.onSelectLandscape(tile.id);
-        else boardOptions.onExploreWalkerPick?.(dreamerEl.dataset.dreamerId, tile.id, dreamerEl, event);
+        else boardOptions.onExploreWalkerPick?.(dreamerEl.dataset.dreamerId, homeId, dreamerEl, event);
         return;
       }
-      boardOptions.onDreamerTokenClick?.(dreamerEl.dataset.dreamerId, tile.id, dreamerEl, event);
+      boardOptions.onDreamerTokenClick?.(
+        dreamerEl.dataset.dreamerId,
+        dreamerEl.dataset.homeTile || tile.id,
+        dreamerEl,
+        event,
+      );
     });
     el.addEventListener("click", (event) => {
       if (touchTapJustHandled()) return;

@@ -4681,47 +4681,49 @@ html[data-pointer="coarse"] .board-camera-controls button {
 
 .hex-tile .hex-occupants {
   position: absolute;
-  left: 12%;
-  right: 12%;
-  bottom: 14%;
-  height: 42%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: calc(3px * var(--hex-scale, 1.72));
-  z-index: 2;
+  inset: 0;
+  z-index: 4;
   pointer-events: none;
 }
 
 .hex-tile .hex-occupant-token {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: 48%;
-  height: 100%;
-  width: auto;
-  object-fit: contain;
-  object-position: bottom center;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.72));
+  position: absolute;
+  left: var(--snap-x, 50%);
+  top: var(--snap-y, 50%);
+  width: 32%;
+  height: 28%;
+  max-width: none;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  object-position: center 18%;
+  background: rgba(8, 6, 16, 0.72);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.8));
   border-radius: calc(5px * var(--hex-scale, 1.72));
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.42);
   image-rendering: auto;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   pointer-events: auto;
   cursor: pointer;
-  transition: transform 0.16s ease, filter 0.16s ease;
+  z-index: 1;
+  transition: transform 0.16s ease, filter 0.16s ease, box-shadow 0.16s ease;
+}
+
+.hex-tile .hex-occupant-token.is-overflow {
+  box-shadow: 0 0 0 2px rgba(255, 214, 120, 0.9);
 }
 
 .hex-tile .hex-occupant-token:focus-visible {
-  transform: translateY(calc(-4px * var(--hex-scale, 1))) scale(1.06);
+  transform: translate(-50%, -58%) scale(1.12);
   filter: drop-shadow(0 6px 14px rgba(201, 160, 255, 0.55));
-  z-index: 4;
+  z-index: 6;
 }
 
 @media (hover: hover) {
   html:not([data-hover="false"]) .hex-tile .hex-occupant-token:hover {
-    transform: translateY(calc(-4px * var(--hex-scale, 1))) scale(1.06);
+    transform: translate(-50%, -58%) scale(1.12);
     filter: drop-shadow(0 6px 14px rgba(201, 160, 255, 0.55));
-    z-index: 4;
+    z-index: 6;
   }
 }
 
@@ -4731,8 +4733,30 @@ html[data-pointer="coarse"] .board-camera-controls button {
 }
 
 .hex-tile .hex-occupant-token.is-pressed {
-  transform: translateY(2px) scale(0.96);
+  transform: translate(-50%, -50%) translateY(2px) scale(0.96);
   filter: brightness(1.12) drop-shadow(0 1px 4px rgba(0, 0, 0, 0.8));
+}
+
+.hex-tile .hex-occupants:has(> .hex-occupant-token:only-child) .hex-occupant-token {
+  width: 48%;
+  height: 44%;
+  top: 62%;
+}
+
+.hex-tile:has(.hex-occupant-token) .tokens {
+  display: none;
+}
+
+.hex-tile:has(.hex-occupant-token ~ .hex-occupant-token) .name:not(.name-leaving):not(.name-arriving) {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 54%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 3;
+  font-size: calc(0.58rem * var(--hex-scale, 1.72));
 }
 
 .hex-tile.is-pressed {
@@ -4740,12 +4764,7 @@ html[data-pointer="coarse"] .board-camera-controls button {
 }
 
 .hex-tile .hex-occupant-beast {
-  max-width: 54%;
-}
-
-.hex-tile .hex-occupant-beast[style*="--beast-stack"] {
-  transform: translate(calc(8px * var(--beast-stack, 0) * var(--hex-scale, 1)), calc(-4px * var(--beast-stack, 0) * var(--hex-scale, 1)));
-  z-index: calc(2 + var(--beast-stack, 0));
+  max-width: none;
 }
 
 .hex-tile.hidden-tile .hex-overlay {
