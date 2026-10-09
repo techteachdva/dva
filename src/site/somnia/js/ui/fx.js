@@ -109,6 +109,25 @@ export function burstSparklesAtElement(el, count = 10, color = "#c9a0ff") {
   burstSparkles(rect.left + rect.width / 2, rect.top + rect.height / 2, count, color);
 }
 
+/** Soft purple ink sprites — a repressed card thinning into the Subconscious. */
+export function burstInkDissolve(x, y) {
+  const layer = document.getElementById("fx-layer");
+  if (!layer || reducedMotion()) return;
+  for (let i = 0; i < 8; i += 1) {
+    const el = document.createElement("span");
+    el.className = "fx-ink-mote";
+    const angle = (Math.PI * 2 * i) / 8 + Math.random() * 0.5;
+    const dist = 16 + Math.random() * 34;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    el.style.setProperty("--ink-x", `${Math.cos(angle) * dist}px`);
+    el.style.setProperty("--ink-y", `${Math.sin(angle) * dist - 10}px`);
+    el.style.animationDelay = `${i * 16}ms`;
+    layer.appendChild(el);
+    window.setTimeout(() => el.remove(), 880);
+  }
+}
+
 function reducedMotion() {
   return typeof window !== "undefined"
     && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -122,6 +141,9 @@ const HAPTIC = {
   forget: [36, 28, 70],
   reveal: [12, 22, 18],
   land: 18,
+  object: 9,
+  good: 11,
+  fail: [52, 42, 78],
 };
 
 /** Short vibration on a coarse pointer. Skipped when motion is reduced. */
@@ -146,8 +168,7 @@ function ensureOverlay(id, className) {
 function playOverlay(id, className, ms) {
   if (typeof document === "undefined" || reducedMotion()) return;
   const el = ensureOverlay(id, className);
-  el.classList.remove("hidden");
-  el.classList.remove("is-playing");
+  el.className = className;
   void el.offsetWidth;
   el.classList.add("is-playing");
   window.setTimeout(() => {
@@ -185,9 +206,23 @@ export function playSubconsciousClearSparkle() {
   });
 }
 
-/** Brief full-screen blink when a Dream is drawn — eyelids closing between dreams. */
-export function playDreamRipple() {
-  playOverlay("fx-dream-ripple", "fx-screen-overlay fx-dream-ripple", 640);
+const DREAM_VEILS = ["eye", "hallway", "teeth"];
+let dreamVeil = 0;
+
+/**
+ * Falling asleep between dreams.
+ * eye — eyelids, hallway — tunnel squeeze, teeth — a closing maw.
+ * Draw Dream plays the eyelid on its own cinematic.
+ */
+export function playDreamRipple(mode) {
+  const kind = DREAM_VEILS.includes(mode)
+    ? mode
+    : DREAM_VEILS[dreamVeil++ % DREAM_VEILS.length];
+  playOverlay(
+    "fx-dream-ripple",
+    `fx-screen-overlay fx-dream-ripple fx-dream-${kind}`,
+    kind === "eye" ? 980 : 920,
+  );
 }
 
 /** Gentle Blue / Yellow / Red wash after spending Psyche to unlock a phase. */

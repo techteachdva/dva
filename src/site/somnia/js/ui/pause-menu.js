@@ -1,4 +1,4 @@
-import { MENU_THEME_TRACK, MUSIC_TRACKS, footerCreditsHtml } from "../audio/audio-settings.js";
+import { MENU_THEME_TRACK, MUSIC_TRACKS, footerCreditsHtml, loadSettings, saveSettings } from "../audio/audio-settings.js";
 import {
   applyAudioSettings,
   getAudioState,
@@ -99,6 +99,11 @@ function renderAudioTab() {
 }
 
 function renderDisplayTab() {
+  const seeded = document.body.classList.contains("seed-dmzemo");
+  const holoOn = seeded || !!loadSettings().holoFoil;
+  const holoLabel = seeded
+    ? "Holographic foil: On (DMZEMO)"
+    : (holoOn ? "Holographic foil: On" : "Holographic foil: Off");
   const form = getFormOverride();
   const forms = ["auto", "phone", "tablet", "desktop"].map(
     (m) => `<button type="button" class="btn ${form === m ? "primary" : ""}" data-form-override="${m}">${m === "auto" ? "Auto" : m[0].toUpperCase() + m.slice(1)}</button>`,
@@ -117,6 +122,11 @@ function renderDisplayTab() {
       <p class="pause-hint">Drag the edges between panels in-game to resize. Reset returns them to the automatic fit.</p>
       <button type="button" class="btn" id="pause-reset-panels">Reset panel sizes</button>
     </div>` : ""}
+    <div class="pause-section">
+      <h3>Holographic foil</h3>
+      <p class="pause-hint">A premium iridescent sheen on every card. It follows the pointer, and on a phone or iPad it follows the tilt of the device. The DMZEMO seed always wears foil.</p>
+      <button type="button" class="btn ${holoOn ? "primary" : ""}" id="pause-holo-foil"${seeded ? " disabled" : ""}>${holoLabel}</button>
+    </div>
   `;
 }
 
@@ -448,6 +458,12 @@ function bindDisplayControls(root) {
   });
   root.querySelector("#pause-reset-panels")?.addEventListener("click", () => {
     resetPanelLayout();
+  });
+  root.querySelector("#pause-holo-foil")?.addEventListener("click", () => {
+    if (document.body.classList.contains("seed-dmzemo")) return;
+    saveSettings({ holoFoil: !loadSettings().holoFoil });
+    document.dispatchEvent(new CustomEvent("somnia-settings"));
+    showTab("display");
   });
 }
 

@@ -1,6 +1,6 @@
 /** Board & special card flow animations — dreams, mindstream, tiles, encounters, repress. */
 
-import { burstSparkles, playDreamRipple, playMeetFlash, playPointRipple, playDreamWarble, playBossFlash, playHaptic } from "../ui/fx.js";
+import { burstSparkles, burstInkDissolve, playDreamRipple, playMeetFlash, playPointRipple, playDreamWarble, playBossFlash, playHaptic } from "../ui/fx.js";
 import { playSfx, playLandscapeSfx, playBossStinger } from "../audio/audio.js";
 import { cardBackForDeckId } from "../cards/card-backs.js";
 
@@ -656,6 +656,11 @@ export function runPendingBoardFx() {
       if (evt.fromDeck) from = centerOf(pileZone(evt.fromDeck, "draw")) || centerOf(deckEl(evt.fromDeck)) || from;
       if (!from) from = boardCenter();
       flyCard(from, to, evt.card, "repress", delay, { w: 86, h: 120 }, "fx-flying-tarot fx-repress-spiral");
+      const inkFrom = from;
+      const inkTo = to;
+      const inkAt = delay;
+      window.setTimeout(() => burstInkDissolve(inkFrom.x, inkFrom.y), inkAt);
+      window.setTimeout(() => burstInkDissolve(inkTo.x, inkTo.y), inkAt + 620);
       pulseDeck("subconscious", "deck-pulse-repress");
       const name = (evt.card?.name || "Card").slice(0, 22);
       floatLabel(to.x, Math.max(36, to.y - 36), `Repressed · ${name}`, "fx-return-label", delay + 60);
@@ -664,6 +669,7 @@ export function runPendingBoardFx() {
       delay += 140;
     } else if (evt.type === "meet-flash") {
       playMeetFlash(evt.mode);
+      if (evt.mode === "reject") playHaptic("fail");
       playDreamWarble(evt.mode === "reject" ? 0.85 : 0.7);
       const tile = hexTileEl(evt.tileId);
       flashEl(tile, evt.mode === "reject" ? "hex-meet-reject" : "hex-meet-accept", 900);
@@ -724,6 +730,7 @@ export function runPendingBoardFx() {
         flyCard(from, to, { ...evt.card, type: "object" }, "draw", delay, { w: 46, h: 64 });
         pulseDeck(deckKey, "deck-pulse-gain");
         flashEl(objectsAreaEl(), "objects-gain", 600);
+        playHaptic("object");
       }
       delay += step;
     } else if (evt.type === "object-play") {

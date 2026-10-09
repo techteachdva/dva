@@ -59,7 +59,8 @@ export function initClickFeedback() {
     if (now - lastTapAt > 70) {
       lastTapAt = now;
       playSfx("ui-tap");
-      playHaptic("tap");
+      const haptic = control.closest(".ms-choice-btn--good") ? "good" : "tap";
+      playHaptic(haptic);
     }
   }, { capture: true, passive: true });
 

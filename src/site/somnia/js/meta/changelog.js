@@ -6,10 +6,20 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "39.4";
+export const SOMNIA_VERSION = "39.5";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "39.5",
+    title: "Living Table",
+    notes: [
+      "Holographic foil is a Display setting, and the DMZEMO seed still forces it on. The sheen follows the pointer, or the tilt of a phone or iPad.",
+      "Dream dust drifts over the board and takes the color of the Mindstream suit still on the table. Cards lift off the felt, deals bounce into place, and a repressed card thins into purple ink.",
+      "Drawing a Dream closes the eyes, squeezes down a hallway, or shuts a maw of teeth. Draw Dream folds the lids shut and opens them on the choice. On a touch screen those choices slide up as a blurred sheet.",
+      "A short buzz marks taking an Object or a Good choice. Losing an Accept or Repress is a heavy double pulse. The stat a choice is asking for glows on the hand.",
+    ],
+  },
   {
     version: "39.4",
     title: "Hex Corner Snap",

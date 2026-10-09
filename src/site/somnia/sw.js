@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-39.4-corners";
-const RUNTIME_CACHE = "somnia-runtime-39.4-corners";
+const CACHE_NAME = "somnia-39.5-polish";
+const RUNTIME_CACHE = "somnia-runtime-39.5-polish";
 
 const PRECACHE = [
   "./",
@@ -100,6 +100,7 @@ const PRECACHE = [
   "./js/flow/opening-hook.js",
   "./js/ui/panel-layout.js",
   "./js/ui/pause-menu.js",
+  "./js/ui/table-polish.js",
   "./js/flow/phase-opener-menu.js",
   "./js/flow/phase-skip.js",
   "./js/app/play.js",

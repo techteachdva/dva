@@ -50,6 +50,7 @@ const DEFAULT_SETTINGS = {
   musicPan: 0,
   sfxPan: 0,
   viewMode: "auto",
+  holoFoil: false,
   guideOpen: false,
   panels: {
     sidebarW: null,

@@ -414,6 +414,7 @@ export function playDiceBattle(opts) {
         : `${beastName} holds the Landscape!`;
     }
     playSfx(dreamerWins ? "dice-win" : "dice-lose");
+    if (!dreamerWins) playHaptic("fail");
     const dismiss = () => {
       if (!activeBattle) return;
       stage.removeEventListener("click", dismiss);

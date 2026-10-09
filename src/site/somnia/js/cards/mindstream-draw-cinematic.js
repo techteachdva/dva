@@ -52,6 +52,7 @@ export function playMindstreamDrawCinematic({ card, suit } = {}) {
 
     const root = document.createElement("div");
     root.className = "ms-draw-cinematic";
+    if (card.type === "draw-dream") root.classList.add("ms-draw-cinematic--draw-dream");
     root.dataset.suit = msSuit;
     root.innerHTML = `
       <div class="ms-draw-veil" aria-hidden="true"></div>

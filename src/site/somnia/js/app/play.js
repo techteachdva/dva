@@ -21,6 +21,7 @@ import {
 } from "../board/board-zoom.js";
 import { initPauseMenu, openPauseMenu } from "../ui/pause-menu.js";
 import { initFxLayer, burstSparklesAtElement, playSubconsciousClearSparkle } from "../ui/fx.js";
+import { initTablePolish, syncTablePolish } from "../ui/table-polish.js";
 import { initMomentOverlay, resetMomentOverlay } from "../ui/moment-overlay.js";
 import {
   runPendingCardFx,
@@ -374,6 +375,7 @@ async function init() {
   initCompactChrome();
   initDialogAccessibility();
   initFxLayer();
+  initTablePolish();
   initMomentOverlay();
   bindButtonRipples();
   initClickFeedback();
@@ -2832,6 +2834,7 @@ function renderAll() {
 
   syncTurnHalo(actionTurnHolder(state)?.id || null);
   updateFinalRecurrenceAtmosphere(state);
+  syncTablePolish(state);
   updateHandSnapshots(state);
   syncBoardMotion(state);
   syncGameCursor(state);
