@@ -173,7 +173,7 @@ export const ADVANCED_TUTORIAL_SCRIPT = [
     id: "adv-boss",
     round: 1,
     title: "The Beast on The Bed",
-    why: "Draw the Dream. Cerberus is Power 12, and it wakes on The Bed. In a real night the bosses come on rounds 3, 6, and 9: Cerberus, Double, Leviathan. A boss is a beast on the escape tile. You do not have to kill it to keep dreaming. You wake by standing here when the points are done. The Skeleton Key you armed asks which Mindstream to flip. Pick any.",
+    why: "Draw the Dream. Cerberus is Power 11, and it wakes on The Bed. In a real night the bosses come on rounds 3, 6, and 9: Cerberus, Double, Leviathan. A boss is a beast on the escape tile. You do not have to kill it to keep dreaming. You wake by standing here when the points are done. The Skeleton Key you armed asks which Mindstream to flip. Pick any.",
     targets: ["#btn-draw-dream", "#board-viewport"],
     rail: [
       { kind: "drawDream", prompt: "Click Draw Dream. Cerberus wakes on The Bed. Then answer the Skeleton Key." },

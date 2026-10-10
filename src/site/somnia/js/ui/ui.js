@@ -774,15 +774,20 @@ function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = 
   options.forEach((opt) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `power-token-radial-item radial-menu-item${opt.disabled ? "" : " ready"}${opt.primary ? " radial-primary" : ""}`;
+    btn.className = `power-token-radial-item radial-menu-item${opt.disabled ? " is-blocked" : " ready"}${opt.primary ? " radial-primary" : ""}`;
     btn.setAttribute("role", "menuitem");
     if (opt.kind) btn.dataset.tutorialAction = opt.kind;
     btn.textContent = opt.label;
     btn.title = opt.hint || opt.label;
-    btn.disabled = !!opt.disabled;
+    if (opt.disabled) btn.setAttribute("aria-disabled", "true");
     btn.addEventListener("click", (event) => {
       event.stopPropagation();
-      if (opt.disabled) return;
+      if (opt.disabled) {
+        hideRadialMenu();
+        const why = opt.hint || opt.label;
+        if (why) flashMoment(why);
+        return;
+      }
       hideRadialMenu();
       onPick?.(opt);
     });
@@ -2514,7 +2519,9 @@ export function renderBoard(
       const overflow = entry.overflow ? " is-overflow" : "";
       const title = entry.overflow
         ? `${encounter.name} is on ${homeName}. Shown on the next Landscape because that hex's six corners are full.`
-        : `${encounter.name} — Accept, Repress, or View`;
+        : isLeviathanCard(encounter)
+          ? `${encounter.name} — Slumber or View`
+          : `${encounter.name} — Accept, Repress, or View`;
       return `<img class="hex-occupant-token hex-occupant-beast${arriving}${overflow}" style="${snap}" data-encounter-key="${encKey}" data-home-tile="${entry.homeId}" src="${encounter.image}" alt="${encounter.name}" title="${title}" decoding="async" draggable="false" onerror="this.remove()">`;
     });
     const occupantsHtml = occupantTokens.length
@@ -2853,6 +2860,9 @@ const DECK_LABELS = {
   "mindstream-lucidity": "◉ Mindstream Lucidity",
   "mindstream-elasticity": "⇄ Mindstream Elasticity",
   "mindstream-willpower": "✊ Mindstream Willpower",
+  "object-lucidity": "✦ Object Lucidity",
+  "object-elasticity": "✦ Object Elasticity",
+  "object-willpower": "✦ Object Willpower",
 };
 
 function discardPileForDeck(state, deckId) {
@@ -2863,6 +2873,9 @@ function discardPileForDeck(state, deckId) {
     case "mindstream-lucidity": return state.mindstreamDiscard?.lucidity || [];
     case "mindstream-elasticity": return state.mindstreamDiscard?.elasticity || [];
     case "mindstream-willpower": return state.mindstreamDiscard?.willpower || [];
+    case "object-lucidity": return state.objectDiscard?.lucidity || [];
+    case "object-elasticity": return state.objectDiscard?.elasticity || [];
+    case "object-willpower": return state.objectDiscard?.willpower || [];
     default: return [];
   }
 }
@@ -2874,6 +2887,9 @@ function discardBinderPiles(state) {
     { id: "mindstream-lucidity", label: "Lucidity", icon: "◉", cards: [...(state.mindstreamDiscard?.lucidity || [])].filter(Boolean).reverse() },
     { id: "mindstream-elasticity", label: "Elasticity", icon: "⇄", cards: [...(state.mindstreamDiscard?.elasticity || [])].filter(Boolean).reverse() },
     { id: "mindstream-willpower", label: "Willpower", icon: "✊", cards: [...(state.mindstreamDiscard?.willpower || [])].filter(Boolean).reverse() },
+    { id: "object-lucidity", label: "Object Lucidity", icon: "✦", cards: [...(state.objectDiscard?.lucidity || [])].filter(Boolean).reverse() },
+    { id: "object-elasticity", label: "Object Elasticity", icon: "✦", cards: [...(state.objectDiscard?.elasticity || [])].filter(Boolean).reverse() },
+    { id: "object-willpower", label: "Object Willpower", icon: "✦", cards: [...(state.objectDiscard?.willpower || [])].filter(Boolean).reverse() },
   ];
 }
 
@@ -3302,6 +3318,9 @@ function drawPileForDeck(state, deckId) {
     case "mindstream-lucidity": return state.mindstreamDecks?.lucidity || [];
     case "mindstream-elasticity": return state.mindstreamDecks?.elasticity || [];
     case "mindstream-willpower": return state.mindstreamDecks?.willpower || [];
+    case "object-lucidity": return state.objectDecks?.lucidity || [];
+    case "object-elasticity": return state.objectDecks?.elasticity || [];
+    case "object-willpower": return state.objectDecks?.willpower || [];
     default: return [];
   }
 }
@@ -3380,6 +3399,9 @@ const DECK_COLUMN_DEFS = [
   { id: "mindstream-lucidity", label: "Mindstream", sub: "Lucidity", emoji: "◉", suit: "lucidity", kind: "mindstream" },
   { id: "mindstream-elasticity", label: "Mindstream", sub: "Elasticity", emoji: "⇄", suit: "elasticity", kind: "mindstream" },
   { id: "mindstream-willpower", label: "Mindstream", sub: "Willpower", emoji: "✊", suit: "willpower", kind: "mindstream" },
+  { id: "object-lucidity", label: "Object", sub: "Lucidity", emoji: "✦", suit: "lucidity", kind: "object" },
+  { id: "object-elasticity", label: "Object", sub: "Elasticity", emoji: "✦", suit: "elasticity", kind: "object" },
+  { id: "object-willpower", label: "Object", sub: "Willpower", emoji: "✦", suit: "willpower", kind: "object" },
 ];
 
 let lastDeckColumnKey = "";
@@ -6355,13 +6377,13 @@ function resolvePrimarySpotlightElement(step) {
         || document.querySelector("#active-archetype");
     }
     const kind = beat.kind;
-    const radialReady = document.querySelector(`.radial-menu-item.ready[data-tutorial-action="${kind}"]:not(:disabled)`);
+    const radialReady = document.querySelector(`.radial-menu-item.ready[data-tutorial-action="${kind}"]:not([aria-disabled="true"])`);
     if (radialReady) return radialReady;
     const dreamerToken = document.querySelector(tutorialDreamerTokenSelector(beat.playerId));
     if (dreamerToken && !document.querySelector(`.radial-menu-item[data-tutorial-action="${kind}"]`)) {
       return dreamerToken;
     }
-    return document.querySelector(`.radial-menu-item[data-tutorial-action="${kind}"]:not(:disabled)`)
+    return document.querySelector(`.radial-menu-item[data-tutorial-action="${kind}"]:not([aria-disabled="true"])`)
       || dreamerToken
       || document.querySelector(tutorialPhaseActionSelector(kind));
   }

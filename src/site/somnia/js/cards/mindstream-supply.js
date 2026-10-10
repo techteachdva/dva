@@ -23,7 +23,6 @@ export function reshuffleMindstreamDiscardIfNeeded(state, suit) {
 
 const CIRCULATING_MINDSTREAM_TYPES = new Set([
   "dreambeast",
-  "object",
   "event",
   "power-token",
   "draw-dream",
@@ -198,8 +197,40 @@ export function pullDreambeastFromMindstream(state, options = {}) {
   return null;
 }
 
+export function ensureObjectPiles(state) {
+  if (!state.objectDecks) state.objectDecks = { lucidity: [], elasticity: [], willpower: [] };
+  if (!state.objectDiscard) state.objectDiscard = { lucidity: [], elasticity: [], willpower: [] };
+}
+
+export function reshuffleObjectDiscardIfNeeded(state, suit) {
+  ensureObjectPiles(state);
+  const deck = state.objectDecks[suit];
+  const discard = state.objectDiscard[suit];
+  if (deck && discard && !deck.length && discard.length) {
+    state.objectDecks[suit] = shuffle(discard);
+    state.objectDiscard[suit] = [];
+    if (state.revealedDeckTops) delete state.revealedDeckTops[`object-${suit}`];
+    return true;
+  }
+  return false;
+}
+
+/** Draw one Object. A suit draws only that deck. No suit searches every Object deck. */
+export function drawObjectCard(state, suit = null) {
+  ensureObjectPiles(state);
+  const order = suit ? [suit] : shuffle([...MINDSTREAM_SUIT_IDS]);
+  for (const s of order) {
+    if (!state.objectDecks[s]) continue;
+    reshuffleObjectDiscardIfNeeded(state, s);
+    if (state.objectDecks[s].length) return state.objectDecks[s].shift();
+  }
+  return null;
+}
+
 export function pullObjectFromMindstream(state, options = {}) {
-  return pullFromMindstreamByType(state, "object", options);
+  const card = drawObjectCard(state, options.suit || null);
+  if (!card) return null;
+  return { card, suit: card.suit || card.mindstreamSuit || options.suit || null };
 }
 
 export function drawTwoDreambeasts(state, { suit = null } = {}) {
@@ -224,7 +255,18 @@ export function pullTwoDreambeastsForChoice(state, { suit = null, autoPick = tru
   return { pick: pick.card, alt: alt.card, suit: pick.suit };
 }
 
+export function discardObject(state, card) {
+  ensureObjectPiles(state);
+  const suit = card?.suit || card?.mindstreamSuit;
+  if (suit && state.objectDiscard[suit]) {
+    state.objectDiscard[suit].push(card);
+    return true;
+  }
+  return false;
+}
+
 export function discardToMindstream(state, card) {
+  if (card?.type === "object") return discardObject(state, card);
   const suit = card.mindstreamSuit || card.suit;
   if (suit && state.mindstreamDiscard[suit]) {
     state.mindstreamDiscard[suit].push(card);
@@ -259,12 +301,17 @@ export function objectForPlayer(card) {
 }
 
 export function pullObjectFromMindstreamDiscards(state) {
+  ensureObjectPiles(state);
   for (const suit of MINDSTREAM_SUIT_IDS) {
-    const discard = state.mindstreamDiscard[suit];
+    const discard = state.objectDiscard[suit] || [];
     for (let i = discard.length - 1; i >= 0; i -= 1) {
-      if (discard[i].type === "object") {
-        return discard.splice(i, 1)[0];
-      }
+      if (discard[i].type === "object") return discard.splice(i, 1)[0];
+    }
+  }
+  for (const suit of MINDSTREAM_SUIT_IDS) {
+    const discard = state.mindstreamDiscard?.[suit] || [];
+    for (let i = discard.length - 1; i >= 0; i -= 1) {
+      if (discard[i].type === "object") return discard.splice(i, 1)[0];
     }
   }
   return null;
@@ -289,9 +336,10 @@ export function countMindstreamDreambeasts(state) {
 }
 
 export function countMindstreamObjects(state) {
+  ensureObjectPiles(state);
   return MINDSTREAM_SUIT_IDS.reduce((sum, suit) => {
-    const inDeck = state.mindstreamDecks[suit].filter((c) => c.type === "object").length;
-    const inDiscard = state.mindstreamDiscard[suit].filter((c) => c.type === "object").length;
+    const inDeck = (state.objectDecks[suit] || []).length;
+    const inDiscard = (state.objectDiscard[suit] || []).length;
     return sum + inDeck + inDiscard;
   }, 0);
 }

@@ -1475,7 +1475,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-mindstream",
     round: 2,
     title: "The Attic Answers",
-    why: "Pass the token back, then draw The Attic. That draw finishes the first quest. Meeting Mandrake here already finished the second. A Mindstream mixes Dreambeasts, Objects, Events, and Power cards. The ? button keeps the other Dreamer gifts.",
+    why: "Pass the token back, then draw The Attic. That draw finishes the first quest. Meeting Mandrake here already finished the second. A Mindstream mixes Dreambeasts, Events, and Power cards. Accepting a Dreambeast draws an Object from its suit deck. The ? button keeps the other Dreamer gifts.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable. They hold the Pass Token after the fight." },

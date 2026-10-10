@@ -4,7 +4,7 @@ import {
   landscapeById,
   tileHasEncounters,
 } from "../core/state.js";
-import { handRoomForPsycheDraw } from "../effects/objects.js";
+import { handRoomForPsycheDraw, drawObjects } from "../effects/objects.js";
 import { recordQuestEvent } from "./quests.js";
 import { requestReturnCards } from "./subconscious.js";
 import { pullObjectsFromMindstreamDiscards } from "../cards/mindstream-supply.js";
@@ -257,40 +257,9 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
 
     case "lover": {
       const suit = archetype.suit || "elasticity";
-      const deck = state.mindstreamDecks[suit];
-      const drawn = [];
-      let guard = 30;
-      while (guard-- > 0 && deck.length) {
-        const card = deck.shift();
-        drawn.push(card);
-        if (card?.type === "object" || card?.subtype === "object") break;
-      }
-      const object = drawn.find((c) => c?.type === "object" || c?.subtype === "object");
-      drawn.forEach((card) => {
-        if (card === object) {
-          player.objects.push(card);
-          recordQuestEvent(state, "draw_object", { count: 1 });
-        } else {
-          state.mindstreamDiscard[suit].push(card);
-        }
-      });
-      state.players.filter((p) => p.alive && p.id !== player.id).forEach((p) => {
-        const others = [];
-        let g = 30;
-        while (g-- > 0 && state.mindstreamDecks[suit].length) {
-          const card = state.mindstreamDecks[suit].shift();
-          others.push(card);
-          if (card?.type === "object" || card?.subtype === "object") break;
-        }
-        const obj = others.find((c) => c?.type === "object" || c?.subtype === "object");
-        others.forEach((card) => {
-          if (card === obj) {
-            p.objects.push(card);
-            recordQuestEvent(state, "draw_object", { count: 1 });
-          } else {
-            state.mindstreamDiscard[suit].push(card);
-          }
-        });
+      state.players.filter((p) => p.alive).forEach((p) => {
+        const drawn = drawObjects(state, p, 1, helpers, suit);
+        if (!drawn.length) addLog(state, `The ${suit} Object deck is empty.`);
       });
       break;
     }
@@ -341,11 +310,12 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
       state.players.filter((p) => p.alive).forEach((p) => {
         const fromDiscard = pullObjectsFromMindstreamDiscards(state, 2);
         fromDiscard.forEach((obj) => {
-          const suit = obj.suit || "lucidity";
-          state.mindstreamDecks[suit]?.unshift(obj);
+          const suit = obj.suit || obj.mindstreamSuit || "lucidity";
+          if (!state.objectDecks) state.objectDecks = { lucidity: [], elasticity: [], willpower: [] };
+          state.objectDecks[suit]?.unshift(obj);
         });
         if (fromDiscard.length) {
-          addLog(state, `${p.name} returns ${fromDiscard.length} Object(s) to Mindstream tops.`);
+          addLog(state, `${p.name} returns ${fromDiscard.length} Object(s) to the top of their Object decks.`);
         }
       });
       break;

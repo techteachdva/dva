@@ -74,7 +74,6 @@ const DREAMER_PASSIVES = {
 };
 const MINDSTREAM_COMPOSITION = {
   dreambeasts: 10,
-  objects: 16,
   events: 35,
   powerToken: 8,
   drawDream: 3,
@@ -181,7 +180,7 @@ function dreambeastsForSuit(dreambeasts, suit) {
 }
 
 function objectsForSuit(objects, suit) {
-  return pickPool(objects.filter((obj) => obj.suit === suit), MINDSTREAM_COMPOSITION.objects);
+  return objects.filter((obj) => obj.suit === suit);
 }
 
 function uniqBy(items, keyFn) {
@@ -653,8 +652,8 @@ function rulesHtml(data) {
       <tr><td>Pass Token</td><td>1</td><td>Any small marker. It moves around the table during Meet.</td></tr>
       <tr><td>Dreams</td><td>${dreams.filter((d) => d.type === "dream").length} unique + copies · 10 Final · 3 bosses</td><td>Build the length you chose; bosses go in slots for Reveal rounds 3 / 6 / 9.</td></tr>
       <tr><td>Dreambeasts</td><td>${dreambeasts.length} unique</td><td>Bosses Cerberus, Double, Leviathan. 10 copies per Mindstream suit from non-boss beasts.</td></tr>
-      <tr><td>Objects</td><td>${objects.length}</td><td>16 per suit in each Mindstream.</td></tr>
-      <tr><td>Mindstream Events</td><td>${eventCount} (L/E/W)</td><td>35 Events + 8 Power Token cards + 3 Draw Dream cards per suit, plus beasts and objects, for 72 cards each.</td></tr>
+      <tr><td>Objects</td><td>${objects.length}</td><td>One copy of each Object in the deck of its suit. Accepting a Dreambeast draws the top card of that suit.</td></tr>
+      <tr><td>Mindstream Events</td><td>${eventCount} (L/E/W)</td><td>35 Events + 8 Power Token cards + 3 Draw Dream cards per suit, plus 10 beasts, for 56 cards each. Objects are separate decks.</td></tr>
       <tr><td>Power Tokens</td><td>US quarters, pool cap 24</td><td>Do not print coins. Start with 1 quarter per Dreamer.</td></tr>
     </tbody>
   </table>
@@ -668,7 +667,7 @@ function rulesHtml(data) {
     <li>Each player picks a Dreamer card. Seat 2–6. Give each Dreamer <strong>5 Psyche</strong> and <strong>1 quarter</strong>.</li>
     <li>Shuffle all 25 Landscapes. Place <strong>The Bed face-up</strong> in the center. Deal the remaining hexes into the 24 outer slots (6 touching The Bed, then ring 2, then 6 corners).</li>
     <li>Flip <strong>exactly one</strong> Landscape that touches The Bed face-up. All other outer hexes stay Wasteland-side up (forgotten).</li>
-    <li>Build three 72-card Mindstream decks (Lucidity / Elasticity / Willpower) from the cutouts. Keep discards separate; empty draw piles reshuffle their discard.</li>
+    <li>Build three 56-card Mindstream decks (Lucidity / Elasticity / Willpower) from the cutouts, and three Object decks of one copy per suited Object. Keep discards separate; empty draw piles reshuffle their discard.</li>
     <li>Shuffle Archetypes; reveal the top as the Active Archetype. Shuffle Psyche. Build the Dream deck for your length, insert the three boss Dreams at rounds 3/6/9, then the Final Recurrence packet (The Final Recurrence, eight effect cards, You Never Wake Up on the bottom).</li>
     <li>Put leftover quarters in a dish (the Power pool, cap 24). Place repressed piles nearby as the Subconscious (Psyche, Dreambeasts, Mindstream by suit, Objects). Return effects put cards back on the matching discard.</li>
     <li>The first Head Dreamer is any agreed player (★). Head rotates clockwise at round end. Set the Pass Token aside until Meet.</li>
@@ -725,7 +724,7 @@ function rulesHtml(data) {
     <li>Quests name Landscapes. A forgotten tile does not move the quest to another hex of the same suit.</li>
     <li>Mark a completed quest for 1 quarter, any phase. Mark both, then Acquire for 1–3 points. Quintessential Archetypes (Sage, Magician, Warrior) grant a passive stat bonus only. Their Psyche quest needs one Dreamer holding 10 Psyche. Other Archetype powers cost 1 quarter in any phase and do not spend a Meet action.</li>
     <li>A Dreamer with <strong>no Psyche and no allies</strong> dies immediately. Repress the top card of each Mindstream. Objects go to Mindstream discards. Quarters return to the dish. They respawn on <strong>The Bed</strong> with 4 / 3 / 2 / 1 Psyche by death count and <strong>no new quarters</strong>. The Bed’s Draw 3 is available as normal. The <strong>fifth death</strong> of any Dreamer ends the game at once.</li>
-    <li><strong>Cerberus, Double, and Leviathan</strong> are Power 12. Their Dreams spawn them on The Bed, usually on Reveal rounds 3, 6, and 9.</li>
+    <li><strong>Cerberus, Double, and Leviathan</strong> are Power 11. Their Dreams spawn them on The Bed, usually on Reveal rounds 3, 6, and 9.</li>
     <li>Final Recurrence starts when that card is drawn, or when every outer Landscape is forgotten. Goal points reset. Remaining Archetypes become map Encounters. Defeat each with a Meet action and <strong>at least 15</strong> pooled Psyche from all Dreamers, including one card of the opposing suit, or sacrifice acquired Archetypes 1:1. The last card is always <strong>You Never Wake Up</strong>.</li>
   </ul>
 
@@ -758,9 +757,9 @@ function cardTrayHtml() {
     { label: "Psyche", note: "Stack the Psyche deck on this back.", art: "images/backs/psyche.webp" },
     { label: "Archetypes", note: "Stack unused Archetypes here.", art: "images/backs/archetype.webp" },
     { label: "Dreams", note: "Dream deck — official wordmark.", art: "images/somnia-logo.png" },
-    { label: "Lucidity Mindstream", note: "Blue. Place that 72-card pile here.", art: "images/backs/mindstream-lucidity.webp" },
-    { label: "Elasticity Mindstream", note: "Yellow. Place that 72-card pile here.", art: "images/backs/mindstream-elasticity.webp" },
-    { label: "Willpower Mindstream", note: "Red. Place that 72-card pile here.", art: "images/backs/mindstream-willpower.webp" },
+    { label: "Lucidity Mindstream", note: "Blue. Place that 56-card pile here.", art: "images/backs/mindstream-lucidity.webp" },
+    { label: "Elasticity Mindstream", note: "Yellow. Place that 56-card pile here.", art: "images/backs/mindstream-elasticity.webp" },
+    { label: "Willpower Mindstream", note: "Red. Place that 56-card pile here.", art: "images/backs/mindstream-willpower.webp" },
   ].map((slot) => {
     const src = artUrl(slot.art);
     return `<div class="card-tray-slot">

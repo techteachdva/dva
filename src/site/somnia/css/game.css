@@ -1175,6 +1175,7 @@ body.in-game main {
 .deck-rail-row.suit-lucidity { border-left: 3px solid var(--lucidity); }
 .deck-rail-row.suit-elasticity { border-left: 3px solid var(--elasticity); }
 .deck-rail-row.suit-willpower { border-left: 3px solid var(--willpower); }
+.deck-rail-row.kind-object { background: rgba(240, 201, 106, 0.06); }
 
 .deck-rail-row.has-peek {
   box-shadow: inset 0 0 0 1px rgba(109, 255, 176, 0.22);
@@ -5086,9 +5087,11 @@ body.explore-move-lock .hex-tile.move-hover .hex-face {
   box-shadow: 0 0 18px rgba(240, 201, 106, 0.4);
 }
 
+.power-token-radial-item.is-blocked,
 .power-token-radial-item:disabled {
-  pointer-events: none;
-  cursor: default;
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 0.72;
 }
 
 body.tutorial-mode-active .radial-menu-item.tutorial-highlight {

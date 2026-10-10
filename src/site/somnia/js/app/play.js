@@ -118,6 +118,7 @@ import {
   resolvePendingDeathDream,
   getEffectHelpers,
   canDreamerMeetOnLandscape,
+  dreamerMeetBlockReason,
   actionTurnActive,
   actionTurnHolder,
   passMeetToken,
@@ -1743,11 +1744,12 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
   const canMeet = occupant && canDreamerMeetOnLandscape(state, occupant, tileId);
 
   const slumberOnly = isLeviathanCard(encounter);
+  const meetBlock = canMeet ? "" : (dreamerMeetBlockReason(state, occupant, tileId) || "Cannot Meet right now.");
   const options = [
     !slumberOnly && {
       id: "accept",
       label: encounterPowerLabel(encounter, true),
-      hint: `${encounterPayHint(encounter, true)} ${encounterAcceptSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
+      hint: meetBlock || `${encounterPayHint(encounter, true)} ${encounterAcceptSummary(encounter)} · ${occupant?.name || "Dreamer"}'s Psyche`,
       disabled: !canMeet || (isInteractiveTutorialActive(state) && !isTutorialActionAllowed(state, "meetAccept", { tileId })),
       primary: true,
       kind: "meetAccept",
@@ -1756,7 +1758,7 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
     !state.forcedAccept && {
       id: "reject",
       label: encounterPowerLabel(encounter, false),
-      hint: `${encounterPayHint(encounter, false)} ${encounterRejectSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
+      hint: meetBlock || `${encounterPayHint(encounter, false)} ${encounterRejectSummary(encounter)} · ${occupant?.name || "Dreamer"}'s Psyche`,
       disabled: !canMeet || (isInteractiveTutorialActive(state) && !isTutorialActionAllowed(state, "meetReject", { tileId })),
       kind: "meetReject",
       onPick: () => handlers.meetEncounter("reject"),
@@ -2439,6 +2441,13 @@ function renderBoardArea() {
 function handleDrawPileClick(deckId) {
   if (!state || !deckId) return;
   if (state.tradeMode && deckId.startsWith("mindstream-")) return;
+
+  if (deckId.startsWith("object-")) {
+    const suit = deckId.replace("object-", "");
+    const suitName = suit.charAt(0).toUpperCase() + suit.slice(1);
+    narrate(state, `${suitName} Objects`, "Accept a Dreambeast of this suit to draw the top Object.");
+    return;
+  }
 
   if (deckId.startsWith("mindstream-")) {
     const suit = deckId.replace("mindstream-", "");

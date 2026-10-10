@@ -36,7 +36,7 @@
     "image": "images/archetypes/archetype-lover.webp",
     "suit": "elasticity",
     "passive": null,
-    "power": "All Dreamers Draw same-suit Mindstream until draw 1 Object, discard the rest",
+    "power": "All Dreamers draw 1 Object from the Lover's suit deck",
     "quests": ["Draw Mindstream on Awards or The Party", "Meet a Dreambeast on Awards or The Party"]
   },
   {
@@ -86,7 +86,7 @@
     "image": "images/archetypes/archetype-creator.webp",
     "suit": "lucidity",
     "passive": null,
-    "power": "Return 2 Objects per Dreamer. Place on top of objects suited Mindstream",
+    "power": "Return 2 Objects per Dreamer to the top of their suited Object decks",
     "quests": ["Draw Mindstream on Day in the Life or Inner Sanctum", "Meet a Dreambeast on Day in the Life or Inner Sanctum"]
   },
   {

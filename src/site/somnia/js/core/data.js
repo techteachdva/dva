@@ -115,10 +115,9 @@ export const SUIT_COLORS = {
 
 const MINDSTREAM_SUITS = ["lucidity", "elasticity", "willpower"];
 
-/** Canonical Mindstream deck: 72 cards per suit. */
+/** Canonical Mindstream deck: 56 cards per suit. Objects live in their own suited decks. */
 export const MINDSTREAM_COMPOSITION = {
   dreambeasts: 10,
-  objects: 16,
   events: 35,
   powerToken: 8,
   drawDream: 3,
@@ -260,23 +259,6 @@ function mindstreamDreambeastCard(beast, suit) {
   };
 }
 
-function mindstreamObjectCard(obj, suit) {
-  const cardSuit = obj.suit || suit;
-  return {
-    id: `ms-${suit}-${obj.id}`,
-    refId: obj.id,
-    name: obj.name,
-    type: "object",
-    suit: cardSuit,
-    mindstreamSuit: suit,
-    subtype: obj.subtype,
-    tags: obj.tags,
-    image: obj.image,
-    text: obj.text,
-    instanceId: uid("mind"),
-  };
-}
-
 function mindstreamEventCard(event, suit) {
   return {
     ...event,
@@ -323,14 +305,6 @@ function pickPool(items, count) {
   return pool;
 }
 
-function objectsForSuit(objects, suit) {
-  const assigned = objects.filter((obj) => obj.suit === suit);
-  if (!assigned.length) {
-    throw new Error(`No objects assigned to Mindstream suit: ${suit}`);
-  }
-  return pickPool(assigned, MINDSTREAM_COMPOSITION.objects);
-}
-
 function dreambeastsForSuit(dreambeasts, suit) {
   const suited = dreambeasts.filter((b) => !b.boss && b.suit === suit);
   const perKind = Math.floor(MINDSTREAM_COMPOSITION.dreambeasts / 2);
@@ -348,10 +322,10 @@ function dreambeastsForSuit(dreambeasts, suit) {
 }
 
 /**
- * Build 72-card Mindstream decks: 10 Dreambeasts, 16 Objects, 35 Events,
+ * Build 56-card Mindstream decks: 10 Dreambeasts, 35 Events,
  * 8 Power Token cards, 3 Draw Additional Dream cards per suit.
  */
-export function buildMindstreamDecks(mindstreamData, dreambeasts = [], objects = []) {
+export function buildMindstreamDecks(mindstreamData, dreambeasts = []) {
   const decks = { lucidity: [], elasticity: [], willpower: [] };
 
   MINDSTREAM_SUITS.forEach((suit) => {
@@ -360,10 +334,6 @@ export function buildMindstreamDecks(mindstreamData, dreambeasts = [], objects =
 
     dreambeastsForSuit(dreambeasts, suit).forEach((beast) => {
       deck.push(mindstreamDreambeastCard(beast, suit));
-    });
-
-    objectsForSuit(objects, suit).forEach((obj) => {
-      deck.push(mindstreamObjectCard(obj, suit));
     });
 
     pickWeightedUnique(
@@ -385,6 +355,23 @@ export function buildMindstreamDecks(mindstreamData, dreambeasts = [], objects =
     decks[suit] = shuffle(deck);
   });
 
+  return decks;
+}
+
+/** One copy of every Object of each suit. Accepting a Dreambeast draws from its suit. */
+export function buildObjectDecks(objects = []) {
+  const decks = { lucidity: [], elasticity: [], willpower: [] };
+  MINDSTREAM_SUITS.forEach((suit) => {
+    decks[suit] = shuffle(
+      objects.filter((obj) => obj.suit === suit).map((obj) => ({
+        ...obj,
+        type: "object",
+        suit,
+        mindstreamSuit: suit,
+        instanceId: uid("obj"),
+      })),
+    );
+  });
   return decks;
 }
 

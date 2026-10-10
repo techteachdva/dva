@@ -223,10 +223,10 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
   return null;
 }
 
-export function drawObjects(state, player, count, helpers) {
+export function drawObjects(state, player, count, helpers, suit = null) {
   const drawn = [];
   for (let i = 0; i < count; i += 1) {
-    const pulled = pullObjectFromMindstream(state);
+    const pulled = pullObjectFromMindstream(state, { suit });
     if (!pulled) break;
     const card = objectForPlayer(pulled.card);
     onObjectDrawn(state, player, card, helpers);

@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 39.6. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 39.7. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -656,9 +656,9 @@ export function rulesDetailsHtml() {
 
       <h3>Bosses</h3>
       <ul>
-        <li><strong>Cerberus</strong> — Power 12. On Accept, Repress top 3 Psyche</li>
-        <li><strong>Double</strong> — Power 12. On Accept, Forget Day in the Life + Scary Classroom</li>
-        <li><strong>Leviathan</strong> — Power 12, two sides. Awake, it stands on The Bed and can only be forced into Slumber: flip it Asleep and Repress it into the Subconscious. Flip Leviathan while it sleeps, and it wakes on The Bed again. Slumber Returns 6 Psyche</li>
+        <li><strong>Cerberus</strong> — Power 11. On Accept, Repress top 3 Psyche</li>
+        <li><strong>Double</strong> — Power 11. On Accept, Forget Day in the Life + Scary Classroom</li>
+        <li><strong>Leviathan</strong> — Power 11, two sides. Awake, it stands on The Bed and can only be forced into Slumber: flip it Asleep and Repress it into the Subconscious. Flip Leviathan while it sleeps, and it wakes on The Bed again. Slumber Returns 6 Psyche</li>
         <li>Boss Dreams spawn the boss as an Encounter on <strong>The Bed</strong> (typically Reveal rounds <strong>3, 6, and 9</strong>)</li>
       </ul>
 
@@ -677,10 +677,11 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Archetypes &amp; Quests</h3>
-      <p>Active Archetype shows 2 quests. When both are already true, spend 1 Power Token to commit them and Acquire for <strong>2, 3, or 4</strong> points. <strong>Magician, Warrior, and Sage are worth 4</strong>, one for each boss. They grant passive stat bonuses only. Their quests are defeating that boss (Accept or Repress it) and one living Dreamer sacrificing one Object, from Objects or Persistent. The card goes to its Mindstream discard. The button sits on the Active Archetype and does not spend a phase action. The other Archetypes are worth 2 or 3. Each asks for a Mindstream draw on one of two Landscapes and a Dreambeast Meet on one of two Landscapes, and they have activatable powers for 1 Power Token in any phase.</p>
+      <p>Active Archetype shows 2 quests. When both are already true, spend 1 Power Token to commit them and Acquire for <strong>2, 3, or 4</strong> points. <strong>Magician, Warrior, and Sage are worth 4</strong>, one for each boss. They grant passive stat bonuses only. Their quests are defeating that boss (Accept or Repress it) and one living Dreamer sacrificing one Object, from Objects or Persistent. The card goes to its Object discard. The button sits on the Active Archetype and does not spend a phase action. The other Archetypes are worth 2 or 3. Each asks for a Mindstream draw on one of two Landscapes and a Dreambeast Meet on one of two Landscapes, and they have activatable powers for 1 Power Token in any phase.</p>
 
       <h3>Objects</h3>
       <ul>
+        <li><strong>Object decks</strong> — three piles, one per suit. Each holds one copy of every Object of that suit. Accepting a Dreambeast draws the top Object of the beast's suit. An empty pile reshuffles its discard. These decks do not end the dream</li>
         <li><strong>Instant</strong> — play from hand during Meet as a free action; the Object is then <strong>Repressed</strong></li>
         <li><strong>Persistent</strong> — stays in play; activate for 1 Power Token as a free action</li>
         <li><strong>Must-play</strong> — auto-resolves on draw (e.g. The Nothing, All Seeing Eye), then Repressed</li>
@@ -696,10 +697,10 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Mindstream &amp; Dreams</h3>
-      <p>Three 72-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, 8 Power Token cards, Draw-Dream cards. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Round 1 draws its Dream immediately and rolls 1d6: even resolves Bright, odd resolves Dim, and the die is the choice. Later Dreams are drawn once per round by the Head Dreamer. Bright then costs a Repress, a discarded Psyche, or a Forgotten Landscape. You choose which cards to discard or repress. It opens only when that Dream's condition is met. Dim is free. A banner stays up at <strong>10%</strong> remaining and tells the table to <strong>Return</strong> cards from the Subconscious; it flashes at <strong>5%</strong>; at <strong>1%</strong> the Dreamscape turns unstable and the nightmare closes in. Each low deck is tagged on the rail.</p>
+      <p>Three 56-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Events, 8 Power Token cards, and Draw-Dream cards. Objects are not in the Mindstream. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Round 1 draws its Dream immediately and rolls 1d6: even resolves Bright, odd resolves Dim, and the die is the choice. Later Dreams are drawn once per round by the Head Dreamer. Bright then costs a Repress, a discarded Psyche, or a Forgotten Landscape. You choose which cards to discard or repress. It opens only when that Dream's condition is met. Dim is free. A banner stays up at <strong>10%</strong> remaining and tells the table to <strong>Return</strong> cards from the Subconscious; it flashes at <strong>5%</strong>; at <strong>1%</strong> the Dreamscape turns unstable and the nightmare closes in. Each low deck is tagged on the rail.</p>
 
       <h3>Death</h3>
-      <p>A Dreamer with <strong>no Psyche</strong> who must pay even one dies. Objects go to Mindstream discards. Power Tokens return to the pool. They respawn on <strong>The Bed</strong> and draw <strong>3 Psyche</strong>. The <strong>Death Clock</strong> at the top of the table ticks once. The <strong>sixth death</strong>, shared by the whole table, ends the night at once.</p>
+      <p>A Dreamer with <strong>no Psyche</strong> who must pay even one dies. Objects go to their suited Object discards. Power Tokens return to the pool. They respawn on <strong>The Bed</strong> and draw <strong>3 Psyche</strong>. The <strong>Death Clock</strong> at the top of the table ticks once. The <strong>sixth death</strong>, shared by the whole table, ends the night at once.</p>
 
       <h3>Final Recurrence</h3>
       <p>Triggered when <strong>The Final Recurrence</strong> is drawn (first of the ten endgame Dreams), or when every outer Landscape has been forgotten. The Bed cannot be forgotten. Goal points reset; remaining Archetypes become map Encounters. Defeat each with a Meet action, <strong>≥ 15</strong> pooled Psyche from <strong>all Dreamers</strong>, including at least one card of the <strong>opposing suit</strong>. Or sacrifice acquired Archetypes 1:1 to auto-defeat. Win by clearing all. The last card is always <strong>You Never Wake Up</strong>.</p>
@@ -714,7 +715,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 39.6</p>
+          <p class="info-hub-kicker">Somnia v 39.7</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>
@@ -779,7 +780,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Bosses</h3>
-            <p>Cerberus, Double, and Leviathan are Power 12. Their Dreams spawn them on <strong>The Bed</strong>, usually on Reveal rounds 3, 6, and 9. Leviathan can sleep and return: Slumber or Flip sends the Awake beast into the Subconscious, and Flip while it is there wakes it onto The Bed. Other spawned beasts land on the acting Dreamer's Landscape unless the card says to choose a tile.</p>
+            <p>Cerberus, Double, and Leviathan are Power 11. Their Dreams spawn them on <strong>The Bed</strong>, usually on Reveal rounds 3, 6, and 9. Leviathan can sleep and return: Slumber or Flip sends the Awake beast into the Subconscious, and Flip while it is there wakes it onto The Bed. Other spawned beasts land on the acting Dreamer's Landscape unless the card says to choose a tile.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Death &amp; Final Recurrence</h3>

@@ -283,12 +283,20 @@ export function occupantsOnLandscape(state, landscapeId) {
 }
 
 /**
- * Dreamer acting on a Landscape. Prefers the focused Dreamer if they occupy it,
- * so sharing a tile (The Bed) does not lock play to the Head.
+ * Dreamer acting on a Landscape.
+ * While someone holds the shared action turn and stands here, they act.
+ * Peeking at another portrait on the same hex (The Bed, where Leviathan wakes)
+ * must not steal Slumber or any other Meet. With no turn seated, the focused
+ * Dreamer acts, so sharing a tile does not lock play to the Head.
  */
 export function actorOnLandscape(state, landscapeId) {
   const onTile = occupantsOnLandscape(state, landscapeId);
   if (!onTile.length) return null;
+  const holderId = state.meetPassHolderId;
+  if (holderId) {
+    const holder = onTile.find((p) => p.id === holderId);
+    if (holder) return holder;
+  }
   const active = state.players?.[state.activePlayerIndex];
   if (active && onTile.some((p) => p.id === active.id)) return active;
   return onTile[0];

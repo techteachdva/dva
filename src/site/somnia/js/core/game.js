@@ -587,6 +587,33 @@ function canUseMeetAction(state, action, landscapeActionId = null) {
   );
 }
 
+/** Why this Dreamer cannot Meet on this Landscape, or "" when they can. */
+export function dreamerMeetBlockReason(state, player, tileId) {
+  if (!player?.alive || player.landscapeId !== tileId) return "Stand on this Landscape to Meet.";
+  const enc = encounterOnLandscape(state, tileId);
+  if (!enc) return "No Dreambeast on this Landscape.";
+  if (getPhase(state) !== "Meet") return "Meet happens in the Meet phase.";
+  const freeMeet = (state.freeQuestMeet?.landscapeId === tileId && player.landscapeId === tileId)
+    || (state.pendingMindstreamMeet?.landscapeId === tileId
+      && player.landscapeId === tileId
+      && (!state.pendingMindstreamMeet.playerId || state.pendingMindstreamMeet.playerId === player.id))
+    || !!(state.forcedAccept && player.id === state.forcedAccept.playerId && tileId === state.forcedAccept.tileId);
+  if (!freeMeet && (state.meetActionBudget < 1 || state.meetActionsUsed >= state.meetActionBudget)) {
+    return "No Meet actions remaining.";
+  }
+  if (!freeMeet && meetPassBlocks(state, player)) {
+    const holder = state.players.find((p) => p.id === state.meetPassHolderId);
+    return `It is ${holder?.name || "another Dreamer"}'s turn.`;
+  }
+  if (hasUsedMeetAction(state, player, meetActionKey(MEET_ACTIONS.MEET))) {
+    return `${player.name} already used Meet this round.`;
+  }
+  if (!canSpendMeetAction(state, player, MEET_ACTIONS.MEET, MEET_ACTIONS)) {
+    return "This Meet action is restricted right now.";
+  }
+  return "";
+}
+
 export function canDreamerMeetOnLandscape(state, player, tileId) {
   if (!player?.alive || player.landscapeId !== tileId) return false;
   const enc = encounterOnLandscape(state, tileId);
@@ -625,7 +652,7 @@ function meetActionHint(state, action, landscapeActionId, baseHint = "") {
 function spendMeetAction(state, action, landscapeActionId = null) {
   const actor = meetActionActor(state, action);
   if (!canUseMeetActionForActor(state, actor, action, landscapeActionId)) {
-    addLog(state, "Cannot use this Meet action (restricted or no actions remain).");
+    logMoment(state, meetActionHint(state, action, landscapeActionId, "Cannot use this Meet action (restricted or no actions remain)."));
     return false;
   }
   if (isFreeQuestMeet(state, action)) {
@@ -1912,21 +1939,24 @@ export function prepareMindstreamMeet(state, {
 }
 
 export function meetEncounter(state, mode = "accept", { instant = false, onDone, freeMeet = false, fromMindstreamDraw = false } = {}) {
+  const say = (message) => {
+    if (message) logMoment(state, message);
+  };
   if (isDiceBattleOpen() || state.diceBattle) {
-    addLog(state, "Finish the dice battle first.");
+    say("Finish the dice battle first.");
     return;
   }
   if (state.forcedAccept) {
     state.selectedLandscapeId = state.forcedAccept.tileId;
     if (mode !== "accept") {
-      addLog(state, "Silver: this Dreambeast must be Accepted. It cannot be Repressed.");
+      say("Silver: this Dreambeast must be Accepted. It cannot be Repressed.");
       return;
     }
   }
   const tile = meetLandscapeTile(state);
   const encounter = encounterForMeet(state);
   if (!encounter || !tile) {
-    addLog(state, "Meet a Dreambeast on a Landscape you occupy.");
+    say("Meet a Dreambeast on a Landscape you occupy.");
     return;
   }
   const actorEarly = actorOnLandscape(state, tile.id);
@@ -1934,45 +1964,57 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
   const freeFromMindstreamPrep = isMindstreamMeetPrep(state, actorEarly);
   const treatAsFree = !!freeMeet || freeFromMindstreamPrep || !!state.forcedAccept;
   const fromMs = !!fromMindstreamDraw || !!state.pendingMindstreamMeet || !!encounter.drawnFromMindstream;
-  if (!state.forcedAccept && !treatAsFree && !spendMeetAction(state, MEET_ACTIONS.MEET)) return;
 
   state.activeEncounter = encounter;
   state.activeEncounterLandscapeId = tile.id;
   const actor = actorOnLandscape(state, tile.id);
-  const abortMeet = (message) => {
-    if (message) addLog(state, message);
-    // Keep Mindstream prep open so the Dreamer can fix their spread and try again.
-    if (state.forcedAccept || treatAsFree) return;
-    refundMeetAction(state, actor || meetActionActor(state, MEET_ACTIONS.MEET), MEET_ACTIONS.MEET);
-  };
   if (!actor) {
-    abortMeet("A Dreamer must be on this Landscape to Meet the Encounter.");
+    say("A Dreamer must be on this Landscape to Meet the Encounter.");
     return;
   }
   const isReject = mode === "reject" || mode === "repress";
+  const verb = isReject
+    ? (isLeviathanCard(encounter) ? "Slumber" : "Repress")
+    : "Accept";
   if (!isReject && isLeviathanCard(encounter)) {
-    abortMeet("Leviathan is Awake. The only Meet is Slumber: Repress it, and it flips Asleep into the Subconscious.");
+    say("Leviathan is Awake. The only Meet is Slumber: play Willpower, win the dice, and it flips Asleep into the Subconscious.");
     return;
   }
   const beastPower = encounterPower(encounter, !isReject);
   const recommended = recommendedEncounterPower(encounter, !isReject);
   const selected = selectedCards(state, actor);
+  const suitName = SUIT_LABELS[encounterPaySuit(encounter, !isReject)] || "Psyche";
 
-  if (!isReject && actor.hand.length >= handLimitForPlayer(state, actor)) {
-    abortMeet(`${actor.name}'s hand is full (${handLimitForPlayer(state, actor)} cards). Spend Psyche or allies first.`);
-    return;
+  if (!isReject) {
+    const limit = handLimitForPlayer(state, actor);
+    const staying = actor.hand.filter((c) => !selected.some((s) => s.instanceId === c.instanceId)).length;
+    if (staying >= limit) {
+      say(`${actor.name}'s hand is full (${limit} cards). Spend Psyche or allies first.`);
+      return;
+    }
   }
 
   if (selected.filter((c) => !isDreambeastPsycheCard(c)).length > 3) {
-    abortMeet("Play up to 3 Psyche cards for an Encounter (allies don't count).");
+    say("Play up to 3 Psyche cards for an Encounter (allies don't count).");
+    return;
+  }
+
+  if (!selected.length) {
+    const foreign = allSelectedCards(state);
+    say(foreign.length
+      ? `${verb} uses ${actor.name}'s Psyche. Select at least 1 ${suitName} from ${actor.name}'s hand.`
+      : `${verb} ${encounter.name}: select 1–3 Psyche from ${actor.name}'s hand, including at least 1 ${suitName}.`);
     return;
   }
 
   const shapeCheck = validateEncounterPlayShape(encounter, selected, { accept: !isReject });
   if (!shapeCheck.ok) {
-    abortMeet(shapeCheck.message);
+    say(shapeCheck.message);
     return;
   }
+
+  // Spread is legal. Spend only now, so a bad Slumber does not pass the turn.
+  if (!state.forcedAccept && !treatAsFree && !spendMeetAction(state, MEET_ACTIONS.MEET)) return;
   // Spread is locked in — clear Mindstream prep before dice.
   if (state.pendingMindstreamMeet?.landscapeId === tile.id) state.pendingMindstreamMeet = null;
   const played = Math.max(1, encounterPlayTotal(state, { accept: !isReject }));
@@ -2069,6 +2111,13 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     actor.hand.push(handCard);
     queueAcceptAllyFx(actor.id, tile.id, handCard);
     addLog(state, `${encounter.name} joins ${actor.name}'s hand as a 3 ${SUIT_LABELS[encounter.suit] || encounter.suit} Psyche ally.`);
+    const suitLabel = SUIT_LABELS[encounter.suit] || encounter.suit || "suited";
+    const reward = drawObjects(state, actor, 1, getEffectHelpers(), encounter.suit);
+    if (reward.length) {
+      logMoment(state, `${actor.name} draws ${reward[0].name} from the ${suitLabel} Object deck.`);
+    } else {
+      logMoment(state, `The ${suitLabel} Object deck is empty.`);
+    }
   } else {
     if (isLeviathanCard(encounter)) {
       encounter.awake = false;
@@ -2733,7 +2782,10 @@ export function toggleHandCard(state, card, owner = null) {
     if (phase !== "Meet" || state.meetActionBudget === 0) return;
     if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;
     const actor = meetPsycheActor(state);
-    if (!actor || player.id !== actor.id) return;
+    if (!actor || player.id !== actor.id) {
+      if (actor) logMoment(state, `Meet uses ${actor.name}'s Psyche.`);
+      return;
+    }
     if (state.selectedHand.includes(id)) {
       state.selectedHand = state.selectedHand.filter((x) => x !== id);
       return;
@@ -2755,7 +2807,10 @@ export function toggleHandCard(state, card, owner = null) {
   if (phase === "Meet" && state.meetActionBudget > 0) {
     if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;
     const actor = meetPsycheActor(state);
-    if (!actor || player.id !== actor.id) return;
+    if (!actor || player.id !== actor.id) {
+      if (actor) logMoment(state, `Meet uses ${actor.name}'s Psyche.`);
+      return;
+    }
     state.selectedHand = state.selectedHand.filter((selId) =>
       actor.hand.some((c) => c.instanceId === selId),
     );

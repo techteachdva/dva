@@ -19,6 +19,9 @@ export function cardBackForDeckId(deckId) {
   if (deckId.startsWith("mindstream-")) {
     return CARD_BACKS[deckId.replace("mindstream-", "")] || CARD_BACKS.lucidity;
   }
+  if (deckId.startsWith("object-")) {
+    return CARD_BACKS[deckId.replace("object-", "")] || CARD_BACKS.lucidity;
+  }
   return CARD_BACKS.psyche;
 }
 

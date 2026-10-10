@@ -29,6 +29,7 @@ import {
   buildDreamDeck,
   insertBossDreams,
   buildMindstreamDecks,
+  buildObjectDecks,
   makeExtraPsycheCards,
   goalPointsForTable,
   uid,
@@ -107,8 +108,10 @@ export function createInitialState(data, options) {
   const psycheDeck = buildPsycheDeck(data.psyche);
   const dreamDeck = insertBossDreams(buildDreamDeck(data.dreams, length.dreams), data.dreambeasts);
   const archetypeDeck = shuffle(data.archetypes.map((a) => ({ ...a, instanceId: uid("arch") })));
-  const mindstreamDecks = buildMindstreamDecks(data.mindstream, data.dreambeasts, data.objects);
+  const mindstreamDecks = buildMindstreamDecks(data.mindstream, data.dreambeasts);
   const mindstreamDiscard = { lucidity: [], elasticity: [], willpower: [] };
+  const objectDecks = buildObjectDecks(data.objects);
+  const objectDiscard = { lucidity: [], elasticity: [], willpower: [] };
   const subconscious = createSubconscious();
 
   function dealStartingPsyche(count) {
@@ -185,6 +188,8 @@ export function createInitialState(data, options) {
     archetypeDeck,
     mindstreamDecks,
     mindstreamDiscard,
+    objectDecks,
+    objectDiscard,
     subconscious,
     board,
     players,

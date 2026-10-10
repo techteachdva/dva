@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "39.6";
+export const SOMNIA_VERSION = "39.7";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "39.7",
+    title: "Object Decks",
+    notes: [
+      "Every Dreambeast Power is 1 lower. Leviathan, Cerberus, and Double are Power 11.",
+      "Objects leave the Mindstream. Three suited Object decks sit on the rail, and Accepting a Dreambeast draws the top Object of its suit.",
+      "Slumber uses the Dreamer whose turn it is. A legal Willpower spread starts the dice fight, and a win takes Leviathan off the board.",
+    ],
+  },
   {
     version: "39.6",
     title: "Portrait Actions",
