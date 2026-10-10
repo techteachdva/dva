@@ -2,7 +2,7 @@
  * Somnia 36.0 — fullscreen Mindstream / Dream draw choices.
  * Events: Good (paid, landscape-gated) vs Bad (free).
  * Objects: Take vs Discard + Draw 3 Psyche.
- * Dreambeasts: Accept / Flee / Repress.
+ * Dreambeasts: Accept or Repress.
  * Dreams: Bright costs a Repress, a Psyche, or a Forgotten Landscape, and a gate.
  * Dim is free.
  */
@@ -323,14 +323,6 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
           disabled: false,
         },
         {
-          id: "flee",
-          role: "flee",
-          shape: "spiral",
-          label: "Flee",
-          hint: `Roll ${1 + totalStat(player, "elasticity", state)}d6 — need one 5+`,
-          disabled: false,
-        },
-        {
           id: "repress",
           role: "bad",
           shape: "lucidity",
@@ -342,7 +334,7 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
       helpers,
     };
     state.pendingMindstreamChoice.needsDrawCinematic = true;
-    logMoment(state, `${card.name} — Accept, Flee, or Repress.`);
+    logMoment(state, `${card.name} — Accept or Repress.`);
     return true;
   }
 

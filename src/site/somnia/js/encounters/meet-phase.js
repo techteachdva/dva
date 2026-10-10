@@ -2,38 +2,29 @@
  * Canonical Meet Phase flow (Somnia 26+) — one source of truth.
  *
  * 1) Start of Meet — each Boss steps 1 hex toward the nearest Dreamer, unless
- *    a Dreamer already shares its hex. Then each Dreamer discards 1 Psyche per
- *    Dreambeast on their tile or an adjacent hex. Those cards go to the Psyche
- *    discard, not the Subconscious. One Dreamer ignores the first tax card
- *    each Meet. Other roaming beasts stay where they are.
+ *    a Dreamer already shares its hex. There is no hand tax.
  * 2) Middle of Meet — one Dreamer may spend 1 Willpower Psyche to unlock
- *    shared Meet Actions. Dreamers take Actions (Meet / Landscape / Trade /
- *    Powers) as they wish. Accept and Repress need 1 Psyche of the required
- *    suit (1–3 cards; allies extra). Beast Power is its dice; recommended
- *    Dreamer Power is beast Power + 2. Underpaying is legal. A win removes
- *    the beast, a loss spends the play and leaves the beast on the map.
- * 3) End of Meet — if any Dreambeasts remain, Forget 1 random Landscape per
- *    remaining beast (never the Bed, never a hex that still hosts a beast).
- *    Fail costs no longer resolve at Meet end (36.0) — Fail only when a
- *    Dreambeast is drawn and Accept/Repress fails, or Flee fails.
+ *    shared Meet Actions. Accept and Repress are the same Power. Accept pays
+ *    the beast's suit. Repress pays the opposing suit.
+ * 3) End of the round — Repress 1 card from the Psyche Deck per Dreambeast
+ *    still on the board. During the Final Recurrence, count remaining
+ *    Archetypes instead. Fail only when Accept or Repress loses.
  */
 import {
   addLog,
   allEncountersOnBoard,
   countEncountersOnBoard,
   landscapeById,
-  headPlayer,
   moveEncounterBetweenLandscapes,
+  repressTopPsycheFromDeck,
 } from "../core/state.js";
-import { adjacentTiles, areHexAdjacent, hexDistance } from "../core/hex.js";
+import { adjacentTiles, hexDistance } from "../core/hex.js";
 import { logMoment } from "../core/narrator.js";
-import { enqueueDiscardFromHand } from "../dreamers/subconscious.js";
-import { forgetRandomLandscapes, forgetNamedLandscapes } from "../board/landscapes.js";
 
 export const MEET_PHASE_FLOW = Object.freeze({
-  start: "Each Dreamer on or adjacent to a roaming Dreambeast discards 1 Psyche per such beast. One Dreamer ignores the first card.",
-  middle: "Spend 1 Willpower Psyche for shared Meet Actions. Accept and Repress are dice battles. Roaming beasts stay until won.",
-  end: "Forget 1 random Landscape per remaining Dreambeast. Fail costs resolve only on draw (failed Accept/Repress or failed Flee).",
+  start: "Bosses step toward the nearest Dreamer. No cards are taxed from hands.",
+  middle: "Spend 1 Willpower Psyche for shared Meet Actions. Accept and Repress are one Power. Roaming beasts stay until won.",
+  end: "Repress 1 Psyche from the Psyche Deck per Dreambeast still on the board. In the Final Recurrence, count remaining Archetypes.",
 });
 
 export function countActiveDreambeasts(state) {
@@ -66,12 +57,6 @@ export function stampEncounterSpawnOrder(state, encounter) {
   state.encounterSpawnSeq = (state.encounterSpawnSeq || 0) + 1;
   encounter.spawnOrder = state.encounterSpawnSeq;
   return encounter;
-}
-
-function beastsPressuringDreamer(state, player, beasts) {
-  const here = landscapeById(state, player.landscapeId);
-  if (!here) return 0;
-  return beasts.filter(({ tile }) => tile?.id === here.id || areHexAdjacent(here, tile)).length;
 }
 
 const BOSS_IDS = new Set(["cerberus", "double", "leviathan"]);
@@ -125,60 +110,10 @@ function stepBossesTowardDreamers(state) {
   });
 }
 
-/** Step 1 — start of Meet. Tutorial skips the tax. Only nearby beasts tax. */
+/** Step 1 — start of Meet. Bosses hunt. Hands are not taxed. */
 export function applyMeetStartTax(state) {
   if (state.tutorialMode) return;
   stepBossesTowardDreamers(state);
-  const beasts = roamingDreambeastsInSpawnOrder(state);
-  if (!beasts.length) return;
-
-  const assessed = state.players
-    .filter((player) => player.alive)
-    .map((player) => {
-      let count = beastsPressuringDreamer(state, player, beasts);
-      const pressured = count > 0;
-      if (state.players.length === 1 && count > 0) {
-        count -= 1;
-        addLog(state, `${player.name} ignores the first Meet tax this Meet.`);
-      }
-      if (
-        count > 0
-        && !state.tutorialMode
-        && !state.immovableTaxUsed
-        && player.dreamer?.id === "the-immovable"
-      ) {
-        state.immovableTaxUsed = true;
-        count -= 1;
-        addLog(state, `${player.name} ignores 1 Meet-tax Psyche.`);
-      }
-      return { player, count, pressured };
-    });
-  const charges = assessed.filter((entry) => entry.count > 0);
-
-  if (!charges.length) {
-    if (!assessed.some((entry) => entry.pressured)) {
-      addLog(
-        state,
-        `Meet start: ${beasts.length} Dreambeast(s) roam out of reach. Nobody discards.`,
-      );
-    }
-    return;
-  }
-
-  const summary = charges
-    .map(({ player, count }) => `${player.name} discards ${count}`)
-    .join("; ");
-  logMoment(
-    state,
-    `Meet begins: Dreambeasts tax whoever shares their tile or stands next to it. ${summary}.`,
-    { forget: true, durationMs: 16000 },
-  );
-  charges.forEach(({ player, count }) => {
-    enqueueDiscardFromHand(state, player, count, {
-      reason: `${player.name}: ${count} Dreambeast${count === 1 ? "" : "s"} on or beside you — discard ${count} Psyche from hand.`,
-    });
-  });
-  addLog(state, `Meet start: ${summary}.`);
 }
 
 /** @deprecated Use applyMeetStartTax. */
@@ -188,28 +123,40 @@ export function applyMeetPhaseDreambeastTax(state) {
 
 /**
  * Step 3 — end of Meet. Forget random Landscapes.
- * Beasts are not removed. Fail already resolved on a failed Accept, Repress, or Flee.
+ * Beasts are not removed. Fail already resolved on a lost Accept or Repress.
  */
+function roundResourceTaxCount(state) {
+  if (state.finalRecurrence) {
+    return (state.finalArchetypes || []).filter((arch) => !arch.defeated).length;
+  }
+  return roamingDreambeastsInSpawnOrder(state).length;
+}
+
+function applyRoundResourceTax(state) {
+  const count = roundResourceTaxCount(state);
+  if (!count) return;
+  const kind = state.finalRecurrence ? "Archetype" : "Dreambeast";
+  const plural = count === 1 ? "" : "s";
+  logMoment(
+    state,
+    `The round ends. ${count} ${kind}${plural} still stand. Repress ${count} from the Psyche Deck.`,
+    { durationMs: 14000 },
+  );
+  repressTopPsycheFromDeck(state, count);
+}
+
 function applyTutorialMeetEnd(state) {
   if (state.tutorialFlags?.meetPenaltyDone) return;
   const beasts = roamingDreambeastsInSpawnOrder(state);
   if (!beasts.length) return;
   state.tutorialFlags.meetPenaltyDone = true;
-
-  const candy = landscapeById(state, "candy-mountain");
-  if (candy?.revealed && !candy.wasteland) {
-    forgetNamedLandscapes(state, ["candy-mountain"]);
-  }
-
   logMoment(
     state,
-    "Meet ends: Mandrake still roams. Candy Mountain is Forgotten. Beasts stay until you win.",
-    { forget: true, durationMs: 14000 },
+    "Meet ends: Mandrake still roams. One Psyche is Repressed from the deck. The beast stays until you win.",
+    { durationMs: 14000 },
   );
-  addLog(
-    state,
-    "Tutorial — leftover Dreambeasts Forget Landscapes. Mandrake stays on The Attic for next round.",
-  );
+  repressTopPsycheFromDeck(state, 1);
+  addLog(state, "Tutorial — a leftover Dreambeast Represses 1 Psyche from the deck.");
 }
 
 export function applyMeetEndConsequences(state) {
@@ -217,35 +164,13 @@ export function applyMeetEndConsequences(state) {
     applyTutorialMeetEnd(state);
     return;
   }
-  const beasts = roamingDreambeastsInSpawnOrder(state);
-  if (!beasts.length) return;
-
-  const forgotten = forgetRandomLandscapes(state, beasts.length, { skipOccupied: true });
-  if (forgotten.length) {
-    logMoment(
-      state,
-      `Meet ends: ${beasts.length} roaming Dreambeast${beasts.length === 1 ? "" : "s"} — Forgot ${forgotten.length} Landscape${forgotten.length === 1 ? "" : "s"} (${forgotten.map((t) => t.name).join(", ")}).`,
-      { forget: true, durationMs: 16000 },
-    );
-  } else {
-    logMoment(
-      state,
-      `Meet ends: ${beasts.length} roaming Dreambeast${beasts.length === 1 ? "" : "s"} remain. No Landscape left to Forget.`,
-    );
-  }
-
-  beasts.forEach(({ tile, encounter }, index) => {
-    addLog(
-      state,
-      `${encounter.name} (spawned ${index + 1}${beasts.length > 1 ? ` of ${beasts.length}` : ""}) remains on ${tile?.name || "the Dreamscape"} — no Fail (Fail only on draw Flee failure or failed Accept/Repress).`,
-    );
-  });
+  applyRoundResourceTax(state);
 }
 
 export function meetEndPreview(state) {
-  const beastCount = countActiveDreambeasts(state);
-  if (beastCount <= 0) return null;
-  return { beastCount, forgetCount: beastCount, relief: 0 };
+  const count = roundResourceTaxCount(state);
+  if (count <= 0) return null;
+  return { beastCount: count, repressCount: count, forgetCount: 0, relief: 0 };
 }
 
 export { isRoamingBeast };

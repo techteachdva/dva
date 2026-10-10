@@ -36,7 +36,6 @@ import {
   encounterAcceptSummary,
   encounterRejectSummary,
   encounterRejectCost,
-  isLeviathanCard,
   encounterPower,
   recommendedEncounterPower,
   encounterPowerLabel,
@@ -1149,8 +1148,7 @@ function appendDreambeastModalDetail(detail, card) {
   const rejectCost = encounterRejectCost(card);
   const rejectSuit = card.rejectSuit ? ` ${suitIconHtml(card.rejectSuit, { size: 14 })}` : "";
   const acceptSuit = card.suit ? ` ${suitIconHtml(card.suit, { size: 14 })}` : "";
-  const slumberOnly = isLeviathanCard(card);
-  const repressVerb = slumberOnly ? "Slumber" : "Repress";
+  const repressVerb = "Repress";
 
   if (card.flavor) {
     const flavor = document.createElement("blockquote");
@@ -1162,11 +1160,11 @@ function appendDreambeastModalDetail(detail, card) {
   const costs = document.createElement("div");
   costs.className = "dreambeast-cost-breakdown";
   costs.innerHTML = `
-    ${slumberOnly ? "" : `<div class="dreambeast-cost-row accept">
+    <div class="dreambeast-cost-row accept">
       <strong>Accept · Power ${card.accept}${acceptSuit} · Rec ${card.accept + 2}</strong>
       <span>${encounterPayHint(card, true)}</span>
       <span>${encounterAcceptSummary(card)}</span>
-    </div>`}
+    </div>
     <div class="dreambeast-cost-row reject">
       <strong>${repressVerb} · Power ${rejectCost}${rejectSuit} · Rec ${rejectCost + 2}</strong>
       <span>${encounterPayHint(card, false)}</span>
@@ -2553,9 +2551,7 @@ export function renderBoard(
       const overflow = entry.overflow ? " is-overflow" : "";
       const title = entry.overflow
         ? `${encounter.name} is on ${homeName}. Shown on the next Landscape because that hex's six corners are full.`
-        : isLeviathanCard(encounter)
-          ? `${encounter.name} — Slumber or View`
-          : `${encounter.name} — Accept, Repress, or View`;
+        : `${encounter.name} — Accept, Repress, or View`;
       return `<img class="hex-occupant-token hex-occupant-beast${arriving}${overflow}" style="${snap}" data-encounter-key="${encKey}" data-home-tile="${entry.homeId}" src="${encounter.image}" alt="${encounter.name}" title="${title}" decoding="async" draggable="false" onerror="this.remove()">`;
     });
     const occupantsHtml = occupantTokens.length
@@ -4369,11 +4365,11 @@ export function renderPhaseActions(_actions, _advanceAction = null, state = null
         ? state.players.find((p) => p.id === state.meetPassHolderId)
         : null;
       const passNote = holder ? ` Pass Token: ${holder.name}.` : "";
-      parts.push(`If you end Meet now, ${beastCount} Dreambeast${beastCount === 1 ? "" : "s"} will Forget ${beastCount} Landscape${beastCount === 1 ? "" : "s"}. At the start, a Dreamer on or beside a beast discards 1 Psyche for each one that can reach them. Beasts stay until you win a dice battle.${passNote}`);
+      parts.push(`If you end the round now, ${beastCount} Dreambeast${beastCount === 1 ? "" : "s"} will Repress ${beastCount} Psyche from the deck. Beasts stay until you win a dice battle.${passNote}`);
     }
     const toll = timelineTollPreview(state);
-    if (toll && !beastCount) {
-      parts.push(`Meet end: Forget ${toll.forgetCount} Landscape${toll.forgetCount === 1 ? "" : "s"}.`);
+    if (toll?.repressCount > 0 && !beastCount) {
+      parts.push(`Round end: Repress ${toll.repressCount} Psyche from the deck.`);
     }
     if (parts.length) {
       cue.hidden = false;
@@ -6260,13 +6256,12 @@ export function showLandscapeDetail(state, tileId, { onDreamerClick = null, onBe
     const rejectCost = encounterRejectCost(enc);
     const rejectSuit = enc.rejectSuit ? suitIconHtml(enc.rejectSuit, { size: 12 }) : "";
     const acceptSuit = enc.suit ? suitIconHtml(enc.suit, { size: 12 }) : "";
-    const slumberOnly = isLeviathanCard(enc);
     beastEntries.push({
       card: { ...enc, type: enc.type || "dreambeast" },
       caption: enc.name,
       detailHtml: `
-        ${slumberOnly ? "" : `<div class="landscape-detail-beast-cost accept"><strong>Accept · P${enc.accept} · Rec ${enc.accept + 2}</strong> ${acceptSuit}<span>${encounterPayHint(enc, true)}</span></div>`}
-        <div class="landscape-detail-beast-cost reject"><strong>${slumberOnly ? "Slumber" : "Repress"} · P${rejectCost} · Rec ${rejectCost + 2}</strong> ${rejectSuit}<span>${encounterPayHint(enc, false)}</span></div>
+        <div class="landscape-detail-beast-cost accept"><strong>Accept · P${enc.accept} · Rec ${enc.accept + 2}</strong> ${acceptSuit}<span>${encounterPayHint(enc, true)}</span></div>
+        <div class="landscape-detail-beast-cost reject"><strong>Repress · P${rejectCost} · Rec ${rejectCost + 2}</strong> ${rejectSuit}<span>${encounterPayHint(enc, false)}</span></div>
         ${enc.effect ? `<div class="landscape-detail-beast-effect"><strong>Effect:</strong> ${enc.effect}</div>` : ""}
         ${enc.flavor ? `<div class="landscape-detail-beast-flavor">${enc.flavor}</div>` : ""}
       `,

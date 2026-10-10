@@ -427,17 +427,15 @@ export function playDiceBattle(opts) {
   };
 
   const showPostRoll = () => {
-    const beastHit = beastSuccesses > 0;
-    if (postRollSpent || !allowPostRollToken || typeof onPostRoll !== "function" || !beastHit) {
+    if (instant) {
       presentWinner();
       return;
     }
     const row = document.createElement("div");
     row.className = "dice-post-roll";
     row.innerHTML = `
-      <p>${escapeHtml(postRollLead) || "Spend 1 Power Token, once. Ties still favor the beast if you stand."}</p>
+      <p>${escapeHtml(postRollLead) || "Ties favor the beast. A token cannot change the dice after they land."}</p>
       <div class="dice-post-roll-actions">
-        <button type="button" class="btn" data-post="subtract">Subtract 1 beast success</button>
         <button type="button" class="btn primary" data-post="stand">Stand</button>
       </div>
     `;

@@ -50,7 +50,6 @@ import {
   resolveDreamerPowerHandPick,
   handleDreamerPowerTilePick,
 } from "../dreamers/dreamer-powers.js";
-import { isLeviathanCard } from "../encounters/dreambeasts.js";
 import { isDiceBattleOpen, cancelDiceBattle } from "../encounters/dice-battle.js";
 
 function alive(state) {
@@ -106,13 +105,10 @@ export function pickMindstreamChoice(state, skill = "skilled") {
     const hand = psycheHandCount(player);
     const canAccept = (player.hand || []).some((c) => c.type !== "psyche-power" && c.type !== "psyche-dreambeast");
     const needMeet = unmarkedQuests(state) > 0 || !!state.finalRecurrence;
-    // Accept when we have a real hand; flee thin hands; repress only as last resort.
     if (has("accept") && canAccept && hand >= (sloppy ? 2 : 3) && (needMeet || hand >= 4 || !sloppy)) {
       return "accept";
     }
-    if (has("flee") && (hand < 3 || sloppy || !canAccept)) return "flee";
     if (has("accept") && canAccept) return "accept";
-    if (has("flee")) return "flee";
     if (has("repress")) return "repress";
     return choices[0] || null;
   }
@@ -639,10 +635,9 @@ export function createSpectatorBot({
         const tile = landscapeById(state, holder.landscapeId);
         const enc = tile?.encounters?.[0] || tile?.encounter;
         if (enc && api.meetEncounter) {
-          const leviathan = isLeviathanCard(enc);
-          const acceptCard = leviathan ? null : cheapestPay(holder, enc, true);
+          const acceptCard = cheapestPay(holder, enc, true);
           const rejectCard = cheapestPay(holder, enc, false);
-          const mode = (!leviathan && acceptCard && psycheHandCount(holder) >= 3) ? "accept"
+          const mode = (acceptCard && psycheHandCount(holder) >= 3) ? "accept"
             : rejectCard ? "reject"
               : acceptCard ? "accept" : null;
           const card = mode === "accept" ? acceptCard : rejectCard;

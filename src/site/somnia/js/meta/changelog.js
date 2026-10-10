@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "39.9";
+export const SOMNIA_VERSION = "40.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "40.0",
+    title: "The Wheat From The Chaff",
+    notes: [
+      "One Power on a Dreambeast. Accept befriends it. Repress banishes it. An ally is worth half that Power, rounded down. Wilds discard. Flee is gone. Every Dream, including the first, uses the card's Bright and Dim.",
+      "Dreambeasts left on the board Repress 1 Psyche from the deck when the round ends. During Final Recurrence, undefeated Archetypes do that instead. Death clears that Dreamer's Objects and tokens and redraws 3 on The Bed. The Mindstream is not touched. Leviathan is met like any other beast.",
+      "A Power Token opens a phase, adds a die before the roll, or uses a power. Acquire is free once both quests are true. A Persistent Object costs 1 Meet action. A finished Object set lets you Acquire an Archetype from the deck, then Represses the set.",
+      "Innocent, Orphan, and Outlaw ask for a suited Mindstream draw and a Meet against a Dreambeast of that suit. The menu is 2, 3, or 4 Dreamers. The Rested draws from the discard, the Visionary reveals Dreamers+1 Landscapes, and the Weaver may discard 1 to draw 1.",
+      "Archetype powers: Innocent returns 4 cards. Orphan draws 2 for everyone. Outlaw draws 1 Object from the discard. Caregiver fills the thinnest hand. Lover returns 1 Object. Explorer moves a Dreamer or Dreambeast onto a Landscape of its suit. Fool returns Dreamers+2. Creator returns 1 Dreambeast per Dreamer. Ruler returns 1 Event per Dreamer.",
+    ],
+  },
   {
     version: "39.9",
     title: "Archetype Dice",

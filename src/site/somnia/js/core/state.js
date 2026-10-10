@@ -13,7 +13,6 @@ import {
   normalizeSubconscious,
   repressFromMindstreamSetup,
   isDreambeastPsycheCard,
-  repressTopMindstreamFromEachDeck,
 } from "../dreamers/subconscious.js";
 import {
   handLimitForPlayer,
@@ -783,7 +782,6 @@ export function applyDreamerDeath(state, player) {
   const clock = state.deathClock;
 
   queueDreamerDeathFx(player.id, player.name, player.landscapeId);
-  repressTopMindstreamFromEachDeck(state);
   discardPlayerObjects(state, player);
   if (player.powerTokens) {
     spendPowerTokens(state, player, player.powerTokens, {
@@ -959,6 +957,24 @@ export function acquireFinalArchetype(state, player, archetype) {
   return copy;
 }
 
+/** Pull one Archetype out of the remaining deck and Acquire it immediately. */
+export function acquireArchetypeFromDeck(state, player, archetypeId) {
+  const idx = (state.archetypeDeck || []).findIndex((arch) => arch.id === archetypeId);
+  if (idx < 0 || !player) return null;
+  const [archetype] = state.archetypeDeck.splice(idx, 1);
+  const copy = {
+    ...archetype,
+    questProgress: (archetype.quests || []).map(() => true),
+  };
+  player.acquiredArchetypes.push(copy);
+  state.acquiredPoints += archetype.points || 0;
+  const goal = state.scoringGoalPoints || state.goalPoints || 0;
+  if (goal > 0 && (state.acquiredPoints || 0) >= goal) state.archetypeGoalReached = true;
+  addLog(state, `${player.name} acquires ${archetype.name} from the deck (+${archetype.points || 0}). Its power is ready.`);
+  checkVictory(state);
+  return copy;
+}
+
 export function beginFinalRecurrence(state) {
   if (state.finalRecurrence) return;
   state.finalRecurrence = true;
@@ -1020,7 +1036,7 @@ export function advancePhase(state) {
       t.revealed && tileHasEncounters(t) && state.players.some((p) => p.alive && p.landscapeId === t.id),
     );
     if (meetHere) state.selectedLandscapeId = meetHere.id;
-    addLog(state, "Meet Phase — spend Willpower for shared Actions. Bosses step toward the nearest Dreamer. Other Dreambeasts stay until Accepted or Repressed.");
+    addLog(state, "Meet Phase — spend Willpower for shared Actions. Bosses step toward the nearest Dreamer. Dreambeasts stay until Accepted or Repressed.");
   }
 }
 
@@ -1250,15 +1266,9 @@ export function completeQuest(state, _questIndex, player, onAcquireFn) {
     addLog(state, `Both quests must already be true. Still open: ${unmet.join(" · ")}`);
     return false;
   }
-  if (player.powerTokens < 1) {
-    addLog(state, "Spend 1 Power Token to commit this Archetype.");
-    return false;
-  }
-
-  spendPowerTokens(state, player, 1);
   archetype.questProgress = archetype.quests.map(() => true);
-  archetype.powerTokensOnArchetype = 1;
-  addLog(state, `${player.name} spends 1 Power Token and commits to ${archetype.name}.`);
+  archetype.powerTokensOnArchetype = 0;
+  addLog(state, `${player.name} commits to ${archetype.name}. Both quests are true.`);
   acquireArchetype(state, player, onAcquireFn);
   return "acquired";
 }

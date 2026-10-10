@@ -9,7 +9,7 @@ export function countBoardDreambeasts(state) {
   );
 }
 
-/** Read-only preview of Meet-end Forget + Fail (no state mutation). */
+/** Read-only preview of the end-of-round Psyche deck tax. */
 export function meetEndTollPreview(state) {
   return meetEndPreview(state);
 }

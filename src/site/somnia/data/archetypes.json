@@ -16,8 +16,8 @@
     "image": "images/archetypes/archetype-innocent.webp",
     "suit": "lucidity",
     "passive": null,
-    "power": "Return 4 Repressed Cards from Subconscious",
-    "quests": ["Draw Mindstream on The Attic or The Basement", "Meet a Dreambeast on The Attic or The Basement"]
+    "power": "Return 4 cards of any type from the Subconscious",
+    "quests": ["Draw Mindstream on any Lucidity Landscape", "Meet a Lucidity Dreambeast"]
   },
   {
     "id": "caregiver",
@@ -26,7 +26,7 @@
     "image": "images/archetypes/archetype-caregiver.webp",
     "suit": "willpower",
     "passive": null,
-    "power": "1 Dreamer Draw 5 Psyche up to hand limit",
+    "power": "The Dreamer with the fewest Psyche draws 5, up to the hand limit",
     "quests": ["Draw Mindstream on Sea of Teeth or Field of Broken Glass", "Meet a Dreambeast on Sea of Teeth or Field of Broken Glass"]
   },
   {
@@ -36,7 +36,7 @@
     "image": "images/archetypes/archetype-lover.webp",
     "suit": "elasticity",
     "passive": null,
-    "power": "All Dreamers draw 1 Object from the Lover's suit deck",
+    "power": "Return 1 Object from the Subconscious",
     "quests": ["Draw Mindstream on Awards or The Party", "Meet a Dreambeast on Awards or The Party"]
   },
   {
@@ -46,7 +46,7 @@
     "image": "images/archetypes/archetype-explorer.webp",
     "suit": "elasticity",
     "passive": null,
-    "power": "1 Dreamer moves to any other Dreamer or Dreambeast",
+    "power": "Move 1 Dreamer or 1 Dreambeast to any Landscape matching its suit",
     "quests": ["Draw Mindstream on Endless Ocean or Lava", "Meet a Dreambeast on Endless Ocean or Lava"]
   },
   {
@@ -66,8 +66,8 @@
     "image": "images/archetypes/archetype-orphan.webp",
     "suit": "willpower",
     "passive": null,
-    "power": "All Dreamers Draw 3 Psyche, Discard 1",
-    "quests": ["Draw Mindstream on Scary Classroom or Candy Mountain", "Meet a Dreambeast on Scary Classroom or Candy Mountain"]
+    "power": "Everyone draws 2 Psyche",
+    "quests": ["Draw Mindstream on any Willpower Landscape", "Meet a Willpower Dreambeast"]
   },
   {
     "id": "fool",
@@ -76,7 +76,7 @@
     "image": "images/archetypes/archetype-fool.webp",
     "suit": "elasticity",
     "passive": null,
-    "power": "Return Dreamers+3 Cards from Subconscious",
+    "power": "Return Dreamers+2 cards from the Subconscious",
     "quests": ["Draw Mindstream on Insanity or Black Void", "Meet a Dreambeast on Insanity or Black Void"]
   },
   {
@@ -86,7 +86,7 @@
     "image": "images/archetypes/archetype-creator.webp",
     "suit": "lucidity",
     "passive": null,
-    "power": "Return 2 Objects per Dreamer to the top of their suited Object decks",
+    "power": "Each Dreamer returns 1 Dreambeast from the Subconscious",
     "quests": ["Draw Mindstream on Day in the Life or Inner Sanctum", "Meet a Dreambeast on Day in the Life or Inner Sanctum"]
   },
   {
@@ -96,7 +96,7 @@
     "image": "images/archetypes/archetype-ruler.webp",
     "suit": "willpower",
     "passive": null,
-    "power": "All Dreamers Return up to 1 Dreambeast from Unconscious and place on any Landscape occupied by a Dreamer",
+    "power": "Each Dreamer returns 1 Event from the Subconscious",
     "quests": ["Draw Mindstream on Tranquil Grove or Endless Hallway", "Meet a Dreambeast on Tranquil Grove or Endless Hallway"]
   },
   {
@@ -116,7 +116,7 @@
     "image": "images/archetypes/archetype-outlaw.webp",
     "suit": "elasticity",
     "passive": null,
-    "power": "All Dreamers Draw top 1 Mindstream of same Suit and 1 from top of same suit Mindstream Discard, Choose 1 to resolve/play, discard other",
-    "quests": ["Draw Mindstream on Desert or Silver Mist", "Meet a Dreambeast on Desert or Silver Mist"]
+    "power": "The acting Dreamer draws 1 Object from the discard",
+    "quests": ["Draw Mindstream on any Elasticity Landscape", "Meet an Elasticity Dreambeast"]
   }
 ]

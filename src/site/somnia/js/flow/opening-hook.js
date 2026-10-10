@@ -98,14 +98,10 @@ function openingDreamLines(state) {
       [variable(omen.name, "Dream"), plain(" stands on The Bed.")],
     ];
   }
-  const even = omen.roll % 2 === 0;
-  const way = even ? "the Bright way" : "the Dim way";
   const lines = [
-    [plain("A die turns before anyone can choose.")],
-    [plain(`It shows ${numberWord(omen.roll)}, ${even ? "even" : "odd"}.`)],
-    [plain("The Dream "), variable(omen.name, "Dream"), plain(` opens ${way}.`)],
+    [plain("The Dream "), variable(omen.name, "Dream"), plain(" is already on the table.")],
+    [plain("Read it. Bright if its condition is met. Otherwise Dim.")],
   ];
-  if (omen.label) lines.push([plain(`${omen.label}.`)]);
   return lines;
 }
 

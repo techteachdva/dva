@@ -70,7 +70,6 @@ import {
   applyRejectReward,
   applyAcceptEffect,
   applyFailEffect,
-  isLeviathanCard,
 } from "../encounters/dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "../dreamers/subconscious.js";
@@ -133,6 +132,7 @@ import { playDiceBattle, isDiceBattleOpen } from "../encounters/dice-battle.js";
 import {
   FINAL_ARCHETYPE_POWER,
   archetypeSpreadOpen,
+  archetypeMeetLocked,
   undefeatedFinalArchetypes,
 } from "../dreamers/final-recurrence-rules.js";
 
@@ -255,9 +255,32 @@ function tutorialSuppressesMeetPass(state) {
 }
 
 function focusActionTurnHolder(state) {
-  if (!state.meetPassHolderId) return;
-  const idx = state.players.findIndex((p) => p.id === state.meetPassHolderId && p.alive);
+  syncActingHand(state);
+}
+
+function bindHolderMeetTile(state, player) {
+  if (getPhase(state) !== "Meet" || !(state.meetActionBudget > 0)) return;
+  if (archetypeSpreadOpen(state) || archetypeMeetLocked(state)) return;
+  const holder = actionTurnHolder(state);
+  if (!holder || holder.id !== player?.id) return;
+  const stood = landscapeById(state, player.landscapeId);
+  if (stood?.revealed && !stood.wasteland) state.selectedLandscapeId = stood.id;
+}
+
+/**
+ * The gold ring is the Dreamer whose turn it is. Their hand is the spread.
+ * Looking at someone else must not leave the highlighted hand unable to select cards.
+ * A Final Recurrence table spread still lets the table switch hands.
+ */
+export function syncActingHand(state) {
+  const holder = actionTurnHolder(state);
+  if (!holder || archetypeSpreadOpen(state)) return;
+  const idx = state.players.findIndex((p) => p.id === holder.id);
   if (idx >= 0) state.activePlayerIndex = idx;
+  if (getPhase(state) !== "Meet" || archetypeMeetLocked(state)) return;
+  if (!holder.landscapeId) return;
+  const tile = landscapeById(state, holder.landscapeId);
+  if (tile?.revealed && !tile.wasteland) state.selectedLandscapeId = holder.landscapeId;
 }
 
 /** True while a phase budget is open and Dreamers take turns spending actions. */
@@ -993,12 +1016,11 @@ export function getPhaseActions(state, handlers) {
     const meetEnc = encounterForMeet(state);
     if (meetEnc && !state.finalRecurrence) {
       const payHint = encounterPayHint(meetEnc, true);
-      const slumberOnly = isLeviathanCard(meetEnc);
       const preferReject = state.pendingMindstreamMeet?.preferredMode === "reject";
       const prepHint = state.pendingMindstreamMeet
         ? " Select Psyche in your hand, then confirm."
         : "";
-      if (!slumberOnly) actions.push({
+      actions.push({
         label: `${encounterPowerLabel(meetEnc, true)} — ${encounterAcceptSummary(meetEnc)}`,
         kind: "meetAccept",
         section: "encounter",
@@ -1314,9 +1336,8 @@ export function drawDreamCard(state, onShowModal) {
 }
 
 /**
- * Round 1 draws its Dream before anyone acts. A seeded 1d6 picks the path:
- * even opens Bright, odd opens Dim. The die is the choice, so Bright's usual
- * toll is not charged and no one is asked. Later Dreams still offer the choice.
+ * Round 1 draws its Dream before anyone acts. The table reads Bright and Dim
+ * from the card, the same way later Dreams do.
  */
 export function resolveOpeningDream(state, helpers = {}) {
   if (!state || state.tutorialMode || state.openingOmen || state.dreamDrawn) return null;
@@ -1350,36 +1371,17 @@ export function resolveOpeningDream(state, helpers = {}) {
     return card;
   }
 
-  const roll = 1 + Math.floor(random() * 6);
-  const sideId = roll % 2 === 0 ? "good" : "bad";
-  const resolution = getDreamResolution(card.refId || card.id);
-  const side = resolution?.[sideId];
-  const sideWord = sideId === "good" ? "Bright" : "Dim";
-
   state.openingOmen = {
     name: card.name,
-    roll,
-    side: sideId,
-    label: side?.label || sideWord,
-    hint: side?.hint || "",
+    roll: null,
+    side: "card",
+    label: "the table reads Bright and Dim",
+    hint: "",
   };
-  card.resolutionSide = sideId;
-  card.resolutionLabel = side?.label || sideWord;
 
   addLog(state, `${head.name} (Head ★) draws the opening Dream: ${card.name}.`);
-  if (side) {
-    state.openingFateAuto = true;
-    try {
-      applyResolutionEffect(state, head, side, helpers, sideId);
-    } finally {
-      state.openingFateAuto = false;
-    }
-    logMoment(state, `${card.name} opens ${sideWord}: ${side.label}. The die showed ${roll}.`);
-    addLog(state, `Opening die ${roll} (${roll % 2 === 0 ? "even" : "odd"}) — ${card.name} resolves ${sideWord}. ${side.label}.`);
-  } else {
-    logMoment(state, `${card.name} opens ${sideWord}. The die showed ${roll}.`);
-    addLog(state, `Opening die ${roll} (${roll % 2 === 0 ? "even" : "odd"}) — ${card.name} resolves ${sideWord}.`);
-  }
+  logMoment(state, `${card.name} is on the table. Bright if its condition is met. Otherwise Dim.`);
+  resolveCardEffect(state, card, head, helpers);
 
   checkDefeat(state);
   applySkeletonKeyAfterDream(state);
@@ -1983,13 +1985,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     return;
   }
   const isReject = mode === "reject" || mode === "repress";
-  const verb = isReject
-    ? (isLeviathanCard(encounter) ? "Slumber" : "Repress")
-    : "Accept";
-  if (!isReject && isLeviathanCard(encounter)) {
-    say("Leviathan is Awake. The only Meet is Slumber: play Willpower, win the dice, and it flips Asleep into the Subconscious.");
-    return;
-  }
+  const verb = isReject ? "Repress" : "Accept";
   const beastPower = encounterPower(encounter, !isReject);
   const recommended = recommendedEncounterPower(encounter, !isReject);
   const selected = selectedCards(state, actor);
@@ -2077,9 +2073,9 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     forceWinner: scriptedWinner,
     minBeastLead: teachStand ? 2 : 0,
     instant: false,
-    allowPostRollToken: teachStand || (!scriptedWinner && (actor.powerTokens || 0) > 0),
+    allowPostRollToken: false,
     postRollLead: teachStand
-      ? "Mandrake leads by more than 1 success. Subtract 1 cannot flip this fight. Click Stand. In a closer fight, that same token can take one success. A tie still favors the beast."
+      ? "Click Stand. Ties favor the beast."
       : "",
     onPostRoll: () => {
       if (!spendPowerTokens(state, actor, 1, { animate: false })) return false;
@@ -2120,7 +2116,7 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     const handCard = dreambeastToHandCard(encounter);
     actor.hand.push(handCard);
     queueAcceptAllyFx(actor.id, tile.id, handCard);
-    addLog(state, `${encounter.name} joins ${actor.name}'s hand as a 3 ${SUIT_LABELS[encounter.suit] || encounter.suit} Psyche ally.`);
+    addLog(state, `${encounter.name} joins ${actor.name}'s hand as a ${handCard.value} ${SUIT_LABELS[encounter.suit] || encounter.suit} Psyche ally.`);
     const suitLabel = SUIT_LABELS[encounter.suit] || encounter.suit || "suited";
     const reward = drawObjects(state, actor, 1, getEffectHelpers(), encounter.suit);
     if (reward.length) {
@@ -2129,19 +2125,15 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
       logMoment(state, `The ${suitLabel} Object deck is empty.`);
     }
   } else {
-    if (isLeviathanCard(encounter)) {
-      encounter.awake = false;
-      addLog(state, `${actor.name} forces Leviathan into Slumber. It flips Asleep and is Repressed into the Subconscious.`);
-    } else {
-      addLog(state, `${actor.name} Represses ${encounter.name}. ${encounter.rejectReward || ""}`);
-    }
-    repressCard(state, { ...encounter, type: "dreambeast", awake: isLeviathanCard(encounter) ? false : encounter.awake });
+    addLog(state, `${actor.name} Represses ${encounter.name}. ${encounter.rejectReward || ""}`);
+    repressCard(state, { ...encounter, type: "dreambeast" });
     applyRejectReward(state, encounter, actor, getEffectHelpers());
   }
 
   const landscapeId = state.activeEncounterLandscapeId;
   if (landscapeId) {
     recordQuestEvent(state, "meet_on_landscape", { landscapeId });
+    recordQuestEvent(state, "meet_beast_suit", { suit: encounter.suit });
     notifyTutorialEncounterResolved(state, landscapeId);
     if (encounter.boss || encounter.id === "cerberus" || encounter.id === "double" || encounter.id === "leviathan") {
       recordQuestEvent(state, "meet_boss", { bossId: encounter.id });
@@ -2369,7 +2361,17 @@ export function playObject(state, objectId = null, { usePower = false } = {}) {
   }
 
   const isPersistentActivate = player.persistent?.some((o) => o.instanceId === card.instanceId);
-  return playObjectCard(state, player, card, getEffectHelpers(), { usePower: isPersistentActivate || usePower });
+  if (isPersistentActivate) {
+    if (getPhase(state) !== "Meet" || !(state.meetActionBudget > 0) || state.meetActionsUsed >= state.meetActionBudget) {
+      addLog(state, "Activating a Persistent Object costs 1 Meet action.");
+      return null;
+    }
+    if (!spendMeetAction(state, MEET_ACTIONS.MEET)) return null;
+    const played = playObjectCard(state, player, card, getEffectHelpers(), { usePower: false });
+    if (!played) state.meetActionsUsed = Math.max(0, (state.meetActionsUsed || 1) - 1);
+    return played;
+  }
+  return playObjectCard(state, player, card, getEffectHelpers(), { usePower });
 }
 
 export function activateObject(state) {
@@ -2746,7 +2748,7 @@ export function handleDefeatFinalArchetype(state, archetypeId = null, onDone = n
     beastName: arch.name,
     dreamerDice: played,
     beastDice: FINAL_ARCHETYPE_POWER,
-    allowPostRollToken: (actor.powerTokens || 0) > 0,
+    allowPostRollToken: false,
     onPostRoll: () => {
       if (!spendPowerTokens(state, actor, 1, { animate: false })) return false;
       addLog(state, `${actor.name} spends 1 Power Token to subtract 1 Archetype success.`);
@@ -2852,6 +2854,7 @@ export function toggleHandCard(state, card, owner = null) {
     if (phase !== "Meet" || state.meetActionBudget === 0) return;
     if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;
     const tableSpread = archetypeSpreadOpen(state);
+    bindHolderMeetTile(state, player);
     const actor = meetPsycheActor(state);
     if (!tableSpread && (!actor || player.id !== actor.id)) {
       if (actor) logMoment(state, `Meet uses ${actor.name}'s Psyche.`);
@@ -2878,9 +2881,11 @@ export function toggleHandCard(state, card, owner = null) {
   if (phase === "Meet" && state.meetActionBudget > 0) {
     if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;
     const tableSpread = archetypeSpreadOpen(state);
+    bindHolderMeetTile(state, player);
     const actor = meetPsycheActor(state);
     if (!tableSpread && (!actor || player.id !== actor.id)) {
       if (actor) logMoment(state, `Meet uses ${actor.name}'s Psyche.`);
+      else logMoment(state, `${player.name} must stand on a revealed Landscape to play a spread.`);
       return;
     }
     if (!tableSpread) {
@@ -3038,7 +3043,7 @@ export function endPhase(state) {
       ? `${COOP_PLAY_TIP} Head Dreamer (★) draws the Dream once. One Dreamer spends Lucidity to set team reveals.`
       : phase === "Explore"
         ? `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves — then Dreamers take turns spending them (Pass Turn or Give Turn to hand off).`
-        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. Start: discard 1 Psyche per roaming Dreambeast on or beside you. End: Forget 1 random Landscape per remaining beast. Fail hits when Accept, Repress, or Flee fails. Beasts stay until you win a dice battle.`,
+        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. When the round ends, each Dreambeast still on the board Represses 1 Psyche from the deck. Fail hits when Accept or Repress loses. Beasts stay until you win a dice battle.`,
     [],
     { moment: `${phase} Phase begins.` },
   );
@@ -3096,7 +3101,7 @@ export function getPhaseHint(state) {
   }
   if (phase === "Meet") {
     if (state.meetActionBudget === 0) {
-      return `${COOP_PLAY_TIP} Dreamers on a beast or next door discard 1 Psyche. One Dreamer spends Willpower for shared Meet actions. Beasts still standing Forget a Landscape when Meet ends.`;
+      return `${COOP_PLAY_TIP} One Dreamer spends Willpower for shared Meet actions. Beasts still standing Repress 1 Psyche from the deck when the round ends.`;
     }
     const pool = coopMeetPlayTotal(state);
     const count = allSelectedCards(state).length;

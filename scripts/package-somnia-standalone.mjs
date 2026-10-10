@@ -57,6 +57,7 @@ function copyDir(src, dest) {
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     const from = path.join(src, entry.name);
     const to = path.join(dest, entry.name);
+    if (entry.name === "dev-secret") continue;
     if (entry.isDirectory()) copyDir(from, to);
     else fs.copyFileSync(from, to);
   }

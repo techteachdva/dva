@@ -1034,7 +1034,7 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       }
       const card = cards[0];
       addLog(state, `${landscapeName}: draws ${card.name}.`);
-      recordQuestEvent(state, "mindstream_on_landscape", { landscapeId: tile.id });
+      recordQuestEvent(state, "mindstream_on_landscape", { landscapeId: tile.id, suit: tile.suit });
       queueMindstreamDrawFx(tile.id, suit, card);
       if (helpers.resolveCardEffect) {
         helpers.resolveCardEffect(state, card, player, helpers);
@@ -1216,7 +1216,7 @@ export function resolveLandscapeMindstreamPick(state, tile, player, suit, action
     }
     const card = cards[0];
     addLog(state, `${tile.name}: draws ${card.name}.`);
-    recordQuestEvent(state, "mindstream_on_landscape", { landscapeId: tile.id });
+    recordQuestEvent(state, "mindstream_on_landscape", { landscapeId: tile.id, suit: tile.suit });
     queueMindstreamDrawFx(tile.id, suit, card);
     if (helpers.resolveCardEffect) {
       helpers.resolveCardEffect(state, card, player, helpers);

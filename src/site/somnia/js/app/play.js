@@ -122,12 +122,13 @@ import {
   dreamerMeetBlockReason,
   actionTurnActive,
   actionTurnHolder,
+  syncActingHand,
   passMeetToken,
   moveDreamer,
   prepareMindstreamMeet,
 } from "../core/game.js";
 import { createSpectatorBot } from "../dev/bot-ai.js";
-import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel, isLeviathanCard } from "../encounters/dreambeasts.js";
+import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "../encounters/dreambeasts.js";
 import { requestEndPhase } from "../flow/phase-skip.js";
 import { initDevConsole } from "../dev/dev-console.js";
 import { enableDevMode } from "../dev/dev-commands.js";
@@ -437,6 +438,23 @@ async function init() {
     renderAll,
     endPhase,
     getAiSpectator,
+    startTableGame: async ({ playerCount = 4 } = {}) => {
+      const roster = [...(gameData.dreamers || [])];
+      if (!roster.length) return false;
+      const shuffled = roster.sort(() => Math.random() - 0.5);
+      const n = Math.max(1, Math.min(playerCount, shuffled.length, 6));
+      const selectedDreamers = shuffled.slice(0, n);
+      await startGame({
+        lengthKey: "nap",
+        selectedDreamerIds: selectedDreamers.map((d) => d.id),
+        gentleStart: false,
+        seed: null,
+      });
+      document.body.classList.remove("opening-cinematic-pending");
+      document.body.classList.remove("tutorial-mode-active");
+      renderAll();
+      return true;
+    },
     startAiWatchGame: async ({ playerCount = 4, skill = "skilled" } = {}) => {
       const roster = [...(gameData.dreamers || [])];
       if (!roster.length) return false;
@@ -451,6 +469,7 @@ async function init() {
         seed: null,
       });
       document.body.classList.remove("opening-cinematic-pending");
+      document.body.classList.remove("tutorial-mode-active");
       getSpectatorBot().start({ skill, stepMs: 750 });
       renderAll();
       return true;
@@ -1093,7 +1112,7 @@ async function startGame(config) {
       state,
       "You are dreaming",
       openingHookText(state),
-      ["The opening Dream has already turned. Reveal is yours."],
+      ["The opening Dream is on the table. Read Bright and Dim."],
     );
   }
 
@@ -1808,10 +1827,9 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
   const handlers = buildPhaseHandlers();
   const canMeet = occupant && canDreamerMeetOnLandscape(state, occupant, tileId);
 
-  const slumberOnly = isLeviathanCard(encounter);
   const meetBlock = canMeet ? "" : (dreamerMeetBlockReason(state, occupant, tileId) || "Cannot Meet right now.");
   const options = [
-    !slumberOnly && {
+    {
       id: "accept",
       label: encounterPowerLabel(encounter, true),
       hint: meetBlock || `${encounterPayHint(encounter, true)} ${encounterAcceptSummary(encounter)} · ${occupant?.name || "Dreamer"}'s Psyche`,
@@ -2555,6 +2573,7 @@ function handleDrawPileClick(deckId) {
 
 function renderAll() {
   if (!state) return;
+  syncActingHand(state);
   document.body.classList.toggle("seed-dmzemo", !!state.seedFlags?.dmzemo);
   bindUiRenderState(state);
   resolveStaleLandscapePick(state);

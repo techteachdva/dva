@@ -201,8 +201,8 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
   }
 
   if (inPlay) {
-    if (options.usePower && !spendPowerTokens(state, player, 1)) {
-      addLog(state, "Need 1 Power Token to activate an Object.");
+    if (options.usePower) {
+      addLog(state, "A Persistent Object costs 1 Meet action, not a Power Token.");
       return null;
     }
     addLog(state, `${player.name} activates ${card.name}.`);

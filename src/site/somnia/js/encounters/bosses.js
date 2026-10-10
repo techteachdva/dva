@@ -1,7 +1,5 @@
 import {
   addLog,
-  drawPsycheForPlayer,
-  forgetLandscapes,
   landscapeById,
   tileEncounters,
   clearEncountersOnLandscape,
@@ -41,9 +39,6 @@ export function applyBossAcceptEffect(state, encounter, actor) {
       addLog(state, "Double: Forgot Day in the Life and Scary Classroom.");
       break;
     case "leviathan":
-      forgetLandscapes(state, 1);
-      repressTopPsyche(state, 3);
-      addLog(state, "Leviathan: Forgot 1 Landscape and Repressed top 3 Psyche.");
       break;
     default:
       break;

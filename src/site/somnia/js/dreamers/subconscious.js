@@ -141,10 +141,27 @@ export function isSubconsciousDreambeast(card) {
     || !!card.boss;
 }
 
+function matchesReturnFilter(card, filter) {
+  if (!filter) return true;
+  if (filter === "dreambeast") return isSubconsciousDreambeast(card);
+  if (filter === "object") return card?.type === "object";
+  if (filter === "event") return card?.type === "event";
+  return true;
+}
+
+function returnReason(filter, count) {
+  if (filter === "dreambeast") return `Return ${count} Dreambeast(s) from the Subconscious.`;
+  if (filter === "object") return `Return ${count} Object(s) from the Subconscious.`;
+  if (filter === "event") return `Return ${count} Event(s) from the Subconscious.`;
+  return `Return ${count} card(s) from the Subconscious.`;
+}
+
 function cardsForReturn(state, filter) {
   const blocked = new Set(state.freshlyRepressedInstanceIds || []);
   const cards = listSubconsciousCards(state).filter((c) => !blocked.has(c.instanceId));
   if (filter === "dreambeast") return cards.filter(isSubconsciousDreambeast);
+  if (filter === "object") return cards.filter((c) => c.type === "object");
+  if (filter === "event") return cards.filter((c) => c.type === "event");
   return cards;
 }
 
@@ -247,9 +264,7 @@ export function requestReturnCards(state, count, player = null, { filter = null 
     picked: [],
     playerId: player?.id || null,
     filter: filter || null,
-    reason: filter === "dreambeast"
-      ? `Return ${toReturn} Dreambeast(s) from the Subconscious.`
-      : `Return ${toReturn} card(s) from the Subconscious.`,
+    reason: returnReason(filter, toReturn),
   };
   return { pending: true, count: toReturn };
 }
@@ -264,9 +279,7 @@ export function enqueueReturnCards(state, count, player = null, { reason = "", f
     count,
     playerId: player?.id || null,
     filter: filter || null,
-    reason: reason || (filter === "dreambeast"
-      ? `${label}: Return ${count} Dreambeast(s) from the Subconscious.`
-      : `${label}: Return ${count} card(s) from the Subconscious.`),
+    reason: reason || `${label}: ${returnReason(filter, count)}`,
   });
   if (!state.pendingRepress && !state.pendingReturn) {
     advanceResolutionQueue(state);
@@ -878,18 +891,24 @@ export function subconsciousBinderEntries(state) {
       pileLabel: pile.label,
       pileIcon: pile.icon,
     })),
-  ).filter((entry) => (filter === "dreambeast" ? isSubconsciousDreambeast(entry.card) : true));
+  ).filter((entry) => matchesReturnFilter(entry.card, filter));
 }
 
-/** Convert an accepted Encounter into a hand card worth 3 Psyche in its suit. */
+/** An accepted beast is an ally worth half its Power, rounded down. */
+export function allyValueForPower(power) {
+  const n = Number(power) || 0;
+  return Math.floor(n / 2);
+}
+
 export function dreambeastToHandCard(encounter) {
   const suit = encounter.suit || "willpower";
+  const value = allyValueForPower(encounter.accept || encounter.power || encounter.repress || 0);
   return {
     ...encounter,
     type: "psyche-dreambeast",
     isDreambeastPsyche: true,
-    value: 3,
-    psycheValue: 3,
+    value,
+    psycheValue: value,
     suit,
     name: encounter.name,
   };

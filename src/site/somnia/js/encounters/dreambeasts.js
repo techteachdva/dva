@@ -69,10 +69,10 @@ export function encounterRejectCost(encounter) {
   return encounter.reject ?? encounter.repress ?? 0;
 }
 
-/** Dice the Dreambeast rolls — Accept and Reject Power are the same point value. */
-export function encounterPower(encounter, accept = true) {
+/** One Power. Accept and Repress roll the same dice. */
+export function encounterPower(encounter, _accept = true) {
   if (!encounter) return 0;
-  return Number(accept ? (encounter.accept || 0) : encounterRejectCost(encounter)) || 0;
+  return Number(encounter.accept || encounterRejectCost(encounter) || 0) || 0;
 }
 
 /** Recommended Dreamer Power is beast Power + 2. Underpaying is legal. */
@@ -86,19 +86,17 @@ export function isLeviathanCard(card) {
 
 export function encounterPowerLabel(encounter, accept = true) {
   const power = encounterPower(encounter, accept);
-  const verb = accept ? "Accept" : (isLeviathanCard(encounter) ? "Slumber" : "Repress");
+  const verb = accept ? "Accept" : "Repress";
   return `${verb} · Power ${power} · Rec ${power + 2}`;
 }
 
 export function encounterAcceptSummary(encounter) {
   const suit = SUIT_LABELS[encounter?.suit] || encounter?.suit || "matching";
-  return `Gain 3 ${suit} Psyche ally in hand`;
+  const value = Math.floor(Number(encounter?.accept || 0) / 2);
+  return `Gain a ${value} ${suit} Psyche ally`;
 }
 
 export function encounterRejectSummary(encounter) {
-  if (isLeviathanCard(encounter)) {
-    return encounter?.rejectReward || "Flip Asleep and Repress into the Subconscious";
-  }
   return encounter?.rejectReward || "Repress the Dreambeast into the Subconscious";
 }
 
@@ -239,32 +237,21 @@ function asAwakeLeviathan(card) {
   };
 }
 
-/** Awake on the board becomes Asleep in the Subconscious. */
+/** Leviathan no longer flips. Repress keeps it in the Subconscious. */
 export function slumberLeviathan(state) {
-  const located = locateLeviathan(state);
-  if (!located) return null;
-  const card = {
-    ...located.encounter,
-    id: "leviathan",
-    refId: located.encounter.refId || "leviathan",
-    type: "dreambeast",
-    boss: true,
-    awake: false,
-    instanceId: located.encounter.instanceId || uid("leviathan"),
-  };
-  removeEncounterFromLandscape(state, located.tile.id, located.encounter);
-  repressCard(state, card);
-  addLog(state, "Leviathan falls Asleep and is Repressed into the Subconscious.");
-  logMoment(state, "Leviathan sleeps in the Subconscious.");
-  return card;
+  addLog(state, "Leviathan does not flip. Repress keeps it in the Subconscious.");
+  return locateLeviathan(state)?.encounter || null;
 }
 
-/** Asleep in the Subconscious, or still in the Dream Deck, wakes onto a tile. */
+/** Spawn from the Dream Deck onto a tile. A Repressed Leviathan stays Repressed. */
 export function wakeLeviathanOn(state, tileId = "bed") {
   const already = locateLeviathan(state);
   if (already) return already.encounter;
-  const card = takeLeviathanFromSubconscious(state) || takeLeviathanFromDreamDeck(state);
-  if (!card) return null;
+  const card = takeLeviathanFromDreamDeck(state);
+  if (!card) {
+    addLog(state, "Leviathan stays in the Subconscious.");
+    return null;
+  }
   const encounter = asAwakeLeviathan(card);
   const dest = landscapeById(state, tileId) ? tileId : "bed";
   setEncounterOnLandscape(state, dest, encounter);
@@ -274,16 +261,10 @@ export function wakeLeviathanOn(state, tileId = "bed") {
   return encounter;
 }
 
-/**
- * Flip Leviathan. Awake on the board goes to sleep in the Subconscious.
- * Asleep in the Subconscious, or still in the Dream Deck, wakes on The Bed.
- */
+/** Old flip effects do not pull Leviathan back out of the Subconscious. */
 export function flipLeviathan(state) {
-  if (locateLeviathan(state)) return slumberLeviathan(state);
-  const woken = wakeLeviathanOn(state, "bed");
-  if (woken) return woken;
-  addLog(state, "Leviathan is not on the board or in the Subconscious to flip.");
-  return null;
+  addLog(state, "Leviathan does not flip. Accept befriends it. Repress keeps it in the Subconscious.");
+  return locateLeviathan(state)?.encounter || null;
 }
 
 const ACCEPT_EFFECTS = {
@@ -769,28 +750,11 @@ export function applyRejectReward(state, encounter, actor, helpers = {}) {
       });
       break;
     }
-    case "draw-object": {
-      if (helpers.drawObjects) {
-        const objs = helpers.drawObjects(state, actor, effect.count || 1, helpers);
-        if (objs.length) addLog(state, `${actor.name} draws ${objs.length} Object(s).`);
-      }
-      if (effect.alsoPsyche) {
-        const drawn = drawPsycheForPlayer(state, actor, effect.alsoPsyche);
-        if (drawn.length) addLog(state, `${actor.name} draws ${drawn.length} Psyche.`);
-      }
-      break;
-    }
+    case "draw-object":
     case "draw-psyche-or-objects": {
-      offerEffectChoice(state, actor, {
-        source: "beast",
-        cardId: "wendigo-reject",
-        title: "Wendigo",
-        message: "Draw 2 Psyche or 2 Objects.",
-        choices: [
-          { id: "psyche", label: "Draw 2 Psyche" },
-          { id: "objects", label: "Draw 2 Objects" },
-        ],
-      });
+      const count = (effect.count || 1) + (effect.alsoPsyche || 0);
+      const drawn = drawPsycheForPlayer(state, actor, effect.type === "draw-psyche-or-objects" ? 2 : count);
+      if (drawn.length) addLog(state, `${actor.name} draws ${drawn.length} Psyche.`);
       break;
     }
     case "return-subconscious": {

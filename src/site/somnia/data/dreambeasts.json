@@ -70,8 +70,8 @@
     "repress": 11,
     "rejectSuit": "willpower",
     "fail": "Forget 2 Landscapes. Repress top 4 Psyche.",
-    "effect": "Awake: spawn on The Bed. The only Meet is Slumber. That flips Leviathan Asleep and Represses it into the Subconscious. Flip Leviathan again to wake it.",
-    "rejectReward": "Return 6 Psyche (Slumber).",
+    "effect": "Power 11 on The Bed. Accept befriends it. Repress sends it to the Subconscious, and it stays there.",
+    "rejectReward": "Return 6 Psyche.",
     "rejectEffect": {
       "type": "return-subconscious",
       "count": 6
@@ -140,7 +140,7 @@
     "rejectSuit": "lucidity",
     "fail": "Repress 5 Psyche from hand.",
     "effect": "Repress top Psyche & 1 Elasticity Mindstream.",
-    "rejectReward": "Draw 2 Objects.",
+    "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
       "count": 2
@@ -407,7 +407,7 @@
     "rejectSuit": "willpower",
     "fail": "Repress 5 Psyche from hand.",
     "effect": "Lucidity 2: Draw 1 Psyche Card.",
-    "rejectReward": "Draw 1 Object.",
+    "rejectReward": "Draw 1 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
       "count": 1
@@ -710,7 +710,7 @@
     "rejectSuit": "lucidity",
     "fail": "Repress top 3 Psyche and top 2 Willpower Mindstream.",
     "effect": "Repress top Willpower Mindstream & top 2 Psyche.",
-    "rejectReward": "Draw 1 Object.",
+    "rejectReward": "Draw 1 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
       "count": 1
@@ -744,7 +744,7 @@
     "rejectSuit": "lucidity",
     "fail": "Repress 5 Psyche from hand.",
     "effect": "Repress a Psyche card at least value 3 or else Repress 3.",
-    "rejectReward": "Draw 2 Psyche or Objects.",
+    "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
       "type": "draw-psyche-or-objects",
       "count": 2
@@ -768,7 +768,7 @@
     "rejectSuit": "lucidity",
     "fail": "Forget Endless Hallway and Silver Mist. Repress 3 Psyche from hand.",
     "effect": "Forget Endless Hallway and Silver Mist.",
-    "rejectReward": "Draw 1 Object.",
+    "rejectReward": "Draw 1 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
       "count": 1
@@ -804,7 +804,7 @@
     "rejectSuit": "lucidity",
     "fail": "Repress 5 Psyche from hand.",
     "effect": "Repress top Willpower Mindstream.",
-    "rejectReward": "Draw 1 Object & 1 Psyche.",
+    "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
       "count": 1,
@@ -829,7 +829,7 @@
     "rejectSuit": "lucidity",
     "fail": "Each Dreamer Represses 2 Psyche. Forget 1 Landscape.",
     "effect": "Discard Psyche Cards = half Dreamers.",
-    "rejectReward": "Draw 1 Set Object.",
+    "rejectReward": "Draw 1 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
       "count": 1
@@ -862,7 +862,7 @@
     "rejectSuit": "lucidity",
     "fail": "Repress 4 Psyche from hand.",
     "effect": "Repress top Willpower Mindstream.",
-    "rejectReward": "Draw 2 Objects.",
+    "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
       "count": 2
@@ -955,7 +955,7 @@
     "rejectSuit": "lucidity",
     "fail": "Forget Inner Sanctum and The Party. Repress 3 Psyche from hand.",
     "effect": "Forget Inner Sanctum and The Party.",
-    "rejectReward": "Draw 2 Objects.",
+    "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
       "count": 2

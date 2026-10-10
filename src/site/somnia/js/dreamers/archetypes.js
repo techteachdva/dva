@@ -1,18 +1,18 @@
 import {
   addLog,
+  allEncountersOnBoard,
   drawPsycheForPlayer,
-  landscapeById,
-  tileHasEncounters,
+  encounterKey,
 } from "../core/state.js";
-import { handRoomForPsycheDraw, drawObjects } from "../effects/objects.js";
+import { handRoomForPsycheDraw, onObjectDrawn } from "../effects/objects.js";
 import { recordQuestEvent } from "./quests.js";
-import { requestReturnCards } from "./subconscious.js";
-import { pullObjectsFromMindstreamDiscards } from "../cards/mindstream-supply.js";
+import { enqueueReturnCards, listSubconsciousCards, requestReturnCards } from "./subconscious.js";
 import { spendPowerTokens, grantPowerTokens } from "../cards/power-tokens.js";
 import { isQuintessentialArchetype } from "./archetype-stats.js";
 import { requestChooseTile } from "../board/landscapes.js";
 import { offerEffectChoice, registerEffectResolver } from "../effects/effect-choices.js";
-import { recordCancellableDiscard } from "./dreamer-powers.js";
+import { dreamerPrimarySuit } from "../encounters/dreambeasts.js";
+import { SUIT_LABELS } from "../core/rules.js";
 
 let lastArchetypeHelpers = null;
 
@@ -29,188 +29,177 @@ function playerById(state, id) {
   return state.players.find((p) => p.id === id) || null;
 }
 
-function explorerDestinations(state, mover) {
-  return state.board.filter((t) => {
-    if (!t.revealed || t.wasteland) return false;
-    const hasDreamer = state.players.some((p) => p.alive && p.id !== mover.id && p.landscapeId === t.id);
-    return hasDreamer || tileHasEncounters(t);
-  }).map((t) => t.id);
+function psycheInHand(player) {
+  return (player.hand || []).filter((c) => c.type !== "psyche-dreambeast" && !c.isDreambeastPsyche).length;
 }
 
-function occupiedDreamerTiles(state) {
-  return state.board.filter((t) =>
-    t.revealed && !t.wasteland && state.players.some((p) => p.alive && p.landscapeId === t.id));
+function suitDestinations(state, suit, exceptId) {
+  return (state.board || [])
+    .filter((tile) => tile.suit === suit && tile.id !== exceptId && !tile.center)
+    .map((tile) => tile.id);
 }
 
-function beginExplorerPower(state, player) {
-  const dests = explorerDestinations(state, player);
-  if (!dests.length) {
-    grantPowerTokens(state, player, 1);
-    addLog(state, "Explorer Power: no Landscape with another Dreamer or Dreambeast. Token refunded.");
-    return;
-  }
-  requestChooseTile(state, {
-    allowedIds: dests,
-    action: "movePlayer",
-    playerId: player.id,
-    title: "Explorer Power",
-    detail: "Choose a Landscape with another Dreamer or a Dreambeast.",
-  });
+function refundArchetypeToken(state, player, reason) {
+  grantPowerTokens(state, player, 1, { reason, logQuest: false, animate: false });
 }
 
-function resolveOutlawCard(state, player, keep, other, suit) {
-  const helpers = rememberArchetypeHelpers();
-  if (helpers?.resolveCardEffect) {
-    helpers.resolveCardEffect(state, keep, player, helpers);
-  }
-  if (keep && keep.type !== "dreambeast" && keep.type !== "object") {
-    state.mindstreamDiscard[suit]?.push(keep);
-  }
-  if (other) state.mindstreamDiscard[suit]?.push(other);
-  addLog(state, `${player.name} keeps ${keep?.name || "a Mindstream card"} (Outlaw).`);
+function returnProduced(result) {
+  if (Array.isArray(result)) return result.length > 0;
+  return !!(result && (result.pending || result.queued));
 }
 
-export function continueArchetypeQueues(state) {
-  if (state.pendingEffectChoice || state.landscapePick || state.pendingDreamChoice) return;
-  const q = state._outlawQueue;
-  if (q?.resolved?.length && !q.playerIds?.length) {
-    const next = q.resolved.shift();
-    const player = playerById(state, next.playerId);
-    if (player && next.keep) resolveOutlawCard(state, player, next.keep, next.other, next.suit);
-    if (!q.resolved.length && !q.playerIds?.length) state._outlawQueue = null;
-    if (state.pendingEffectChoice || state.landscapePick) return;
-    continueArchetypeQueues(state);
-  }
+function discardedObjects(state) {
+  const piles = state.objectDiscard || {};
+  return ["lucidity", "elasticity", "willpower"].flatMap((suit) => piles[suit] || []);
 }
 
-function presentOutlawPick(state) {
-  const q = state._outlawQueue;
-  if (!q) return;
-  q.resolved = q.resolved || [];
-  if (!q.playerIds?.length) {
-    continueArchetypeQueues(state);
+function takeDiscardedObject(state, card) {
+  const suit = card?.suit || card?.mindstreamSuit;
+  const pile = state.objectDiscard?.[suit];
+  if (!pile) return null;
+  const idx = pile.findIndex((entry) => entry === card || entry.instanceId === card.instanceId);
+  if (idx < 0) return null;
+  return pile.splice(idx, 1)[0];
+}
+
+function beginOutlawPower(state, player, helpers) {
+  const cards = discardedObjects(state);
+  if (!cards.length) {
+    refundArchetypeToken(state, player, "Outlaw Power: the Object discard is empty. Token refunded.");
     return;
   }
-  const player = playerById(state, q.playerIds[0]);
-  const suit = q.suit;
-  if (!player) {
-    q.playerIds.shift();
-    presentOutlawPick(state);
+  if (cards.length === 1) {
+    const card = takeDiscardedObject(state, cards[0]);
+    if (card) onObjectDrawn(state, player, card, helpers);
     return;
   }
-  const options = [];
-  if (state.mindstreamDecks[suit]?.length) {
-    options.push(state.mindstreamDecks[suit].shift());
-  }
-  if (state.mindstreamDiscard[suit]?.length) {
-    options.push(state.mindstreamDiscard[suit].pop());
-  }
-  if (!options.length) {
-    addLog(state, `${player.name} has no ${suit} Mindstream cards to draw.`);
-    q.playerIds.shift();
-    presentOutlawPick(state);
-    return;
-  }
-  if (options.length === 1) {
-    q.resolved.push({ playerId: player.id, keep: options[0], other: null, suit });
-    q.playerIds.shift();
-    presentOutlawPick(state);
-    return;
-  }
+  rememberArchetypeHelpers(helpers);
   offerEffectChoice(state, player, {
     cardId: "outlaw-power",
     ui: "cards",
     title: "Outlaw Power",
-    message: `${player.name}: keep 1 ${suit} Mindstream card. The other is discarded.`,
-    cards: options,
-    payload: { suit, options },
+    message: `${player.name}: draw 1 Object from the discard.`,
+    cards,
   });
 }
 
 registerEffectResolver("outlaw-power", (state, choiceId) => {
   const pending = state.pendingEffectChoice;
   const player = playerById(state, pending?.playerId);
-  const suit = pending?.payload?.suit;
-  const options = pending?.payload?.options || [];
-  const keep = options.find((c) => (c.instanceId || c.id) === choiceId) || options[0];
-  const other = options.find((c) => c !== keep);
+  const card = discardedObjects(state).find((entry) => (entry.instanceId || entry.id) === choiceId);
   state.pendingEffectChoice = null;
-  const q = state._outlawQueue;
-  if (q && player && keep) {
-    q.resolved = q.resolved || [];
-    q.resolved.push({ playerId: player.id, keep, other, suit });
-    q.playerIds.shift();
-  }
-  presentOutlawPick(state);
+  const taken = card ? takeDiscardedObject(state, card) : null;
+  if (player && taken) onObjectDrawn(state, player, taken, rememberArchetypeHelpers());
   return true;
 });
 
-function presentRulerPick(state) {
-  const q = state._rulerQueue;
-  const beasts = state.subconscious?.dreambeasts || [];
-  const occupied = occupiedDreamerTiles(state);
-  if (!q?.length || !beasts.length || !occupied.length) {
-    state._rulerQueue = null;
-    if (q?.length && !beasts.length) addLog(state, "No Dreambeasts left in the Unconscious.");
+function explorerPieces(state) {
+  const pieces = [];
+  alivePlayers(state).forEach((dreamer) => {
+    const suit = dreamerPrimarySuit(dreamer.dreamer || {});
+    const dests = suitDestinations(state, suit, dreamer.landscapeId);
+    if (!dests.length) return;
+    pieces.push({
+      id: `dreamer:${dreamer.id}`,
+      label: `Move ${dreamer.name}`,
+      hint: `Any ${SUIT_LABELS[suit] || suit} Landscape.`,
+      kind: "dreamer",
+      playerId: dreamer.id,
+      dests,
+    });
+  });
+  allEncountersOnBoard(state).forEach(({ tile, encounter }) => {
+    const suit = encounter.suit;
+    if (!suit) return;
+    const dests = suitDestinations(state, suit, tile.id);
+    if (!dests.length) return;
+    const key = encounterKey(encounter);
+    pieces.push({
+      id: `beast:${tile.id}:${key}`,
+      label: `Move ${encounter.name}`,
+      hint: `Any ${SUIT_LABELS[suit] || suit} Landscape.`,
+      kind: "beast",
+      fromTileId: tile.id,
+      encounterKey: key,
+      encounter,
+      dests,
+    });
+  });
+  return pieces;
+}
+
+function beginExplorerPower(state, player) {
+  const pieces = explorerPieces(state);
+  if (!pieces.length) {
+    refundArchetypeToken(state, player, "Explorer Power: nothing can move onto a Landscape of its suit. Token refunded.");
     return;
   }
-  const player = playerById(state, q[0]);
-  if (!player) {
-    q.shift();
-    presentRulerPick(state);
+  if (pieces.length === 1) {
+    moveExplorerPiece(state, pieces[0]);
     return;
   }
   offerEffectChoice(state, player, {
-    cardId: "ruler-power",
-    title: "Ruler Power",
-    message: `${player.name}: return 1 Dreambeast from the Unconscious onto a Dreamer's Landscape, or skip.`,
-    choices: [
-      ...beasts.map((b) => ({ id: b.instanceId || b.id, label: b.name })),
-      { id: "skip", label: "Skip" },
-    ],
-    payload: { beasts },
+    cardId: "explorer-power",
+    title: "Explorer Power",
+    message: "Move 1 Dreamer or 1 Dreambeast onto a Landscape of its suit.",
+    choices: pieces.map((piece) => ({ id: piece.id, label: piece.label, hint: piece.hint })),
+    payload: { pieces },
   });
 }
 
-registerEffectResolver("ruler-power", (state, choiceId) => {
-  const pending = state.pendingEffectChoice;
-  const player = playerById(state, pending?.playerId);
-  state.pendingEffectChoice = null;
-  if (choiceId === "skip" || !player) {
-    if (state._rulerQueue?.length) state._rulerQueue.shift();
-    presentRulerPick(state);
-    return true;
+function moveExplorerPiece(state, piece) {
+  if (!piece) return;
+  if (piece.kind === "dreamer") {
+    requestChooseTile(state, {
+      allowedIds: piece.dests,
+      action: "movePlayer",
+      playerId: piece.playerId,
+      title: "Explorer Power",
+      detail: piece.hint || "Choose a Landscape of that suit.",
+    });
+    return;
   }
-  const pile = state.subconscious?.dreambeasts || [];
-  const idx = pile.findIndex((b) => (b.instanceId || b.id) === choiceId);
-  if (idx < 0) {
-    if (state._rulerQueue?.length) state._rulerQueue.shift();
-    presentRulerPick(state);
-    return true;
-  }
-  const [beast] = pile.splice(idx, 1);
-  const occupied = occupiedDreamerTiles(state);
+  const found = allEncountersOnBoard(state).find(({ tile, encounter }) =>
+    tile.id === piece.fromTileId && encounterKey(encounter) === piece.encounterKey);
+  if (!found) return;
   requestChooseTile(state, {
-    allowedIds: occupied.map((t) => t.id),
-    action: "spawnEncounter",
-    encounter: beast,
-    title: "Ruler Power",
-    detail: `Place ${beast.name} on a Landscape occupied by a Dreamer.`,
-    followup: { archetypeFollowup: "ruler" },
+    allowedIds: piece.dests,
+    action: "moveEncounter",
+    fromTileId: found.tile.id,
+    encounter: found.encounter,
+    title: "Explorer Power",
+    detail: `Move ${found.encounter.name} onto a Landscape of its suit.`,
   });
-  if (state.pendingObjectFollowup?.archetypeFollowup === "ruler" && !state.landscapePick) {
-    resumeArchetypeFollowup(state);
-  }
+}
+
+registerEffectResolver("explorer-power", (state, choiceId) => {
+  const pending = state.pendingEffectChoice;
+  const piece = (pending?.payload?.pieces || []).find((entry) => entry.id === choiceId);
+  state.pendingEffectChoice = null;
+  moveExplorerPiece(state, piece);
   return true;
 });
 
-export function resumeArchetypeFollowup(state) {
-  const follow = state.pendingObjectFollowup;
-  if (follow?.archetypeFollowup !== "ruler") return false;
-  state.pendingObjectFollowup = null;
-  if (state._rulerQueue?.length) state._rulerQueue.shift();
-  presentRulerPick(state);
+function returnOneEach(state, filter, noun) {
+  const available = listSubconsciousCards(state).filter((card) => (
+    filter === "dreambeast"
+      ? card.type === "dreambeast" || card.type === "boss" || card.type === "psyche-dreambeast" || card.isDreambeastPsyche || card.boss
+      : card.type === filter
+  ));
+  if (!available.length) return false;
+  alivePlayers(state).forEach((dreamer) => {
+    enqueueReturnCards(state, 1, dreamer, {
+      filter,
+      reason: `${dreamer.name}: Return 1 ${noun} from the Subconscious.`,
+    });
+  });
   return true;
+}
+
+export function continueArchetypeQueues() {}
+
+export function resumeArchetypeFollowup() {
+  return false;
 }
 
 /** Quintessential passives log on acquire; activatable powers cost 1 Power Token. */
@@ -242,38 +231,39 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
 
   switch (archetype.id) {
     case "innocent":
-      requestReturnCards(state, 4, player);
+      if (!returnProduced(requestReturnCards(state, 4, player))) {
+        refundArchetypeToken(state, player, "Innocent Power: the Subconscious is empty. Token refunded.");
+      }
       break;
 
     case "caregiver": {
-      const need = handRoomForPsycheDraw(state, player);
+      const living = alivePlayers(state);
+      if (!living.length) break;
+      const thinnest = living.reduce((best, dreamer) => (
+        psycheInHand(dreamer) < psycheInHand(best) ? dreamer : best
+      ), living[0]);
+      const need = handRoomForPsycheDraw(state, thinnest);
       const drawCount = Math.min(5, need);
-      if (drawCount) {
-        const drawn = drawPsycheForPlayer(state, player, drawCount);
-        recordQuestEvent(state, "draw_psyche", { count: drawn.length });
+      if (!drawCount) {
+        refundArchetypeToken(state, player, `${thinnest.name} is already at the hand limit. Token refunded.`);
+        break;
+      }
+      const drawn = drawPsycheForPlayer(state, thinnest, drawCount);
+      recordQuestEvent(state, "draw_psyche", { count: drawn.length });
+      addLog(state, `${thinnest.name} has the fewest Psyche and draws ${drawn.length}.`);
+      break;
+    }
+
+    case "lover":
+      if (!returnProduced(requestReturnCards(state, 1, player, { filter: "object" })) && !state.pendingReturn) {
+        refundArchetypeToken(state, player, "Lover Power: no Object in the Subconscious. Token refunded.");
       }
       break;
-    }
-
-    case "lover": {
-      const suit = archetype.suit || "elasticity";
-      state.players.filter((p) => p.alive).forEach((p) => {
-        const drawn = drawObjects(state, p, 1, helpers, suit);
-        if (!drawn.length) addLog(state, `The ${suit} Object deck is empty.`);
-      });
-      break;
-    }
 
     case "orphan":
-      state.players.filter((p) => p.alive).forEach((p) => {
-        const drawn = drawPsycheForPlayer(state, p, 3);
+      alivePlayers(state).forEach((dreamer) => {
+        const drawn = drawPsycheForPlayer(state, dreamer, 2);
         recordQuestEvent(state, "draw_psyche", { count: drawn.length });
-        if (p.hand.length) {
-          const discarded = p.hand.pop();
-          state.psycheDiscard.push(discarded);
-          recordCancellableDiscard(state, p, discarded, "orphan");
-          recordQuestEvent(state, "discard_psyche", { count: 1 });
-        }
       });
       break;
 
@@ -282,42 +272,25 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
       break;
 
     case "fool":
-      requestReturnCards(state, state.players.filter((p) => p.alive).length + 3, player);
-      break;
-
-    case "outlaw": {
-      rememberArchetypeHelpers(helpers);
-      state._outlawQueue = {
-        playerIds: alivePlayers(state).map((p) => p.id),
-        suit: archetype.suit || "elasticity",
-      };
-      presentOutlawPick(state);
-      break;
-    }
-
-    case "ruler": {
-      const beasts = state.subconscious?.dreambeasts || [];
-      if (!beasts.length) {
-        addLog(state, "No Dreambeasts in the Unconscious to return.");
-        break;
+      if (!returnProduced(requestReturnCards(state, alivePlayers(state).length + 2, player))) {
+        refundArchetypeToken(state, player, "Fool Power: the Subconscious is empty. Token refunded.");
       }
-      state._rulerQueue = alivePlayers(state).map((p) => p.id);
-      presentRulerPick(state);
       break;
-    }
+
+    case "outlaw":
+      beginOutlawPower(state, player, helpers);
+      break;
+
+    case "ruler":
+      if (!returnOneEach(state, "event", "Event")) {
+        refundArchetypeToken(state, player, "Ruler Power: no Event in the Subconscious. Token refunded.");
+      }
+      break;
 
     case "creator":
-      state.players.filter((p) => p.alive).forEach((p) => {
-        const fromDiscard = pullObjectsFromMindstreamDiscards(state, 2);
-        fromDiscard.forEach((obj) => {
-          const suit = obj.suit || obj.mindstreamSuit || "lucidity";
-          if (!state.objectDecks) state.objectDecks = { lucidity: [], elasticity: [], willpower: [] };
-          state.objectDecks[suit]?.unshift(obj);
-        });
-        if (fromDiscard.length) {
-          addLog(state, `${p.name} returns ${fromDiscard.length} Object(s) to the top of their Object decks.`);
-        }
-      });
+      if (!returnOneEach(state, "dreambeast", "Dreambeast")) {
+        refundArchetypeToken(state, player, "Creator Power: no Dreambeast in the Subconscious. Token refunded.");
+      }
       break;
 
     default:
@@ -326,25 +299,6 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
   return true;
 }
 
-export function handleArchetypePowerTilePick(state, tileId) {
-  const pending = state.pendingArchetypePower;
-  if (!pending || pending.step !== "pick-destination") return false;
-
-  const mover = state.players.find((p) => p.id === pending.moverId);
-  const tile = landscapeById(state, tileId);
-  if (!mover || !tile?.revealed) return false;
-
-  const hasTarget = state.players.some((p) => p.alive && p.id !== mover.id && p.landscapeId === tileId)
-    || tileHasEncounters(tile);
-  if (!hasTarget) {
-    addLog(state, "Choose a Landscape occupied by another Dreamer or a Dreambeast.");
-    return false;
-  }
-
-  mover.landscapeId = tileId;
-  state.selectedLandscapeId = tileId;
-  addLog(state, `${mover.name} moves to ${tile.name} (Explorer Power).`);
-  recordQuestEvent(state, "move_player", { count: 1 });
-  state.pendingArchetypePower = null;
-  return true;
+export function handleArchetypePowerTilePick() {
+  return false;
 }

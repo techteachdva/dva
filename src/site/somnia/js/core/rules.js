@@ -4,7 +4,7 @@ import {
   repressCard,
   isDreambeastPsycheCard,
 } from "../dreamers/subconscious.js";
-import { dreamerMeetBonuses, encounterRejectCost, encounterPower, recommendedEncounterPower, isLeviathanCard } from "../encounters/dreambeasts.js";
+import { dreamerMeetBonuses, encounterRejectCost, encounterPower, recommendedEncounterPower } from "../encounters/dreambeasts.js";
 import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
 import { persistentMeetBonus, sumEffectivePsycheValue } from "../effects/objects.js";
 import { effectiveDreamerStat } from "../dreamers/archetype-stats.js";
@@ -443,7 +443,7 @@ export function selectedHasPaySuit(cards, suit) {
 export function encounterPayHint(encounter, accept = true) {
   const suit = encounterPaySuit(encounter, accept);
   if (!suit) return "";
-  const verb = accept ? "Accept" : (isLeviathanCard(encounter) ? "Slumber" : "Repress");
+  const verb = accept ? "Accept" : "Repress";
   const power = encounterPower(encounter, accept);
   return `${verb} needs at least 1 ${SUIT_LABELS[suit]} Psyche (1–3 cards; allies extra). Beast Power ${power}, recommended ${power + 2}. You may play less and still roll. Matching ${SUIT_LABELS[suit]} is added to your Power.`;
 }
@@ -531,19 +531,13 @@ export function archetypeSpreadDice(state, archetypeId = null) {
 }
 
 function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {
-  const wild = isWildPsyche(card);
   const isAlly = isDreambeastPsycheCard(card);
-  const toSub = toRepress || wild || isAlly;
+  const toSub = toRepress || isAlly;
   const target = toSub ? "subconscious" : "discard";
   const reason = toSub ? "repress" : "spend";
   queueCardDiscard(player.id, card, target, reason);
   queueHandDelta(player.id, -1);
 
-  if (wild) {
-    repressCard(state, card);
-    playSfx("repress");
-    return;
-  }
   if (isAlly) {
     repressCard(state, card);
     playSfx("repress");

@@ -7,7 +7,7 @@
     "elasticity": 1,
     "willpower": 0,
     "flavor": "Though waves may break, my ship shall take me off to the Land of Nod.",
-    "power": "All Dreamers Draw from the Psyche Discard, or Refresh: put 1 Psyche on the deck bottom and Draw 1."
+    "power": "Each Dreamer draws 1 from the Psyche discard."
   },
   {
     "id": "the-visionary",
@@ -17,7 +17,7 @@
     "elasticity": 0,
     "willpower": 1,
     "flavor": "Peer deep enough within yourself and you will find the seed of everything.",
-    "power": "Reveal Dreamers+1 Landscapes, or each Dreamer Peeks at 1 deck top and may send it to the bottom."
+    "power": "Reveal a number of Landscapes equal to the number of Dreamers + 1."
   },
   {
     "id": "the-runner",
@@ -47,7 +47,7 @@
     "elasticity": 0,
     "willpower": 2,
     "flavor": "Even Time stands still for those who wait long enough.",
-    "power": "Hold the Line: during the next Meet Phase, all Dreamers may add +1 Psyche to any Accept or Repress spread."
+    "power": "Hold the Line: every spread this Meet may add +1 Psyche. If it is not yet Meet, the bonus waits until Meet begins."
   },
   {
     "id": "the-weaver",
@@ -57,6 +57,6 @@
     "elasticity": 1,
     "willpower": 2,
     "flavor": "Strands of fate, woven as I will it.",
-    "power": "Threads of Will: each Dreamer Discards 1 Psyche and Draws 1."
+    "power": "Each Dreamer may discard 1 Psyche to draw 1."
   }
 ]

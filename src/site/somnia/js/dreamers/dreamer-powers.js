@@ -285,12 +285,37 @@ function hunterPowerStart(state) {
 
 function immovablePowerExecute(state) {
   if (getPhase(state) === "Meet") {
-    state.anchorMeetSpreadPending = 1;
-    addLog(state, "Hold the Line: during the next Meet Phase, all Dreamers may add +1 Psyche to any Accept or Repress spread.");
+    state.anchorMeetSpreadBonus = (state.anchorMeetSpreadBonus || 0) + 1;
+    addLog(state, "Hold the Line: this Meet, every spread may add +1 Psyche.");
   } else {
-    state.anchorMeetSpreadBonus = 1;
-    addLog(state, "Hold the Line: this Meet Phase, all Dreamers may add +1 Psyche to any Accept or Repress spread.");
+    state.anchorMeetSpreadPending = (state.anchorMeetSpreadPending || 0) + 1;
+    addLog(state, "Hold the Line: the next Meet, every spread may add +1 Psyche.");
   }
+  clearDreamerPower(state);
+  return { done: true };
+}
+
+function offerWeaverCycle(state) {
+  const pending = state.pendingDreamerPower;
+  const queue = pending.cycleQueue || [];
+  let index = pending.cycleIndex ?? 0;
+  while (index < queue.length) {
+    const player = state.players.find((p) => p.id === queue[index]);
+    index += 1;
+    if (!player || !cyclablePsycheCards(player).length) {
+      if (player) addLog(state, `${player.name} keeps their hand.`);
+      continue;
+    }
+    pending.cycleIndex = index;
+    pending.cyclePlayerId = player.id;
+    pending.step = "weaver-offer";
+    setChoiceUI(state, `The Weaver — ${player.name}`, "Discard 1 Psyche to draw 1, or skip.", [
+      { id: "weaver-cycle", label: "Discard 1, draw 1", hint: "Choose one Psyche to discard, then draw 1." },
+      { id: "weaver-skip", label: "Skip", hint: "Keep this hand." },
+    ]);
+    return { ui: pending.ui };
+  }
+  addLog(state, "The Weaver's cycle is finished.");
   clearDreamerPower(state);
   return { done: true };
 }
@@ -329,7 +354,7 @@ function advanceCycleStep(state, label) {
 function weaverPowerStart(state) {
   state.pendingDreamerPower.cycleQueue = alivePlayers(state).map((p) => p.id);
   state.pendingDreamerPower.cycleIndex = 0;
-  return advanceCycleStep(state, "Threads of Will");
+  return offerWeaverCycle(state);
 }
 
 function restedRefreshStart(state) {
@@ -412,11 +437,22 @@ export function beginDreamerPower(state) {
 
   switch (pending.dreamerId) {
     case "the-rested":
-      restedPowerStart(state);
-      return { ui: state.pendingDreamerPower.ui };
-    case "the-visionary":
-      visionaryPowerStart(state);
-      return { ui: state.pendingDreamerPower.ui };
+      drawPsycheFromDiscardForAll(state);
+      clearDreamerPower(state);
+      return { done: true };
+    case "the-visionary": {
+      const available = revealableTiles(state).length;
+      const count = Math.min(alivePlayers(state).length + 1, available);
+      if (!count) {
+        addLog(state, "No Landscapes available to reveal.");
+        clearDreamerPower(state);
+        return { done: true };
+      }
+      pending.step = "reveal-landscape";
+      pending.revealRemaining = count;
+      addLog(state, `Visionary Power: reveal ${count} Landscape(s) — click hidden tiles on the map.`);
+      return { needsBoard: true };
+    }
     case "the-runner":
       runnerPowerStart(state);
       return { ui: state.pendingDreamerPower.ui };
@@ -437,6 +473,22 @@ export function resolveDreamerPowerChoice(state, choiceId) {
   if (!pending) return { done: true };
 
   delete pending.ui;
+
+  if (pending.dreamerId === "the-weaver" && pending.step === "weaver-offer") {
+    if (choiceId === "weaver-cycle") {
+      const player = state.players.find((p) => p.id === pending.cyclePlayerId);
+      const cards = cyclablePsycheCards(player);
+      pending.step = "cycle-hand";
+      pending.ui = {
+        type: "hand",
+        title: `The Weaver — ${player?.name || "Dreamer"}`,
+        message: "Choose 1 Psyche to discard. You will draw 1.",
+        cards,
+      };
+      return { ui: pending.ui };
+    }
+    return offerWeaverCycle(state);
+  }
 
   if (pending.dreamerId === "the-rested") {
     if (choiceId === "discard-draw") drawPsycheFromDiscardForAll(state);
@@ -521,8 +573,8 @@ export function resolveDreamerPowerHandPick(state, cardKey) {
 
   cycleHandCard(state, player, card, { toBottom: pending.cycleMode === "bottom" });
   pending.cycleIndex = pending.cycleIndex ?? 0;
-  const label = pending.dreamerId === "the-weaver" ? "Threads of Will" : "The Rested";
-  return advanceCycleStep(state, label);
+  if (pending.dreamerId === "the-weaver") return offerWeaverCycle(state);
+  return advanceCycleStep(state, "The Rested");
 }
 
 export function resolveDreamerPowerDeckPick(state, deckKey) {

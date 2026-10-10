@@ -10,6 +10,8 @@ export function createQuestTracker() {
     meetBoss: { cerberus: false, double: false, leviathan: false },
     meetOnLandscape: {},
     mindstreamOnLandscape: {},
+    mindstreamOnSuit: {},
+    meetBeastSuit: {},
     psycheCycleOnBed: false,
     landscapesRevealed: 0,
     landscapeActions: {},
@@ -37,6 +39,14 @@ export function recordQuestEvent(state, event, data = {}) {
       break;
     case "mindstream_on_landscape":
       t.mindstreamOnLandscape[data.landscapeId] = true;
+      if (data.suit) {
+        if (!t.mindstreamOnSuit) t.mindstreamOnSuit = {};
+        t.mindstreamOnSuit[data.suit] = true;
+      }
+      break;
+    case "meet_beast_suit":
+      if (!t.meetBeastSuit) t.meetBeastSuit = {};
+      if (data.suit) t.meetBeastSuit[data.suit] = true;
       break;
     case "psyche_cycle_bed":
       t.psycheCycleOnBed = true;
@@ -147,6 +157,12 @@ const QUEST_CHECKS = {
     mindstreamOnAny(t, ["day-in-the-life", "inner-sanctum"]),
   "meet a dreambeast on day in the life or inner sanctum": (t) =>
     meetOnAny(t, ["day-in-the-life", "inner-sanctum"]),
+  "draw mindstream on any lucidity landscape": (t) => !!t.mindstreamOnSuit?.lucidity,
+  "draw mindstream on any elasticity landscape": (t) => !!t.mindstreamOnSuit?.elasticity,
+  "draw mindstream on any willpower landscape": (t) => !!t.mindstreamOnSuit?.willpower,
+  "meet a lucidity dreambeast": (t) => !!t.meetBeastSuit?.lucidity,
+  "meet an elasticity dreambeast": (t) => !!t.meetBeastSuit?.elasticity,
+  "meet a willpower dreambeast": (t) => !!t.meetBeastSuit?.willpower,
 };
 
 function normalizeQuest(text) {
@@ -244,8 +260,15 @@ export function activeQuestLandscapeIds(state) {
   arch.quests.forEach((q, i) => {
     if (arch.questProgress?.[i]) return;
     if (isQuestConditionMet(state, arch.id, q)) return;
-    const hinted = QUEST_LANDSCAPE_HINTS[normalizeQuest(q)];
+    const key = normalizeQuest(q);
+    const hinted = QUEST_LANDSCAPE_HINTS[key];
     if (hinted) hinted.forEach((id) => ids.add(id));
+    const suit = key.match(/any (lucidity|elasticity|willpower) landscape/);
+    if (suit) {
+      (state.board || []).forEach((tile) => {
+        if (tile.suit === suit[1] && !tile.center) ids.add(tile.id);
+      });
+    }
   });
   return [...ids];
 }

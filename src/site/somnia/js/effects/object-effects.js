@@ -2,7 +2,7 @@ import {
   addLog,
   drawPsycheForPlayer,
   landscapeById,
-  acquireArchetype,
+  acquireArchetypeFromDeck,
   setEncounterOnLandscape,
   removeEncounterFromLandscape,
   encounterOnLandscape,
@@ -184,13 +184,31 @@ function spawnBeastOn(state, helpers, landscapeId, options = {}) {
   addLog(state, `${pulled.card.name}${kindNote} appears on ${tile?.name || "the Dreamscape"} from the ${pulled.suit} Mindstream.`);
 }
 
+function offerSetAcquire(state, player, label, instanceIds = []) {
+  const deck = state.archetypeDeck || [];
+  if (!deck.length) {
+    addLog(state, `${label} is complete, and the Archetype deck is empty. The set stays.`);
+    return false;
+  }
+  if (state.pendingObjectChoice?.cardId === "object-set") return false;
+  state.pendingObjectChoice = {
+    cardId: "object-set",
+    step: "pick-archetype",
+    ui: "choice",
+    playerId: player.id,
+    title: `${label} set`,
+    message: "Pick an Archetype from the deck. You Acquire it, then the set is Repressed.",
+    choices: deck.map((arch) => ({ id: arch.id, label: `${arch.name} (${arch.points || 0} pts)` })),
+    payload: { label, instanceIds },
+  };
+  addLog(state, `${label} set complete. Choose an Archetype to Acquire.`);
+  return true;
+}
+
 function trackChessPlay(state, player) {
   player.chessPlayed = (player.chessPlayed || 0) + 1;
-  if (player.chessPlayed >= 3) {
-    player.chessPlayed = 0;
-    returnN(state, dreamerCount(state) + 2, player);
-    addLog(state, "Chess Set complete: Return Dreamers+2 Cards.");
-  }
+  if (player.chessPlayed < 3) return;
+  if (offerSetAcquire(state, player, "Chess", [])) player.chessPlayed = 0;
 }
 
 function askMoveDreamer(state, player, { cardId, title, destIds, thenReturn = 0, log }) {
@@ -475,11 +493,39 @@ export function resumeObjectEffect(state, helpers = null) {
   return true;
 }
 
+function repressSetCards(state, player, instanceIds) {
+  const ids = new Set(instanceIds || []);
+  const pull = (list) => {
+    const kept = [];
+    for (const card of list || []) {
+      if (ids.has(card.instanceId)) repressCard(state, card);
+      else kept.push(card);
+    }
+    return kept;
+  };
+  player.objects = pull(player.objects);
+  player.persistent = pull(player.persistent);
+}
+
 export function resolveObjectChoice(state, choiceId, helpers = null) {
   const pending = state.pendingObjectChoice;
   if (!pending) return false;
   helpers = useHelpers(helpers);
   const player = playerById(state, pending.playerId);
+  if (pending.cardId === "object-set" && pending.step === "pick-archetype") {
+    state.pendingObjectChoice = null;
+    const acquired = acquireArchetypeFromDeck(state, player, choiceId);
+    if (!acquired) {
+      addLog(state, "That Archetype is no longer in the deck.");
+      return false;
+    }
+    if (acquired.power) {
+      addLog(state, `${acquired.name} is ready. Spend 1 Power Token to use: ${acquired.power}`);
+    }
+    repressSetCards(state, player, pending.payload?.instanceIds);
+    addLog(state, `${pending.payload?.label || "The set"} is Repressed.`);
+    return true;
+  }
   const step = pending.step;
   const payload = pending.payload || {};
   const cardId = pending.cardId;
@@ -749,36 +795,27 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
   return true;
 }
 
+const SET_LABELS = {
+  chess: "Chess",
+  stick: "Sticks",
+  body: "Body",
+  element: "Elements",
+  jewelry: "Jewelry",
+};
+
 export function checkObjectTagSet(state, player, tag, { extra = 0 } = {}) {
   if (!player.persistent) player.persistent = [];
   const inPlay = [...player.persistent, ...(player.objects || [])];
   const tagged = inPlay.filter((o) => o.tags?.some((t) => t.startsWith(tag)));
   const wild = (player.setWildcards || []).filter((t) => t === tag).length;
   if (tagged.length + extra + wild < setRequiredForTag(tag)) return;
+  const label = SET_LABELS[tag] || tag;
   if (wild) {
     const idx = player.setWildcards.indexOf(tag);
     if (idx >= 0) player.setWildcards.splice(idx, 1);
   }
-
-  if (tag === "chess") {
-    returnN(state, dreamerCount(state) + 2, player);
-    addLog(state, "Chess Set complete: Return Dreamers+2 Cards.");
-  } else if (tag === "stick") {
-    returnN(state, dreamerCount(state) + 3, player);
-    addLog(state, "Stick Set complete: Return Dreamers+3 Cards.");
-  } else if (tag === "body") {
-    returnN(state, dreamerCount(state) + 5, player);
-    addLog(state, "Body Set complete: Return Dreamers+5 Cards.");
-  } else if (tag === "element") {
-    returnN(state, dreamerCount(state) + 4, player);
-    addLog(state, "Element Set complete: Return Dreamers+4 Cards.");
-  } else if (tag === "jewelry") {
-    returnN(state, dreamerCount(state) + 4, player);
-    addLog(state, "Jewelry Set complete: Return Dreamers+4 Cards.");
-    if (state.activeArchetype?.questProgress?.every(Boolean)) {
-      acquireArchetype(state, player);
-      addLog(state, "Jewelry Set: Acquired available Archetype.");
-    }
+  if (!offerSetAcquire(state, player, label, tagged.map((card) => card.instanceId)) && wild) {
+    player.setWildcards.push(tag);
   }
 }
 

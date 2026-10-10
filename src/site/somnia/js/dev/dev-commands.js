@@ -172,7 +172,7 @@ const COMMANDS = {
         Subconscious: ["return", "repress", "clear-sub"],
         Warnings: ["pressure", "warn", "unstable"],
         Dice: ["dice"],
-        Player: ["player", "head", "move", "power", "points", "kill"],
+        Player: ["player", "head", "move", "power", "points", "kill", "table"],
         Progress: ["quest", "acquire", "archetype", "win", "lose"],
         Scenarios: ["scenario", "scenarios"],
       };
@@ -188,6 +188,20 @@ const COMMANDS = {
       lines.push("Quick playtest: /dream draw — draw and resolve the top Dream card.");
       lines.push("Toggle console: ` (backtick) · Enable: ?dev=1 or /dev on");
       return ok(lines.join("\n"), lines);
+    },
+  },
+
+  table: {
+    usage: "table <1-6>",
+    desc: "Start a human Nap with that many Dreamers. 1, 5, and 6 are not on the menu.",
+    run: (state, args, ctx) => {
+      const n = Number(args[0]);
+      if (!Number.isInteger(n) || n < 1 || n > 6) return fail("Usage: table <1-6>");
+      if (!ctx.startTableGame) return fail("Table helper unavailable. Reload play.html?dev=1");
+      Promise.resolve(ctx.startTableGame({ playerCount: n })).then((started) => {
+        if (!started) console.warn("[dev] Could not start a table.");
+      });
+      return ok(`Starting a ${n}-Dreamer Nap.`, [`${n} Dreamers. No bots.`]);
     },
   },
 
@@ -413,14 +427,14 @@ const COMMANDS = {
 
   "beast-hand": {
     usage: "beast-hand <id> [playerIndex]",
-    desc: "Add an accepted Dreambeast (3 Psyche) to hand.",
+    desc: "Add an accepted Dreambeast ally to hand. Value is half its Power, rounded down.",
     run: (state, args, ctx) => {
       const template = findById(ctx.gameData.dreambeasts, args[0]);
       if (!template) return fail(`Dreambeast not found: ${args[0]}`);
       const player = playerAt(state, args[1]);
       const card = dreambeastToHandCard({ ...template, instanceId: uid("beast-dev") });
       player.hand.push(card);
-      return ok(`Gave accepted ${template.name} (3 ${template.suit}) to ${player.name}.`);
+      return ok(`Gave accepted ${template.name} (${card.value} ${template.suit}) to ${player.name}.`);
     },
   },
 
