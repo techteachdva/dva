@@ -6,16 +6,32 @@ let celebrationTimer = null;
 function spawnConfetti() {
   const layer = document.getElementById("victory-fx");
   if (!layer) return;
-  const colors = ["#f0c96a", "#c9a0ff", "#6dffb0", "#ff6b9d", "#4ad4ff", "#ffffff"];
-  for (let i = 0; i < 48; i += 1) {
+  const colors = ["#ff4d6d", "#ff8a3d", "#ffe14a", "#5dff8a", "#4ad4ff", "#9b6bff", "#ffffff"];
+  for (let i = 0; i < 64; i += 1) {
     const piece = document.createElement("span");
-    piece.className = "victory-confetti";
+    piece.className = "victory-confetti victory-sprinkle";
     piece.style.left = `${Math.random() * 100}%`;
     piece.style.background = colors[i % colors.length];
-    piece.style.animationDelay = `${Math.random() * 2}s`;
-    piece.style.animationDuration = `${2.5 + Math.random() * 2}s`;
+    piece.style.animationDelay = `${Math.random() * 1.4}s`;
+    piece.style.animationDuration = `${2.2 + Math.random() * 2.4}s`;
+    piece.style.setProperty("--sprinkle-x", `${(Math.random() - 0.5) * 80}px`);
     layer.appendChild(piece);
     setTimeout(() => piece.remove(), 6000);
+  }
+}
+
+function spawnAsh() {
+  const layer = document.getElementById("victory-fx");
+  if (!layer) return;
+  for (let i = 0; i < 42; i += 1) {
+    const spark = document.createElement("span");
+    spark.className = "loss-spark";
+    spark.style.left = `${Math.random() * 100}%`;
+    spark.style.animationDelay = `${Math.random() * 2.2}s`;
+    spark.style.animationDuration = `${2.4 + Math.random() * 2.8}s`;
+    spark.style.setProperty("--spark-x", `${(Math.random() - 0.5) * 48}px`);
+    layer.appendChild(spark);
+    setTimeout(() => spark.remove(), 6400);
   }
 }
 
@@ -35,7 +51,10 @@ function spawnStars() {
 
 export function startVictoryCelebration() {
   celebrationActive = true;
+  document.body.classList.remove("end-nightmare", "final-recurrence-active", "loss-nightmare");
   document.body.classList.add("victory-celebrating");
+  const backdrop = document.getElementById("final-nightmare-backdrop");
+  if (backdrop) backdrop.style.opacity = "0";
   const layer = document.getElementById("victory-fx");
   if (layer) {
     layer.innerHTML = "";
@@ -58,13 +77,35 @@ export function startVictoryCelebration() {
   }, 1200);
 }
 
+export function startLossNightmare() {
+  celebrationActive = true;
+  document.body.classList.remove("victory-celebrating");
+  document.body.classList.add("end-nightmare");
+  const backdrop = document.getElementById("final-nightmare-backdrop");
+  if (backdrop) backdrop.style.opacity = "1";
+  const layer = document.getElementById("victory-fx");
+  if (layer) layer.innerHTML = "";
+  spawnAsh();
+  if (celebrationTimer) clearInterval(celebrationTimer);
+  celebrationTimer = setInterval(() => {
+    if (!celebrationActive) return;
+    spawnAsh();
+  }, 1400);
+}
+
 export function stopVictoryCelebration() {
   celebrationActive = false;
-  document.body.classList.remove("victory-celebrating");
+  document.body.classList.remove("victory-celebrating", "end-nightmare");
+  const backdrop = document.getElementById("final-nightmare-backdrop");
+  if (backdrop && !document.body.classList.contains("final-recurrence-active")) {
+    backdrop.style.opacity = "0";
+  }
   if (celebrationTimer) {
     clearInterval(celebrationTimer);
     celebrationTimer = null;
   }
+  const layer = document.getElementById("victory-fx");
+  if (layer) layer.innerHTML = "";
 }
 
 export function isVictoryCelebrating() {

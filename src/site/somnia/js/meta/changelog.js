@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "39.8";
+export const SOMNIA_VERSION = "39.9";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "39.9",
+    title: "Archetype Dice",
+    notes: [
+      "Remaining Archetypes are Power 12. Pool up to 3 Psyche, including their suit, and win the dice battle to Acquire them immediately.",
+      "At the start of Final Recurrence each Archetype appears on a quest Landscape, a matching suit, or The Bed.",
+      "Win or lose, the end screen shows the score. Beating Final Recurrence is +10, waking before it is +15, the Archetype goal is 12 plus the difficulty, and fewer Dreamers add a win bonus.",
+    ],
+  },
   {
     version: "39.8",
     title: "Hand Discard",

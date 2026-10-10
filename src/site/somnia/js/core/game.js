@@ -11,6 +11,8 @@ import {
   checkDefeat,
   checkVictory,
   landscapeById,
+  markFinalArchetypeDefeated,
+  acquireFinalArchetype,
   setEncounterOnLandscape,
   removeEncounterFromLandscape,
   encounterOnLandscape,
@@ -26,10 +28,12 @@ import {
   exploreBudget,
   meetActionBudgetFromWillpower,
   coopMeetPlayTotal,
+  archetypeSpreadDice,
   meetPsycheActor,
   actorOnLandscape,
   selectedCards,
   allSelectedCards,
+  selectedHasPaySuit,
   spreadPsycheCount,
   allyPsycheCount,
   meetBonusBreakdown,
@@ -119,7 +123,6 @@ import { notifyTutorialEncounterResolved, classifyPhaseAction, exploreMoveLockAc
 import {
   resolveCardEffect,
   createEffectHelpers,
-  defeatFinalArchetype,
   sacrificeAcquiredForFinal,
   canSpendMeetAction,
   onExploreMove,
@@ -127,6 +130,11 @@ import {
   onMeetPhaseEnd,
 } from "../effects/effects.js";
 import { playDiceBattle, isDiceBattleOpen } from "../encounters/dice-battle.js";
+import {
+  FINAL_ARCHETYPE_POWER,
+  archetypeSpreadOpen,
+  undefeatedFinalArchetypes,
+} from "../dreamers/final-recurrence-rules.js";
 
 const effectHelpers = { spawnEncounter: null, beginFinalRecurrence: null };
 
@@ -964,20 +972,22 @@ export function getPhaseActions(state, handlers) {
     }
     if (state.finalRecurrence) {
       const onTile = landscapeById(state, state.selectedLandscapeId);
-      if (onTile?.finalArchetype && !onTile.finalArchetype.defeated) {
+      undefeatedFinalArchetypes(onTile).forEach((arch) => {
+        const dice = archetypeSpreadDice(state, arch.id);
         actions.push({
-          label: `Defeat ${onTile.finalArchetype.name} (${poolTotal} pool)`,
+          label: `Defeat ${arch.name} (${dice}d6 vs ${FINAL_ARCHETYPE_POWER})`,
+          kind: "defeatFinalArchetype",
           section: "encounter",
           disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
-          hint: meetActionHint(state, MEET_ACTIONS.MEET, null, "Pool 15+ Psyche from all Dreamers (opposing suit) to defeat this Remaining Archetype."),
-          onClick: handlers.defeatFinalArchetype,
+          hint: meetActionHint(
+            state,
+            MEET_ACTIONS.MEET,
+            null,
+            `Pool up to 3 Psyche from any hand, including ${SUIT_LABELS[arch.suit] || arch.suit}. Win the dice against Power ${FINAL_ARCHETYPE_POWER} to Acquire ${arch.name}.`,
+          ),
+          onClick: () => handlers.defeatFinalArchetype?.(arch.id),
         });
-        actions.push({
-          label: "Sacrifice Archetypes to auto-defeat",
-          section: "encounter",
-          onClick: handlers.sacrificeForFinal,
-        });
-      }
+      });
     }
     const meetTile = meetLandscapeTile(state);
     const meetEnc = encounterForMeet(state);
@@ -2662,28 +2672,88 @@ export function cancelTrade(state) {
   addLog(state, "Trade cancelled.");
 }
 
-export function handleDefeatFinalArchetype(state) {
-  if (!spendMeetAction(state, MEET_ACTIONS.MEET)) return;
+export function handleDefeatFinalArchetype(state, archetypeId = null, onDone = null) {
+  const say = (message) => logMoment(state, message);
+  if (isDiceBattleOpen() || state.diceBattle) {
+    say("Finish the dice battle first.");
+    return;
+  }
+  if (getPhase(state) !== "Meet" || !(state.meetActionBudget > 0)) {
+    say(`Open Meet, stand on the Archetype, and pool up to 3 Psyche. Then fight Power ${FINAL_ARCHETYPE_POWER}.`);
+    return;
+  }
   const tile = landscapeById(state, state.selectedLandscapeId);
-  const arch = tile?.finalArchetype;
-  if (!arch || arch.defeated) {
-    addLog(state, "Select a Landscape with an undefeated Remaining Archetype.");
-    refundMeetAction(state, landscapeActor(state), MEET_ACTIONS.MEET);
+  const waiting = undefeatedFinalArchetypes(tile);
+  const arch = archetypeId
+    ? waiting.find((entry) => entry.id === archetypeId) || null
+    : waiting[0];
+  if (!arch) {
+    say("Select a Landscape with an undefeated Remaining Archetype.");
+    return;
+  }
+  const actor = actorOnLandscape(state, tile.id);
+  if (!actor) {
+    say(`A Dreamer must stand on ${tile.name} to Meet ${arch.name}.`);
+    return;
+  }
+  const selected = allSelectedCards(state);
+  const psyche = selected.filter((card) => !isDreambeastPsycheCard(card) && card.type !== "psyche-power");
+  const suitName = SUIT_LABELS[arch.suit] || arch.suit || "matching";
+  if (!selected.length) {
+    say(`Pool 1–3 Psyche from any hand, including ${suitName}, then Defeat ${arch.name} (Power ${FINAL_ARCHETYPE_POWER}).`);
+    return;
+  }
+  if (psyche.length > 3) {
+    say("Play up to 3 Psyche. Allies do not count toward that limit.");
+    return;
+  }
+  if (!selectedHasPaySuit(selected, arch.suit)) {
+    say(`The spread needs at least 1 ${suitName} Psyche to Meet ${arch.name}.`);
+    return;
+  }
+  if (!spendMeetAction(state, MEET_ACTIONS.MEET)) return;
+
+  const played = Math.max(1, archetypeSpreadDice(state));
+  addLog(state, `${actor.name} Power ${played}d6 vs ${arch.name} Power ${FINAL_ARCHETYPE_POWER}d6.`);
+
+  const finish = (dreamerWins) => {
+    state.diceBattle = null;
+    const spent = discardAllSelected(state);
+    spent.forEach(({ player: owner, cards }) => trackPsycheDiscard(state, owner, cards));
+    if (!dreamerWins) {
+      addLog(state, `${actor.name} loses the dice battle with ${arch.name}. The spread is spent. ${arch.name} remains.`);
+      logMoment(state, `${arch.name} holds the Landscape.`);
+      onDone?.();
+      return;
+    }
+    markFinalArchetypeDefeated(state, arch.id);
+    const acquired = acquireFinalArchetype(state, actor, arch);
+    if (acquired) resolveOnAcquire(state, acquired, actor);
+    logMoment(state, `${arch.name} is Acquired. Its power is ready.`);
+    checkVictory(state);
+    onDone?.();
+  };
+
+  const forceInstant = typeof document === "undefined" || !!globalThis.__SOMNIA_INSTANT_DICE__;
+  if (forceInstant) {
+    finish(true);
     return;
   }
 
-  const actor = landscapeActor(state);
-  const selected = allSelectedCards(state);
-  const ok = defeatFinalArchetype(state, arch, actor, selected, () => coopMeetPlayTotal(state));
-  if (ok) {
-    const discardedBy = discardAllSelected(state);
-    discardedBy.forEach(({ player: p, cards }) => trackPsycheDiscard(state, p, cards));
-    arch.defeated = true;
-    const entry = state.finalArchetypes.find((a) => a.id === arch.id);
-    if (entry) entry.defeated = true;
-  } else {
-    refundMeetAction(state, actor, MEET_ACTIONS.MEET);
-  }
+  state.diceBattle = { archetypeId: arch.id, tileId: tile.id };
+  playDiceBattle({
+    dreamerName: actor.name,
+    beastName: arch.name,
+    dreamerDice: played,
+    beastDice: FINAL_ARCHETYPE_POWER,
+    allowPostRollToken: (actor.powerTokens || 0) > 0,
+    onPostRoll: () => {
+      if (!spendPowerTokens(state, actor, 1, { animate: false })) return false;
+      addLog(state, `${actor.name} spends 1 Power Token to subtract 1 Archetype success.`);
+      return true;
+    },
+    onComplete: ({ dreamerWins }) => finish(dreamerWins),
+  });
 }
 
 export function handleSacrificeForFinal(state) {
@@ -2781,8 +2851,9 @@ export function toggleHandCard(state, card, owner = null) {
   if (isDreambeastPsycheCard(card)) {
     if (phase !== "Meet" || state.meetActionBudget === 0) return;
     if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;
+    const tableSpread = archetypeSpreadOpen(state);
     const actor = meetPsycheActor(state);
-    if (!actor || player.id !== actor.id) {
+    if (!tableSpread && (!actor || player.id !== actor.id)) {
       if (actor) logMoment(state, `Meet uses ${actor.name}'s Psyche.`);
       return;
     }
@@ -2806,14 +2877,17 @@ export function toggleHandCard(state, card, owner = null) {
 
   if (phase === "Meet" && state.meetActionBudget > 0) {
     if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;
+    const tableSpread = archetypeSpreadOpen(state);
     const actor = meetPsycheActor(state);
-    if (!actor || player.id !== actor.id) {
+    if (!tableSpread && (!actor || player.id !== actor.id)) {
       if (actor) logMoment(state, `Meet uses ${actor.name}'s Psyche.`);
       return;
     }
-    state.selectedHand = state.selectedHand.filter((selId) =>
-      actor.hand.some((c) => c.instanceId === selId),
-    );
+    if (!tableSpread) {
+      state.selectedHand = state.selectedHand.filter((selId) =>
+        actor.hand.some((c) => c.instanceId === selId),
+      );
+    }
     state.selectedHand.push(id);
     return;
   }

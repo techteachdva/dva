@@ -58,7 +58,8 @@ import {
 import { recoverLegacySilver } from "../effects/event-choices.js";
 import { updateFinalRecurrenceAtmosphere } from "../dreamers/final-recurrence-atmosphere.js";
 import { syncDeckPressure } from "../cards/deck-pressure.js";
-import { startVictoryCelebration, stopVictoryCelebration } from "../ui/victory-celebration.js";
+import { startVictoryCelebration, startLossNightmare, stopVictoryCelebration } from "../ui/victory-celebration.js";
+import { archetypeMeetLocked } from "../dreamers/final-recurrence-rules.js";
 import { LENGTHS, loadGameData } from "../core/data.js";
 import {
   createInitialState,
@@ -149,7 +150,7 @@ import { resolveMindstreamChoice } from "../cards/mindstream-choices.js";
 import { playMindstreamDrawCinematic } from "../cards/mindstream-draw-cinematic.js";
 import { playBeastMillSequence } from "../encounters/beast-mill-cinematic.js";
 import { continueArchetypeQueues } from "../dreamers/archetypes.js";
-import { phaseOpeningActive, encounterPayHint, actorOnLandscape } from "../core/rules.js";
+import { phaseOpeningActive, encounterPayHint, actorOnLandscape, SUIT_LABELS } from "../core/rules.js";
 import {
   syncPhaseOpenerMenu,
   shouldShowPhaseOpenerMenu,
@@ -349,6 +350,7 @@ let prevHandIds = new Set();
 let pendingScoreResult = null;
 let scoreSubmitted = false;
 let victoryShown = false;
+let lossShown = false;
 
 /** Game ID + seed for the end screen; the tutorial's fixed layout has neither. */
 function endScreenDream() {
@@ -712,7 +714,7 @@ function bindEndLeaderboard() {
       const result = await submitHighScore({
         name: valid.name,
         score: pendingScoreResult.breakdown.total,
-        won: true,
+        won: pendingScoreResult.won !== false,
         seconds: pendingScoreResult.seconds,
         difficulty: pendingScoreResult.difficulty,
         breakdown: pendingScoreResult.breakdown,
@@ -1022,6 +1024,10 @@ function clearAutosave() {
 
 async function startGame(config) {
   launchConfig = config;
+  pendingScoreResult = null;
+  victoryShown = false;
+  lossShown = false;
+  stopVictoryCelebration();
   clearActionHistory();
   resetPhaseOpenerChrome();
 
@@ -1555,7 +1561,10 @@ function buildPhaseHandlers() {
       refundPowerBonus(state);
       renderAll();
     },
-    defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
+    defeatFinalArchetype: (id) => {
+      handleDefeatFinalArchetype(state, id, () => renderAll());
+      renderAll();
+    },
     sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
     nextPhase: () => { requestEndPhase(state, () => renderAll()); },
     skipPhase: () => { requestEndPhase(state, () => renderAll()); },
@@ -1667,7 +1676,7 @@ function zoomMaxOnDreamer(playerId, tileId) {
     return;
   }
   if (playerIndex >= 0) state.activePlayerIndex = playerIndex;
-  if (getPhase(state) === "Meet" && tileId) state.selectedLandscapeId = tileId;
+  if (getPhase(state) === "Meet" && tileId && !archetypeMeetLocked(state)) state.selectedLandscapeId = tileId;
   if (playerId && tileId) focusOnDreamer(playerId, tileId);
   renderAll();
   suppressDreamerOverlay(800);
@@ -1738,7 +1747,7 @@ function openDreamerBoardRadial(anchorEl, playerId, tileId) {
   const sameDreamer = state.activePlayerIndex === playerIndex;
   const sameMeetTile = getPhase(state) !== "Meet" || state.selectedLandscapeId === tileId;
   state.activePlayerIndex = playerIndex;
-  if (getPhase(state) === "Meet") state.selectedLandscapeId = tileId;
+  if (getPhase(state) === "Meet" && !archetypeMeetLocked(state)) state.selectedLandscapeId = tileId;
   const liveToken = document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`);
   if (sameDreamer && sameMeetTile && liveToken?.isConnected) {
     showDreamerBoardRadialMenu(playerId, tileId, player);
@@ -1765,9 +1774,9 @@ function openArchetypeBoardRadial(anchorEl, arch, tileId) {
     {
       id: "defeat",
       label: `Defeat ${arch.name}`,
-      hint: "Pool 15+ Psyche from all Dreamers, using the suit that opposes this Archetype.",
+      hint: `Pool up to 3 Psyche, including ${SUIT_LABELS[arch.suit] || arch.suit || "its suit"}, then roll against Power 12. A win Acquires it now.`,
       primary: true,
-      onPick: () => handlers.defeatFinalArchetype(),
+      onPick: () => handlers.defeatFinalArchetype(arch.id),
     },
     {
       id: "view",
@@ -2569,7 +2578,7 @@ function renderAll() {
           ? LENGTHS[state.lengthKey].label
           : `${state.goalPoints} pts`);
       const seconds = Math.max(0, Math.round((Date.now() - (state.gameStartedAt || Date.now())) / 1000));
-      pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel };
+      pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel, won: true };
     }
     const msg = state.tutorialVictory
       ? `You collected ${state.acquiredPoints} Archetype point${state.acquiredPoints === 1 ? "" : "s"} and woke on The Bed — the same escape as a real Daydream.`
@@ -2620,8 +2629,24 @@ function renderAll() {
       syncTurnHalo(null);
       syncDeckPressure(state);
       clearAutosave();
-      stopVictoryCelebration();
-      showEndScreen(false, state.log[0] || "The Dreamscape collapses.", null, endScreenDream());
+      if (!pendingScoreResult && !state.tutorialMode) {
+        const breakdown = calculateFinalScore(state);
+        const lengthLabel = state.lengthKey && LENGTHS[state.lengthKey]
+          ? LENGTHS[state.lengthKey].label
+          : `${state.scoringGoalPoints || state.goalPoints || 0} pts`;
+        const seconds = Math.max(0, Math.round((Date.now() - (state.gameStartedAt || Date.now())) / 1000));
+        pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel, won: false };
+      }
+      showEndScreen(
+        false,
+        state.log[0] || "You never wake up.",
+        state.tutorialMode ? null : pendingScoreResult,
+        endScreenDream(),
+      );
+      if (!lossShown) {
+        lossShown = true;
+        startLossNightmare();
+      }
       return;
     }
   }
@@ -2704,7 +2729,7 @@ function renderAll() {
     const prevId = state.players[state.activePlayerIndex]?.id;
     state.activePlayerIndex = index;
     const player = state.players[index];
-    if (getPhase(state) === "Meet" && player?.landscapeId) {
+    if (getPhase(state) === "Meet" && player?.landscapeId && !archetypeMeetLocked(state)) {
       state.selectedLandscapeId = player.landscapeId;
     }
     const nextId = state.players[index]?.id;

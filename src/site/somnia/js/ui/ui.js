@@ -21,7 +21,13 @@ import {
   encounterPlayTotal,
   encounterPayHint,
   currentMeetEncounter,
+  archetypeSpreadDice,
 } from "../core/rules.js";
+import {
+  FINAL_ARCHETYPE_POWER,
+  archetypeSpreadOpen,
+  undefeatedFinalArchetypes,
+} from "../dreamers/final-recurrence-rules.js";
 import { countBoardDreambeasts, timelineTollPreview } from "../flow/phase-skip.js";
 import {
   DREAMER_KIND_AFFINITY,
@@ -1821,8 +1827,7 @@ function boardStructureKey(state) {
     tile.wastelandImage || "",
     tile.center ? 1 : 0,
     tile.finalRecurrenceSide ? 1 : 0,
-    tile.finalArchetype?.id || "",
-    tile.finalArchetype?.defeated ? 1 : 0,
+    undefeatedFinalArchetypes(tile).map((arch) => arch.id).join("+"),
     tileEncounters(tile).map((enc) => `${encounterKey(enc)}:${enc.image || ""}`).join(","),
   ].join("/"));
   const occupants = state.players
@@ -2079,8 +2084,8 @@ function activateBoardTarget(event, fallbackEl = null) {
     const tileEl = token.closest(".hex-tile");
     const homeId = token.dataset.homeTile || tileEl?.dataset.tileId;
     const tile = ctx.state.board.find((entry) => entry.id === homeId);
-    const arch = tile?.finalArchetype;
-    if (arch && !arch.defeated && arch.id === token.dataset.archetypeId) {
+    const arch = undefeatedFinalArchetypes(tile).find((entry) => entry.id === token.dataset.archetypeId);
+    if (arch) {
       ctx.boardOptions.onArchetypeTokenClick?.(arch, tile.id, token, event);
       return;
     }
@@ -2313,10 +2318,10 @@ function assignVertexOccupants(state) {
       if (!encounter?.image) return;
       queue.push({ kind: "beast", homeId: tile.id, encounter });
     });
-    const arch = tile.finalArchetype;
-    if (arch && !arch.defeated && arch.image) {
+    undefeatedFinalArchetypes(tile).forEach((arch) => {
+      if (!arch.image) return;
       queue.push({ kind: "archetype", homeId: tile.id, archetype: arch });
-    }
+    });
   });
 
   const pending = [];
@@ -2960,12 +2965,14 @@ export function renderCoopMeetHands(state, onCardClick) {
   const player = activePlayer(state);
   const meetActor = meetPsycheActor(state);
   const poolCount = spreadPsycheCount(state);
-  const poolTotal = meetPsychePlayTotal(state);
+  const tableSpread = archetypeSpreadOpen(state);
+  const poolTotal = tableSpread ? archetypeSpreadDice(state) : meetPsychePlayTotal(state);
   const bonus = meetBonusBreakdown(state);
   const bonusText = bonus.total ? ` · +${bonus.total}` : "";
   const pending = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus}` : "";
   const isActor = meetActor?.id === player.id;
   const tile = state.board.find((t) => t.id === state.selectedLandscapeId);
+  const archFight = undefeatedFinalArchetypes(tile)[0];
   const enc = tileEncounters(tile)[0] || currentMeetEncounter(state).encounter;
   const acceptBit = enc
     ? ` · A ${encounterPlayTotal(state, { accept: true })} vs P${encounterPower(enc, true)} (rec ${recommendedEncounterPower(enc, true)}) · R ${encounterPlayTotal(state, { accept: false })} vs P${encounterPower(enc, false)} (rec ${recommendedEncounterPower(enc, false)})`
@@ -2978,12 +2985,14 @@ export function renderCoopMeetHands(state, onCardClick) {
     : "";
   renderActiveDreamerHand(state, onCardClick, {
     title: msPrep ? `${player.name} — Mindstream Meet` : `${player.name} — Meet Hand`,
-    statsText: meetActor
-      ? (isActor
-        ? `Pool ${poolCount}/3 = ${poolTotal}${bonusText}${pending}${acceptBit}${prepNote}`
-        : `${meetActor.name} may pool`)
-      : "Pool 1–3",
-    canClickCard: (card) => card.type === "psyche-power" || !meetActor || isActor,
+    statsText: archFight
+      ? `Pool ${poolCount}/3 = ${poolTotal}d6 vs Power ${FINAL_ARCHETYPE_POWER}${prepNote}`
+      : meetActor
+        ? (isActor
+          ? `Pool ${poolCount}/3 = ${poolTotal}${bonusText}${pending}${acceptBit}${prepNote}`
+          : `${meetActor.name} may pool`)
+        : "Pool 1–3",
+    canClickCard: (card) => card.type === "psyche-power" || tableSpread || !meetActor || isActor,
   });
 }
 
@@ -4565,25 +4574,28 @@ export function showScreen(id) {
  */
 export function showEndScreen(won, message, scoreResult = null, dream = null) {
   showScreen("screen-end");
-  document.getElementById("end-title").textContent = won ? "You Wake Up!" : "Trapped Forever";
+  document.getElementById("end-title").textContent = won ? "You Wake Up!" : "You Never Wake Up";
   document.getElementById("end-message").textContent = message;
   document.getElementById("btn-start-daydream")?.classList.add("hidden");
   renderEndGameId(dream);
 
   const breakdownEl = document.getElementById("end-score-breakdown");
   const leaderboardEl = document.getElementById("end-leaderboard");
-  if (won && scoreResult?.breakdown) {
+  if (scoreResult?.breakdown) {
     const b = scoreResult.breakdown;
+    const goalLabel = b.goalReached ? "Archetype goal" : "Archetype points";
     breakdownEl.classList.remove("hidden");
     breakdownEl.innerHTML = `
       <h3>Final Score: ${b.total}</h3>
       <ul class="score-breakdown-list">
-        <li>Archetype goal: <strong>${b.archetypePoints}</strong></li>
+        <li>${goalLabel}: <strong>${b.archetypePoints}</strong></li>
         <li>Psyche in hands: <strong>${b.psyche}</strong></li>
         <li>Objects: <strong>${b.objects}</strong></li>
         <li>Power Tokens: <strong>${b.tokens}</strong></li>
         <li>Accepted allies: <strong>${b.allies}</strong></li>
         <li>Dreams remaining: <strong>${b.dreams}</strong></li>
+        <li>Escape: <strong>${b.escapeBonus || 0}</strong></li>
+        <li>Dreamer table: <strong>${b.dreamerBonus || 0}</strong></li>
       </ul>
     `;
     leaderboardEl?.classList.remove("hidden");
@@ -6261,14 +6273,13 @@ export function showLandscapeDetail(state, tileId, { onDreamerClick = null, onBe
       onClick: onBeastClick ? (event) => onBeastClick(enc, tile.id, event) : null,
     });
   });
-  if (tile.finalArchetype && !tile.finalArchetype.defeated) {
-    const arch = tile.finalArchetype;
+  undefeatedFinalArchetypes(tile).forEach((arch) => {
     beastEntries.push({
       card: { ...arch, type: "dreambeast" },
-      caption: `${arch.name} (Archetype)`,
-      detailHtml: `<div class="landscape-detail-beast-effect">Remaining Archetype on this Landscape.</div>`,
+      caption: `${arch.name} · Power ${FINAL_ARCHETYPE_POWER}`,
+      detailHtml: `<div class="landscape-detail-beast-effect">Remaining Archetype. Pool up to 3 Psyche, including ${SUIT_LABELS[arch.suit] || arch.suit}, and win the dice battle to Acquire it.</div>`,
     });
-  }
+  });
 
   body.innerHTML = "";
   const root = document.createElement("div");

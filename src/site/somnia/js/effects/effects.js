@@ -7,14 +7,12 @@ import { forgetEdgeLandscapes, triggerBedFinalRecurrence } from "../board/landsc
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { grantPowerTokens } from "../cards/power-tokens.js";
 import { applyMeetEndConsequences } from "../encounters/meet-phase.js";
-import { opposingSuit } from "../core/rules.js";
 import {
   requestReturnCards,
   enqueueRepressFromHand,
   enqueueDiscardFromHand,
   enqueueCollectiveRepressFromHand,
 } from "../dreamers/subconscious.js";
-import { FINAL_RECURRENCE_PSYCHE_REQUIRED } from "../dreamers/final-recurrence-rules.js";
 import { logMoment } from "../core/narrator.js";
 import { onObjectDrawn } from "./objects.js";
 import { beginMindstreamCardChoice, beginDreamCardChoice } from "../cards/mindstream-choices.js";
@@ -252,21 +250,10 @@ export function createEffectHelpers(spawnFn) {
   };
 }
 
-export function defeatFinalArchetype(state, archetype, player, selectedCards, meetPlayTotalFn) {
-  if (!state.finalRecurrence) return false;
-  const played = meetPlayTotalFn(state);
-  if (played < FINAL_RECURRENCE_PSYCHE_REQUIRED) {
-    addLog(state, `Need ${FINAL_RECURRENCE_PSYCHE_REQUIRED} Psyche to defeat ${archetype.name} (have ${played}).`);
-    return false;
-  }
-  const opposing = opposingSuit(archetype.suit);
-  const hasOpposing = selectedCards.some((c) => c.suit === opposing);
-  if (!hasOpposing) {
-    addLog(state, `Must use ${opposing} Psyche (opposing suit) to defeat ${archetype.name}.`);
-    return false;
-  }
+export function defeatFinalArchetype(state, archetype) {
+  if (!state.finalRecurrence || !archetype || archetype.defeated) return false;
   archetype.defeated = true;
-  logMoment(state, `${archetype.name} defeated in the Final Recurrence!`);
+  logMoment(state, `${archetype.name} falls in the Final Recurrence.`);
   checkFinalRecurrenceVictory(state);
   return true;
 }

@@ -22,6 +22,7 @@ import {
   canUsePhasePowerToken,
 } from "../core/rules.js";
 import { psycheHandCount } from "../cards/psyche.js";
+import { undefeatedFinalArchetypes } from "../dreamers/final-recurrence-rules.js";
 import {
   listSubconsciousCards,
   isDreambeastPsycheCard,
@@ -261,11 +262,11 @@ function spectatorDest(state, player) {
   if (state.acquiredPoints >= state.goalPoints && !state.finalRecurrence) return "bed";
   if (state.finalRecurrence) {
     // Prefer a final tile where this Dreamer already holds opposing Psyche.
-    const finals = state.board.filter((t) => t.finalArchetype && !t.finalArchetype.defeated);
+    const finals = state.board.filter((t) => undefeatedFinalArchetypes(t).length);
     const ranked = finals.map((tile) => {
-      const opp = { lucidity: "willpower", willpower: "elasticity", elasticity: "lucidity" }[tile.finalArchetype.suit];
-      const oppCards = (player.hand || []).filter((c) => c.suit === opp).length;
-      return { id: tile.id, score: oppCards * 5 + psycheHandCount(player) };
+      const suit = undefeatedFinalArchetypes(tile)[0]?.suit;
+      const suitCards = (player.hand || []).filter((c) => c.suit === suit || c.suit === "wild").length;
+      return { id: tile.id, score: suitCards * 5 + psycheHandCount(player) };
     }).sort((a, b) => b.score - a.score);
     return ranked[0]?.id || "bed";
   }

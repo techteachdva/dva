@@ -182,6 +182,8 @@ export function createInitialState(data, options) {
     gameId: buildGameId(openingNeighbor?.name, seed),
     remFree: { reveal: false, explore: false, meet: false },
     goalPoints: goalPointsForTable(options.lengthKey, players.length),
+    scoringGoalPoints: goalPointsForTable(options.lengthKey, players.length),
+    archetypeGoalReached: false,
     dreamDeck,
     psycheDeck,
     psycheDiscard: [],
@@ -888,9 +890,82 @@ export function respawnDreamer(state, playerId, dreamerId) {
   return true;
 }
 
+function tileCanHostArchetype(tile) {
+  return !!(tile && tile.revealed && !tile.wasteland && !tile.center && tile.id !== "bed");
+}
+
+function questLandscapeIds(state, arch) {
+  const text = (arch.quests || []).join(" · ");
+  const named = (state.board || [])
+    .filter((tile) => tile.name && tile.id !== "bed" && tile.id !== "wasteland")
+    .sort((a, b) => b.name.length - a.name.length);
+  const ids = [];
+  named.forEach((tile) => {
+    if (text.includes(tile.name) && !ids.includes(tile.id)) ids.push(tile.id);
+  });
+  return ids.slice(0, 2);
+}
+
+function placeFinalArchetype(state, arch) {
+  const questTiles = questLandscapeIds(state, arch)
+    .map((id) => landscapeById(state, id))
+    .filter(tileCanHostArchetype);
+  const emptyQuest = questTiles.find((tile) => !(tile.finalArchetypes || []).some((entry) => !entry.defeated));
+  if (emptyQuest || questTiles[0]) return emptyQuest || questTiles[0];
+
+  const suitTiles = (state.board || []).filter((tile) => tileCanHostArchetype(tile) && tile.suit === arch.suit);
+  const emptySuit = suitTiles.find((tile) => !(tile.finalArchetypes || []).some((entry) => !entry.defeated));
+  if (emptySuit || suitTiles[0]) return emptySuit || suitTiles[0];
+
+  return landscapeById(state, "bed");
+}
+
+function hostFinalArchetype(tile, arch) {
+  if (!tile) return null;
+  if (!tile.finalArchetypes) tile.finalArchetypes = [];
+  const placed = { ...arch, defeated: false, landscapeId: tile.id };
+  tile.finalArchetypes.push(placed);
+  tile.finalArchetype = tile.finalArchetypes.find((entry) => !entry.defeated) || null;
+  return placed;
+}
+
+export function markFinalArchetypeDefeated(state, archetypeId) {
+  (state.finalArchetypes || []).forEach((arch) => {
+    if (arch.id === archetypeId) arch.defeated = true;
+  });
+  (state.board || []).forEach((tile) => {
+    (tile.finalArchetypes || []).forEach((arch) => {
+      if (arch.id === archetypeId) arch.defeated = true;
+    });
+    if (tile.finalArchetype?.id === archetypeId) tile.finalArchetype.defeated = true;
+    if (tile.finalArchetypes) {
+      tile.finalArchetype = tile.finalArchetypes.find((arch) => !arch.defeated) || null;
+    }
+  });
+}
+
+export function acquireFinalArchetype(state, player, archetype) {
+  if (!player || !archetype) return null;
+  const copy = {
+    ...archetype,
+    defeated: true,
+    questProgress: [true, true],
+  };
+  player.acquiredArchetypes.push(copy);
+  state.acquiredPoints += archetype.points || 0;
+  const goal = state.scoringGoalPoints || 0;
+  if (goal > 0 && (state.acquiredPoints || 0) >= goal) state.archetypeGoalReached = true;
+  addLog(state, `${player.name} acquires ${archetype.name} (+${archetype.points || 0}). Its power is ready.`);
+  return copy;
+}
+
 export function beginFinalRecurrence(state) {
   if (state.finalRecurrence) return;
   state.finalRecurrence = true;
+  if (state.scoringGoalPoints == null) state.scoringGoalPoints = state.goalPoints || 0;
+  if ((state.goalPoints || 0) > 0 && (state.acquiredPoints || 0) >= state.goalPoints) {
+    state.archetypeGoalReached = true;
+  }
   state.goalPoints = 0;
   const bed = landscapeById(state, "bed");
   if (bed) {
@@ -904,18 +979,14 @@ export function beginFinalRecurrence(state) {
   state.activeArchetype = null;
 
   state.finalArchetypes = remaining.map((arch) => {
-    const tile = state.board.find((l) => l.revealed && l.suit === arch.suit && !l.center && !l.wasteland && !l.finalArchetype)
-      || state.board.find((l) => l.revealed && !l.center && !l.wasteland && !l.finalArchetype)
-      || landscapeById(state, "bed");
-    if (tile) {
-      tile.finalArchetype = { ...arch, defeated: false };
-      addLog(state, `${arch.name} appears on ${tile.name}.`);
-    }
-    return { ...arch, defeated: false, landscapeId: tile?.id };
+    const tile = placeFinalArchetype(state, arch);
+    const placed = hostFinalArchetype(tile, arch);
+    if (tile && placed) addLog(state, `${arch.name} appears on ${tile.name}.`);
+    return placed || { ...arch, defeated: false, landscapeId: tile?.id };
   });
 
   state.finalRecurrenceDreamsAtStart = Math.max(1, state.dreamDeck?.length || 1);
-  addLog(state, "Defeat each Remaining Archetype with a 15 Psyche Play using opposing suits.");
+  addLog(state, "Remaining Archetypes are Power 12. Pool up to 3 Psyche and win the dice battle to Acquire each one.");
   markDreamFeedNudge();
   checkVictory(state);
 }
@@ -1042,12 +1113,17 @@ function grantGoalBedSprint(state) {
 
 export function checkVictory(state) {
   if (state.finalRecurrence) {
+    if (state.status !== "playing") return;
     const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
     if (left === 0) {
       state.status = "won";
       addLog(state, "All Remaining Archetypes defeated. You wake up!");
     }
     return;
+  }
+  if ((state.scoringGoalPoints || state.goalPoints) > 0
+    && state.acquiredPoints >= (state.scoringGoalPoints || state.goalPoints)) {
+    state.archetypeGoalReached = true;
   }
   if (state.acquiredPoints >= state.goalPoints) {
     if (!state.goalBedSprintUsed && !state.tutorialMode && state.status === "playing") {

@@ -673,15 +673,50 @@ body.play-window #screen-end.active {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  opacity: 0.9;
+  opacity: 0.95;
   animation: dream-mote-rise linear forwards;
+}
+
+.victory-sprinkle {
+  width: 5px;
+  height: 9px;
+  border-radius: 40% 40% 50% 50%;
+  box-shadow: 0 0 8px currentColor;
 }
 
 @keyframes dream-mote-rise {
   to {
-    transform: translateY(-110vh) scale(0.35);
+    transform: translate3d(var(--sprinkle-x, 0px), -110vh, 0) scale(0.35) rotate(220deg);
     opacity: 0;
   }
+}
+
+.loss-spark {
+  position: absolute;
+  top: -16px;
+  width: 3px;
+  height: 10px;
+  border-radius: 2px;
+  background: #0a0a0c;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.9), 0 0 2px #1a1218;
+  opacity: 0.9;
+  animation: loss-spark-fall linear forwards;
+}
+
+@keyframes loss-spark-fall {
+  to {
+    transform: translate3d(var(--spark-x, 0px), 110vh, 0) rotate(160deg);
+    opacity: 0.15;
+  }
+}
+
+body.end-nightmare #screen-end.active {
+  background: url("../images/final-nightmare-hellscape.png") center center / cover no-repeat;
+}
+
+body.end-nightmare #screen-end .end-panel {
+  background: rgba(8, 4, 12, 0.78);
+  border-color: rgba(80, 20, 28, 0.85);
 }
 
 .victory-star {
@@ -4959,6 +4994,27 @@ body.explore-move-lock .hex-tile.move-hover .hex-face {
 
 #screen-game .hand-bar:has(.hand-choice-bar:not(.hidden)) {
   grid-template-rows: auto minmax(6.5rem, 1fr);
+}
+
+/* The prompt used to share row 1 with the hand, so the cards covered Confirm. */
+#screen-game .hand-bar:has(.hand-choice-bar:not(.hidden)) > .hand-choice-bar {
+  position: relative;
+  z-index: 8;
+  pointer-events: auto;
+}
+
+#screen-game .hand-bar:has(.hand-choice-bar:not(.hidden)) > :not(.hand-choice-bar) {
+  grid-row: 2;
+}
+
+#screen-game.active:has(.hand-choice-bar:not(.hidden)) .hand-bar,
+#screen-game.active:has(.hand-choice-bar:not(.hidden)) .hand-bar * {
+  cursor: pointer !important;
+}
+
+#screen-game.active:has(.hand-choice-bar:not(.hidden)) .hand-bar .game-card:disabled,
+#screen-game.active:has(.hand-choice-bar:not(.hidden)) .hand-bar .hand-inactive {
+  cursor: default !important;
 }
 
 .hand-section.hand-choice-target {

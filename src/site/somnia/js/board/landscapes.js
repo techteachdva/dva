@@ -619,7 +619,7 @@ export function triggerBedFinalRecurrence(state, reason) {
   narrate(
     state,
     "The Bed flips — Final Recurrence!",
-    reason || "The Dreamscape collapses to its final form. The Dream Deck is now only Final Recurrence cards. Defeat each Remaining Archetype on the map with 15-Psyche plays using opposing suits.",
+    reason || "The Dreamscape collapses to its final form. The Dream Deck is now only Final Recurrence cards. Each Remaining Archetype is Power 12. Pool up to 3 Psyche, including its suit, and win the dice battle to Acquire it.",
     [
       `${state.dreamDeck.length} Final Dream cards remain`,
       "Goal changes: defeat all Remaining Archetypes",

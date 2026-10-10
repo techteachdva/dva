@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 39.8. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 39.9. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -703,7 +703,7 @@ export function rulesDetailsHtml() {
       <p>A Dreamer with <strong>no Psyche</strong> who must pay even one dies. Objects go to their suited Object discards. Power Tokens return to the pool. They respawn on <strong>The Bed</strong> and draw <strong>3 Psyche</strong>. The <strong>Death Clock</strong> at the top of the table ticks once. The <strong>sixth death</strong>, shared by the whole table, ends the night at once.</p>
 
       <h3>Final Recurrence</h3>
-      <p>Triggered when <strong>The Final Recurrence</strong> is drawn (first of the ten endgame Dreams), or when every outer Landscape has been forgotten. The Bed cannot be forgotten. Goal points reset; remaining Archetypes become map Encounters. Defeat each with a Meet action, <strong>≥ 15</strong> pooled Psyche from <strong>all Dreamers</strong>, including at least one card of the <strong>opposing suit</strong>. Or sacrifice acquired Archetypes 1:1 to auto-defeat. Win by clearing all. The last card is always <strong>You Never Wake Up</strong>.</p>
+      <p>Triggered when <strong>The Final Recurrence</strong> is drawn (first of the ten endgame Dreams), or when every outer Landscape has been forgotten. The Bed cannot be forgotten. Goal points reset. Each remaining Archetype appears on a Landscape named in its quests, or on a revealed Landscape of its suit, or on The Bed. Defeat each with a Meet action: pool up to 3 Psyche from the table, including that Archetype's suit, and win a dice battle against <strong>Power 12</strong>. A win Acquires the Archetype immediately and its power is ready. Win by clearing every Remaining Archetype. If the Dream Deck runs out first, you never wake up.</p>
     </div>
   `;
 }
@@ -715,7 +715,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 39.8</p>
+          <p class="info-hub-kicker">Somnia v 39.9</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>
@@ -784,7 +784,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Death &amp; Final Recurrence</h3>
-            <p>No Psyche when a payment is due: that Dreamer dies, Objects are lost, Power returns to the pool, and they redraw 3 Psyche on The Bed. The Death Clock ticks. Six deaths end the night. Forget every outer Landscape — or draw <strong>The Final Recurrence</strong> — to start the endgame. Defeat remaining Archetypes with <strong>≥ 15</strong> pooled Psyche including the opposing suit, or sacrifice acquired Archetypes 1:1. Last card: <strong>You Never Wake Up</strong>.</p>
+            <p>No Psyche when a payment is due: that Dreamer dies, Objects are lost, Power returns to the pool, and they redraw 3 Psyche on The Bed. The Death Clock ticks. Six deaths end the night. Forget every outer Landscape — or draw <strong>The Final Recurrence</strong> — to start the endgame. Remaining Archetypes are Power 12. Pool up to 3 Psyche of their suit and win the dice battle to Acquire each one. Last card: <strong>You Never Wake Up</strong>.</p>
           </div>
           <p class="info-hub-footer">Draw Dream sits left of Next Phase during Reveal. Select 1 Psyche, then press the button beside it to open that phase. Back in the top-left undoes the last action. Click Commit on the Active Archetype once both quests are true, or spend a Power Token. The Head (★) rotates at round end. Draw Mindstream is repeatable. Unique tile actions cost 1 Meet action and are once per table. The Bed's Draw 3 is once per Dreamer this Meet. Quests still name their Landscape after it is Forgotten.</p>
         </section>

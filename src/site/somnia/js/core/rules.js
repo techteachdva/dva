@@ -12,6 +12,7 @@ import { PHASES } from "./data.js";
 import { isWildPsyche, psycheCardValue } from "../cards/psyche.js";
 import { playSfx } from "../audio/audio.js";
 import { queueCardDiscard, queueHandDelta } from "../cards/card-fx.js";
+import { archetypeSpreadOpen, undefeatedFinalArchetypes } from "../dreamers/final-recurrence-rules.js";
 
 export { isWildPsyche, psycheCardValue };
 
@@ -366,8 +367,9 @@ export function canSelectCard(state, card, phase, player = null) {
 
   if (phase === "Meet" && state.meetActionBudget > 0) {
     if (!active.alive || !active.hand.some((c) => c.instanceId === card.instanceId)) return false;
+    const tableSpread = archetypeSpreadOpen(state);
     const actor = meetPsycheActor(state);
-    if (!actor || active.id !== actor.id) return false;
+    if (!tableSpread && (!actor || active.id !== actor.id)) return false;
     if (!isDreambeastPsycheCard(card) && spreadPsycheCount(state) >= 3) return false;
     return true;
   }
@@ -495,6 +497,37 @@ export function coopMeetPlayTotal(state) {
     return total;
   }
   return meetPsychePlayTotal(state);
+}
+
+/**
+ * Dice the table rolls against a Remaining Archetype.
+ * Up to 3 Psyche from any hand, plus the Dreamer on that Landscape's suit bonus.
+ */
+export function archetypeSpreadDice(state, archetypeId = null) {
+  const tile = state.board?.find((entry) => entry.id === state.selectedLandscapeId);
+  const waiting = undefeatedFinalArchetypes(tile);
+  const arch = (archetypeId && waiting.find((entry) => entry.id === archetypeId)) || waiting[0];
+  const actor = meetPsycheActor(state);
+  const selected = allSelectedCards(state);
+  let total = state.pendingPowerBonus || 0;
+  const byOwner = new Map();
+  selected.forEach((card) => {
+    const owner = cardOwner(state, card);
+    if (!owner) return;
+    if (!byOwner.has(owner.id)) byOwner.set(owner.id, []);
+    byOwner.get(owner.id).push(card);
+  });
+  byOwner.forEach((cards, ownerId) => {
+    const owner = state.players.find((p) => p.id === ownerId);
+    if (!owner) return;
+    total += sumEffectivePsycheValue(state, owner, cards);
+    total += persistentMeetBonus(state, owner);
+  });
+  if (actor && arch?.suit && selectedHasPaySuit(selected, arch.suit)) {
+    total += totalStat(actor, arch.suit, state);
+  }
+  total += state.anchorMeetSpreadBonus || 0;
+  return total;
 }
 
 function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {
