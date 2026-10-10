@@ -1,14 +1,13 @@
 /**
  * Mindstream Event landscape icons:
- * - Each Event lists Landscape icon(s).
- * - The Event only resolves if ANY listed Landscape is Revealed (not Wasteland).
- * - Top and bottom effects both require that gate.
- * - If none of the listed Landscapes are Revealed, the Event is wasted and discarded.
- * - "Affected Landscape" counts and riders use only matching Revealed tiles.
+ * - Each Event names one or two Landscapes.
+ * - Bright is available when any of those Landscapes is Revealed.
+ * - If every named Landscape is still a Wasteland, Bright is greyed out. Dim stays available.
+ * - Bright pays more when more of the outer map is awake.
+ * - "Affected Landscape" counts use only the named tiles that are Revealed.
  */
 
 import { narrate, logMoment } from "../core/narrator.js";
-import { allDreamersDiscardPsyche } from "../cards/psyche-pressure.js";
 import { getEventResolution } from "../effects/event-resolutions.js";
 
 export function eventLandscapeIds(event) {
@@ -56,6 +55,62 @@ export function countAffectedLandscapes(state, event) {
 
 export function hasAffectedLandscapes(state, event) {
   return countAffectedLandscapes(state, event) > 0;
+}
+
+export function outerLandscapeStats(state) {
+  const outer = (state?.board || []).filter((t) => !t.center && t.id !== "bed");
+  const awake = outer.filter((t) => t.revealed && !t.wasteland).length;
+  return { awake, total: outer.length };
+}
+
+/** Shrink a Bright count when most of the map is still Wasteland. A full map pays the printed amount. */
+export function scaleEventCount(base, state) {
+  const n = Number(base) || 0;
+  if (n <= 0) return n;
+  const { awake, total } = outerLandscapeStats(state);
+  if (!total || awake >= total) return n;
+  return Math.max(1, Math.round(n * (awake / total)));
+}
+
+export function eventRewardSentence(state, baseCount) {
+  const { awake, total } = outerLandscapeStats(state);
+  if (!total) return "";
+  if (awake >= total) return "The whole map is awake, so Bright pays in full.";
+  const base = Number(baseCount) || 0;
+  if (base > 0) {
+    const scaled = scaleEventCount(base, state);
+    if (scaled === base) return `${awake} of ${total} Landscapes are awake. Bright pays in full.`;
+    return `${awake} of ${total} Landscapes are awake, so Bright pays ${scaled} instead of ${base}.`;
+  }
+  return `${awake} of ${total} Landscapes are awake, so Bright pays less than on a fully revealed map.`;
+}
+
+/** Plain sentence for why Bright is open or greyed out. */
+export function eventGateSentence(state, event) {
+  const ids = eventLandscapeIds(event);
+  const names = eventLandscapeNames(state, event);
+  if (!ids.length) return "Bright is open. This Event is not tied to a Landscape.";
+  const revealed = revealedLandscapeIds(state?.board || []);
+  const open = [];
+  const closed = [];
+  ids.forEach((id, index) => {
+    if (revealed.has(id)) open.push(names[index]);
+    else closed.push(names[index]);
+  });
+  if (open.length && !closed.length) {
+    const verb = open.length === 1 ? "is" : "are";
+    return `Bright is open because ${formatNameList(open)} ${verb} revealed.`;
+  }
+  if (!open.length) {
+    const waste = closed.length === 1
+      ? `${closed[0]} is still a Wasteland`
+      : `${formatNameList(closed)} are still Wasteland`;
+    const which = closed.length === 1 ? "it" : "one of them";
+    return `Bright is greyed out because ${waste}. Reveal ${which} to open Bright.`;
+  }
+  const openVerb = open.length === 1 ? "is" : "are";
+  const closedVerb = closed.length === 1 ? "is still a Wasteland" : "are still Wasteland";
+  return `Bright is open because ${formatNameList(open)} ${openVerb} revealed. ${formatNameList(closed)} ${closedVerb}.`;
 }
 
 /** True when every listed Landscape icon is currently Revealed on the board. */
@@ -131,18 +186,9 @@ export function beginEventOrWaste(state, event) {
   };
 
   if (info.wasted) {
-    allDreamersDiscardPsyche(state, 2);
-    logMoment(
-      state,
-      `${event.name} fizzles — the Dreamscape is hidden. Each Dreamer discards 2 Psyche.`,
-      { forget: true },
-    );
-    narrate(
-      state,
-      `${event.name} cannot resolve`,
-      `None of this Event's Landscapes are Revealed (${formatNameList(info.needed)}). The Event is wasted: every Dreamer discards 2 Psyche, then the card goes to the ${info.discardPile}.`,
-      ["Each Dreamer discards 2 Psyche", `Discarded unused to the ${info.discardPile}`],
-    );
+    const sentence = eventGateSentence(state, event);
+    logMoment(state, `${event.name}: ${sentence}`, { forget: true });
+    narrate(state, `${event.name}: Bright is closed`, sentence, ["Dim is still available"]);
     return false;
   }
 

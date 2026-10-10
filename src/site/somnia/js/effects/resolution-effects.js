@@ -4,9 +4,12 @@
 
 import {
   addLog,
+  allEncountersOnBoard,
   drawPsycheForPlayer,
+  removeEncounterFromLandscape,
   revealLandscapeTile,
 } from "../core/state.js";
+import { scaleEventCount } from "../board/event-landscapes.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { grantPowerTokens } from "../cards/power-tokens.js";
 import {
@@ -151,10 +154,29 @@ registerEffectResolver("discard-object-or-psyche", (state, choiceId) => {
 /**
  * @param {"good"|"bad"} _side
  */
+function scaleGoodStep(state, step) {
+  if (!step?.params) return step;
+  const params = { ...step.params };
+  let changed = false;
+  for (const key of ["count", "draw", "ret", "pt"]) {
+    if (typeof params[key] === "number" && params[key] > 0) {
+      const scaled = scaleEventCount(params[key], state);
+      if (scaled !== params[key]) {
+        params[key] = scaled;
+        changed = true;
+      }
+    }
+  }
+  return changed ? { ...step, params } : step;
+}
+
 export function applyResolutionEffect(state, player, sideSpec, helpers = {}, _side = "good") {
   const steps = resolutionSideSteps(sideSpec);
   if (!steps.length) return;
-  steps.forEach((step) => applyResolutionStep(state, player, step, helpers));
+  steps.forEach((step) => {
+    const next = _side === "good" ? scaleGoodStep(state, step) : step;
+    applyResolutionStep(state, player, next, helpers);
+  });
 }
 
 function applyResolutionStep(state, player, step, helpers = {}) {
@@ -307,6 +329,20 @@ function applyResolutionStep(state, player, step, helpers = {}) {
         strict: true,
       });
       break;
+    case "repressBoardBeast": {
+      const list = allEncountersOnBoard(state);
+      const n = Math.min(p.count || 1, list.length);
+      if (!n) {
+        addLog(state, "No active Dreambeast to Repress.");
+        break;
+      }
+      list.slice(0, n).forEach(({ tile, encounter }) => {
+        repressCard(state, encounter);
+        removeEncounterFromLandscape(state, tile.id, encounter);
+        addLog(state, `${encounter.name} is Repressed from ${tile.name}. No reward.`);
+      });
+      break;
+    }
     case "discardDream": {
       for (let i = 0; i < (p.count || 1); i += 1) {
         const dream = state.dreamDeck?.shift();

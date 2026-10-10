@@ -181,6 +181,33 @@ function landscapeNameForId(id, board = []) {
   return tile?.name || id.replace(/-/g, " ");
 }
 
+function joinNames(names) {
+  if (names.length <= 1) return names[0] || "";
+  if (names.length === 2) return `${names[0]} or ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, or ${names[names.length - 1]}`;
+}
+
+/** Plain sentence for why Bright is open or greyed out. */
+function eventBrightSentence(ids, tiles, revealed) {
+  const open = [];
+  const closed = [];
+  ids.forEach((id) => {
+    const name = landscapeNameForId(id, tiles);
+    (revealed.has(id) ? open : closed).push(name);
+  });
+  if (open.length && !closed.length) {
+    return open.length === 1
+      ? `Bright is open. ${open[0]} is revealed.`
+      : `Bright is open. ${joinNames(open).replace(" or ", " and ")} are revealed.`;
+  }
+  if (!open.length) {
+    return closed.length === 1
+      ? `Bright is greyed out. Reveal ${closed[0]} to open it.`
+      : `Bright is greyed out. Reveal ${joinNames(closed)} to open it.`;
+  }
+  return `Bright is open because ${joinNames(open)} is revealed.`;
+}
+
 function createEventLandscapeIconRow(card, board = null) {
   const ids = eventLandscapeIds(card);
   if (!ids.length) return null;
@@ -196,26 +223,32 @@ function createEventLandscapeIconRow(card, board = null) {
     active ? "event-active" : "event-inactive",
   ].join(" ");
 
-  const hint = document.createElement("span");
+  const hint = document.createElement("p");
   hint.className = "event-landscape-hint";
-  hint.textContent = active
-    ? "Event fires"
-    : "Needs a listed Landscape Revealed or this Event is discarded unused";
+  hint.textContent = eventBrightSentence(ids, tiles, revealed);
   row.appendChild(hint);
 
   const chips = document.createElement("div");
   chips.className = "event-landscape-chips";
 
   ids.forEach((id) => {
-    const chip = document.createElement("span");
+    const name = landscapeNameForId(id, tiles);
     const isRevealed = revealed.has(id);
+    const chip = document.createElement("figure");
     chip.className = `event-landscape-icon${isRevealed ? " revealed" : ""}`;
-    chip.title = `${landscapeNameForId(id, tiles)}${isRevealed ? " (Revealed)" : " (Hidden)"}`;
+    chip.title = isRevealed
+      ? `${name} is revealed, so Bright is open.`
+      : `${name} is still a Wasteland, so Bright stays greyed out.`;
     const img = document.createElement("img");
     img.src = landscapeImageForId(id, tiles);
-    img.alt = landscapeNameForId(id, tiles);
+    img.alt = name;
     img.loading = "lazy";
-    chip.appendChild(img);
+    const caption = document.createElement("figcaption");
+    caption.textContent = name;
+    const state = document.createElement("span");
+    state.className = "event-landscape-state";
+    state.textContent = isRevealed ? "Revealed" : "Wasteland";
+    chip.append(img, caption, state);
     chips.appendChild(chip);
   });
 
@@ -1343,18 +1376,18 @@ export function showModal(card, options = {}) {
     banner.className = `event-resolution-banner${wasted ? " wasted" : active ? " resolves" : ""}`;
     if (wasted) {
       banner.innerHTML = `
-        <strong>Discarded unused</strong>
-        <span>None of this Event's Landscapes are Revealed${info.needed?.length ? ` (${formatNameList(info.needed)})` : ""}. No effect happens. The card is placed in the ${info.discardPile}.</span>
+        <strong>Bright is greyed out</strong>
+        <span>${info.needed?.length ? `${formatNameList(info.needed)} ${info.needed.length === 1 ? "is" : "are"} still Wasteland. Reveal ${info.needed.length === 1 ? "it" : "one"} to open Bright.` : "Reveal this Event's Landscape to open Bright."} Dim is still available.</span>
       `;
     } else if (active) {
       banner.innerHTML = `
-        <strong>Resolves</strong>
-        <span>${formatNameList(info.activeNames)} ${info.activeNames.length === 1 ? "is" : "are"} Revealed, so this Event fires. After it resolves it is discarded to the ${info.discardPile}.</span>
+        <strong>Bright is open</strong>
+        <span>${formatNameList(info.activeNames)} ${info.activeNames.length === 1 ? "is" : "are"} revealed, so Bright can be chosen. Dim is the repression.</span>
       `;
     } else {
       banner.innerHTML = `
-        <strong>Needs a Revealed Landscape</strong>
-        <span>This Event only fires if any listed Landscape is Revealed. Otherwise it is discarded unused to the ${info.discardPile}.</span>
+        <strong>Bright is greyed out</strong>
+        <span>Reveal one of the Landscapes named on this card to open Bright. Dim is still available.</span>
       `;
     }
     detail.appendChild(banner);
@@ -4754,12 +4787,15 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
     const title = choice.disabled && choice.disabledReason
       ? ` title="${choice.disabledReason.replace(/"/g, "&quot;")}"`
       : "";
+    const why = choice.disabled && choice.disabledReason
+      ? choice.disabledReason
+      : (choice.hint || "");
     return `
       <button type="button"
         class="ms-choice-btn ${shapeClass(choice.shape)} ms-choice-btn--${role}"
         data-choice="${choice.id}"${disabled}${title}>
         <span class="ms-choice-btn__label">${choice.label}</span>
-        ${choice.hint ? `<span class="ms-choice-btn__hint">${choice.hint}</span>` : ""}
+        ${why ? `<span class="ms-choice-btn__hint">${why}</span>` : ""}
       </button>
     `;
   };
@@ -4780,6 +4816,13 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
   const cardImg = art
     ? `<img class="ms-choice-card" src="${art}" alt="${card.name || ui.title || "Card"}">`
     : `<div class="ms-choice-card ms-choice-card--placeholder">${ui.title || "Card"}</div>`;
+  const landscapeFigs = (ui.landscapeChips || []).map((chip) => `
+    <figure class="event-landscape-icon ms-choice-landscape${chip.revealed ? " revealed" : ""}">
+      <img src="${chip.image || ""}" alt="${chip.name || "Landscape"}">
+      <figcaption>${chip.name || "Landscape"}</figcaption>
+      <span class="event-landscape-state">${chip.revealed ? "Revealed" : "Wasteland"}</span>
+    </figure>
+  `).join("");
 
   body.innerHTML = `
     <div class="ms-choice-fullscreen" data-kind="${kind}" data-suit="${ui.suit || ""}">
@@ -4791,7 +4834,8 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
             <p class="ms-choice-kicker">${kindLabel}</p>
             <h2 class="ms-choice-title">${ui.title || card.name || "Choose"}</h2>
             ${ui.message ? `<p class="ms-choice-message">${ui.message}</p>` : ""}
-            ${ui.landscapeHint ? `<p class="ms-choice-landscapes">Landscapes: ${ui.landscapeHint}</p>` : ""}
+            ${ui.landscapeHint ? `<p class="ms-choice-landscapes">${ui.landscapeHint}</p>` : ""}
+            ${landscapeFigs ? `<div class="ms-choice-landscape-row">${landscapeFigs}</div>` : ""}
           </div>
           <div class="ms-choice-card-frame">${cardImg}</div>
           ${flee ? `<div class="ms-choice-flee-slot">${renderBtn(flee)}</div>` : ""}

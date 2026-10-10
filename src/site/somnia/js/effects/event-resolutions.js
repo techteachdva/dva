@@ -40,8 +40,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Scatter Focus",
-      hint: "All discard 1 Psyche",
-      effect: "discardPsycheAll",
+      hint: "All repress 1 Psyche",
+      effect: "repressPsycheAll",
       params: { count: 1 },
     },
   },
@@ -58,9 +58,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Drop Your Peak",
-      hint: "Discard your highest Psyche",
-      effect: "discardHighestPsyche",
-      params: {},
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
     },
   },
 
@@ -112,7 +112,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Snooze Again",
-      hint: "Repress top Lucidity Mindstream",
+      hint: "Repress the top Mindstream card",
       effect: "repressTopMindstream",
       params: { suit: "lucidity", count: 1 },
     },
@@ -130,9 +130,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Heavy Lids",
-      hint: "Discard 1 Dream",
-      effect: "discardDream",
-      params: { count: 1 },
+      hint: "Repress the top Mindstream card",
+      effect: "repressTopMindstream",
+      params: { suit: "lucidity", count: 1 },
     },
   },
 
@@ -148,9 +148,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Plans Go Wrong",
-      hint: "Spawn an Encounter here",
-      effect: "spawnEncounter",
-      params: {},
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
     },
   },
 
@@ -184,8 +184,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Cannot Wake",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -202,8 +202,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Pay the Toll",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -222,8 +222,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Siren Lies",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -240,9 +240,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "It Notices You",
-      hint: "Spawn an Encounter here",
-      effect: "spawnEncounter",
-      params: {},
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
     },
   },
 
@@ -258,9 +258,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Face Emerges",
-      hint: "Spawn an Encounter here",
-      effect: "spawnEncounter",
-      params: {},
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
     },
   },
 
@@ -276,9 +276,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Dream Dissolves",
-      hint: "Discard 1 Dream",
-      effect: "discardDream",
-      params: { count: 1 },
+      hint: "Repress the top Mindstream card",
+      effect: "repressTopMindstream",
+      params: { suit: "lucidity", count: 1 },
     },
   },
 
@@ -348,8 +348,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Bottled Pressure",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -366,8 +366,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Peace Shatters",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -384,8 +384,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Dissonance",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -420,7 +420,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Drop Everything",
-      hint: "Repress 2 Objects from hand",
+      hint: "Repress 2 Objects",
       effect: "repressObjects",
       params: { count: 2 },
     },
@@ -438,7 +438,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "World Warps",
-      hint: "Forget 4 Landscapes; repress top 2 Psyche",
+      hint: "Forget 4 Landscapes; Repress 2 from the Psyche deck",
       steps: [
         { effect: "forgetLandscapes", params: { count: 4 } },
         { effect: "repressTopPsycheDeck", params: { count: 2 } },
@@ -458,7 +458,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Infection Spreads",
-      hint: "Repress top 2 of Psyche deck",
+      hint: "Repress 2 from the Psyche deck",
       effect: "repressTopPsycheDeck",
       params: { count: 2 },
     },
@@ -494,8 +494,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Called On",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -530,8 +530,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Blank Stare",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -584,8 +584,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Lock Clicks Shut",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -620,8 +620,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Detention",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -638,9 +638,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Leviathan Stirs",
-      hint: "Discard your highest Psyche",
-      effect: "discardHighestPsyche",
-      params: {},
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
     },
   },
 
@@ -662,8 +662,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Wind Scours You",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -698,8 +698,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Not Enough",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -718,8 +718,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Discordant Note",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -736,8 +736,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Miss the Landing",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -756,8 +756,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Sticky Trap",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -774,9 +774,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Smothered",
-      hint: "Discard 1 Dream",
-      effect: "discardDream",
-      params: { count: 1 },
+      hint: "Repress the top Mindstream card",
+      effect: "repressTopMindstream",
+      params: { suit: "elasticity", count: 1 },
     },
   },
 
@@ -792,8 +792,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Cuts Everywhere",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -810,8 +810,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Pressure Cracks",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -828,8 +828,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Oasis Was Sand",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -846,8 +846,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Thirst Claims Will",
-      hint: "Discard 1 Willpower Psyche",
-      effect: "discardSuitPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { suit: "willpower", count: 1 },
     },
   },
@@ -866,7 +866,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Doorway Snaps Shut",
-      hint: "Repress top Elasticity Mindstream",
+      hint: "Repress the top Mindstream card",
       effect: "repressTopMindstream",
       params: { suit: "elasticity", count: 1 },
     },
@@ -884,8 +884,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Playthings Shatter",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -902,8 +902,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Swept Under",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -920,8 +920,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Nowhere to Run",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -956,9 +956,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "It Lurches Alive",
-      hint: "Spawn an Encounter here",
-      effect: "spawnEncounter",
-      params: {},
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
     },
   },
 
@@ -992,8 +992,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Chest Was Empty",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1010,8 +1010,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Beasts Pour Through",
-      hint: "Discard 4 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 4 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 4 },
     },
   },
@@ -1028,9 +1028,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Something Scrapes Out",
-      hint: "Spawn an Encounter here",
-      effect: "spawnEncounter",
-      params: {},
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
     },
   },
 
@@ -1046,8 +1046,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Darkness Bites",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1064,8 +1064,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Floor Swallows Footing",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1082,8 +1082,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Almost — Not Quite",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1100,8 +1100,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Fingers Slip",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1118,8 +1118,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Wood Draws Blood",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -1136,7 +1136,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Frostbite",
-      hint: "Discard 1 Object",
+      hint: "Repress 1 Object",
       effect: "repressObjects",
       params: { count: 1 },
     },
@@ -1154,8 +1154,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Sun Burns Clean",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -1172,9 +1172,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Mirage Becomes Real",
-      hint: "Spawn an Encounter here",
-      effect: "spawnEncounter",
-      params: {},
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
     },
   },
 
@@ -1190,9 +1190,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Sand Strips You Bare",
-      hint: "Discard 1 Object or Psyche",
-      effect: "discardObjectOrPsyche",
-      params: {},
+      hint: "Repress 1 Object",
+      effect: "repressObjects",
+      params: { count: 1 },
     },
   },
 
@@ -1210,8 +1210,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Friendship Frays",
-      hint: "All discard 1 Psyche",
-      effect: "discardPsycheAll",
+      hint: "All repress 1 Psyche",
+      effect: "repressPsycheAll",
       params: { count: 1 },
     },
   },
@@ -1230,8 +1230,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Stumble on the Stairs",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1250,8 +1250,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Miss a Step",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1268,9 +1268,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Third Place Stings",
-      hint: "Spawn an Encounter here",
-      effect: "spawnEncounter",
-      params: {},
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
     },
   },
 
@@ -1286,9 +1286,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Forced Acceptance",
-      hint: "Spawn an Encounter here",
-      effect: "spawnEncounter",
-      params: {},
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
     },
   },
 
@@ -1326,8 +1326,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Blinded",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1362,10 +1362,10 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Doom Descends",
-      hint: "Discard 2 Psyche; spawn Encounter",
+      hint: "Repress 2 Psyche from hand; Repress 1 active Dreambeast. No reward",
       steps: [
-        { effect: "discardPsyche", params: { count: 2 } },
-        { effect: "spawnEncounter", params: {} },
+        { effect: "repressPsyche", params: { count: 2 } },
+        { effect: "repressBoardBeast", params: { count: 1 } },
       ],
     },
   },
@@ -1400,8 +1400,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Crack Under Heat",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1418,8 +1418,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Ash in the Lungs",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -1456,9 +1456,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Boil Over",
-      hint: "Spawn an Encounter here",
-      effect: "spawnEncounter",
-      params: {},
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
     },
   },
 
@@ -1474,9 +1474,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Dreams Vanish",
-      hint: "Discard 3 Dreams",
-      effect: "discardDream",
-      params: { count: 3 },
+      hint: "Repress 3 top Mindstream cards",
+      effect: "repressTopMindstream",
+      params: { suit: "willpower", count: 3 },
     },
   },
 
@@ -1492,7 +1492,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Clock Runs Out",
-      hint: "All repress 1 Object",
+      hint: "Repress 1 Object",
       effect: "repressObjects",
       params: { count: 1 },
     },
@@ -1528,8 +1528,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Swallow Seawater",
-      hint: "Discard 1 Willpower Psyche",
-      effect: "discardSuitPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { suit: "willpower", count: 1 },
     },
   },
@@ -1546,9 +1546,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Wiped Out",
-      hint: "Discard your highest Psyche",
-      effect: "discardHighestPsyche",
-      params: {},
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
     },
   },
 
@@ -1566,8 +1566,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Lost in Grey",
-      hint: "Discard 1 Willpower Psyche",
-      effect: "discardSuitPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { suit: "willpower", count: 1 },
     },
   },
@@ -1584,8 +1584,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Crystal Shatters",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1620,8 +1620,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Pulled Under",
-      hint: "Discard 2 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 2 },
     },
   },
@@ -1638,8 +1638,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Stuck Fast",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1656,8 +1656,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Tongue Burns Cold",
-      hint: "Discard 1 Willpower Psyche",
-      effect: "discardSuitPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { suit: "willpower", count: 1 },
     },
   },
@@ -1674,9 +1674,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Bridge Sags",
-      hint: "Discard 1 Dream",
-      effect: "discardDream",
-      params: { count: 1 },
+      hint: "Repress the top Mindstream card",
+      effect: "repressTopMindstream",
+      params: { suit: "willpower", count: 1 },
     },
   },
 
@@ -1710,8 +1710,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Clouds Dissolve",
-      hint: "All discard 1 Psyche",
-      effect: "discardPsycheAll",
+      hint: "All repress 1 Psyche",
+      effect: "repressPsycheAll",
       params: { count: 1 },
     },
   },
@@ -1728,8 +1728,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Jaws Close",
-      hint: "Discard 2 Willpower Psyche",
-      effect: "discardSuitPsyche",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
       params: { suit: "willpower", count: 2 },
     },
   },
@@ -1746,8 +1746,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Calm Breaks",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1764,8 +1764,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Choke on Green",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1782,9 +1782,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Something Hunts Between",
-      hint: "Spawn an Encounter here",
-      effect: "spawnEncounter",
-      params: {},
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
     },
   },
 
@@ -1800,8 +1800,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Ground to Nothing",
-      hint: "Discard 3 Psyche or 1 Dream",
-      effect: "discardPsyche",
+      hint: "Repress 3 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 3 },
     },
   },
@@ -1820,8 +1820,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Bite Closes",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1838,8 +1838,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Filling Falls Out",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1856,9 +1856,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Knock Knock — Horror",
-      hint: "Spawn an Encounter here",
-      effect: "spawnEncounter",
-      params: {},
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
     },
   },
 
@@ -1874,8 +1874,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Reason Demands Cost",
-      hint: "All discard 1 Psyche",
-      effect: "discardPsycheAll",
+      hint: "All repress 1 Psyche",
+      effect: "repressPsycheAll",
       params: { count: 1 },
     },
   },
@@ -1910,8 +1910,8 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Memory Cuts",
-      hint: "Discard 1 Psyche",
-      effect: "discardPsyche",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
       params: { count: 1 },
     },
   },
@@ -1928,9 +1928,9 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Toll of Dreams",
-      hint: "Discard 2 Dreams",
-      effect: "discardDream",
-      params: { count: 2 },
+      hint: "Repress 2 top Mindstream cards",
+      effect: "repressTopMindstream",
+      params: { suit: "willpower", count: 2 },
     },
   },
 };

@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 40.0. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 40.1. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -708,7 +708,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Mindstream &amp; Dreams</h3>
-      <p>Three 56-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Events, 8 Power Token cards, and Draw-Dream cards. Objects are not in the Mindstream. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Every Dream, including the first, uses the card's printed condition. Bright if that condition is met. Otherwise Dim. The Head Dreamer draws one Dream each round. Bright then costs a Repress, a discarded Psyche, or a Forgotten Landscape. You choose which cards to discard or repress. Dim is free. A banner stays up at <strong>10%</strong> remaining and tells the table to <strong>Return</strong> cards from the Subconscious; it flashes at <strong>5%</strong>; at <strong>1%</strong> the Dreamscape turns unstable and the nightmare closes in. Each low deck is tagged on the rail.</p>
+      <p>Three 56-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Events, 8 Power Token cards, and Draw-Dream cards. Each Event names one or two Landscapes on the card. Bright is open only while one of those Landscapes is revealed. If it is still a Wasteland, Bright is greyed out and the card says which Landscape to reveal. Dim represses a card or forgets a Landscape. Bright's reward shrinks while more of the map is Wasteland. Ending Meet on a Wasteland Represses 1 Psyche from hand. Objects are not in the Mindstream. When a Mindstream draw pile is empty, shuffle its discard into a new draw pile. If a suit is entirely Repressed in the Subconscious — none left in that Mindstream, its discard, or in play — the table loses immediately. The Psyche Deck works the same way: when its draw pile is empty, shuffle the discard. If both the Psyche draw pile and discard are empty, the table loses immediately. Spawn a Dreambeast by cycling from the top until a beast, then discard the rest of that Mindstream. Every Dream, including the first, uses the card's printed condition. Bright if that condition is met. Otherwise Dim. The Head Dreamer draws one Dream each round. Bright then costs a Repress, a discarded Psyche, or a Forgotten Landscape. You choose which cards to discard or repress. Dim is free. A banner stays up at <strong>10%</strong> remaining and tells the table to <strong>Return</strong> cards from the Subconscious; it flashes at <strong>5%</strong>; at <strong>1%</strong> the Dreamscape turns unstable and the nightmare closes in. Each low deck is tagged on the rail.</p>
 
       <h3>Death</h3>
       <p>A Dreamer with <strong>no Psyche</strong> who must pay even one dies. The Death Clock ticks. Their Objects are cleared and their tokens return to the pool. They redraw <strong>3 Psyche</strong> on <strong>The Bed</strong>. The Mindstream is not touched. The <strong>sixth death</strong>, shared by the whole table, ends the night at once.</p>
@@ -726,7 +726,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 40.0</p>
+          <p class="info-hub-kicker">Somnia v 40.1</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>

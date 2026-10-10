@@ -11,7 +11,16 @@ import { addLog, drawPsycheForPlayer, setEncounterOnLandscape, landscapeById, ti
 import { logMoment } from "../core/narrator.js";
 import { totalStat } from "../core/rules.js";
 import { isWildPsyche } from "./psyche.js";
-import { hasAffectedLandscapes, eventLandscapeNames } from "../board/event-landscapes.js";
+import {
+  hasAffectedLandscapes,
+  eventLandscapeNames,
+  eventLandscapeIds,
+  eventGateSentence,
+  eventRewardSentence,
+  scaleEventCount,
+  landscapeImageForId,
+  revealedLandscapeIds,
+} from "../board/event-landscapes.js";
 import { getEventResolution } from "../effects/event-resolutions.js";
 import { getDreamResolution } from "./dream-resolutions.js";
 import { applyResolutionEffect, discardMindstreamCard, resolutionRulesText } from "../effects/resolution-effects.js";
@@ -210,7 +219,23 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
     const landscapesOk = hasAffectedLandscapes(state, card)
       || !(card.landscapes?.length);
     const canGood = landscapesOk && canPayEventGood(state, player, resolution);
-    const landscapeHint = eventLandscapeNames(state, card).join(", ") || "any revealed Landscape";
+    const gateSentence = eventGateSentence(state, card);
+    const ids = eventLandscapeIds(card);
+    const names = eventLandscapeNames(state, card);
+    const revealed = revealedLandscapeIds(state.board);
+    const landscapeChips = ids.map((id, index) => ({
+      id,
+      name: names[index],
+      image: landscapeImageForId(id, state.board),
+      revealed: revealed.has(id),
+    }));
+    const baseCount = primaryGoodCount(resolution);
+    const rewardScale = landscapesOk ? eventRewardSentence(state, baseCount) : "";
+    let goodHint = resolution.good.hint || "";
+    if (landscapesOk && baseCount > 0) {
+      const scaled = scaleEventCount(baseCount, state);
+      if (scaled !== baseCount) goodHint = goodHint.replace(String(baseCount), String(scaled));
+    }
     const cardsNeeded = eventGoodCardsNeeded(state, player, resolution);
     const costHint = cardsNeeded <= 0
       ? `Free — base ${SUIT_LABELS[resolution.suit]} covers ${resolution.cost}`
@@ -226,17 +251,20 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
       message: resolutionRulesText(resolution) || card.text || "",
       suit: resolution.suit,
       cost: resolution.cost,
-      landscapeHint,
+      landscapeHint: gateSentence,
+      landscapeStatus: gateSentence,
+      landscapeChips,
+      rewardScale,
       choices: [
         {
           id: "good",
           role: "good",
           shape: resolution.suit,
           label: resolution.good.label,
-          hint: `${resolution.good.hint} · ${costHint}`,
+          hint: landscapesOk ? `${goodHint} · ${costHint}` : gateSentence,
           disabled: !canGood,
           disabledReason: !landscapesOk
-            ? `Needs a revealed Landscape: ${landscapeHint}`
+            ? gateSentence
             : `Need ${cardsNeeded} ${SUIT_LABELS[resolution.suit]} Psyche (or higher base ${SUIT_LABELS[resolution.suit]})`,
         },
         {

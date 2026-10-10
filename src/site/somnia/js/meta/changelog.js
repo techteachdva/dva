@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "40.0";
+export const SOMNIA_VERSION = "40.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "40.1",
+    title: "Bright Needs a Place",
+    notes: [
+      "Each Event names one or two Landscapes. Bright opens when one of those Landscapes is revealed, and stays greyed out while they are Wasteland. The card and the choice show the Landscape by name and say why Bright is open or closed.",
+      "Dim represses Psyche, an Object in play, a Mindstream card, or an active Dreambeast with no reward, or it forgets Landscapes. Bright's count shrinks while part of the map is still Wasteland.",
+      "A Dreamer who ends Meet standing on a Wasteland Represses 1 Psyche from hand.",
+    ],
+  },
   {
     version: "40.0",
     title: "The Wheat From The Chaff",
