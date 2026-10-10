@@ -115,7 +115,7 @@ import { playSfx } from "../audio/audio.js";
 import { markPhasePulse, markDreamFeedNudge, playPhaseSpendFlash } from "../ui/fx.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { COOP_PLAY_TIP } from "../meta/guide.js";
-import { notifyTutorialEncounterResolved, classifyPhaseAction } from "../tutorial/tutorial-mode.js";
+import { notifyTutorialEncounterResolved, classifyPhaseAction, exploreMoveLockActive } from "../tutorial/tutorial-mode.js";
 import {
   resolveCardEffect,
   createEffectHelpers,
@@ -270,6 +270,32 @@ export function actionTurnHolder(state) {
   return state.players.find((p) => p.id === state.meetPassHolderId && p.alive) || null;
 }
 
+/** Dreamer who may act. Their board portrait opens the action radial on every phase. */
+export function actingDreamerId(state) {
+  const holder = actionTurnHolder(state);
+  if (holder) return holder.id;
+  if (exploreMoveLockActive(state)) return activePlayer(state)?.id || null;
+  return null;
+}
+
+/**
+ * Click on a Dreamer portrait.
+ * The acting Dreamer's own portrait always opens the radial, including while
+ * Explore treats the rest of the board as move targets.
+ */
+export function dreamerPortraitClickIntent({
+  moveLock = false,
+  dreamerId = null,
+  actingId = null,
+  hexIsLegalMove = false,
+} = {}) {
+  if (dreamerId && actingId && dreamerId === actingId) return "radial";
+  if (moveLock && hexIsLegalMove) return "move";
+  if (moveLock && dreamerId) return "walker";
+  if (dreamerId) return "radial";
+  return "hex";
+}
+
 function meetPassBlocks(state, actor) {
   if (!actionTurnActive(state)) return false;
   const holder = state.players.find((p) => p.id === state.meetPassHolderId);
@@ -291,7 +317,7 @@ function nextLivingClockwise(state, fromId) {
 }
 
 /** Seat the action turn on the Dreamer who opened the phase (they act first). */
-function seatMeetPassToken(state, openerId) {
+export function seatMeetPassToken(state, openerId) {
   if (tutorialSuppressesMeetPass(state)) {
     state.meetPassHolderId = null;
     return;

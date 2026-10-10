@@ -6,10 +6,18 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "39.5";
+export const SOMNIA_VERSION = "39.6";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "39.6",
+    title: "Portrait Actions",
+    notes: [
+      "On your turn in Reveal, Explore, or Meet, click your own Dreamer portrait on the board to open the action menu. During Explore that click no longer spends a move.",
+      "The portrait on turn wears a gold ring. Draw 1 Psyche, Dreamer Power, Objects, Trade, and Pass Turn live there.",
+    ],
+  },
   {
     version: "39.5",
     title: "Living Table",

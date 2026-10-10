@@ -18,7 +18,7 @@ import {
   getPhase,
 } from "../core/state.js";
 import { countMindstreamDreambeasts } from "../cards/mindstream-supply.js";
-import { spawnEncounterOnLandscape, drawMindstreamCard } from "../core/game.js";
+import { spawnEncounterOnLandscape, drawMindstreamCard, seatMeetPassToken } from "../core/game.js";
 import { resolveCardEffect, createEffectHelpers } from "../effects/effects.js";
 import { resolveOnAcquire } from "../dreamers/archetypes.js";
 import { narrate } from "../core/narrator.js";
@@ -461,6 +461,7 @@ const COMMANDS = {
       state.meetActionsUsed = 0;
       state.usedMeetActionsByPlayer = {};
       state.lastMeetActionByPlayer = {};
+      seatMeetPassToken(state, activePlayer(state)?.id);
       return ok(`Meet phase · budget ${n}.`);
     },
   },
@@ -474,6 +475,7 @@ const COMMANDS = {
       state.phaseIndex = 1;
       state.exploreActivated = true;
       state.exploreMovesLeft = n;
+      seatMeetPassToken(state, activePlayer(state)?.id);
       return ok(`Explore phase · ${n} moves.`);
     },
   },
@@ -498,6 +500,7 @@ const COMMANDS = {
       state.phaseIndex = 0;
       state.revealLandscapeUsed = false;
       beginRevealPicking(state, n);
+      seatMeetPassToken(state, activePlayer(state)?.id);
       return ok(`Reveal pick mode · budget ${n}. Click cyan tiles.`);
     },
   },

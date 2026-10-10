@@ -4815,8 +4815,15 @@ html[data-pointer="coarse"] .board-camera-controls button {
 body.explore-move-lock .hex-tile:not(.movable):not(.explore-walker) {
   filter: saturate(0.55) brightness(0.72);
 }
+.hex-tile .hex-occupant-dreamer.is-turn-holder {
+  z-index: 8;
+  box-shadow: 0 0 0 2px rgba(240, 201, 106, 0.95), 0 0 14px rgba(240, 201, 106, 0.45);
+}
 body.explore-move-lock .hex-tile .hex-occupant-token {
   pointer-events: none;
+}
+body.explore-move-lock .hex-tile .hex-occupant-dreamer.is-turn-holder {
+  pointer-events: auto;
 }
 body.explore-move-lock .hex-tile.explore-walker {
   --hex-border-color: rgba(240, 201, 106, 0.92);

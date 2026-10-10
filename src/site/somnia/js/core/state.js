@@ -261,7 +261,6 @@ export function createInitialState(data, options) {
     skipExploreReason: null,
     rivalryEncountersOnBed: 0,
     rivalryLeftover: 0,
-    paradoxMeet: false, // unused — Paradox no longer swaps stats
     chaseDream: false,
     chaseTrapped: [],
     skipLandscapeActionsNextMeet: false,
@@ -681,7 +680,6 @@ export function resetPhaseFlags(state) {
   state.skipExploreReason = null;
   state.rivalryEncountersOnBed = 0;
   state.rivalryLeftover = 0;
-  state.paradoxMeet = false;
   state.chaseDream = false;
   state.chaseTrapped = [];
   state.skipLandscapeActionsNextMeet = false;

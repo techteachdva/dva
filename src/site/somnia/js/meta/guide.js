@@ -44,14 +44,14 @@ export const TUTORIAL_STEPS = [
   {
     id: "reveal",
     title: "Reveal Phase",
-    body: "Discuss, then draw the Dream and/or set reveal budget in any order. Click **Draw Dream** left of Next Phase for the Head Dreamer (★). Select 1 Lucidity, then press **Reveal Landscapes** beside that Psyche.",
+    body: "Discuss, then draw the Dream. Click **Draw Dream** left of Next Phase for the Head Dreamer (★). Select 1 Lucidity, then press **Reveal Landscapes** beside that Psyche. On your turn, click a glowing hex, or click your Dreamer portrait for actions.",
     target: "#board-viewport",
     phase: "Reveal",
   },
   {
     id: "explore",
     title: "Explore Phase",
-    body: "Discuss who should spend Elasticity, then select 1 Elasticity and press **Spend Elasticity** beside that Psyche. Click Dreamer chips in the bottom-left dock and green hexes in any order until moves run out.",
+    body: "Discuss who should spend Elasticity, then select 1 Elasticity and press **Spend Elasticity** beside that Psyche. Dreamers take turns. On your turn, click a green hex to move, or click your Dreamer portrait for actions.",
     target: "#board-viewport",
     phase: "Explore",
   },
@@ -265,7 +265,7 @@ export function getCurrentObjective(state) {
             : "Pick the Dreamer with the highest Lucidity stat.",
         );
         if (budget >= 1) {
-          steps.push(`Select 1 Lucidity, then click **Reveal Landscapes** beside that Psyche (${budget} reveals). Click hex tiles in any order.`);
+          steps.push(`Select 1 Lucidity, then click **Reveal Landscapes** beside that Psyche (${budget} reveals). On your turn, click a glowing hex, or click your Dreamer portrait for actions.`);
         }
       }
       return {
@@ -318,7 +318,7 @@ export function getCurrentObjective(state) {
             ? `Select 1 Elasticity, then click **Spend Elasticity** beside that Psyche (${budget} moves for everyone).`
             : "Select 1 Elasticity, then click Spend Elasticity beside that Psyche to unlock moves.",
         ],
-        tip: "After unlocking, move any Dreamer in any order.",
+        tip: "The Dreamer who opens takes the first move. On your turn, click your portrait for actions.",
       };
     }
     if (state.exploreMovesLeft > 0) {
@@ -328,9 +328,9 @@ export function getCurrentObjective(state) {
         title: "Move on the board",
         steps: [
           `Click a **green dashed hex** to move ${player.name}.`,
-          `${state.exploreMovesLeft} team move(s) remaining. Spend one to move, or open the Dreamer and choose **Draw 1 Psyche**. **Next: Meet** turns whatever is left into Psyche draws around the table.`,
+          `${state.exploreMovesLeft} team move(s) remaining. On your turn, click a green hex to move, or click your Dreamer portrait and choose **Draw 1 Psyche**. **Next: Meet** turns whatever is left into Psyche draws around the table.`,
         ],
-        tip: "Click a Dreamer on the board to open their actions, or a dock chip to focus them.",
+        tip: "Click your Dreamer portrait on the board to open actions on your turn.",
       };
     }
     return {
@@ -378,7 +378,7 @@ export function getCurrentObjective(state) {
       const enc = state.activeEncounter;
       lines.push(`Encounter **${enc.name}**: Accept (${enc.accept}) or Repress (${enc.reject ?? enc.repress}).`);
     } else {
-      lines.push("Open a Dreamer on the board for Landscape actions, Trade, Dreamer Powers, or Quests. **Draw 1 Psyche** spends one Meet action. Next Phase turns unused actions into Psyche draws around the table.");
+      lines.push("On your turn, click your Dreamer portrait for Landscape actions, Trade, Dreamer Powers, or **Draw 1 Psyche**. Mark quests on the Archetype card. Next Phase turns unused actions into Psyche draws around the table.");
     }
     return {
       phase: "Meet",
@@ -415,12 +415,12 @@ export function getDreamerChipTooltip(state, player, index) {
       return `${name} — best Elasticity bonus (+${totalStat(player, statForPhaseBudget("Explore", state), state)}). Strong candidate to unlock team moves.`;
     }
     if (isActive && state.exploreActivated) {
-      return `Moving ${name} — ${state.exploreMovesLeft} team move(s) left. Switch chips anytime.`;
+      return `${name} — ${state.exploreMovesLeft} shared move(s) left. Click this portrait on the board for actions.`;
     }
     if (!state.exploreActivated) {
-      return `${name} — discuss who spends Elasticity, then focus chips to move in any order.`;
+      return `${name} — discuss who spends Elasticity. The Dreamer who opens takes the first move.`;
     }
-    return `Click to move ${name}. Team shares ${state.exploreMovesLeft || "—"} move(s).`;
+    return `${name} — click their portrait on the board for actions. Shared moves: ${state.exploreMovesLeft || "—"}.`;
   }
 
   if (phase === "Meet") {
@@ -433,7 +433,7 @@ export function getDreamerChipTooltip(state, player, index) {
         return `Discuss who spends Willpower for shared Meet actions.`;
       }
       const pool = allSelectedCards(state).length;
-      return `${state.meetActionsUsed}/${state.meetActionBudget} actions used · pool ${pool}/3. Meet actions may be taken in any order.`;
+      return `${state.meetActionsUsed}/${state.meetActionBudget} actions used · pool ${pool}/3. On your turn, click your portrait for actions.`;
     }
     if (state.meetActionBudget > 0) {
       return `Click ${name}'s Psyche to add to the cooperative pool (max 3 total).`;
@@ -537,7 +537,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 39.5. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 39.6. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -714,7 +714,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 39.5</p>
+          <p class="info-hub-kicker">Somnia v 39.6</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>

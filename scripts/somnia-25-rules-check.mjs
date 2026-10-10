@@ -17,11 +17,11 @@ globalThis.fetch = async (url) => {
   return { json: async () => loadJson(name) };
 };
 
-const { loadGameData } = await import(pathToFileURL(path.join(JS_DIR, "data.js")).href);
-const { createInitialState, repressTopPsycheFromDeck, checkDefeat } = await import(pathToFileURL(path.join(JS_DIR, "state.js")).href);
-const { discardSelected, isWildPsyche } = await import(pathToFileURL(path.join(JS_DIR, "rules.js")).href);
-const { getDreamerBoardRadialOptions } = await import(pathToFileURL(path.join(JS_DIR, "game.js")).href);
-const { listSubconsciousCards } = await import(pathToFileURL(path.join(JS_DIR, "subconscious.js")).href);
+const { loadGameData } = await import(pathToFileURL(path.join(JS_DIR, "core/data.js")).href);
+const { createInitialState, repressTopPsycheFromDeck, checkDefeat } = await import(pathToFileURL(path.join(JS_DIR, "core/state.js")).href);
+const { discardSelected, isWildPsyche } = await import(pathToFileURL(path.join(JS_DIR, "core/rules.js")).href);
+const { getDreamerBoardRadialOptions, actingDreamerId, dreamerPortraitClickIntent } = await import(pathToFileURL(path.join(JS_DIR, "core/game.js")).href);
+const { listSubconsciousCards } = await import(pathToFileURL(path.join(JS_DIR, "dreamers/subconscious.js")).href);
 
 const data = await loadGameData();
 const failures = [];
@@ -54,9 +54,9 @@ const deckBefore = state.psycheDeck.length;
 const subBefore = listSubconsciousCards(state).length;
 discardSelected(state, player);
 const milled = deckBefore - state.psycheDeck.length;
-assert(milled === 5, `Wild should repress 5 from the Psyche Deck, milled ${milled}`);
-assert(listSubconsciousCards(state).length >= subBefore + 6, "Wild plus 5 deck cards should enter the Subconscious");
-assert(state.status === "playing", "Table should still be playing after a normal Wild mill");
+assert(milled === 0, `Wild no longer mills the Psyche deck, milled ${milled}`);
+assert(listSubconsciousCards(state).length === subBefore + 1, "The spent Wild itself enters the Subconscious");
+assert(state.status === "playing", "Table should still be playing after spending a Wild");
 
 const empty = createInitialState(data, {
   lengthKey: "daydream",
@@ -93,9 +93,47 @@ assert(!kinds.has("completeQuest0"), "Dreamer radial should not include Quest bu
 assert(!kinds.has("phasePowerToken"), "Dreamer radial should not include Token as Psyche");
 assert(kinds.has("dreamerPower"), "Dreamer radial should include Dreamer Power");
 
+const turn = createInitialState(data, {
+  lengthKey: "daydream",
+  selectedDreamers: data.dreamers.slice(0, 2),
+});
+turn.tutorialMode = false;
+turn.phaseIndex = 1;
+turn.exploreActivated = true;
+turn.exploreMovesLeft = 2;
+turn.meetPassHolderId = turn.players[0].id;
+assert(actingDreamerId(turn) === turn.players[0].id, "Explore turn holder is the acting Dreamer");
+assert(dreamerPortraitClickIntent({
+  moveLock: true,
+  dreamerId: turn.players[0].id,
+  actingId: turn.players[0].id,
+  hexIsLegalMove: true,
+}) === "radial", "Own portrait during Explore opens the radial even on a legal hex");
+assert(dreamerPortraitClickIntent({
+  moveLock: true,
+  dreamerId: turn.players[1].id,
+  actingId: turn.players[0].id,
+  hexIsLegalMove: true,
+}) === "move", "Another Dreamer's portrait on a legal hex still moves");
+turn.phaseIndex = 2;
+turn.meetActionBudget = 3;
+turn.meetActionsUsed = 0;
+turn.meetPassHolderId = turn.players[1].id;
+assert(actingDreamerId(turn) === turn.players[1].id, "Meet turn holder is the acting Dreamer");
+assert(dreamerPortraitClickIntent({
+  moveLock: false,
+  dreamerId: turn.players[1].id,
+  actingId: turn.players[1].id,
+  hexIsLegalMove: false,
+}) === "radial", "Own portrait during Meet opens the radial");
+turn.phaseIndex = 0;
+turn.landscapePick = { mode: "reveal", remaining: 2 };
+turn.meetPassHolderId = turn.players[0].id;
+assert(actingDreamerId(turn) === turn.players[0].id, "Reveal turn holder is the acting Dreamer");
+
 if (failures.length) {
   console.error("FAIL somnia 25 rules");
   failures.forEach((msg) => console.error(` - ${msg}`));
   process.exit(1);
 }
-console.log("PASS somnia 25 wild mill, empty psyche defeat, slim radial");
+console.log("PASS somnia 25 wild spend, empty psyche defeat, slim radial, portrait intent");

@@ -65,7 +65,6 @@ export function clearDreamRoundFlags(state) {
   state.skipExploreReason = null;
   state.rivalryEncountersOnBed = 0;
   state.rivalryLeftover = 0;
-  state.paradoxMeet = false;
   state.chaseDream = false;
   state.chaseTrapped = [];
   state.skipLandscapeActionsNextMeet = false;
@@ -115,7 +114,6 @@ export function onMeetPhaseEnd(state) {
   }
   state.rivalryLeftover = 0;
   state.rivalryEncountersOnBed = 0;
-  state.paradoxMeet = false;
   state.chaseDream = false;
   state.chaseTrapped = [];
   state.abductionCarried = [];

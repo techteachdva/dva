@@ -88,7 +88,7 @@ globalThis.document = {
 globalThis.window.matchMedia = () => ({ matches: false });
 globalThis.requestAnimationFrame = (fn) => { fn(); return 0; };
 
-const boardZoom = await import(pathToFileURL(path.join(JS, "board-zoom.js")).href);
+const boardZoom = await import(pathToFileURL(path.join(JS, "board/board-zoom.js")).href);
 
 boardZoom.initBoardZoom();
 boardZoom.resetBoardZoom();
@@ -108,7 +108,7 @@ const token = document.querySelector('.hex-occupant-dreamer[data-dreamer-id="p0"
   || document.querySelector('.hex-tile[data-tile-id="house"]');
 if (!token) fail("resolveAnchor selector should find dreamer token or tile fallback");
 
-const playSrc = fs.readFileSync(path.join(JS, "play.js"), "utf8");
+const playSrc = fs.readFileSync(path.join(JS, "app/play.js"), "utf8");
 if (!playSrc.includes("pendingDreamerRadial")) fail("play.js should defer map-token radial until after focus render");
 if (!playSrc.includes("queueDreamerBoardFocus")) fail("play.js should queue dreamer focus before renderAll");
 if (!playSrc.includes("showDreamerBoardRadialMenu")) fail("play.js should split radial menu from focus setup");
@@ -118,8 +118,10 @@ if (playSrc.includes("openDreamerBoardRadial(anchorEl")) {
   }
 }
 
-const uiSrc = fs.readFileSync(path.join(JS, "ui.js"), "utf8");
+const uiSrc = fs.readFileSync(path.join(JS, "ui/ui.js"), "utf8");
 if (!uiSrc.includes("resolveAnchor")) fail("showRadialMenu should support resolveAnchor re-query");
+if (!uiSrc.includes("dreamerPortraitClickIntent")) fail("board clicks should route the acting Dreamer portrait to the radial");
+if (!uiSrc.includes("is-turn-holder")) fail("the acting Dreamer portrait should be marked on the board");
 
 console.log(JSON.stringify({
   pass: failures.length === 0,

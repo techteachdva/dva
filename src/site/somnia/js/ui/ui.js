@@ -87,6 +87,7 @@ import { revealCompactTarget } from "./compact-chrome.js";
 import { getMomentHistory, flashMoment } from "./moment-overlay.js";
 import { isBeastTokenHidden, isDreamerTokenHidden } from "../board/board-fx.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "../cards/power-tokens.js";
+import { actingDreamerId, dreamerPortraitClickIntent } from "../core/game.js";
 import { cardBackForDeckId, CARD_BACKS } from "../cards/card-backs.js";
 import {
   eventLandscapeIds,
@@ -1819,7 +1820,7 @@ function boardStructureKey(state) {
   return `${tiles.join("|")}#${occupants}`;
 }
 
-function boardChromeKey(state, legalMoveIds, pickHighlights) {
+function boardChromeKey(state, legalMoveIds, pickHighlights, turnHolderId = "") {
   const moveLock = exploreMoveLockActive(state);
   const walker = moveLock ? (activePlayer(state)?.landscapeId || "") : "";
   return [
@@ -1832,7 +1833,22 @@ function boardChromeKey(state, legalMoveIds, pickHighlights) {
     activeQuestLandscapeIds(state).join(","),
     moveLock ? "lock" : "",
     walker,
+    turnHolderId || "",
   ].join("|");
+}
+
+function syncTurnHolderTokens(holderId) {
+  document.querySelectorAll(".hex-occupant-dreamer").forEach((token) => {
+    const on = !!holderId && token.dataset.dreamerId === holderId;
+    token.classList.toggle("is-turn-holder", on);
+    if (on) token.setAttribute("aria-current", "true");
+    else token.removeAttribute("aria-current");
+    if (token.classList.contains("is-overflow")) return;
+    const name = token.alt || "Dreamer";
+    token.title = on
+      ? `${name} — your turn. Click for actions. Double-click to zoom.`
+      : `${name} — click for actions. Double-click to zoom.`;
+  });
 }
 
 function hexTileClassName(tile, state, sets) {
@@ -1996,50 +2012,57 @@ function isBoardChromeControl(target) {
   return !!target.closest("button, a, input, select, textarea, .board-camera-controls, .spread-tray");
 }
 
-function resolveExploreMoveHit(event, fallbackEl, legalIds) {
+function dreamerPortraitAt(event) {
+  const token = tokenUnderPoint(event.clientX, event.clientY);
+  if (!token?.classList.contains("hex-occupant-dreamer") || !token.dataset.dreamerId) return null;
+  const tileEl = token.closest(".hex-tile");
+  return {
+    dreamerId: token.dataset.dreamerId,
+    tileId: token.dataset.homeTile || tileEl?.dataset.tileId || null,
+    token,
+  };
+}
+
+function legalExploreDestination(event, fallbackEl, legalIds) {
   const legal = new Set(legalIds || []);
   const hex = hexTileUnderPoint(event.clientX, event.clientY) || fallbackEl;
   const hexId = hex?.dataset?.tileId || null;
-  if (hexId && legal.has(hexId)) return { kind: "move", tileId: hexId };
-
+  if (hexId && legal.has(hexId)) return hexId;
   const token = tokenUnderPoint(event.clientX, event.clientY);
-  const tokenTileId = token?.closest(".hex-tile")?.dataset.tileId || null;
-  if (tokenTileId && legal.has(tokenTileId)) return { kind: "move", tileId: tokenTileId };
-
-  if (token?.classList.contains("hex-occupant-dreamer") && token.dataset.dreamerId) {
-    return {
-      kind: "walker",
-      dreamerId: token.dataset.dreamerId,
-      tileId: token.dataset.homeTile || tokenTileId,
-      token,
-    };
-  }
-  return { kind: "hex", tileId: hexId || tokenTileId };
+  const parentId = token?.closest(".hex-tile")?.dataset.tileId || null;
+  if (parentId && legal.has(parentId)) return parentId;
+  return null;
 }
 
 function activateBoardTarget(event, fallbackEl = null) {
   const ctx = boardTouchCtx;
   if (!ctx) return;
+  const portrait = dreamerPortraitAt(event);
+  const destId = ctx.moveLock ? legalExploreDestination(event, fallbackEl, ctx.legalMoveIds) : null;
+  const intent = dreamerPortraitClickIntent({
+    moveLock: !!ctx.moveLock,
+    dreamerId: portrait?.dreamerId || null,
+    actingId: ctx.turnHolderId || null,
+    hexIsLegalMove: !!destId,
+  });
+  if (intent === "radial" && portrait) {
+    ctx.boardOptions.onDreamerTokenClick?.(portrait.dreamerId, portrait.tileId, portrait.token, event);
+    return;
+  }
   if (ctx.moveLock) {
-    const hit = resolveExploreMoveHit(event, fallbackEl, ctx.legalMoveIds);
-    if (hit.kind === "move" && hit.tileId) {
-      ctx.onSelectLandscape(hit.tileId);
+    if (intent === "move" && destId) {
+      ctx.onSelectLandscape(destId);
       return;
     }
-    if (hit.kind === "walker") {
-      ctx.boardOptions.onExploreWalkerPick?.(hit.dreamerId, hit.tileId, hit.token, event);
+    if (intent === "walker" && portrait) {
+      ctx.boardOptions.onExploreWalkerPick?.(portrait.dreamerId, portrait.tileId, portrait.token, event);
       return;
     }
-    if (hit.tileId) ctx.onSelectLandscape(hit.tileId);
+    const hex = hexTileUnderPoint(event.clientX, event.clientY) || fallbackEl;
+    if (hex?.dataset.tileId) ctx.onSelectLandscape(hex.dataset.tileId);
     return;
   }
   const token = tokenUnderPoint(event.clientX, event.clientY);
-  if (token?.classList.contains("hex-occupant-dreamer") && token.dataset.dreamerId) {
-    const tileEl = token.closest(".hex-tile");
-    const homeId = token.dataset.homeTile || tileEl?.dataset.tileId;
-    ctx.boardOptions.onDreamerTokenClick?.(token.dataset.dreamerId, homeId, token, event);
-    return;
-  }
   if (token?.classList.contains("hex-occupant-beast") && token.dataset.encounterKey) {
     const tileEl = token.closest(".hex-tile");
     const homeId = token.dataset.homeTile || tileEl?.dataset.tileId;
@@ -2088,6 +2111,11 @@ function clearExploreMovePreview() {
 function onExploreMovePreview(event) {
   const ctx = boardTouchCtx;
   if (!ctx?.moveLock || event.pointerType === "touch") {
+    clearExploreMovePreview();
+    return;
+  }
+  const portrait = dreamerPortraitAt(event);
+  if (portrait && ctx.turnHolderId && portrait.dreamerId === ctx.turnHolderId) {
     clearExploreMovePreview();
     return;
   }
@@ -2200,7 +2228,7 @@ function bindBoardTouchTap() {
   });
 }
 
-function patchBoardChrome(state, legalMoveIds, pickHighlights, size) {
+function patchBoardChrome(state, legalMoveIds, pickHighlights, size, turnHolderId = "") {
   const board = document.getElementById("hex-board");
   if (!board) return false;
   const bounds = boardPixelBounds(state, size);
@@ -2225,6 +2253,7 @@ function patchBoardChrome(state, legalMoveIds, pickHighlights, size) {
     el.style.zIndex = String(tileZIndex(el, y, bounds.offsetY));
     patched += 1;
   });
+  syncTurnHolderTokens(turnHolderId);
   return patched === state.board.length;
 }
 
@@ -2316,12 +2345,14 @@ export function renderBoard(
   boardOptions = {},
 ) {
   const moveLock = exploreMoveLockActive(state);
+  const turnHolderId = actingDreamerId(state) || "";
   boardTouchCtx = {
     state,
     onSelectLandscape,
     boardOptions,
     legalMoveIds: legalMoveIds || [],
     moveLock,
+    turnHolderId,
   };
   document.body.classList.toggle("explore-move-lock", moveLock);
   if (!moveLock) clearExploreMovePreview();
@@ -2329,7 +2360,7 @@ export function renderBoard(
   bindExploreMovePreview();
   const board = document.getElementById("hex-board");
   const size = fitHexSize(state);
-  const chromeKey = boardChromeKey(state, legalMoveIds, pickHighlights);
+  const chromeKey = boardChromeKey(state, legalMoveIds, pickHighlights, turnHolderId);
   const structureKey = boardStructureKey(state);
   if (
     structureKey === lastBoardStructureKey
@@ -2342,7 +2373,7 @@ export function renderBoard(
     if (size !== boardGeom.size) patchBoardGeometry(board, state, size);
     if (chromeKey !== lastBoardChromeKey) {
       lastBoardChromeKey = chromeKey;
-      patchBoardChrome(state, legalMoveIds, pickHighlights, size);
+      patchBoardChrome(state, legalMoveIds, pickHighlights, size, turnHolderId);
     }
     return;
   }
@@ -2467,10 +2498,15 @@ export function renderBoard(
         const hidden = isDreamerTokenHidden(player.id);
         const arriving = hidden ? " is-arriving is-departing" : "";
         const overflow = entry.overflow ? " is-overflow" : "";
+        const onTurn = player.id === turnHolderId;
         const title = entry.overflow
           ? `${player.name} stands on ${homeName}. Shown on the next Landscape because that hex's six corners are full.`
-          : `${player.name} — click for actions · double-click to zoom`;
-        return `<img class="hex-occupant-token hex-occupant-dreamer${arriving}${overflow}" style="${snap}" data-dreamer-id="${player.id}" data-home-tile="${entry.homeId}" src="${player.dreamer.image}" alt="${player.dreamer.name}" title="${title}" role="button" tabindex="0" decoding="async" draggable="false" onerror="this.remove()">`;
+          : onTurn
+            ? `${player.name} — your turn. Click for actions. Double-click to zoom.`
+            : `${player.name} — click for actions. Double-click to zoom.`;
+        const turnClass = onTurn ? " is-turn-holder" : "";
+        const current = onTurn ? ` aria-current="true"` : "";
+        return `<img class="hex-occupant-token hex-occupant-dreamer${turnClass}${arriving}${overflow}" style="${snap}" data-dreamer-id="${player.id}" data-home-tile="${entry.homeId}" src="${player.dreamer.image}" alt="${player.dreamer.name}" title="${title}" role="button" tabindex="0"${current} decoding="async" draggable="false" onerror="this.remove()">`;
       }
       const encounter = entry.encounter;
       const encKey = encounterKey(encounter);
@@ -2506,7 +2542,17 @@ export function renderBoard(
       if (boardTouchCtx?.moveLock) {
         const legal = new Set(boardTouchCtx.legalMoveIds || []);
         const homeId = dreamerEl.dataset.homeTile || tile.id;
-        if (legal.has(tile.id)) boardTouchCtx.onSelectLandscape(tile.id);
+        const intent = dreamerPortraitClickIntent({
+          moveLock: true,
+          dreamerId: dreamerEl.dataset.dreamerId,
+          actingId: boardTouchCtx.turnHolderId || null,
+          hexIsLegalMove: legal.has(tile.id) || legal.has(homeId),
+        });
+        if (intent === "radial") {
+          boardOptions.onDreamerTokenClick?.(dreamerEl.dataset.dreamerId, homeId, dreamerEl, event);
+          return;
+        }
+        if (intent === "move") boardTouchCtx.onSelectLandscape(legal.has(tile.id) ? tile.id : homeId);
         else boardOptions.onExploreWalkerPick?.(dreamerEl.dataset.dreamerId, homeId, dreamerEl, event);
         return;
       }
@@ -2547,6 +2593,7 @@ export function renderBoard(
     }
     board.appendChild(el);
   });
+  syncTurnHolderTokens(turnHolderId);
 }
 
 export function renderPlayers(state, onSelectPlayer, onDoubleClickPlayer = null) {
