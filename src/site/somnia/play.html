@@ -35,7 +35,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 39.7</span>
+        <span class="version-label">v 39.8</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -51,7 +51,7 @@
         <span class="hud-pill hud-pill-power" title="Power Tokens"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Power</span><span id="hud-power">0</span></span>
       </div>
       <div id="hud" class="hud">
-        <div class="hud-item hud-goal-wrap" title="Archetype points scored / points required to wake."><span class="label">Goal:</span><span id="hud-goal">0/8</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span><div id="hud-escape-banner" class="hud-escape-banner hidden" role="status" aria-live="polite"></div></div>
+        <div class="hud-item hud-goal-wrap" title="Archetype points scored / points required to wake."><span class="label">Goal:</span><span id="hud-goal">0/8</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span></div>
         <div class="hud-item hud-dreams-wrap"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
         <div class="hud-item hud-beasts-wrap hidden" id="hud-beasts-wrap"><span class="label">Roaming</span><span id="hud-beasts">0</span></div>
         <div class="hud-item hud-round-wrap"><span class="label">Round</span><span id="hud-round">1</span><span id="hud-boss-rounds" class="hud-boss-rounds" aria-hidden="true"></span></div>
@@ -98,6 +98,7 @@
                 <div id="moment-overlay-stack" class="moment-overlay-stack" role="status" aria-live="polite"></div>
                 <div id="ai-thought-banner" class="ai-thought-banner hidden" role="status" aria-live="polite"></div>
                 <div id="action-moment-banner" class="action-moment-banner hidden" role="status" aria-live="polite" hidden></div>
+                <div id="hud-escape-banner" class="hud-escape-banner hidden" role="status" aria-live="polite"></div>
                 <div id="hud-forget-banner" class="hud-forget-banner hidden" role="status" aria-live="assertive"></div>
                 <div id="deck-pressure-banner" class="deck-pressure-banner hidden" role="alert" aria-live="assertive"></div>
                 <p id="table-action-cue" class="table-action-cue" hidden></p>
@@ -120,6 +121,10 @@
         </aside>
 
         <footer class="hand-bar" id="hand-bar">
+          <div id="hand-choice-bar" class="hand-choice-bar hidden" hidden role="status" aria-live="polite">
+            <p id="hand-choice-text"></p>
+            <button type="button" id="hand-choice-confirm" class="btn primary btn-sm">Confirm</button>
+          </div>
           <div class="resize-handle resize-row edge-top" id="resize-hand" title="Drag to resize hand area"></div>
           <div class="dreamer-dock" id="dreamer-dock">
             <div class="hand-header dreamer-dock-header">

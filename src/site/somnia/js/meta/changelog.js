@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "39.7";
+export const SOMNIA_VERSION = "39.8";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "39.8",
+    title: "Hand Discard",
+    notes: [
+      "Discard and Repress are chosen in the hand. Object costs are chosen in the Objects row. The card popup is gone.",
+      "During Final Recurrence, Remaining Archetypes stand on Landscapes as card art, the same way Dreambeasts do. Click one to Defeat or View.",
+      "The Archetype goal message sits at the bottom of the board, under the top bar.",
+    ],
+  },
   {
     version: "39.7",
     title: "Object Decks",

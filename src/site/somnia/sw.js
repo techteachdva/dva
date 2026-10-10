@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-39.7-objects";
-const RUNTIME_CACHE = "somnia-runtime-39.7-objects";
+const CACHE_NAME = "somnia-39.8-hand";
+const RUNTIME_CACHE = "somnia-runtime-39.8-hand";
 
 const PRECACHE = [
   "./",

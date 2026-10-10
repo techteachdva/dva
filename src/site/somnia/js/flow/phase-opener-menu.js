@@ -402,8 +402,13 @@ export function syncPhaseOpenerMenu(state, handlers, renderAll) {
   openerParked = false;
   parkedPhaseKey = null;
   if (openerMenuOpen) {
-    // Blocking pickers own the utility modal — release the opener flag only.
-    closePhaseOpenerMenu({ hideModal: !isBlockingGameChoice(state) });
+    // Hand and Object costs are chosen on the table, so the opener must get
+    // out of the way. Other blocking choices still own this modal.
+    const repressOnTable = !!state.pendingRepress
+      && !state.pendingDeathChoice
+      && !state.pendingMindstreamChoice
+      && !state.pendingNothingChoice;
+    closePhaseOpenerMenu({ hideModal: repressOnTable || !isBlockingGameChoice(state) });
   }
   return false;
 }

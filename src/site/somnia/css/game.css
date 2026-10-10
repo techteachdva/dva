@@ -2325,15 +2325,20 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 
 .hud-escape-banner {
   display: block;
-  margin-top: 0.35rem;
-  padding: 0.35rem 0.5rem;
-  font-size: 0.78rem;
-  line-height: 1.25;
+  width: 100%;
+  max-width: 42rem;
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.35;
   font-weight: 700;
   color: #ffe8a8;
-  background: linear-gradient(90deg, rgba(120, 70, 10, 0.55), rgba(40, 90, 120, 0.45));
-  border: 1px solid rgba(255, 210, 120, 0.45);
-  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(120, 70, 10, 0.9), rgba(40, 90, 120, 0.86));
+  border: 1px solid rgba(255, 210, 120, 0.55);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
   animation: pulse-escape-hint 2.2s ease-in-out infinite;
 }
 
@@ -4768,6 +4773,11 @@ html[data-pointer="coarse"] .board-camera-controls button {
   max-width: none;
 }
 
+.hex-tile .hex-occupant-archetype {
+  box-shadow: 0 0 0 2px rgba(240, 201, 106, 0.95), 0 0 14px rgba(240, 201, 106, 0.55);
+  object-position: center 20%;
+}
+
 .hex-tile.hidden-tile .hex-overlay {
   background: linear-gradient(180deg, rgba(20,10,30,0.3) 0%, rgba(0,0,0,0.75) 100%);
 }
@@ -4918,6 +4928,46 @@ body.explore-move-lock .hex-tile.move-hover .hex-face {
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 0.65rem;
   align-items: stretch;
+}
+
+.hand-choice-bar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(42, 28, 16, 0.92), rgba(36, 24, 64, 0.9));
+  border: 1px solid rgba(255, 210, 120, 0.5);
+  color: #ffe8a8;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+.hand-choice-bar.hidden {
+  display: none;
+}
+
+.hand-choice-bar p {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+#screen-game .hand-bar:has(.hand-choice-bar:not(.hidden)) {
+  grid-template-rows: auto minmax(6.5rem, 1fr);
+}
+
+.hand-section.hand-choice-target {
+  box-shadow: inset 0 0 0 1px rgba(240, 201, 106, 0.6);
+  border-radius: 10px;
+}
+
+.game-card.phase-suggested:not(.psyche-card):not(.selected) {
+  box-shadow: 0 0 0 2px rgba(240, 201, 106, 0.8);
 }
 
 .power-section {

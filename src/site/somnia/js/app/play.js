@@ -22,7 +22,7 @@ import {
 import { initPauseMenu, openPauseMenu } from "../ui/pause-menu.js";
 import { initFxLayer, burstSparklesAtElement, playSubconsciousClearSparkle } from "../ui/fx.js";
 import { initTablePolish, syncTablePolish } from "../ui/table-polish.js";
-import { initMomentOverlay, resetMomentOverlay } from "../ui/moment-overlay.js";
+import { initMomentOverlay, resetMomentOverlay, flashMoment } from "../ui/moment-overlay.js";
 import {
   runPendingCardFx,
   syncHandRemovals,
@@ -253,7 +253,7 @@ import {
   showRevealedTopsModal,
   showCardPeekStage,
   showRevealDeckTopModal,
-  showRepressPicker,
+  renderHandChoiceBar,
   showDreamReplayPicker,
   renderSubconsciousButton,
   renderActionMomentBanner,
@@ -1564,7 +1564,30 @@ function buildPhaseHandlers() {
 
 let lastDreamerTokenTap = { id: null, time: 0 };
 
+function repressChoiceActive() {
+  const pending = state?.pendingRepress;
+  if (!pending) return null;
+  if (state.pendingDeathChoice || state.pendingMindstreamChoice || state.pendingNothingChoice) return null;
+  return pending;
+}
+
+function focusRepressOwner() {
+  const pending = repressChoiceActive();
+  if (!pending || pending.collective) return;
+  const idx = state.players.findIndex((p) => p.id === pending.playerId);
+  if (idx >= 0) state.activePlayerIndex = idx;
+}
+
 function onObjectCardClick(card, zone) {
+  const pending = repressChoiceActive();
+  if (pending?.source === "objects" && !pending.confirmEmpty) {
+    const wasPicked = pending.picked.some((entry) => entry.instanceId === card.instanceId);
+    const ok = toggleRepressPick(state, card.instanceId);
+    if (!ok) flashMoment("That Object is not part of this choice.");
+    else playSfx(wasPicked ? "deselect" : "select");
+    renderAll();
+    return;
+  }
   const player = activePlayer(state);
   showModal(card, {
     objectZone: zone,
@@ -1730,6 +1753,39 @@ function openDreamerBoardRadial(anchorEl, playerId, tileId) {
   renderAll();
 }
 
+function openArchetypeBoardRadial(anchorEl, arch, tileId) {
+  const occupant = actorOnLandscape(state, tileId);
+  if (occupant) {
+    const idx = state.players.findIndex((p) => p.id === occupant.id);
+    if (idx >= 0 && !repressChoiceActive()) state.activePlayerIndex = idx;
+  }
+  state.selectedLandscapeId = tileId;
+  const handlers = buildPhaseHandlers();
+  const options = [
+    {
+      id: "defeat",
+      label: `Defeat ${arch.name}`,
+      hint: "Pool 15+ Psyche from all Dreamers, using the suit that opposes this Archetype.",
+      primary: true,
+      onPick: () => handlers.defeatFinalArchetype(),
+    },
+    {
+      id: "view",
+      label: "View",
+      hint: "Remaining Archetype on this Landscape",
+      onPick: () => showModal({ ...arch, type: arch.type || "archetype" }),
+    },
+  ];
+  showRadialMenu(anchorEl, options, (opt) => {
+    opt.onPick?.();
+    renderAll();
+  }, {
+    ariaLabel: `${arch.name} archetype`,
+    resolveAnchor: () => document.querySelector(`.hex-occupant-archetype[data-archetype-id="${arch.id}"]`)
+      || document.querySelector(`.hex-tile[data-tile-id="${tileId}"]`),
+  });
+}
+
 function openBeastBoardRadial(anchorEl, encounter, tileId) {
   const occupant = actorOnLandscape(state, tileId);
   if (occupant) {
@@ -1791,6 +1847,33 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
 function onHandCardClick(card, owner) {
   const now = Date.now();
   const id = card.instanceId || card.id;
+  const pending = repressChoiceActive();
+  if (pending?.source === "objects") {
+    if (lastCardClick.id === id && now - lastCardClick.time < 400) {
+      showModal(card);
+      lastCardClick.id = null;
+      return;
+    }
+    lastCardClick.id = id;
+    lastCardClick.time = now;
+    flashMoment("Choose an Object in the Objects row.");
+    return;
+  }
+  if (pending?.source === "hand" && !pending.confirmEmpty) {
+    if (lastCardClick.id === id && now - lastCardClick.time < 400) {
+      showModal(card);
+      lastCardClick.id = null;
+      return;
+    }
+    lastCardClick.id = id;
+    lastCardClick.time = now;
+    const wasPicked = pending.picked.some((entry) => entry.instanceId === id);
+    const ok = toggleRepressPick(state, id);
+    if (!ok) flashMoment("That card is not part of this choice.");
+    else playSfx(wasPicked ? "deselect" : "select");
+    renderAll();
+    return;
+  }
   if (lastCardClick.id === id && now - lastCardClick.time < 400) {
     showModal(card);
     lastCardClick.id = null;
@@ -2158,42 +2241,12 @@ function utilityModalShowing(selector) {
 }
 
 function maybeShowRepressPicker() {
-  // Higher-priority fullscreen choices only — never yield to Dream/Object/Effect
-  // or the phase-opener (those used to steal this modal and soft-lock Meet tax).
+  // Discard and Repress are chosen in the hand (or the Objects row), not a popup.
   if (state?.pendingDeathChoice || state?.pendingMindstreamChoice || state?.pendingNothingChoice) {
     return;
   }
-  if (!state?.pendingRepress) {
-    lastRepressPickerKey = null;
-    return;
-  }
-  const pending = state.pendingRepress;
-  const key = [
-    pending.collective ? "team" : pending.playerId,
-    pending.source,
-    pending.picked.length,
-    pending.remaining,
-    pending.confirmEmpty ? 1 : 0,
-    pending.toDiscard ? 1 : 0,
-  ].join(":");
-  const showing = utilityModalShowing("#repress-confirm");
-  if (key === lastRepressPickerKey && showing) return;
-  lastRepressPickerKey = key;
-
-  showRepressPicker(
-    state,
-    (instanceId) => {
-      toggleRepressPick(state, instanceId);
-      lastRepressPickerKey = null;
-      renderAll();
-    },
-    () => {
-      const paid = confirmRepressStep(state);
-      lastRepressPickerKey = null;
-      if (paid) hideUtilityModal(true);
-      renderAll();
-    },
-  );
+  lastRepressPickerKey = null;
+  if (utilityModalShowing("[data-choice='repress']")) hideUtilityModal(true);
 }
 
 let dreamerPowerModalKey = null;
@@ -2417,6 +2470,13 @@ function renderBoardArea() {
       }
       openBeastBoardRadial(anchorEl, encounter, tileId);
     },
+    onArchetypeTokenClick: (arch, tileId, anchorEl) => {
+      if (exploreMoveLockActive(state) && tileId) {
+        commitLandscape(tileId);
+        return;
+      }
+      openArchetypeBoardRadial(anchorEl, arch, tileId);
+    },
     onExploreWalkerPick: (playerId) => {
       const playerIndex = state.players.findIndex((p) => p.id === playerId);
       if (playerIndex < 0) return;
@@ -2621,6 +2681,7 @@ function renderAll() {
   renderPhaseActions(phaseActions, advanceAction, state);
 
   renderBoardArea();
+  focusRepressOwner();
   renderPlayers(state, (index) => {
     if (!isTutorialActionAllowed(state, "dreamerSelect", { playerIndex: index })) {
       tutorialActionBlocked(state);
@@ -2687,14 +2748,24 @@ function renderAll() {
   } else {
     // Releases opener flag without dismissing a Repress/Return modal.
     syncPhaseOpenerMenu(state, handlers, renderAll);
-    if (!blockingChoice && phaseOpeningActive(state)) {
+    const picking = repressChoiceActive();
+    if (picking?.source === "hand") {
+      const tray = document.getElementById("spread-tray");
+      if (tray) {
+        tray.classList.add("hidden");
+        tray.setAttribute("hidden", "");
+        tray.innerHTML = "";
+      }
+      renderMeetPoolGuide(state);
+      renderHand(state, onHandCardClick, getNewHandCardIds(state));
+    } else if (!blockingChoice && phaseOpeningActive(state)) {
       renderPhaseSpendHands(state, onHandCardClick);
     } else if (!blockingChoice && (
       (getPhase(state) === "Meet" && state.meetActionBudget > 0)
       || state.pendingMindstreamMeet
     )) {
       renderCoopMeetHands(state, onHandCardClick);
-    } else if (!blockingChoice) {
+    } else if (!blockingChoice || picking?.source === "objects") {
       renderMeetPoolGuide(state);
       renderHand(state, onHandCardClick, getNewHandCardIds(state));
     }
@@ -2718,6 +2789,10 @@ function renderAll() {
       })());
     }
   }
+  renderHandChoiceBar(state, () => {
+    confirmRepressStep(state);
+    renderAll();
+  });
   renderPowerTokens(state, {
     onTokenClick: (el) => openPowerTokenRadial(el),
   });
@@ -2793,7 +2868,7 @@ function renderAll() {
   if (!isBlockingGameChoice(state)) maybeShowTradePanel();
   applyBackButton(describeBackAction());
 
-  const blocking = isBlockingGameChoice(state);
+  const blocking = isBlockingGameChoice(state) && !repressChoiceActive();
   setUtilityModalRequired(blocking, blockingChoiceLabel(state));
   if (!state.tutorialMode && !state.excessPsycheIntroShown) {
     requestAnimationFrame(() => {

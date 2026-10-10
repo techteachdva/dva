@@ -456,6 +456,8 @@ export function renderActiveDreamerHand(state, onCardClick, {
   newCardIds = null,
   canClickCard = () => true,
   suggestCard = () => false,
+  isSelected = null,
+  ignoreSpread = false,
   emptyText = "Empty hand",
 } = {}) {
   const handRoot = document.getElementById("hand");
@@ -490,7 +492,7 @@ export function renderActiveDreamerHand(state, onCardClick, {
 
   const fresh = newCardIds || new Set();
   const { main, spill } = splitHandCards(player);
-  const spreadIds = new Set(state.selectedHand || []);
+  const spreadIds = ignoreSpread ? new Set() : new Set(state.selectedHand || []);
   const inHand = main.filter((card) => !spreadIds.has(card.instanceId));
   const spreadCount = main.length - inHand.length;
 
@@ -521,7 +523,8 @@ export function renderActiveDreamerHand(state, onCardClick, {
     const clickable = canClickCard(card, player);
     appendHandCard(primary, card, {
       selected: Boolean(
-        state.trade?.offerPsycheIds?.includes(card.instanceId)
+        isSelected?.(card)
+        || state.trade?.offerPsycheIds?.includes(card.instanceId)
         || state.trade?.partnerOfferIds?.includes(card.instanceId),
       ),
       suggested: suggestCard(card, player),
@@ -545,9 +548,12 @@ export function renderActiveDreamerHand(state, onCardClick, {
       spill.forEach((card, index) => {
         const clickable = canClickCard(card, player);
         appendHandCard(allyHost, card, {
-          selected: state.selectedHand.includes(card.instanceId)
+          selected: Boolean(
+            isSelected?.(card)
+            || (!ignoreSpread && state.selectedHand.includes(card.instanceId))
             || state.trade?.offerPsycheIds?.includes(card.instanceId)
             || state.trade?.partnerOfferIds?.includes(card.instanceId),
+          ),
           suggested: suggestCard(card, player),
           entering: fresh.has(card.instanceId),
           dealIndex: index,
@@ -980,6 +986,7 @@ export function renderCard(card, options = {}) {
     portrait ? "portrait" : "",
     dense ? "hand-dense" : "",
     selected ? "selected" : "",
+    suggested ? "phase-suggested" : "",
     entering ? "card-enter" : "",
     card.resolutionSide === "good" ? "choice-bright" : "",
     card.resolutionSide === "bad" ? "choice-dim" : "",
@@ -2068,6 +2075,16 @@ function activateBoardTarget(event, fallbackEl = null) {
     return;
   }
   const token = tokenUnderPoint(event.clientX, event.clientY);
+  if (token?.classList.contains("hex-occupant-archetype") && token.dataset.archetypeId) {
+    const tileEl = token.closest(".hex-tile");
+    const homeId = token.dataset.homeTile || tileEl?.dataset.tileId;
+    const tile = ctx.state.board.find((entry) => entry.id === homeId);
+    const arch = tile?.finalArchetype;
+    if (arch && !arch.defeated && arch.id === token.dataset.archetypeId) {
+      ctx.boardOptions.onArchetypeTokenClick?.(arch, tile.id, token, event);
+      return;
+    }
+  }
   if (token?.classList.contains("hex-occupant-beast") && token.dataset.encounterKey) {
     const tileEl = token.closest(".hex-tile");
     const homeId = token.dataset.homeTile || tileEl?.dataset.tileId;
@@ -2296,6 +2313,10 @@ function assignVertexOccupants(state) {
       if (!encounter?.image) return;
       queue.push({ kind: "beast", homeId: tile.id, encounter });
     });
+    const arch = tile.finalArchetype;
+    if (arch && !arch.defeated && arch.image) {
+      queue.push({ kind: "archetype", homeId: tile.id, archetype: arch });
+    }
   });
 
   const pending = [];
@@ -2513,6 +2534,14 @@ export function renderBoard(
         const current = onTurn ? ` aria-current="true"` : "";
         return `<img class="hex-occupant-token hex-occupant-dreamer${turnClass}${arriving}${overflow}" style="${snap}" data-dreamer-id="${player.id}" data-home-tile="${entry.homeId}" src="${player.dreamer.image}" alt="${player.dreamer.name}" title="${title}" role="button" tabindex="0"${current} decoding="async" draggable="false" onerror="this.remove()">`;
       }
+      if (entry.kind === "archetype") {
+        const arch = entry.archetype;
+        const overflow = entry.overflow ? " is-overflow" : "";
+        const title = entry.overflow
+          ? `${arch.name} is on ${homeName}. Shown on the next Landscape because that hex's six corners are full.`
+          : `${arch.name} — Remaining Archetype. Click to defeat or view.`;
+        return `<img class="hex-occupant-token hex-occupant-beast hex-occupant-archetype${overflow}" style="${snap}" data-archetype-id="${arch.id}" data-home-tile="${entry.homeId}" src="${arch.image}" alt="${arch.name}" title="${title}" decoding="async" draggable="false" onerror="this.remove()">`;
+      }
       const encounter = entry.encounter;
       const encKey = encounterKey(encounter);
       const arriving = encKey && isBeastTokenHidden(encKey) ? " is-arriving" : "";
@@ -2722,26 +2751,121 @@ export function renderPlayers(state, onSelectPlayer, onDoubleClickPlayer = null)
   });
 }
 
+function tableRepress(state) {
+  const pending = state?.pendingRepress;
+  if (!pending) return null;
+  if (state.pendingDeathChoice || state.pendingMindstreamChoice || state.pendingNothingChoice) return null;
+  return pending;
+}
+
+function repressChoiceCopy(state, pending) {
+  const discard = !!pending.toDiscard || !!pending.toMindstream;
+  const verb = discard ? "Discard" : "Repress";
+  const sourceLabel = pending.source === "objects" ? "Objects" : "Psyche";
+  const pool = pending.confirmEmpty ? [] : repressPickerCards(state);
+  const picked = pending.picked.length;
+  const needed = pending.remaining;
+  const unpicked = Math.max(0, pool.length - picked);
+  const owesMore = !pending.confirmEmpty && picked < needed && unpicked > 0;
+  let instruction;
+  if (pending.confirmEmpty && needed <= 0) {
+    instruction = `No cards to ${verb.toLowerCase()} for this effect.`;
+  } else if (pending.confirmEmpty || pool.length === 0) {
+    instruction = `No ${sourceLabel} available to ${verb.toLowerCase()} (${needed} required).`;
+  } else if (picked >= needed) {
+    instruction = `${picked} ${sourceLabel} chosen. Confirm to pay this cost.`;
+  } else if (pending.collective) {
+    instruction = `Choose ${needed - picked} more Psyche from any hand (${picked}/${needed}). Switch Dreamers to see each hand.`;
+  } else if (pending.source === "objects") {
+    instruction = `Choose ${needed - picked} more Objects in the Objects row (${picked}/${needed}).`;
+  } else {
+    instruction = `Choose ${needed - picked} more Psyche in this hand (${picked}/${needed}).`;
+  }
+  const title = pending.source === "objects"
+    ? `${verb} an Object`
+    : (discard ? "Discard Psyche" : "Repress to Subconscious");
+  const confirmLabel = owesMore
+    ? `Choose ${needed - picked} more`
+    : (pending.confirmEmpty || pool.length === 0 ? "Continue" : `${verb} these`);
+  return { title, instruction, confirmLabel, owesMore };
+}
+
+export function renderHandChoiceBar(state, onConfirm) {
+  const bar = document.getElementById("hand-choice-bar");
+  const text = document.getElementById("hand-choice-text");
+  const btn = document.getElementById("hand-choice-confirm");
+  const pending = tableRepress(state);
+  document.querySelector(".psyche-hand-section")?.classList.toggle(
+    "hand-choice-target",
+    !!pending && pending.source === "hand",
+  );
+  document.querySelector(".objects-hand-section")?.classList.toggle(
+    "hand-choice-target",
+    !!pending && pending.source === "objects",
+  );
+  document.querySelector(".persistent-section")?.classList.toggle(
+    "hand-choice-target",
+    !!pending && pending.source === "objects",
+  );
+  if (!bar || !text || !btn) return;
+  if (!pending) {
+    bar.classList.add("hidden");
+    bar.hidden = true;
+    bar.setAttribute("aria-hidden", "true");
+    btn.onclick = null;
+    return;
+  }
+  const copy = repressChoiceCopy(state, pending);
+  const lead = pending.reason && pending.reason !== copy.instruction
+    ? `${pending.reason} — ${copy.instruction}`
+    : copy.instruction;
+  bar.classList.remove("hidden");
+  bar.hidden = false;
+  bar.setAttribute("aria-hidden", "false");
+  text.textContent = `${copy.title}. ${lead}`;
+  btn.disabled = copy.owesMore;
+  btn.textContent = copy.confirmLabel;
+  btn.onclick = (event) => {
+    event.preventDefault();
+    if (btn.disabled) return;
+    onConfirm?.();
+  };
+}
+
 export function renderObjects(state, onCardClick) {
   const container = document.getElementById("player-objects");
   const persistentEl = document.getElementById("player-persistent");
   if (!container) return;
   const player = activePlayer(state);
+  const pending = tableRepress(state);
+  const pickingObjects = pending?.source === "objects" && !pending.confirmEmpty;
+  const pickedIds = new Set((pending?.picked || []).map((card) => card.instanceId));
+  const poolIds = new Set(pickingObjects ? repressPickerCards(state).map((card) => card.instanceId) : []);
+  const room = (pending?.picked.length || 0) < (pending?.remaining || 0);
   container.innerHTML = "";
   if (persistentEl) persistentEl.innerHTML = "";
+
+  const mountObject = (host, card, zone) => {
+    const inPool = poolIds.has(card.instanceId);
+    const chosen = pickedIds.has(card.instanceId);
+    host.appendChild(renderCard(card, {
+      mini: true,
+      selected: chosen,
+      suggested: inPool && !chosen,
+      onClick: () => onCardClick(card, pickingObjects ? "repress" : zone),
+      onInspect: () => showModal(card),
+    }));
+    if (pickingObjects && inPool && !chosen && !room) {
+      host.lastElementChild.disabled = true;
+    }
+  };
 
   if (!player.objects.length) {
     container.classList.add("empty");
     container.textContent = "No Objects";
   } else {
     container.classList.remove("empty");
-    player.objects.forEach((card) => {
-      container.appendChild(renderCard(card, {
-        mini: true,
-        onClick: () => onCardClick(card, "hand"),
-        onInspect: () => showModal(card),
-      }));
-    });
+    player.objects.forEach((card) => mountObject(container, card, "hand"));
   }
 
   if (persistentEl) {
@@ -2750,19 +2874,29 @@ export function renderObjects(state, onCardClick) {
       persistentEl.textContent = "None";
     } else {
       persistentEl.classList.remove("empty");
-      player.persistent.forEach((card) => {
-        persistentEl.appendChild(renderCard(card, {
-          mini: true,
-          onClick: () => onCardClick(card, "persistent"),
-          onInspect: () => showModal(card),
-        }));
-      });
+      player.persistent.forEach((card) => mountObject(persistentEl, card, "persistent"));
     }
   }
 }
 
 export function renderHand(state, onCardClick, newCardIds = null) {
   const player = activePlayer(state);
+  const pending = tableRepress(state);
+  if (pending?.source === "hand") {
+    const poolIds = new Set(pending.confirmEmpty ? [] : repressPickerCards(state).map((card) => card.instanceId));
+    const pickedIds = new Set((pending.picked || []).map((card) => card.instanceId));
+    const room = pending.picked.length < pending.remaining;
+    renderActiveDreamerHand(state, onCardClick, {
+      newCardIds,
+      ignoreSpread: true,
+      title: `${player.name}${player.isHead ? " ★" : ""} — Psyche Hand`,
+      statsHtml: handStatsHtml(state, player),
+      canClickCard: (card) => poolIds.has(card.instanceId) && (pickedIds.has(card.instanceId) || room),
+      suggestCard: (card) => poolIds.has(card.instanceId) && !pickedIds.has(card.instanceId),
+      isSelected: (card) => pickedIds.has(card.instanceId),
+    });
+    return;
+  }
   renderActiveDreamerHand(state, onCardClick, {
     newCardIds,
     title: `${player.name}${player.isHead ? " ★" : ""} — Psyche Hand`,
