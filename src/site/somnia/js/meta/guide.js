@@ -454,14 +454,15 @@ export const RULES_TAB_DETAILS = "details";
 export function tutorialBriefHtml() {
   return `
     <div class="rules-page tutorial-brief-page">
-      <p class="rules-lead">Wake up. Capture the Archetype for points, then stand together on The Bed before the Dream Deck runs out. Psyche cards are your hand: power and health. Blue Lucidity sees, yellow Elasticity walks, red Willpower acts. Each round is Reveal, Explore, Meet. Follow the sparkles.</p>
+      <p class="rules-lead">Two Dreamers, The Visionary and The Immovable, on the current table. Capture The Innocent. One suited Psyche opens a phase for both of you. The opener shows both hands. Draw the Dream and take Dim when Bright would spend cards you still need. Follow the sparkles.</p>
       <section class="overview-block tutorial-brief-outcomes">
         <h3>You will learn</h3>
         <ul>
-          <li>Why you spend a color, and when to <strong>skip a phase</strong></li>
-          <li>A fight you are meant to lose, then one you stack and win</li>
-          <li>Who a beast can reach, and how to pass the Meet</li>
-          <li>A Mindstream draw, one Commit, and a power that brings cards back</li>
+          <li>Bright and Dim on the Dream, then Skip Phase when you should not spend</li>
+          <li>Open Reveal, Explore, and Meet from the phase opener</li>
+          <li>A short Repress you are meant to lose, then an Accept you stack and win</li>
+          <li>Pass the turn between two Dreamers</li>
+          <li>The Innocent: a Lucidity Mindstream draw, and a Lucidity Dreambeast</li>
         </ul>
         <p>Finish this lesson and the <strong>Advanced Tutorial</strong> unlocks: trade, objects, the other powers, death, and the boss on The Bed. You can also Begin Dreaming now, or skip this lesson and return to it from the menu.</p>
       </section>
@@ -537,7 +538,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 40.3. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 40.4. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -621,7 +622,7 @@ export function rulesDetailsHtml() {
       <h3>Guided Tutorial</h3>
       <ul>
         <li>The guided tutorial plays opener rotation, a scripted loss where you Stand after the dice, beast reach, the Meet Pass, a stacked rematch, Mindstreams, quests, and powers. The guide window docks on the map. Drag the header or resize the corner if you want it elsewhere.</li>
-        <li>Follow the sparkle: <strong>Draw Dream</strong> is left of Next Phase. Select 1 Psyche, then press the button beside it to open Reveal, Explore, or Meet. Click a Dreamer or an occupied Landscape for landscape options. Click Commit on the Active Archetype once both quests are true, or spend a Power Token. Every required click is highlighted, including hand cards, hexes, and Next Phase. <strong>Back</strong> sits at the top-left of the map if you need to undo.</li>
+        <li>Follow the sparkle. <strong>Draw Dream</strong> is left of Next Phase. The opener shows both hands: spend 1 suited Psyche, then Open Reveal, Explore, or Meet. <strong>Skip Phase</strong> leaves a phase unopened. Click a Dreamer or a Landscape for the fight and the hex action. Commit the Active Archetype once both quests are true. Every required click is highlighted. <strong>Back</strong> sits at the top-left of the map if you need to undo.</li>
         <li>Each step shows a punchy Objective plus one or two sentences of why that action matters. <strong>?</strong> and Pause → Help stay available after you graduate.</li>
       </ul>
 
@@ -726,7 +727,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 40.3</p>
+          <p class="info-hub-kicker">Somnia v 40.4</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
         </div>
@@ -797,7 +798,7 @@ export function infoHubHtml(options = {}) {
             <h3>Death &amp; Final Recurrence</h3>
             <p>No Psyche when a payment is due: the Death Clock ticks, that Dreamer's Objects clear, their tokens return to the pool, and they redraw 3 Psyche on The Bed. The Mindstream is not touched. Six deaths end the night. When the outer map is gone, the remaining Archetypes are Power 12. Win those dice battles or you do not wake.</p>
           </div>
-          <p class="info-hub-footer">Draw Dream sits left of Next Phase during Reveal. Select 1 Psyche, then press the button beside it to open that phase. A token can open a phase when nobody spends a card. Back in the top-left undoes the last action. Click Commit on the Active Archetype once both quests are true. The Head (★) rotates at round end.</p>
+          <p class="info-hub-footer">Draw Dream sits left of Next Phase during Reveal. The opener shows every hand. Spend 1 suited Psyche, or 1 Power Token, then open the phase. Skip Phase leaves it unopened. Back in the top-left undoes the last action. Commit the Active Archetype once both quests are true. The Head (★) rotates at round end.</p>
         </section>
       </div>
     </div>

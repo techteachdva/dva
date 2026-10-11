@@ -19,6 +19,14 @@ import {
 } from "../core/rules.js";
 import { isDreambeastPsycheCard } from "../dreamers/subconscious.js";
 import { renderCard, hideUtilityModal, isUtilityModalMinimized } from "../ui/ui.js";
+import {
+  currentRailBeat,
+  isInteractiveTutorialActive,
+  isTutorialActionAllowed,
+  tutorialActionBlocked,
+  tutorialOpenerCardOk,
+  tutorialOpenerConfirmOk,
+} from "../tutorial/tutorial-mode.js";
 
 let openerMenuOpen = false;
 let openerParked = false;
@@ -68,6 +76,10 @@ function confirmKind(phase) {
 }
 
 function runOpener(state) {
+  if (isInteractiveTutorialActive(state) && !tutorialOpenerConfirmOk(state)) {
+    tutorialActionBlocked(state);
+    return;
+  }
   const phase = getPhase(state);
   const handlers = openerHandlers;
   if (!handlers) return;
@@ -78,6 +90,10 @@ function runOpener(state) {
 
 function selectOpenerCard(state, player, card) {
   if (!isOpenerCard(card, state)) return;
+  if (isInteractiveTutorialActive(state) && !tutorialOpenerCardOk(state, player, card)) {
+    tutorialActionBlocked(state);
+    return;
+  }
   state.selectedHand = [card.instanceId];
   state.phaseTokenAsPsyche = null;
   const idx = state.players.findIndex((p) => p.id === player.id);
@@ -100,6 +116,13 @@ function selectOpenerToken(state, player) {
 
 function focusDreamerRow(state, player) {
   const idx = state.players.findIndex((p) => p.id === player.id);
+  if (isInteractiveTutorialActive(state)) {
+    const beat = currentRailBeat(state);
+    if (beat?.playerIndex != null && idx !== beat.playerIndex) {
+      tutorialActionBlocked(state);
+      return;
+    }
+  }
   if (idx >= 0) state.activePlayerIndex = idx;
   openerRenderAll?.();
 }
@@ -283,7 +306,7 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
         </div>
         <div class="phase-opener-actions">
           <button type="button" id="btn-view-board" class="btn btn-phase-opener-skip">View board</button>
-          ${state.tutorialMode ? "" : `<button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip">Skip Phase</button>`}
+          <button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip">Skip Phase</button>
           <button type="button" id="btn-spread-opener" class="btn primary btn-phase-opener-confirm tint-${phase === "Reveal" ? "reveal" : phase === "Explore" ? "explore" : "meet"}" data-tutorial-action="${kind}" ${canConfirm ? "" : "disabled"}>
             ${confirmLabel(phase)}${canConfirm ? ` (${projected})` : ""}
           </button>
@@ -364,6 +387,10 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   body.querySelector("#btn-skip-phase")?.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    if (isInteractiveTutorialActive(state) && !isTutorialActionAllowed(state, "advancePhase")) {
+      tutorialActionBlocked(state);
+      return;
+    }
     openerParked = false;
     parkedPhaseKey = null;
     openerMenuOpen = false;

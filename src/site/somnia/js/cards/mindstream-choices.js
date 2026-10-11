@@ -681,6 +681,10 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
       return true;
     }
     const sideId = choiceId === "good" ? "good" : "bad";
+    if (state.tutorialFlags?.forceDreamDim && sideId === "good") {
+      addLog(state, "Tutorial — take Dim. Bright spends cards this lesson still needs.");
+      return false;
+    }
     if (sideId === "good") {
       const bright = assessDreamGood(state, player, resolution);
       if (!bright.ok) {

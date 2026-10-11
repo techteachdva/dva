@@ -6,10 +6,18 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "40.3";
+export const SOMNIA_VERSION = "40.4";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "40.4",
+    title: "A Real First Night",
+    notes: [
+      "The tutorial is a two-Dreamer night on the current table. The phase opener shows both hands. Draw the Dream, take Dim when Bright would spend the cards you still need, then Reveal, Explore, and Meet the way a real game does.",
+      "The fight teaches the spread you played: beast Power is its dice, your Power is the Psyche on the table plus the matching stat, and Stand only closes the roll. The Innocent is a Lucidity Mindstream draw and a Lucidity Dreambeast.",
+    ],
+  },
   {
     version: "40.3",
     title: "The Spread You Played",

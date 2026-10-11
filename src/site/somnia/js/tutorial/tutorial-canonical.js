@@ -26,6 +26,8 @@ import {
   passMeetToken,
 } from "../core/game.js";
 import { playPsychePowerFromHand } from "../cards/power-tokens.js";
+import { resolveMindstreamChoice } from "../cards/mindstream-choices.js";
+import { confirmRepressStep } from "../dreamers/subconscious.js";
 
 function reattachStateRuntime(state) {
   state.checkPsycheDeath = (player, opts) => checkDreamerPsycheDeath(state, player, opts);
@@ -146,7 +148,7 @@ function advanceToRound(state, minRound, { allowDreamDraw = false } = {}) {
 /** Finish the current round's R.E.M. loop and advance to the next round's Reveal. */
 function closeRound(state, { allowDreamDraw = true } = {}) {
   if (allowDreamDraw && getPhase(state) === "Reveal" && !state.dreamDrawn) {
-    drawDreamCard(state);
+    settleDrawnDream(state);
   }
   if (getPhase(state) === "Reveal" && !state.revealLandscapeUsed) {
     const lucidityPlayer = pickPlayerWithSuit(state, "lucidity", 0);
@@ -277,8 +279,19 @@ function acceptAtticRematch(state) {
   state.tutorialFlags.encounterResolved = true;
 }
 
+function settleDrawnDream(state) {
+  drawDreamCard(state);
+  if (state.pendingMindstreamChoice?.kind === "dream") {
+    resolveMindstreamChoice(state, "bad");
+  }
+  let guard = 6;
+  while (state.pendingRepress?.confirmEmpty && guard-- > 0) {
+    confirmRepressStep(state);
+  }
+}
+
 function skipToMeetRound2(state) {
-  if (getPhase(state) === "Reveal" && !state.dreamDrawn) drawDreamCard(state);
+  if (getPhase(state) === "Reveal" && !state.dreamDrawn) settleDrawnDream(state);
   closeRevealPick(state);
   advanceToPhase(state, "Meet");
 }
@@ -293,6 +306,8 @@ function markInnocentQuests(state) {
   if (!state.questTracker.mindstreamOnLandscape) state.questTracker.mindstreamOnLandscape = {};
   if (!state.questTracker.meetOnLandscape) state.questTracker.meetOnLandscape = {};
   state.questTracker.mindstreamOnLandscape["the-attic"] = true;
+  state.questTracker.mindstreamOnSuit = { ...(state.questTracker.mindstreamOnSuit || {}), lucidity: true };
+  state.questTracker.meetBeastSuit = { ...(state.questTracker.meetBeastSuit || {}), lucidity: true };
   if (!(state.questTracker.meetOnLandscape["the-attic"] > 0)) {
     state.questTracker.meetOnLandscape["the-attic"] = 1;
   }
@@ -319,7 +334,7 @@ function useInnocentPower(state) {
 export function applyCanonicalTutorialStep(state, step) {
   switch (step.id) {
     case "draw-dream-r1":
-      drawDreamCard(state);
+      settleDrawnDream(state);
       return;
 
     case "reveal-r1":
@@ -366,7 +381,7 @@ export function applyCanonicalTutorialStep(state, step) {
       return;
 
     case "r2-dream":
-      drawDreamCard(state);
+      settleDrawnDream(state);
       return;
 
     case "r2-skip":
