@@ -2056,6 +2056,19 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     : null;
   const teachStand = !!(state.tutorialMode && scriptedWinner === "beast" && (actor.powerTokens || 0) > 0);
 
+  if (globalThis.__SOMNIA_REAL_DICE__ && !state.tutorialMode) {
+    playDiceBattle({
+      dreamerName: actor.name,
+      beastName: encounter.name,
+      dreamerDice: played,
+      beastDice: beastPower,
+      instant: true,
+      allowPostRollToken: false,
+      onComplete: ({ dreamerWins }) => finish(dreamerWins),
+    });
+    return;
+  }
+
   const forceInstant = instant
     || typeof document === "undefined"
     || !!globalThis.__SOMNIA_INSTANT_DICE__;
@@ -2735,6 +2748,19 @@ export function handleDefeatFinalArchetype(state, archetypeId = null, onDone = n
     checkVictory(state);
     onDone?.();
   };
+
+  if (globalThis.__SOMNIA_REAL_DICE__) {
+    playDiceBattle({
+      dreamerName: actor.name,
+      beastName: arch.name,
+      dreamerDice: played,
+      beastDice: FINAL_ARCHETYPE_POWER,
+      instant: true,
+      allowPostRollToken: false,
+      onComplete: ({ dreamerWins }) => finish(dreamerWins),
+    });
+    return;
+  }
 
   const forceInstant = typeof document === "undefined" || !!globalThis.__SOMNIA_INSTANT_DICE__;
   if (forceInstant) {

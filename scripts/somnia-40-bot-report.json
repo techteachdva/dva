@@ -1,0 +1,165 @@
+{
+  "version": "40.1",
+  "length": "nap",
+  "lengthRules": "12 archetype points, 14 regular dreams, bosses at rounds 3/6/9",
+  "dice": "real d6, success on 5-6, strict more successes, ties to the beast",
+  "gamesPerTable": 1000,
+  "rosters": {
+    "2": [
+      "the-visionary",
+      "the-immovable"
+    ],
+    "3": [
+      "the-visionary",
+      "the-hunter",
+      "the-weaver"
+    ],
+    "4": [
+      "the-rested",
+      "the-runner",
+      "the-hunter",
+      "the-weaver"
+    ]
+  },
+  "bot": "Opens each phase with the best stat and cheapest suited card. Reveals quest landscapes, walks to the quest beast or The Bed once the goal is met, fights with a 1-3 card spread aimed at Power+2, adds a token die when the gap is 1-2, Accepts while the hand has room and Represses when it is crowded, Acquires for free the moment both quests are true, and in Final Recurrence stands on the Remaining Archetype with up to 3 Psyche of its suit.",
+  "elapsedSec": 295.1,
+  "byPlayers": {
+    "2": {
+      "games": 1000,
+      "wins": 1,
+      "losses": 999,
+      "winRate": 0.001,
+      "lossReasons": {
+        "psyche-empty": 994,
+        "you-never-wake-up": 4,
+        "death-clock": 1
+      },
+      "avgRounds": 17.28,
+      "medianRounds": 18,
+      "avgPoints": 1,
+      "avgPointsOnLoss": 0.98,
+      "avgArchetypes": 0.34,
+      "avgDeathClock": 0.63,
+      "finalRecurrenceGames": 575,
+      "finalRecurrenceWins": 0,
+      "winsBeforeFinalRecurrence": 1,
+      "avgRoundsOnWin": 24,
+      "avgRoundsOnLoss": 17.27,
+      "stepCaps": 0,
+      "errors": 0,
+      "zeroPointGames": 749,
+      "pointsBuckets": {
+        "0": 749,
+        "1-3": 151,
+        "4-7": 80,
+        "8-11": 16,
+        "12+": 4
+      },
+      "deathClockBuckets": [
+        643,
+        189,
+        98,
+        45,
+        18,
+        6,
+        1
+      ]
+    },
+    "3": {
+      "games": 1000,
+      "wins": 22,
+      "losses": 978,
+      "winRate": 0.022,
+      "lossReasons": {
+        "psyche-empty": 965,
+        "you-never-wake-up": 4,
+        "death-clock": 9
+      },
+      "avgRounds": 16.9,
+      "medianRounds": 18,
+      "avgPoints": 2.5,
+      "avgPointsOnLoss": 2.24,
+      "avgArchetypes": 0.85,
+      "avgDeathClock": 0.7,
+      "finalRecurrenceGames": 569,
+      "finalRecurrenceWins": 0,
+      "winsBeforeFinalRecurrence": 22,
+      "avgRoundsOnWin": 13.18,
+      "avgRoundsOnLoss": 16.98,
+      "stepCaps": 0,
+      "errors": 0,
+      "zeroPointGames": 564,
+      "pointsBuckets": {
+        "0": 564,
+        "1-3": 186,
+        "4-7": 147,
+        "8-11": 59,
+        "12+": 44
+      },
+      "deathClockBuckets": [
+        667,
+        142,
+        84,
+        63,
+        26,
+        9,
+        9
+      ]
+    },
+    "4": {
+      "games": 1000,
+      "wins": 42,
+      "losses": 958,
+      "winRate": 0.042,
+      "lossReasons": {
+        "psyche-empty": 934,
+        "death-clock": 18,
+        "you-never-wake-up": 6
+      },
+      "avgRounds": 17.14,
+      "medianRounds": 18,
+      "avgPoints": 3.42,
+      "avgPointsOnLoss": 2.98,
+      "avgArchetypes": 1.15,
+      "avgDeathClock": 0.68,
+      "finalRecurrenceGames": 617,
+      "finalRecurrenceWins": 0,
+      "winsBeforeFinalRecurrence": 42,
+      "avgRoundsOnWin": 11.64,
+      "avgRoundsOnLoss": 17.39,
+      "stepCaps": 0,
+      "errors": 0,
+      "zeroPointGames": 456,
+      "pointsBuckets": {
+        "0": 456,
+        "1-3": 202,
+        "4-7": 179,
+        "8-11": 82,
+        "12+": 81
+      },
+      "deathClockBuckets": [
+        690,
+        134,
+        80,
+        44,
+        20,
+        14,
+        18
+      ]
+    }
+  },
+  "samples": {
+    "2": {
+      "otherTails": [],
+      "errorSamples": []
+    },
+    "3": {
+      "otherTails": [],
+      "errorSamples": []
+    },
+    "4": {
+      "otherTails": [],
+      "errorSamples": []
+    }
+  }
+}

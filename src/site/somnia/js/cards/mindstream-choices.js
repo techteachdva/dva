@@ -206,6 +206,20 @@ function playerById(state, id) {
   return state.players.find((p) => p.id === id) || null;
 }
 
+/** First printed count on a Bright effect, so the awake-map scale can rewrite the hint. */
+function primaryGoodCount(resolution) {
+  const good = resolution?.good;
+  if (!good) return 0;
+  const direct = Number(good.params?.count);
+  if (direct > 0) return direct;
+  for (const step of good.steps || []) {
+    const count = Number(step?.params?.count);
+    if (count > 0) return count;
+  }
+  const fromHint = String(good.hint || "").match(/\d+/);
+  return fromHint ? Number(fromHint[0]) : 0;
+}
+
 /**
  * Intercept Mindstream draws (and Dreams) into a fullscreen choice.
  * Returns true when a choice was opened (caller should not auto-discard yet).
