@@ -1,0 +1,23 @@
+{
+  "skill_name": "game-design3r",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "In Somnia, Dim feels like a slap whenever Bright is greyed out because the Event's named Landscape isn't revealed yet. Players just click Dim, lose a card or Forget a hex, and move on. Apply some game design principles here — what should I change?",
+      "expected_output": "Prioritized fixes grounded in the current Somnia engine/data (event choice code, event-landscapes.json), citing Building Blocks codes (e.g. TRN-16, ACT-17) and designer principles, with ripples, tests, and a keep list.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Take a look at Dragon Trail's combat. It works, but fights start to feel samey after the first few encounters. What would you change to make them more interesting without blowing up the rest of the game?",
+      "expected_output": "Prioritized fixes based on reading src/site/dragon-trail/js combat code and the master design doc, using Meier's interesting decisions and other lenses, with concrete numeric/rule edits and ways to test.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "quick q — somnia has a quarterbacking problem. open hands + shared budgets means one person at my table (Dana) basically plays everyone's turn. what's the smallest fix that doesn't add a new rule system?",
+      "expected_output": "A short answer (1-2 fixes) that respects the 'no new system' constraint, cites STR-02 partnership vs collaborative and relevant codes (UNC-06/UNC-08/TRN-14), and reads the current turn-passing code.",
+      "files": []
+    }
+  ]
+}
