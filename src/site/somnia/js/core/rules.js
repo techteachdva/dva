@@ -448,23 +448,33 @@ export function encounterPayHint(encounter, accept = true) {
   return `${verb} needs at least 1 ${SUIT_LABELS[suit]} Psyche (1–3 cards; allies extra). Beast Power ${power}, recommended ${power + 2}. You may play less and still roll. Matching ${SUIT_LABELS[suit]} is added to your Power.`;
 }
 
-/** Meet pay total for Accept or Reject, including matching Dreamer stat when the required color is played. */
-export function encounterPlayTotal(state, { accept = true } = {}) {
-  const actor = meetPsycheActor(state);
+/**
+ * Dice for one Accept or Repress spread.
+ * Pass the Dreamer and cards already chosen. Do not re-read the selected
+ * Landscape: spending the Meet action passes the turn and would otherwise
+ * score the next Dreamer's empty hand as 1d6.
+ */
+export function encounterDiceTotal(state, actor, selected, encounter, { accept = true } = {}) {
   if (!actor) return state.pendingPowerBonus || 0;
-  const selected = selectedCards(state, actor);
+  const cards = selected || [];
   let total = state.pendingPowerBonus || 0;
-  total += sumEffectivePsycheValue(state, actor, selected);
+  total += sumEffectivePsycheValue(state, actor, cards);
   total += persistentMeetBonus(state, actor);
-  const bonus = meetBonusBreakdown(state);
-  total += bonus.total;
-  const { encounter } = currentMeetEncounter(state);
+  if (encounter) total += dreamerMeetBonuses(actor.dreamer, encounter).total || 0;
   const suit = encounterPaySuit(encounter, accept);
-  if (suit && selectedHasPaySuit(selected, suit)) {
+  if (suit && selectedHasPaySuit(cards, suit)) {
     total += totalStat(actor, suit, state);
   }
   total += state.anchorMeetSpreadBonus || 0;
   return total;
+}
+
+/** Meet pay total for Accept or Reject, including matching Dreamer stat when the required color is played. */
+export function encounterPlayTotal(state, { accept = true } = {}) {
+  const actor = meetPsycheActor(state);
+  if (!actor) return state.pendingPowerBonus || 0;
+  const { encounter } = currentMeetEncounter(state);
+  return encounterDiceTotal(state, actor, selectedCards(state, actor), encounter, { accept });
 }
 
 /** Psyche total for Meet Accept — only the Dreamer on the Encounter Landscape may pay. */

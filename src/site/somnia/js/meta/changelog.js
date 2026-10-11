@@ -6,10 +6,17 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "40.2";
+export const SOMNIA_VERSION = "40.3";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "40.3",
+    title: "The Spread You Played",
+    notes: [
+      "Accept and Repress roll the Psyche that was played. The Meet action was passing the turn before the dice were counted, so the next Dreamer's empty hand rolled as 1d6.",
+    ],
+  },
   {
     version: "40.2",
     title: "Distinct Dreams",

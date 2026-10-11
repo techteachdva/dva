@@ -36,7 +36,6 @@ import {
   selectedHasPaySuit,
   spreadPsycheCount,
   allyPsycheCount,
-  meetBonusBreakdown,
   discardSelected,
   discardAllSelected,
   selectedBySuit,
@@ -56,7 +55,7 @@ import {
   totalStat,
   phaseOpeningActive,
   cardCountsAsSuit,
-  encounterPlayTotal,
+  encounterDiceTotal,
   encounterPayHint,
   encounterPaySuit,
   PHASE_OPENER_MAX_CARDS,
@@ -64,6 +63,7 @@ import {
 import {
   encounterPower,
   recommendedEncounterPower,
+  dreamerMeetBonuses,
   encounterPowerLabel,
   encounterAcceptSummary,
   encounterRejectSummary,
@@ -2019,12 +2019,15 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     return;
   }
 
-  // Spread is legal. Spend only now, so a bad Slumber does not pass the turn.
+  // Lock the dice to this Dreamer's spread before the Meet action passes the turn.
+  // Passing first retargets the Landscape, and the next empty hand was rolling as 1d6.
+  const played = Math.max(
+    1,
+    encounterDiceTotal(state, actor, selected, encounter, { accept: !isReject }),
+  );
+  const bonus = dreamerMeetBonuses(actor.dreamer, encounter);
   if (!state.forcedAccept && !treatAsFree && !spendMeetAction(state, MEET_ACTIONS.MEET)) return;
-  // Spread is locked in — clear Mindstream prep before dice.
   if (state.pendingMindstreamMeet?.landscapeId === tile.id) state.pendingMindstreamMeet = null;
-  const played = Math.max(1, encounterPlayTotal(state, { accept: !isReject }));
-  const bonus = meetBonusBreakdown(state);
   const ctx = {
     mode,
     isReject,
@@ -2726,9 +2729,8 @@ export function handleDefeatFinalArchetype(state, archetypeId = null, onDone = n
     say(`The spread needs at least 1 ${suitName} Psyche to Meet ${arch.name}.`);
     return;
   }
+  const played = Math.max(1, archetypeSpreadDice(state, arch.id));
   if (!spendMeetAction(state, MEET_ACTIONS.MEET)) return;
-
-  const played = Math.max(1, archetypeSpreadDice(state));
   addLog(state, `${actor.name} Power ${played}d6 vs ${arch.name} Power ${FINAL_ARCHETYPE_POWER}d6.`);
 
   const finish = (dreamerWins) => {
