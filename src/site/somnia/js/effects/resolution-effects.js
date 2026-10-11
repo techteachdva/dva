@@ -22,7 +22,7 @@ import {
 import { discardToMindstream } from "../cards/mindstream-supply.js";
 import { discardDreamCard } from "../cards/dream-deck.js";
 import { flipLeviathan } from "../encounters/dreambeasts.js";
-import { requestChooseTile, forgetRandomLandscapes } from "../board/landscapes.js";
+import { requestChooseTile, forgetRandomLandscapes, forgetNamedLandscapes } from "../board/landscapes.js";
 import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
 
 function alive(state) {
@@ -215,7 +215,13 @@ function applyResolutionStep(state, player, step, helpers = {}) {
       break;
     }
     case "returnCards": {
-      if (p.count > 0) requestReturnCards(state, p.count, player);
+      if (p.count > 0) requestReturnCards(state, p.count, player, { filter: p.filter || null });
+      break;
+    }
+    case "returnAllDreambeasts": {
+      const returned = requestReturnCards(state, 99, player, { filter: "dreambeast" });
+      const n = Array.isArray(returned) ? returned.length : (returned?.count || 0);
+      if (!n) addLog(state, "No Dreambeasts are waiting in the Subconscious.");
       break;
     }
     case "returnCardsAll": {
@@ -255,6 +261,24 @@ function applyResolutionStep(state, player, step, helpers = {}) {
       const forgotten = forgetRandomLandscapes(state, p.count || 1, { skipOccupied: true });
       if (forgotten.length) {
         addLog(state, `Forget ${forgotten.length} Landscape${forgotten.length === 1 ? "" : "s"}: ${forgotten.map((t) => t.name).join(", ")}.`);
+      }
+      break;
+    }
+    case "forgetNamed": {
+      const ids = p.ids || [];
+      const n = forgetNamedLandscapes(state, ids);
+      if (n > 0) {
+        const names = ids
+          .map((id) => state.board.find((tile) => tile.id === id)?.name || id)
+          .join(" and ");
+        addLog(state, `Forget ${names}.`);
+      } else {
+        const fallback = forgetRandomLandscapes(state, Math.max(2, ids.length), { skipOccupied: true });
+        if (fallback.length) {
+          addLog(state, `Those Landscapes are already gone. Forget ${fallback.map((t) => t.name).join(", ")} instead.`);
+        } else {
+          addLog(state, "No awake Landscape remains to Forget.");
+        }
       }
       break;
     }
@@ -329,6 +353,14 @@ function applyResolutionStep(state, player, step, helpers = {}) {
         strict: true,
       });
       break;
+    case "repressObjectsAll":
+      alive(state).forEach((pl) => {
+        enqueueRepressObjects(state, pl, p.count || 1, {
+          reason: `${pl.name}: Repress ${p.count || 1} Object${(p.count || 1) === 1 ? "" : "s"}.`,
+          strict: true,
+        });
+      });
+      break;
     case "repressBoardBeast": {
       const list = allEncountersOnBoard(state);
       const n = Math.min(p.count || 1, list.length);
@@ -354,6 +386,11 @@ function applyResolutionStep(state, player, step, helpers = {}) {
     }
     case "repressTopMindstream":
       repressTopMindstream(state, p.suit || "lucidity", p.count || 1);
+      break;
+    case "repressTopEachMindstream":
+      ["lucidity", "elasticity", "willpower"].forEach((suit) => {
+        repressTopMindstream(state, suit, p.count || 1);
+      });
       break;
     case "repressTopPsycheDeck":
       repressTopPsyche(state, p.count || 1);
@@ -384,6 +421,10 @@ function applyResolutionStep(state, player, step, helpers = {}) {
     case "meetOnlyThisRound":
       state.meetOnlyRound = true;
       addLog(state, "Dreamers may only Meet this round.");
+      break;
+    case "freeExplore":
+      state.freeExploreNextRound = true;
+      addLog(state, "The next Explore is free. Dreamers may move to any revealed Landscape.");
       break;
     default:
       addLog(state, `Unresolved effect: ${effect}`);

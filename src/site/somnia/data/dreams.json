@@ -18,14 +18,14 @@
     "name": "Heroism",
     "type": "dream",
     "image": "images/dreams/heroism.webp",
-    "text": "You stand triumphant over your fallen foe. Each Dreamer Draws Psyche equal to their Willpower."
+    "text": "Bright: Discard 2 Willpower \u2014 every Dreamer draws 2 Psyche. Dim: Each Dreamer Represses 1 Object."
   },
   {
     "id": "injury",
     "name": "Injury",
     "type": "dream",
     "image": "images/dreams/injury.webp",
-    "text": "Each Dreamer Discards Psyche Cards valued higher than their Willpower.",
+    "text": "Bright: Discard 3 Lucidity \u2014 draw 1 Object. Dim: Each Dreamer Represses 2 Psyche.",
     "copies": 2
   },
   {
@@ -33,28 +33,28 @@
     "name": "Judgement",
     "type": "dream",
     "image": "images/dreams/judgement.webp",
-    "text": "Awaken Leviathan on Sea of Teeth or Endless Ocean and move Leviathan to the nearest occupied Landscape."
+    "text": "Bright: Each Dreamer Represses 3 Psyche \u2014 Return every Dreambeast from the Subconscious. Dim: Spawn 1 Dreambeast on each Dreamer's Landscape."
   },
   {
     "id": "loss",
     "name": "Loss",
     "type": "dream",
     "image": "images/dreams/loss.webp",
-    "text": "Forget the four corners of the Patchwork Dreamscape. If corners are Wasteland, Forget adjacent Landscapes instead."
+    "text": "Bright: Discard 4 Willpower \u2014 Return 2 cards. Dim: Forget Sea of Teeth and Field of Broken Glass."
   },
   {
     "id": "misunderstanding",
     "name": "Misunderstanding",
     "type": "dream",
     "image": "images/dreams/misunderstanding.webp",
-    "text": "Repress top Mindstream cards equal to the number of players plus 3."
+    "text": "Bright: Discard 2 Lucidity \u2014 Reveal 1 Landscape. Dim: Repress 3 cards from the Lucidity Mindstream."
   },
   {
     "id": "mortality",
     "name": "Mortality",
     "type": "dream",
     "image": "images/dreams/mortality.webp",
-    "text": "Each Dreamer must Discard either 5 Psyche or 3 Objects.",
+    "text": "Bright: Discard 3 Willpower \u2014 every Dreamer draws 1 Psyche. Dim: Each Dreamer Represses 2 Objects.",
     "copies": 2
   },
   {
@@ -69,14 +69,14 @@
     "name": "Abduction",
     "type": "dream",
     "image": "images/dreams/abduction.webp",
-    "text": "Move each Active Encounter 2 Landscapes away from The Bed; Dreamers moved with Encounters may only Meet this round."
+    "text": "Bright: Discard 2 Elasticity \u2014 gain 1 free Meet action. Dim: Forget The Attic and The Basement."
   },
   {
     "id": "absurdity",
     "name": "Absurdity",
     "type": "dream",
     "image": "images/dreams/absurdity.webp",
-    "text": "Draw Dreamers+1 cards from each Mindstream. For each Event drawn, Forget Landscapes referenced on it."
+    "text": "Bright: Discard 3 Elasticity \u2014 draw 2 Psyche. Dim: Forget Insanity and Black Void."
   },
   {
     "id": "bargaining",
@@ -90,14 +90,14 @@
     "name": "Recovery",
     "type": "dream",
     "image": "images/dreams/recovery.webp",
-    "text": "The sun breaks through the mist. Return 1 Card per Dreamer."
+    "text": "Bright: Discard 2 Lucidity \u2014 every Dreamer Returns 1 card. Dim: Repress 3 cards from the Psyche deck."
   },
   {
     "id": "responsibility",
     "name": "Responsibility",
     "type": "dream",
     "image": "images/dreams/responsibility.webp",
-    "text": "Each Dreamer Discards Psyche equal to player count unless they discard Willpower Psyche totaling player count."
+    "text": "Bright: Discard 3 Willpower \u2014 gain 1 Power Token. Dim: Forget Awards and The Party."
   },
   {
     "id": "travel",
@@ -118,7 +118,7 @@
     "name": "Transformation",
     "type": "dream",
     "image": "images/dreams/transformation.webp",
-    "text": "Next Meet phase, when Spawning an Encounter you may draw the top 2 Encounters and pick 1."
+    "text": "Bright: Discard 2 Willpower \u2014 draw 1 Object. Dim: Repress 2 cards from the Willpower Mindstream."
   },
   {
     "id": "trapped",
@@ -132,14 +132,14 @@
     "name": "Lost",
     "type": "dream",
     "image": "images/dreams/lost.webp",
-    "text": "Forget all Landscapes adjacent to The Bed. Dreamers there pay the Wasteland cost."
+    "text": "Bright: Discard 3 Lucidity \u2014 Reveal 2 Landscapes. Dim: Forget Endless Ocean and Lava."
   },
   {
     "id": "misplaced",
     "name": "Misplaced",
     "type": "dream",
     "image": "images/dreams/misplaced.webp",
-    "text": "Repress all your Objects unless you discard Willpower Psyche equal to the number of Objects you wish to save."
+    "text": "Bright: Discard 2 Elasticity \u2014 Return 1 Object. Dim: Each Dreamer Represses 1 Object."
   },
   {
     "id": "rivalry",
@@ -160,14 +160,14 @@
     "name": "Paradox",
     "type": "dream",
     "image": "images/dreams/paradox.webp",
-    "text": "Next Meet Phase treat all Willpower costs as Elasticity and Elasticity as Willpower."
+    "text": "Bright: Discard 2 Lucidity \u2014 Return 2 cards. Dim: Forget Day in the Life and Inner Sanctum."
   },
   {
     "id": "powerlessness",
     "name": "Powerlessness",
     "type": "dream",
     "image": "images/dreams/powerlessness.webp",
-    "text": "Spawn 1 Encounter per Dreamer on unoccupied edge Landscapes.",
+    "text": "Bright: Discard 4 Willpower \u2014 gain 1 free Meet action. Dim: Forget Tranquil Grove and Endless Hallway.",
     "copies": 2
   },
   {
@@ -175,14 +175,14 @@
     "name": "Well Being",
     "type": "dream",
     "image": "images/dreams/well-being.webp",
-    "text": "All Dreamers Draw 3 Psyche."
+    "text": "Bright: Discard 2 Lucidity \u2014 every Dreamer draws 2 Psyche. Dim: Each Dreamer Represses 1 Psyche."
   },
   {
     "id": "quiet",
     "name": "Quiet",
     "type": "dream",
     "image": "images/dreams/quiet.webp",
-    "text": "Everything remains, nothing changes. Nothing Happens.",
+    "text": "Bright: Discard 1 Lucidity \u2014 gain 1 Power Token. Dim: Repress 3 cards from the Elasticity Mindstream.",
     "copies": 1
   },
   {
@@ -197,7 +197,7 @@
     "name": "Final Recurrence: DELTA",
     "type": "final",
     "image": "images/dreams/delta.webp",
-    "text": "Forget 4 Edge Landscapes. All Dreamers Discard 1 Psyche."
+    "text": "Bright: Discard 2 Elasticity \u2014 every Dreamer draws 1 Psyche. Dim: Forget Desert and Silver Mist."
   },
   {
     "id": "theta",
@@ -218,21 +218,21 @@
     "name": "Final Recurrence: BETA",
     "type": "final",
     "image": "images/dreams/beta.webp",
-    "text": "Forget 4 Edge Landscapes. All Dreamers Draw 1 Psyche."
+    "text": "Bright: Discard 3 Willpower \u2014 gain 1 Power Token. Dim: Each Dreamer Represses 2 Psyche."
   },
   {
     "id": "circadia",
     "name": "Final Recurrence: Circadia",
     "type": "final",
     "image": "images/dreams/circadia.webp",
-    "text": "All Dreamers draw up to 4 Psyche from Discard."
+    "text": "Bright: Discard 3 Lucidity \u2014 every Dreamer Returns 1 card. Dim: Repress 4 cards from the Psyche deck."
   },
   {
     "id": "somnambulance",
     "name": "Final Recurrence: Somnambulance",
     "type": "final",
     "image": "images/dreams/somnambulance.webp",
-    "text": "All Dreamers Move 1 Landscape."
+    "text": "Bright: Discard 2 Elasticity \u2014 the next Explore is free. Dim: Forget Candy Mountain and Scary Classroom."
   },
   {
     "id": "homeostasis",
@@ -246,7 +246,7 @@
     "name": "Final Recurrence: Pineal Purge",
     "type": "final",
     "image": "images/dreams/pineal-purge.webp",
-    "text": "Discard 3 Psyche."
+    "text": "Bright: Discard 4 Lucidity \u2014 Return 3 cards. Dim: Repress 1 card from each Mindstream."
   },
   {
     "id": "you-never-wake",

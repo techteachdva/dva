@@ -10,7 +10,6 @@ import { applyMeetEndConsequences } from "../encounters/meet-phase.js";
 import {
   requestReturnCards,
   enqueueRepressFromHand,
-  enqueueDiscardFromHand,
   enqueueCollectiveRepressFromHand,
 } from "../dreamers/subconscious.js";
 import { logMoment } from "../core/narrator.js";
@@ -21,10 +20,6 @@ import { isBossDreamCard, spawnBossEncounterOnBed } from "../cards/dream-deck.js
 
 function alivePlayers(state) {
   return state.players.filter((p) => p.alive);
-}
-
-function dreamerCount(state) {
-  return alivePlayers(state).length;
 }
 
 export function returnCards(state, count, player = null) {
@@ -123,17 +118,6 @@ export function onMeetPhaseEnd(state) {
 }
 
 const DREAM_EFFECTS = {
-  delta: (state) => {
-    forgetEdgeLandscapes(state, state.finalRecurrence ? 6 : 4);
-    alivePlayers(state).forEach((p) => {
-      const n = state.finalRecurrence ? 2 : 1;
-      for (let i = 0; i < n && p.hand.length; i += 1) {
-        state.psycheDiscard.push(p.hand.pop());
-      }
-    });
-    recordQuestEvent(state, "discard_psyche", { count: dreamerCount(state) });
-    logMoment(state, state.finalRecurrence ? "Delta — the map frays; Psyche slips away." : "Delta waves crash through the Dreamscape.");
-  },
   theta: (state) => {
     forgetEdgeLandscapes(state, state.finalRecurrence ? 10 : 8);
     if (state.finalRecurrence) {
@@ -152,20 +136,6 @@ const DREAM_EFFECTS = {
         enqueueRepressFromHand(state, p, 2, { reason: "Alpha — Repress 2 Psyche." });
       } else if (helpers?.drawObjects) helpers.drawObjects(state, p, 1, helpers);
     });
-  },
-  beta: (state) => {
-    forgetEdgeLandscapes(state, state.finalRecurrence ? 6 : 4);
-    alivePlayers(state).forEach((p) => {
-      if (state.finalRecurrence) {
-        enqueueDiscardFromHand(state, p, 2, {
-          reason: `${p.name}: Beta — choose 2 Psyche to discard.`,
-          strict: true,
-        });
-      } else {
-        drawPsycheForPlayer(state, p, 1);
-      }
-    });
-    if (state.finalRecurrence) logMoment(state, "Beta — arousal without rest; Psyche burns off.");
   },
   "final-recurrence": (state) => {
     triggerBedFinalRecurrence(state, "The Final Recurrence is drawn — The Bed flips.");

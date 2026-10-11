@@ -6,10 +6,20 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "40.1";
+export const SOMNIA_VERSION = "40.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "40.2",
+    title: "Distinct Dreams",
+    notes: [
+      "Judgement no longer wakes Leviathan. Bright: each Dreamer Represses 3 Psyche and every Dreambeast Returns from the Subconscious. Dim, free: spawn 1 Dreambeast on each Dreamer's Landscape.",
+      "A Dream drawn at the start of the round is a tax. Bright always costs Psyche, usually of one suit, and pays something back. Dim is the free fallback and Represses cards or Forgets Landscapes.",
+      "Several Dim paths Forget the exact Landscape pair an Archetype quest needs: Sea of Teeth and Field of Broken Glass, Awards and The Party, Endless Ocean and Lava, Insanity and Black Void, Day in the Life and Inner Sanctum, Tranquil Grove and Endless Hallway, plus The Attic and The Basement, Desert and Silver Mist, and Candy Mountain and Scary Classroom.",
+      "Dream cards that were near-copies have new art. Abandonment, Alpha, Bargaining, Betrayal, Chase, Final Recurrence, Homeostasis, Judgement, Rivalry, Temptation, Theta, Trapped, Travel, Wanderlust, and You Never Wake Up keep their pictures.",
+    ],
+  },
   {
     version: "40.1",
     title: "Bright Needs a Place",

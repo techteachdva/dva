@@ -109,6 +109,11 @@ function dreamGateMet(state, player, gate) {
     if (subconsciousCount(state.subconscious) >= 1) return { ok: true, reason: "" };
     return { ok: false, reason: `Bright needs ${label}.` };
   }
+  if (gate.kind === "tableHand") {
+    const short = (state.players || []).filter((p) => p.alive).some((p) => (p.hand?.length || 0) < (gate.count || 1));
+    if (!short) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright needs ${label}.` };
+  }
   return { ok: false, reason: "Bright has no condition." };
 }
 
@@ -118,8 +123,19 @@ function dreamTollAffordable(state, player, toll) {
   }
   const hand = player?.hand?.length || 0;
   if (toll.kind === "psyche") {
+    if (toll.suit) {
+      const have = psycheOfSuit(player, toll.suit).length;
+      if (have >= toll.count) return { ok: true, reason: "" };
+      const suitName = SUIT_LABELS[toll.suit] || toll.suit;
+      return { ok: false, reason: `Bright costs ${toll.count} ${suitName} Psyche, and the hand is short.` };
+    }
     if (hand >= toll.count) return { ok: true, reason: "" };
     return { ok: false, reason: `Bright costs ${toll.count} Psyche, and the hand is short.` };
+  }
+  if (toll.kind === "repressAll") {
+    const short = (state.players || []).filter((p) => p.alive).some((p) => (p.hand?.length || 0) < toll.count);
+    if (!short) return { ok: true, reason: "" };
+    return { ok: false, reason: `Bright costs each Dreamer Repress ${toll.count} Psyche, and a hand is short.` };
   }
   if (toll.kind === "repress") {
     if (hand >= toll.count) return { ok: true, reason: "" };
@@ -147,7 +163,15 @@ export function assessDreamGood(state, player, resolution) {
 
 function payDreamToll(state, player, toll, helpers) {
   if (toll.kind === "psyche") {
-    applyResolutionEffect(state, player, { effect: "discardPsyche", params: { count: toll.count } }, helpers, "good");
+    const effect = toll.suit ? "discardSuitPsyche" : "discardPsyche";
+    applyResolutionEffect(state, player, {
+      effect,
+      params: { count: toll.count, suit: toll.suit },
+    }, helpers, "good");
+    return;
+  }
+  if (toll.kind === "repressAll") {
+    applyResolutionEffect(state, player, { effect: "repressPsycheAll", params: { count: toll.count } }, helpers, "good");
     return;
   }
   if (toll.kind === "repress") {
@@ -429,7 +453,7 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
 export function beginDreamCardChoice(state, card, player, helpers = {}) {
   if (!card || card.type === "boss-dream" || card.boss) return false;
   if (card.id === "you-never-wake" || card.id === "final-recurrence") return false;
-  if (["delta", "theta", "alpha", "beta"].includes(card.id)) return false;
+  if (["theta", "alpha"].includes(card.id)) return false;
 
   const resolution = getDreamResolution(card.refId || card.id);
   if (!resolution) return false;
