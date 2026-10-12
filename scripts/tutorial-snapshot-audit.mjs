@@ -18,16 +18,25 @@ function loadJson(name) {
   return JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${name}.json`), "utf8"));
 }
 
+// tutorial-mode.js railHighlight() probes document.querySelector unguarded to pick a spotlight.
+// Expose an empty DOM to that function only; elsewhere `typeof document` stays "undefined" so the
+// engine keeps its headless paths (moment overlays, fx, etc.).
+const HEADLESS_DOCUMENT = { querySelector: () => null, querySelectorAll: () => [], getElementById: () => null };
+Object.defineProperty(globalThis, "document", {
+  configurable: true,
+  get: () => (new Error().stack?.includes("railHighlight") ? HEADLESS_DOCUMENT : undefined),
+});
+
 globalThis.fetch = async (url) => {
   const name = String(url).replace(/^data\//, "").replace(/\.json$/, "");
   return { json: async () => loadJson(name) };
 };
 
-const dataMod = await import(pathToFileURL(path.join(JS_DIR, "data.js")).href);
-const tutorialMod = await import(pathToFileURL(path.join(JS_DIR, "tutorial-mode.js")).href);
-const gameMod = await import(pathToFileURL(path.join(JS_DIR, "game.js")).href);
-const stateMod = await import(pathToFileURL(path.join(JS_DIR, "state.js")).href);
-const canonicalMod = await import(pathToFileURL(path.join(JS_DIR, "tutorial-canonical.js")).href);
+const dataMod = await import(pathToFileURL(path.join(JS_DIR, "core/data.js")).href);
+const tutorialMod = await import(pathToFileURL(path.join(JS_DIR, "tutorial/tutorial-mode.js")).href);
+const gameMod = await import(pathToFileURL(path.join(JS_DIR, "core/game.js")).href);
+const stateMod = await import(pathToFileURL(path.join(JS_DIR, "core/state.js")).href);
+const canonicalMod = await import(pathToFileURL(path.join(JS_DIR, "tutorial/tutorial-canonical.js")).href);
 
 const {
   createTutorialState,
@@ -54,7 +63,7 @@ const {
   gainMeetActions,
   passMeetToken,
 } = gameMod;
-const { meetPsychePlayTotal } = await import(pathToFileURL(path.join(JS_DIR, "rules.js")).href);
+const { meetPsychePlayTotal } = await import(pathToFileURL(path.join(JS_DIR, "core/rules.js")).href);
 
 const gameData = await dataMod.loadGameData();
 const failures = [];
@@ -219,7 +228,7 @@ const STEP_EFFECT_CHECKS = {
   "reveal-r1": (s) => getPhase(s) === "Explore" && landscapeById(s, "candy-mountain")?.revealed,
   "explore-r1": (s) => getPhase(s) === "Meet" && s.players[0].landscapeId === "the-attic",
   "meet-r1": (s) => !!s.tutorialFlags?.firstBattleLost && encounterOnLandscape(s, "the-attic"),
-  "meet-hold": (s) => (s.anchorMeetSpreadPending || 0) >= 1,
+  "meet-hold": (s) => (s.anchorMeetSpreadPending || 0) >= 1 || (s.anchorMeetSpreadBonus || 0) >= 1,
   "meet-penalty": (s) => s.round >= 2,
   "r2-dream": (s) => s.dreamDrawn,
   "r2-skip": (s) => getPhase(s) === "Meet",

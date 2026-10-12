@@ -21,11 +21,11 @@ globalThis.fetch = async (url) => {
   return { json: async () => loadJson(name) };
 };
 
-const dataMod = await import(pathToFileURL(path.join(JS_DIR, "data.js")).href);
-const stateMod = await import(pathToFileURL(path.join(JS_DIR, "state.js")).href);
-const gameMod = await import(pathToFileURL(path.join(JS_DIR, "game.js")).href);
-const landscapeMod = await import(pathToFileURL(path.join(JS_DIR, "landscapes.js")).href);
-const tutorialMod = await import(pathToFileURL(path.join(JS_DIR, "tutorial-mode.js")).href);
+const dataMod = await import(pathToFileURL(path.join(JS_DIR, "core/data.js")).href);
+const stateMod = await import(pathToFileURL(path.join(JS_DIR, "core/state.js")).href);
+const gameMod = await import(pathToFileURL(path.join(JS_DIR, "core/game.js")).href);
+const landscapeMod = await import(pathToFileURL(path.join(JS_DIR, "board/landscapes.js")).href);
+const tutorialMod = await import(pathToFileURL(path.join(JS_DIR, "tutorial/tutorial-mode.js")).href);
 
 const { buildDreamDeck, LENGTHS } = dataMod;
 const { createInitialState, landscapeById, checkDefeat } = stateMod;
@@ -163,10 +163,12 @@ function revealAllOuter(state) {
       name: "Audit 5",
     }));
     state.selectedHand = player.hand.slice(0, 3).map((c) => c.instanceId);
+    // The Bed holds several Remaining Archetypes; tile.finalArchetype advances to the next one on defeat.
+    const target = tile.finalArchetype;
     handleDefeatFinalArchetype(state);
-    const entry = state.finalArchetypes.find((a) => a.id === tile.finalArchetype.id);
-    if (!tile.finalArchetype.defeated || !entry?.defeated) {
-      fail("defeat-did-not-stick", { tile: tile.finalArchetype.defeated, entry: entry?.defeated });
+    const entry = state.finalArchetypes.find((a) => a.id === target.id);
+    if (!target.defeated || !entry?.defeated) {
+      fail("defeat-did-not-stick", { id: target.id, tile: target.defeated, entry: entry?.defeated });
     }
   }
 }
