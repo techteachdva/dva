@@ -87,16 +87,16 @@ function loadGameDataSync() {
   return data;
 }
 
-const dataModule = await import(pathToFileURL(join(JS_DIR, "data.js")).href);
+const dataModule = await import(pathToFileURL(join(JS_DIR, "core/data.js")).href);
 const gameData = loadGameDataSync();
 gameData.mindstream = dataModule.enrichMindstreamEvents?.(
   gameData.mindstream,
   gameData["event-landscapes"] || {},
 ) ?? gameData.mindstream;
 
-const { createInitialState, getPhase } = await import(pathToFileURL(join(JS_DIR, "state.js")).href);
+const { createInitialState, getPhase } = await import(pathToFileURL(join(JS_DIR, "core/state.js")).href);
 const { powerTokensHeld, powerTokensInPool, MAX_POWER_TOKEN_POOL, grantPowerTokens } = await import(
-  pathToFileURL(join(JS_DIR, "power-tokens.js")).href
+  pathToFileURL(join(JS_DIR, "cards/power-tokens.js")).href
 );
 const {
   drawDreamCard,
@@ -105,12 +105,12 @@ const {
   gainMeetActions,
   endPhase,
   drawMindstreamCard,
-} = await import(pathToFileURL(join(JS_DIR, "game.js")).href);
+} = await import(pathToFileURL(join(JS_DIR, "core/game.js")).href);
 const { handleLandscapeTilePick, revealableTiles } = await import(
-  pathToFileURL(join(JS_DIR, "landscapes.js")).href
+  pathToFileURL(join(JS_DIR, "board/landscapes.js")).href
 );
-const { spendPowerTokens } = await import(pathToFileURL(join(JS_DIR, "power-tokens.js")).href);
-const { markQuestComplete } = await import(pathToFileURL(join(JS_DIR, "game.js")).href).catch(() => ({}));
+const { spendPowerTokens } = await import(pathToFileURL(join(JS_DIR, "cards/power-tokens.js")).href);
+const { markQuestComplete } = await import(pathToFileURL(join(JS_DIR, "core/game.js")).href).catch(() => ({}));
 
 function pickDreamers(count = 2) {
   return gameData.dreamers.slice(0, count);
@@ -183,7 +183,7 @@ function runRevealPhase(state, { revealTiles = 1 } = {}) {
 }
 
 async function cancelLandscapePick(state) {
-  const { cancelLandscapePick: cancel } = await import(pathToFileURL(join(JS_DIR, "landscapes.js")).href);
+  const { cancelLandscapePick: cancel } = await import(pathToFileURL(join(JS_DIR, "board/landscapes.js")).href);
   cancel(state);
 }
 

@@ -21,11 +21,11 @@ globalThis.fetch = async (url) => {
   return { json: async () => loadJson(name) };
 };
 
-const dataMod = await import(pathToFileURL(path.join(JS_DIR, "data.js")).href);
-const stateMod = await import(pathToFileURL(path.join(JS_DIR, "state.js")).href);
-const gameMod = await import(pathToFileURL(path.join(JS_DIR, "game.js")).href);
-const landscapeMod = await import(pathToFileURL(path.join(JS_DIR, "landscapes.js")).href);
-const tutorialMod = await import(pathToFileURL(path.join(JS_DIR, "tutorial-mode.js")).href);
+const dataMod = await import(pathToFileURL(path.join(JS_DIR, "core/data.js")).href);
+const stateMod = await import(pathToFileURL(path.join(JS_DIR, "core/state.js")).href);
+const gameMod = await import(pathToFileURL(path.join(JS_DIR, "core/game.js")).href);
+const landscapeMod = await import(pathToFileURL(path.join(JS_DIR, "board/landscapes.js")).href);
+const tutorialMod = await import(pathToFileURL(path.join(JS_DIR, "tutorial/tutorial-mode.js")).href);
 
 const { buildDreamDeck, LENGTHS } = dataMod;
 const { createInitialState, landscapeById, checkDefeat } = stateMod;

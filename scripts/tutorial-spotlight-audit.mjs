@@ -17,14 +17,23 @@ function loadJson(name) {
   return JSON.parse(fs.readFileSync(path.join(DATA, `${name}.json`), "utf8"));
 }
 
+// tutorial-mode.js railHighlight() probes document.querySelector unguarded to pick a spotlight.
+// Expose an empty DOM to that function only; elsewhere `typeof document` stays "undefined" so the
+// engine keeps its headless paths (moment overlays, fx, etc.).
+const HEADLESS_DOCUMENT = { querySelector: () => null, querySelectorAll: () => [], getElementById: () => null };
+Object.defineProperty(globalThis, "document", {
+  configurable: true,
+  get: () => (new Error().stack?.includes("railHighlight") ? HEADLESS_DOCUMENT : undefined),
+});
+
 globalThis.fetch = async (url) => {
   const name = String(url).replace(/^data\//, "").replace(/\.json$/, "");
   return { json: async () => loadJson(name) };
 };
 
-const { loadGameData } = await import(pathToFileURL(path.join(JS, "data.js")).href);
-const tm = await import(pathToFileURL(path.join(JS, "tutorial-mode.js")).href);
-const gm = await import(pathToFileURL(path.join(JS, "game.js")).href);
+const { loadGameData } = await import(pathToFileURL(path.join(JS, "core/data.js")).href);
+const tm = await import(pathToFileURL(path.join(JS, "tutorial/tutorial-mode.js")).href);
+const gm = await import(pathToFileURL(path.join(JS, "core/game.js")).href);
 
 const data = await loadGameData();
 const script = tm.TUTORIAL_SCRIPT;
