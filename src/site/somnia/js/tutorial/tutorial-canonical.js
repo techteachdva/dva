@@ -231,7 +231,7 @@ function rejectAtticEncounter(state) {
   state.activePlayerIndex = 0;
   state.selectedLandscapeId = "the-attic";
   state.tutorialFlags.nextBattleWinner = "beast";
-  selectExactCards(state, 0, ["willpower-1-v-w1"]);
+  selectExactCards(state, 0, ["elasticity-1-v-e1"]);
   meetEncounter(state, "reject", { instant: true });
   state.tutorialFlags.firstBattleLost = true;
 }
