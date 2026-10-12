@@ -218,9 +218,6 @@ export function playDiceBattle(opts) {
     minBeastLead = 0,
     instant = false,
     hold = false,
-    allowPostRollToken = false,
-    postRollLead = "",
-    onPostRoll = null,
     onComplete,
   } = opts || {};
 
@@ -228,7 +225,6 @@ export function playDiceBattle(opts) {
   const bCount = clampDice(beastDice);
   let dreamerFaces = rollD6(dCount);
   let beastFaces = rollD6(bCount);
-  let postRollSpent = false;
 
   if (forceWinner === "dreamer") {
     let guard = 12;
@@ -402,7 +398,6 @@ export function playDiceBattle(opts) {
 
   const presentWinner = () => {
     if (!activeBattle) return;
-    stage.querySelector(".dice-post-roll")?.remove();
     recount();
     document.body.classList.remove("dice-rolling");
     stage.classList.remove("winner-dreamer", "winner-beast");
@@ -426,52 +421,11 @@ export function playDiceBattle(opts) {
     }
   };
 
-  const showPostRoll = () => {
-    if (instant) {
-      presentWinner();
-      return;
-    }
-    const row = document.createElement("div");
-    row.className = "dice-post-roll";
-    row.innerHTML = `
-      <p>${escapeHtml(postRollLead) || "Ties favor the beast. A token cannot change the dice after they land."}</p>
-      <div class="dice-post-roll-actions">
-        <button type="button" class="btn primary" data-post="stand">Stand</button>
-      </div>
-    `;
-    stage.querySelector(".dice-battle-table")?.after(row);
-    row.addEventListener("click", (event) => event.stopPropagation());
-    document.dispatchEvent(new CustomEvent("somnia-dice-post-roll"));
-    row.querySelectorAll("[data-post]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const kind = btn.getAttribute("data-post");
-        if (kind === "stand") {
-          presentWinner();
-          return;
-        }
-        if (postRollSpent || !onPostRoll("subtract")) return;
-        postRollSpent = true;
-        const index = beastFaces.findIndex((face) => face >= SUCCESS_MIN);
-        if (index >= 0) {
-          beastFaces[index] = 1;
-          const die = beastDiceEls[index];
-          die?.classList.remove("success");
-          die?.querySelector(".die-face.hit")?.classList.remove("hit");
-          const slot = die?.closest(".battle-die-slot");
-          slot?.classList.remove("success");
-          slot?.classList.add("plucked");
-          playHaptic("repress");
-        }
-        recount();
-        presentWinner();
-      });
-    });
-  };
 
   activeBattle.timer = window.setTimeout(() => {
     recount();
     document.body.classList.remove("dice-rolling");
-    showPostRoll();
+    presentWinner();
   }, lastDelay);
 
   return result();

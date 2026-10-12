@@ -23,6 +23,8 @@ export {
 let settings = loadSettings();
 let bgm = null;
 let musicStarted = false;
+/** While a movie plays, the game music stays quiet. */
+let musicHeld = false;
 let radioIndex = 0;
 let themeMode = false;
 let audioCtx = null;
@@ -72,7 +74,7 @@ function ensureAudioContext() {
 function recoverAfterInterruption() {
   const ac = ensureAudioContext();
   if (!ac) return;
-  if (!bgm || !musicStarted) return;
+  if (!bgm || !musicStarted || musicHeld) return;
   settings = loadSettings();
   if (settings.musicMuted || settings.musicMode === "off") return;
   const kick = () => {
@@ -627,7 +629,7 @@ function loadThemeTrack(loop) {
 }
 
 function playMusic() {
-  if (!bgm) return;
+  if (!bgm || musicHeld) return;
   settings = loadSettings();
   if (settings.musicMuted || settings.musicMode === "off") return;
   ensureMusicChain();
@@ -637,6 +639,17 @@ function playMusic() {
     playPromise.then(() => { musicStarted = true; }).catch(() => {});
   } else {
     musicStarted = true;
+  }
+}
+
+/** Pause the game music for a movie; release it to resume. */
+export function holdMusic(held) {
+  musicHeld = !!held;
+  if (!bgm) return;
+  if (musicHeld) {
+    bgm.pause();
+  } else if (musicStarted || bgm.src) {
+    playMusic();
   }
 }
 

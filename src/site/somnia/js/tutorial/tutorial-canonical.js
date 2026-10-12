@@ -302,6 +302,7 @@ function acceptAtticRematch(state) {
     if (holderIndex >= 0) state.activePlayerIndex = holderIndex;
     passMeetToken(state);
   }
+  useImmovableHold(state);
   state.activePlayerIndex = 0;
   state.selectedLandscapeId = "the-attic";
   if ((visionary?.powerTokens || 0) >= 1) powerBonus(state);
@@ -402,10 +403,6 @@ export function applyCanonicalTutorialStep(state, step) {
 
     case "meet-reach":
       state.activePlayerIndex = 1;
-      return;
-
-    case "meet-hold":
-      useImmovableHold(state);
       return;
 
     case "meet-penalty":

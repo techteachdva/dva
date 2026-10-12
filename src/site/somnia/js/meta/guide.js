@@ -453,16 +453,6 @@ export const RULES_TAB_INTRO = "intro";
 export const RULES_TAB_REM = "rem";
 export const RULES_TAB_DETAILS = "details";
 
-/** Short welcome shown before the interactive tutorial walkthrough. */
-export function tutorialBriefHtml() {
-  return `
-    <div class="rules-page tutorial-brief-page">
-      ${playerPrimerHtml()}
-      <p class="player-primer-next">The sparkles show every click. Finish this lesson and the Advanced Tutorial unlocks. Open <strong>?</strong> anytime for this page and the glossary.</p>
-    </div>
-  `;
-}
-
 export function advancedTutorialBriefHtml() {
   return `
     <div class="rules-page tutorial-brief-page">
@@ -536,7 +526,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 41.1. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 41.2. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -591,7 +581,7 @@ export function rulesRemHtml() {
             <li><strong>Unused Meet actions</strong> draw 1 Psyche each, one Dreamer at a time. Ending Meet draws whatever is left the same way</li>
             <li>Innocent, Orphan, and Outlaw ask for a Mindstream draw on any Landscape of their suit and a Meet against a Dreambeast of that suit. The 3-point Archetypes still name two Landscapes. Magician, Warrior, and Sage require defeating their boss and one Dreamer sacrificing one Object</li>
             <li><strong>During Meet:</strong> Trade up to 3 Psyche with a Dreamer on the same or adjacent hex, and that is free. Declare up to 3 Power Tokens for +1d6 each before the dice roll. A Dreamer or Archetype Power costs 1 token. A Persistent Object costs 1 Meet action and taps once per Meet. Acquire is free once both quests on any face-up Archetype are already true</li>
-            <li><strong>After the dice land</strong>, stand. Ties favor the beast. A token cannot change the dice after they land.</li>
+            <li><strong>Once the dice land</strong>, the fight is over. Ties favor the beast. Spend tokens and pick cards before you roll.</li>
             <li>Using an Instant Object Represses it</li>
           </ul>
         </div>
@@ -619,7 +609,7 @@ export function rulesDetailsHtml() {
 
       <h3>Guided Tutorial</h3>
       <ul>
-        <li>The guided tutorial plays opener rotation, a scripted loss where you Stand after the dice, beast reach, the Meet Pass, a stacked rematch, Mindstreams, quests, and powers. The guide window docks on the map. Drag the header or resize the corner if you want it elsewhere.</li>
+        <li>The guided tutorial plays opener rotation, a scripted loss that shows you must prepare before the roll, dusk taking your Waking Mind, Remember, a prepared rematch, Mindstreams, quests, and powers. The guide window docks on the map. Drag the header or resize the corner if you want it elsewhere.</li>
         <li>Follow the sparkle: <strong>Draw Dream</strong> is left of Next Phase. Select 1 Psyche, then press the button beside it to open Reveal, Explore, or Meet. Click a Dreamer or an occupied Landscape for landscape options. Click Commit on the Active Archetype once both quests are true, or spend a Power Token. Every required click is highlighted, including hand cards, hexes, and Next Phase. <strong>Back</strong> sits at the top-left of the map if you need to undo.</li>
         <li>Each step shows a punchy Objective plus one or two sentences of why that action matters. <strong>?</strong> and Pause → Help stay available after you graduate.</li>
       </ul>
@@ -725,7 +715,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 41.1</p>
+          <p class="info-hub-kicker">Somnia v 41.2</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">Capture the Archetypes. Stand on The Bed. Wake before the Dream Deck runs out.</p>
         </div>

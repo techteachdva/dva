@@ -35,7 +35,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 41.1</span>
+        <span class="version-label">v 41.2</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -247,6 +247,15 @@
   <div id="utility-choice-dock" class="utility-choice-dock hidden" role="status" aria-live="polite">
     <span id="utility-choice-dock-label">Choice required</span>
     <button type="button" class="btn btn-sm primary" id="utility-choice-restore">Resume choice</button>
+  </div>
+
+  <div id="intro-movie" class="intro-movie hidden" role="dialog" aria-modal="true" aria-label="Somnia intro movie">
+    <video id="intro-movie-video" class="intro-movie-video" playsinline preload="metadata" controls poster="media/somnia-intro-poster.jpg">
+      <source src="media/somnia-intro.mp4" type="video/mp4">
+      <track kind="captions" src="media/somnia-intro.vtt" srclang="en" label="English">
+    </video>
+    <button type="button" id="intro-movie-play" class="btn primary intro-movie-play hidden">▶ Play the intro</button>
+    <button type="button" id="intro-movie-skip" class="btn intro-movie-skip">Skip intro</button>
   </div>
 
   <div id="tutorial-brief" class="tutorial-brief hidden" role="dialog" aria-modal="true" aria-labelledby="tutorial-brief-title">

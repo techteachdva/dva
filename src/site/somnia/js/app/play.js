@@ -163,7 +163,6 @@ import {
 } from "../flow/phase-opener-menu.js";
 import {
   TUTORIAL_STEPS,
-  tutorialBriefHtml,
   advancedTutorialBriefHtml,
   markTutorialSeen,
   markBasicTutorialComplete,
@@ -268,6 +267,7 @@ import {
   suppressDreamerOverlay,
   showTutorialStep,
   showTutorialBrief,
+  playIntroMovie,
   hideTutorialBrief,
   updateTutorialStepUI,
   hideTutorial,
@@ -345,6 +345,8 @@ let dockSelectTimer = null;
 const DOCK_SELECT_DELAY_MS = 280;
 let tutorialAutoAdvanceTimer = null;
 let fullscreenReady = false;
+/** The tutorial intro movie waits for the first click on the table. */
+let pendingIntroMovie = null;
 const lastCardClick = { id: null, time: 0 };
 let lastRepressPickerKey = null;
 let lastReturnPickerKey = null;
@@ -573,6 +575,11 @@ function bindFullscreenPrompt() {
     if (fullscreenReady) return;
     fullscreenReady = true;
     prompt.classList.add("hidden");
+    if (pendingIntroMovie) {
+      const playMovie = pendingIntroMovie;
+      pendingIntroMovie = null;
+      playMovie();
+    }
     startGameRadio();
     keepScreenAwake();
     const wantsCinematic = state && !launchConfig?.resumeSaveId && !state.tutorialMode;
@@ -1137,10 +1144,18 @@ async function startGame(config) {
         ? "The longer night. The sparkles show every click."
         : "Two practice rounds. The sparkles show every click.";
     }
-    showTutorialBrief(track === "advanced" ? advancedTutorialBriefHtml() : tutorialBriefHtml(), () => {
+    const beginTutorial = () => {
       tutorialBriefPending = false;
       syncInteractiveTutorial();
-    });
+    };
+    if (track === "advanced") {
+      showTutorialBrief(advancedTutorialBriefHtml(), beginTutorial);
+    } else if (fullscreenReady) {
+      playIntroMovie(beginTutorial);
+    } else {
+      // Wait for the Enter the Dreamscape click: browsers only play a movie with sound after a click.
+      pendingIntroMovie = () => playIntroMovie(beginTutorial);
+    }
   }
 }
 

@@ -228,7 +228,6 @@ const STEP_EFFECT_CHECKS = {
   "reveal-r1": (s) => getPhase(s) === "Explore" && landscapeById(s, "candy-mountain")?.revealed,
   "explore-r1": (s) => getPhase(s) === "Meet" && s.players[0].landscapeId === "the-attic",
   "meet-r1": (s) => !!s.tutorialFlags?.firstBattleLost && encounterOnLandscape(s, "the-attic"),
-  "meet-hold": (s) => (s.anchorMeetSpreadPending || 0) >= 1 || (s.anchorMeetSpreadBonus || 0) >= 1,
   "meet-penalty": (s) => s.round >= 2,
   "r2-dream": (s) => s.dreamDrawn,
   "r2-skip": (s) => getPhase(s) === "Meet",

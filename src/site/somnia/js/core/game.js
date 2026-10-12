@@ -2061,7 +2061,6 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
   const scriptedWinner = state.tutorialMode
     ? (state.tutorialFlags?.nextBattleWinner || "dreamer")
     : null;
-  const teachStand = !!(state.tutorialMode && scriptedWinner === "beast" && (actor.powerTokens || 0) > 0);
 
   if (globalThis.__SOMNIA_REAL_DICE__ && !state.tutorialMode) {
     playDiceBattle({
@@ -2070,7 +2069,6 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
       dreamerDice: played,
       beastDice: beastPower,
       instant: true,
-      allowPostRollToken: false,
       onComplete: ({ dreamerWins }) => finish(dreamerWins),
     });
     return;
@@ -2091,17 +2089,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     dreamerDice: played,
     beastDice: beastPower,
     forceWinner: scriptedWinner,
-    minBeastLead: teachStand ? 2 : 0,
     instant: false,
-    allowPostRollToken: false,
-    postRollLead: teachStand
-      ? "Click Stand. Ties favor the beast."
-      : "",
-    onPostRoll: () => {
-      if (!spendPowerTokens(state, actor, 1, { animate: false })) return false;
-      addLog(state, `${actor.name} spends 1 Power Token to subtract 1 beast success.`);
-      return true;
-    },
     onComplete: ({ dreamerWins }) => finish(dreamerWins),
   });
 }
@@ -2762,7 +2750,6 @@ export function handleDefeatFinalArchetype(state, archetypeId = null, onDone = n
       dreamerDice: played,
       beastDice: FINAL_ARCHETYPE_POWER,
       instant: true,
-      allowPostRollToken: false,
       onComplete: ({ dreamerWins }) => finish(dreamerWins),
     });
     return;
@@ -2780,12 +2767,6 @@ export function handleDefeatFinalArchetype(state, archetypeId = null, onDone = n
     beastName: arch.name,
     dreamerDice: played,
     beastDice: FINAL_ARCHETYPE_POWER,
-    allowPostRollToken: false,
-    onPostRoll: () => {
-      if (!spendPowerTokens(state, actor, 1, { animate: false })) return false;
-      addLog(state, `${actor.name} spends 1 Power Token to subtract 1 Archetype success.`);
-      return true;
-    },
     onComplete: ({ dreamerWins }) => finish(dreamerWins),
   });
 }

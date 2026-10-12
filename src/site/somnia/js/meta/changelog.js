@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "41.1";
+export const SOMNIA_VERSION = "41.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "41.2",
+    title: "Watch, Then Play",
+    notes: [
+      "The tutorial opens with a one-minute intro movie instead of a page of rules. Skip it any time with the button or Esc. Captions are in the player controls.",
+      "The Stand button is gone. A fight is decided when the dice land: spend Power Tokens and choose your cards before the roll.",
+      "Every tutorial step is shorter and plainer. The Immovable's Hold the Line now comes in the rematch, where it helps.",
+    ],
+  },
   {
     version: "41.1",
     title: "The Lesson Matches the Game",
