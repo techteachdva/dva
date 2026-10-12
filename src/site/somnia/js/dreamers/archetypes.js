@@ -6,6 +6,7 @@ import {
 } from "../core/state.js";
 import { handRoomForPsycheDraw, onObjectDrawn } from "../effects/objects.js";
 import { recordQuestEvent } from "./quests.js";
+import { beginRemember } from "../effects/remember.js";
 import { enqueueReturnCards, listSubconsciousCards, requestReturnCards } from "./subconscious.js";
 import { spendPowerTokens, grantPowerTokens } from "../cards/power-tokens.js";
 import { isQuintessentialArchetype } from "./archetype-stats.js";
@@ -231,7 +232,7 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
 
   switch (archetype.id) {
     case "innocent":
-      if (!returnProduced(requestReturnCards(state, 4, player))) {
+      if (!beginRemember(state, player, 3, { source: "Innocent" })) {
         refundArchetypeToken(state, player, "Innocent Power: the Subconscious is empty. Token refunded.");
       }
       break;
@@ -272,7 +273,7 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
       break;
 
     case "fool":
-      if (!returnProduced(requestReturnCards(state, alivePlayers(state).length + 2, player))) {
+      if (!beginRemember(state, player, alivePlayers(state).length + 1, { source: "Fool" })) {
         refundArchetypeToken(state, player, "Fool Power: the Subconscious is empty. Token refunded.");
       }
       break;

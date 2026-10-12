@@ -261,12 +261,6 @@ export function wakeLeviathanOn(state, tileId = "bed") {
   return encounter;
 }
 
-/** Old flip effects do not pull Leviathan back out of the Subconscious. */
-export function flipLeviathan(state) {
-  addLog(state, "Leviathan does not flip. Accept befriends it. Repress keeps it in the Subconscious.");
-  return locateLeviathan(state)?.encounter || null;
-}
-
 const ACCEPT_EFFECTS = {
   cerberus: { type: "boss" },
   double: { type: "boss" },

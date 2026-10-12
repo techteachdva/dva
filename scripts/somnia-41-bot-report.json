@@ -1,0 +1,230 @@
+{
+  "version": "41.0",
+  "length": "nap",
+  "lengthRules": "12 archetype points, 14 regular dreams, bosses at rounds 3/6/9",
+  "dice": "real d6, success on 5-6, strict more successes, ties to the beast",
+  "gamesPerTable": 300,
+  "rosters": {
+    "2": [
+      "the-visionary",
+      "the-immovable"
+    ],
+    "3": [
+      "the-visionary",
+      "the-hunter",
+      "the-weaver"
+    ],
+    "4": [
+      "the-rested",
+      "the-runner",
+      "the-hunter",
+      "the-weaver"
+    ]
+  },
+  "bot": "Bot 41 Mind-keeper: focuses the row Archetype closest to true and Acquires the moment both quests are true; opens phases with the best stat; fights with a 1-3 card spread aimed at Power+2 and token dice for gaps of 1-2; places Persistent Remember Objects and taps them; walks to Memory tiles when the Waking Mind runway is 3 rounds or less or a hand has 2+ surplus; Remembers with cards above 6 in hand; Returns Psyche first, highest value; discards cheapest cards; in Final Recurrence fights the Archetypes on The Bed.",
+  "elapsedSec": 104.9,
+  "byPlayers": {
+    "2": {
+      "games": 300,
+      "wins": 132,
+      "losses": 168,
+      "winRate": 0.44,
+      "lossReasons": {
+        "final-recurrence-timeout": 162,
+        "mind-empty": 6
+      },
+      "avgRounds": 17.47,
+      "medianRounds": 19,
+      "avgPoints": 8.96,
+      "avgPointsOnLoss": 6.46,
+      "avgArchetypes": 3.69,
+      "avgDeathClock": 0.87,
+      "finalRecurrenceGames": 238,
+      "finalRecurrenceWins": 74,
+      "winsBeforeFinalRecurrence": 58,
+      "avgRoundsOnWin": 15.48,
+      "avgRoundsOnLoss": 19.04,
+      "stepCaps": 0,
+      "errors": 0,
+      "zeroPointGames": 9,
+      "pointsBuckets": {
+        "0": 9,
+        "1-3": 22,
+        "4-7": 97,
+        "8-11": 75,
+        "12+": 97
+      },
+      "deathClockBuckets": [
+        144,
+        86,
+        48,
+        10,
+        10,
+        2,
+        0
+      ],
+      "avgPsycheReturned": 22.9,
+      "rememberBySource": {
+        "Bright": 1.9,
+        "Day in the Life": 4.98,
+        "Silver Mist": 2.76,
+        "Flower": 0.28,
+        "Hammer": 0.32,
+        "Monkey Paw": 0.44,
+        "Tranquil Grove": 3.69,
+        "Black Void": 3.47,
+        "Mirror": 0.17,
+        "Red Apple": 0.23,
+        "The All": 0.3,
+        "Spark of Sun": 0.36,
+        "Tear of Moon": 0.14,
+        "Possibility Polyhedral": 0.22,
+        "Candle": 0.17,
+        "Egg": 0.29,
+        "Psychic Owl": 0.3
+      },
+      "avgMindAtEnd": 39.9,
+      "avgHandsAtEnd": 15.1
+    },
+    "3": {
+      "games": 300,
+      "wins": 164,
+      "losses": 136,
+      "winRate": 0.5466666666666666,
+      "lossReasons": {
+        "final-recurrence-timeout": 122,
+        "mind-empty": 13,
+        "death-clock": 1
+      },
+      "avgRounds": 16.59,
+      "medianRounds": 18,
+      "avgPoints": 9.4,
+      "avgPointsOnLoss": 5.51,
+      "avgArchetypes": 3.83,
+      "avgDeathClock": 0.74,
+      "finalRecurrenceGames": 219,
+      "finalRecurrenceWins": 92,
+      "winsBeforeFinalRecurrence": 72,
+      "avgRoundsOnWin": 14.85,
+      "avgRoundsOnLoss": 18.69,
+      "stepCaps": 0,
+      "errors": 0,
+      "zeroPointGames": 9,
+      "pointsBuckets": {
+        "0": 9,
+        "1-3": 31,
+        "4-7": 82,
+        "8-11": 49,
+        "12+": 129
+      },
+      "deathClockBuckets": [
+        174,
+        70,
+        30,
+        16,
+        6,
+        3,
+        1
+      ],
+      "avgPsycheReturned": 25.9,
+      "rememberBySource": {
+        "Tranquil Grove": 4.53,
+        "Red Apple": 0.14,
+        "Monkey Paw": 0.24,
+        "Silver Mist": 3.77,
+        "Bright": 1.63,
+        "Day in the Life": 5.26,
+        "Flower": 0.21,
+        "Black Void": 5.08,
+        "Possibility Polyhedral": 0.35,
+        "Mirror": 0.1,
+        "Hammer": 0.33,
+        "The All": 0.12,
+        "Spark of Sun": 0.33,
+        "Psychic Owl": 0.12,
+        "Egg": 0.33,
+        "Candle": 0.3,
+        "Tear of Moon": 0.32
+      },
+      "avgMindAtEnd": 39.4,
+      "avgHandsAtEnd": 22.6
+    },
+    "4": {
+      "games": 300,
+      "wins": 135,
+      "losses": 165,
+      "winRate": 0.45,
+      "lossReasons": {
+        "final-recurrence-timeout": 151,
+        "mind-empty": 13,
+        "death-clock": 1
+      },
+      "avgRounds": 17.17,
+      "medianRounds": 19,
+      "avgPoints": 8.77,
+      "avgPointsOnLoss": 6.04,
+      "avgArchetypes": 3.6,
+      "avgDeathClock": 0.62,
+      "finalRecurrenceGames": 232,
+      "finalRecurrenceWins": 79,
+      "winsBeforeFinalRecurrence": 56,
+      "avgRoundsOnWin": 14.84,
+      "avgRoundsOnLoss": 19.07,
+      "stepCaps": 0,
+      "errors": 0,
+      "zeroPointGames": 6,
+      "pointsBuckets": {
+        "0": 6,
+        "1-3": 39,
+        "4-7": 86,
+        "8-11": 61,
+        "12+": 108
+      },
+      "deathClockBuckets": [
+        192,
+        58,
+        33,
+        10,
+        4,
+        2,
+        1
+      ],
+      "avgPsycheReturned": 26.4,
+      "rememberBySource": {
+        "Bright": 1.26,
+        "Black Void": 4.22,
+        "Tear of Moon": 0.21,
+        "Silver Mist": 3.85,
+        "Day in the Life": 6.02,
+        "Egg": 0.15,
+        "The All": 0.32,
+        "Tranquil Grove": 5.1,
+        "Spark of Sun": 0.36,
+        "Monkey Paw": 0.29,
+        "Red Apple": 0.19,
+        "Psychic Owl": 0.22,
+        "Mirror": 0.3,
+        "Candle": 0.16,
+        "Hammer": 0.13,
+        "Possibility Polyhedral": 0.2,
+        "Flower": 0.16
+      },
+      "avgMindAtEnd": 38.5,
+      "avgHandsAtEnd": 32.4
+    }
+  },
+  "samples": {
+    "2": {
+      "otherTails": [],
+      "errorSamples": []
+    },
+    "3": {
+      "otherTails": [],
+      "errorSamples": []
+    },
+    "4": {
+      "otherTails": [],
+      "errorSamples": []
+    }
+  }
+}

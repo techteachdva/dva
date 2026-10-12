@@ -31,6 +31,7 @@ import { logMoment } from "../core/narrator.js";
 import { resumeLandscapeAction } from "../board/landscape-actions.js";
 import { resumeArchetypeFollowup, continueArchetypeQueues } from "../dreamers/archetypes.js";
 import { continueDeferredEventQueues, startSilverForcedAccept } from "./event-choices.js";
+import { beginRemember } from "./remember.js";
 
 let lastHelpers = null;
 
@@ -1172,11 +1173,15 @@ export function persistentObjectCanActivate(card) {
     || ELEMENT_MOVES[card.id]
     || card.id === "mobius-crystal"
     || card.id === "skeleton-key"
-    || card.id === "monkey-paw",
+    || card.id === "monkey-paw"
+    || (card.remember || 0) > 0,
   );
 }
 
 export function activatePersistentObjectEffect(state, player, card) {
+  if ((card.remember || 0) > 0) {
+    return beginRemember(state, player, card.remember, { source: card.name }) ? true : false;
+  }
   const mover = BEAST_MOVERS[card.id];
   if (mover) {
     const sources = allEncountersOnBoard(state);

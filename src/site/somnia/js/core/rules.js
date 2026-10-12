@@ -80,6 +80,7 @@ export const MEET_ACTIONS = {
   TRADE: "trade",
   ARCHETYPE: "archetype-power",
   DREAMER: "dreamer-power",
+  OBJECT: "object",
 };
 
 export function dreamerStat(dreamer, stat) {
@@ -606,9 +607,16 @@ export function canTradeBetween(state, landscapeA, landscapeB) {
   return hexCanTradeBetween(state, landscapeA, landscapeB);
 }
 
+/** 41.0 Repress cycle: Lucidity represses Willpower, Willpower represses Elasticity, Elasticity represses Lucidity. */
+export const REPRESS_CYCLE = { willpower: "lucidity", lucidity: "elasticity", elasticity: "willpower" };
+
+/** The suit you pay to Repress a Dreambeast of this suit. */
+export function repressSuitFor(suit) {
+  return REPRESS_CYCLE[suit] || null;
+}
+
 export function opposingSuit(suit) {
-  const cycle = { lucidity: "willpower", willpower: "elasticity", elasticity: "lucidity" };
-  return cycle[suit] || null;
+  return repressSuitFor(suit);
 }
 
 export function validateEncounterPlayShape(encounter, cards, { accept = true } = {}) {

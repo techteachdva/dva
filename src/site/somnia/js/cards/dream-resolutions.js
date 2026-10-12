@@ -90,11 +90,11 @@ export const DREAM_RESOLUTIONS = {
   loss: {
     good: {
       label: "Hold What Remains",
-      hint: "Discard 4 Willpower — Return 2 cards",
+      hint: "Remember: discard 4 Willpower — Return 5",
       toll: { kind: "psyche", count: 4, suit: "willpower" },
       gate: { kind: "suit", suit: "willpower", count: 4, label: "Hold 4 Willpower Psyche" },
       effect: "returnCards",
-      params: { count: 2 },
+      params: { count: 5 },
     },
     bad: {
       label: "The Caregiver's Map Tears",
@@ -209,11 +209,11 @@ export const DREAM_RESOLUTIONS = {
   recovery: {
     good: {
       label: "Sun Through the Mist",
-      hint: "Discard 2 Lucidity — every Dreamer Returns 1 card",
+      hint: "Remember: discard 2 Lucidity — Return 3",
       toll: { kind: "psyche", count: 2, suit: "lucidity" },
       gate: { kind: "suit", suit: "lucidity", count: 2, label: "Hold 2 Lucidity Psyche" },
-      effect: "returnCardsAll",
-      params: { count: 1 },
+      effect: "returnCards",
+      params: { count: 3 },
     },
     bad: {
       label: "Healing Fails",
@@ -251,9 +251,9 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Roads Seal Shut",
-      hint: "Skip the next Explore Phase",
-      effect: "skipNextExplore",
-      params: {},
+      hint: "Forget 1 Landscape",
+      effect: "forgetLandscapes",
+      params: { count: 1 },
     },
   },
 
@@ -268,9 +268,9 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Feet Refuse to Move",
-      hint: "Skip the next Explore Phase",
-      effect: "skipNextExplore",
-      params: {},
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
     },
   },
 
@@ -300,9 +300,9 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Walls Close In",
-      hint: "Skip the next Explore Phase",
-      effect: "skipNextExplore",
-      params: {},
+      hint: "Repress 2 from the Waking Mind",
+      effect: "repressTopPsycheDeck",
+      params: { count: 2 },
     },
   },
 
@@ -372,22 +372,6 @@ export const DREAM_RESOLUTIONS = {
     },
   },
 
-  paradox: {
-    good: {
-      label: "Hold Both Truths",
-      hint: "Discard 2 Lucidity — Return 2 cards",
-      toll: { kind: "psyche", count: 2, suit: "lucidity" },
-      gate: { kind: "suit", suit: "lucidity", count: 2, label: "Hold 2 Lucidity Psyche" },
-      effect: "returnCards",
-      params: { count: 2 },
-    },
-    bad: {
-      label: "The Creator's Rooms Collapse",
-      hint: "Forget Day in the Life and Inner Sanctum",
-      effect: "forgetNamed",
-      params: { ids: ["day-in-the-life", "inner-sanctum"] },
-    },
-  },
 
   powerlessness: {
     good: {
@@ -443,11 +427,11 @@ export const DREAM_RESOLUTIONS = {
   circadia: {
     good: {
       label: "Reset the Clock",
-      hint: "Discard 3 Lucidity — every Dreamer Returns 1 card",
+      hint: "Remember: discard 3 Lucidity — Return 4",
       toll: { kind: "psyche", count: 3, suit: "lucidity" },
       gate: { kind: "suit", suit: "lucidity", count: 3, label: "Hold 3 Lucidity Psyche" },
-      effect: "returnCardsAll",
-      params: { count: 1 },
+      effect: "returnCards",
+      params: { count: 4 },
     },
     bad: {
       label: "The Clock Eats the Deck",
@@ -498,11 +482,11 @@ export const DREAM_RESOLUTIONS = {
   "pineal-purge": {
     good: {
       label: "Burn the Residue",
-      hint: "Discard 4 Lucidity — Return 3 cards",
+      hint: "Remember: discard 4 Lucidity — Return 5",
       toll: { kind: "psyche", count: 4, suit: "lucidity" },
       gate: { kind: "suit", suit: "lucidity", count: 4, label: "Hold 4 Lucidity Psyche" },
       effect: "returnCards",
-      params: { count: 3 },
+      params: { count: 5 },
     },
     bad: {
       label: "The Third Eye Spills",

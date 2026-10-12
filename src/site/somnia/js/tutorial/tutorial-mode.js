@@ -173,6 +173,10 @@ export function createTutorialBaseState(data) {
       powerTokensOnArchetype: 0,
     };
     state.archetypeDeck = state.archetypeDeck.filter((a) => a.id !== "innocent");
+    // The tutorial teaches one Dream at a time; the rest of the row returns to the deck.
+    const rest = (state.archetypeRow || []).filter((a) => a && a.id !== "innocent");
+    state.archetypeDeck = [...rest.map((a) => ({ ...a })), ...state.archetypeDeck];
+    state.archetypeRow = [state.activeArchetype];
   }
 
   state.players.forEach((p, index) => {

@@ -184,7 +184,7 @@ function isQuestMetByTracker(state, questText) {
 export function ensureQuestConditions(state) {
   if (!state.questConditionsMet) state.questConditionsMet = {};
   const archetypes = [
-    ...(state.activeArchetype ? [state.activeArchetype] : []),
+    ...rowArchetypes(state),
     ...state.archetypeDeck,
     ...state.players.flatMap((p) => p.acquiredArchetypes || []),
   ];
@@ -240,8 +240,21 @@ const QUEST_LANDSCAPE_HINTS = {
   "meet a dreambeast on day in the life or inner sanctum": ["day-in-the-life", "inner-sanctum"],
 };
 
+/** Face-up Archetypes (41.0 row), falling back to the single Active Archetype. */
+export function rowArchetypes(state) {
+  const row = Array.isArray(state?.archetypeRow) && state.archetypeRow.length
+    ? state.archetypeRow
+    : (state?.activeArchetype ? [state.activeArchetype] : []);
+  return row.filter(Boolean);
+}
+
 export function meetQuestLandscapeIds(state) {
-  const arch = state.activeArchetype;
+  const ids = new Set();
+  rowArchetypes(state).forEach((arch) => meetQuestLandscapeIdsFor(state, arch).forEach((id) => ids.add(id)));
+  return [...ids];
+}
+
+function meetQuestLandscapeIdsFor(state, arch) {
   if (!arch?.quests) return [];
   const ids = new Set();
   arch.quests.forEach((quest, index) => {
@@ -254,7 +267,12 @@ export function meetQuestLandscapeIds(state) {
 }
 
 export function activeQuestLandscapeIds(state) {
-  const arch = state.activeArchetype;
+  const ids = new Set();
+  rowArchetypes(state).forEach((arch) => activeQuestLandscapeIdsFor(state, arch).forEach((id) => ids.add(id)));
+  return [...ids];
+}
+
+function activeQuestLandscapeIdsFor(state, arch) {
   if (!arch?.quests) return [];
   const ids = new Set();
   arch.quests.forEach((q, i) => {
@@ -342,7 +360,10 @@ export function getQuestStatus(state, archetype) {
 }
 
 export function sacrificeQuestOpen(state) {
-  const arch = state.activeArchetype;
+  return rowArchetypes(state).some((arch) => sacrificeQuestOpenFor(state, arch));
+}
+
+function sacrificeQuestOpenFor(state, arch) {
   if (!arch?.quests) return false;
   return arch.quests.some((quest, index) => {
     if (arch.questProgress?.[index]) return false;

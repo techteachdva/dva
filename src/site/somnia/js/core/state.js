@@ -1,4 +1,5 @@
 import { createQuestTracker, recordQuestEvent, isQuestConditionMet } from "../dreamers/quests.js";
+import { FINAL_ARCHETYPE_POWER } from "../dreamers/final-recurrence-rules.js";
 import { buildHexBoard, adjacentTiles, hexDistance } from "./hex.js";
 import { effectiveDreamerStat } from "../dreamers/archetype-stats.js";
 import { playSfx } from "../audio/audio.js";
@@ -34,7 +35,7 @@ import {
   uid,
   PSYCHE_STARTING_HAND,
 } from "./data.js";
-import { discardToMindstream, pullObjectFromMindstream, objectForPlayer, reshuffleMindstreamDiscardIfNeeded, goneMindstreamSuit, stampBeastMillTile } from "../cards/mindstream-supply.js";
+import { discardToMindstream, pullObjectFromMindstream, objectForPlayer, reshuffleMindstreamDiscardIfNeeded, stampBeastMillTile } from "../cards/mindstream-supply.js";
 import { psycheHandCount, hasPsycheHealth } from "../cards/psyche.js";
 import {
   grantPowerTokens,
@@ -163,14 +164,15 @@ export function createInitialState(data, options) {
     stackBeastKindToTop(mindstreamDecks, seedFlags.fantasy ? "fantasy" : "nightmare");
   }
 
+  orderArchetypeDeckForRow(archetypeDeck);
+
   if (options.gentleStart) {
     pinFirstById(archetypeDeck, "innocent");
     pinOpeningDream(dreamDeck, data.dreams, "quiet");
   }
 
-  const activeArchetype = archetypeDeck.shift();
-  activeArchetype.questProgress = [false, false];
-  activeArchetype.powerTokensOnArchetype = 0;
+  const archetypeRow = archetypeDeck.splice(0, ARCHETYPE_ROW_SIZE).map(freshRowArchetype);
+  const activeArchetype = archetypeRow[0];
 
   const state = {
     phaseIndex: 0,
@@ -196,6 +198,7 @@ export function createInitialState(data, options) {
     players,
     activePlayerIndex: 0,
     activeArchetype,
+    archetypeRow,
     activeEncounter: null,
     activeEncounterLandscapeId: null,
     activeDream: null,
@@ -325,6 +328,72 @@ export function landscapeById(state, id) {
 
 export function playersOnLandscape(state, id) {
   return state.players.filter((p) => p.landscapeId === id && p.alive);
+}
+
+/** 41.0: Final Recurrence lasts this many rounds once it begins. */
+export const FINAL_RECURRENCE_ROUNDS = 3;
+/** 41.0: Final Recurrence summons this many Archetypes (the cheapest left), whatever the table size. */
+export const FINAL_RECURRENCE_ARCHETYPES = 2;
+
+/** 41.0: three Archetypes are face up. Acquire whichever one's quests come true first. */
+export const ARCHETYPE_ROW_SIZE = 3;
+
+function freshRowArchetype(arch) {
+  if (!arch) return arch;
+  arch.questProgress = [false, false];
+  arch.powerTokensOnArchetype = 0;
+  return arch;
+}
+
+/** 2- and 3-point Archetypes open the night; the boss-gated 4-pointers sit in the bottom half. */
+function orderArchetypeDeckForRow(deck) {
+  const low = deck.filter((a) => (a.points || 0) < 4);
+  const high = deck.filter((a) => (a.points || 0) >= 4);
+  const opening = low.slice(0, ARCHETYPE_ROW_SIZE);
+  const rest = shuffle([...low.slice(ARCHETYPE_ROW_SIZE), ...high]);
+  const half = Math.ceil(rest.length / 2);
+  // Keep 4-pointers out of the first half of what remains.
+  const restLow = rest.filter((a) => (a.points || 0) < 4);
+  const restHigh = rest.filter((a) => (a.points || 0) >= 4);
+  const top = restLow.slice(0, Math.max(0, half));
+  const bottom = shuffle([...restLow.slice(half), ...restHigh]);
+  deck.splice(0, deck.length, ...opening, ...top, ...bottom);
+}
+
+/** The face-up Archetypes. Keeps activeArchetype pointing at a row card. */
+export function archetypeRowOf(state) {
+  if (!Array.isArray(state.archetypeRow)) {
+    state.archetypeRow = state.activeArchetype ? [state.activeArchetype] : [];
+  }
+  state.archetypeRow = state.archetypeRow.filter(Boolean);
+  if (!state.activeArchetype || !state.archetypeRow.includes(state.activeArchetype)) {
+    state.activeArchetype = state.archetypeRow[0] || null;
+  }
+  return state.archetypeRow;
+}
+
+export function refillArchetypeRow(state) {
+  const row = archetypeRowOf(state);
+  while (row.length < ARCHETYPE_ROW_SIZE && state.archetypeDeck?.length) {
+    row.push(freshRowArchetype(state.archetypeDeck.shift()));
+  }
+  if (!state.activeArchetype || !row.includes(state.activeArchetype)) state.activeArchetype = row[0] || null;
+  return row;
+}
+
+export function focusRowArchetype(state, archetypeId) {
+  const row = archetypeRowOf(state);
+  const hit = row.find((a) => a.id === archetypeId);
+  if (hit) state.activeArchetype = hit;
+  return hit || null;
+}
+
+/** Row Archetype whose quests are both already true (focused one first). */
+export function readyRowArchetype(state) {
+  const row = archetypeRowOf(state);
+  const ordered = [state.activeArchetype, ...row.filter((a) => a !== state.activeArchetype)].filter(Boolean);
+  return ordered.find((arch) => (arch.quests || []).length
+    && arch.quests.every((quest) => isQuestConditionMet(state, arch.id, quest))) || null;
 }
 
 export function addLog(state, message) {
@@ -989,20 +1058,27 @@ export function beginFinalRecurrence(state) {
     bed.revealed = true;
     bed.wasteland = false;
   }
-  const remaining = [...state.archetypeDeck];
-  if (state.activeArchetype) remaining.unshift(state.activeArchetype);
+  // 41.0: the two cheapest Archetypes left, all standing on The Bed.
+  const pool = [...archetypeRowOf(state), ...state.archetypeDeck];
+  const summoned = pool
+    .map((arch, index) => ({ arch, index }))
+    .sort((a, b) => ((a.arch.points || 0) - (b.arch.points || 0)) || (a.index - b.index))
+    .slice(0, FINAL_RECURRENCE_ARCHETYPES)
+    .map((entry) => entry.arch);
   state.archetypeDeck = [];
+  state.archetypeRow = [];
   state.activeArchetype = null;
 
-  state.finalArchetypes = remaining.map((arch) => {
-    const tile = placeFinalArchetype(state, arch);
+  state.finalArchetypes = summoned.map((arch) => {
+    const tile = bed || placeFinalArchetype(state, arch);
     const placed = hostFinalArchetype(tile, arch);
     if (tile && placed) addLog(state, `${arch.name} appears on ${tile.name}.`);
     return placed || { ...arch, defeated: false, landscapeId: tile?.id };
   });
 
+  state.finalRecurrenceRoundsLeft = FINAL_RECURRENCE_ROUNDS;
   state.finalRecurrenceDreamsAtStart = Math.max(1, state.dreamDeck?.length || 1);
-  addLog(state, "Remaining Archetypes are Power 12. Pool up to 3 Psyche and win the dice battle to Acquire each one.");
+  addLog(state, `Final Recurrence: ${summoned.length} Archetype${summoned.length === 1 ? "" : "s"} stand on The Bed. Power ${FINAL_ARCHETYPE_POWER}. Pool up to 3 Psyche and win each dice battle within ${FINAL_RECURRENCE_ROUNDS} rounds to wake.`);
   markDreamFeedNudge();
   checkVictory(state);
 }
@@ -1013,6 +1089,11 @@ export function advancePhase(state) {
   if (phase === "Meet") {
     rewardRestedDreamers(state);
     passHeadDreamer(state);
+    if (state.finalRecurrence && state.finalRecurrenceRoundsLeft != null) {
+      state.finalRecurrenceRoundsLeft = Math.max(0, state.finalRecurrenceRoundsLeft - 1);
+      checkDefeat(state);
+      if (state.status !== "playing") return;
+    }
     state.anchorMeetSpreadBonus = 0;
     state.round += 1;
     beginRoundReveal(state);
@@ -1172,18 +1253,15 @@ export function checkDefeat(state) {
   }
   if (!(state.psycheDeck?.length) && !(state.psycheDiscard?.length)) {
     state.status = "lost";
-    addLog(state, "The Psyche Deck is exhausted — nothing left to draw or shuffle. You never wake up.");
-    return;
-  }
-  const collapsed = goneMindstreamSuit(state);
-  if (collapsed) {
-    state.status = "lost";
-    addLog(state, `The ${collapsed} Mindstream is gone — every card is Repressed in the Subconscious. You never wake up.`);
+    addLog(state, "The Waking Mind is empty — nothing left to draw or shuffle. You forget yourself, and never wake up.");
     return;
   }
   if (state.finalRecurrence) {
     const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
-    if (state.dreamDeck.length === 0 && left > 0) {
+    if (left > 0 && state.finalRecurrenceRoundsLeft != null && state.finalRecurrenceRoundsLeft <= 0) {
+      state.status = "lost";
+      addLog(state, "Final Recurrence ends with an Archetype still standing on The Bed. You never wake up.");
+    } else if (left > 0 && state.finalRecurrenceRoundsLeft == null && state.dreamDeck.length === 0) {
       state.status = "lost";
       addLog(state, "The Dream Deck is exhausted. You never wake up.");
     }
@@ -1195,8 +1273,8 @@ export function checkDefeat(state) {
   }
 }
 
-export function acquireArchetype(state, player, onAcquireFn, { skipQuestCheck = false } = {}) {
-  const archetype = state.activeArchetype;
+export function acquireArchetype(state, player, onAcquireFn, { skipQuestCheck = false, archetype: chosen = null } = {}) {
+  const archetype = chosen || state.activeArchetype;
   if (!archetype) return false;
   if (!skipQuestCheck && !archetype.questProgress.every(Boolean)) return false;
 
@@ -1206,11 +1284,10 @@ export function acquireArchetype(state, player, onAcquireFn, { skipQuestCheck = 
 
   if (onAcquireFn) onAcquireFn(state, archetype, player);
 
-  state.activeArchetype = state.archetypeDeck.shift() || null;
-  if (state.activeArchetype) {
-    state.activeArchetype.questProgress = [false, false];
-    state.activeArchetype.powerTokensOnArchetype = 0;
-  }
+  const row = archetypeRowOf(state);
+  state.archetypeRow = row.filter((a) => a !== archetype && a.id !== archetype.id);
+  if (state.activeArchetype === archetype || state.activeArchetype?.id === archetype.id) state.activeArchetype = null;
+  refillArchetypeRow(state);
 
   checkVictory(state);
   return true;
@@ -1257,8 +1334,9 @@ export function blockingChoiceLabel(state) {
   return "Required choice";
 }
 
-export function completeQuest(state, _questIndex, player, onAcquireFn) {
-  const archetype = state.activeArchetype;
+export function completeQuest(state, _questIndex, player, onAcquireFn, { archetypeId = null } = {}) {
+  if (archetypeId) focusRowArchetype(state, archetypeId);
+  const archetype = (archetypeId ? state.activeArchetype : (readyRowArchetype(state) || state.activeArchetype));
   if (!archetype?.quests?.length) return false;
   if (archetype.questProgress?.every(Boolean)) return false;
   const unmet = archetype.quests.filter((quest) => !isQuestConditionMet(state, archetype.id, quest));
@@ -1269,7 +1347,7 @@ export function completeQuest(state, _questIndex, player, onAcquireFn) {
   archetype.questProgress = archetype.quests.map(() => true);
   archetype.powerTokensOnArchetype = 0;
   addLog(state, `${player.name} commits to ${archetype.name}. Both quests are true.`);
-  acquireArchetype(state, player, onAcquireFn);
+  acquireArchetype(state, player, onAcquireFn, { archetype });
   return "acquired";
 }
 

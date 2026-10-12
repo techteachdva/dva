@@ -408,7 +408,7 @@
       "suit": "elasticity",
       "type": "event",
       "image": "images/cards/mindstream/elasticity/portal-another-world.webp",
-      "text": "Elasticity 0–1 Move 1. Elasticity 2+ Move 3. Move to edge of Dreamscape."
+      "text": "Elasticity 0â€“1 Move 1. Elasticity 2+ Move 3. Move to edge of Dreamscape."
     },
     {
       "id": "giant-animated-pile",
@@ -432,7 +432,7 @@
       "suit": "elasticity",
       "type": "event",
       "image": "images/cards/mindstream/elasticity/lost-treasure.webp",
-      "text": "Elasticity 0–1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche. Return 1 Card per Affected Landscape."
+      "text": "Elasticity 0â€“1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche. Return 1 Card per Affected Landscape."
     },
     {
       "id": "wrong-door",
@@ -472,7 +472,7 @@
       "suit": "elasticity",
       "type": "event",
       "image": "images/cards/mindstream/elasticity/the-right-door.webp",
-      "text": "Elasticity 0–1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche."
+      "text": "Elasticity 0â€“1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche."
     },
     {
       "id": "just-out-of-reach",
@@ -496,7 +496,7 @@
       "suit": "elasticity",
       "type": "event",
       "image": "images/cards/mindstream/elasticity/freezing-night.webp",
-      "text": "Elasticity 0–1, Draw 2 Psyche keep 1. Willpower 2+, Draw 2 Objects keep 1."
+      "text": "Elasticity 0â€“1, Draw 2 Psyche keep 1. Willpower 2+, Draw 2 Objects keep 1."
     },
     {
       "id": "searing-day",
@@ -504,7 +504,7 @@
       "suit": "elasticity",
       "type": "event",
       "image": "images/cards/mindstream/elasticity/searing-day.webp",
-      "text": "Elasticity 0–1, Discard 2 Psyche. Elasticity 2+, Draw 2 Psyche."
+      "text": "Elasticity 0â€“1, Discard 2 Psyche. Elasticity 2+, Draw 2 Psyche."
     },
     {
       "id": "a-mirage",
@@ -520,7 +520,7 @@
       "suit": "elasticity",
       "type": "event",
       "image": "images/cards/mindstream/elasticity/sandstorm.webp",
-      "text": "Elasticity 0–1, Discard 1 Object or Psyche. Elasticity 2+, Move to Tranquil Grove or Inner Sanctum."
+      "text": "Elasticity 0â€“1, Discard 1 Object or Psyche. Elasticity 2+, Move to Tranquil Grove or Inner Sanctum."
     },
     {
       "id": "friendship",
@@ -690,7 +690,7 @@
       "suit": "willpower",
       "type": "event",
       "image": "images/cards/mindstream/willpower/clear-as-crystal.webp",
-      "text": "Willpower 0–1: Draw 3 Psyche. Willpower 2+: Draw 3 Psyche and Return 2."
+      "text": "Willpower 0â€“1: Draw 3 Psyche. Willpower 2+: Draw 3 Psyche and Return 2."
     },
     {
       "id": "a-mouth-rises",
@@ -706,7 +706,7 @@
       "suit": "willpower",
       "type": "event",
       "image": "images/cards/mindstream/willpower/whirlpool.webp",
-      "text": "Willpower 0–1, Flip Leviathan. Willpower 2+, Move 2 toward Endless Ocean."
+      "text": "Willpower 0â€“1, Flip Leviathan. Willpower 2+, Move 2 toward Endless Ocean."
     },
     {
       "id": "syrup-lake",
@@ -762,7 +762,7 @@
       "suit": "willpower",
       "type": "event",
       "image": "images/cards/mindstream/willpower/ivory-calm.webp",
-      "text": "Willpower 0–1: Draw 1 Psyche. Willpower 2+, Draw 1 Psyche and Return 3."
+      "text": "Willpower 0â€“1: Draw 1 Psyche. Willpower 2+, Draw 1 Psyche and Return 3."
     },
     {
       "id": "tartar-algae",
@@ -802,7 +802,7 @@
       "suit": "willpower",
       "type": "event",
       "image": "images/cards/mindstream/willpower/golden-tooth.webp",
-      "text": "Willpower 0–1: Draw 2 Psyche. Willpower 2+: Draw 1 Object from any Mindstream."
+      "text": "Willpower 0â€“1: Draw 2 Psyche. Willpower 2+: Draw 1 Object from any Mindstream."
     },
     {
       "id": "who-is-there",

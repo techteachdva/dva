@@ -134,6 +134,16 @@ function roundResourceTaxCount(state) {
   return roamingDreambeastsInSpawnOrder(state).length;
 }
 
+/** Cards the dusk mill will take from the Waking Mind when this round ends. */
+export function duskMillCount(state) {
+  return roundResourceTaxCount(state);
+}
+
+/** The Waking Mind: Psyche cards still drawable (deck plus discard). */
+export function wakingMindCount(state) {
+  return (state.psycheDeck?.length || 0) + (state.psycheDiscard?.length || 0);
+}
+
 function repressWastelandStanders(state) {
   for (const player of state.players || []) {
     if (!player.alive) continue;

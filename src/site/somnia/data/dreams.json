@@ -156,13 +156,6 @@
     "text": "All Dreamers may discard up to 3 Objects to Draw that many Psyche."
   },
   {
-    "id": "paradox",
-    "name": "Paradox",
-    "type": "dream",
-    "image": "images/dreams/paradox.webp",
-    "text": "Bright: Discard 2 Lucidity \u2014 Return 2 cards. Dim: Forget Day in the Life and Inner Sanctum."
-  },
-  {
     "id": "powerlessness",
     "name": "Powerlessness",
     "type": "dream",

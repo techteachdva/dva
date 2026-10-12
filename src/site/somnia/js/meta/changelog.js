@@ -6,10 +6,23 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "40.4";
+export const SOMNIA_VERSION = "41.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "41.0",
+    title: "Remember",
+    notes: [
+      "The Psyche deck and its discard are the Waking Mind. The top bar shows it, and what dusk will take. Every Dreambeast still standing wears a −1 badge: at dusk it Represses 1 from the Mind. Three losses remain: the Mind runs dry, the sixth death, or the night ends. A fully Repressed Mindstream suit no longer loses the game.",
+      "Remember N: discard up to N Psyche, then Return that many plus 1 from the Subconscious. Tranquil Grove, Silver Mist, Day in the Life, and Black Void are Memory Landscapes (Remember 2). Twelve Objects are Persistent Remember taps, 1 Meet action each, once per Meet. Return Brights on Dreams and Events now Remember. Innocent Remembers 3. Fool Remembers Dreamers+1. Clearing the Subconscious no longer replays a Dream.",
+      "Three Archetypes are face up. Acquire whichever one's quests come true first, and the next fills the row. Sage, Magician, and Warrior sit in the bottom half of the deck. The Party moves Dreamers instead of swapping Archetypes.",
+      "Final Recurrence: the two cheapest Archetypes left stand on The Bed. Defeat both within 3 rounds to wake.",
+      "A Landscape's suit tells you its verb. Lucidity sees and remembers, Elasticity moves Dreamers, Willpower fights and moves beasts. Each tile's action is once per table on that tile each Meet. Repress is a printed cycle: Lucidity represses Willpower, Willpower represses Elasticity, Elasticity represses Lucidity.",
+      "Dream it open: when an Event's Landscape is still Wasteland, pay Bright's cost plus 1 Lucidity to Reveal it and take Bright. Bright pays what it prints. Paradox, Leviathan flips, and skip-Explore Dims are gone. A Persistent Object tap no longer uses up that Dreamer's fight.",
+      "The AI spectator is the Mind-keeper: it chases the face-up Archetype closest to true, walks to Memory Landscapes when the Mind runs low, and spends spare Psyche to Remember.",
+    ],
+  },
   {
     version: "40.4",
     title: "A Real First Night",

@@ -70,9 +70,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 5,
     good: {
       label: "Grasp the Unknowable",
-      hint: "Return 4 Cards",
-      effect: "returnCards",
-      params: { count: 4 },
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
     },
     bad: {
       label: "Mind Unravels",
@@ -124,9 +124,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 1,
     good: {
       label: "Rest and Recall",
-      hint: "Draw 1 Psyche and Return 2",
-      effect: "drawPsycheAndReturn",
-      params: { draw: 1, ret: 2 },
+      hint: "Draw 1 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 1 },
     },
     bad: {
       label: "Heavy Lids",
@@ -160,9 +160,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 2,
     good: {
       label: "Familiar Ground",
-      hint: "Return 3 Cards",
-      effect: "returnCards",
-      params: { count: 3 },
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
     },
     bad: {
       label: "False Memory",
@@ -252,9 +252,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Meet Its Gaze",
-      hint: "Return 3 Cards",
-      effect: "returnCards",
-      params: { count: 3 },
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
     },
     bad: {
       label: "Face Emerges",
@@ -342,9 +342,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Refine the Wound",
-      hint: "Return 2 Cards and gain 1 PT",
-      effect: "returnAndPT",
-      params: { ret: 2, pt: 1 },
+      hint: "Remember 1 and gain 1 PT",
+      effect: "rememberAndPT",
+      params: { count: 1, pt: 1 },
     },
     bad: {
       label: "Bottled Pressure",
@@ -378,9 +378,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 2,
     good: {
       label: "Strike the Chord",
-      hint: "Draw 1 Psyche and Return 2",
-      effect: "drawPsycheAndReturn",
-      params: { draw: 1, ret: 2 },
+      hint: "Draw 1 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 1 },
     },
     bad: {
       label: "Dissonance",
@@ -396,9 +396,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Refuse the Wound",
-      hint: "Return 4 Cards",
-      effect: "returnCards",
-      params: { count: 4 },
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
     },
     bad: {
       label: "Truth Intrudes",
@@ -432,9 +432,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 5,
     good: {
       label: "Shape the Change",
-      hint: "Return 3 Cards",
-      effect: "returnCards",
-      params: { count: 3 },
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
     },
     bad: {
       label: "World Warps",
@@ -488,9 +488,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Slip Out Quietly",
-      hint: "Return 2 Cards",
-      effect: "returnCards",
-      params: { count: 2 },
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
     },
     bad: {
       label: "Called On",
@@ -524,9 +524,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 2,
     good: {
       label: "Ace the Guess",
-      hint: "Draw 1 Psyche and Return 3",
-      effect: "drawPsycheAndReturn",
-      params: { draw: 1, ret: 3 },
+      hint: "Draw 1 Psyche and Remember 2",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 2 },
     },
     bad: {
       label: "Blank Stare",
@@ -560,9 +560,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Rearrange the Garden",
-      hint: "Return 2 Cards",
-      effect: "returnCards",
-      params: { count: 2 },
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
     },
     bad: {
       label: "Roots Claim You",
@@ -578,9 +578,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Match and Escape",
-      hint: "Return 4 Cards",
-      effect: "returnCards",
-      params: { count: 4 },
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
     },
     bad: {
       label: "Lock Clicks Shut",
@@ -596,9 +596,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Trace the Pattern",
-      hint: "Return 4 Cards",
-      effect: "returnCards",
-      params: { count: 4 },
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
     },
     bad: {
       label: "Pattern Fractures",
@@ -614,9 +614,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Lucky Matching Hand",
-      hint: "Return 4 Cards",
-      effect: "returnCards",
-      params: { count: 4 },
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
     },
     bad: {
       label: "Detention",
@@ -674,9 +674,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Choose Which Echoes",
-      hint: "Return 4 Cards",
-      effect: "returnCards",
-      params: { count: 4 },
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
     },
     bad: {
       label: "Shatter the Mirrors",
@@ -804,9 +804,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Cut and Polish",
-      hint: "Return 4 Cards and gain 1 PT",
-      effect: "returnAndPT",
-      params: { ret: 4, pt: 1 },
+      hint: "Remember 3 and gain 1 PT",
+      effect: "rememberAndPT",
+      params: { count: 3, pt: 1 },
     },
     bad: {
       label: "Pressure Cracks",
@@ -914,9 +914,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 2,
     good: {
       label: "Sprint and Recover",
-      hint: "Draw 1 Psyche and Return 2",
-      effect: "drawPsycheAndReturn",
-      params: { draw: 1, ret: 2 },
+      hint: "Draw 1 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 1 },
     },
     bad: {
       label: "Nowhere to Run",
@@ -986,9 +986,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Claim the Hoard",
-      hint: "Draw 3 Psyche and Return 1",
-      effect: "drawPsycheAndReturn",
-      params: { draw: 3, ret: 1 },
+      hint: "Draw 3 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 3, count: 1 },
     },
     bad: {
       label: "Chest Was Empty",
@@ -1004,9 +1004,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 4,
     good: {
       label: "Back Out Fast",
-      hint: "Return 2 Cards",
-      effect: "returnCards",
-      params: { count: 2 },
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
     },
     bad: {
       label: "Beasts Pour Through",
@@ -1094,9 +1094,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 2,
     good: {
       label: "Stretch and Grasp",
-      hint: "Return 3 Cards",
-      effect: "returnCards",
-      params: { count: 3 },
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
     },
     bad: {
       label: "Fingers Slip",
@@ -1262,9 +1262,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Polish the Medal",
-      hint: "Return 2 Cards",
-      effect: "returnCards",
-      params: { count: 2 },
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
     },
     bad: {
       label: "Third Place Stings",
@@ -1302,9 +1302,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 5,
     good: {
       label: "Steel Your Skin",
-      hint: "Return 3 Cards",
-      effect: "returnCards",
-      params: { count: 3 },
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
     },
     bad: {
       label: "Blades Find Everyone",
@@ -1412,9 +1412,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Rise Tempered",
-      hint: "Return 4 Cards",
-      effect: "returnCards",
-      params: { count: 4 },
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
     },
     bad: {
       label: "Ash in the Lungs",
@@ -1430,9 +1430,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Offer and Receive",
-      hint: "Return 3 Cards",
-      effect: "returnCards",
-      params: { count: 3 },
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
     },
     bad: {
       label: "The Altar Takes",
@@ -1486,9 +1486,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Buy a Moment",
-      hint: "Return 2 Cards",
-      effect: "returnCards",
-      params: { count: 2 },
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
     },
     bad: {
       label: "Clock Runs Out",
@@ -1522,9 +1522,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 2,
     good: {
       label: "Ride the Chop",
-      hint: "Draw 1 Psyche and Return 4",
-      effect: "drawPsycheAndReturn",
-      params: { draw: 1, ret: 4 },
+      hint: "Draw 1 Psyche and Remember 3",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 3 },
     },
     bad: {
       label: "Swallow Seawater",
@@ -1540,9 +1540,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 2,
     good: {
       label: "Surf the Crest",
-      hint: "Draw 1 Psyche and Return 3",
-      effect: "drawPsycheAndReturn",
-      params: { draw: 1, ret: 3 },
+      hint: "Draw 1 Psyche and Remember 2",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 2 },
     },
     bad: {
       label: "Wiped Out",
@@ -1578,9 +1578,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 2,
     good: {
       label: "See Through",
-      hint: "Draw 3 Psyche and Return 2",
-      effect: "drawPsycheAndReturn",
-      params: { draw: 3, ret: 2 },
+      hint: "Draw 3 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 3, count: 1 },
     },
     bad: {
       label: "Crystal Shatters",
@@ -1596,9 +1596,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 5,
     good: {
       label: "Speak First",
-      hint: "Return 3 Cards and gain 1 PT",
-      effect: "returnAndPT",
-      params: { ret: 3, pt: 1 },
+      hint: "Remember 2 and gain 1 PT",
+      effect: "rememberAndPT",
+      params: { count: 2, pt: 1 },
     },
     bad: {
       label: "Leviathan Awakens",
@@ -1740,9 +1740,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 2,
     good: {
       label: "Settle Into White",
-      hint: "Draw 1 Psyche and Return 3",
-      effect: "drawPsycheAndReturn",
-      params: { draw: 1, ret: 3 },
+      hint: "Draw 1 Psyche and Remember 2",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 2 },
     },
     bad: {
       label: "Calm Breaks",
@@ -1758,9 +1758,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 2,
     good: {
       label: "Harvest the Bloom",
-      hint: "Draw 2 Psyche and Return 2",
-      effect: "drawPsycheAndReturn",
-      params: { draw: 2, ret: 2 },
+      hint: "Draw 2 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 2, count: 1 },
     },
     bad: {
       label: "Choke on Green",
@@ -1794,9 +1794,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 4,
     good: {
       label: "Spit Out the Grit",
-      hint: "Return 2 Cards",
-      effect: "returnCards",
-      params: { count: 2 },
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
     },
     bad: {
       label: "Ground to Nothing",
@@ -1886,9 +1886,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 3,
     good: {
       label: "Empty the Room",
-      hint: "Return 3 Cards",
-      effect: "returnCards",
-      params: { count: 3 },
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
     },
     bad: {
       label: "Loneliness Bites",
@@ -1904,9 +1904,9 @@ export const EVENT_RESOLUTIONS = {
     cost: 2,
     good: {
       label: "Memory Floods Back",
-      hint: "Return 3 Cards",
-      effect: "returnCards",
-      params: { count: 3 },
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
     },
     bad: {
       label: "Memory Cuts",

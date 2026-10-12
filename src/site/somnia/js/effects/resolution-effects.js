@@ -12,6 +12,7 @@ import {
 import { scaleEventCount } from "../board/event-landscapes.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { grantPowerTokens } from "../cards/power-tokens.js";
+import { beginRemember } from "./remember.js";
 import {
   repressCard,
   requestReturnCards,
@@ -21,7 +22,6 @@ import {
 } from "../dreamers/subconscious.js";
 import { discardToMindstream } from "../cards/mindstream-supply.js";
 import { discardDreamCard } from "../cards/dream-deck.js";
-import { flipLeviathan } from "../encounters/dreambeasts.js";
 import { requestChooseTile, forgetRandomLandscapes, forgetNamedLandscapes } from "../board/landscapes.js";
 import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
 
@@ -212,6 +212,30 @@ function applyResolutionStep(state, player, step, helpers = {}) {
           logQuest: false,
         });
       }
+      break;
+    }
+    case "remember": {
+      if (p.perDreamer) {
+        alive(state).forEach((pl) => beginRemember(state, pl, p.count || 1, { source: p.source || "Bright" }));
+      } else {
+        beginRemember(state, player, p.count || 1, { source: p.source || "Bright", filter: p.filter || null });
+      }
+      break;
+    }
+    case "rememberAndPT": {
+      if (p.pt > 0) {
+        grantPowerTokens(state, player, p.pt, {
+          reason: `${player.name} gains ${p.pt} Power Token${p.pt === 1 ? "" : "s"}.`,
+          logQuest: false,
+        });
+      }
+      beginRemember(state, player, p.count || 1, { source: "Bright" });
+      break;
+    }
+    case "drawPsycheAndRemember": {
+      const drawn = drawPsycheForPlayer(state, player, p.draw || 1);
+      if (drawn.length) addLog(state, `${player.name} draws ${drawn.length} Psyche.`);
+      beginRemember(state, player, p.count || 1, { source: "Bright" });
       break;
     }
     case "returnCards": {
@@ -409,15 +433,6 @@ function applyResolutionStep(state, player, step, helpers = {}) {
       addLog(state, "Encounters spawn on every Dreamer.");
       break;
     }
-    case "flipLeviathan":
-      flipLeviathan(state);
-      break;
-    case "skipNextExplore":
-      state.skipExploreNextRound = true;
-      state.skipExploreReason = p.reason
-        || (state.activeDream?.name ? `${state.activeDream.name} Dream` : "drawn Dream");
-      addLog(state, "Skip the next Explore Phase.");
-      break;
     case "meetOnlyThisRound":
       state.meetOnlyRound = true;
       addLog(state, "Dreamers may only Meet this round.");

@@ -788,6 +788,7 @@ const COMMANDS = {
       const template = findById(ctx.gameData.archetypes, args[0]);
       if (!template) return fail(`Archetype not found: ${args[0]}`);
       state.activeArchetype = { ...template, instanceId: uid("arch-dev"), questProgress: [false, false] };
+      state.archetypeRow = [state.activeArchetype, ...(state.archetypeRow || []).slice(1).filter((a) => a.id !== template.id)];
       return ok(`Active Archetype: ${template.name}.`);
     },
   },

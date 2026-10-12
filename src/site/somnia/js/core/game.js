@@ -174,6 +174,10 @@ function meetActionKey(action, landscapeActionId = null) {
   if (action === MEET_ACTIONS.LANDSCAPE && landscapeActionId) {
     return `landscape:${landscapeActionId}`;
   }
+  // 41.0: each Persistent Object taps once per Meet, and does not use up the Dreamer's fight.
+  if (action === MEET_ACTIONS.OBJECT && landscapeActionId) {
+    return `object:${landscapeActionId}`;
+  }
   return action;
 }
 
@@ -197,10 +201,15 @@ function isTableUniqueLandscapeAction(actionId) {
   return !!actionId && actionId !== "draw-mindstream" && !PER_DREAMER_LANDSCAPE_ACTIONS.has(actionId);
 }
 
+/** 41.0: a tile's unique action is once per table per Meet on that tile, so a family of tiles each gets one use. */
+function tableUniqueKey(player, actionId) {
+  return player?.landscapeId ? `${actionId}@${player.landscapeId}` : actionId;
+}
+
 function hasUsedMeetAction(state, player, key) {
   const actionId = landscapeActionIdFromKey(key);
   if (isTableUniqueLandscapeAction(actionId)) {
-    return (state.usedUniqueActionsThisMeet || []).includes(actionId);
+    return (state.usedUniqueActionsThisMeet || []).includes(tableUniqueKey(player, actionId));
   }
   return usedMeetActionList(state, player).includes(key);
 }
@@ -214,8 +223,9 @@ function markUsedMeetAction(state, player, key) {
   const actionId = landscapeActionIdFromKey(key);
   if (isTableUniqueLandscapeAction(actionId)) {
     if (!state.usedUniqueActionsThisMeet) state.usedUniqueActionsThisMeet = [];
-    if (!state.usedUniqueActionsThisMeet.includes(actionId)) {
-      state.usedUniqueActionsThisMeet.push(actionId);
+    const tileKey = tableUniqueKey(player, actionId);
+    if (!state.usedUniqueActionsThisMeet.includes(tileKey)) {
+      state.usedUniqueActionsThisMeet.push(tileKey);
     }
   }
 }
@@ -231,7 +241,8 @@ function unmarkUsedMeetAction(state, player, key) {
   }
   const actionId = landscapeActionIdFromKey(key);
   if (isTableUniqueLandscapeAction(actionId) && state.usedUniqueActionsThisMeet) {
-    state.usedUniqueActionsThisMeet = state.usedUniqueActionsThisMeet.filter((id) => id !== actionId);
+    const tileKey = tableUniqueKey(player, actionId);
+    state.usedUniqueActionsThisMeet = state.usedUniqueActionsThisMeet.filter((id) => id !== tileKey && id !== actionId);
   }
 }
 
@@ -242,7 +253,7 @@ function clearAllUsedMeetActions(state) {
 }
 
 function meetActionActor(state, action) {
-  if (action === MEET_ACTIONS.TRADE || action === MEET_ACTIONS.ARCHETYPE || action === MEET_ACTIONS.DREAMER) {
+  if (action === MEET_ACTIONS.TRADE || action === MEET_ACTIONS.ARCHETYPE || action === MEET_ACTIONS.DREAMER || action === MEET_ACTIONS.OBJECT) {
     return activePlayer(state);
   }
   const tile = meetLandscapeTile(state) || landscapeById(state, state.selectedLandscapeId);
@@ -468,9 +479,9 @@ export function spendExcessPsycheDraw(state, { quiet = false } = {}) {
   }
 
   const before = (state.psycheDeck?.length || 0) + (state.psycheDiscard?.length || 0);
+  const noun = excessNoun(phase);
   const drawn = drawPsycheForPlayer(state, holder, 1);
   const card = drawn[0];
-  const noun = excessNoun(phase);
   if (card) {
     addLog(state, `${holder.name} spends 1 unused ${noun} and draws ${card.name || "a Psyche card"}.`);
     if (tutorialLesson && state.tutorialFlags) state.tutorialFlags.excessPsycheDrawn = true;
@@ -805,8 +816,8 @@ export function getPhaseActions(state, handlers) {
         label: "Activate Persistent",
         kind: "activateObject",
         section: "objects",
-        hint: "Free in any phase — spend 1 Power Token to activate a Persistent Object.",
-        disabled: player.powerTokens < 1,
+        hint: "Meet — spend 1 Meet action to activate a Persistent Object (Remember Objects Return cards).",
+        disabled: getPhase(state) !== "Meet" || !(state.meetActionBudget > 0) || (state.meetActionsUsed || 0) >= (state.meetActionBudget || 0),
         onClick: handlers.activateObject,
       });
     }
@@ -1864,13 +1875,6 @@ export function getPowerTokenRadialOptions(state) {
       : "Spend 1 Power Token as 1 plus this Dreamer's suited stat (instead of a Psyche card).",
     disabled: !phaseOn && !canUsePhasePowerToken(state, player),
   });
-  options.push({
-    id: "activatePersistent",
-    kind: "activateObject",
-    label: "Activate Object",
-    hint: "Free action — spend 1 Power Token to activate a Persistent Object. Does not cost a Meet action.",
-    disabled: !(player.persistent?.length) || held < 1,
-  });
   return options;
 }
 
@@ -2382,9 +2386,9 @@ export function playObject(state, objectId = null, { usePower = false } = {}) {
       addLog(state, "Activating a Persistent Object costs 1 Meet action.");
       return null;
     }
-    if (!spendMeetAction(state, MEET_ACTIONS.MEET)) return null;
+    if (!spendMeetAction(state, MEET_ACTIONS.OBJECT, card.instanceId)) return null;
     const played = playObjectCard(state, player, card, getEffectHelpers(), { usePower: false });
-    if (!played) state.meetActionsUsed = Math.max(0, (state.meetActionsUsed || 1) - 1);
+    if (!played) refundMeetAction(state, player, MEET_ACTIONS.OBJECT, card.instanceId);
     return played;
   }
   return playObjectCard(state, player, card, getEffectHelpers(), { usePower });

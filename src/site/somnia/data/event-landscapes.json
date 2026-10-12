@@ -124,7 +124,7 @@
       "black-void",
       "endless-hallway"
     ],
-    "effectTop": "Elasticity 0�1 Move 1. Elasticity 2+ Move 3. Move to edge of Dreamscape."
+    "effectTop": "Elasticity 0–1 Move 1. Elasticity 2+ Move 3. Move to edge of Dreamscape."
   },
   "undulating-floor": {
     "landscapes": [
@@ -136,7 +136,7 @@
     "landscapes": [
       "desert"
     ],
-    "effectTop": "Elasticity 0�1, Draw 2 Psyche keep 1.",
+    "effectTop": "Elasticity 0–1, Draw 2 Psyche keep 1.",
     "effectBottom": "Willpower 2+, Draw 2 Objects keep 1."
   },
   "friendship": {
@@ -228,7 +228,7 @@
       "field-of-broken-glass",
       "silver-mist"
     ],
-    "effectTop": "Willpower 0�1: Draw 3 Psyche. Willpower 2+: Draw 3 Psyche and Return 2."
+    "effectTop": "Willpower 0–1: Draw 3 Psyche. Willpower 2+: Draw 3 Psyche and Return 2."
   },
   "jaw-shark": {
     "landscapes": [
@@ -240,7 +240,7 @@
     "landscapes": [
       "sea-of-teeth"
     ],
-    "effectTop": "Willpower 0�1: Draw 2 Psyche. Willpower 2+: Draw 1 Object from any Mindstream."
+    "effectTop": "Willpower 0–1: Draw 2 Psyche. Willpower 2+: Draw 1 Object from any Mindstream."
   },
   "who-is-there": {
     "landscapes": [
@@ -455,7 +455,7 @@
     "landscapes": [
       "the-attic"
     ],
-    "effectTop": "Elasticity 0�1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche. Return 1 Card per Affected Landscape."
+    "effectTop": "Elasticity 0–1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche. Return 1 Card per Affected Landscape."
   },
   "wrong-door": {
     "landscapes": [
@@ -480,7 +480,7 @@
     "landscapes": [
       "house"
     ],
-    "effectTop": "Elasticity 0�1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche."
+    "effectTop": "Elasticity 0–1, Discard 1 Psyche. Elasticity 2+, Draw 3 Psyche."
   },
   "just-out-of-reach": {
     "landscapes": [
@@ -500,7 +500,7 @@
       "desert",
       "lava"
     ],
-    "effectTop": "Elasticity 0�1, Discard 2 Psyche. Elasticity 2+, Draw 2 Psyche."
+    "effectTop": "Elasticity 0–1, Discard 2 Psyche. Elasticity 2+, Draw 2 Psyche."
   },
   "a-mirage": {
     "landscapes": [
@@ -512,7 +512,7 @@
     "landscapes": [
       "desert"
     ],
-    "effectTop": "Elasticity 0�1, Discard 1 Object or Psyche. Elasticity 2+, Move to Tranquil Grove or Inner Sanctum."
+    "effectTop": "Elasticity 0–1, Discard 1 Object or Psyche. Elasticity 2+, Move to Tranquil Grove or Inner Sanctum."
   },
   "rhythm-of-the-night": {
     "landscapes": [
@@ -574,7 +574,7 @@
     "landscapes": [
       "endless-ocean"
     ],
-    "effectTop": "Willpower 0�1, Flip Leviathan. Willpower 2+, Move 2 toward Endless Ocean."
+    "effectTop": "Willpower 0–1, Flip Leviathan. Willpower 2+, Move 2 toward Endless Ocean."
   },
   "syrup-lake": {
     "landscapes": [
@@ -612,7 +612,7 @@
       "sea-of-teeth",
       "inner-sanctum"
     ],
-    "effectTop": "Willpower 0�1: Draw 1 Psyche. Willpower 2+, Draw 1 Psyche and Return 3."
+    "effectTop": "Willpower 0–1: Draw 1 Psyche. Willpower 2+, Draw 1 Psyche and Return 3."
   },
   "tartar-algae": {
     "landscapes": [

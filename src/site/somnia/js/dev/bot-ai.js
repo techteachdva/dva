@@ -32,6 +32,12 @@ import {
   confirmRepressStep,
 } from "../dreamers/subconscious.js";
 import { activeQuestLandscapeIds } from "../dreamers/quests.js";
+import {
+  mindRunway, wantsRemember, pickRememberChoice, pickReturnInstance, pickHandLoss,
+  rememberObject, rememberObjectReady, memoryTiles, memoryTileOpen, bestRowArchetype, readyArchetype,
+  LOW_RUNWAY, handSurplus,
+} from "./bot-policy.js";
+import { focusRowArchetype } from "../core/state.js";
 import { handLimitForPlayer, resolveNothingChoice } from "../effects/objects.js";
 import { revealableTiles, forgettableTiles, cancelLandscapePick } from "../board/landscapes.js";
 import { getEventResolution } from "../effects/event-resolutions.js";
@@ -138,9 +144,7 @@ export function pickMindstreamChoice(state, skill = "skilled") {
       const hand = psycheHandCount(player);
       const disaster = [
         "spawnEncountersOnDreamers",
-        "flipLeviathan",
         "forgetLandscapes",
-        "skipNextExplore",
         "meetOnlyThisRound",
         "discardDream",
         "discardPsycheAll",
@@ -256,6 +260,13 @@ export function botThoughtOpener(pick) {
 
 function spectatorDest(state, player) {
   if (state.acquiredPoints >= state.goalPoints && !state.finalRecurrence) return "bed";
+  if (!state.finalRecurrence && (state.subconscious?.psyche || []).length > 0 && !rememberObject(player, "persistent")
+    && (mindRunway(state) <= LOW_RUNWAY || handSurplus(player) >= 2)) {
+    const here = landscapeById(state, player.landscapeId);
+    const tiles = memoryTiles(state);
+    const near = here ? [...tiles].sort((a, b) => hexDistance(here, a) - hexDistance(here, b))[0] : tiles[0];
+    if (near) return near.id;
+  }
   if (state.finalRecurrence) {
     // Prefer a final tile where this Dreamer already holds opposing Psyche.
     const finals = state.board.filter((t) => undefeatedFinalArchetypes(t).length);
@@ -387,13 +398,12 @@ function resolveSpectatorPendings(state, skill, helpers) {
       continue;
     }
     if (state.pendingReturn) {
-      const cards = listSubconsciousCards(state);
-      const card = cards.find((c) => !state.pendingReturn.picked.some((p) => p.instanceId === c.instanceId));
-      if (!card) {
+      const id = pickReturnInstance(state, state.pendingReturn.picked || []);
+      if (!id) {
         state.pendingReturn = null;
         break;
       }
-      pickReturnCard(state, card.instanceId);
+      pickReturnCard(state, id);
       acted = true;
       continue;
     }
@@ -406,7 +416,9 @@ function resolveSpectatorPendings(state, skill, helpers) {
       }
       const player = state.players.find((p) => p.id === pending.playerId) || alive(state)[0];
       const pool = pending.source === "objects" ? (player?.objects || []) : (player?.hand || []);
-      const card = pool.find((c) => !pending.picked.some((p) => p.instanceId === c.instanceId));
+      const card = pending.source === "objects"
+        ? pool.find((c) => !pending.picked.some((p) => p.instanceId === c.instanceId))
+        : pickHandLoss(player, pending);
       if (!card) {
         confirmRepressStep(state);
         acted = true;
@@ -429,8 +441,9 @@ function resolveSpectatorPendings(state, skill, helpers) {
       continue;
     }
     if (state.pendingEffectChoice) {
+      const remember = pickRememberChoice(state, state.pendingEffectChoice);
       const choices = (state.pendingEffectChoice.choices || []).filter((c) => !c.disabled);
-      resolveEffectChoice(state, choices[0]?.id || "confirm", helpers);
+      resolveEffectChoice(state, remember || choices[0]?.id || "confirm", helpers);
       acted = true;
       continue;
     }
@@ -623,6 +636,11 @@ export function createSpectatorBot({
       }
     }
 
+    if (!state.finalRecurrence) {
+      const best = bestRowArchetype(state);
+      if (best && state.activeArchetype?.id !== best.id) focusRowArchetype(state, best.id);
+    }
+
     if (phase === "Meet" && (state.meetActionBudget || 0) > 0
       && state.meetActionsUsed < state.meetActionBudget) {
       const holder = state.meetPassHolderId
@@ -650,6 +668,43 @@ export function createSpectatorBot({
             api.meetEncounter(state, mode, { instant: true });
             renderAll?.();
             return true;
+          }
+        }
+
+        // 41.0: Acquire whichever row Dream is already true.
+        const ready = readyArchetype(state);
+        if (ready && api.handleQuestComplete) {
+          focusRowArchetype(state, ready.id);
+          const before = state.acquiredPoints;
+          api.handleQuestComplete(state, 0);
+          if (state.acquiredPoints !== before) {
+            think(`The table Acquires ${ready.name}`);
+            renderAll?.();
+            return true;
+          }
+        }
+
+        // 41.0 Mind-keeper: Remember with a ready Object or an open Memory tile.
+        if (wantsRemember(state, holder)) {
+          const obj = rememberObjectReady(state, holder);
+          if (obj && api.playObject) {
+            const before = state.meetActionsUsed;
+            api.playObject(state, obj.instanceId);
+            if (state.meetActionsUsed > before || state.pendingEffectChoice || state.pendingReturn) {
+              think(`${holder.name} taps ${obj.name} to Remember`);
+              renderAll?.();
+              return true;
+            }
+          }
+          if (memoryTileOpen(state, tile) && api.performLandscapeAction) {
+            state.selectedLandscapeId = tile.id;
+            const before = state.meetActionsUsed;
+            api.performLandscapeAction(state, "remember-2");
+            if (state.meetActionsUsed > before || state.pendingEffectChoice || state.pendingReturn) {
+              think(`${holder.name} Remembers on ${tile.name}`);
+              renderAll?.();
+              return true;
+            }
           }
         }
 

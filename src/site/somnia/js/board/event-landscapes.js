@@ -64,25 +64,13 @@ export function outerLandscapeStats(state) {
 }
 
 /** Shrink a Bright count when most of the map is still Wasteland. A full map pays the printed amount. */
-export function scaleEventCount(base, state) {
-  const n = Number(base) || 0;
-  if (n <= 0) return n;
-  const { awake, total } = outerLandscapeStats(state);
-  if (!total || awake >= total) return n;
-  return Math.max(1, Math.round(n * (awake / total)));
+/** 41.0: Bright pays what it prints. The awake-map shrink is gone. */
+export function scaleEventCount(base, _state) {
+  return Number(base) || 0;
 }
 
-export function eventRewardSentence(state, baseCount) {
-  const { awake, total } = outerLandscapeStats(state);
-  if (!total) return "";
-  if (awake >= total) return "The whole map is awake, so Bright pays in full.";
-  const base = Number(baseCount) || 0;
-  if (base > 0) {
-    const scaled = scaleEventCount(base, state);
-    if (scaled === base) return `${awake} of ${total} Landscapes are awake. Bright pays in full.`;
-    return `${awake} of ${total} Landscapes are awake, so Bright pays ${scaled} instead of ${base}.`;
-  }
-  return `${awake} of ${total} Landscapes are awake, so Bright pays less than on a fully revealed map.`;
+export function eventRewardSentence(_state, _baseCount) {
+  return "";
 }
 
 /** Plain sentence for why Bright is open or greyed out. */

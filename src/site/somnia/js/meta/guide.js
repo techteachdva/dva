@@ -14,6 +14,9 @@ import {
   totalStat,
 } from "../core/rules.js";
 import { footerCreditsHtml } from "../audio/audio.js";
+import { playerPrimerHtml, glossaryPanelHtml, bindGuideHub } from "./glossary.js";
+
+export { bindGuideHub, playerPrimerHtml };
 
 const TUTORIAL_KEY = "somnia_tutorial_seen";
 const BASIC_TUTORIAL_KEY = "somnia_basic_tutorial_complete";
@@ -32,7 +35,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "goal",
     title: "How You Win",
-    body: "Complete quests on the Active Archetype (right panel), acquire it for points, and repeat until you reach your goal. Round 1's Dream is already drawn. Later rounds, the Head Dreamer draws a new Dream.",
+    body: "Three Archetypes are face up (right panel). Make both quests true on any one of them, Acquire it for points, and a new one takes its place. Repeat until you reach your goal. Round 1's Dream is already drawn. Later rounds, the Head Dreamer draws a new Dream.",
     target: "#active-archetype",
   },
   {
@@ -58,7 +61,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "meet",
     title: "Meet Phase",
-    body: "Discuss who spends Willpower, then select 1 Willpower and press **Gain Actions** beside that Psyche. Click a Dreamer or occupied Landscape for Meet actions. Encounters, Landscape actions, and Persistent Objects spend 1 action. Trade is free. A Power Token opens a phase, adds a die before the roll, or uses a Dreamer or Archetype power. Acquire is free once both quests are true. For Encounters, only the Dreamer on that Landscape may spend Psyche (up to 3).",
+    body: "Discuss who spends Willpower, then select 1 Willpower and press **Gain Actions** beside that Psyche. Click a Dreamer or occupied Landscape for Meet actions. Encounters, Landscape actions, and Persistent Objects spend 1 action (each Persistent Object taps once per Meet). Trade is free. A Power Token opens a phase, adds a die before the roll, or uses a Dreamer or Archetype power. Acquire is free once both quests are true. For Encounters, only the Dreamer on that Landscape may spend Psyche (up to 3).",
     target: "#board-viewport",
     phase: "Meet",
   },
@@ -454,18 +457,8 @@ export const RULES_TAB_DETAILS = "details";
 export function tutorialBriefHtml() {
   return `
     <div class="rules-page tutorial-brief-page">
-      <p class="rules-lead">Two Dreamers, The Visionary and The Immovable, on the current table. Capture The Innocent. One suited Psyche opens a phase for both of you. The opener shows both hands. Draw the Dream and take Dim when Bright would spend cards you still need. Follow the sparkles.</p>
-      <section class="overview-block tutorial-brief-outcomes">
-        <h3>You will learn</h3>
-        <ul>
-          <li>Bright and Dim on the Dream, then Skip Phase when you should not spend</li>
-          <li>Open Reveal, Explore, and Meet from the phase opener</li>
-          <li>A short Repress you are meant to lose, then an Accept you stack and win</li>
-          <li>Pass the turn between two Dreamers</li>
-          <li>The Innocent: a Lucidity Mindstream draw, and a Lucidity Dreambeast</li>
-        </ul>
-        <p>Finish this lesson and the <strong>Advanced Tutorial</strong> unlocks: trade, objects, the other powers, death, and the boss on The Bed. You can also Begin Dreaming now, or skip this lesson and return to it from the menu.</p>
-      </section>
+      ${playerPrimerHtml()}
+      <p class="player-primer-next">The sparkles show every click. Finish this lesson and the Advanced Tutorial unlocks. Open <strong>?</strong> anytime for this page and the glossary.</p>
     </div>
   `;
 }
@@ -493,16 +486,21 @@ export function rulesIntroHtml() {
   return `
     <div class="rules-page rules-page-intro">
       <h2>Somnia</h2>
-      <p class="rules-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
+      <p class="rules-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before you forget yourself.</p>
 
       <section class="overview-block">
         <h3>How You Win</h3>
-        <p>When both quests on the <strong>Active Archetype</strong> are already true, <strong>Acquire</strong> is free. Innocent, Orphan, and Outlaw (2 points) ask you to Draw Mindstream on any Landscape of their suit and Meet a Dreambeast of that suit. The 3-point Archetypes still name two Landscapes for each quest. <strong>Magician, Warrior, and Sage</strong> require defeating their boss and one Dreamer sacrificing one Object. Repeat until you reach your goal (<strong>8 / 12 / 24</strong> for Daydream, Nap, or Deep Sleep). Then every living Dreamer must stand on <strong>The Bed</strong> before the Dream Deck ends.</p>
+        <p>Three <strong>Archetypes</strong> are face up. When both quests on any one of them are already true, <strong>Acquire</strong> is free, and the next Archetype takes its place. Innocent, Orphan, and Outlaw (2 points) ask you to Draw Mindstream on any Landscape of their suit and Meet a Dreambeast of that suit. The 3-point Archetypes still name two Landscapes for each quest. <strong>Magician, Warrior, and Sage</strong> require defeating their boss and one Dreamer sacrificing one Object. Repeat until you reach your goal (<strong>8 / 12 / 24</strong> for Daydream, Nap, or Deep Sleep). Then every living Dreamer must stand on <strong>The Bed</strong> before the Dream Deck ends.</p>
       </section>
 
       <section class="overview-block">
         <h3>How You Lose</h3>
-        <p>The <strong>Death Clock</strong> reaches 6. Or the <strong>Dream Deck</strong> empties before you reach your goal (<strong>11 / 14 / 18</strong> regular Dreams for Daydream, Nap, or Deep Sleep, plus Final Recurrence cards and three boss Dreams). The table also loses if the <strong>Psyche Deck</strong> and its discard are both empty, or if any Mindstream suit is entirely Repressed. In <strong>Final Recurrence</strong>, you lose if Dreams run out while Remaining Archetypes still stand on the map.</p>
+        <p>Three ways to lose. <strong>The Waking Mind runs dry:</strong> the Psyche deck and its discard are both empty (the <strong>Mind</strong> counter in the top bar, with what dusk will take). <strong>The sixth death</strong> on the shared Death Clock. <strong>The night ends:</strong> the Dream Deck empties before you reach your goal (<strong>11 / 14 / 18</strong> regular Dreams for Daydream, Nap, or Deep Sleep). In <strong>Final Recurrence</strong>, the two cheapest Archetypes left stand on The Bed; defeat both within <strong>3 rounds</strong> or you never wake.</p>
+      </section>
+
+      <section class="overview-block">
+        <h3>Remember</h3>
+        <p>Every Dreambeast still standing at dusk Represses 1 Psyche from the Waking Mind. <strong>Remember N</strong> wins it back: discard up to N Psyche from your hand, then Return that many <strong>plus 1</strong> from the Subconscious. Every Psyche you Return is +1 Mind. Remember comes from recognizable places: the four <strong>Memory</strong> Landscapes (Tranquil Grove, Silver Mist, Day in the Life, Black Void — Remember 2), Persistent <strong>Remember Objects</strong> (1 Meet action), fixed <strong>Bright</strong> choices on Dreams and Events, and the Innocent and Fool.</p>
       </section>
 
       <section class="overview-block">
@@ -528,7 +526,7 @@ export function rulesIntroHtml() {
             <li><strong>Round 1:</strong> each Dreamer starts with <strong>5 Psyche</strong></li>
             <li><strong>Round 2+:</strong> alive Dreamers draw <strong>2 Psyche</strong> at round start</li>
             <li><strong>One Dreamer per phase</strong> spends 1 suited card to set the team budget</li>
-            <li>Unresolved Dreambeasts stay on the map. When the round ends, each one Represses 1 Psyche from the deck. During Final Recurrence, each undefeated Archetype does that instead. Fail hits only when Accept or Repress loses</li>
+            <li>Unresolved Dreambeasts stay on the map, each with a −1 badge. When the round ends, each one Represses 1 Psyche from the Waking Mind. During Final Recurrence, each undefeated Archetype does that instead. Fail hits only when Accept or Repress loses</li>
           </ul>
         </div>
       </section>
@@ -538,7 +536,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 40.4. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 41.0. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -561,7 +559,7 @@ export function rulesRemHtml() {
             <li><strong>Setup:</strong> every Landscape is shuffled. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten</li>
             <li><strong>Reveal budget</strong> = that 1 card's value + Lucidity bonuses (Dreamer, Objects, Acquired Archetypes) → click that many Wasteland hexes to flip Landscapes face-up</li>
             <li><strong>Unused Reveals</strong> draw 1 Psyche each, one Dreamer at a time, clockwise. If the map is already face-up, the whole Lucidity budget draws Psyche this way</li>
-            <li>Draw the Dream and spend Lucidity in either order during Reveal</li>
+            <li>Draw the Dream first, then spend Lucidity</li>
             <li><strong>Round 1:</strong> each Dreamer already has 5 Psyche — no round-start draw</li>
             <li><strong>Round 2+:</strong> each alive Dreamer draws <strong>2 Psyche</strong> at the start of Reveal</li>
           </ul>
@@ -585,14 +583,14 @@ export function rulesRemHtml() {
           <ul>
             <li><strong>Start:</strong> each Boss steps 1 hex toward the nearest Dreamer, unless a Dreamer already shares its hex. There is no hand tax</li>
             <li><strong>Middle:</strong> action budget = that 1 card's value + Willpower bonuses. Spend on Encounters and Landscape actions. Accept and Repress are <strong>dice battles</strong>. You need at least 1 Psyche of the required suit (1–3 cards; allies extra). Beast Power = its dice. Recommended Dreamer Power is beast Power + 2 — you may play less and get lucky. +1d6 for matching Fantasy/Nightmare type and +1d6 for matching the beast's suit. Up to 3 Power Tokens add +1d6 each. 5s and 6s succeed</li>
-            <li><strong>End of the round:</strong> each Dreambeast still on the board Represses 1 Psyche from the deck. During Final Recurrence, count undefeated Archetypes instead. If the Psyche deck and discard are both empty, you lose. Beasts stay until Accepted or Repressed. Fail hits only when Accept or Repress loses</li>
-            <li>Each Landscape offers <strong>Draw Mindstream</strong> (repeatable) and one <strong>unique action</strong> (once per table this Meet). <strong>The Bed</strong> has Draw 3 Psyche, once per Dreamer this Meet</li>
+            <li><strong>End of the round (dusk):</strong> each Dreambeast still on the board Represses 1 Psyche from the Waking Mind. During Final Recurrence, count undefeated Archetypes instead. If the Psyche deck and discard are both empty, you lose. Beasts stay until Accepted or Repressed. Fail hits only when Accept or Repress loses</li>
+            <li>Each Landscape offers <strong>Draw Mindstream</strong> (repeatable) and one <strong>unique action</strong> (once per table on that Landscape this Meet). A Landscape's suit tells you its verb: <strong>Lucidity</strong> sees and remembers (Remember 2, Flip Top 3, Draw 2 Keep 1, Swap Landscapes; Awards takes Power), <strong>Elasticity</strong> moves Dreamers, <strong>Willpower</strong> fights and bodies (spawn and move Dreambeasts, Cycle Psyche, Take Power). <strong>The Bed</strong> has Draw 3 Psyche, once per Dreamer this Meet</li>
             <li><strong>Opening:</strong> any Dreamer may spend the suited Psyche, no matter whose turn it was. The Dreamer who opens takes the first action</li>
             <li><strong>Pass Token:</strong> after that first action, Pass Turn or Give Turn moves clockwise through the remaining shared actions. Next Phase can still end Meet early</li>
             <li><strong>Dreamer passives,</strong> once a round, free: Runner's first move costs no team move. Hunter may shove the beast 1 hex after their first battle if it stays. Rested draws 1 Psyche at round end if they opened no phase. Weaver swaps 1 Psyche with an adjacent Dreamer once per Meet</li>
             <li><strong>Unused Meet actions</strong> draw 1 Psyche each, one Dreamer at a time. Ending Meet draws whatever is left the same way</li>
             <li>Innocent, Orphan, and Outlaw ask for a Mindstream draw on any Landscape of their suit and a Meet against a Dreambeast of that suit. The 3-point Archetypes still name two Landscapes. Magician, Warrior, and Sage require defeating their boss and one Dreamer sacrificing one Object</li>
-            <li><strong>During Meet:</strong> Trade up to 3 Psyche with a Dreamer on the same or adjacent hex, and that is free. Declare up to 3 Power Tokens for +1d6 each before the dice roll. A Dreamer or Archetype Power costs 1 token. A Persistent Object costs 1 Meet action. Acquire is free once both quests are already true</li>
+            <li><strong>During Meet:</strong> Trade up to 3 Psyche with a Dreamer on the same or adjacent hex, and that is free. Declare up to 3 Power Tokens for +1d6 each before the dice roll. A Dreamer or Archetype Power costs 1 token. A Persistent Object costs 1 Meet action and taps once per Meet. Acquire is free once both quests on any face-up Archetype are already true</li>
             <li><strong>After the dice land</strong>, stand. Ties favor the beast. A token cannot change the dice after they land.</li>
             <li>Using an Instant Object Represses it</li>
           </ul>
@@ -622,7 +620,7 @@ export function rulesDetailsHtml() {
       <h3>Guided Tutorial</h3>
       <ul>
         <li>The guided tutorial plays opener rotation, a scripted loss where you Stand after the dice, beast reach, the Meet Pass, a stacked rematch, Mindstreams, quests, and powers. The guide window docks on the map. Drag the header or resize the corner if you want it elsewhere.</li>
-        <li>Follow the sparkle. <strong>Draw Dream</strong> is left of Next Phase. The opener shows both hands: spend 1 suited Psyche, then Open Reveal, Explore, or Meet. <strong>Skip Phase</strong> leaves a phase unopened. Click a Dreamer or a Landscape for the fight and the hex action. Commit the Active Archetype once both quests are true. Every required click is highlighted. <strong>Back</strong> sits at the top-left of the map if you need to undo.</li>
+        <li>Follow the sparkle: <strong>Draw Dream</strong> is left of Next Phase. Select 1 Psyche, then press the button beside it to open Reveal, Explore, or Meet. Click a Dreamer or an occupied Landscape for landscape options. Click Commit on the Active Archetype once both quests are true, or spend a Power Token. Every required click is highlighted, including hand cards, hexes, and Next Phase. <strong>Back</strong> sits at the top-left of the map if you need to undo.</li>
         <li>Each step shows a punchy Objective plus one or two sentences of why that action matters. <strong>?</strong> and Pause → Help stay available after you graduate.</li>
       </ul>
 
@@ -640,9 +638,9 @@ export function rulesDetailsHtml() {
         <li>Only the Dreamer <strong>standing on the Landscape</strong> may Meet the Encounter and pool Psyche (up to <strong>3</strong> cards; allies do not count toward the 3-card spread and may be any number)</li>
         <li><strong>Dice battle</strong> — at least 1 Psyche of the required suit. Beast <strong>Power</strong> is how many d6 it rolls (the old Accept/Repress cost). Recommended Dreamer Power is beast Power + 2; you may play less. Your Power is Psyche played (Nightmare/Fantasy and Suit bonuses included) plus matching Dreamer stat, +1d6 type, +1d6 suit, and +1d6 per Power Token on the spread (max 3). A 5 or 6 is a success. Most successes wins (ties favor the beast). Pools display up to 22d6</li>
         <li><strong>Accept</strong> (win) — beast joins hand as an ally worth half its Power, rounded down. Allies do not count toward the 3-card spread</li>
-        <li><strong>Repress</strong> (win) — same Power, opposing suit; the beast goes to the Subconscious; resolve the printed reward</li>
+        <li><strong>Repress</strong> (win) — same Power, paid in the next suit of the cycle: <strong>Lucidity represses Willpower, Willpower represses Elasticity, Elasticity represses Lucidity</strong>. The beast goes to the Subconscious; resolve the printed reward</li>
         <li><strong>Lose the battle</strong> — Psyche and Power Tokens in the play are spent. The beast stays. Fail resolves when Accept or Repress loses. Leaving a hex is Explore</li>
-        <li><strong>Round end</strong> — each Dreambeast still on the board Represses 1 Psyche from the deck. During Final Recurrence, each undefeated Archetype does that instead. An empty Psyche deck and discard loses the game. Beasts remain until Accepted or Repressed</li>
+        <li><strong>Dusk</strong> — each Dreambeast still on the board Represses 1 Psyche from the Waking Mind. During Final Recurrence, each undefeated Archetype does that instead. An empty Waking Mind (Psyche deck and discard) loses the game. Beasts remain until Accepted or Repressed</li>
         <li>Meet bonuses: +1d6 if fantasy/nightmare affinity matches; +1d6 if primary suit matches the Dreambeast's suit; jewelry/stick Objects +1 each; body tag doubles highest card</li>
         <li>Spent allies are Repressed to the Subconscious. Spent Psyche, including Wild, goes to the discard</li>
       </ul>
@@ -663,7 +661,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Power Tokens</h3>
-      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Cards grant tokens only from Mindstream: take 1, or Return one Subconscious card per Dreamer. A token does three things: open a phase when nobody spends a suited card (<strong>1 plus that Dreamer's suited stat</strong>), add <strong>+1d6</strong> to a spread before the roll (max <strong>3</strong>), or use a Dreamer or Archetype power. Acquire is free once both quests are true. A Persistent Object costs 1 Meet action. Dying returns held tokens to the pool.</p>
+      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Cards grant tokens only from Mindstream: take 1, or Return one Subconscious card per Dreamer. A token does three things: open a phase when nobody spends a suited card (<strong>1 plus that Dreamer's suited stat</strong>), add <strong>+1d6</strong> to a spread before the roll (max <strong>3</strong>), or use a Dreamer or Archetype power. Acquire is free once both quests are true. A Persistent Object costs 1 Meet action, not a token. Dying returns held tokens to the pool.</p>
 
       <h3>Dreamer Powers</h3>
       <p>Each costs <strong>1 Power Token</strong> and can be used in any phase. Lucidity Dreamers help Reveal, Elasticity Dreamers help Explore, Willpower Dreamers help Meet.</p>
@@ -677,15 +675,15 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Archetypes &amp; Quests</h3>
-      <p>Active Archetype shows 2 quests. When both are already true, Acquire is free, for <strong>2, 3, or 4</strong> points. <strong>Magician, Warrior, and Sage are worth 4</strong>. They grant passive stat bonuses only. Their quests are defeating that boss and one living Dreamer sacrificing one Object. Innocent, Orphan, and Outlaw are the 2-point Archetypes: Draw Mindstream on any Landscape of their suit, and Meet a Dreambeast of that suit. The 3-point Archetypes still name two Landscapes for each quest. Their powers cost 1 Power Token.</p>
+      <p>Three Archetypes are face up, each with 2 quests. When both quests on any one are already true, Acquire is free, for <strong>2, 3, or 4</strong> points, and the next Archetype fills the row. The 4-point Archetypes sit in the bottom half of the deck, after the first bosses. <strong>Magician, Warrior, and Sage are worth 4</strong>. They grant passive stat bonuses only. Their quests are defeating that boss and one living Dreamer sacrificing one Object. Innocent, Orphan, and Outlaw are the 2-point Archetypes: Draw Mindstream on any Landscape of their suit, and Meet a Dreambeast of that suit. The 3-point Archetypes still name two Landscapes for each quest. Their powers cost 1 Power Token.</p>
       <ul>
-        <li><strong>Innocent</strong> — Return 4 cards of any type from the Subconscious.</li>
+        <li><strong>Innocent</strong> — Remember 3.</li>
         <li><strong>Orphan</strong> — everyone draws 2 Psyche.</li>
         <li><strong>Outlaw</strong> — the acting Dreamer draws 1 Object from the discard.</li>
         <li><strong>Caregiver</strong> — the Dreamer with the fewest Psyche draws 5, up to the hand limit.</li>
         <li><strong>Lover</strong> — Return 1 Object from the Subconscious.</li>
         <li><strong>Explorer</strong> — move 1 Dreamer or 1 Dreambeast to any Landscape of its suit.</li>
-        <li><strong>Fool</strong> — Return Dreamers+2 cards from the Subconscious.</li>
+        <li><strong>Fool</strong> — Remember Dreamers+1.</li>
         <li><strong>Creator</strong> — each Dreamer returns 1 Dreambeast from the Subconscious.</li>
         <li><strong>Ruler</strong> — each Dreamer returns 1 Event from the Subconscious.</li>
       </ul>
@@ -694,16 +692,16 @@ export function rulesDetailsHtml() {
       <ul>
         <li><strong>Object decks</strong> — three piles, one per suit. You acquire an Object only by drawing a Mindstream that says so, by successfully Accepting a Dreambeast, or as part of a Dream card. An empty pile reshuffles its discard. These decks do not end the dream</li>
         <li><strong>Instant</strong> — play from hand during Meet; the Object is then <strong>Repressed</strong></li>
-        <li><strong>Persistent</strong> — the only Object that stays in play. Activating it costs 1 Meet action</li>
+        <li><strong>Persistent</strong> — the only Object that stays in play. Activating it costs 1 Meet action, once per Meet. <strong>Remember Objects</strong> (Candle, Mirror, Flower, Psychic Owl, Tear of the Moon, Egg, Red Apple, Possibility Polyhedral, Hammer, Spark of Sun, Monkey Paw, The All) tap to Remember</li>
         <li><strong>Must-play</strong> — this Instant resolves when drawn, then is Repressed</li>
         <li><strong>Sets</strong> — 3 sticks, 3 jewelry, 3 chess, 4 elements, or 5 body parts. Completing any set lets you pick an Archetype still in the deck and Acquire it at once. The set is then Repressed. If the deck is empty, the set stays</li>
       </ul>
 
       <h3>Subconscious, Trade &amp; Landscapes</h3>
       <ul>
-        <li><strong>Subconscious</strong> — face-up Repressed piles (Psyche, Dreambeasts, Mindstream by suit, Objects). Return puts those cards back into their discards so they can be drawn again. Clearing every card sparks the table, then the Head Dreamer may search the Dream discard and replay one Dream. It stays in the discard and does not spend the round's draw. A Mindstream suit left entirely in the Subconscious ends the dream</li>
+        <li><strong>Subconscious</strong> — face-up Repressed piles (Psyche, Dreambeasts, Mindstream by suit, Objects). Return puts those cards back into their discards so they can be drawn again; a Returned Psyche is +1 Waking Mind. <strong>Remember N</strong>: discard up to N Psyche, then Return that many +1</li>
         <li><strong>Trade</strong>: free during Meet. Partner stands on the same or adjacent hex. The trade window shows both hands, and each Dreamer offers up to 3 Psyche.</li>
-        <li><strong>Landscape actions</strong> — Draw matching Mindstream as often as you have Meet actions. Each unique Landscape action is once per table this Meet. <strong>The Bed:</strong> Draw 3 Psyche, once per Dreamer this Meet. Quests still name their Landscape even if it is forgotten</li>
+        <li><strong>Landscape actions</strong> — Draw matching Mindstream as often as you have Meet actions. Each unique Landscape action is once per table on that Landscape this Meet. <strong>The Bed:</strong> Draw 3 Psyche, once per Dreamer this Meet. Quests still name their Landscape even if it is forgotten</li>
         <li><strong>Map setup</strong> — shuffle every Landscape. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten. Further Reveals require 1 Lucidity Psyche</li>
         <li><strong>Forget</strong> — turns Landscapes to Wasteland; Encounters Repressed; Dreamers there lose 1 Psyche. If all outer tiles are Wasteland → <strong>Final Recurrence</strong></li>
       </ul>
@@ -715,7 +713,7 @@ export function rulesDetailsHtml() {
       <p>A Dreamer with <strong>no Psyche</strong> who must pay even one dies. The Death Clock ticks. Their Objects are cleared and their tokens return to the pool. They redraw <strong>3 Psyche</strong> on <strong>The Bed</strong>. The Mindstream is not touched. The <strong>sixth death</strong>, shared by the whole table, ends the night at once.</p>
 
       <h3>Final Recurrence</h3>
-      <p>Triggered when <strong>The Final Recurrence</strong> is drawn (first of the ten endgame Dreams), or when every outer Landscape has been forgotten. The Bed cannot be forgotten. Goal points reset. Each remaining Archetype appears on a Landscape named in its quests, or on a revealed Landscape of its suit, or on The Bed. Defeat each with a Meet action: pool up to 3 Psyche from the table, including that Archetype's suit, and win a dice battle against <strong>Power 12</strong>. A win Acquires the Archetype immediately and its power is ready. Win by clearing every Remaining Archetype. If the Dream Deck runs out first, you never wake up.</p>
+      <p>Triggered when <strong>The Final Recurrence</strong> is drawn (first of the ten endgame Dreams), or when every outer Landscape has been forgotten. The Bed cannot be forgotten. Goal points reset. <strong>The two cheapest Archetypes left</strong> (from the row and deck) appear on <strong>The Bed</strong>. Defeat each with a Meet action: pool up to 3 Psyche from the table, including that Archetype's suit, and win a dice battle against <strong>Power 12</strong>. A win Acquires the Archetype immediately and its power is ready. Clear them all within <strong>3 rounds</strong> to wake. Each one still standing at dusk Represses 1 from the Waking Mind.</p>
     </div>
   `;
 }
@@ -727,12 +725,18 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 40.4</p>
+          <p class="info-hub-kicker">Somnia v 41.0</p>
           <h2>Dream Guide</h2>
-          <p class="info-hub-lead">You wake within a place you've never been, with a feeling like you've never left. Capture the Archetypes. Stand together on The Bed. Wake before the Dream Deck runs out.</p>
+          <p class="info-hub-lead">Capture the Archetypes. Stand on The Bed. Wake before the Dream Deck runs out.</p>
+        </div>
+        <div class="info-hub-tabs" role="tablist" aria-label="Dream Guide">
+          <button type="button" class="is-on" role="tab" data-guide-tab="now" aria-selected="true">Now</button>
+          <button type="button" role="tab" data-guide-tab="primer" aria-selected="false">Primer</button>
+          <button type="button" role="tab" data-guide-tab="glossary" aria-selected="false">Glossary</button>
         </div>
         <button type="button" class="btn primary info-hub-play" data-info-hub-play>PLAY</button>
       </header>
+      <div class="info-hub-panel" data-guide-panel="now">
       <div class="info-hub-grid">
         <section class="info-hub-feed" aria-label="Dream Feed">
           ${feedHtml}
@@ -740,24 +744,25 @@ export function infoHubHtml(options = {}) {
         <section class="info-hub-rules" aria-label="Rules highlights">
           <div class="info-hub-rule">
             <h3>Win &amp; Lose</h3>
-            <p><strong>Win:</strong> when both Active Archetype quests are already true, <strong>Acquire</strong> is free, for 2, 3, or 4 points. Repeat until the goal. Magician, Warrior, and Sage are worth 4: defeat their boss, and have one Dreamer sacrifice one Object. Daydream asks for <strong>8</strong>, Nap for <strong>12</strong>, Deep Sleep for <strong>24</strong>. Then stand together on <strong>The Bed</strong> before the Dream Deck ends.</p>
-            <p><strong>Lose:</strong> the Death Clock reaches 6, the Dream Deck empties first, the Psyche Deck and discard are both empty, or any Mindstream suit is entirely Repressed in the Subconscious. A top-of-screen warning appears when those decks hit 10%, stays flashing at 5%, and makes the table unstable at 1%. In Final Recurrence you lose if Dreams run out while remaining Archetypes still stand.</p>
+            <p><strong>Win:</strong> three Archetypes are face up. When both quests on any one are already true, <strong>Acquire</strong> is free, for 2, 3, or 4 points, and the next fills the row. Repeat until the goal. Magician, Warrior, and Sage are worth 4: defeat their boss, and have one Dreamer sacrifice one Object. Daydream asks for <strong>8</strong>, Nap for <strong>12</strong>, Deep Sleep for <strong>24</strong>. Then stand together on <strong>The Bed</strong> before the Dream Deck ends.</p>
+            <p><strong>Lose:</strong> the Waking Mind runs dry (Psyche deck and discard both empty — watch the <strong>Mind</strong> counter and its dusk forecast), the sixth death, or the Dream Deck empties before the goal. In Final Recurrence you lose if an Archetype still stands on The Bed after 3 rounds.</p>
+            <p><strong>Remember N:</strong> discard up to N Psyche, Return that many +1 from the Subconscious. Memory Landscapes (Remember 2), Remember Objects, fixed Brights, and the Innocent and Fool all Remember.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Play Together</h3>
-            <p>${COOP_PLAY_TIP} Opening costs <strong>1 suited Psyche</strong> (or <strong>1 Power Token as 1 plus that suited stat</strong>). Budget = that card's value + Dreamer, Object, and Acquired Archetype bonuses. Bright is the paid path. Dim is free. The card remembers which one you chose.</p>
+            <p>${COOP_PLAY_TIP} Opening costs <strong>1 suited Psyche</strong> (or <strong>1 Power Token as 1 plus that suited stat</strong>). Budget = that card's value + that Dreamer's stat. Acquired Sage, Magician, and Warrior add +1 to everyone. Objects change the dice, not the budget. Bright is the paid path. Dim is free.</p>
           </div>
           <div class="info-hub-rule info-hub-rem">
             <h3>R.E.M. — Every Round</h3>
             <ul>
               <li class="suit-lucidity"><strong>Reveal</strong> — Head (★) draws a Dream. Spend Lucidity to flip Wastelands. Unused Reveals draw 1 Psyche each, around the table.</li>
               <li class="suit-elasticity"><strong>Explore</strong> — Spend Elasticity for shared moves. Entering Wasteland discards 1 Psyche. Unused moves draw 1 Psyche each, one Dreamer at a time.</li>
-              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Pass Turn moves around the table, one Meet action at a time. One Power: Accept befriends, Repress banishes, and 5s and 6s succeed. Beasts left behind Repress 1 Psyche from the deck each. During Final Recurrence, undefeated Archetypes do that instead. If the Psyche deck is gone, you lose. Unused Meet actions draw 1 Psyche each, around the table.</li>
+              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Pass Turn moves around the table, one Meet action at a time. One Power: Accept befriends, Repress banishes (Lucidity represses Willpower, Willpower represses Elasticity, Elasticity represses Lucidity), and 5s and 6s succeed. Beasts left behind Repress 1 Psyche from the Waking Mind each at dusk. During Final Recurrence, undefeated Archetypes do that instead. Unused Meet actions draw 1 Psyche each, around the table.</li>
             </ul>
           </div>
           <div class="info-hub-rule">
             <h3>Meet Pass</h3>
-            <p>After Meet opens, a Pass Token starts with a living Dreamer who did not open the phase. If the Head opened it, the next Dreamer clockwise holds it. They take one Meet action, or pass. Passing moves the token clockwise. A Dreamer who dies drops the token. Next Phase can still end Meet early.</p>
+            <p>The Dreamer who opens the phase takes the first action. Pass Turn then moves clockwise through whatever budget is left. Give Turn hands that budget to someone you choose. Next Phase can still end the phase early. Leftover actions draw 1 Psyche each.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Free Passives</h3>
@@ -796,10 +801,17 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Death &amp; Final Recurrence</h3>
-            <p>No Psyche when a payment is due: the Death Clock ticks, that Dreamer's Objects clear, their tokens return to the pool, and they redraw 3 Psyche on The Bed. The Mindstream is not touched. Six deaths end the night. When the outer map is gone, the remaining Archetypes are Power 12. Win those dice battles or you do not wake.</p>
+            <p>No Psyche when a payment is due: the Death Clock ticks, that Dreamer's Objects clear, their tokens return to the pool, and they redraw 3 Psyche on The Bed. The Mindstream is not touched. Six deaths end the night. In Final Recurrence, the two cheapest Archetypes left stand on The Bed at Power 12. Defeat both within 3 rounds or you do not wake.</p>
           </div>
-          <p class="info-hub-footer">Draw Dream sits left of Next Phase during Reveal. The opener shows every hand. Spend 1 suited Psyche, or 1 Power Token, then open the phase. Skip Phase leaves it unopened. Back in the top-left undoes the last action. Commit the Active Archetype once both quests are true. The Head (★) rotates at round end.</p>
+          <p class="info-hub-footer">Draw Dream sits left of Next Phase during Reveal. The opener shows every hand. Spend 1 suited Psyche, or 1 Power Token, then open the phase. Skip Phase leaves it unopened. Back in the top-left undoes the last action. Acquire is free once both quests are true. The Head (★) rotates at round end.</p>
         </section>
+      </div>
+      </div>
+      <div class="info-hub-panel info-hub-panel-primer" data-guide-panel="primer" hidden>
+        ${playerPrimerHtml()}
+      </div>
+      <div class="info-hub-panel info-hub-panel-glossary" data-guide-panel="glossary" hidden>
+        ${glossaryPanelHtml()}
       </div>
     </div>
   `;

@@ -34,7 +34,6 @@ import {
   removeAcceptedAlly,
   applyFailEffect,
   applyAcceptEffect,
-  flipLeviathan,
 } from "../encounters/dreambeasts.js";
 import { countAffectedLandscapes } from "../board/event-landscapes.js";
 import { recordCancellableDiscard } from "../dreamers/dreamer-powers.js";
@@ -1504,28 +1503,6 @@ export function beginFromTheFire(state, player) {
   returnN(state, 2, player);
 }
 
-export function beginMouthRises(state, player, helpers) {
-  const lev = flipLeviathan(state, helpers);
-  if (lev?.awake) {
-    const dest = landscapeById(state, "endless-ocean");
-    const leviathanEntry = allEncountersOnBoard(state).find(
-      ({ encounter }) => encounter.id === "leviathan" || encounter.refId === "leviathan",
-    );
-    const from = leviathanEntry?.tile;
-    if (dest?.revealed && from && dest.id !== from.id) {
-      if (leviathanEntry) removeEncounterFromLandscape(state, from.id, leviathanEntry.encounter);
-      setEncounterOnLandscape(state, dest.id, lev);
-      addLog(state, "Leviathan moves to Endless Ocean.");
-    }
-  }
-  requestChooseTile(state, {
-    allowedIds: ["endless-ocean"].filter((id) => landscapeById(state, id)?.revealed),
-    action: "movePlayer",
-    playerId: player.id,
-    title: "A Mouth Rises",
-    detail: "Move to Endless Ocean if revealed.",
-  });
-}
 
 export function beginUndulatingFloor(state, player) {
   const dests = state.board.filter((t) => t.revealed && !t.wasteland);

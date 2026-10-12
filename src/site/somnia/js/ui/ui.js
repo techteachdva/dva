@@ -1,4 +1,4 @@
-import { getPhase, activePlayer, headPlayer, tileEncounters, encounterKey, allDreamersOnBed } from "../core/state.js";
+import { getPhase, activePlayer, headPlayer, tileEncounters, encounterKey, allDreamersOnBed, archetypeRowOf, focusRowArchetype } from "../core/state.js";
 import {
   coopMeetPlayTotal,
   meetPsycheActor,
@@ -29,6 +29,7 @@ import {
   undefeatedFinalArchetypes,
 } from "../dreamers/final-recurrence-rules.js";
 import { countBoardDreambeasts, timelineTollPreview } from "../flow/phase-skip.js";
+import { wakingMindCount, duskMillCount } from "../encounters/meet-phase.js";
 import {
   DREAMER_KIND_AFFINITY,
   beastKindLabel,
@@ -69,6 +70,8 @@ import {
   rulesReferenceHtml,
   RULES_TAB_FEED,
   getDreamerChipTooltip,
+  bindGuideHub,
+  playerPrimerHtml,
 } from "../meta/guide.js";
 import {
   burstSparklesAtElement,
@@ -2576,7 +2579,8 @@ export function renderBoard(
         const title = entry.overflow
           ? `${arch.name} is on ${homeName}. Shown on the next Landscape because that hex's six corners are full.`
           : `${arch.name} — Remaining Archetype. Click to defeat or view.`;
-        return `<img class="hex-occupant-token hex-occupant-beast hex-occupant-archetype${overflow}" style="${snap}" data-archetype-id="${arch.id}" data-home-tile="${entry.homeId}" src="${arch.image}" alt="${arch.name}" title="${title}" decoding="async" draggable="false" onerror="this.remove()">`;
+        const duskBadge = arch.defeated ? "" : `<span class="hex-dusk-badge" style="${snap}" title="Still standing at dusk: Represses 1 from the Waking Mind">−1</span>`;
+        return `<img class="hex-occupant-token hex-occupant-beast hex-occupant-archetype${overflow}" style="${snap}" data-archetype-id="${arch.id}" data-home-tile="${entry.homeId}" src="${arch.image}" alt="${arch.name}" title="${title}" decoding="async" draggable="false" onerror="this.remove()">${duskBadge}`;
       }
       const encounter = entry.encounter;
       const encKey = encounterKey(encounter);
@@ -2585,7 +2589,8 @@ export function renderBoard(
       const title = entry.overflow
         ? `${encounter.name} is on ${homeName}. Shown on the next Landscape because that hex's six corners are full.`
         : `${encounter.name} — Accept, Repress, or View`;
-      return `<img class="hex-occupant-token hex-occupant-beast${arriving}${overflow}" style="${snap}" data-encounter-key="${encKey}" data-home-tile="${entry.homeId}" src="${encounter.image}" alt="${encounter.name}" title="${title}" decoding="async" draggable="false" onerror="this.remove()">`;
+      const duskBadge = arriving ? "" : `<span class="hex-dusk-badge" style="${snap}" title="Still standing at dusk: Represses 1 from the Waking Mind">−1</span>`;
+      return `<img class="hex-occupant-token hex-occupant-beast${arriving}${overflow}" style="${snap}" data-encounter-key="${encKey}" data-home-tile="${entry.homeId}" src="${encounter.image}" alt="${encounter.name}" title="${title}" decoding="async" draggable="false" onerror="this.remove()">${duskBadge}`;
     });
     const occupantsHtml = occupantTokens.length
       ? `<div class="hex-occupants">${occupantTokens.join("")}</div>`
@@ -3900,7 +3905,6 @@ export function renderActiveSlots(state, onCardClick, onQuestClick = null, onSac
   if (state.activeArchetype) {
     const card = { ...state.activeArchetype };
     const statuses = getQuestStatus(state, card);
-    const tokensOn = card.powerTokensOnArchetype || 0;
     archetypeSlot.appendChild(renderCard(card, {
       portrait: true,
       onClick: () => onCardClick(card),
@@ -3910,10 +3914,30 @@ export function renderActiveSlots(state, onCardClick, onQuestClick = null, onSac
       if (typeof onSacrificeObject === "function" && sacrificeQuestOpen(state)) {
         archetypeSlot.appendChild(renderSacrificeObjectQuest(state, onSacrificeObject));
       }
-      const tokens = document.createElement("p");
-      tokens.className = "archetype-tokens";
-      tokens.textContent = `${tokensOn}/2 Power Tokens on Archetype`;
-      archetypeSlot.appendChild(tokens);
+    }
+    const row = archetypeRowOf(state);
+    if (row.length > 1) {
+      const strip = document.createElement("div");
+      strip.className = "archetype-row-strip";
+      const lead = document.createElement("p");
+      lead.className = "archetype-row-lead";
+      lead.textContent = "Dreams to chase — Acquire whichever comes true first:";
+      strip.appendChild(lead);
+      row.forEach((arch) => {
+        const status = getQuestStatus(state, arch);
+        const met = status.filter((q) => q.conditionMet).length;
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = `archetype-row-chip${arch === state.activeArchetype ? " is-focused" : ""}${met === status.length && status.length ? " is-ready" : ""}`;
+        chip.title = `${arch.name} (${arch.points} pts): ${(arch.quests || []).join(" · ")}`;
+        chip.innerHTML = `<span class="archetype-row-name">${arch.name}</span><span class="archetype-row-points">${arch.points} pts</span><span class="archetype-row-met">${met}/${status.length}</span>`;
+        chip.addEventListener("click", () => {
+          focusRowArchetype(state, arch.id);
+          renderActiveSlots(state, onCardClick, onQuestClick, onSacrificeObject);
+        });
+        strip.appendChild(chip);
+      });
+      archetypeSlot.appendChild(strip);
     }
   } else {
     archetypeSlot.textContent = "No active Archetype.";
@@ -4052,17 +4076,21 @@ export function renderHud(state, hint = "") {
   const pointsEl = document.getElementById("hud-points");
   const dreamsEl = document.getElementById("hud-dreams");
   const dreamsWrap = document.querySelector(".hud-dreams-wrap");
-  const beastsWrap = document.getElementById("hud-beasts-wrap");
-  const beastsEl = document.getElementById("hud-beasts");
+  const mindWrap = document.getElementById("hud-mind-wrap");
+  const mindEl = document.getElementById("hud-mind");
+  const mindDuskEl = document.getElementById("hud-mind-dusk");
   renderTurnPlaque(state);
 
   if (state.finalRecurrence) {
     const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
-    if (goalEl) goalEl.textContent = `Final: ${left} left`;
+    const roundsLeft = state.finalRecurrenceRoundsLeft;
+    if (goalEl) goalEl.textContent = roundsLeft != null ? `Final: ${left} left · ${roundsLeft} rd` : `Final: ${left} left`;
     if (goalBar) goalBar.style.width = "0%";
     document.querySelector(".hud-goal-wrap")?.setAttribute(
       "title",
-      "Final Recurrence — Remaining Archetypes left to defeat.",
+      roundsLeft != null
+        ? `Final Recurrence — ${left} Archetype${left === 1 ? "" : "s"} on The Bed. ${roundsLeft} round${roundsLeft === 1 ? "" : "s"} left to defeat them all.`
+        : "Final Recurrence — Remaining Archetypes left to defeat.",
     );
   } else {
     const goal = state.goalPoints || 0;
@@ -4118,16 +4146,20 @@ export function renderHud(state, hint = "") {
     if (urgency) dreamsWrap.classList.add(urgency);
   }
 
-  const beastCount = countBoardDreambeasts(state);
-  if (beastsWrap && beastsEl) {
-    if (beastCount > 0) {
-      beastsWrap.classList.remove("hidden");
-      beastsEl.textContent = String(beastCount);
-      beastsWrap.title = `${beastCount} roaming Dreambeast${beastCount === 1 ? "" : "s"} on the map`;
-    } else {
-      beastsWrap.classList.add("hidden");
-      beastsEl.textContent = "0";
-    }
+  const mind = wakingMindCount(state);
+  const dusk = duskMillCount(state);
+  if (mindEl) mindEl.textContent = String(mind);
+  if (mindDuskEl) {
+    mindDuskEl.classList.toggle("hidden", dusk <= 0);
+    mindDuskEl.textContent = dusk > 0 ? `−${dusk} at dusk` : "";
+  }
+  if (mindWrap) {
+    const runway = dusk > 0 ? mind / dusk : Infinity;
+    mindWrap.classList.toggle("hud-urgent-warn", runway <= 4 && runway > 2);
+    mindWrap.classList.toggle("hud-urgent-critical", runway <= 2);
+    mindWrap.title = dusk > 0
+      ? `Waking Mind: ${mind} Psyche left to draw. ${dusk} still standing — dusk Represses ${dusk}. About ${Math.max(0, Math.floor(runway))} round${Math.floor(runway) === 1 ? "" : "s"} of mind left. Remember to win cards back.`
+      : `Waking Mind: ${mind} Psyche left to draw. Nothing stands on the map, so dusk takes nothing.`;
   }
 
   document.getElementById("hud-round").textContent = String(state.round);
@@ -4424,6 +4456,7 @@ export function showRulesReferenceModal(_activeTab = RULES_TAB_FEED, state = nul
   const feedState = state || uiRenderState;
   const feedHtml = feedState ? buildDreamFeedHtml(feedState) : undefined;
   body.innerHTML = `<div class="rules-modal">${rulesReferenceHtml(RULES_TAB_FEED, { feedHtml })}</div>`;
+  bindGuideHub(body);
   body.querySelector("[data-info-hub-play]")?.addEventListener("click", () => hideUtilityModal(true));
   const closeBtn = modal.querySelector(".utility-close");
   if (closeBtn) closeBtn.hidden = true;
@@ -4583,6 +4616,8 @@ export function renderDreamerPicker(dreamers, selectedIds, onToggle, options = {
 export function renderSetupIntro() {
   const legend = document.getElementById("setup-phase-legend");
   if (legend) legend.remove();
+  const body = document.getElementById("menu-intro-body");
+  if (body) body.innerHTML = playerPrimerHtml();
 }
 
 export function showScreen(id) {

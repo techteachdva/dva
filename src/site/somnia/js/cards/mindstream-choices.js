@@ -7,7 +7,8 @@
  * Dim is free.
  */
 
-import { addLog, drawPsycheForPlayer, setEncounterOnLandscape, landscapeById, tileHasEncounters } from "../core/state.js";
+import { addLog, drawPsycheForPlayer, setEncounterOnLandscape, landscapeById, tileHasEncounters, revealLandscapeTile } from "../core/state.js";
+import { recordQuestEvent } from "../dreamers/quests.js";
 import { logMoment } from "../core/narrator.js";
 import { totalStat } from "../core/rules.js";
 import { isWildPsyche } from "./psyche.js";
@@ -56,6 +57,26 @@ export function canPayEventGood(state, player, resolution) {
   const need = eventGoodCardsNeeded(state, player, resolution);
   if (need <= 0) return true;
   return psycheOfSuit(player, resolution.suit).length >= need;
+}
+
+/** 41.0 "Dream it open": the named Landscape that +1 Lucidity would Reveal, if any. */
+export function dreamItOpenTile(state, card) {
+  const ids = eventLandscapeIds(card);
+  for (const id of ids) {
+    const tile = (state.board || []).find((t) => t.id === id);
+    if (tile && !tile.center && (!tile.revealed || tile.wasteland)) return tile;
+  }
+  return null;
+}
+
+/** Can this Dreamer pay Bright's cost plus 1 Lucidity Psyche to Reveal the named Landscape? */
+export function canDreamItOpen(state, player, card, resolution) {
+  if (!card?.landscapes?.length || !resolution) return false;
+  if (!dreamItOpenTile(state, card)) return false;
+  const need = eventGoodCardsNeeded(state, player, resolution);
+  const lucid = psycheOfSuit(player, "lucidity").length;
+  if (resolution.suit === "lucidity") return lucid >= need + 1;
+  return psycheOfSuit(player, resolution.suit).length >= need && lucid >= 1;
 }
 
 function awakeLandscapes(state) {
@@ -256,7 +277,9 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
     if (!resolution) return false;
     const landscapesOk = hasAffectedLandscapes(state, card)
       || !(card.landscapes?.length);
-    const canGood = landscapesOk && canPayEventGood(state, player, resolution);
+    const openTile = landscapesOk ? null : dreamItOpenTile(state, card);
+    const canOpen = !landscapesOk && canDreamItOpen(state, player, card, resolution);
+    const canGood = (landscapesOk && canPayEventGood(state, player, resolution)) || canOpen;
     const gateSentence = eventGateSentence(state, card);
     const ids = eventLandscapeIds(card);
     const names = eventLandscapeNames(state, card);
@@ -298,11 +321,16 @@ export function beginMindstreamCardChoice(state, card, player, helpers = {}) {
           id: "good",
           role: "good",
           shape: resolution.suit,
-          label: resolution.good.label,
-          hint: landscapesOk ? `${goodHint} · ${costHint}` : gateSentence,
+          label: landscapesOk ? resolution.good.label : `Dream it open: ${resolution.good.label}`,
+          hint: landscapesOk
+            ? `${goodHint} · ${costHint}`
+            : openTile
+              ? `+1 Lucidity Psyche: Reveal ${openTile.name}, then ${goodHint} · ${costHint}`
+              : gateSentence,
+          dreamItOpen: !landscapesOk && !!openTile,
           disabled: !canGood,
           disabledReason: !landscapesOk
-            ? gateSentence
+            ? (openTile ? `Dream it open needs Bright's cost plus 1 Lucidity Psyche. ${gateSentence}` : gateSentence)
             : `Need ${cardsNeeded} ${SUIT_LABELS[resolution.suit]} Psyche (or higher base ${SUIT_LABELS[resolution.suit]})`,
         },
         {
@@ -564,10 +592,18 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
       return true;
     }
     if (choiceId === "good") {
+      let openedByDream = false;
       if (!hasAffectedLandscapes(state, card) && card.landscapes?.length) {
-        addLog(state, "Good path needs a revealed Landscape.");
-        state.pendingMindstreamChoice = pending;
-        return false;
+        if (!canDreamItOpen(state, player, card, resolution)) {
+          addLog(state, "Bright needs its Landscape — or Bright's cost plus 1 Lucidity Psyche to Dream it open.");
+          state.pendingMindstreamChoice = pending;
+          return false;
+        }
+        const tile = dreamItOpenTile(state, card);
+        revealLandscapeTile(state, tile);
+        recordQuestEvent(state, "reveal_landscape", { count: 1 });
+        addLog(state, `${player.name} Dreams ${tile.name} open with 1 Lucidity.`);
+        openedByDream = tile.name;
       }
       const need = eventGoodCardsNeeded(state, player, resolution);
       if (need > 0 && psycheOfSuit(player, resolution.suit).length < need) {
@@ -575,7 +611,7 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
         state.pendingMindstreamChoice = pending;
         return false;
       }
-      if (need > 0) {
+      if (need > 0 || openedByDream) {
         const prevIdle = state.onResolutionIdle;
         state.onResolutionIdle = (s) => {
           applyResolutionEffect(s, player, resolution.good, h, "good");
@@ -585,6 +621,13 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
           if (typeof prevIdle === "function") prevIdle(s);
           h.onChoiceResolved?.(s);
         };
+        if (openedByDream) {
+          enqueueDiscardFromHand(state, player, 1, {
+            reason: `${player.name}: discard 1 Lucidity Psyche to Dream ${openedByDream} open.`,
+            strict: true,
+            cardFilter: { suit: "lucidity", payablePsyche: true },
+          });
+        }
         payEventGoodCost(state, player, resolution);
         return true;
       }

@@ -1556,30 +1556,32 @@ body.in-game main {
 
 .menu-intro-card {
   position: relative;
-  width: min(40rem, 92vw);
-  max-height: min(70vh, 34rem);
+  width: min(72rem, 96vw);
+  max-height: min(88vh, 46rem);
   overflow: auto;
-  padding: 1.35rem 1.5rem 1.45rem;
+  padding: 1.1rem 1.25rem 1.2rem;
   color: #f6f1e8;
-  text-align: center;
-  background: rgba(10, 6, 22, 0.92);
+  text-align: left;
+  background: rgba(10, 6, 22, 0.94);
   border: 1px solid rgba(180, 160, 255, 0.45);
   border-radius: 14px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
 }
 
 .menu-intro-card h2 {
-  margin: 0 2rem 0.7rem;
-  font-size: 1.15rem;
+  margin: 0 2rem 0.55rem;
+  font-size: 1.05rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  text-align: center;
   color: #e4d4ff;
 }
 
-.menu-intro-card p {
-  margin: 0;
-  font-size: clamp(0.95rem, 1.15vw, 1.12rem);
-  line-height: 1.55;
+.menu-intro-card .player-primer p,
+.menu-intro-card .player-primer-lead {
+  font-size: 0.78rem;
+  line-height: 1.38;
+  text-align: left;
 }
 
 .menu-intro-close {
@@ -2416,9 +2418,26 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   font-weight: 700;
 }
 
-.hud-beasts-wrap #hud-beasts {
-  color: #ff9f6b;
+.hud-mind-wrap #hud-mind {
+  color: #b9a8ff;
   font-weight: 700;
+}
+
+.hud-mind-dusk {
+  margin-left: 0.3rem;
+  color: #ff9f6b;
+  font-size: 0.82em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hud-mind-wrap.hud-urgent-warn #hud-mind {
+  color: var(--gold);
+}
+
+.hud-mind-wrap.hud-urgent-critical #hud-mind {
+  color: #ff8a7a;
+  animation: pulse-escape-hint 1.2s ease-in-out infinite;
 }
 
 .timeline-toll-preview {
@@ -4748,6 +4767,24 @@ html[data-pointer="coarse"] .board-camera-controls button {
   cursor: pointer;
   z-index: 1;
   transition: transform 0.16s ease, filter 0.16s ease, box-shadow 0.16s ease;
+}
+
+.hex-tile .hex-dusk-badge {
+  position: absolute;
+  left: var(--snap-x, 50%);
+  top: var(--snap-y, 50%);
+  transform: translate(55%, -150%);
+  z-index: 5;
+  padding: 0 0.28em;
+  border-radius: 999px;
+  background: #3a1630;
+  border: 1px solid #ff9f6b;
+  color: #ffcfae;
+  font-size: calc(0.42rem * var(--hex-scale, 1.72));
+  font-weight: 800;
+  line-height: 1.35;
+  pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
 }
 
 .hex-tile .hex-occupant-token.is-overflow {
@@ -11882,6 +11919,208 @@ html[data-touch="true"] .action-dock .btn-advance {
   letter-spacing: 0.14em;
 }
 
+.info-hub-tabs {
+  display: flex;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+}
+
+.info-hub-tabs button {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid rgba(180, 160, 255, 0.28);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.info-hub-tabs button.is-on {
+  color: #fff;
+  background: rgba(123, 92, 255, 0.45);
+  border-color: rgba(200, 180, 255, 0.7);
+}
+
+.info-hub-panel {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.info-hub-panel[hidden],
+.glossary-view[hidden],
+.glossary-item[hidden],
+.glossary-letter[hidden],
+.glossary-concept[hidden],
+.glossary-empty[hidden] {
+  display: none !important;
+}
+
+.info-hub-panel-primer,
+.info-hub-panel-glossary {
+  overflow: auto;
+  padding: 0.85rem clamp(1.1rem, 3vw, 2.2rem) 1.4rem;
+}
+
+.player-primer-lead {
+  margin: 0 0 0.65rem;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.player-primer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+.player-primer h3 {
+  margin: 0.55rem 0 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent, #c9b6ff);
+}
+
+.player-primer section h3:first-child {
+  margin-top: 0;
+}
+
+.player-primer p {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.38;
+}
+
+.info-hub-panel-primer .player-primer-lead,
+.info-hub-panel-primer .player-primer p {
+  color: #f6f1e8;
+  font-size: 0.9rem;
+  line-height: 1.42;
+}
+
+.player-primer-next {
+  margin: 0.75rem 0 0;
+  font-size: 0.82rem;
+  color: var(--gold, #f0c830);
+}
+
+.glossary-tools {
+  display: flex;
+  gap: 0.75rem;
+  align-items: end;
+  margin-bottom: 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: 0.55rem;
+  background: #0b0a14;
+}
+
+.glossary-search-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.glossary-search-label input {
+  font-size: 1rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(180, 160, 255, 0.35);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+}
+
+.glossary-modes {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.glossary-modes button {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid rgba(180, 160, 255, 0.28);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+}
+
+.glossary-modes button.is-on {
+  color: #fff;
+  background: rgba(123, 92, 255, 0.4);
+}
+
+.glossary-alpha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+  margin: 0 0 0.8rem;
+}
+
+.glossary-alpha a {
+  color: var(--accent, #c9b6ff);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.glossary-letter h2,
+.glossary-concept h2 {
+  margin: 0.9rem 0 0.35rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.glossary-item {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glossary-item h3 {
+  margin: 0 0 0.15rem;
+  font-size: 0.95rem;
+}
+
+.glossary-item p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.glossary-empty {
+  margin: 0.5rem 0;
+  color: var(--muted);
+}
+
+.tutorial-brief-page .player-primer-lead,
+.tutorial-brief-page .player-primer p {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+@media (max-width: 900px) {
+  .info-hub-header {
+    flex-wrap: wrap;
+  }
+
+  .player-primer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .info-hub-grid {
   display: grid;
   grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
@@ -16026,4 +16265,50 @@ html[data-touch="true"] .ms-choice-fullscreen {
   html[data-touch="true"] #utility-modal:has(.card-choice-modal-wrap) .utility-content.card-choice-modal-wrap {
     animation: none;
   }
+}
+
+/* 41.0 — Archetype row: three Dreams to chase. */
+.archetype-row-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.45rem;
+}
+
+.archetype-row-lead {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted, #b9b2d0);
+}
+
+.archetype-row-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(20, 14, 36, 0.8);
+  color: inherit;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.archetype-row-chip.is-focused {
+  border-color: var(--gold, #e7c46a);
+  box-shadow: 0 0 0 1px var(--gold, #e7c46a);
+}
+
+.archetype-row-chip.is-ready {
+  background: rgba(60, 120, 70, 0.45);
+  border-color: #8fe0a0;
+}
+
+.archetype-row-points {
+  opacity: 0.75;
+}
+
+.archetype-row-met {
+  font-weight: 700;
 }

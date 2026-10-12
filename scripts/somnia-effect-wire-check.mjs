@@ -16,9 +16,10 @@ function verbsInHint(hint) {
   const text = String(hint || "").toLowerCase();
   const verbs = [];
   if (/all draw|all dreamers draw/.test(text)) verbs.push("drawPsycheAll");
-  else if (/\bdraw\b/.test(text)) verbs.push("drawPsyche", "drawPsycheAll", "drawPsycheAndPT", "drawPsycheAndReturn", "drawObject");
+  else if (/\bdraw\b/.test(text)) verbs.push("drawPsyche", "drawPsycheAll", "drawPsycheAndPT", "drawPsycheAndReturn", "drawPsycheAndRemember", "drawObject");
   if (/\breturn\b/.test(text)) verbs.push("returnCards", "returnCardsAll", "returnAndPT", "drawPsycheAndReturn");
-  if (/\bpt\b|power token/.test(text)) verbs.push("grantPT", "drawPsycheAndPT", "returnAndPT");
+  if (/\bremember\b/.test(text)) verbs.push("remember", "rememberAndPT", "drawPsycheAndRemember", "returnCards");
+  if (/\bpt\b|power token/.test(text)) verbs.push("grantPT", "drawPsycheAndPT", "returnAndPT", "rememberAndPT");
   if (/\bmove\b/.test(text)) verbs.push("moveToNamed");
   if (/free meet/.test(text)) verbs.push("freeMeetAction");
   if (/\breveal\b/.test(text)) verbs.push("revealLandscapes");
@@ -63,8 +64,9 @@ const resolutionJs = readFileSync(join(root, "src/site/somnia/js/effects/resolut
 if (resolutionJs.includes("state.skipNextExplore =")) {
   problems.push("skipNextExplore still writes state.skipNextExplore");
 }
-if (!resolutionJs.includes("state.skipExploreNextRound = true")) {
-  problems.push("skipNextExplore does not set skipExploreNextRound");
+// 41.0: skipNextExplore was retired (a lose-a-turn effect); no resolution may use it.
+if (resolutionJs.includes('case "skipNextExplore"')) {
+  problems.push("skipNextExplore is retired in 41.0 but still has a resolution case");
 }
 if (resolutionJs.includes("state.meetOnlyThisRound =")) {
   problems.push("meetOnlyThisRound still writes state.meetOnlyThisRound");

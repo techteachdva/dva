@@ -36,6 +36,7 @@ import {
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { shuffle } from "../core/data.js";
 import { offerEffectChoice, registerEffectResolver } from "../effects/effect-choices.js";
+import { beginRemember } from "../effects/remember.js";
 import { recordCancellableMove } from "../dreamers/dreamer-powers.js";
 import { discardDreamCard, isBossDreamCard, spawnBossEncounterOnBed } from "../cards/dream-deck.js";
 
@@ -91,6 +92,10 @@ export const LANDSCAPE_ACTION_DEFS = {
   "draw-any-mindstream": {
     label: "Draw Any Mindstream",
     description: "Draw 1 card from any Mindstream deck of your choice.",
+  },
+  "remember-2": {
+    label: "Remember 2",
+    description: "Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
   },
   "return-2": {
     label: "Return 2 Cards",
@@ -1150,6 +1155,11 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
 
     case "draw-2-keep-1":
       return beginDrawTwoKeepOne(state, player, helpers);
+
+    case "remember-2":
+      return beginRemember(state, player, 2, { source: landscapeName })
+        ? { ok: true }
+        : { ok: false, refund: true };
 
     case "return-2":
       return { ok: true, ...returnTypedCard(state, null, 2) };

@@ -35,7 +35,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 40.4</span>
+        <span class="version-label">v 41.0</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -53,7 +53,7 @@
       <div id="hud" class="hud">
         <div class="hud-item hud-goal-wrap" title="Archetype points scored / points required to wake."><span class="label">Goal:</span><span id="hud-goal">0/8</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span></div>
         <div class="hud-item hud-dreams-wrap"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
-        <div class="hud-item hud-beasts-wrap hidden" id="hud-beasts-wrap"><span class="label">Roaming</span><span id="hud-beasts">0</span></div>
+        <div class="hud-item hud-mind-wrap" id="hud-mind-wrap" title="The Waking Mind: Psyche left to draw (deck plus discard). Each Dreambeast still standing at dusk Represses 1. Remember to win cards back."><span class="label">Mind</span><span id="hud-mind">0</span><span id="hud-mind-dusk" class="hud-mind-dusk hidden"></span></div>
         <div class="hud-item hud-round-wrap"><span class="label">Round</span><span id="hud-round">1</span><span id="hud-boss-rounds" class="hud-boss-rounds" aria-hidden="true"></span></div>
         <div class="hud-feed-cluster">
           <button type="button" id="btn-moment-history" class="btn btn-icon btn-moment-history hud-moment-history-btn" title="Moment narration history" aria-label="Moment narration history">!</button>
@@ -253,8 +253,8 @@
     <div class="tutorial-brief-backdrop"></div>
     <div class="tutorial-brief-card">
       <header class="tutorial-brief-header">
-        <h2 id="tutorial-brief-title">Guided Tutorial</h2>
-        <p>Two practice rounds — the sparkles show every click.</p>
+        <h2 id="tutorial-brief-title">How a dream is played</h2>
+        <p>Read this once. The sparkles show every click after.</p>
       </header>
       <div id="tutorial-brief-body" class="tutorial-brief-body"></div>
       <footer class="tutorial-brief-footer">

@@ -16,7 +16,7 @@
     "image": "images/archetypes/archetype-innocent.webp",
     "suit": "lucidity",
     "passive": null,
-    "power": "Return 4 cards of any type from the Subconscious",
+    "power": "Remember 3: discard up to 3 Psyche, Return that many +1",
     "quests": ["Draw Mindstream on any Lucidity Landscape", "Meet a Lucidity Dreambeast"]
   },
   {
@@ -76,7 +76,7 @@
     "image": "images/archetypes/archetype-fool.webp",
     "suit": "elasticity",
     "passive": null,
-    "power": "Return Dreamers+2 cards from the Subconscious",
+    "power": "Remember Dreamers+1: discard up to that many Psyche, Return that many +1",
     "quests": ["Draw Mindstream on Insanity or Black Void", "Meet a Dreambeast on Insanity or Black Void"]
   },
   {

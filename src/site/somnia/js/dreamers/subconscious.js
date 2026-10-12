@@ -165,13 +165,24 @@ function cardsForReturn(state, filter) {
   return cards;
 }
 
+/** How many Subconscious cards a Return could pick right now (fresh Represses wait a beat). */
+export function returnableCount(state, filter = null) {
+  return cardsForReturn(state, filter).length;
+}
+
+/** Cards a Return could pick right now. */
+export function returnableCards(state, filter = null) {
+  return cardsForReturn(state, filter);
+}
+
 function noteSubconsciousCleared(state, before) {
   if (before <= 0) return;
   if (subconsciousCount(state.subconscious) > 0) return;
-  if (state.tutorialMode || state.status !== "playing" || state.pendingDreamReplay) return;
-  state.pendingDreamReplay = {
-    reason: "The Subconscious is clear. Search the Dream discard and replay one Dream.",
-  };
+  if (state.tutorialMode || state.status !== "playing") return;
+  // 41.0: a clear Subconscious is its own reward (a full Waking Mind). It no longer replays a Dream.
+  state.log = state.log || [];
+  state.log.unshift("The Subconscious is clear. Everything you forgot, you remembered.");
+  state.log = state.log.slice(0, 40);
 }
 
 export function removeFromSubconscious(state, instanceId) {

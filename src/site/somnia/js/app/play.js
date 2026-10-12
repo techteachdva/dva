@@ -321,6 +321,7 @@ function getSpectatorBot() {
       performLandscapeAction,
       handleQuestComplete,
       cancelLandscapePick,
+      playObject: (s, id) => playObject(s, id),
     },
   });
   return spectatorBot;
