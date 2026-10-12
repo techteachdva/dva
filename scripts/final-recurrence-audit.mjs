@@ -163,10 +163,12 @@ function revealAllOuter(state) {
       name: "Audit 5",
     }));
     state.selectedHand = player.hand.slice(0, 3).map((c) => c.instanceId);
+    // The Bed holds several Remaining Archetypes; tile.finalArchetype advances to the next one on defeat.
+    const target = tile.finalArchetype;
     handleDefeatFinalArchetype(state);
-    const entry = state.finalArchetypes.find((a) => a.id === tile.finalArchetype.id);
-    if (!tile.finalArchetype.defeated || !entry?.defeated) {
-      fail("defeat-did-not-stick", { tile: tile.finalArchetype.defeated, entry: entry?.defeated });
+    const entry = state.finalArchetypes.find((a) => a.id === target.id);
+    if (!target.defeated || !entry?.defeated) {
+      fail("defeat-did-not-stick", { id: target.id, tile: target.defeated, entry: entry?.defeated });
     }
   }
 }

@@ -32,6 +32,8 @@ globalThis.fetch = async (url) => {
 const { loadGameData } = await import(pathToFileURL(path.join(JS, "core/data.js")).href);
 const tm = await import(pathToFileURL(path.join(JS, "tutorial/tutorial-mode.js")).href);
 const gm = await import(pathToFileURL(path.join(JS, "core/game.js")).href);
+const { resolveMindstreamChoice } = await import(pathToFileURL(path.join(JS, "cards/mindstream-choices.js")).href);
+const { confirmRepressStep } = await import(pathToFileURL(path.join(JS, "dreamers/subconscious.js")).href);
 
 const data = await loadGameData();
 const script = tm.TUTORIAL_SCRIPT;
@@ -39,6 +41,13 @@ const failures = [];
 
 function fail(msg) {
   failures.push(msg);
+}
+
+/** Dim is the free Dream path: resolve the Dream choice as "bad", then confirm any empty Repress. */
+function takeDim() {
+  if (state.pendingMindstreamChoice?.kind === "dream") resolveMindstreamChoice(state, "bad");
+  let guard = 6;
+  while (state.pendingRepress?.confirmEmpty && guard-- > 0) confirmRepressStep(state);
 }
 
 function performBeat(step, beat) {
@@ -163,6 +172,24 @@ function performBeat(step, beat) {
     case "completeQuest1":
       if (!tm.isTutorialActionAllowed(state, beat.kind)) fail(`${step.id}: ${beat.kind} blocked`);
       else gm.handleQuestComplete(state, beat.kind === "completeQuest0" ? 0 : 1);
+      break;
+    case "dreamDim":
+      if (!tm.isTutorialActionAllowed(state, "dreamDim")) fail(`${step.id}: dim blocked`);
+      else takeDim();
+      break;
+    case "excessPsyche":
+      if (!tm.isTutorialActionAllowed(state, "excessPsyche")) fail(`${step.id}: excess psyche blocked`);
+      else {
+        state.activePlayerIndex = beat.playerIndex ?? 0;
+        if (!gm.spendExcessPsycheDraw(state)) fail(`${step.id}: excess Psyche draw refused`);
+      }
+      break;
+    case "meetPass":
+      if (!tm.isTutorialActionAllowed(state, "meetPass")) fail(`${step.id}: meet pass blocked`);
+      else {
+        state.activePlayerIndex = beat.playerIndex ?? 0;
+        if (!gm.passMeetToken(state)) fail(`${step.id}: Pass Turn refused`);
+      }
       break;
     default:
       fail(`${step.id}: unknown beat ${beat.kind}`);
