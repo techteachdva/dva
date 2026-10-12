@@ -25,9 +25,10 @@ import {
   powerBonus,
   passMeetToken,
 } from "../core/game.js";
-import { playPsychePowerFromHand } from "../cards/power-tokens.js";
 import { resolveMindstreamChoice } from "../cards/mindstream-choices.js";
-import { confirmRepressStep } from "../dreamers/subconscious.js";
+import { confirmRepressStep, pickRepressCard, pickReturnCard, returnableCards } from "../dreamers/subconscious.js";
+import { resolveEffectChoice } from "../effects/effect-choices.js";
+import { rememberPriority } from "../effects/remember.js";
 
 function reattachStateRuntime(state) {
   state.checkPsycheDeath = (player, opts) => checkDreamerPsycheDeath(state, player, opts);
@@ -236,51 +237,76 @@ function rejectAtticEncounter(state) {
   state.tutorialFlags.firstBattleLost = true;
 }
 
-function grantPassOpener(state) {
-  const visionary = state.players[0];
-  if (!visionary) return;
-  if (!state.tutorialFlags) state.tutorialFlags = {};
-  if (visionary.hand.some((c) => c.id === "willpower-1-v-open")) {
-    state.tutorialFlags.passOpenerGranted = true;
-    return;
+
+
+/** Resolve any open choice the way the lesson asks: given choice, cheapest discards, Psyche Returned first. */
+function settleTutorialChoices(state, { choiceId = null } = {}) {
+  let guard = 40;
+  while (guard-- > 0) {
+    if (state.pendingEffectChoice) {
+      const enabled = (state.pendingEffectChoice.choices || []).filter((c) => !c.disabled);
+      const pick = enabled.find((c) => c.id === choiceId) || enabled[0];
+      resolveEffectChoice(state, pick?.id || "confirm");
+      continue;
+    }
+    if (state.pendingRepress) {
+      const pending = state.pendingRepress;
+      if (pending.confirmEmpty) { confirmRepressStep(state); continue; }
+      const owner = state.players.find((p) => p.id === pending.playerId) || state.players[0];
+      const picked = new Set((pending.picked || []).map((c) => c.instanceId));
+      const card = [...(owner?.hand || [])]
+        .filter((c) => !picked.has(c.instanceId) && c.type === "psyche")
+        .filter((c) => !pending.cardFilter?.suit || c.suit === pending.cardFilter.suit)
+        .sort((a, b) => (a.value || 0) - (b.value || 0))[0];
+      if (!card) { confirmRepressStep(state); continue; }
+      pickRepressCard(state, card.instanceId);
+      continue;
+    }
+    if (state.pendingReturn) {
+      const picked = new Set((state.pendingReturn.picked || []).map((c) => c.instanceId));
+      const card = returnableCards(state, state.pendingReturn.filter)
+        .filter((c) => !picked.has(c.instanceId))
+        .sort((a, b) => rememberPriority(a) - rememberPriority(b))[0];
+      if (!card) { state.pendingReturn = null; continue; }
+      pickReturnCard(state, card.instanceId);
+      continue;
+    }
+    break;
   }
-  visionary.hand.push({
-    id: "willpower-1-v-open",
-    type: "psyche",
-    suit: "willpower",
-    value: 1,
-    name: "Willpower 1",
-    instanceId: "psyche-v-open-canonical",
-  });
-  state.tutorialFlags.passOpenerGranted = true;
 }
 
-function openMeetAndPass(state) {
+/** The Immovable opens round 2's Meet and Remembers 2 on Tranquil Grove. */
+function openMeetAndRemember(state) {
   if (!state.tutorialFlags) state.tutorialFlags = {};
   state.tutorialFlags.meetPassLive = true;
-  grantPassOpener(state);
-  selectExactCards(state, 0, ["willpower-1-v-open"]);
+  selectExactCards(state, 1, ["willpower-3-i-w3"]);
   gainMeetActions(state);
-  // The step ends with The Visionary holding the Pass Token. Only pass if someone else holds it.
+  const immovable = state.players[1];
+  if (immovable && state.meetPassHolderId && state.meetPassHolderId !== immovable.id) {
+    const holderIndex = state.players.findIndex((p) => p.id === state.meetPassHolderId);
+    if (holderIndex >= 0) state.activePlayerIndex = holderIndex;
+    passMeetToken(state);
+  }
+  placePlayerOnLandscape(state, 1, "tranquil-grove");
+  state.activePlayerIndex = 1;
+  state.selectedLandscapeId = "tranquil-grove";
+  performLandscapeAction(state, "remember-2");
+  settleTutorialChoices(state, { choiceId: "discard-1" });
+}
+
+function acceptAtticRematch(state) {
+  placePlayerOnLandscape(state, 0, "the-attic");
   const visionary = state.players[0];
   if (visionary && state.meetPassHolderId && state.meetPassHolderId !== visionary.id) {
     const holderIndex = state.players.findIndex((p) => p.id === state.meetPassHolderId);
     if (holderIndex >= 0) state.activePlayerIndex = holderIndex;
     passMeetToken(state);
   }
-}
-
-function acceptAtticRematch(state) {
-  placePlayerOnLandscape(state, 0, "the-attic");
-  state.activePlayerIndex = 1;
-  const surge = state.players[1]?.hand?.find((c) => c.type === "psyche-power");
-  if (surge) playTutorialPowerSurge(state, 1);
-  state.activePlayerIndex = 1;
-  if ((state.players[1]?.powerTokens || 0) >= 1) powerBonus(state);
   state.activePlayerIndex = 0;
   state.selectedLandscapeId = "the-attic";
+  if ((visionary?.powerTokens || 0) >= 1) powerBonus(state);
   state.tutorialFlags.nextBattleWinner = "dreamer";
-  selectExactCards(state, 0, ["lucidity-3-v-l3", "lucidity-2-v-l2", "elasticity-2-v-e2"]);
+  selectExactCards(state, 0, ["lucidity-3-v-l3", "lucidity-2-r2-a", "elasticity-2-v-e2"]);
   meetEncounter(state, "accept", { instant: true });
   state.tutorialFlags.encounterResolved = true;
 }
@@ -318,10 +344,6 @@ function markInnocentQuests(state) {
     state.questTracker.meetOnLandscape["the-attic"] = 1;
   }
 
-  playTutorialPowerSurge(state, 0);
-  const visionary = state.players[0];
-  if (visionary) visionary.powerTokens = Math.max(visionary.powerTokens || 0, 2);
-
   state.activePlayerIndex = 0;
   handleQuestComplete(state, 0);
   state.tutorialFlags.archetypeAcquired = true;
@@ -333,6 +355,7 @@ function useInnocentPower(state) {
     state.players[0].powerTokens = 1;
   }
   handleUseArchetypePower(state, "innocent");
+  settleTutorialChoices(state, { choiceId: "discard-0" });
   state.tutorialFlags.archetypePowerUsed = true;
 }
 
@@ -346,19 +369,22 @@ export function applyCanonicalTutorialStep(state, step) {
     case "reveal-r1":
       selectExactCards(state, 0, ["lucidity-1-v-l1"]);
       revealLandscape(state);
-      revealNamedTile(state, "candy-mountain");
+      ["tranquil-grove", "candy-mountain", "road"].forEach((tileId) => {
+        if (state.landscapePick?.mode === "reveal") handleBoardTileClick(state, tileId);
+      });
+      closeRevealPick(state);
       advanceToPhase(state, "Explore");
       return;
 
     case "explore-r1":
-      selectExactCards(state, 1, ["elasticity-2-i-e2"]);
+      selectExactCards(state, 1, ["elasticity-3-i-e3"]);
       activateExplore(state);
       if (!state.exploreActivated) {
         state.exploreActivated = true;
-        state.exploreMovesLeft = Math.max(2, state.exploreMovesLeft || 0);
+        state.exploreMovesLeft = Math.max(3, state.exploreMovesLeft || 0);
       }
-      placePlayerOnLandscape(state, 0, "house");
       placePlayerOnLandscape(state, 0, "the-attic");
+      placePlayerOnLandscape(state, 1, "tranquil-grove");
       if (!state.tutorialFlags) state.tutorialFlags = {};
       state.tutorialFlags.excessPsycheLesson = true;
       if ((state.exploreMovesLeft || 0) < 1) state.exploreMovesLeft = 1;
@@ -392,22 +418,23 @@ export function applyCanonicalTutorialStep(state, step) {
 
     case "r2-skip":
       skipToMeetRound2(state);
-      grantPassOpener(state);
       return;
 
-    case "r2-pass":
-      openMeetAndPass(state);
+    case "r2-remember":
+      openMeetAndRemember(state);
       return;
 
     case "r2-rematch":
       if (getPhase(state) !== "Meet") skipToMeetRound2(state);
-      if ((state.meetActionBudget || 0) <= 0) openMeetAndPass(state);
+      if ((state.meetActionBudget || 0) <= 0) openMeetAndRemember(state);
       acceptAtticRematch(state);
       return;
 
     case "r2-mindstream":
       ensureMeetBudget(state, 0);
       drawMindstreamOn(state, 0, "the-attic");
+      if (state.pendingMindstreamChoice?.kind === "power-token") resolveMindstreamChoice(state, "take");
+      settleTutorialChoices(state);
       return;
 
     case "r2-acquire":
@@ -445,11 +472,6 @@ function drawMindstreamOn(state, playerIndex, landscapeId) {
   state.questTracker.mindstreamOnLandscape[landscapeId] = true;
 }
 
-function playTutorialPowerSurge(state, playerIndex = 0) {
-  const player = state.players[playerIndex];
-  const card = player?.hand?.find((c) => c.type === "psyche-power");
-  if (player && card) playPsychePowerFromHand(state, player, card);
-}
 
 export function precomputeTutorialSnapshots(data, script, buildBaseState, applyStep = applyCanonicalTutorialStep) {
   const snapshots = [];

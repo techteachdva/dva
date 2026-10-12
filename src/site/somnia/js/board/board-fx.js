@@ -99,6 +99,11 @@ export function isBeastTokenHidden(encKey) {
   return !!encKey && arrivingBeasts.has(encKey);
 }
 
+/** Drop queued board animations (used after the tutorial replays its steps off-screen). */
+export function clearBoardFxQueue() {
+  queue.length = 0;
+}
+
 export function resetBoardMotion(state) {
   prevDreamerTiles.clear();
   prevEncounterTiles.clear();

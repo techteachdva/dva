@@ -28,6 +28,12 @@ function cardSnapshot(card) {
   };
 }
 
+/** Drop queued card animations (used after the tutorial replays its steps off-screen). */
+export function clearCardFxQueue() {
+  queue.length = 0;
+  queuedDiscardIds.clear();
+}
+
 export function queueCardDraw(playerId, cards, source = "psyche") {
   const list = Array.isArray(cards) ? cards : [cards];
   list.forEach((card) => {

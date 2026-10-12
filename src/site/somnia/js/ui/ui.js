@@ -4430,11 +4430,11 @@ export function renderPhaseActions(_actions, _advanceAction = null, state = null
         ? state.players.find((p) => p.id === state.meetPassHolderId)
         : null;
       const passNote = holder ? ` Pass Token: ${holder.name}.` : "";
-      parts.push(`If you end the round now, ${beastCount} Dreambeast${beastCount === 1 ? "" : "s"} will Repress ${beastCount} Psyche from the deck. Beasts stay until you win a dice battle.${passNote}`);
+      parts.push(`If you end the round now, ${beastCount} Dreambeast${beastCount === 1 ? "" : "s"} will Repress ${beastCount} Psyche from the Waking Mind at dusk. Beasts stay until you win a dice battle.${passNote}`);
     }
     const toll = timelineTollPreview(state);
     if (toll?.repressCount > 0 && !beastCount) {
-      parts.push(`Round end: Repress ${toll.repressCount} Psyche from the deck.`);
+      parts.push(`Dusk: Repress ${toll.repressCount} Psyche from the Waking Mind.`);
     }
     if (parts.length) {
       cue.hidden = false;

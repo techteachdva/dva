@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "41.0";
+export const SOMNIA_VERSION = "41.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "41.1",
+    title: "The Lesson Matches the Game",
+    notes: [
+      "The tutorial teaches the game that ships. It starts like a real night: The Bed and one neighbor face up, 5 Psyche and 1 Power Token each, and three Archetypes face up. Power Surge cards are gone from the lesson; Power Token cards come from the Mindstream.",
+      "Round 1 reveals three Landscapes and names the suit verbs, splits the Dreamers between Mandrake and the Memory Landscape Tranquil Grove, and shows dusk taking 1 from the Waking Mind. Round 2 opens with The Immovable, who acts first and Remembers 2 to win that card back. Acquire is free, and The Innocent Remembers 3.",
+      "The Advanced Tutorial's passives, Instant, Persistent, and power lessons match 41.0. Dusk warnings name the Waking Mind.",
+    ],
+  },
   {
     version: "41.0",
     title: "Remember",

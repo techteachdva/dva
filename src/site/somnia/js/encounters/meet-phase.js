@@ -25,7 +25,7 @@ import { enqueueRepressFromHand } from "../dreamers/subconscious.js";
 export const MEET_PHASE_FLOW = Object.freeze({
   start: "Bosses step toward the nearest Dreamer. No cards are taxed from hands.",
   middle: "Spend 1 Willpower Psyche for shared Meet Actions. Accept and Repress are one Power. Roaming beasts stay until won.",
-  end: "Repress 1 Psyche from the Psyche Deck per Dreambeast still on the board. A Dreamer who ends Meet on a Wasteland also Represses 1 Psyche from hand. In the Final Recurrence, count remaining Archetypes.",
+  end: "Dusk: Repress 1 Psyche from the Waking Mind per Dreambeast still on the board. A Dreamer who ends Meet on a Wasteland also Represses 1 Psyche from hand. In the Final Recurrence, count remaining Archetypes.",
 });
 
 export function countActiveDreambeasts(state) {
@@ -163,7 +163,7 @@ function applyRoundResourceTax(state) {
   const plural = count === 1 ? "" : "s";
   logMoment(
     state,
-    `The round ends. ${count} ${kind}${plural} still stand. Repress ${count} from the Psyche Deck.`,
+    `Dusk. ${count} ${kind}${plural} still stand. Repress ${count} from the Waking Mind.`,
     { durationMs: 14000 },
   );
   repressTopPsycheFromDeck(state, count);
@@ -176,11 +176,11 @@ function applyTutorialMeetEnd(state) {
   state.tutorialFlags.meetPenaltyDone = true;
   logMoment(
     state,
-    "Meet ends: Mandrake still roams. One Psyche is Repressed from the deck. The beast stays until you win.",
+    "Dusk: Mandrake still stands. One Psyche is Repressed from the Waking Mind. The beast stays until you win.",
     { durationMs: 14000 },
   );
   repressTopPsycheFromDeck(state, 1);
-  addLog(state, "Tutorial — a leftover Dreambeast Represses 1 Psyche from the deck.");
+  addLog(state, "Tutorial — a leftover Dreambeast Represses 1 Psyche from the Waking Mind at dusk.");
 }
 
 export function applyMeetEndConsequences(state) {

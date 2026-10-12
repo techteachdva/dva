@@ -3075,7 +3075,7 @@ export function endPhase(state) {
       ? `${COOP_PLAY_TIP} Head Dreamer (★) draws the Dream once. One Dreamer spends Lucidity to set team reveals.`
       : phase === "Explore"
         ? `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves — then Dreamers take turns spending them (Pass Turn or Give Turn to hand off).`
-        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. When the round ends, each Dreambeast still on the board Represses 1 Psyche from the deck. Fail hits when Accept or Repress loses. Beasts stay until you win a dice battle.`,
+        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. When the round ends, each Dreambeast still on the board Represses 1 Psyche from the Waking Mind. Fail hits when Accept or Repress loses. Beasts stay until you win a dice battle.`,
     [],
     { moment: `${phase} Phase begins.` },
   );
@@ -3133,7 +3133,7 @@ export function getPhaseHint(state) {
   }
   if (phase === "Meet") {
     if (state.meetActionBudget === 0) {
-      return `${COOP_PLAY_TIP} One Dreamer spends Willpower for shared Meet actions. Beasts still standing Repress 1 Psyche from the deck when the round ends.`;
+      return `${COOP_PLAY_TIP} One Dreamer spends Willpower for shared Meet actions. Beasts still standing Repress 1 Psyche from the Waking Mind at dusk.`;
     }
     const pool = coopMeetPlayTotal(state);
     const count = allSelectedCards(state).length;

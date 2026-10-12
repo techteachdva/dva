@@ -13,6 +13,45 @@ const DATA = path.join(REPO, "src/site/somnia/data");
 const JS = path.join(REPO, "src/site/somnia/js");
 const REPORT_PATH = path.join(REPO, "scripts/tutorial-spotlight-report.json");
 
+/** Answer open choices the way the lesson asks: the named choice, cheapest discards, Psyche Returned first. */
+function settleChoices(choiceId = null) {
+  let guard = 40;
+  while (guard-- > 0) {
+    if (state.pendingEffectChoice) {
+      const enabled = (state.pendingEffectChoice.choices || []).filter((c) => !c.disabled);
+      const pick = enabled.find((c) => c.id === choiceId) || enabled[0];
+      resolveEffectChoice(state, pick?.id || "confirm");
+      continue;
+    }
+    if (state.pendingRepress) {
+      const pending = state.pendingRepress;
+      if (pending.confirmEmpty) { confirmRepressStep(state); continue; }
+      const owner = state.players.find((p) => p.id === pending.playerId) || state.players[0];
+      const picked = new Set((pending.picked || []).map((c) => c.instanceId));
+      const card = [...(owner?.hand || [])]
+        .filter((c) => !picked.has(c.instanceId) && c.type === "psyche")
+        .sort((a, b) => (a.value || 0) - (b.value || 0))[0];
+      if (!card) { confirmRepressStep(state); continue; }
+      pickRepressCard(state, card.instanceId);
+      continue;
+    }
+    if (state.pendingReturn) {
+      const picked = new Set((state.pendingReturn.picked || []).map((c) => c.instanceId));
+      const card = returnableCards(state, state.pendingReturn.filter)
+        .filter((c) => !picked.has(c.instanceId))
+        .sort((a, b) => (a.type === "psyche" ? 0 : 1) - (b.type === "psyche" ? 0 : 1))[0];
+      if (!card) { state.pendingReturn = null; continue; }
+      pickReturnCard(state, card.instanceId);
+      continue;
+    }
+    if (state.pendingMindstreamChoice?.kind === "power-token") {
+      resolveMindstreamChoice(state, "take");
+      continue;
+    }
+    break;
+  }
+}
+
 function loadJson(name) {
   return JSON.parse(fs.readFileSync(path.join(DATA, `${name}.json`), "utf8"));
 }
@@ -35,7 +74,8 @@ const { loadGameData } = await import(pathToFileURL(path.join(JS, "core/data.js"
 const tm = await import(pathToFileURL(path.join(JS, "tutorial/tutorial-mode.js")).href);
 const gm = await import(pathToFileURL(path.join(JS, "core/game.js")).href);
 const { resolveMindstreamChoice } = await import(pathToFileURL(path.join(JS, "cards/mindstream-choices.js")).href);
-const { confirmRepressStep } = await import(pathToFileURL(path.join(JS, "dreamers/subconscious.js")).href);
+const { confirmRepressStep, pickRepressCard, pickReturnCard, returnableCards } = await import(pathToFileURL(path.join(JS, "dreamers/subconscious.js")).href);
+const { resolveEffectChoice } = await import(pathToFileURL(path.join(JS, "effects/effect-choices.js")).href);
 
 const data = await loadGameData();
 const script = tm.TUTORIAL_SCRIPT;
@@ -152,8 +192,9 @@ function validateSpotlight(beat, spotlight, step, sync) {
       }
       break;
     case "landscapeActionA":
-      if (!spotlight?.includes("landscapeActionA") && !spotlight?.includes(`data-tile-id="${beat.landscapeId}"`)) {
-        fail("landscapeActionA needs hex or Action A button", {
+    case "landscapeActionB":
+      if (!spotlight?.includes(beat.kind) && !spotlight?.includes(`data-tile-id="${beat.landscapeId}"`)) {
+        fail(`${beat.kind} needs hex or its Action button`, {
           step: step.id,
           landscapeId: beat.landscapeId,
           spotlight,
@@ -262,6 +303,7 @@ function performBeat(step, beat) {
     case "archetypePower":
       state.activePlayerIndex = beat.playerIndex ?? 0;
       gm.handleUseArchetypePower(state, "innocent");
+      settleChoices("discard-0");
       state.tutorialFlags.archetypePowerUsed = true;
       break;
     case "advancePhase":
@@ -271,6 +313,13 @@ function performBeat(step, beat) {
       state.activePlayerIndex = beat.playerIndex ?? state.activePlayerIndex;
       state.selectedLandscapeId = beat.landscapeId;
       gm.performLandscapeAction(state, "draw-mindstream");
+      settleChoices();
+      break;
+    case "landscapeActionB":
+      state.activePlayerIndex = beat.playerIndex ?? state.activePlayerIndex;
+      state.selectedLandscapeId = beat.landscapeId;
+      gm.performLandscapeAction(state, beat.actionId);
+      settleChoices(beat.choiceId);
       break;
     case "completeQuest0":
     case "completeQuest1":

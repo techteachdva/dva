@@ -33,7 +33,8 @@ const { loadGameData } = await import(pathToFileURL(path.join(JS, "core/data.js"
 const tm = await import(pathToFileURL(path.join(JS, "tutorial/tutorial-mode.js")).href);
 const gm = await import(pathToFileURL(path.join(JS, "core/game.js")).href);
 const { resolveMindstreamChoice } = await import(pathToFileURL(path.join(JS, "cards/mindstream-choices.js")).href);
-const { confirmRepressStep } = await import(pathToFileURL(path.join(JS, "dreamers/subconscious.js")).href);
+const { confirmRepressStep, pickRepressCard, pickReturnCard, returnableCards } = await import(pathToFileURL(path.join(JS, "dreamers/subconscious.js")).href);
+const { resolveEffectChoice } = await import(pathToFileURL(path.join(JS, "effects/effect-choices.js")).href);
 
 const data = await loadGameData();
 const script = tm.TUTORIAL_SCRIPT;
@@ -48,6 +49,45 @@ function takeDim() {
   if (state.pendingMindstreamChoice?.kind === "dream") resolveMindstreamChoice(state, "bad");
   let guard = 6;
   while (state.pendingRepress?.confirmEmpty && guard-- > 0) confirmRepressStep(state);
+}
+
+/** Answer open choices the way the lesson asks: the named choice, cheapest discards, Psyche Returned first. */
+function settleChoices(choiceId = null) {
+  let guard = 40;
+  while (guard-- > 0) {
+    if (state.pendingEffectChoice) {
+      const enabled = (state.pendingEffectChoice.choices || []).filter((c) => !c.disabled);
+      const pick = enabled.find((c) => c.id === choiceId) || enabled[0];
+      resolveEffectChoice(state, pick?.id || "confirm");
+      continue;
+    }
+    if (state.pendingRepress) {
+      const pending = state.pendingRepress;
+      if (pending.confirmEmpty) { confirmRepressStep(state); continue; }
+      const owner = state.players.find((p) => p.id === pending.playerId) || state.players[0];
+      const picked = new Set((pending.picked || []).map((c) => c.instanceId));
+      const card = [...(owner?.hand || [])]
+        .filter((c) => !picked.has(c.instanceId) && c.type === "psyche")
+        .sort((a, b) => (a.value || 0) - (b.value || 0))[0];
+      if (!card) { confirmRepressStep(state); continue; }
+      pickRepressCard(state, card.instanceId);
+      continue;
+    }
+    if (state.pendingReturn) {
+      const picked = new Set((state.pendingReturn.picked || []).map((c) => c.instanceId));
+      const card = returnableCards(state, state.pendingReturn.filter)
+        .filter((c) => !picked.has(c.instanceId))
+        .sort((a, b) => (a.type === "psyche" ? 0 : 1) - (b.type === "psyche" ? 0 : 1))[0];
+      if (!card) { state.pendingReturn = null; continue; }
+      pickReturnCard(state, card.instanceId);
+      continue;
+    }
+    if (state.pendingMindstreamChoice?.kind === "power-token") {
+      resolveMindstreamChoice(state, "take");
+      continue;
+    }
+    break;
+  }
 }
 
 function performBeat(step, beat) {
@@ -153,6 +193,7 @@ function performBeat(step, beat) {
         state.activePlayerIndex = beat.playerIndex ?? 0;
         const ok = gm.handleUseArchetypePower(state, "innocent");
         if (!ok) fail(`${step.id}: Innocent Power could not fire (Meet budget or token)`);
+        settleChoices("discard-0");
         state.tutorialFlags.archetypePowerUsed = true;
       }
       break;
@@ -166,6 +207,16 @@ function performBeat(step, beat) {
         state.activePlayerIndex = beat.playerIndex ?? state.activePlayerIndex;
         state.selectedLandscapeId = beat.landscapeId;
         gm.performLandscapeAction(state, "draw-mindstream");
+        settleChoices();
+      }
+      break;
+    case "landscapeActionB":
+      if (!tm.isTutorialActionAllowed(state, "landscapeActionB")) fail(`${step.id}: landscape action B blocked`);
+      else {
+        state.activePlayerIndex = beat.playerIndex ?? state.activePlayerIndex;
+        state.selectedLandscapeId = beat.landscapeId;
+        gm.performLandscapeAction(state, beat.actionId);
+        settleChoices(beat.choiceId);
       }
       break;
     case "completeQuest0":

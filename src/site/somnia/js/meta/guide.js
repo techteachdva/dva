@@ -369,7 +369,7 @@ export function getCurrentObjective(state) {
     const count = allSelectedCards(state).length;
     const beasts = allEncountersOnBoard(state).length;
     const meter = beasts > 0
-      ? `If you end the round now, ${beasts} Dreambeast${beasts === 1 ? "" : "s"} will Repress ${beasts} Psyche from the deck.`
+      ? `If you end the round now, ${beasts} Dreambeast${beasts === 1 ? "" : "s"} will Repress ${beasts} Psyche from the Waking Mind at dusk.`
       : "No Dreambeasts are roaming. Ending the round will not tax the Psyche deck.";
     const lines = [
       meter,
@@ -536,7 +536,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 41.0. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 41.1. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -725,7 +725,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 41.0</p>
+          <p class="info-hub-kicker">Somnia v 41.1</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">Capture the Archetypes. Stand on The Bed. Wake before the Dream Deck runs out.</p>
         </div>
