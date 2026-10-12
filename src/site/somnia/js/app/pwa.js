@@ -148,7 +148,7 @@ function claimFirstInstall(registration) {
 
 async function registerWorker() {
   if (!pwaEnabled()) return null;
-  const swUrl = new URL("../sw.js", import.meta.url);
+  const swUrl = new URL("../../sw.js", import.meta.url);
   try {
     let seenController = !!navigator.serviceWorker.controller;
     const registration = await navigator.serviceWorker.register(swUrl);
