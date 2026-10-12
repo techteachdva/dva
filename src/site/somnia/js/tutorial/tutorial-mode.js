@@ -386,10 +386,13 @@ function exploreMoveBeatComplete(state, beat) {
 
 function powerSurgeHandToggleBeatComplete(state, beat) {
   const player = state.players[beat.playerIndex ?? 0];
+  const ids = requiredCardIds(beat);
+  // Done once the Power Surge has been played (left the hand). Hold the Line already spent
+  // the Immovable's only token, so a token-count threshold never fires here.
   return railBeatStickyComplete(
     state,
     beat,
-    () => (player?.powerTokens || 0) >= 2,
+    () => !!player && ids.every((cardId) => !player.hand.some((c) => c.id === cardId)),
     { skipKinds: ["dreamerSelect"] },
   );
 }

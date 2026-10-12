@@ -261,7 +261,13 @@ function openMeetAndPass(state) {
   grantPassOpener(state);
   selectExactCards(state, 0, ["willpower-1-v-open"]);
   gainMeetActions(state);
-  passMeetToken(state);
+  // The step ends with The Visionary holding the Pass Token. Only pass if someone else holds it.
+  const visionary = state.players[0];
+  if (visionary && state.meetPassHolderId && state.meetPassHolderId !== visionary.id) {
+    const holderIndex = state.players.findIndex((p) => p.id === state.meetPassHolderId);
+    if (holderIndex >= 0) state.activePlayerIndex = holderIndex;
+    passMeetToken(state);
+  }
 }
 
 function acceptAtticRematch(state) {
