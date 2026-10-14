@@ -29,7 +29,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "welcome",
     title: "Welcome to Ainmos",
-    body: "You are Dreamers trapped in a collapsing Dreamscape. Cooperate to earn Archetype points before the Dream Deck runs out — or never wake up. Any Dreamer may open a phase and acts first. Then Pass Turn or Give Turn.",
+    body: "You are Dreamers trapped in a collapsing Dreamscape. Cooperate to earn Archetype points and defeat the night's final Boss — or never wake up. Any Dreamer may open a phase and acts first. Then Pass Turn or Give Turn.",
     target: null,
   },
   {
@@ -766,7 +766,7 @@ export function infoHubHtml(options = {}) {
         <div class="info-hub-brand">
           <p class="info-hub-kicker">Ainmos v 0.8</p>
           <h2>Dream Guide</h2>
-          <p class="info-hub-lead">Capture the Archetypes. Stand on The Bed. Wake before the Dream Deck runs out.</p>
+          <p class="info-hub-lead">Build the dream. Climb the Bosses. Wake before the night runs out.</p>
         </div>
         <div class="info-hub-tabs" role="tablist" aria-label="Dream Guide">
           <button type="button" class="is-on" role="tab" data-guide-tab="now" aria-selected="true">Now</button>
@@ -783,7 +783,7 @@ export function infoHubHtml(options = {}) {
         <section class="info-hub-rules" aria-label="Rules highlights">
           <div class="info-hub-rule">
             <h3>Win &amp; Lose</h3>
-            <p><strong>Win:</strong> three Archetypes are face up. When both quests on any one are already true, <strong>Acquire</strong> is free, for 2, 3, or 4 points, and the next fills the row. Repeat until the goal. Magician, Warrior, and Sage are worth 4: defeat their boss, and have one Dreamer sacrifice one Object. Daydream asks for <strong>8</strong>, Nap for <strong>12</strong>, Deep Sleep for <strong>24</strong>. Then stand together on <strong>The Bed</strong> before the Dream Deck ends.</p>
+            <p><strong>Win:</strong> three Archetypes are face up. When both quests on any one are already true, <strong>Acquire</strong> is free, for 2, 3, or 4 points, and the next fills the row. Repeat until the goal. Magician, Warrior, and Sage are worth 4: defeat a Boss of their suit, and have one Dreamer sacrifice one Object. Daydream asks for <strong>8</strong>, Nap for <strong>12</strong>, Deep Sleep for <strong>24</strong>. Defeat the night's final Boss with the goal met to wake.</p>
             <p><strong>Lose:</strong> the Waking Mind runs dry (Psyche deck and discard both empty — watch the <strong>Mind</strong> counter and its dusk forecast), the sixth death, or the final Boss round ends before you wake.</p>
             <p><strong>Remember N:</strong> discard up to N Psyche, Return that many +1 from the Subconscious. Memory Landscapes (Remember 2), Remember Objects, fixed Brights, and the Innocent and Fool all Remember.</p>
           </div>

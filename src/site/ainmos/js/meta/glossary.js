@@ -666,7 +666,7 @@ function escapeHtml(value) {
 export function playerPrimerHtml() {
   return `
     <div class="player-primer">
-      <p class="player-primer-lead">2–4 Dreamers, one team. Three Archetypes are face up: make one true, Acquire it, and repeat until the goal. Then stand together on <strong>The Bed</strong> before the <strong>Dream Deck</strong> runs out — and before you forget yourself.</p>
+      <p class="player-primer-lead">2–4 Dreamers, one team. Three Archetypes are face up: make one true, Acquire it, and repeat until the goal. Build the dream tile by tile, climb the ladder of Bosses, and defeat the night's <strong>final Boss</strong> with your goal met — before you forget yourself.</p>
       <div class="player-primer-grid">
         <section>
           <h3>Win and lose</h3>

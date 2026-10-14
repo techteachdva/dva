@@ -950,3 +950,9 @@ html[data-form="phone"] .night-ante { gap: 1px; }
 @media (prefers-reduced-motion: reduce) {
   .coach-card, .coach-spark { animation: none; }
 }
+
+/* The splash box art, reflected like the wordmark. */
+.menu-splash-art {
+  scale: -1 1;
+  filter: hue-rotate(-12deg) saturate(0.92);
+}
