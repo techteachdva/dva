@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.3";
+export const SOMNIA_VERSION = "0.4";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.4",
+    title: "Dream Forms",
+    notes: [
+      "A spread can make a Dream Form: Echo (two of one value), Ladder (three in a row), Chord (three of one suit), Trinity (one of each suit), Trifecta (three of a kind), or Unity (three 1s). The best Form adds its dice: +1 to start, +1 per level. The Dream Forms panel shows every level.",
+      "Six Objects are now Form Objects: Mirror (Echo), Rope (Ladder), Conch Shell (Chord), Spark of Sun (Trinity), Monkey Paw (Trifecta), and Egg (Unity). Play one, Repress 1 Psyche of its suit, and its Form rises a level. The Object is Repressed too.",
+      "Psyche cards can carry one upgrade: Chaotic (a d6 value, rolled when drawn), Vivid (a second suit), Lucid (any suit, same value), or Recurring (returns to hand after a spread). A new upgrade replaces the old one; the same upgrade twice changes nothing and is not spent.",
+    ],
+  },
   {
     version: "0.3",
     title: "The Dream Re-forms",

@@ -14,7 +14,8 @@ import {
 } from "./object-effects.js";
 
 export { persistentObjectCanActivate };
-import { psycheHandCount, psycheCardValue } from "../cards/psyche.js";
+import { psycheHandCount, psycheCardValue, psycheMatchesSuit, isWildPsyche } from "../cards/psyche.js";
+import { formById, levelUpForm } from "../cards/dream-forms.js";
 import { pullObjectFromMindstream, objectForPlayer, discardToMindstream } from "../cards/mindstream-supply.js";
 import { spendPowerTokens, grantPowerTokens } from "../cards/power-tokens.js";
 import { queueObjectDrawFx, queueObjectPlayFx } from "../board/board-fx.js";
@@ -166,6 +167,41 @@ function resolveMustPlayObject(state, player, card, helpers) {
   repressCard(state, card);
 }
 
+function dreamFormFee(player, suit) {
+  const candidates = (player.hand || []).filter((c) => (
+    c.type === "psyche"
+    && !c.isDreambeastPsyche
+    && psycheMatchesSuit(c, suit)
+  ));
+  // Spend the plainest card: not Wild, not upgraded, lowest value.
+  return candidates.sort((a, b) => (
+    Number(isWildPsyche(a)) - Number(isWildPsyche(b))
+    || Number(!!a.upgrade) - Number(!!b.upgrade)
+    || (a.value || 0) - (b.value || 0)
+  ))[0] || null;
+}
+
+function playDreamFormObject(state, player, card) {
+  const form = formById(card.levelsForm);
+  const suitName = card.suit ? card.suit.charAt(0).toUpperCase() + card.suit.slice(1) : "suited";
+  const fee = dreamFormFee(player, card.suit);
+  if (!form) return null;
+  if (!fee) {
+    addLog(state, `${card.name} asks for 1 ${suitName} Psyche to Repress. Draw or trade for one, then play it.`);
+    return null;
+  }
+  player.hand = player.hand.filter((c) => c.instanceId !== fee.instanceId);
+  repressCard(state, fee);
+  player.objects = player.objects.filter((o) => o.instanceId !== card.instanceId);
+  const level = levelUpForm(state, form.id);
+  queueObjectPlayFx(card, { to: "subconscious" });
+  repressCard(state, card);
+  playSfx("acquire");
+  addLog(state, `${player.name} Represses ${fee.name} and ${card.name}. ${form.name} rises to level ${level}: +${level} dice.`);
+  maybeClearFreshlyRepressed(state);
+  return card;
+}
+
 export function playObjectCard(state, player, card, helpers, options = {}) {
   ensureObjectZones(player);
   const inHand = player.objects.find((o) => o.instanceId === card.instanceId);
@@ -180,6 +216,11 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
     const tag = objectSetTag(card);
     if (tag) checkObjectTagSet(state, player, tag);
     return card;
+  }
+
+  // Ainmos Dream Form Objects: Repress 1 suited Psyche, raise the Form, Repress the Object.
+  if (inHand?.subtype === "instant" && inHand.levelsForm) {
+    return playDreamFormObject(state, player, inHand);
   }
 
   if (inHand?.subtype === "instant") {

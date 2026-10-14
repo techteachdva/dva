@@ -11,7 +11,7 @@ import { addLog, drawPsycheForPlayer, setEncounterOnLandscape, landscapeById, ti
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { logMoment } from "../core/narrator.js";
 import { totalStat } from "../core/rules.js";
-import { isWildPsyche } from "./psyche.js";
+import { isWildPsyche, psycheMatchesSuit } from "./psyche.js";
 import {
   hasAffectedLandscapes,
   eventLandscapeNames,
@@ -43,7 +43,7 @@ const SUIT_LABELS = {
 
 function psycheOfSuit(player, suit) {
   return (player.hand || []).filter(
-    (c) => c.type !== "psyche-power" && c.type !== "object" && (c.suit === suit || isWildPsyche(c)),
+    (c) => c.type !== "psyche-power" && c.type !== "object" && psycheMatchesSuit(c, suit),
   );
 }
 

@@ -1,3 +1,4 @@
+import { bestForm, DREAM_FORMS, formLevel, PSYCHE_UPGRADES, upgradeLabel } from "../cards/dream-forms.js";
 import { renderNightBar } from "./night-bar.js";
 import { holdMusic } from "../audio/audio.js";
 import { getPhase, activePlayer, headPlayer, tileEncounters, encounterKey, allDreamersOnBed, archetypeRowOf, focusRowArchetype } from "../core/state.js";
@@ -438,7 +439,12 @@ function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini,
       ${selected ? `<span class="psyche-quanta psyche-quanta-${card.suit}" aria-hidden="true"></span>` : ""}
       ${psychePipHtml(card.value, symbol, suitClass(card.suit))}
       <span class="psyche-label">${label}</span>
+      ${upgradeBadgeHtml(card)}
     `;
+    if (card.upgrade) {
+      el.classList.add("has-upgrade", `upgrade-${card.upgrade}`);
+      el.title = `${upgradeLabel(card)}: ${PSYCHE_UPGRADES[card.upgrade]?.text || ""}`;
+    }
   }
 
   attachCardActions(el, { onClick, onInspect });
@@ -613,6 +619,36 @@ export function renderActiveDreamerHand(state, onCardClick, {
 }
 
 /** Selected Psyche sit on the table as a holographic spread. */
+const UPGRADE_GLYPH = { chaotic: "⚄", vivid: "◐", lucid: "◇", recurring: "↻" };
+
+function upgradeBadgeHtml(card) {
+  if (!card?.upgrade) return "";
+  const glyph = UPGRADE_GLYPH[card.upgrade] || "✦";
+  const second = card.upgrade === "vivid" && card.vividSuit
+    ? `<span class="upgrade-second-suit suit-${card.vividSuit}" aria-hidden="true"></span>`
+    : "";
+  return `<span class="psyche-upgrade-badge" aria-label="${upgradeLabel(card)}">${glyph}</span>${second}`;
+}
+
+/** Ainmos: the six Dream Forms, their levels, and the dice each adds. */
+export function renderDreamForms(state) {
+  const host = document.getElementById("dream-forms");
+  if (!host || !state) return;
+  const key = DREAM_FORMS.map((f) => formLevel(state, f.id)).join(",");
+  if (host.dataset.key === key) return;
+  host.dataset.key = key;
+  host.innerHTML = DREAM_FORMS.map((f) => {
+    const level = formLevel(state, f.id);
+    const pips = Array.from({ length: Math.min(level, 8) }, () => "<i></i>").join("");
+    return `<li class="dream-form-row form-${f.id}${level > 1 ? " is-raised" : ""}" title="${f.name}: ${f.pattern}. Level ${level}, +${level} dice.">
+      <span class="dream-form-name">${f.name}</span>
+      <span class="dream-form-pattern">${f.pattern}</span>
+      <span class="dream-form-pips" aria-hidden="true">${pips}</span>
+      <span class="dream-form-dice">+${level}</span>
+    </li>`;
+  }).join("");
+}
+
 export function renderSpreadTray(state, onCardClick, openerAction = null) {
   const tray = document.getElementById("spread-tray");
   if (!tray) return;
@@ -633,6 +669,14 @@ export function renderSpreadTray(state, onCardClick, openerAction = null) {
   const caption = document.createElement("p");
   caption.className = "spread-tray-label";
   caption.textContent = cards.length === 1 ? "Spread — 1 Psyche" : `Spread — ${cards.length} Psyche`;
+  const form = bestForm(state, cards);
+  if (form) {
+    const chip = document.createElement("span");
+    chip.className = `spread-form-chip form-${form.id}`;
+    chip.textContent = `${form.name} +${form.dice}`;
+    chip.title = `${form.name}, level ${form.level}: +${form.dice} dice`;
+    caption.appendChild(chip);
+  }
   tray.appendChild(caption);
 
   const row = document.createElement("div");

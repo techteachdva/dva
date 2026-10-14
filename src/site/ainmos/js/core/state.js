@@ -1,3 +1,4 @@
+import { rollChaoticValue } from "../cards/dream-forms.js";
 import { resetDreamscape } from "../board/landscapes.js";
 import { finalBossForLength } from "../encounters/boss-ladder.js";
 import { createQuestTracker, recordQuestEvent, isQuestConditionMet } from "../dreamers/quests.js";
@@ -577,6 +578,8 @@ export function drawPsycheForPlayer(state, player, count = 1) {
 
     const limit = handLimitForPlayer(state, player);
     if ((player.hand?.length || 0) < limit) {
+      // Chaotic Psyche rolls its value each time it comes into a hand.
+      if (card.upgrade === "chaotic") rollChaoticValue(card);
       player.hand.push(card);
       drawn.push(card);
     } else {

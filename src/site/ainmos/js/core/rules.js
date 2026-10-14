@@ -1,3 +1,4 @@
+import { bestForm } from "../cards/dream-forms.js";
 /** SOMNIA 18.5.1 rules helpers */
 
 import {
@@ -9,7 +10,7 @@ import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
 import { persistentMeetBonus, sumEffectivePsycheValue } from "../effects/objects.js";
 import { effectiveDreamerStat } from "../dreamers/archetype-stats.js";
 import { PHASES } from "./data.js";
-import { isWildPsyche, psycheCardValue } from "../cards/psyche.js";
+import { isWildPsyche, psycheCardValue, psycheMatchesSuit } from "../cards/psyche.js";
 import { playSfx } from "../audio/audio.js";
 import { queueCardDiscard, queueHandDelta } from "../cards/card-fx.js";
 import { archetypeSpreadOpen, undefeatedFinalArchetypes } from "../dreamers/final-recurrence-rules.js";
@@ -18,7 +19,7 @@ export { isWildPsyche, psycheCardValue };
 
 /** Wild Psyche counts as the active phase suit when played for phase actions. */
 export function cardCountsAsSuit(card, suit, state) {
-  if (!isWildPsyche(card)) return card.suit === suit;
+  if (!isWildPsyche(card)) return psycheMatchesSuit(card, suit);
   const phase = PHASES[state.phaseIndex];
   if (phase === "Reveal") return suit === "lucidity";
   if (phase === "Explore") return suit === "elasticity";
@@ -377,11 +378,11 @@ export function canSelectCard(state, card, phase, player = null) {
 
   if (phase === "Reveal") {
     if (selected.length >= PHASE_OPENER_MAX_CARDS) return false;
-    return card.suit === "lucidity" || isWildPsyche(card);
+    return psycheMatchesSuit(card, "lucidity");
   }
   if (phase === "Explore") {
     if (selected.length >= PHASE_OPENER_MAX_CARDS) return false;
-    return card.suit === "elasticity" || isWildPsyche(card);
+    return psycheMatchesSuit(card, "elasticity");
   }
   if (phase === "Meet") {
     if (state.meetActionBudget > 0 && state.meetActionsUsed < state.meetActionBudget) {
@@ -390,7 +391,7 @@ export function canSelectCard(state, card, phase, player = null) {
     }
     if (state.meetActionBudget === 0) {
       if (selected.length >= PHASE_OPENER_MAX_CARDS) return false;
-      return card.suit === "willpower" || isWildPsyche(card);
+      return psycheMatchesSuit(card, "willpower");
     }
     return selected.length < 3;
   }
@@ -438,7 +439,7 @@ export function encounterPaySuit(encounter, accept = true) {
 
 export function selectedHasPaySuit(cards, suit) {
   if (!suit) return true;
-  return (cards || []).some((c) => isWildPsyche(c) || c.suit === suit);
+  return (cards || []).some((c) => psycheMatchesSuit(c, suit));
 }
 
 export function encounterPayHint(encounter, accept = true) {
@@ -467,6 +468,8 @@ export function encounterDiceTotal(state, actor, selected, encounter, { accept =
     total += totalStat(actor, suit, state);
   }
   total += state.anchorMeetSpreadBonus || 0;
+  // Ainmos Dream Forms: the spread's best pattern adds its dice.
+  total += bestForm(state, cards)?.dice || 0;
   return total;
 }
 

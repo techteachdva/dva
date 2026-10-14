@@ -168,3 +168,130 @@
 /* Phones: the bar keeps every card but tightens the gaps. */
 html[data-form="phone"] .night-bar { gap: 3px; padding: 2px 4px; }
 html[data-form="phone"] .night-ante { gap: 1px; }
+
+/* ---- Psyche upgrades ---------------------------------------------------- */
+
+.psyche-card.has-upgrade {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22), 0 0 12px rgba(200, 184, 236, 0.35);
+}
+
+.psyche-upgrade-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 1.15em;
+  height: 1.15em;
+  border-radius: 50%;
+  background: rgba(14, 11, 28, 0.82);
+  color: var(--dc-ink, #f3f0ff);
+  font-size: 0.78em;
+  line-height: 1;
+  box-shadow: 0 0 0 1px rgba(200, 184, 236, 0.55), 0 0 8px rgba(200, 184, 236, 0.4);
+  pointer-events: none;
+}
+
+.upgrade-chaotic .psyche-upgrade-badge { box-shadow: 0 0 0 1px var(--dc-peach, #e9c3b8), 0 0 8px rgba(233, 195, 184, 0.6); }
+.upgrade-vivid .psyche-upgrade-badge { box-shadow: 0 0 0 1px var(--dc-mint, #b6e6d6), 0 0 8px rgba(182, 230, 214, 0.6); }
+.upgrade-lucid .psyche-upgrade-badge { box-shadow: 0 0 0 1px var(--dc-powder, #b4cbe8), 0 0 8px rgba(180, 203, 232, 0.7); }
+.upgrade-recurring .psyche-upgrade-badge { box-shadow: 0 0 0 1px var(--dc-lavender, #c8b8ec), 0 0 8px rgba(200, 184, 236, 0.7); }
+
+/* Lucid cards shimmer through every suit. */
+.psyche-card.upgrade-lucid .psyche-holo {
+  background: var(--dc-iridescent);
+  opacity: 0.35;
+  mix-blend-mode: screen;
+}
+
+/* Vivid: a sliver of the second suit along the card's edge. */
+.upgrade-second-suit {
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 4px;
+  border-radius: 0 3px 3px 0;
+  z-index: 2;
+}
+.upgrade-second-suit.suit-lucidity { background: var(--lucidity); box-shadow: 0 0 6px var(--lucidity); }
+.upgrade-second-suit.suit-elasticity { background: var(--elasticity); box-shadow: 0 0 6px var(--elasticity); }
+.upgrade-second-suit.suit-willpower { background: var(--willpower); box-shadow: 0 0 6px var(--willpower); }
+
+/* ---- Dream Forms --------------------------------------------------------- */
+
+.spread-form-chip {
+  display: inline-block;
+  margin-left: 0.55rem;
+  padding: 0.05rem 0.55rem;
+  border-radius: 999px;
+  background: var(--dc-iridescent);
+  color: #1a1530;
+  font-family: var(--font-display);
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 0 12px rgba(182, 230, 214, 0.45);
+  animation: dc-bob 2.8s ease-in-out infinite;
+}
+
+.dream-forms {
+  list-style: none;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.dream-form-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.28rem 0.5rem;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px rgba(200, 184, 236, 0.1);
+}
+
+.dream-form-row.is-raised {
+  background: linear-gradient(90deg, rgba(200, 184, 236, 0.14), rgba(182, 230, 214, 0.06));
+  box-shadow: inset 0 0 0 1px rgba(182, 230, 214, 0.35);
+}
+
+.dream-form-name {
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.dream-form-pattern {
+  font-family: var(--dc-whisper, Georgia, serif);
+  font-style: italic;
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dream-form-pips { display: inline-flex; gap: 2px; }
+.dream-form-pips i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--dc-mint, #b6e6d6);
+  box-shadow: 0 0 4px var(--dc-mint, #b6e6d6);
+}
+
+.dream-form-dice {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  color: var(--dc-powder, #b4cbe8);
+  min-width: 1.6em;
+  text-align: right;
+}

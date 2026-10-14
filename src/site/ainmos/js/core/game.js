@@ -1,3 +1,4 @@
+import { bestForm } from "../cards/dream-forms.js";
 import { isLadderBoss, anteForBoss } from "../encounters/boss-ladder.js";
 import {
   getPhase,
@@ -91,7 +92,7 @@ import {
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "../effects/objects.js";
 import { isBossDreamCard } from "../cards/dream-deck.js";
 import { resumeObjectEffect } from "../effects/object-effects.js";
-import { hasPsycheHealth, allyHandCount, isWildPsyche, isTradablePsyche, TRADE_OFFER_LIMIT } from "../cards/psyche.js";
+import { hasPsycheHealth, allyHandCount, isWildPsyche, isTradablePsyche, TRADE_OFFER_LIMIT, psycheMatchesSuit } from "../cards/psyche.js";
 import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx, queueAcceptAllyFx } from "../board/board-fx.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "../dreamers/archetypes.js";
 import { getActivatableArchetypePowers } from "../dreamers/archetype-stats.js";
@@ -1904,7 +1905,7 @@ function autoSelectMeetSpread(state, mode = "accept") {
   ));
   if (!candidates.length) return false;
   const suited = paySuit
-    ? candidates.filter((card) => isWildPsyche(card) || card.suit === paySuit)
+    ? candidates.filter((card) => psycheMatchesSuit(card, paySuit))
     : candidates;
   const pick = [];
   if (suited[0]) pick.push(suited[0]);
@@ -2041,6 +2042,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     encounterDiceTotal(state, actor, selected, encounter, { accept: !isReject }),
   );
   const bonus = dreamerMeetBonuses(actor.dreamer, encounter);
+  const form = bestForm(state, selected);
   if (!state.forcedAccept && !treatAsFree && !spendMeetAction(state, MEET_ACTIONS.MEET)) return;
   if (state.pendingMindstreamMeet?.landscapeId === tile.id) state.pendingMindstreamMeet = null;
   const ctx = {
@@ -2060,7 +2062,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     : "";
   addLog(
     state,
-    `${actor.name} Power ${played}d6 vs ${encounter.name} Power ${beastPower}d6.${bonus.total ? ` Affinity +${bonus.total}.` : ""}${recNote}`,
+    `${actor.name} Power ${played}d6 vs ${encounter.name} Power ${beastPower}d6.${form ? ` ${form.name} +${form.dice}.` : ""}${bonus.total ? ` Affinity +${bonus.total}.` : ""}${recNote}`,
   );
 
   const finish = (dreamerWins) => {
@@ -2112,6 +2114,7 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
   queueMeetFlashFx(isReject ? "reject" : "accept", tile.id, selected);
   const discarded = discardSelected(state, actor);
   trackPsycheDiscard(state, actor, discarded);
+  returnRecurringPsyche(state, actor, discarded);
 
   if (!dreamerWins) {
     if (state.tutorialMode) state.tutorialFlags.firstBattleLost = true;
@@ -2983,6 +2986,16 @@ function canAutoActivateExplore(state) {
 }
 
 /** Freeform Board: tap an empty glowing hex to place the chosen Landscape there. */
+/** Ainmos: Recurring Psyche spent on a spread comes back to the hand, win or lose. */
+function returnRecurringPsyche(state, actor, spent) {
+  const back = (spent || []).filter((card) => card?.upgrade === "recurring");
+  if (!back.length) return;
+  const ids = new Set(back.map((card) => card.instanceId));
+  state.psycheDiscard = (state.psycheDiscard || []).filter((card) => !ids.has(card.instanceId));
+  actor.hand.push(...back);
+  addLog(state, `${back.map((card) => card.name).join(", ")} ${back.length === 1 ? "returns" : "return"} to ${actor.name}'s hand (Recurring).`);
+}
+
 export function handleBoardSlotClick(state, q, r) {
   const pick = state.landscapePick;
   if (pick?.mode !== "reveal") return false;

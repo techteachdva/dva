@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.3-dream-reforms";
-const RUNTIME_CACHE = "ainmos-runtime-0.3-dream-reforms";
+const CACHE_NAME = "ainmos-0.4-dream-forms";
+const RUNTIME_CACHE = "ainmos-runtime-0.4-dream-forms";
 
 const PRECACHE = [
   "./",
@@ -56,6 +56,7 @@ const PRECACHE = [
   "./js/ui/click-feedback.js",
   "./js/ui/vault-panel.js",
   "./js/ui/night-bar.js",
+  "./js/cards/dream-forms.js",
   "./js/encounters/boss-ladder.js",
   "./js/ui/compact-chrome.js",
   "./js/core/data.js",

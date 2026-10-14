@@ -1,3 +1,4 @@
+import { psycheSuitsOf } from "./dream-forms.js";
 import { isDreambeastPsycheCard } from "../dreamers/subconscious.js";
 
 export const MAX_PSYCHE_IN_HAND = 10;
@@ -6,6 +7,13 @@ export const MAX_ALLIES_IN_HAND = MAX_PSYCHE_IN_HAND;
 
 export function isWildPsyche(card) {
   return !!(card?.wild || card?.id?.startsWith("wild-"));
+}
+
+/** Does this Psyche count as that suit? Wild, Lucid, and Vivid cards count as more than one. */
+export function psycheMatchesSuit(card, suit) {
+  if (!card || !suit) return false;
+  if (isWildPsyche(card)) return true;
+  return psycheSuitsOf(card).includes(suit);
 }
 
 /** Each Dreamer may offer this many Psyche in one trade. */

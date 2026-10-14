@@ -1,3 +1,4 @@
+import { renderDreamForms } from "../ui/ui.js";
 import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, playSfx, playLandscapeSfx } from "../audio/audio.js";
 import { initClickFeedback } from "../ui/click-feedback.js";
 import { syncTurnHalo, positionTurnHalo, trackTurnHaloWithCamera } from "../board/turn-halo.js";
@@ -2478,6 +2479,7 @@ function renderBoardArea() {
       openDreamerBoardRadial(null, result.playerId, result.tileId);
     }
   };
+  renderDreamForms(state);
   renderDreamscapeVault(state, {
     onSelect: (index) => {
       if (handleVaultTileSelect(state, index)) playSfx("select");
