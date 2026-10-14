@@ -1,3 +1,4 @@
+import { resetDreamscape } from "../board/landscapes.js";
 import { finalBossForLength } from "../encounters/boss-ladder.js";
 import { createQuestTracker, recordQuestEvent, isQuestConditionMet } from "../dreamers/quests.js";
 import { FINAL_ARCHETYPE_POWER } from "../dreamers/final-recurrence-rules.js";
@@ -816,6 +817,13 @@ export function beginRoundReveal(state) {
   state.hunterShoveUsed = false;
   state.weaverSwapUsed = false;
   resetVaultRoundCounters(state);
+  // Ainmos dawn: the round after a Boss Dream, the Waking Mind reshuffles and everyone draws 3.
+  if (state.bossArrivedThisRound && !state.tutorialMode) {
+    state.bossArrivedThisRound = false;
+    anteDawn(state);
+  }
+  // Ainmos: the Vault ran dry last round, so the Dreamscape resets now.
+  if (isFreeformBoard(state) && vaultExhausted(state)) resetDreamscape(state);
   // A new round with no Dream left to draw: the night is over.
   if (!state.tutorialMode && !(state.dreamDeck || []).length) {
     state.nightOver = true;
@@ -835,6 +843,19 @@ export function beginRoundReveal(state) {
   });
 
   addLog(state, `Round ${state.round}: Reveal — each Dreamer draws 2 Psyche.`);
+}
+
+/** Between Antes: the discard shuffles back into the Waking Mind, then each Dreamer draws 3. */
+export function anteDawn(state) {
+  if (state.psycheDiscard?.length) {
+    state.psycheDeck = shuffle([...(state.psycheDeck || []), ...state.psycheDiscard]);
+    state.psycheDiscard = [];
+  }
+  state.ante = (state.ante || 1) + 1;
+  state.players.forEach((player) => {
+    if (player.alive) drawPsycheForPlayer(state, player, 3);
+  });
+  addLog(state, `Dawn between Antes: the Waking Mind reshuffles, and each Dreamer draws 3 Psyche.`);
 }
 
 export const DEATH_CLOCK_CAP = 6;

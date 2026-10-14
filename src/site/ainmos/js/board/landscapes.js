@@ -493,6 +493,64 @@ export function surfaceLandscapeNear(state, landscapeId, nearTileId = "bed") {
   return tile;
 }
 
+/** Board-tile fields that are not part of the Landscape card itself. */
+const TILE_RUNTIME_KEYS = [
+  "q", "r", "revealed", "wasteland", "forgotten", "finalRecurrenceSide",
+  "encounters", "encounter", "finalArchetype", "finalArchetypes",
+];
+
+function tileToCard(tile) {
+  const card = { ...tile };
+  TILE_RUNTIME_KEYS.forEach((key) => delete card[key]);
+  return card;
+}
+
+/**
+ * Ainmos Dreamscape Reset. When the Vault and tile deck are both empty, the
+ * next round begins with the dream dissolving: every Landscape but The Bed
+ * shuffles back into the tile deck, ordinary Dreambeasts on them are Repressed,
+ * Bosses drift back to The Bed, and every Dreamer wakes on The Bed.
+ */
+export function resetDreamscape(state) {
+  if (!isFreeformBoard(state)) return false;
+  const bed = state.board.find((t) => t.center || t.id === "bed");
+  if (!bed) return false;
+  const outer = state.board.filter((t) => t !== bed);
+  const bosses = [];
+  let repressed = 0;
+  outer.forEach((tile) => {
+    tileEncounters(tile).forEach((enc) => {
+      if (enc.boss) bosses.push(enc);
+      else {
+        repressCard(state, enc, { tileId: tile.id });
+        repressed += 1;
+      }
+    });
+  });
+  state.landscapeTileDeck = shuffle([
+    ...(state.landscapeTileDeck || []),
+    ...(state.landscapeVault || []),
+    ...(state.landscapesSetAside || []),
+    ...outer.map(tileToCard),
+  ]);
+  state.landscapeVault = [];
+  state.landscapesSetAside = [];
+  state.board = [bed];
+  bosses.forEach((boss) => tileEncounters(bed).push(boss));
+  state.players.forEach((player) => {
+    if (player.alive) player.landscapeId = bed.id;
+  });
+  state.selectedLandscapeId = bed.id;
+  state.landscapePick = null;
+  refillVault(state);
+  state.dreamscapeResets = (state.dreamscapeResets || 0) + 1;
+  logMoment(
+    state,
+    `The Dreamscape dissolves and re-forms. Every Dreamer wakes on The Bed.${repressed ? ` ${repressed} Dreambeast${repressed === 1 ? " sinks" : "s sink"} into the Subconscious.` : ""}${bosses.length ? " The Boss drifts back to The Bed." : ""}`,
+  );
+  return true;
+}
+
 /** Freeform: choose which Vault tile the next placement uses (tap again to clear). */
 export function selectVaultTile(state, index) {
   const pick = state.landscapePick;

@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.2";
+export const SOMNIA_VERSION = "0.3";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.3",
+    title: "The Dream Re-forms",
+    notes: [
+      "When the Dreamscape Vault and the tile deck are both empty, the next round begins with a Dreamscape Reset: every Landscape but The Bed shuffles back into the tile deck, Dreambeasts on them are Repressed, Bosses drift back to The Bed, and every Dreamer wakes on The Bed.",
+      "Dawn between Antes: the round after a Boss arrives, the Waking Mind reshuffles and every Dreamer draws 3 Psyche.",
+      "The Bed no longer draws 3. It Dreams Onward: flip the top tile of the deck, then place it free or put it back.",
+    ],
+  },
   {
     version: "0.2",
     title: "Ten Nightmares",

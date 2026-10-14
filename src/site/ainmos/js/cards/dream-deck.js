@@ -59,6 +59,8 @@ export function collapseDuplicateBosses(state) {
 
 export function spawnBossEncounterOnBed(state, card) {
   if (!isBossDreamCard(card)) return false;
+  // The round a Boss arrives closes its Ante; dawn follows next round.
+  state.bossArrivedThisRound = true;
   const existing = allEncountersOnBoard(state).find(({ encounter }) => (
     encounter.id === card.id || encounter.refId === card.id
   ));
