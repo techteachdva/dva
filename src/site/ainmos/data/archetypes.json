@@ -1,0 +1,122 @@
+[
+  {
+    "id": "sage",
+    "name": "Sage",
+    "points": 4,
+    "image": "images/archetypes/archetype-sage.webp",
+    "suit": "lucidity",
+    "passive": "All Dreamers +1 Lucidity",
+    "power": null,
+    "quests": ["Defeat Double", "1 Dreamer sacrifices 1 Object"]
+  },
+  {
+    "id": "innocent",
+    "name": "Innocent",
+    "points": 2,
+    "image": "images/archetypes/archetype-innocent.webp",
+    "suit": "lucidity",
+    "passive": null,
+    "power": "Remember 3: discard up to 3 Psyche, Return that many +1",
+    "quests": ["Draw Mindstream on any Lucidity Landscape", "Meet a Lucidity Dreambeast"]
+  },
+  {
+    "id": "caregiver",
+    "name": "Caregiver",
+    "points": 3,
+    "image": "images/archetypes/archetype-caregiver.webp",
+    "suit": "willpower",
+    "passive": null,
+    "power": "The Dreamer with the fewest Psyche draws 5, up to the hand limit",
+    "quests": ["Draw Mindstream on Sea of Teeth or Field of Broken Glass", "Meet a Dreambeast on Sea of Teeth or Field of Broken Glass"]
+  },
+  {
+    "id": "lover",
+    "name": "Lover",
+    "points": 3,
+    "image": "images/archetypes/archetype-lover.webp",
+    "suit": "elasticity",
+    "passive": null,
+    "power": "Return 1 Object from the Subconscious",
+    "quests": ["Draw Mindstream on Awards or The Party", "Meet a Dreambeast on Awards or The Party"]
+  },
+  {
+    "id": "explorer",
+    "name": "Explorer",
+    "points": 3,
+    "image": "images/archetypes/archetype-explorer.webp",
+    "suit": "elasticity",
+    "passive": null,
+    "power": "Move 1 Dreamer or 1 Dreambeast to any Landscape matching its suit",
+    "quests": ["Draw Mindstream on Endless Ocean or Lava", "Meet a Dreambeast on Endless Ocean or Lava"]
+  },
+  {
+    "id": "magician",
+    "name": "Magician",
+    "points": 4,
+    "image": "images/archetypes/archetype-magician.webp",
+    "suit": "lucidity",
+    "passive": "All Dreamers +1 Elasticity",
+    "power": null,
+    "quests": ["Defeat Cerberus", "1 Dreamer sacrifices 1 Object"]
+  },
+  {
+    "id": "orphan",
+    "name": "Orphan",
+    "points": 2,
+    "image": "images/archetypes/archetype-orphan.webp",
+    "suit": "willpower",
+    "passive": null,
+    "power": "Everyone draws 2 Psyche",
+    "quests": ["Draw Mindstream on any Willpower Landscape", "Meet a Willpower Dreambeast"]
+  },
+  {
+    "id": "fool",
+    "name": "Fool",
+    "points": 3,
+    "image": "images/archetypes/archetype-fool.webp",
+    "suit": "elasticity",
+    "passive": null,
+    "power": "Remember Dreamers+1: discard up to that many Psyche, Return that many +1",
+    "quests": ["Draw Mindstream on Insanity or Black Void", "Meet a Dreambeast on Insanity or Black Void"]
+  },
+  {
+    "id": "creator",
+    "name": "Creator",
+    "points": 3,
+    "image": "images/archetypes/archetype-creator.webp",
+    "suit": "lucidity",
+    "passive": null,
+    "power": "Each Dreamer returns 1 Dreambeast from the Subconscious",
+    "quests": ["Draw Mindstream on Day in the Life or Inner Sanctum", "Meet a Dreambeast on Day in the Life or Inner Sanctum"]
+  },
+  {
+    "id": "ruler",
+    "name": "Ruler",
+    "points": 3,
+    "image": "images/archetypes/archetype-ruler.webp",
+    "suit": "willpower",
+    "passive": null,
+    "power": "Each Dreamer returns 1 Event from the Subconscious",
+    "quests": ["Draw Mindstream on Tranquil Grove or Endless Hallway", "Meet a Dreambeast on Tranquil Grove or Endless Hallway"]
+  },
+  {
+    "id": "warrior",
+    "name": "Warrior",
+    "points": 4,
+    "image": "images/archetypes/archetype-warrior.webp",
+    "suit": "willpower",
+    "passive": "All Dreamers +1 Willpower",
+    "power": null,
+    "quests": ["Defeat Leviathan", "1 Dreamer sacrifices 1 Object"]
+  },
+  {
+    "id": "outlaw",
+    "name": "Outlaw",
+    "points": 2,
+    "image": "images/archetypes/archetype-outlaw.webp",
+    "suit": "elasticity",
+    "passive": null,
+    "power": "The acting Dreamer draws 1 Object from the discard",
+    "quests": ["Draw Mindstream on any Elasticity Landscape", "Meet an Elasticity Dreambeast"]
+  }
+]

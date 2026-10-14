@@ -1,0 +1,314 @@
+/*
+  Somnia glass overlays. Loaded after game.css.
+  Offline stand-in for the Tailwind glass spec so the itch zip
+  does not need the Tailwind CDN.
+
+  Glass:     bg-slate-900/40 · backdrop-blur-md · border-white/10 · shadow-2xl shadow-indigo-950/50
+  Selected:  border-white/40 · bg-gradient-to-br from-white/10 to-transparent
+  Modal:     bg-slate-950/60 · backdrop-blur-xl
+  Nightmare: bg-rose-950/40 · border-rose-500/20 · shadow-rose-950/50
+  Card hover: -translate-y-2 · scale-105 · shadow-indigo-500/20 · duration-300
+*/
+
+body.play-window,
+body.menu-window {
+  --glass: rgba(15, 23, 42, 0.4);
+  --glass-deep: rgba(2, 6, 23, 0.6);
+  --glass-line: rgba(255, 255, 255, 0.1);
+  --glass-catch: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 25px 50px -12px rgba(30, 27, 75, 0.5);
+}
+
+body.play-window .top-bar,
+body.menu-window .top-bar {
+  background: rgba(8, 10, 24, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-line);
+  border-top-color: var(--glass-catch);
+  border-left-color: var(--glass-catch);
+  box-shadow: var(--glass-shadow);
+}
+
+.hud-suits {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.hud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.2rem 0.65rem 0.2rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 20px rgba(30, 27, 75, 0.35);
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: #f8fafc;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-pill-name {
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.72);
+}
+
+.hud-pill-ring {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16);
+  flex: 0 0 auto;
+}
+
+.hud-pill-lucidity .hud-pill-ring { background: #4a9eff; }
+.hud-pill-elasticity .hud-pill-ring { background: #f0c830; }
+.hud-pill-willpower .hud-pill-ring { background: #e84848; }
+.hud-pill-power .hud-pill-ring { background: #c4b5fd; }
+
+body.play-window .hud-item,
+.header-actions .btn,
+.phase-banner,
+.table-action-cue,
+.pause-card,
+.tutorial-card,
+.end-panel {
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Rails that hold small type sit a step more solid so the drifting
+   field behind the board does not shimmer through the words. */
+.hand-bar,
+.sidebar,
+.deck-column {
+  background: rgba(8, 10, 24, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--glass-shadow);
+}
+
+.modal-backdrop {
+  background: rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.modal-content,
+.fullscreen-prompt-card,
+#utility-modal .modal-content,
+#card-modal .modal-content {
+  background: rgba(2, 6, 23, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top-color: rgba(255, 255, 255, 0.22);
+  border-left-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 25px 50px -12px rgba(30, 27, 75, 0.55);
+  border-radius: 1.25rem;
+}
+
+.btn {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 46%),
+    rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #f8fafc;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 4px 0 rgba(8, 6, 22, 0.75),
+    0 10px 22px rgba(30, 27, 75, 0.32);
+  transition: transform 80ms ease, border-color 180ms ease, background 180ms ease, box-shadow 80ms ease;
+}
+
+.btn:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0) 46%);
+}
+
+.btn:focus-visible {
+  border-color: rgba(255, 255, 255, 0.45);
+  outline: 2px solid rgba(255, 236, 186, 0.85);
+  outline-offset: 3px;
+}
+
+.btn:active:not(:disabled),
+.btn.is-pressed:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(8, 6, 22, 0.7);
+}
+
+.btn.primary,
+.btn[data-advance] {
+  background: rgba(49, 46, 129, 0.55);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+select,
+textarea {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+select {
+  padding-right: 2rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.75) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.75) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 55%, calc(100% - 11px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.28);
+}
+
+.hand-primary .game-card,
+.hand-spillover .game-card,
+.game-card.psyche-card {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.35);
+}
+
+:where(html:not([data-hover="false"])) #screen-game .hand-primary .game-card:hover,
+#screen-game .hand-primary .game-card:focus-visible {
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 18px 36px rgba(99, 102, 241, 0.2);
+  transform: rotate(var(--fan-rot, 0deg)) translateY(calc(var(--fan-y, 0px) - 0.5rem)) scale(1.05);
+  transition-duration: 300ms;
+}
+
+.game-card.selected,
+.game-card.is-selected,
+.hand-bar .game-card.selected {
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28), 0 16px 32px rgba(99, 102, 241, 0.28);
+}
+
+body.nightmare-frost .top-bar,
+body.nightmare-frost .hand-bar,
+body.nightmare-frost .sidebar,
+body.nightmare-frost .modal-content,
+body.nightmare-frost .hud-pill,
+body.nightmare-frost #final-nightmare-backdrop ~ .top-bar {
+  background: rgba(76, 5, 25, 0.4);
+  border-color: rgba(244, 63, 94, 0.2);
+  box-shadow: 0 25px 50px -12px rgba(76, 5, 25, 0.5);
+}
+
+body.nightmare-frost .btn.primary {
+  background: rgba(136, 19, 55, 0.55);
+  border-color: rgba(251, 113, 133, 0.35);
+}
+
+#hud-forget-banner,
+body.deck-pressure-severe .top-bar.play-top-bar,
+body.deck-pressure-critical .top-bar.play-top-bar {
+  background: rgba(76, 5, 25, 0.4);
+  border-color: rgba(244, 63, 94, 0.2);
+  box-shadow: 0 18px 40px rgba(76, 5, 25, 0.45);
+}
+
+@media (max-width: 1180px) {
+  .hud-pill-name { display: none; }
+  .hud-pill { padding-right: 0.5rem; }
+}
+
+@media (max-width: 1100px) {
+  /* Tablets have their own two-row bar. This wrap is for a short desktop window. */
+  html[data-form="desktop"] body.play-window .top-bar.play-top-bar {
+    flex-wrap: wrap;
+    height: auto;
+    row-gap: 0.25rem;
+  }
+  html[data-form="desktop"] body.play-window .top-bar.play-top-bar .hud {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Midnight field. Slow enough to read as stillness. Reduced motion keeps it still. */
+body.play-window {
+  isolation: isolate;
+  background-color: #07060f;
+}
+
+body.play-window::before,
+body.play-window::after {
+  content: "";
+  position: fixed;
+  inset: -18%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+body.play-window::before {
+  background:
+    radial-gradient(ellipse 42% 34% at 18% 28%, rgba(76, 29, 149, 0.28), transparent 68%),
+    radial-gradient(ellipse 36% 42% at 78% 72%, rgba(49, 16, 96, 0.32), transparent 70%),
+    radial-gradient(ellipse 28% 24% at 48% 46%, rgba(24, 12, 48, 0.4), transparent 72%),
+    radial-gradient(ellipse 22% 18% at 62% 22%, rgba(88, 28, 135, 0.16), transparent 70%);
+  filter: blur(36px);
+  animation: dream-lava 110s ease-in-out infinite alternate;
+}
+
+body.play-window::after {
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(216, 196, 255, 0.55) 0 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(167, 139, 250, 0.35) 0 1px, transparent 1.8px);
+  background-size: 140px 180px, 220px 260px;
+  background-position: 0 0, 40px 80px;
+  opacity: 0.18;
+  animation: dream-spark 140s linear infinite;
+}
+
+@keyframes dream-lava {
+  0% { transform: translate3d(-3%, -2%, 0) scale(1); }
+  50% { transform: translate3d(4%, 3%, 0) scale(1.06); }
+  100% { transform: translate3d(-2%, 4%, 0) scale(1.03); }
+}
+
+@keyframes dream-spark {
+  from { background-position: 0 0, 40px 80px; }
+  to { background-position: 140px 180px, -80px 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.play-window::before,
+  body.play-window::after {
+    animation: none;
+  }
+}

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0a14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ainmos">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="images/icons/somnia-192.png">
+  <title>Ainmos — Dream Table</title>
+  <link rel="stylesheet" href="css/fonts-local.css">
+  <link rel="stylesheet" href="css/game.css">
+  <link rel="stylesheet" href="css/glass.css">
+  <link rel="stylesheet" href="css/dreamscape.css">
+  <link rel="stylesheet" href="css/ainmos.css">
+</head>
+<body class="in-game play-window">
+  <div id="final-nightmare-backdrop" class="final-nightmare-backdrop" aria-hidden="true"></div>
+  <div id="final-recurrence-veil" class="final-recurrence-veil" aria-hidden="true"></div>
+  <div id="fullscreen-prompt" class="fullscreen-prompt" role="button" tabindex="0">
+    <div class="fullscreen-prompt-card">
+      <h2>Enter the Dreamscape</h2>
+      <p class="input-hint">
+        <span class="hint-fine">Click anywhere to begin and enter fullscreen.</span>
+        <span class="hint-coarse">Tap anywhere to begin.</span>
+      </p>
+      <span class="fullscreen-prompt-hint input-hint">
+        <span class="hint-fine">Esc — pause menu · music starts here</span>
+        <span class="hint-coarse">Pause is in the top bar · music starts here</span>
+      </span>
+    </div>
+  </div>
+
+  <div id="app">
+    <header class="top-bar play-top-bar">
+      <div class="brand">
+        <span class="version-label">v 0.1</span>
+        <img class="brand-wordmark" src="images/somnia-logo.png" alt="Ainmos" />
+      </div>
+      <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
+        <span class="death-clock-label">Death Clock</span>
+        <span id="death-clock-pips" class="death-clock-pips" aria-hidden="true"></span>
+        <span id="death-clock-count">0/6</span>
+      </div>
+      <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
+      <div id="hud-suits" class="hud-suits" aria-label="Focused Dreamer">
+        <span class="hud-pill hud-pill-lucidity" title="Lucidity"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Lucidity</span><span id="hud-lucidity">0</span></span>
+        <span class="hud-pill hud-pill-elasticity" title="Elasticity"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Elasticity</span><span id="hud-elasticity">0</span></span>
+        <span class="hud-pill hud-pill-willpower" title="Willpower"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Willpower</span><span id="hud-willpower">0</span></span>
+        <span class="hud-pill hud-pill-power" title="Power Tokens"><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Power</span><span id="hud-power">0</span></span>
+      </div>
+      <div id="hud" class="hud">
+        <div class="hud-item hud-goal-wrap" title="Archetype points scored / points required to wake."><span class="label">Goal:</span><span id="hud-goal">0/8</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span></div>
+        <div class="hud-item hud-dreams-wrap"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
+        <div class="hud-item hud-mind-wrap" id="hud-mind-wrap" title="The Waking Mind: Psyche left to draw (deck plus discard). Each Dreambeast still standing at dusk Represses 1. Remember to win cards back."><span class="label">Mind</span><span id="hud-mind">0</span><span id="hud-mind-dusk" class="hud-mind-dusk hidden"></span></div>
+        <div class="hud-item hud-round-wrap"><span class="label">Round</span><span id="hud-round">1</span><span id="hud-boss-rounds" class="hud-boss-rounds" aria-hidden="true"></span></div>
+        <div class="hud-feed-cluster">
+          <button type="button" id="btn-moment-history" class="btn btn-icon btn-moment-history hud-moment-history-btn" title="Moment narration history" aria-label="Moment narration history">!</button>
+          <button type="button" id="btn-dream-feed" class="btn btn-icon btn-dream-feed hud-dream-feed-btn" title="Dream Guide — feed and rules" aria-label="Open Dream Guide">?</button>
+        </div>
+      </div>
+      <div id="header-actions" class="header-actions">
+        <button type="button" id="btn-header-subconscious" class="btn btn-sm btn-header-subconscious" data-deck-id="subconscious" data-chrome-overflow="compact" title="Browse The Subconscious">☠ Subconscious</button>
+        <button type="button" class="btn btn-icon btn-music-toggle" data-music-toggle aria-pressed="true" title="Mute music" aria-label="Mute music">🔊</button>
+        <button type="button" id="btn-pause" class="btn btn-sm" title="Pause menu (Esc)">⏸ Pause</button>
+        <div class="header-dropdown chrome-more" id="header-more-menu" hidden>
+          <button type="button" id="btn-header-more" class="btn btn-sm btn-icon" aria-expanded="false" aria-haspopup="true" title="More table actions" aria-label="More table actions">⋯</button>
+          <div id="header-more-panel" class="header-dropdown-panel hidden" role="menu" aria-label="More table actions"></div>
+        </div>
+      </div>
+    </header>
+    <main>
+      <section id="screen-game" class="screen active">
+        <div class="table-surface" id="table-surface">
+          <div class="dream-motes" aria-hidden="true"></div>
+          <button type="button" id="btn-deck-drawer" class="chrome-edge-toggle chrome-edge-toggle-deck" aria-expanded="false" aria-controls="deck-column">Decks</button>
+          <aside id="deck-column" class="deck-column" aria-label="Game decks"></aside>
+          <div id="coop-play-banner" class="coop-play-banner hidden" aria-live="polite"></div>
+          <div id="phase-banner" class="phase-banner" aria-live="polite"></div>
+          <div id="dice-battle-stage" class="dice-battle-stage" hidden aria-hidden="true"></div>
+          <div id="guide-panel" class="guide-panel" hidden></div>
+          <div class="board-viewport" id="board-viewport" title="Scroll to zoom · pinch to zoom · drag or Space+drag to pan">
+            <div id="turn-plaque" class="turn-plaque hidden" role="status" aria-live="polite">
+              <span class="turn-plaque-label">Turn</span>
+              <span id="turn-plaque-name" class="turn-plaque-name">—</span>
+              <span id="turn-plaque-phase" class="turn-plaque-phase"></span>
+              <button type="button" id="turn-plaque-pass" class="turn-plaque-pass hidden" title="Pass your turn — next Dreamer uses the remaining moves/actions">Pass</button>
+            </div>
+            <div id="dreamscape-vault" class="dreamscape-vault" hidden></div>
+            <div class="board-zoom-stage" id="board-zoom-stage">
+              <div id="hex-board" class="hex-board"></div>
+            </div>
+            <button type="button" id="btn-map-back" class="btn-map-back" data-tutorial-action="mapBack" aria-label="Back one action" disabled>Back</button>
+            <button type="button" id="btn-draw-dream" class="btn-draw-dream" data-tutorial-action="drawDream" hidden aria-label="Draw Dream">Draw Dream</button>
+            <button type="button" id="btn-next-phase" class="btn-next-phase" data-tutorial-action="advancePhase" aria-label="Next phase"></button>
+            <div id="table-bottom" class="table-bottom">
+              <div id="table-notices" class="table-notices">
+                <div id="moment-overlay-stack" class="moment-overlay-stack" role="status" aria-live="polite"></div>
+                <div id="ai-thought-banner" class="ai-thought-banner hidden" role="status" aria-live="polite"></div>
+                <div id="action-moment-banner" class="action-moment-banner hidden" role="status" aria-live="polite" hidden></div>
+                <div id="hud-escape-banner" class="hud-escape-banner hidden" role="status" aria-live="polite"></div>
+                <div id="hud-forget-banner" class="hud-forget-banner hidden" role="status" aria-live="assertive"></div>
+                <div id="deck-pressure-banner" class="deck-pressure-banner hidden" role="alert" aria-live="assertive"></div>
+                <p id="table-action-cue" class="table-action-cue" hidden></p>
+              </div>
+              <div id="spread-tray" class="spread-tray hidden" hidden aria-label="Selected Psyche spread"></div>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" id="btn-sidebar-drawer" class="chrome-edge-toggle chrome-edge-toggle-side" aria-expanded="false" aria-controls="sidebar-right">Table</button>
+        <div id="sidebar-drawer-backdrop" class="chrome-drawer-backdrop hidden"></div>
+        <aside class="sidebar right sidebar-v14" id="sidebar-right">
+          <div class="resize-handle resize-col edge-left" id="resize-sidebar-right" title="Drag to resize sidebar"></div>
+          <h3>Active Archetype</h3>
+          <div id="active-archetype" class="active-card-slot"></div>
+          <h3>Encounter</h3>
+          <div id="active-encounter" class="active-card-slot"></div>
+          <h3>Acquired</h3>
+          <div id="acquired-archetypes" class="mini-card-row"></div>
+        </aside>
+
+        <footer class="hand-bar" id="hand-bar">
+          <div id="hand-choice-bar" class="hand-choice-bar hidden" hidden role="status" aria-live="polite">
+            <p id="hand-choice-text"></p>
+            <button type="button" id="hand-choice-confirm" class="btn primary btn-sm">Confirm</button>
+          </div>
+          <div class="resize-handle resize-row edge-top" id="resize-hand" title="Drag to resize hand area"></div>
+          <div class="dreamer-dock" id="dreamer-dock">
+            <div class="hand-header dreamer-dock-header">
+              <h3>Dreamers</h3>
+              <span class="hand-hint input-hint">
+                <span class="hint-fine">click to focus · board card opens actions</span>
+                <span class="hint-coarse">tap to focus · tap board card for actions</span>
+              </span>
+            </div>
+            <div id="player-list" class="player-list-dock"></div>
+          </div>
+          <div class="hand-section power-section">
+            <div class="hand-header hand-header-stacked">
+              <h3>Power Tokens</h3>
+              <span id="power-token-stats" class="power-token-stats"></span>
+            </div>
+            <div id="power-token-actions" class="power-token-actions">
+              <div class="power-bonus-row">
+                <button type="button" id="btn-power-bonus" class="btn btn-sm power-bonus-btn" disabled title="Spend any number of Power Tokens. Each adds +1 to the current Psyche spread.">
+                  +1 to Spread
+                </button>
+                <button type="button" id="btn-power-bonus-undo" class="btn btn-sm power-bonus-btn power-bonus-undo hidden" disabled title="Return 1 Power Token and remove +1 from the current Psyche spread.">
+                  -1 Spread
+                </button>
+              </div>
+              <p id="power-bonus-pending" class="power-bonus-pending hidden" aria-live="polite"></p>
+            </div>
+            <div id="power-tokens" class="power-tokens" aria-label="Power tokens held"></div>
+          </div>
+          <div class="hand-section psyche-hand-section">
+            <div class="hand-header hand-header-stacked">
+              <div class="hand-header-row">
+                <h3 id="hand-title">Your Psyche Hand</h3>
+                <span id="hand-stats" class="hand-stats-line"></span>
+              </div>
+              <span class="hand-hint hand-hint-subtle input-hint">
+                <span class="hint-fine">Click Dreamer chips to switch · double-click cards to inspect</span>
+                <span class="hint-coarse">Tap Dreamer chips to switch · long-press cards to inspect</span>
+              </span>
+            </div>
+            <div id="meet-pool-guide" class="meet-pool-guide hidden" hidden aria-hidden="true"></div>
+            <div id="hand" class="hand-dreamer-display" data-player-id="">
+              <div id="hand-primary" class="hand-primary" aria-label="Psyche hand cards"></div>
+            </div>
+          </div>
+          <div class="hand-section allies-section">
+            <div class="hand-header">
+              <h3>Allies</h3>
+            </div>
+            <div id="hand-allies" class="hand objects-row allies-row" aria-label="Accepted Dreambeast allies"></div>
+          </div>
+          <div class="hand-section objects-hand-section">
+            <div class="hand-header">
+              <h3>Objects</h3>
+            </div>
+            <div id="player-objects" class="hand objects-row"></div>
+          </div>
+          <div class="hand-section persistent-section">
+            <div class="hand-header">
+              <h3>Persistent</h3>
+            </div>
+            <div id="player-persistent" class="hand objects-row"></div>
+          </div>
+        </footer>
+      </section>
+
+      <section id="screen-end" class="screen">
+        <div id="victory-fx" class="victory-fx" aria-hidden="true"></div>
+        <div class="end-panel">
+          <h2 id="end-title"></h2>
+          <p id="end-message"></p>
+          <div id="end-game-id-row" class="end-game-id-row hidden">
+            <span class="end-game-id-label">Game ID</span>
+            <button type="button" id="end-game-id" class="pause-game-id end-game-id" title="Tap to copy"></button>
+            <span id="end-seed-badge" class="pause-seed-badge"></span>
+            <p id="end-game-id-hint" class="end-game-id-hint">Enter this Game ID as a seed on the menu to dream this exact dream again.</p>
+          </div>
+          <div id="end-score-breakdown" class="end-score-breakdown hidden"></div>
+          <div id="end-leaderboard" class="end-leaderboard hidden">
+            <h3>Leaderboard</h3>
+            <p class="end-leaderboard-hint">Enter your name to save your score.</p>
+            <div class="end-name-row">
+              <input type="text" id="end-score-first" class="input" placeholder="First name" maxlength="16" autocomplete="given-name" autocorrect="off" autocapitalize="words" enterkeyhint="next">
+              <input type="text" id="end-score-last" class="input end-score-last" placeholder="Last initial" maxlength="1" autocomplete="family-name" autocorrect="off" autocapitalize="characters" enterkeyhint="done">
+              <button type="button" id="end-score-submit" class="btn primary">Submit</button>
+            </div>
+            <p id="end-score-status" class="end-score-status" role="status"></p>
+            <ol id="end-score-list" class="end-score-list"></ol>
+          </div>
+          <div class="end-actions">
+            <button type="button" id="btn-start-daydream" class="btn primary hidden">Start Daydream</button>
+            <button type="button" id="btn-advanced-tutorial" class="btn primary hidden">Advanced Tutorial</button>
+            <button id="btn-restart" class="btn">Return to Menu</button>
+            <button type="button" id="btn-replay-tutorial" class="btn">Replay Tutorial</button>
+            <button type="button" id="btn-replay-basic" class="btn hidden">Replay Basic</button>
+            <button type="button" id="btn-end-overview" class="btn">Game Overview</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="card-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <div id="modal-card"></div>
+      <div id="modal-card-actions" class="modal-card-actions" hidden></div>
+    </div>
+  </div>
+
+  <div id="utility-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop utility-backdrop"></div>
+    <div class="modal-content utility-content">
+      <button class="modal-close utility-close" aria-label="Close">&times;</button>
+      <div id="utility-modal-body"></div>
+    </div>
+  </div>
+
+  <div id="utility-choice-dock" class="utility-choice-dock hidden" role="status" aria-live="polite">
+    <span id="utility-choice-dock-label">Choice required</span>
+    <button type="button" class="btn btn-sm primary" id="utility-choice-restore">Resume choice</button>
+  </div>
+
+  <div id="intro-movie" class="intro-movie hidden" role="dialog" aria-modal="true" aria-label="Ainmos intro movie">
+    <video id="intro-movie-video" class="intro-movie-video" playsinline preload="metadata" controls poster="media/somnia-intro-poster.jpg">
+      <source src="media/somnia-intro.mp4" type="video/mp4">
+      <track kind="captions" src="media/somnia-intro.vtt" srclang="en" label="English">
+    </video>
+    <button type="button" id="intro-movie-play" class="btn primary intro-movie-play hidden">▶ Play the intro</button>
+    <button type="button" id="intro-movie-skip" class="btn intro-movie-skip">Skip intro</button>
+  </div>
+
+  <div id="tutorial-brief" class="tutorial-brief hidden" role="dialog" aria-modal="true" aria-labelledby="tutorial-brief-title">
+    <div class="tutorial-brief-backdrop"></div>
+    <div class="tutorial-brief-card">
+      <header class="tutorial-brief-header">
+        <h2 id="tutorial-brief-title">How a dream is played</h2>
+        <p>Read this once. The sparkles show every click after.</p>
+      </header>
+      <div id="tutorial-brief-body" class="tutorial-brief-body"></div>
+      <footer class="tutorial-brief-footer">
+        <button type="button" id="tutorial-brief-begin" class="btn primary">Begin Guided Tutorial</button>
+      </footer>
+    </div>
+  </div>
+
+  <div id="tutorial-overlay" class="tutorial-overlay hidden" role="dialog" aria-modal="true">
+    <div class="tutorial-backdrop"></div>
+    <div class="tutorial-card" id="tutorial-card" aria-expanded="true">
+      <header class="tutorial-card-header" id="tutorial-card-header">
+        <span class="tutorial-card-drag-label" id="tutorial-card-drag-label">Tutorial Guide</span>
+        <div class="tutorial-card-window-actions">
+          <button type="button" id="tutorial-minimize" class="tutorial-window-btn" aria-label="Minimize tutorial window" title="Minimize">−</button>
+          <button type="button" id="tutorial-expand" class="tutorial-window-btn hidden" aria-label="Expand tutorial window" title="Expand">□</button>
+        </div>
+      </header>
+      <div class="tutorial-card-body" id="tutorial-card-body">
+        <div class="tutorial-progress-wrap">
+          <div class="tutorial-progress" id="tutorial-progress"></div>
+          <div class="tutorial-progress-bar" role="progressbar" aria-valuemin="1" aria-valuemax="11" aria-valuenow="1" id="tutorial-progress-bar">
+            <span class="tutorial-progress-fill" id="tutorial-progress-fill"></span>
+          </div>
+        </div>
+        <div class="tutorial-jump-row">
+          <label for="tutorial-jump" class="tutorial-jump-label">Jump to topic</label>
+          <select id="tutorial-jump" class="tutorial-jump-select" aria-label="Jump to tutorial topic"></select>
+        </div>
+        <h2 id="tutorial-title"></h2>
+        <p id="tutorial-body"></p>
+        <div class="tutorial-actions">
+          <button type="button" id="tutorial-back" class="btn" disabled>Back</button>
+          <div class="tutorial-actions-main">
+            <button type="button" id="tutorial-skip" class="btn">Skip</button>
+            <button type="button" id="tutorial-next" class="btn primary">Next</button>
+          </div>
+        </div>
+      </div>
+      <div class="tutorial-card-resize-handle" id="tutorial-resize-handle" aria-hidden="true" title="Resize"></div>
+    </div>
+  </div>
+
+  <div id="pause-menu" class="pause-menu hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Pause menu">
+    <div class="pause-backdrop"></div>
+    <div class="pause-card">
+      <header class="pause-header">
+        <h2>⏸ Paused</h2>
+        <button type="button" id="pause-resume" class="btn primary">Resume</button>
+      </header>
+      <nav class="pause-tabs" aria-label="Pause sections">
+        <button type="button" class="pause-tab active" data-pause-tab="audio">🔊 Audio</button>
+        <button type="button" class="pause-tab" data-pause-tab="display">🖥 Display</button>
+        <button type="button" class="pause-tab" data-pause-tab="game">💾 Save</button>
+        <button type="button" class="pause-tab" data-pause-tab="help">❓ Help</button>
+      </nav>
+      <div id="pause-menu-body" class="pause-body"></div>
+    </div>
+  </div>
+
+  <div id="dev-console" class="dev-console hidden" aria-hidden="true">
+    <div class="dev-console-header">
+      <span>Dev Commands</span>
+      <span class="dev-console-hint">` toggle · /help</span>
+      <button type="button" id="dev-console-close" class="dev-console-close" aria-label="Close">×</button>
+    </div>
+    <div id="dev-console-log" class="dev-console-log"></div>
+    <input type="text" id="dev-console-input" class="dev-console-input" placeholder="/help" spellcheck="false" autocomplete="off" />
+  </div>
+  <button type="button" id="dev-console-toggle" class="dev-console-toggle hidden" title="Dev console (`)">Dev</button>
+
+  <script type="module" src="js/app/play.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+/* ==========================================================================
+   Ainmos: the mirror dream.
+
+   Ainmos is Somnia read backwards, so its wordmark is Somnia's in a mirror.
+   Everything here layers on Somnia's styles; nothing is replaced wholesale.
+   ========================================================================== */
+
+/* The Somnia wordmark, reflected: it reads AINMOS, as a dream would spell it. */
+.brand-wordmark {
+  transform: scaleX(-1);
+  filter:
+    drop-shadow(0 0 6px rgba(200, 184, 236, 0.45))
+    drop-shadow(0 0 14px rgba(182, 230, 214, 0.18));
+}
+
+/* A soft pastel shimmer along the top edge of the menu glass, like light on water. */
+.menu-glass-panel::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--dc-lavender, #c8b8ec), var(--dc-mint, #b6e6d6), var(--dc-powder, #b4cbe8), transparent);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.menu-tutorial-hint {
+  font-family: var(--dc-whisper, Georgia, serif);
+  font-style: italic;
+}

@@ -1,0 +1,1945 @@
+/**
+ * Ainmos 36.0 — Mindstream Event Good/Bad resolution pairs.
+ * Cost is paid in Psyche of the event's suit before resolving the chosen side.
+ */
+
+export const EVENT_RESOLUTIONS = {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LUCIDITY
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  "fantastic-imagination": {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Open the Sky",
+      hint: "Reveal 2 Landscapes",
+      effect: "revealLandscapes",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Vision Blurs",
+      hint: "Forget 2 Landscapes",
+      effect: "forgetLandscapes",
+      params: { count: 2 },
+    },
+  },
+
+  centering: {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Breathe Together",
+      hint: "All draw 1 Psyche; you gain 1 PT",
+      steps: [
+        { effect: "drawPsycheAll", params: { count: 1 } },
+        { effect: "grantPT", params: { count: 1 } },
+      ],
+    },
+    bad: {
+      label: "Scatter Focus",
+      hint: "All repress 1 Psyche",
+      effect: "repressPsycheAll",
+      params: { count: 1 },
+    },
+  },
+
+  "the-ascent": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Climb Clear-Eyed",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Drop Your Peak",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "beyond-comprehension": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 5,
+    good: {
+      label: "Grasp the Unknowable",
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Mind Unravels",
+      hint: "Forget 4 Landscapes",
+      effect: "forgetLandscapes",
+      params: { count: 4 },
+    },
+  },
+
+  "just-a-dream": {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Wake Softly",
+      hint: "Draw 3 Psyche",
+      effect: "drawPsyche",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Clinging Nightmare",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "morning-routine": {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 1,
+    good: {
+      label: "Coffee Clarity",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Snooze Again",
+      hint: "Repress the top Mindstream card",
+      effect: "repressTopMindstream",
+      params: { suit: "lucidity", count: 1 },
+    },
+  },
+
+  "afternoon-nap": {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 1,
+    good: {
+      label: "Rest and Recall",
+      hint: "Draw 1 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 1 },
+    },
+    bad: {
+      label: "Heavy Lids",
+      hint: "Repress the top Mindstream card",
+      effect: "repressTopMindstream",
+      params: { suit: "lucidity", count: 1 },
+    },
+  },
+
+  "evening-plans": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Map Tomorrow",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Plans Go Wrong",
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
+    },
+  },
+
+  "i-know-this-place": {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Familiar Ground",
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "False Memory",
+      hint: "Forget 2 Landscapes",
+      effect: "forgetLandscapes",
+      params: { count: 2 },
+    },
+  },
+
+  "im-still-dreaming": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Choose Your Shore",
+      hint: "Move to Day in the Life or Insanity",
+      effect: "moveToNamed",
+      params: { ids: ["day-in-the-life", "insanity"] },
+    },
+    bad: {
+      label: "Cannot Wake",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "a-way-out-forms": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Find the Exit",
+      hint: "Reveal 2 Landscapes",
+      effect: "revealLandscapes",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Pay the Toll",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "voice-in-the-distance": {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 1,
+    good: {
+      label: "Follow the Call",
+      hint: "Gain 1 PT; move to Road or Hallway",
+      steps: [
+        { effect: "grantPT", params: { count: 1 } },
+        { effect: "moveToNamed", params: { ids: ["road", "endless-hallway"] } },
+      ],
+    },
+    bad: {
+      label: "Siren Lies",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "somethings-over-there": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Investigate Carefully",
+      hint: "Draw 1 Object",
+      effect: "drawObject",
+      params: {},
+    },
+    bad: {
+      label: "It Notices You",
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
+    },
+  },
+
+  "a-face-appears": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Meet Its Gaze",
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Face Emerges",
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
+    },
+  },
+
+  "mist-swirls": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Part the Mist",
+      hint: "Reveal 2 Landscapes",
+      effect: "revealLandscapes",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Dream Dissolves",
+      hint: "Repress the top Mindstream card",
+      effect: "repressTopMindstream",
+      params: { suit: "lucidity", count: 1 },
+    },
+  },
+
+  transported: {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Ride the Coordinates",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Wrong Coordinates",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  lightness: {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Share the Lift",
+      hint: "All Dreamers draw 1 Psyche",
+      effect: "drawPsycheAll",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Gravity Returns",
+      hint: "All repress 1 Psyche",
+      effect: "repressPsycheAll",
+      params: { count: 1 },
+    },
+  },
+
+  "the-council-of-the-years": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 4,
+    good: {
+      label: "Keep One Verdict",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Judgment Falls",
+      hint: "Repress 3 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 3 },
+    },
+  },
+
+  sublimation: {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Refine the Wound",
+      hint: "Remember 1 and gain 1 PT",
+      effect: "rememberAndPT",
+      params: { count: 1, pt: 1 },
+    },
+    bad: {
+      label: "Bottled Pressure",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  serenity: {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Enter Stillness",
+      hint: "Draw 3 Psyche and gain 1 PT",
+      effect: "drawPsycheAndPT",
+      params: { draw: 3, pt: 1 },
+    },
+    bad: {
+      label: "Peace Shatters",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "harmonic-resonance": {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Strike the Chord",
+      hint: "Draw 1 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 1 },
+    },
+    bad: {
+      label: "Dissonance",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  denial: {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Refuse the Wound",
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Truth Intrudes",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "keep-it-together": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Grip Your Relics",
+      hint: "Draw 1 Object",
+      effect: "drawObject",
+      params: {},
+    },
+    bad: {
+      label: "Drop Everything",
+      hint: "Repress 2 Objects",
+      effect: "repressObjects",
+      params: { count: 2 },
+    },
+  },
+
+  metamorphosis: {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 5,
+    good: {
+      label: "Shape the Change",
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "World Warps",
+      hint: "Forget 4 Landscapes; Repress 2 from the Psyche deck",
+      steps: [
+        { effect: "forgetLandscapes", params: { count: 4 } },
+        { effect: "repressTopPsycheDeck", params: { count: 2 } },
+      ],
+    },
+  },
+
+  contagion: {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 4,
+    good: {
+      label: "Quarantine Mind",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Infection Spreads",
+      hint: "Repress 2 from the Psyche deck",
+      effect: "repressTopPsycheDeck",
+      params: { count: 2 },
+    },
+  },
+
+  "forgot-clothes": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Dash Anywhere",
+      hint: "Draw 1 Psyche",
+      effect: "drawPsyche",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Exposed Shame",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "wrong-classroom": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Slip Out Quietly",
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Called On",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "everyones-laughing": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Laugh With Them",
+      hint: "Gain 1 PT",
+      effect: "grantPT",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Punchline Cuts",
+      hint: "Repress 2 Objects",
+      effect: "repressObjects",
+      params: { count: 2 },
+    },
+  },
+
+  "pop-quiz": {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Ace the Guess",
+      hint: "Draw 1 Psyche and Remember 2",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 2 },
+    },
+    bad: {
+      label: "Blank Stare",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  revolving: {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 2,
+    good: {
+      label: "Spin Free",
+      hint: "Draw 3 Psyche",
+      effect: "drawPsyche",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Vertigo Takes Hold",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  blooming: {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Rearrange the Garden",
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Roots Claim You",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "break-out": {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Match and Escape",
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Lock Clicks Shut",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "sacred-geometry": {
+    polarity: "good",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Trace the Pattern",
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Pattern Fractures",
+      hint: "Forget 2 Landscapes",
+      effect: "forgetLandscapes",
+      params: { count: 2 },
+    },
+  },
+
+  "caught-cheating": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 3,
+    good: {
+      label: "Lucky Matching Hand",
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Detention",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "feel-deal-heal": {
+    polarity: "bad",
+    suit: "lucidity",
+    cost: 4,
+    good: {
+      label: "Deal and Heal",
+      hint: "Draw 3 Psyche",
+      effect: "drawPsyche",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Leviathan Stirs",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ELASTICITY
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  "a-shining-wind": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Ride the Gale",
+      hint: "Gain 2 PT; move to Mist or Ocean",
+      steps: [
+        { effect: "grantPT", params: { count: 2 } },
+        { effect: "moveToNamed", params: { ids: ["silver-mist", "endless-ocean"] } },
+      ],
+    },
+    bad: {
+      label: "Wind Scours You",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "a-million-reflections": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 3,
+    good: {
+      label: "Choose Which Echoes",
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Shatter the Mirrors",
+      hint: "Forget 2 Landscapes",
+      effect: "forgetLandscapes",
+      params: { count: 2 },
+    },
+  },
+
+  "this-will-have-to-do": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 1,
+    good: {
+      label: "Make Do",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Not Enough",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "is-that-music": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Dance Toward It",
+      hint: "Gain 1 PT; move to Awards or Party",
+      steps: [
+        { effect: "grantPT", params: { count: 1 } },
+        { effect: "moveToNamed", params: { ids: ["awards", "the-party"] } },
+      ],
+    },
+    bad: {
+      label: "Discordant Note",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "roof-dive": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Leap Into Joy",
+      hint: "Move to Sky, Party, or Candy Mountain",
+      effect: "moveToNamed",
+      params: { ids: ["sky", "the-party", "candy-mountain"] },
+    },
+    bad: {
+      label: "Miss the Landing",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "cotton-candy": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Sugar Rush",
+      hint: "Draw 3 Psyche; move to Candy Mountain",
+      steps: [
+        { effect: "drawPsyche", params: { count: 3 } },
+        { effect: "moveToNamed", params: { ids: ["candy-mountain"] } },
+      ],
+    },
+    bad: {
+      label: "Sticky Trap",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  insulation: {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 1,
+    good: {
+      label: "Wrap Yourself Soft",
+      hint: "Gain 1 PT",
+      effect: "grantPT",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Smothered",
+      hint: "Repress the top Mindstream card",
+      effect: "repressTopMindstream",
+      params: { suit: "elasticity", count: 1 },
+    },
+  },
+
+  "shimmering-slivers": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Gather the Slivers",
+      hint: "Draw 1 Object",
+      effect: "drawObject",
+      params: {},
+    },
+    bad: {
+      label: "Cuts Everywhere",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  diamonds: {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 3,
+    good: {
+      label: "Cut and Polish",
+      hint: "Remember 3 and gain 1 PT",
+      effect: "rememberAndPT",
+      params: { count: 3, pt: 1 },
+    },
+    bad: {
+      label: "Pressure Cracks",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "desert-oasis": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 3,
+    good: {
+      label: "Drink Deep",
+      hint: "Draw 3 Psyche and gain 1 PT",
+      effect: "drawPsycheAndPT",
+      params: { draw: 3, pt: 1 },
+    },
+    bad: {
+      label: "Oasis Was Sand",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "need-water": {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 3,
+    good: {
+      label: "Find a Spring",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Thirst Claims Will",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { suit: "willpower", count: 1 },
+    },
+  },
+
+  "into-the-next": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Step Through",
+      hint: "All draw 1; free Meet Action",
+      steps: [
+        { effect: "drawPsycheAll", params: { count: 1 } },
+        { effect: "freeMeetAction", params: { count: 1 } },
+      ],
+    },
+    bad: {
+      label: "Doorway Snaps Shut",
+      hint: "Repress the top Mindstream card",
+      effect: "repressTopMindstream",
+      params: { suit: "elasticity", count: 1 },
+    },
+  },
+
+  "broken-toys": {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Mend What Remains",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Playthings Shatter",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  flooded: {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Ride the Flood",
+      hint: "Move to Ocean, House, or Suburbia",
+      effect: "moveToNamed",
+      params: { ids: ["endless-ocean", "house", "suburbia"] },
+    },
+    bad: {
+      label: "Swept Under",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "running-somewhere": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Sprint and Recover",
+      hint: "Draw 1 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 1 },
+    },
+    bad: {
+      label: "Nowhere to Run",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "portal-another-world": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Cross the Threshold",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Portal Severs",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "giant-animated-pile": {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 3,
+    good: {
+      label: "Bargain With the Pile",
+      hint: "Draw 1 Object",
+      effect: "drawObject",
+      params: {},
+    },
+    bad: {
+      label: "It Lurches Alive",
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
+    },
+  },
+
+  "dust-bunnies": {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Find Lost Treasure",
+      hint: "Draw 1 Object",
+      effect: "drawObject",
+      params: {},
+    },
+    bad: {
+      label: "They Nibble Memory",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "lost-treasure": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 3,
+    good: {
+      label: "Claim the Hoard",
+      hint: "Draw 3 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 3, count: 1 },
+    },
+    bad: {
+      label: "Chest Was Empty",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "wrong-door": {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 4,
+    good: {
+      label: "Back Out Fast",
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Beasts Pour Through",
+      hint: "Repress 4 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 4 },
+    },
+  },
+
+  "hidden-in-the-walls": {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 4,
+    good: {
+      label: "Listen Without Opening",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Something Scrapes Out",
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
+    },
+  },
+
+  "deeper-darker": {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 3,
+    good: {
+      label: "Bring a Light",
+      hint: "Draw 1 Object",
+      effect: "drawObject",
+      params: {},
+    },
+    bad: {
+      label: "Darkness Bites",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "undulating-floor": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Surf the Wave",
+      hint: "Gain 1 PT",
+      effect: "grantPT",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Floor Swallows Footing",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "the-right-door": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Step Through Correctly",
+      hint: "Draw 3 Psyche",
+      effect: "drawPsyche",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Almost — Not Quite",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "just-out-of-reach": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Stretch and Grasp",
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Fingers Slip",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  splinters: {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 3,
+    good: {
+      label: "Pull Them Free",
+      hint: "Draw 1 Object",
+      effect: "drawObject",
+      params: {},
+    },
+    bad: {
+      label: "Wood Draws Blood",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "freezing-night": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Warm by Will",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Frostbite",
+      hint: "Repress 1 Object",
+      effect: "repressObjects",
+      params: { count: 1 },
+    },
+  },
+
+  "searing-day": {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Endure the Glare",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Sun Burns Clean",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "a-mirage": {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 4,
+    good: {
+      label: "See Through It",
+      hint: "Reveal 2 Landscapes",
+      effect: "revealLandscapes",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Mirage Becomes Real",
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
+    },
+  },
+
+  sandstorm: {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 3,
+    good: {
+      label: "Shelter in Sanctum",
+      hint: "Move to Grove or Inner Sanctum",
+      effect: "moveToNamed",
+      params: { ids: ["tranquil-grove", "inner-sanctum"] },
+    },
+    bad: {
+      label: "Sand Strips You Bare",
+      hint: "Repress 1 Object",
+      effect: "repressObjects",
+      params: { count: 1 },
+    },
+  },
+
+  friendship: {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Walk Together",
+      hint: "Reveal 2 Landscapes; free Meet",
+      steps: [
+        { effect: "revealLandscapes", params: { count: 2 } },
+        { effect: "freeMeetAction", params: { count: 1 } },
+      ],
+    },
+    bad: {
+      label: "Friendship Frays",
+      hint: "All repress 1 Psyche",
+      effect: "repressPsycheAll",
+      params: { count: 1 },
+    },
+  },
+
+  "get-up": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Climb to the Attic",
+      hint: "Free Meet Action; move to Attic",
+      steps: [
+        { effect: "freeMeetAction", params: { count: 1 } },
+        { effect: "moveToNamed", params: { ids: ["the-attic"] } },
+      ],
+    },
+    bad: {
+      label: "Stumble on the Stairs",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "get-down": {
+    polarity: "good",
+    suit: "elasticity",
+    cost: 2,
+    good: {
+      label: "Descend to Basement",
+      hint: "Free Meet Action; move to Basement",
+      steps: [
+        { effect: "freeMeetAction", params: { count: 1 } },
+        { effect: "moveToNamed", params: { ids: ["the-basement"] } },
+      ],
+    },
+    bad: {
+      label: "Miss a Step",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  bronze: {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 3,
+    good: {
+      label: "Polish the Medal",
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Third Place Stings",
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
+    },
+  },
+
+  silver: {
+    polarity: "bad",
+    suit: "elasticity",
+    cost: 4,
+    good: {
+      label: "Almost Gold",
+      hint: "Draw 2 Psyche and gain 1 PT",
+      effect: "drawPsycheAndPT",
+      params: { draw: 2, pt: 1 },
+    },
+    bad: {
+      label: "Forced Acceptance",
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // WILLPOWER
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  "a-thousand-daggers": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 5,
+    good: {
+      label: "Steel Your Skin",
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Blades Find Everyone",
+      hint: "All repress 2 Psyche",
+      effect: "repressPsycheAll",
+      params: { count: 2 },
+    },
+  },
+
+  "flashing-lights": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Seize the Neon",
+      hint: "Draw 2 Psyche and gain 2 PT",
+      effect: "drawPsycheAndPT",
+      params: { draw: 2, pt: 2 },
+    },
+    bad: {
+      label: "Blinded",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "rhythm-of-the-night": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Keep the Beat",
+      hint: "All Dreamers draw 2 Psyche",
+      effect: "drawPsycheAll",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Drop the Object",
+      hint: "Repress 1 Object",
+      effect: "repressObjects",
+      params: { count: 1 },
+    },
+  },
+
+  "roiling-doom": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 4,
+    good: {
+      label: "Stand in the Storm",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Doom Descends",
+      hint: "Repress 2 Psyche from hand; Repress 1 active Dreambeast. No reward",
+      steps: [
+        { effect: "repressPsyche", params: { count: 2 } },
+        { effect: "repressBoardBeast", params: { count: 1 } },
+      ],
+    },
+  },
+
+  "perilous-pinnacle": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 4,
+    good: {
+      label: "Hold the Peak",
+      hint: "Gain 2 PT",
+      effect: "grantPT",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Lose Your Grip",
+      hint: "Repress 2 Objects",
+      effect: "repressObjects",
+      params: { count: 2 },
+    },
+  },
+
+  "cooling-obsidian": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Harden to Stone",
+      hint: "Move to Ocean or Broken Glass",
+      effect: "moveToNamed",
+      params: { ids: ["endless-ocean", "field-of-broken-glass"] },
+    },
+    bad: {
+      label: "Crack Under Heat",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "from-the-fire": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 3,
+    good: {
+      label: "Rise Tempered",
+      hint: "Remember 3",
+      effect: "remember",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Ash in the Lungs",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "a-sacrifice": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 3,
+    good: {
+      label: "Offer and Receive",
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "The Altar Takes",
+      hint: "Repress 1 Object",
+      effect: "repressObjects",
+      params: { count: 1 },
+    },
+  },
+
+  "heating-up": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 4,
+    good: {
+      label: "Channel the Heat",
+      hint: "Draw Psyche; free Meet",
+      steps: [
+        { effect: "drawPsyche", params: { count: 1 } },
+        { effect: "freeMeetAction", params: { count: 1 } },
+      ],
+    },
+    bad: {
+      label: "Boil Over",
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
+    },
+  },
+
+  "no-thing": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 3,
+    good: {
+      label: "Hold Onto Something",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Dreams Vanish",
+      hint: "Repress 3 top Mindstream cards",
+      effect: "repressTopMindstream",
+      params: { suit: "willpower", count: 3 },
+    },
+  },
+
+  "no-time": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 3,
+    good: {
+      label: "Buy a Moment",
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Clock Runs Out",
+      hint: "Repress 1 Object",
+      effect: "repressObjects",
+      params: { count: 1 },
+    },
+  },
+
+  "no-where": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 5,
+    good: {
+      label: "Map the Void",
+      hint: "All draw 2 Psyche",
+      effect: "drawPsycheAll",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Places Unmake",
+      hint: "Forget 4 Landscapes",
+      effect: "forgetLandscapes",
+      params: { count: 4 },
+    },
+  },
+
+  "choppy-water": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Ride the Chop",
+      hint: "Draw 1 Psyche and Remember 3",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 3 },
+    },
+    bad: {
+      label: "Swallow Seawater",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { suit: "willpower", count: 1 },
+    },
+  },
+
+  "big-wave": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Surf the Crest",
+      hint: "Draw 1 Psyche and Remember 2",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 2 },
+    },
+    bad: {
+      label: "Wiped Out",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  fog: {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Enter the Mist",
+      hint: "Draw 2 Psyche; move to Silver Mist",
+      steps: [
+        { effect: "drawPsyche", params: { count: 2 } },
+        { effect: "moveToNamed", params: { ids: ["silver-mist"] } },
+      ],
+    },
+    bad: {
+      label: "Lost in Grey",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { suit: "willpower", count: 1 },
+    },
+  },
+
+  "clear-as-crystal": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "See Through",
+      hint: "Draw 3 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 3, count: 1 },
+    },
+    bad: {
+      label: "Crystal Shatters",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "a-mouth-rises": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 5,
+    good: {
+      label: "Speak First",
+      hint: "Remember 2 and gain 1 PT",
+      effect: "rememberAndPT",
+      params: { count: 2, pt: 1 },
+    },
+    bad: {
+      label: "Leviathan Awakens",
+      hint: "Forget 3 Landscapes",
+      effect: "forgetLandscapes",
+      params: { count: 3 },
+    },
+  },
+
+  whirlpool: {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 4,
+    good: {
+      label: "Steer Toward Shore",
+      hint: "Move toward Endless Ocean",
+      effect: "moveToNamed",
+      params: { ids: ["endless-ocean"] },
+    },
+    bad: {
+      label: "Pulled Under",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "syrup-lake": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 1,
+    good: {
+      label: "Wade Sweetly",
+      hint: "Draw 1 Psyche and gain 1 PT",
+      effect: "drawPsycheAndPT",
+      params: { draw: 1, pt: 1 },
+    },
+    bad: {
+      label: "Stuck Fast",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "peppermint-peak": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Summit the Mint",
+      hint: "Draw 3 Psyche",
+      effect: "drawPsyche",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Tongue Burns Cold",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { suit: "willpower", count: 1 },
+    },
+  },
+
+  "licorice-bridge": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Cross Safely",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Bridge Sags",
+      hint: "Repress the top Mindstream card",
+      effect: "repressTopMindstream",
+      params: { suit: "willpower", count: 1 },
+    },
+  },
+
+  "chocolate-mines": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Strike a Vein",
+      hint: "Draw 3 Psyche",
+      effect: "drawPsyche",
+      params: { count: 3 },
+    },
+    bad: {
+      label: "Cave-In",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "marshmallow-clouds": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 3,
+    good: {
+      label: "Float Soft Power",
+      hint: "Gain 2 PT",
+      effect: "grantPT",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Clouds Dissolve",
+      hint: "All repress 1 Psyche",
+      effect: "repressPsycheAll",
+      params: { count: 1 },
+    },
+  },
+
+  "jaw-shark": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 4,
+    good: {
+      label: "Feed It Willingly",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Jaws Close",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { suit: "willpower", count: 2 },
+    },
+  },
+
+  "ivory-calm": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Settle Into White",
+      hint: "Draw 1 Psyche and Remember 2",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 1, count: 2 },
+    },
+    bad: {
+      label: "Calm Breaks",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "tartar-algae": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Harvest the Bloom",
+      hint: "Draw 2 Psyche and Remember 1",
+      effect: "drawPsycheAndRemember",
+      params: { draw: 2, count: 1 },
+    },
+    bad: {
+      label: "Choke on Green",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "caramel-forest": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 3,
+    good: {
+      label: "Taste the Trees",
+      hint: "Draw 2 Psyche",
+      effect: "drawPsyche",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Something Hunts Between",
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
+    },
+  },
+
+  "chewed-to-dust": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 4,
+    good: {
+      label: "Spit Out the Grit",
+      hint: "Remember 1",
+      effect: "remember",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Ground to Nothing",
+      hint: "Repress 3 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 3 },
+    },
+  },
+
+  "gap-in-the-teeth": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Slip Through the Gap",
+      hint: "Draw 2 Psyche; move to Candy or Ocean",
+      steps: [
+        { effect: "drawPsyche", params: { count: 2 } },
+        { effect: "moveToNamed", params: { ids: ["candy-mountain", "endless-ocean"] } },
+      ],
+    },
+    bad: {
+      label: "Bite Closes",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "golden-tooth": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Pull the Prize",
+      hint: "Draw 1 Object",
+      effect: "drawObject",
+      params: {},
+    },
+    bad: {
+      label: "Filling Falls Out",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "who-is-there": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 3,
+    good: {
+      label: "Answer the Door",
+      hint: "Free Meet Action",
+      effect: "freeMeetAction",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Knock Knock — Horror",
+      hint: "Repress 1 active Dreambeast. No reward",
+      effect: "repressBoardBeast",
+      params: { count: 1 },
+    },
+  },
+
+  "no-why": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 3,
+    good: {
+      label: "Accept Without Reason",
+      hint: "All draw 1 Psyche",
+      effect: "drawPsycheAll",
+      params: { count: 1 },
+    },
+    bad: {
+      label: "Reason Demands Cost",
+      hint: "All repress 1 Psyche",
+      effect: "repressPsycheAll",
+      params: { count: 1 },
+    },
+  },
+
+  "no-one": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 3,
+    good: {
+      label: "Empty the Room",
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Loneliness Bites",
+      hint: "Repress 2 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 2 },
+    },
+  },
+
+  "i-remember": {
+    polarity: "good",
+    suit: "willpower",
+    cost: 2,
+    good: {
+      label: "Memory Floods Back",
+      hint: "Remember 2",
+      effect: "remember",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Memory Cuts",
+      hint: "Repress 1 Psyche from hand",
+      effect: "repressPsyche",
+      params: { count: 1 },
+    },
+  },
+
+  "dream-for-landscapes": {
+    polarity: "bad",
+    suit: "willpower",
+    cost: 3,
+    good: {
+      label: "Pay Dreams for Maps",
+      hint: "Reveal 2 Landscapes",
+      effect: "revealLandscapes",
+      params: { count: 2 },
+    },
+    bad: {
+      label: "Toll of Dreams",
+      hint: "Repress 2 top Mindstream cards",
+      effect: "repressTopMindstream",
+      params: { suit: "willpower", count: 2 },
+    },
+  },
+};
+
+export function getEventResolution(id) {
+  return EVENT_RESOLUTIONS[id] || null;
+}
+
+export function eventResolutionCost(id) {
+  const r = getEventResolution(id);
+  return r ? { suit: r.suit, cost: r.cost } : null;
+}

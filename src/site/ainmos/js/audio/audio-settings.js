@@ -1,0 +1,123 @@
+export const SETTINGS_KEY = "ainmos.settings";
+
+export const MUSIC_TRACKS = [
+  { id: "dreams-become-real", title: "Dreams Become Real", file: "audio/dreams-become-real.mp3" },
+  { id: "that-zen-moment", title: "That Zen Moment", file: "audio/that-zen-moment.mp3" },
+  { id: "ethereal-relaxation", title: "Ethereal Relaxation", file: "audio/ethereal-relaxation.mp3" },
+  { id: "magic-escape-room", title: "Magic Escape Room", file: "audio/magic-escape-room.mp3" },
+];
+
+/** The Ainmos theme — loops on the main menu and closes every radio rotation. */
+export const MENU_THEME_TRACK = {
+  id: "dreamers-awakening",
+  title: "Dreamer's Awakening",
+  file: "audio/dreamers-awakening.mp3?v=6",
+};
+
+/** Kevin MacLeod rotation, with the theme as the finale before it loops. */
+export const RADIO_PLAYLIST = [...MUSIC_TRACKS.map((t) => t.id), MENU_THEME_TRACK.id];
+
+export const MUSIC_ATTRIBUTION = {
+  artist: "Kevin MacLeod",
+  license: "CC BY 4.0",
+  licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+  sourceUrl: "https://incompetech.com",
+  tracks: MUSIC_TRACKS,
+};
+
+export const VIEW_PRESETS = {
+  small: { sidebarW: 240, handH: 108, chromeH: 68, footerH: 88, uiScale: 0.92 },
+  medium: { sidebarW: 300, handH: 155, chromeH: 96, footerH: 108, uiScale: 1 },
+  large: { sidebarW: 360, handH: 280, chromeH: 72, footerH: 132, uiScale: 1.22 },
+};
+
+export const VIEW_MODE_ORDER = ["auto", "small", "medium", "large"];
+
+export const VIEW_MODE_LABELS = {
+  auto: "Auto",
+  small: "Small",
+  medium: "Medium",
+  large: "Large",
+};
+
+const DEFAULT_SETTINGS = {
+  musicMode: "radio",
+  trackId: "dreams-become-real",
+  musicVolume: 0.4,
+  sfxVolume: 0.5,
+  musicMuted: false,
+  sfxMuted: false,
+  musicPan: 0,
+  sfxPan: 0,
+  viewMode: "auto",
+  holoFoil: false,
+  guideOpen: false,
+  panels: {
+    sidebarW: null,
+    handH: null,
+    chromeH: null,
+    footerH: null,
+  },
+};
+
+export function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return { ...DEFAULT_SETTINGS, panels: { ...DEFAULT_SETTINGS.panels } };
+    const parsed = JSON.parse(raw);
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsed,
+      trackId: parsed.trackId === MENU_THEME_TRACK.id || MUSIC_TRACKS.some((t) => t.id === parsed.trackId)
+        ? parsed.trackId
+        : DEFAULT_SETTINGS.trackId,
+      panels: { ...DEFAULT_SETTINGS.panels, ...(parsed.panels || {}) },
+    };
+  } catch {
+    return { ...DEFAULT_SETTINGS, panels: { ...DEFAULT_SETTINGS.panels } };
+  }
+}
+
+export function saveSettings(partial) {
+  const current = loadSettings();
+  const next = {
+    ...current,
+    ...partial,
+    panels: { ...current.panels, ...(partial.panels || {}) },
+  };
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+  return next;
+}
+
+export function musicCreditHtml() {
+  const { artist, license, licenseUrl, sourceUrl, tracks } = MUSIC_ATTRIBUTION;
+  const host = sourceUrl.replace(/^https?:\/\//, "");
+  const list = tracks
+    .map((t) => `<a href="${sourceUrl}" rel="noopener noreferrer">"${t.title}"</a>`)
+    .join(", ");
+  return `<p class="music-credit">Music: ${list} by ${artist} (${host}), licensed under <a href="${licenseUrl}" rel="noopener noreferrer">${license}</a>.</p>`;
+}
+
+export function menuThemeCreditHtml() {
+  return `<p class="music-credit">Theme: "Dreamer's Awakening" — a five-minute loop composed with <a href="https://beepbox.co" rel="noopener noreferrer">BeepBox</a> by Cursor AI, directed by Philip Carroll. Plays on the main menu, closes every radio rotation, and can be chosen as the single track.</p>`;
+}
+
+export function artCreditHtml() {
+  return `<p class="music-credit">Card illustrations: AI-generated in <a href="https://cursor.com" rel="noopener noreferrer">Cursor</a>, from prompts written by Philip Carroll.</p>`;
+}
+
+export function boxArtCreditHtml() {
+  return `<p class="music-credit">Ainmos splash and background art by David Paul Seymour. Ainmos artwork © Philip Carroll.</p>`;
+}
+
+export function boxArtSplashCreditHtml() {
+  return `<p class="menu-splash-credit">Art by David Paul Seymour · Ainmos artwork © Philip Carroll</p>`;
+}
+
+export function footerCreditsHtml() {
+  return `${musicCreditHtml()}${boxArtCreditHtml()}${artCreditHtml()}`;
+}

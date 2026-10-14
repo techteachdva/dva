@@ -1,0 +1,524 @@
+/* ==========================================================================
+   Dreamscape: Freeform Board, the Dreamscape Vault, and ghost hexes (42.0)
+
+   Dreamcore notes: faded pastels with a cool grey-blue undertone (lavender,
+   mint, powder blue, dusty peach), one soft neon jolt for "act now", old
+   window chrome with tiny title dots, sparkles, and plain serif whispers.
+   It sits on Somnia's deep violet glass rather than replacing it.
+   ========================================================================== */
+
+:root {
+  --dc-lavender: #c8b8ec;
+  --dc-mint: #b6e6d6;
+  --dc-powder: #b4cbe8;
+  --dc-peach: #e9c3b8;
+  --dc-haze: rgba(226, 220, 255, 0.78);
+  --dc-ink: #f3f0ff;
+  --dc-whisper: "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --dc-glass: linear-gradient(160deg, rgba(42, 36, 72, 0.82), rgba(20, 17, 38, 0.9));
+  --dc-iridescent: conic-gradient(from 210deg,
+    var(--dc-lavender), var(--dc-mint), var(--dc-powder), var(--dc-peach), var(--dc-lavender));
+  --dc-neon: #9ff5ff;
+}
+
+/* ---- The Vault window ------------------------------------------------- */
+
+.dreamscape-vault {
+  position: absolute;
+  left: calc(var(--map-chrome-left, 0px) + 0.6rem);
+  /* Below the Back button, above the narrator line. */
+  top: 4.6rem;
+  max-height: calc(100% - 4.6rem - 5.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  z-index: 34;
+  width: clamp(9.6rem, 12vw, 11.2rem);
+  pointer-events: auto;
+  animation: dc-vault-arrive 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.dreamscape-vault::-webkit-scrollbar { display: none; }
+
+.dreamscape-vault[hidden] { display: none; }
+
+.vault-window {
+  position: relative;
+  padding: 0.35rem 0.45rem 0.55rem;
+  border-radius: 14px;
+  background: var(--dc-glass);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  backdrop-filter: blur(10px) saturate(1.15);
+  box-shadow:
+    0 14px 40px rgba(4, 2, 14, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 28px rgba(200, 184, 236, 0.12);
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* Iridescent hairline border. */
+.vault-window::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--dc-iridescent);
+  opacity: 0.55;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Faint scanlines, like a dream remembered on an old screen. */
+.vault-window::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.025) 0 1px,
+    transparent 1px 3px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.vault-window > * { position: relative; z-index: 3; }
+
+.vault-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.12rem 0.1rem 0.3rem;
+  border-bottom: 1px solid rgba(200, 184, 236, 0.16);
+}
+
+.vault-dots { display: inline-flex; gap: 3px; }
+.vault-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dc-peach);
+  opacity: 0.7;
+}
+.vault-dots i:nth-child(2) { background: var(--dc-mint); }
+.vault-dots i:nth-child(3) { background: var(--dc-powder); }
+
+.vault-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dc-haze);
+  white-space: nowrap;
+}
+
+.vault-deck {
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  color: var(--dc-powder);
+}
+.vault-deck i { font-style: normal; margin-left: 2px; opacity: 0.7; }
+
+.vault-whisper {
+  margin: 0.35rem 0 0.4rem;
+  font-family: var(--dc-whisper);
+  font-style: italic;
+  font-size: 0.74rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--dc-lavender);
+  text-shadow: 0 0 10px rgba(200, 184, 236, 0.35);
+}
+
+.vault-tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* ---- One Vault tile ---------------------------------------------------- */
+
+.vault-tile {
+  --pip: var(--muted);
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.6rem 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.45rem;
+  align-items: center;
+  padding: 0.3rem 0.35rem;
+  border: 1px solid rgba(200, 184, 236, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--dc-ink);
+  text-align: left;
+  cursor: default;
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease;
+  overflow: hidden;
+}
+
+.vault-tile.suit-lucidity { --pip: var(--lucidity); }
+.vault-tile.suit-elasticity { --pip: var(--elasticity); }
+.vault-tile.suit-willpower { --pip: var(--willpower); }
+
+.vault-tile:disabled { opacity: 0.62; }
+.dreamscape-vault[data-mode="rest"] .vault-tile { opacity: 0.58; filter: saturate(0.7); }
+
+.vault-tile.is-live { cursor: pointer; opacity: 1; }
+.vault-tile.is-live:hover,
+.vault-tile.is-live:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(182, 230, 214, 0.5);
+  background: rgba(182, 230, 214, 0.07);
+  outline: none;
+}
+
+.vault-tile.is-selected {
+  border-color: transparent;
+  background: linear-gradient(135deg, rgba(200, 184, 236, 0.22), rgba(182, 230, 214, 0.14));
+  box-shadow: 0 0 0 1.5px var(--dc-mint), 0 0 22px rgba(159, 245, 255, 0.35);
+  animation: dc-bob 3.2s ease-in-out infinite;
+}
+
+.vault-tile-hex {
+  grid-row: 1 / span 2;
+  width: 2.6rem;
+  height: 3rem;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background-size: cover;
+  background-position: center;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12);
+}
+
+.vault-tile-name {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+}
+
+.vault-tile-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--dc-whisper);
+  font-style: italic;
+  font-size: 0.64rem;
+  color: rgba(226, 220, 255, 0.7);
+}
+
+.vault-suit-pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pip);
+  box-shadow: 0 0 6px var(--pip);
+  flex: none;
+}
+
+/* A sparkle sweeps across the chosen tile. */
+.vault-tile-glint {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.vault-tile.is-selected .vault-tile-glint,
+.vault-tile.is-flip .vault-tile-glint {
+  animation: dc-glint 2.8s ease-in-out infinite;
+}
+
+.vault-tiles-single .vault-tile { grid-template-columns: 3.2rem 1fr; }
+.vault-tiles-single .vault-tile-hex { width: 3.2rem; height: 3.7rem; }
+
+.vault-empty {
+  margin: 0.4rem 0;
+  font-family: var(--dc-whisper);
+  font-style: italic;
+  font-size: 0.72rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* ---- Footer ------------------------------------------------------------ */
+
+.vault-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.vault-hint,
+.vault-why {
+  margin: 0;
+  font-family: var(--dc-whisper);
+  font-style: italic;
+  font-size: 0.66rem;
+  text-align: center;
+  color: rgba(226, 220, 255, 0.72);
+}
+.vault-why { color: var(--dc-peach); }
+
+.vault-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid rgba(200, 184, 236, 0.35);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(200, 184, 236, 0.16), rgba(120, 100, 190, 0.1));
+  color: var(--dc-ink);
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.vault-btn:hover,
+.vault-btn:focus-visible {
+  border-color: var(--dc-mint);
+  box-shadow: 0 0 16px rgba(182, 230, 214, 0.3);
+  outline: none;
+}
+
+.vault-btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.vault-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: rgba(74, 158, 255, 0.22);
+  color: #d6e8ff;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.vault-cost i { font-style: normal; font-size: 0.6rem; opacity: 0.85; }
+
+.vault-btn-bury { border-color: rgba(233, 195, 184, 0.45); }
+
+/* ---- Ghost hexes: where the dream can grow ------------------------------ */
+
+.hex-ghost {
+  --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  position: absolute;
+  width: calc(var(--hex-size, 58px) * 1.732050808);
+  height: calc(var(--hex-size, 58px) * 2);
+  transform: translate3d(-50%, -50%, 0) scale(0.94);
+  padding: 0;
+  border: none;
+  background: rgba(200, 184, 236, 0.12);
+  clip-path: var(--hex-clip);
+  cursor: default;
+  pointer-events: none;
+  transition: background 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+}
+
+.hex-ghost-face {
+  position: absolute;
+  inset: calc(1.5px * var(--hex-scale, 1));
+  clip-path: var(--hex-clip);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(200, 184, 236, 0.07), transparent 65%),
+    rgba(10, 8, 22, 0.55);
+}
+
+.hex-ghost-cue {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(1.1rem * var(--hex-scale, 1));
+  color: var(--dc-ink);
+  text-shadow: 0 0 10px var(--dc-neon);
+  pointer-events: none;
+}
+
+.hex-ghost.is-placeable {
+  pointer-events: auto;
+  cursor: pointer;
+  background: var(--dc-iridescent);
+  animation: dc-ghost-breathe 2.6s ease-in-out infinite;
+}
+
+.hex-ghost.is-placeable .hex-ghost-face {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(182, 230, 214, 0.18), transparent 70%),
+    rgba(18, 14, 36, 0.72);
+}
+
+/* Hovering a glowing hex previews the chosen Landscape in place. */
+.hex-ghost.is-placeable:hover .hex-ghost-face,
+.hex-ghost.is-placeable:focus-visible .hex-ghost-face {
+  background-image: var(--ghost-image);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.72;
+}
+
+.hex-ghost.is-placeable:hover,
+.hex-ghost.is-placeable:focus-visible {
+  transform: translate3d(-50%, -50%, 0) scale(1);
+  outline: none;
+}
+
+.hex-ghost.is-placeable:hover .hex-ghost-cue { opacity: 0; }
+
+/* ---- Setup: board choice ----------------------------------------------- */
+
+.field-board-mode .board-mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.board-mode-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(200, 184, 236, 0.25);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.board-mode-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.board-mode-option strong {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.board-mode-option em {
+  font-family: var(--dc-whisper);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.board-mode-option:has(input:checked) {
+  border-color: transparent;
+  background: linear-gradient(135deg, rgba(200, 184, 236, 0.2), rgba(182, 230, 214, 0.1));
+  box-shadow: 0 0 0 1.5px var(--dc-mint), 0 0 18px rgba(182, 230, 214, 0.2);
+}
+
+.board-mode-option:has(input:focus-visible) {
+  outline: 2px solid var(--dc-neon);
+  outline-offset: 2px;
+}
+
+/* ---- Motion ------------------------------------------------------------ */
+
+@keyframes dc-vault-arrive {
+  from { opacity: 0; transform: translateX(-12px); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+/* Short tables: keep the window compact. */
+@media (min-width: 761px) and (max-height: 860px) {
+  .vault-tile { grid-template-columns: 2.1rem 1fr; padding: 0.22rem 0.3rem; }
+  .vault-tile-hex { width: 2.1rem; height: 2.42rem; }
+  .vault-tile-meta { display: none; }
+  .vault-whisper { margin: 0.25rem 0 0.3rem; }
+  .vault-tiles { gap: 0.28rem; }
+}
+
+@keyframes dc-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes dc-glint {
+  0%, 55% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+@keyframes dc-ghost-breathe {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dreamscape-vault,
+  .vault-tile.is-selected,
+  .vault-tile-glint,
+  .hex-ghost.is-placeable {
+    animation: none !important;
+  }
+}
+
+/* ---- Phones: the Vault becomes a row above the hand ---------------------- */
+
+@media (max-width: 760px), (max-height: 520px) and (orientation: landscape) {
+  .dreamscape-vault {
+    left: 50%;
+    /* Under the Back / Draw / Next buttons, clear of the narrator lines below. */
+    top: 4.1rem;
+    bottom: auto;
+    transform: translateX(-50%);
+    width: min(calc(100% - 1rem), 26rem);
+    max-height: none;
+    overflow: visible;
+    animation: none;
+  }
+
+  .vault-window { padding: 0.3rem 0.4rem 0.4rem; }
+  .vault-whisper { margin: 0.2rem 0 0.3rem; }
+
+  .vault-tiles {
+    flex-direction: row;
+    gap: 0.3rem;
+  }
+
+  .vault-tile {
+    flex: 1;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    row-gap: 0.15rem;
+    padding: 0.3rem 0.2rem;
+  }
+
+  .vault-tile-hex { grid-row: auto; width: 2.2rem; height: 2.55rem; }
+  .vault-tile-meta { display: none; }
+  .vault-tile-name { font-size: 0.6rem; }
+
+  .vault-footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .vault-why { flex-basis: 100%; }
+}
+

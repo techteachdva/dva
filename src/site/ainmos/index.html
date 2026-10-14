@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0a14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ainmos">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="images/icons/somnia-192.png">
+  <title>Ainmos — Enter the Dreamscape</title>
+  <link rel="stylesheet" href="css/fonts-local.css">
+  <link rel="stylesheet" href="css/game.css">
+  <link rel="stylesheet" href="css/glass.css">
+  <link rel="stylesheet" href="css/dreamscape.css">
+  <link rel="stylesheet" href="css/ainmos.css">
+</head>
+<body class="menu-window menu-splash-active">
+  <div id="menu-splash" class="menu-splash" aria-hidden="false">
+    <div class="menu-splash-inner">
+      <img
+        class="menu-splash-art"
+        src="images/somnia-box-art.jpg"
+        alt="Ainmos"
+        width="1200"
+        height="1200"
+        decoding="async"
+      >
+    </div>
+  </div>
+  <div id="app">
+    <header class="top-bar">
+      <button type="button" class="brand brand-logo-btn" id="btn-somnia-changelog" title="Ainmos Changelog &amp; Credits" aria-label="Open Ainmos Changelog and Credits">
+        <span class="version-label">v 0.1</span>
+        <img class="brand-wordmark" src="images/somnia-logo.png" alt="Ainmos" />
+        <p class="tagline">Cooperative Dreamscape Roguelike</p>
+      </button>
+      <div class="header-actions">
+        <button type="button" class="btn btn-icon" data-music-toggle aria-pressed="true" title="Mute music">🔊</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="screen-setup" class="screen active" aria-label="Main menu">
+        <button type="button" id="btn-menu-spiral" class="menu-spiral" aria-label="How Ainmos is played" aria-expanded="true" aria-controls="menu-intro" title="How Ainmos is played">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M32 34c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4-8-3.6-8-8 3.6-8 8-8 8 3.6 8 8-3.6 12-8 12-12-5.4-12-12 5.4-12 12-12 12 5.4 12 12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div id="menu-intro" class="menu-intro" role="dialog" aria-modal="true" aria-labelledby="menu-intro-title">
+          <div class="menu-intro-card">
+            <button type="button" id="btn-menu-intro-close" class="menu-intro-close" aria-label="Close">&times;</button>
+            <h2 id="menu-intro-title">How a dream is played</h2>
+            <div id="menu-intro-body"></div>
+          </div>
+        </div>
+        <div class="setup-triad">
+          <div class="setup-panel-left menu-glass-panel">
+            <h2 class="menu-panel-title">Dream Settings</h2>
+            <label class="field">
+              <span>Players</span>
+              <select id="setup-players">
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Difficulty</span>
+              <select id="setup-length">
+                <option value="daydream">Daydream — 8 pts · 11 Dreams</option>
+                <option value="nap">Nap — 12 pts · 14 Dreams</option>
+                <option value="deep">Deep Sleep — 24 pts · 18 Dreams</option>
+              </select>
+            </label>
+            <p class="field-hint" id="setup-length-hint">Same rules on every night. Daydream is the first one. Nap and Deep Sleep ask for more points.</p>
+            <label class="field field-seed">
+              <span>Seed <em class="field-optional">optional</em></span>
+              <input type="text" id="setup-seed" maxlength="24" placeholder="e.g. SOMNIA or a Game ID" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" title="Same seed = same shuffle. Six secret keywords bend the rules…" />
+            </label>
+            <p id="setup-seed-preview" class="seed-preview hidden"></p>
+          </div>
+
+          <div class="setup-panel-center menu-glass-panel">
+            <h2 class="menu-panel-title">Choose Dreamers</h2>
+            <div id="dreamer-picker" class="card-grid picker menu-dreamer-picker"></div>
+          </div>
+
+          <div class="setup-panel-right menu-glass-panel">
+            <div id="setup-continue-wrap" class="setup-continue-wrap hidden">
+              <button type="button" id="btn-continue" class="btn btn-continue-dream">Continue Dream</button>
+              <p id="setup-continue-meta" class="setup-continue-meta"></p>
+            </div>
+            <div class="setup-launch-row">
+              <button type="button" id="btn-start" class="btn begin-dream-btn" disabled>Begin Dreaming</button>
+              <button type="button" id="btn-tutorial-mode" class="btn btn-tutorial-menu" hidden title="Two guided rounds with step-by-step coaching">Tutorial</button>
+            </div>
+            <button type="button" id="btn-advanced-tutorial" class="btn btn-tutorial-menu btn-advanced-menu" hidden disabled title="Finish the Tutorial to unlock the longer night">Advanced Tutorial</button>
+            <button type="button" id="btn-saved-dreams" class="btn btn-saved-dreams">Saved Dreams</button>
+            <p class="menu-tutorial-hint">Ainmos is Somnia's mirror dream. Every night you build the Dreamscape yourself, one Landscape at a time. Open <strong>?</strong> or Pause → Help anytime for rules.</p>
+            <button type="button" id="btn-pwa-install" class="btn btn-pwa-install hidden" hidden>Install Ainmos</button>
+            <p id="pwa-install-hint" class="pwa-install-hint" hidden>On iPad: open Ainmos once while online, then Share → Add to Home Screen. The icon plays with no internet.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <div id="utility-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop utility-backdrop"></div>
+    <div class="modal-content utility-content">
+      <button class="modal-close utility-close" aria-label="Close">&times;</button>
+      <div id="utility-modal-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app/setup.js"></script>
+</body>
+</html>

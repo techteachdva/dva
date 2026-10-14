@@ -1,0 +1,1402 @@
+import { createQuestTracker, recordQuestEvent, isQuestConditionMet } from "../dreamers/quests.js";
+import { FINAL_ARCHETYPE_POWER } from "../dreamers/final-recurrence-rules.js";
+import { buildHexBoard, adjacentTiles, hexDistance } from "./hex.js";
+import {
+  BOARD_MODES,
+  buildLandscapeTileDeck,
+  refillVault,
+  resetVaultRoundCounters,
+  isFreeformBoard,
+  vaultExhausted,
+} from "../board/dreamscape-vault.js";
+import { effectiveDreamerStat } from "../dreamers/archetype-stats.js";
+import { playSfx } from "../audio/audio.js";
+import { markTileRevealed, markTileForgotten, markDreamFeedNudge } from "../ui/fx.js";
+import { queueTileRevealFx, queueEncounterSpawnFx, queueDreamerDeathFx, queueReshuffleFx } from "../board/board-fx.js";
+import { queueCardDraw, queueHandDelta } from "../cards/card-fx.js";
+import {
+  createSubconscious,
+  repressCard,
+  repressCards,
+  subconsciousCount,
+  normalizeSubconscious,
+  repressFromMindstreamSetup,
+  isDreambeastPsycheCard,
+} from "../dreamers/subconscious.js";
+import {
+  handLimitForPlayer,
+  handRoomForPsycheDraw,
+  extraPsycheDrawAtRoundStart,
+  drawObjects,
+} from "../effects/objects.js";
+import {
+  LENGTHS,
+  PHASES,
+  shuffle,
+  buildPsycheDeck,
+  buildDreamDeck,
+  insertBossDreams,
+  buildMindstreamDecks,
+  buildObjectDecks,
+  makeExtraPsycheCards,
+  goalPointsForTable,
+  uid,
+  PSYCHE_STARTING_HAND,
+} from "./data.js";
+import { discardToMindstream, pullObjectFromMindstream, objectForPlayer, reshuffleMindstreamDiscardIfNeeded, stampBeastMillTile } from "../cards/mindstream-supply.js";
+import { psycheHandCount, hasPsycheHealth } from "../cards/psyche.js";
+import {
+  grantPowerTokens,
+  spendPowerTokens,
+  resolvePowerCardsInHand,
+  resolveAllPowerCardsInHands,
+} from "../cards/power-tokens.js";
+import { applyMeetStartTax } from "../encounters/meet-phase.js";
+import { seedRandomness, mintSeedSuffix, specialSeedFlag, buildGameId, normalizeSeedInput } from "./rng.js";
+import { snapshotDeckCaps } from "../cards/deck-pressure.js";
+
+function pinFirstById(list, id) {
+  const index = list.findIndex((item) => item.id === id);
+  if (index <= 0) return;
+  const [card] = list.splice(index, 1);
+  list.unshift(card);
+}
+
+function pinOpeningDream(dreamDeck, dreams, id) {
+  if (dreamDeck[0]?.id === id) return;
+  const index = dreamDeck.findIndex((card) => card.id === id);
+  if (index > 0) {
+    const swap = dreamDeck[0];
+    dreamDeck[0] = dreamDeck[index];
+    dreamDeck[index] = swap;
+    return;
+  }
+  const template = dreams?.find((dream) => dream.id === id);
+  if (template) {
+    dreamDeck[0] = { ...template, instanceId: uid("dream") };
+  }
+}
+
+/** FANTASY / NIGHTMARE seeds: float that beast kind to the top of every Mindstream deck. */
+function stackBeastKindToTop(mindstreamDecks, kind) {
+  Object.keys(mindstreamDecks).forEach((suit) => {
+    const deck = mindstreamDecks[suit];
+    if (!Array.isArray(deck)) return;
+    const favored = deck.filter((c) => c.type === "dreambeast" && c.beastKind === kind);
+    if (!favored.length) return;
+    const rest = deck.filter((c) => !favored.includes(c));
+    mindstreamDecks[suit] = [...favored, ...rest];
+  });
+}
+
+export function createInitialState(data, options) {
+  const length = LENGTHS[options.lengthKey];
+  const landscapes = data.landscapes.filter((l) => !l.hidden);
+
+  const seed = seedRandomness(normalizeSeedInput(options.seed) || mintSeedSuffix());
+  const seedFlag = specialSeedFlag(seed);
+  const seedFlags = {
+    somnia: seedFlag === "somnia",
+    dmzemo: seedFlag === "dmzemo",
+    spark: seedFlag === "spark",
+    fantasy: seedFlag === "fantasy",
+    nightmare: seedFlag === "nightmare",
+    rem: seedFlag === "rem",
+  };
+
+  const usedDreamerIds = new Set(options.selectedDreamers.map((d) => d.id));
+  const availableDreamers = data.dreamers.filter((d) => !usedDreamerIds.has(d.id));
+
+  const tutorialLayout = Boolean(options.tutorialMode);
+  // The tutorial teaches the Fixed Board.
+  // Ainmos: every night is built on a Freeform Board.
+  const boardMode = BOARD_MODES.FREEFORM;
+  const freeform = boardMode === BOARD_MODES.FREEFORM;
+  const board = buildHexBoard(landscapes, {
+    tutorialLayout,
+    revealRing1: seedFlags.somnia && !tutorialLayout && !freeform,
+    freeform,
+  });
+  const openingNeighbor = tutorialLayout
+    ? null
+    : board.find((t) => !t.center && t.revealed && !t.wasteland);
+
+  const psycheDeck = buildPsycheDeck(data.psyche);
+  const dreamDeck = insertBossDreams(buildDreamDeck(data.dreams, length.dreams), data.dreambeasts);
+  const archetypeDeck = shuffle(data.archetypes.map((a) => ({ ...a, instanceId: uid("arch") })));
+  const mindstreamDecks = buildMindstreamDecks(data.mindstream, data.dreambeasts);
+  const mindstreamDiscard = { lucidity: [], elasticity: [], willpower: [] };
+  const objectDecks = buildObjectDecks(data.objects);
+  const objectDiscard = { lucidity: [], elasticity: [], willpower: [] };
+  const subconscious = createSubconscious();
+
+  function dealStartingPsyche(count) {
+    const hand = [];
+    const deferred = [];
+    let guard = psycheDeck.length + deferred.length + 1;
+    while (hand.length < count && guard-- > 0) {
+      if (!psycheDeck.length && deferred.length) {
+        psycheDeck.push(...deferred.splice(0));
+      }
+      if (!psycheDeck.length) break;
+      const card = psycheDeck.shift();
+      if (card.type === "psyche-power") deferred.push(card);
+      else hand.push(card);
+    }
+    if (deferred.length) psycheDeck.unshift(...deferred);
+    return hand;
+  }
+
+  const extras = shuffle(makeExtraPsycheCards(options.selectedDreamers.length));
+  if (extras.length) {
+    psycheDeck.push(...extras);
+    const mixed = shuffle(psycheDeck.splice(0));
+    psycheDeck.push(...mixed);
+  }
+
+  const players = options.selectedDreamers.map((dreamer, index) => ({
+    id: uid("player"),
+    name: dreamer.name,
+    dreamer,
+    landscapeId: "bed",
+    powerTokens: 0,
+    hand: dealStartingPsyche(PSYCHE_STARTING_HAND),
+    objects: [],
+    persistent: [],
+    acquiredArchetypes: [],
+    isHead: index === 0,
+    alive: true,
+    pendingRespawn: false,
+    deathCount: 0,
+  }));
+
+  ["lucidity", "elasticity", "willpower"].forEach((suit) => {
+    repressFromMindstreamSetup({ mindstreamDecks, subconscious }, suit, players.length);
+  });
+
+  // FANTASY / NIGHTMARE seeds stack AFTER the opening repress so the
+  // favored Dreambeasts genuinely sit on top of each Mindstream deck.
+  if (seedFlags.fantasy || seedFlags.nightmare) {
+    stackBeastKindToTop(mindstreamDecks, seedFlags.fantasy ? "fantasy" : "nightmare");
+  }
+
+  orderArchetypeDeckForRow(archetypeDeck);
+
+  if (options.gentleStart) {
+    pinFirstById(archetypeDeck, "innocent");
+    pinOpeningDream(dreamDeck, data.dreams, "quiet");
+  }
+
+  const archetypeRow = archetypeDeck.splice(0, ARCHETYPE_ROW_SIZE).map(freshRowArchetype);
+  const activeArchetype = archetypeRow[0];
+
+  const state = {
+    phaseIndex: 0,
+    round: 1,
+    lengthKey: options.lengthKey,
+    boardMode,
+    landscapeTileDeck: freeform ? buildLandscapeTileDeck(landscapes) : [],
+    landscapeVault: [],
+    landscapesSetAside: [],
+    vaultRefreshesThisRound: 0,
+    seed,
+    seedFlags,
+    gameId: buildGameId(openingNeighbor?.name, seed),
+    remFree: { reveal: false, explore: false, meet: false },
+    goalPoints: goalPointsForTable(options.lengthKey, players.length),
+    scoringGoalPoints: goalPointsForTable(options.lengthKey, players.length),
+    archetypeGoalReached: false,
+    dreamDeck,
+    psycheDeck,
+    psycheDiscard: [],
+    archetypeDeck,
+    mindstreamDecks,
+    mindstreamDiscard,
+    objectDecks,
+    objectDiscard,
+    subconscious,
+    board,
+    players,
+    activePlayerIndex: 0,
+    activeArchetype,
+    archetypeRow,
+    activeEncounter: null,
+    activeEncounterLandscapeId: null,
+    activeDream: null,
+    acquiredPoints: 0,
+    deathClock: 0,
+    goalBedSprintUsed: false,
+    selectedHand: [],
+    selectedLandscapeId: "bed",
+    log: [
+      seedFlags.somnia
+        ? `Lucid start (${buildGameId(openingNeighbor?.name, seed)}): the whole inner ring begins Revealed around The Bed. Enter this Game ID as a seed to replay this dream.`
+        : openingNeighbor
+          ? `The Dreamscape is shuffled (${buildGameId(openingNeighbor.name, seed)}). Only ${openingNeighbor.name} is Revealed beside The Bed; every other Landscape starts forgotten.`
+          : "The Dreamscape forms around The Bed...",
+    ],
+    status: "playing",
+    finalRecurrence: false,
+    dreamDrawn: false,
+    dreamDiscard: [],
+    revealLandscapeUsed: false,
+    exploreMovesLeft: 0,
+    exploreActivated: false,
+    meetActionBudget: 0,
+    meetActionsUsed: 0,
+    usedMeetActionsByPlayer: {},
+    usedUniqueActionsThisMeet: [],
+    lastMeetActionByPlayer: {},
+    lastPhaseOpenerId: null,
+    phaseOpenersThisRound: [],
+    meetPassHolderId: null,
+    freshlyRepressedInstanceIds: [],
+    visionaryPeekUsed: false,
+    runnerFreeMoveUsed: false,
+    immovableTaxUsed: false,
+    hunterShoveUsed: false,
+    weaverSwapUsed: false,
+    pendingPowerBonus: 0,
+    pendingPowerBonusTokens: 0,
+    phaseTokenAsPsyche: null,
+    tradeMode: false,
+    viewingDeck: null,
+    availableDreamers,
+    allDreamers: data.dreamers,
+    questTracker: createQuestTracker(),
+    questConditionsMet: {},
+    gameStartedAt: Date.now(),
+    questRoundFlags: { discardedOnBed: false },
+    finalArchetypes: [],
+    freeExploreNextRound: false,
+    pendingRespawn: null,
+    trade: null,
+    pendingReturn: null,
+    pendingRepress: null,
+    resolutionQueue: [],
+    landscapePick: null,
+    narrator: null,
+    exploreFreeMove: false,
+    pendingHeatingUp: false,
+    persistentArchetypes: [],
+    skeletonKeyPending: false,
+    abductionCarried: [],
+    meetOnlyRound: false,
+    bargainingDream: false,
+    temptationDream: false,
+    wanderlustTarget: 0,
+    wanderlustMoves: 0,
+    pickEncounterOnSpawn: false,
+    skipExploreNextRound: false,
+    skipExploreReason: null,
+    rivalryEncountersOnBed: 0,
+    rivalryLeftover: 0,
+    chaseDream: false,
+    chaseTrapped: [],
+    skipLandscapeActionsNextMeet: false,
+    pendingDreamerPower: null,
+    cancellableDiscard: null,
+    cancellableMove: null,
+    anchorMeetSpreadBonus: 0,
+    anchorMeetSpreadPending: 0,
+    pendingDeathChoice: null,
+    pendingNothingChoice: null,
+    pendingObjectChoice: null,
+    pendingObjectFollowup: null,
+    forcedAccept: null,
+    pendingDreamChoice: null,
+    pendingDreamQueue: [],
+    pendingEffectChoice: null,
+    pendingMindstreamChoice: null,
+    pendingMindstreamMeet: null,
+    skipNextDreamDraw: false,
+    revealedDeckTops: {},
+    encounterSpawnSeq: 0,
+  };
+
+  snapshotDeckCaps(state);
+  refillVault(state);
+  resetPhaseFlags(state);
+  state.phaseIndex = 0;
+  addLog(state, `Round ${state.round}: Reveal Phase — each Dreamer begins with ${PSYCHE_STARTING_HAND} Psyche.`);
+  players.forEach((player) => {
+    const startingTokens = seedFlags.spark || seedFlags.somnia ? 2 : 1;
+    grantPowerTokens(state, player, startingTokens, {
+      reason: `${player.name} begins with ${startingTokens} Power Token${startingTokens === 1 ? "" : "s"}.`,
+      logQuest: false,
+      animate: false,
+    });
+  });
+  if (state.tutorialMode) resolveAllPowerCardsInHands(state);
+  state.checkPsycheDeath = (player, opts) => checkDreamerPsycheDeath(state, player, opts);
+  return state;
+}
+
+export function getPhase(state) {
+  return PHASES[state.phaseIndex];
+}
+
+export function activePlayer(state) {
+  return state.players[state.activePlayerIndex];
+}
+
+export function headPlayer(state) {
+  return state.players.find((p) => p.isHead) || state.players[0];
+}
+
+export function landscapeById(state, id) {
+  return state.board.find((l) => l.id === id);
+}
+
+export function playersOnLandscape(state, id) {
+  return state.players.filter((p) => p.landscapeId === id && p.alive);
+}
+
+/** 41.0: Final Recurrence lasts this many rounds once it begins. */
+export const FINAL_RECURRENCE_ROUNDS = 3;
+/** 41.0: Final Recurrence summons this many Archetypes (the cheapest left), whatever the table size. */
+export const FINAL_RECURRENCE_ARCHETYPES = 2;
+
+/** 41.0: three Archetypes are face up. Acquire whichever one's quests come true first. */
+export const ARCHETYPE_ROW_SIZE = 3;
+
+function freshRowArchetype(arch) {
+  if (!arch) return arch;
+  arch.questProgress = [false, false];
+  arch.powerTokensOnArchetype = 0;
+  return arch;
+}
+
+/** 2- and 3-point Archetypes open the night; the boss-gated 4-pointers sit in the bottom half. */
+function orderArchetypeDeckForRow(deck) {
+  const low = deck.filter((a) => (a.points || 0) < 4);
+  const high = deck.filter((a) => (a.points || 0) >= 4);
+  const opening = low.slice(0, ARCHETYPE_ROW_SIZE);
+  const rest = shuffle([...low.slice(ARCHETYPE_ROW_SIZE), ...high]);
+  const half = Math.ceil(rest.length / 2);
+  // Keep 4-pointers out of the first half of what remains.
+  const restLow = rest.filter((a) => (a.points || 0) < 4);
+  const restHigh = rest.filter((a) => (a.points || 0) >= 4);
+  const top = restLow.slice(0, Math.max(0, half));
+  const bottom = shuffle([...restLow.slice(half), ...restHigh]);
+  deck.splice(0, deck.length, ...opening, ...top, ...bottom);
+}
+
+/** The face-up Archetypes. Keeps activeArchetype pointing at a row card. */
+export function archetypeRowOf(state) {
+  if (!Array.isArray(state.archetypeRow)) {
+    state.archetypeRow = state.activeArchetype ? [state.activeArchetype] : [];
+  }
+  state.archetypeRow = state.archetypeRow.filter(Boolean);
+  if (!state.activeArchetype || !state.archetypeRow.includes(state.activeArchetype)) {
+    state.activeArchetype = state.archetypeRow[0] || null;
+  }
+  return state.archetypeRow;
+}
+
+export function refillArchetypeRow(state) {
+  const row = archetypeRowOf(state);
+  while (row.length < ARCHETYPE_ROW_SIZE && state.archetypeDeck?.length) {
+    row.push(freshRowArchetype(state.archetypeDeck.shift()));
+  }
+  if (!state.activeArchetype || !row.includes(state.activeArchetype)) state.activeArchetype = row[0] || null;
+  return row;
+}
+
+export function focusRowArchetype(state, archetypeId) {
+  const row = archetypeRowOf(state);
+  const hit = row.find((a) => a.id === archetypeId);
+  if (hit) state.activeArchetype = hit;
+  return hit || null;
+}
+
+/** Row Archetype whose quests are both already true (focused one first). */
+export function readyRowArchetype(state) {
+  const row = archetypeRowOf(state);
+  const ordered = [state.activeArchetype, ...row.filter((a) => a !== state.activeArchetype)].filter(Boolean);
+  return ordered.find((arch) => (arch.quests || []).length
+    && arch.quests.every((quest) => isQuestConditionMet(state, arch.id, quest))) || null;
+}
+
+export function addLog(state, message) {
+  state.log.unshift(message);
+  state.log = state.log.slice(0, 40);
+}
+
+function peekCardSummary(card) {
+  return {
+    id: card.id,
+    name: card.name,
+    type: card.type,
+    suit: card.suit,
+    value: card.value,
+    image: card.image,
+    text: card.text,
+    isWild: card.isWild,
+    isDreambeast: card.isDreambeast,
+  };
+}
+
+export function pileForDeckKey(state, deckKey) {
+  if (deckKey === "psyche") return state.psycheDeck || [];
+  if (deckKey === "dream") return state.dreamDeck || [];
+  if (deckKey === "archetype") return state.archetypeDeck || [];
+  if (deckKey?.startsWith("mindstream-")) {
+    const suit = deckKey.replace("mindstream-", "");
+    return state.mindstreamDecks?.[suit] || [];
+  }
+  return [];
+}
+
+export function allLandscapesRevealed(state) {
+  const outer = (state.board || []).filter((t) => !t.center && t.id !== "bed");
+  if (isFreeformBoard(state)) {
+    // Freeform: done only when nothing is left to place and nothing is Wasteland.
+    return vaultExhausted(state) && outer.every((t) => t.revealed && !t.wasteland);
+  }
+  return outer.length > 0 && outer.every((t) => t.revealed && !t.wasteland);
+}
+
+export function syncRevealedTopsFromDeck(state, deckKey) {
+  if (!state.revealedDeckTops) state.revealedDeckTops = {};
+  const deck = pileForDeckKey(state, deckKey);
+  const n = Math.min(state.revealedDeckTops[deckKey]?.length || 0, deck.length);
+  if (!n) {
+    delete state.revealedDeckTops[deckKey];
+    return;
+  }
+  state.revealedDeckTops[deckKey] = deck.slice(0, n).map(peekCardSummary);
+}
+
+export function rememberRevealedTops(state, deckKey, cards) {
+  if (!state.revealedDeckTops) state.revealedDeckTops = {};
+  const incoming = (Array.isArray(cards) ? cards : [cards]).filter(Boolean);
+  const deck = pileForDeckKey(state, deckKey);
+  const want = Math.max(incoming.length, state.revealedDeckTops[deckKey]?.length || 0);
+  const n = Math.min(want, deck.length);
+  if (!n) {
+    delete state.revealedDeckTops[deckKey];
+    return;
+  }
+  state.revealedDeckTops[deckKey] = deck.slice(0, n).map(peekCardSummary);
+}
+
+/** Look at the next facedown card without turning it face-up on the pile. */
+export function peekFacedownDeckCard(state, deckKey) {
+  const deck = pileForDeckKey(state, deckKey);
+  const shown = state.revealedDeckTops?.[deckKey]?.length || 0;
+  if (shown >= deck.length) return null;
+  return deck[shown] || null;
+}
+
+export function revealNextDeckCard(state, deckKey) {
+  const deck = pileForDeckKey(state, deckKey);
+  if (!deck.length) return null;
+  if (!state.revealedDeckTops) state.revealedDeckTops = {};
+  const current = state.revealedDeckTops[deckKey] || [];
+  if (current.length >= deck.length) return null;
+  const card = deck[current.length];
+  state.revealedDeckTops[deckKey] = [...current, peekCardSummary(card)];
+  return card;
+}
+
+export function consumeRevealedTop(state, deckKey, count = 1) {
+  const list = state.revealedDeckTops?.[deckKey];
+  if (!list?.length) return;
+  list.splice(0, count);
+  if (!list.length) delete state.revealedDeckTops[deckKey];
+}
+
+export function clearRevealedTops(state, deckKey) {
+  if (state.revealedDeckTops) delete state.revealedDeckTops[deckKey];
+}
+
+export function refillPsycheDeckFromDiscard(state) {
+  if (state.psycheDeck?.length) return false;
+  if (!state.psycheDiscard?.length) return false;
+  state.psycheDeck = shuffle(state.psycheDiscard);
+  state.psycheDiscard = [];
+  clearRevealedTops(state, "psyche");
+  queueReshuffleFx("psyche");
+  addLog(state, "Psyche discard pile shuffled into a new deck.");
+  return true;
+}
+
+/** Repress the top of the Psyche Deck, reshuffling discard if needed. */
+export function repressTopPsycheFromDeck(state, count = 5) {
+  let taken = 0;
+  for (let i = 0; i < count; i += 1) {
+    refillPsycheDeckFromDiscard(state);
+    if (!state.psycheDeck.length) break;
+    const card = state.psycheDeck.shift();
+    consumeRevealedTop(state, "psyche");
+    repressCard(state, card, { fromDeck: "psyche" });
+    taken += 1;
+  }
+  if (taken) {
+    addLog(state, `Repressed the top ${taken} card${taken === 1 ? "" : "s"} of the Psyche Deck.`);
+  }
+  checkDefeat(state);
+  return taken;
+}
+
+export function drawPsycheForPlayer(state, player, count = 1) {
+  const drawn = [];
+  for (let i = 0; i < count; i += 1) {
+    refillPsycheDeckFromDiscard(state);
+    if (!state.psycheDeck.length) break;
+    const card = state.psycheDeck.shift();
+    consumeRevealedTop(state, "psyche");
+
+    if (card.type === "psyche-power") {
+      const limit = handLimitForPlayer(state, player);
+      if ((player.hand?.length || 0) < limit) {
+        player.hand.push(card);
+        drawn.push(card);
+      } else {
+        state.psycheDiscard.push(card);
+      }
+      continue;
+    }
+
+    const limit = handLimitForPlayer(state, player);
+    if ((player.hand?.length || 0) < limit) {
+      player.hand.push(card);
+      drawn.push(card);
+    } else {
+      state.psycheDiscard.push(card);
+    }
+  }
+  if (drawn.length) {
+    queueCardDraw(player.id, drawn, "psyche");
+    queueHandDelta(player.id, drawn.length);
+    playSfx("draw", { count: drawn.length });
+  }
+  checkDefeat(state);
+  return drawn;
+}
+
+export function drawPsyche(state, count = 1) {
+  return drawPsycheForPlayer(state, activePlayer(state), count);
+}
+
+export function drawMindstream(state, suit, count = 1) {
+  const drawn = [];
+  for (let i = 0; i < count; i += 1) {
+    const wasEmpty = !state.mindstreamDecks[suit]?.length;
+    const reshuffled = reshuffleMindstreamDiscardIfNeeded(state, suit);
+    if (wasEmpty && reshuffled) {
+      addLog(state, `${suit[0].toUpperCase()}${suit.slice(1)} Mindstream discard shuffled into a new draw pile.`);
+    }
+    const deck = state.mindstreamDecks[suit];
+    if (!deck.length) {
+      checkDefeat(state);
+      break;
+    }
+    drawn.push(deck.shift());
+    consumeRevealedTop(state, `mindstream-${suit}`);
+  }
+  if (drawn.length) {
+    const actor = activePlayer(state);
+    if (actor) queueCardDraw(actor.id, drawn, `mindstream-${suit}`);
+    playSfx("draw", { count: drawn.length });
+  }
+  return drawn;
+}
+
+export function repressPsycheToSubconscious(state, cards) {
+  repressCards(state, cards);
+}
+
+export function drawObject(state, player, count = 1, helpers = null) {
+  if (helpers) return drawObjects(state, player, count, helpers);
+  const drawn = [];
+  for (let i = 0; i < count; i += 1) {
+    const pulled = pullObjectFromMindstream(state);
+    if (!pulled) break;
+    const card = objectForPlayer(pulled.card);
+    player.objects.push(card);
+    drawn.push(card);
+  }
+  return drawn;
+}
+
+export function encounterKey(encounter) {
+  return encounter?.instanceId || encounter?.id || "";
+}
+
+/** All Dreambeasts/encounters on a landscape (no per-tile limit). */
+export function tileEncounters(tile) {
+  if (!tile) return [];
+  if (!Array.isArray(tile.encounters)) {
+    tile.encounters = tile.encounter ? [tile.encounter] : [];
+    delete tile.encounter;
+  }
+  return tile.encounters;
+}
+
+export function tileHasEncounters(tile) {
+  return tileEncounters(tile).length > 0;
+}
+
+export function encountersOnLandscape(state, landscapeId) {
+  return tileEncounters(landscapeById(state, landscapeId));
+}
+
+export function findEncounterOnBoard(state, encounter) {
+  const key = encounterKey(encounter);
+  if (!key) return null;
+  for (const tile of state.board || []) {
+    const match = tileEncounters(tile).find((enc) => encounterKey(enc) === key);
+    if (match) return { tile, encounter: match };
+  }
+  return null;
+}
+
+export function encounterOnLandscape(state, landscapeId) {
+  const encounters = encountersOnLandscape(state, landscapeId);
+  if (!encounters.length) return null;
+  if (state.activeEncounterLandscapeId === landscapeId && state.activeEncounter) {
+    const activeKey = encounterKey(state.activeEncounter);
+    const match = encounters.find((enc) => encounterKey(enc) === activeKey);
+    if (match) return match;
+  }
+  return encounters[0];
+}
+
+export function addEncounterOnLandscape(state, landscapeId, encounter) {
+  const tile = landscapeById(state, landscapeId);
+  if (!tile || !encounter) return null;
+  const card = { ...encounter };
+  if (!card.instanceId) card.instanceId = uid("enc");
+  if (card.spawnOrder == null) {
+    state.encounterSpawnSeq = (state.encounterSpawnSeq || 0) + 1;
+    card.spawnOrder = state.encounterSpawnSeq;
+  }
+  tileEncounters(tile).push(card);
+  state.activeEncounter = card;
+  state.activeEncounterLandscapeId = landscapeId;
+  stampBeastMillTile(state, landscapeId, card);
+  queueEncounterSpawnFx(landscapeId, card, tile.suit || card.suit);
+  return card;
+}
+
+/** Spawn an encounter on a landscape (stacks with existing occupants). */
+export function setEncounterOnLandscape(state, landscapeId, encounter) {
+  if (!encounter) {
+    clearEncountersOnLandscape(state, landscapeId);
+    return null;
+  }
+  return addEncounterOnLandscape(state, landscapeId, encounter);
+}
+
+export function removeEncounterFromLandscape(state, landscapeId, encounter) {
+  const tile = landscapeById(state, landscapeId);
+  if (!tile) return;
+  const list = tileEncounters(tile);
+  const key = encounterKey(encounter);
+  const idx = list.findIndex((enc) => encounterKey(enc) === key);
+  if (idx < 0) return;
+  list.splice(idx, 1);
+  if (state.activeEncounterLandscapeId === landscapeId && encounterKey(state.activeEncounter) === key) {
+    state.activeEncounter = list[0] || null;
+    if (!list.length) state.activeEncounterLandscapeId = null;
+  }
+}
+
+export function clearEncountersOnLandscape(state, landscapeId) {
+  const tile = landscapeById(state, landscapeId);
+  if (!tile) return;
+  tile.encounters = [];
+  delete tile.encounter;
+  if (state.activeEncounterLandscapeId === landscapeId) {
+    state.activeEncounter = null;
+    state.activeEncounterLandscapeId = null;
+  }
+}
+
+export function moveEncounterBetweenLandscapes(state, fromId, toId, encounter) {
+  const located = findEncounterOnBoard(state, encounter);
+  const enc = located?.encounter || encounter;
+  const from = located?.tile?.id || fromId;
+  if (!enc || !from || !toId) return false;
+  removeEncounterFromLandscape(state, from, enc);
+  addEncounterOnLandscape(state, toId, enc);
+  return true;
+}
+
+export function countEncountersOnBoard(state, filterFn = () => true) {
+  let count = 0;
+  (state.board || []).forEach((tile) => {
+    tileEncounters(tile).forEach((enc) => {
+      if (filterFn(enc)) count += 1;
+    });
+  });
+  return count;
+}
+
+/** Revealed, non-wasteland Landscapes (Dreambeasts may stack on any of these). */
+export function revealedLandscapeTiles(state, { suit = null, landscapeIds = null } = {}) {
+  let tiles = (state.board || []).filter((t) => t.revealed && !t.wasteland);
+  if (suit) tiles = tiles.filter((t) => t.suit === suit);
+  if (landscapeIds?.length) tiles = tiles.filter((t) => landscapeIds.includes(t.id));
+  return tiles;
+}
+
+export function allEncountersOnBoard(state) {
+  const out = [];
+  (state.board || []).forEach((tile) => {
+    tileEncounters(tile).forEach((encounter) => {
+      out.push({ tile, encounter });
+    });
+  });
+  return out;
+}
+
+export function resetPhaseFlags(state) {
+  state.dreamDrawn = false;
+  state.revealLandscapeUsed = false;
+  state.exploreMovesLeft = 0;
+  state.exploreActivated = false;
+  state.meetActionBudget = 0;
+  state.meetActionsUsed = 0;
+  state.usedMeetActionsByPlayer = {};
+  state.usedUniqueActionsThisMeet = [];
+  state.lastMeetActionByPlayer = {};
+  state.pendingPowerBonus = 0;
+  state.pendingPowerBonusTokens = 0;
+  state.phaseTokenAsPsyche = null;
+  state.selectedHand = [];
+  state.tradeMode = false;
+  state.trade = null;
+  state.questRoundFlags = { discardedOnBed: false };
+  state.abductionCarried = [];
+  state.meetOnlyRound = false;
+  state.bargainingDream = false;
+  state.temptationDream = false;
+  state.wanderlustTarget = 0;
+  state.wanderlustMoves = 0;
+  state.pickEncounterOnSpawn = false;
+  state.skipExploreNextRound = false;
+  state.skipExploreReason = null;
+  state.rivalryEncountersOnBed = 0;
+  state.rivalryLeftover = 0;
+  state.chaseDream = false;
+  state.chaseTrapped = [];
+  state.skipLandscapeActionsNextMeet = false;
+  state.anchorMeetSpreadBonus = 0;
+}
+
+export function beginRoundReveal(state) {
+  resetPhaseFlags(state);
+  state.phaseIndex = 0;
+  state.remFree = { reveal: false, explore: false, meet: false };
+  state.lastPhaseOpenerId = null;
+  state.phaseOpenersThisRound = [];
+  state.meetPassHolderId = null;
+  state.freshlyRepressedInstanceIds = [];
+  state.visionaryPeekUsed = false;
+  state.runnerFreeMoveUsed = false;
+  state.immovableTaxUsed = false;
+  state.hunterShoveUsed = false;
+  state.weaverSwapUsed = false;
+  resetVaultRoundCounters(state);
+
+  state.players.forEach((player) => {
+    if (!player.alive) return;
+    if (!hasPsycheHealth(player)) {
+      handleDreamerDeath(state, player);
+      return;
+    }
+    drawPsycheForPlayer(state, player, 2);
+    const extra = extraPsycheDrawAtRoundStart(state, player);
+    if (extra) drawPsycheForPlayer(state, player, extra);
+  });
+
+  addLog(state, `Round ${state.round}: Reveal — each Dreamer draws 2 Psyche.`);
+}
+
+export const DEATH_CLOCK_CAP = 6;
+/** @deprecated Personal caps are gone. The table shares DEATH_CLOCK_CAP. */
+export const MAX_DREAMER_DEATHS = DEATH_CLOCK_CAP;
+
+export function deathAvoidTokenCost() {
+  return 0;
+}
+
+export function deathCapFor() {
+  return DEATH_CLOCK_CAP;
+}
+
+function respawnPsycheTarget() {
+  return 3;
+}
+
+function seatDreamerOnBed(state, player) {
+  player.landscapeId = "bed";
+  state.selectedLandscapeId = "bed";
+  const idx = state.players.findIndex((p) => p.id === player.id);
+  if (idx >= 0) state.activePlayerIndex = idx;
+}
+
+function loseOnFinalDeath(state, player) {
+  if (state.tutorialMode) return;
+  if (state.status !== "playing") return;
+  state.status = "lost";
+  addLog(
+    state,
+    `The Death Clock strikes ${DEATH_CLOCK_CAP}. ${player.name} does not return. You never wake up.`,
+  );
+}
+
+function clearPlayerHandOnDeath(state, player) {
+  while (player.hand.length) {
+    const card = player.hand.pop();
+    if (isDreambeastPsycheCard(card)) {
+      repressCard(state, card);
+    } else {
+      if (!state.psycheDiscard) state.psycheDiscard = [];
+      state.psycheDiscard.push(card);
+    }
+  }
+}
+
+function discardPlayerObjects(state, player) {
+  const objects = [...(player.objects || []), ...(player.persistent || [])];
+  objects.forEach((obj) => discardToMindstream(state, obj));
+  player.objects = [];
+  player.persistent = [];
+}
+
+export function applyDreamerDeath(state, player) {
+  state.pendingDeathChoice = null;
+  if (!player?.alive || state.status !== "playing") return;
+
+  const deaths = (player.deathCount || 0) + 1;
+  player.deathCount = deaths;
+  state.deathClock = (state.deathClock || 0) + 1;
+  const clock = state.deathClock;
+
+  queueDreamerDeathFx(player.id, player.name, player.landscapeId);
+  discardPlayerObjects(state, player);
+  if (player.powerTokens) {
+    spendPowerTokens(state, player, player.powerTokens, {
+      reason: `${player.name}'s Power Tokens return to the pool.`,
+    });
+  }
+  player.powerTokens = 0;
+  clearPlayerHandOnDeath(state, player);
+  seatDreamerOnBed(state, player);
+
+  if (clock >= DEATH_CLOCK_CAP) {
+    player.alive = false;
+    addLog(state, `${player.name} dies. The Death Clock is ${clock}/${DEATH_CLOCK_CAP}.`);
+    loseOnFinalDeath(state, player);
+    return;
+  }
+
+  const target = respawnPsycheTarget();
+  drawPsycheForPlayer(state, player, target);
+  if (state.tutorialMode) resolvePowerCardsInHand(state, player);
+
+  addLog(
+    state,
+    `${player.name} dies with nothing to pay. The Death Clock ticks to ${clock}/${DEATH_CLOCK_CAP}. Objects are lost, Power Tokens return to the pool, and they redraw ${target} Psyche on The Bed.`,
+  );
+}
+
+export function offerDreamerDeathChoice(state, player) {
+  if (!player?.alive || hasPsycheHealth(player)) return false;
+  applyDreamerDeath(state, player);
+  return true;
+}
+
+export function avoidDreamerDeath(state) {
+  const pending = state.pendingDeathChoice;
+  if (!pending) return false;
+
+  const player = state.players.find((p) => p.id === pending.playerId);
+  if (!player?.alive) {
+    state.pendingDeathChoice = null;
+    return false;
+  }
+
+  const spent = spendPowerTokens(state, player, pending.cost, {
+    reason: `${player.name} spends ${pending.cost} Power Token${pending.cost === 1 ? "" : "s"} to cling to the Dream.`,
+  });
+  if (!spent) return false;
+
+  state.pendingDeathChoice = null;
+  drawPsycheForPlayer(state, player, 1);
+
+  if (!hasPsycheHealth(player)) {
+    applyDreamerDeath(state, player);
+  } else {
+    addLog(state, `${player.name} draws 1 Psyche and stays in the Dream.`);
+  }
+  return true;
+}
+
+export function acceptDreamerDeath(state) {
+  const pending = state.pendingDeathChoice;
+  if (!pending) return false;
+
+  const player = state.players.find((p) => p.id === pending.playerId);
+  state.pendingDeathChoice = null;
+  if (!player) return false;
+
+  applyDreamerDeath(state, player);
+  return true;
+}
+
+export function checkDreamerPsycheDeath(state, player, opts = {}) {
+  if (!player?.alive || state.status !== "playing") return false;
+  if (!opts.unpaid) return false;
+  if (psycheHandCount(player) > 0) return false;
+  applyDreamerDeath(state, player);
+  return true;
+}
+
+export function handleDreamerDeath(state, player) {
+  checkDreamerPsycheDeath(state, player);
+}
+
+export function respawnDreamer(state, playerId, dreamerId) {
+  const player = state.players.find((p) => p.id === playerId);
+  const dreamer = state.availableDreamers.find((d) => d.id === dreamerId);
+  if (!player || !dreamer) return false;
+
+  state.availableDreamers = state.availableDreamers.filter((d) => d.id !== dreamerId);
+  player.dreamer = dreamer;
+  player.name = dreamer.name;
+  player.alive = true;
+  player.landscapeId = "bed";
+  player.deathCount = 0;
+  player.powerTokens = 0;
+  player.hand = [];
+  grantPowerTokens(state, player, 1, { reason: `${dreamer.name} begins with 1 Power Token.`, logQuest: false, animate: false });
+  drawPsycheForPlayer(state, player, PSYCHE_STARTING_HAND);
+  if (state.tutorialMode) resolvePowerCardsInHand(state, player);
+  player.pendingRespawn = false;
+  state.pendingRespawn = null;
+  seatDreamerOnBed(state, player);
+  addLog(state, `${dreamer.name} enters the Dreamscape on The Bed with ${PSYCHE_STARTING_HAND} Psyche and 1 Power.`);
+  return true;
+}
+
+function tileCanHostArchetype(tile) {
+  return !!(tile && tile.revealed && !tile.wasteland && !tile.center && tile.id !== "bed");
+}
+
+function questLandscapeIds(state, arch) {
+  const text = (arch.quests || []).join(" · ");
+  const named = (state.board || [])
+    .filter((tile) => tile.name && tile.id !== "bed" && tile.id !== "wasteland")
+    .sort((a, b) => b.name.length - a.name.length);
+  const ids = [];
+  named.forEach((tile) => {
+    if (text.includes(tile.name) && !ids.includes(tile.id)) ids.push(tile.id);
+  });
+  return ids.slice(0, 2);
+}
+
+function placeFinalArchetype(state, arch) {
+  const questTiles = questLandscapeIds(state, arch)
+    .map((id) => landscapeById(state, id))
+    .filter(tileCanHostArchetype);
+  const emptyQuest = questTiles.find((tile) => !(tile.finalArchetypes || []).some((entry) => !entry.defeated));
+  if (emptyQuest || questTiles[0]) return emptyQuest || questTiles[0];
+
+  const suitTiles = (state.board || []).filter((tile) => tileCanHostArchetype(tile) && tile.suit === arch.suit);
+  const emptySuit = suitTiles.find((tile) => !(tile.finalArchetypes || []).some((entry) => !entry.defeated));
+  if (emptySuit || suitTiles[0]) return emptySuit || suitTiles[0];
+
+  return landscapeById(state, "bed");
+}
+
+function hostFinalArchetype(tile, arch) {
+  if (!tile) return null;
+  if (!tile.finalArchetypes) tile.finalArchetypes = [];
+  const placed = { ...arch, defeated: false, landscapeId: tile.id };
+  tile.finalArchetypes.push(placed);
+  tile.finalArchetype = tile.finalArchetypes.find((entry) => !entry.defeated) || null;
+  return placed;
+}
+
+export function markFinalArchetypeDefeated(state, archetypeId) {
+  (state.finalArchetypes || []).forEach((arch) => {
+    if (arch.id === archetypeId) arch.defeated = true;
+  });
+  (state.board || []).forEach((tile) => {
+    (tile.finalArchetypes || []).forEach((arch) => {
+      if (arch.id === archetypeId) arch.defeated = true;
+    });
+    if (tile.finalArchetype?.id === archetypeId) tile.finalArchetype.defeated = true;
+    if (tile.finalArchetypes) {
+      tile.finalArchetype = tile.finalArchetypes.find((arch) => !arch.defeated) || null;
+    }
+  });
+}
+
+export function acquireFinalArchetype(state, player, archetype) {
+  if (!player || !archetype) return null;
+  const copy = {
+    ...archetype,
+    defeated: true,
+    questProgress: [true, true],
+  };
+  player.acquiredArchetypes.push(copy);
+  state.acquiredPoints += archetype.points || 0;
+  const goal = state.scoringGoalPoints || 0;
+  if (goal > 0 && (state.acquiredPoints || 0) >= goal) state.archetypeGoalReached = true;
+  addLog(state, `${player.name} acquires ${archetype.name} (+${archetype.points || 0}). Its power is ready.`);
+  return copy;
+}
+
+/** Pull one Archetype out of the remaining deck and Acquire it immediately. */
+export function acquireArchetypeFromDeck(state, player, archetypeId) {
+  const idx = (state.archetypeDeck || []).findIndex((arch) => arch.id === archetypeId);
+  if (idx < 0 || !player) return null;
+  const [archetype] = state.archetypeDeck.splice(idx, 1);
+  const copy = {
+    ...archetype,
+    questProgress: (archetype.quests || []).map(() => true),
+  };
+  player.acquiredArchetypes.push(copy);
+  state.acquiredPoints += archetype.points || 0;
+  const goal = state.scoringGoalPoints || state.goalPoints || 0;
+  if (goal > 0 && (state.acquiredPoints || 0) >= goal) state.archetypeGoalReached = true;
+  addLog(state, `${player.name} acquires ${archetype.name} from the deck (+${archetype.points || 0}). Its power is ready.`);
+  checkVictory(state);
+  return copy;
+}
+
+export function beginFinalRecurrence(state) {
+  if (state.finalRecurrence) return;
+  state.finalRecurrence = true;
+  if (state.scoringGoalPoints == null) state.scoringGoalPoints = state.goalPoints || 0;
+  if ((state.goalPoints || 0) > 0 && (state.acquiredPoints || 0) >= state.goalPoints) {
+    state.archetypeGoalReached = true;
+  }
+  state.goalPoints = 0;
+  const bed = landscapeById(state, "bed");
+  if (bed) {
+    bed.finalRecurrenceSide = true;
+    bed.revealed = true;
+    bed.wasteland = false;
+  }
+  // 41.0: the two cheapest Archetypes left, all standing on The Bed.
+  const pool = [...archetypeRowOf(state), ...state.archetypeDeck];
+  const summoned = pool
+    .map((arch, index) => ({ arch, index }))
+    .sort((a, b) => ((a.arch.points || 0) - (b.arch.points || 0)) || (a.index - b.index))
+    .slice(0, FINAL_RECURRENCE_ARCHETYPES)
+    .map((entry) => entry.arch);
+  state.archetypeDeck = [];
+  state.archetypeRow = [];
+  state.activeArchetype = null;
+
+  state.finalArchetypes = summoned.map((arch) => {
+    const tile = bed || placeFinalArchetype(state, arch);
+    const placed = hostFinalArchetype(tile, arch);
+    if (tile && placed) addLog(state, `${arch.name} appears on ${tile.name}.`);
+    return placed || { ...arch, defeated: false, landscapeId: tile?.id };
+  });
+
+  state.finalRecurrenceRoundsLeft = FINAL_RECURRENCE_ROUNDS;
+  state.finalRecurrenceDreamsAtStart = Math.max(1, state.dreamDeck?.length || 1);
+  addLog(state, `Final Recurrence: ${summoned.length} Archetype${summoned.length === 1 ? "" : "s"} stand on The Bed. Power ${FINAL_ARCHETYPE_POWER}. Pool up to 3 Psyche and win each dice battle within ${FINAL_RECURRENCE_ROUNDS} rounds to wake.`);
+  markDreamFeedNudge();
+  checkVictory(state);
+}
+
+export function advancePhase(state) {
+  const phase = getPhase(state);
+
+  if (phase === "Meet") {
+    rewardRestedDreamers(state);
+    passHeadDreamer(state);
+    if (state.finalRecurrence && state.finalRecurrenceRoundsLeft != null) {
+      state.finalRecurrenceRoundsLeft = Math.max(0, state.finalRecurrenceRoundsLeft - 1);
+      checkDefeat(state);
+      if (state.status !== "playing") return;
+    }
+    state.anchorMeetSpreadBonus = 0;
+    state.round += 1;
+    beginRoundReveal(state);
+    return;
+  }
+
+  state.phaseIndex += 1;
+  state.selectedHand = [];
+  state.pendingPowerBonus = 0;
+  state.pendingPowerBonusTokens = 0;
+
+  if (getPhase(state) === "Explore") {
+    addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");
+  } else if (getPhase(state) === "Meet") {
+    applyMeetStartTax(state);
+    if (state.anchorMeetSpreadPending) {
+      state.anchorMeetSpreadBonus = state.anchorMeetSpreadPending;
+      state.anchorMeetSpreadPending = 0;
+    }
+    const meetHere = state.board?.find((t) =>
+      t.revealed && tileHasEncounters(t) && state.players.some((p) => p.alive && p.landscapeId === t.id),
+    );
+    if (meetHere) state.selectedLandscapeId = meetHere.id;
+    addLog(state, "Meet Phase — spend Willpower for shared Actions. Bosses step toward the nearest Dreamer. Dreambeasts stay until Accepted or Repressed.");
+  }
+}
+
+function rewardRestedDreamers(state) {
+  if (state.tutorialMode) return;
+  const opened = new Set(state.phaseOpenersThisRound || []);
+  state.players.forEach((player) => {
+    if (!player.alive || player.dreamer?.id !== "the-rested") return;
+    if (opened.has(player.id)) return;
+    const drawn = drawPsycheForPlayer(state, player, 1);
+    if (drawn.length) addLog(state, `${player.name} opened no phase this round — draws 1 Psyche.`);
+  });
+}
+
+function passHeadDreamer(state) {
+  const players = state.players || [];
+  const currentHeadIndex = players.findIndex((p) => p.isHead);
+  const start = currentHeadIndex >= 0 ? currentHeadIndex : state.activePlayerIndex;
+  let next = null;
+  for (let step = 1; step <= players.length; step += 1) {
+    const player = players[(start + step) % players.length];
+    if (player?.alive) {
+      next = player;
+      break;
+    }
+  }
+  if (!next) return;
+  players.forEach((p) => {
+    p.isHead = false;
+  });
+  next.isHead = true;
+  const idx = players.findIndex((p) => p.id === next.id);
+  if (idx >= 0) state.activePlayerIndex = idx;
+}
+
+export function allDreamersOnBed(state) {
+  const alive = state.players.filter((p) => p.alive);
+  return alive.length > 0 && alive.every((p) => p.landscapeId === "bed");
+}
+
+function stepDreamerTowardBed(state, player) {
+  const bed = landscapeById(state, "bed");
+  const current = landscapeById(state, player.landscapeId);
+  if (!bed || !current || current.id === "bed") return false;
+  const adj = adjacentTiles(state, current.id).filter((tile) => tile.revealed);
+  const closer = adj
+    .filter((tile) => hexDistance(tile, bed) < hexDistance(current, bed))
+    .sort((a, b) => {
+      const waste = (tile) => (tile.wasteland ? 1 : 0);
+      return waste(a) - waste(b) || hexDistance(a, bed) - hexDistance(b, bed);
+    });
+  const dest = closer[0];
+  if (!dest) return false;
+  player.landscapeId = dest.id;
+  if (dest.wasteland && psycheHandCount(player) < 1) {
+    addLog(state, `${player.name} steps into Wasteland with no Psyche to pay.`);
+    applyDreamerDeath(state, player);
+    return false;
+  }
+  if (dest.wasteland) {
+    const card = (player.hand || []).find((entry) => !isDreambeastPsycheCard(entry));
+    if (card) {
+      player.hand = player.hand.filter((entry) => entry.instanceId !== card.instanceId);
+      if (!state.psycheDiscard) state.psycheDiscard = [];
+      state.psycheDiscard.push(card);
+      recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: dest.id });
+    }
+  }
+  recordQuestEvent(state, "move_player", { count: 1 });
+  return dest.name;
+}
+
+function grantGoalBedSprint(state) {
+  const moved = [];
+  for (const player of state.players.filter((entry) => entry.alive)) {
+    const steps = Math.max(0, effectiveDreamerStat(state, player.dreamer, "elasticity"));
+    const names = [];
+    for (let i = 0; i < steps; i += 1) {
+      if (!player.alive || player.landscapeId === "bed") break;
+      const name = stepDreamerTowardBed(state, player);
+      if (!name) break;
+      names.push(name);
+    }
+    if (names.length) moved.push(`${player.name} → ${names[names.length - 1]}`);
+  }
+  if (moved.length) {
+    addLog(state, `The goal is reached. Elasticity carries the table toward The Bed: ${moved.join("; ")}.`);
+  }
+}
+
+export function checkVictory(state) {
+  if (state.finalRecurrence) {
+    if (state.status !== "playing") return;
+    const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
+    if (left === 0) {
+      state.status = "won";
+      addLog(state, "All Remaining Archetypes defeated. You wake up!");
+    }
+    return;
+  }
+  if ((state.scoringGoalPoints || state.goalPoints) > 0
+    && state.acquiredPoints >= (state.scoringGoalPoints || state.goalPoints)) {
+    state.archetypeGoalReached = true;
+  }
+  if (state.acquiredPoints >= state.goalPoints) {
+    if (!state.goalBedSprintUsed && !state.tutorialMode && state.status === "playing") {
+      state.goalBedSprintUsed = true;
+      grantGoalBedSprint(state);
+    }
+    if (state.status !== "playing") return;
+    if (allDreamersOnBed(state)) {
+      state.status = "won";
+      addLog(state, "The Dreamers wake up! You escaped the Dreamscape.");
+    } else if (!state.victoryPendingLogged) {
+      state.victoryPendingLogged = true;
+      addLog(state, "Archetype goal reached! All Dreamers must return to the Bed to wake up.");
+    }
+  }
+}
+
+export function checkDefeat(state) {
+  if (state.tutorialMode) return;
+  if (state.status !== "playing") return;
+  if ((state.deathClock || 0) >= DEATH_CLOCK_CAP) {
+    const last = (state.players || []).find((p) => !p.alive) || state.players?.[0];
+    loseOnFinalDeath(state, last);
+    return;
+  }
+  if (!(state.players || []).some((p) => p.alive)) {
+    state.status = "lost";
+    addLog(state, "No Dreamers remain in the Dreamscape. You never wake up.");
+    return;
+  }
+  if (!(state.psycheDeck?.length) && !(state.psycheDiscard?.length)) {
+    state.status = "lost";
+    addLog(state, "The Waking Mind is empty — nothing left to draw or shuffle. You forget yourself, and never wake up.");
+    return;
+  }
+  if (state.finalRecurrence) {
+    const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
+    if (left > 0 && state.finalRecurrenceRoundsLeft != null && state.finalRecurrenceRoundsLeft <= 0) {
+      state.status = "lost";
+      addLog(state, "Final Recurrence ends with an Archetype still standing on The Bed. You never wake up.");
+    } else if (left > 0 && state.finalRecurrenceRoundsLeft == null && state.dreamDeck.length === 0) {
+      state.status = "lost";
+      addLog(state, "The Dream Deck is exhausted. You never wake up.");
+    }
+    return;
+  }
+  if (state.dreamDeck.length === 0 && state.acquiredPoints < state.goalPoints) {
+    state.status = "lost";
+    addLog(state, "The Dream Deck is exhausted. You never wake up.");
+  }
+}
+
+export function acquireArchetype(state, player, onAcquireFn, { skipQuestCheck = false, archetype: chosen = null } = {}) {
+  const archetype = chosen || state.activeArchetype;
+  if (!archetype) return false;
+  if (!skipQuestCheck && !archetype.questProgress.every(Boolean)) return false;
+
+  player.acquiredArchetypes.push(archetype);
+  state.acquiredPoints += archetype.points;
+  addLog(state, `${player.name} acquired ${archetype.name} (+${archetype.points} Archetype pts).`);
+
+  if (onAcquireFn) onAcquireFn(state, archetype, player);
+
+  const row = archetypeRowOf(state);
+  state.archetypeRow = row.filter((a) => a !== archetype && a.id !== archetype.id);
+  if (state.activeArchetype === archetype || state.activeArchetype?.id === archetype.id) state.activeArchetype = null;
+  refillArchetypeRow(state);
+
+  checkVictory(state);
+  return true;
+}
+
+/** True while the player must resolve a modal/board choice before continuing. */
+export function isBlockingGameChoice(state) {
+  if (!state) return false;
+  return !!(
+    state.pendingDreamChoice
+    || state.pendingEffectChoice
+    || state.pendingObjectChoice
+    || state.pendingMindstreamChoice
+    || state.pendingReturn
+    || state.pendingRepress
+    || state.pendingDeathChoice
+    || state.pendingNothingChoice
+    || state.pendingRespawn
+    || state.landscapePick
+    || state.pendingDreamerPower?.ui
+    || state.pendingDreamReplay
+  );
+}
+
+export function blockingChoiceLabel(state) {
+  if (!state) return "Required choice";
+  const pending = state.pendingDreamChoice
+    || state.pendingMindstreamChoice
+    || state.pendingEffectChoice
+    || state.pendingObjectChoice;
+  if (pending?.title) return pending.title;
+  if (state.pendingReturn) return "Return from Subconscious";
+  if (state.pendingDreamReplay) return "Replay a Dream";
+  if (state.pendingRepress) {
+    return state.pendingRepress.toDiscard || state.pendingRepress.toMindstream
+      ? "Discard for this effect"
+      : "Repress to Subconscious";
+  }
+  if (state.pendingDeathChoice) return "Psyche death choice";
+  if (state.pendingNothingChoice) return "The Nothing";
+  if (state.pendingRespawn) return "Choose a new Dreamer";
+  if (state.landscapePick?.title) return state.landscapePick.title;
+  if (state.pendingDreamerPower?.ui?.title) return state.pendingDreamerPower.ui.title;
+  return "Required choice";
+}
+
+export function completeQuest(state, _questIndex, player, onAcquireFn, { archetypeId = null } = {}) {
+  if (archetypeId) focusRowArchetype(state, archetypeId);
+  const archetype = (archetypeId ? state.activeArchetype : (readyRowArchetype(state) || state.activeArchetype));
+  if (!archetype?.quests?.length) return false;
+  if (archetype.questProgress?.every(Boolean)) return false;
+  const unmet = archetype.quests.filter((quest) => !isQuestConditionMet(state, archetype.id, quest));
+  if (unmet.length) {
+    addLog(state, `Both quests must already be true. Still open: ${unmet.join(" · ")}`);
+    return false;
+  }
+  archetype.questProgress = archetype.quests.map(() => true);
+  archetype.powerTokensOnArchetype = 0;
+  addLog(state, `${player.name} commits to ${archetype.name}. Both quests are true.`);
+  acquireArchetype(state, player, onAcquireFn, { archetype });
+  return "acquired";
+}
+
+export { forgetLandscapes, forgetNamedLandscapes } from "../board/landscapes.js";
+
+/** Map thresholds removed — all-Forgotten still starts Final Recurrence elsewhere. */
+export function maybeMapRevealForgetThresholds(_state) {}
+
+export function revealLandscapeTile(state, tile) {
+  if (!tile.revealed) {
+    tile.revealed = true;
+    tile.wasteland = false;
+    addLog(state, `Revealed ${tile.name}.`);
+    markTileRevealed(tile.id);
+    queueTileRevealFx(tile.id);
+    playSfx("reveal");
+  } else if (tile.wasteland) {
+    tile.wasteland = false;
+    addLog(state, `Restored ${tile.name} from Wasteland.`);
+    markTileRevealed(tile.id);
+    queueTileRevealFx(tile.id);
+    playSfx("reveal");
+  }
+  maybeMapRevealForgetThresholds(state);
+}

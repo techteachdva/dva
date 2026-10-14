@@ -1,0 +1,201 @@
+/**
+ * Canonical Meet Phase flow (Ainmos 26+) — one source of truth.
+ *
+ * 1) Start of Meet — each Boss steps 1 hex toward the nearest Dreamer, unless
+ *    a Dreamer already shares its hex. There is no hand tax.
+ * 2) Middle of Meet — one Dreamer may spend 1 Willpower Psyche to unlock
+ *    shared Meet Actions. Accept and Repress are the same Power. Accept pays
+ *    the beast's suit. Repress pays the opposing suit.
+ * 3) End of the round — Repress 1 card from the Psyche Deck per Dreambeast
+ *    still on the board. During the Final Recurrence, count remaining
+ *    Archetypes instead. Fail only when Accept or Repress loses.
+ */
+import {
+  addLog,
+  allEncountersOnBoard,
+  countEncountersOnBoard,
+  landscapeById,
+  moveEncounterBetweenLandscapes,
+  repressTopPsycheFromDeck,
+} from "../core/state.js";
+import { adjacentTiles, hexDistance } from "../core/hex.js";
+import { logMoment } from "../core/narrator.js";
+import { enqueueRepressFromHand } from "../dreamers/subconscious.js";
+
+export const MEET_PHASE_FLOW = Object.freeze({
+  start: "Bosses step toward the nearest Dreamer. No cards are taxed from hands.",
+  middle: "Spend 1 Willpower Psyche for shared Meet Actions. Accept and Repress are one Power. Roaming beasts stay until won.",
+  end: "Dusk: Repress 1 Psyche from the Waking Mind per Dreambeast still on the board. A Dreamer who ends Meet on a Wasteland also Represses 1 Psyche from hand. In the Final Recurrence, count remaining Archetypes.",
+});
+
+export function countActiveDreambeasts(state) {
+  return countEncountersOnBoard(
+    state,
+    (enc) => enc.type === "dreambeast" || enc.boss || enc.type === "boss-dream",
+  );
+}
+
+export function roamingDreambeastsInSpawnOrder(state) {
+  return allEncountersOnBoard(state)
+    .filter(({ encounter }) => (
+      encounter.type === "dreambeast" || encounter.boss || encounter.type === "boss-dream"
+    ))
+    .sort((a, b) => {
+      const ao = a.encounter.spawnOrder ?? Number.MAX_SAFE_INTEGER;
+      const bo = b.encounter.spawnOrder ?? Number.MAX_SAFE_INTEGER;
+      if (ao !== bo) return ao - bo;
+      return String(a.encounter.instanceId || a.encounter.id)
+        .localeCompare(String(b.encounter.instanceId || b.encounter.id));
+    });
+}
+
+function isRoamingBeast(enc) {
+  return enc && (enc.type === "dreambeast" || enc.boss || enc.type === "boss-dream");
+}
+
+export function stampEncounterSpawnOrder(state, encounter) {
+  if (!encounter || encounter.spawnOrder != null) return encounter;
+  state.encounterSpawnSeq = (state.encounterSpawnSeq || 0) + 1;
+  encounter.spawnOrder = state.encounterSpawnSeq;
+  return encounter;
+}
+
+const BOSS_IDS = new Set(["cerberus", "double", "leviathan"]);
+
+function isBossEncounter(encounter) {
+  if (!encounter) return false;
+  const id = encounter.refId || encounter.id;
+  return !!(encounter.boss || encounter.type === "boss-dream" || BOSS_IDS.has(id));
+}
+
+function dreamerSharesTile(state, tileId) {
+  return (state.players || []).some((player) => player.alive && player.landscapeId === tileId);
+}
+
+function nearestDreamerTile(state, fromTile) {
+  let nearest = null;
+  let nearestDist = Infinity;
+  (state.players || []).forEach((player) => {
+    if (!player.alive) return;
+    const tile = landscapeById(state, player.landscapeId);
+    if (!tile) return;
+    const dist = hexDistance(fromTile, tile);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearest = tile;
+    }
+  });
+  return nearest;
+}
+
+/** Bosses hunt at the opening of Meet. A boss already sharing a hex stays. */
+function stepBossesTowardDreamers(state) {
+  const bosses = allEncountersOnBoard(state).filter(({ encounter }) => (
+    isBossEncounter(encounter) && encounter.awake !== false
+  ));
+  bosses.forEach(({ tile, encounter }) => {
+    if (!tile || dreamerSharesTile(state, tile.id)) return;
+    const target = nearestDreamerTile(state, tile);
+    if (!target) return;
+    const steps = adjacentTiles(state, tile.id).filter((next) => next.revealed && !next.wasteland);
+    const closer = steps
+      .filter((next) => hexDistance(next, target) < hexDistance(tile, target))
+      .sort((a, b) => hexDistance(a, target) - hexDistance(b, target));
+    const dest = closer[0];
+    if (!dest) {
+      addLog(state, `${encounter.name} holds. No open step toward the nearest Dreamer.`);
+      return;
+    }
+    moveEncounterBetweenLandscapes(state, tile.id, dest.id, encounter);
+    addLog(state, `${encounter.name} stalks toward the nearest Dreamer and steps onto ${dest.name}.`);
+  });
+}
+
+/** Step 1 — start of Meet. Bosses hunt. Hands are not taxed. */
+export function applyMeetStartTax(state) {
+  if (state.tutorialMode) return;
+  stepBossesTowardDreamers(state);
+}
+
+/** @deprecated Use applyMeetStartTax. */
+export function applyMeetPhaseDreambeastTax(state) {
+  applyMeetStartTax(state);
+}
+
+/**
+ * Step 3 — end of Meet.
+ * Repress 1 Psyche from the deck per leftover beast, and 1 Psyche from hand
+ * for each Dreamer still standing on a Wasteland.
+ */
+function roundResourceTaxCount(state) {
+  if (state.finalRecurrence) {
+    return (state.finalArchetypes || []).filter((arch) => !arch.defeated).length;
+  }
+  return roamingDreambeastsInSpawnOrder(state).length;
+}
+
+/** Cards the dusk mill will take from the Waking Mind when this round ends. */
+export function duskMillCount(state) {
+  return roundResourceTaxCount(state);
+}
+
+/** The Waking Mind: Psyche cards still drawable (deck plus discard). */
+export function wakingMindCount(state) {
+  return (state.psycheDeck?.length || 0) + (state.psycheDiscard?.length || 0);
+}
+
+function repressWastelandStanders(state) {
+  for (const player of state.players || []) {
+    if (!player.alive) continue;
+    const tile = landscapeById(state, player.landscapeId);
+    if (!tile || tile.center || !tile.wasteland) continue;
+    enqueueRepressFromHand(state, player, 1, {
+      reason: `${player.name} ends Meet on ${tile.name}, a Wasteland. Repress 1 Psyche from hand.`,
+      strict: true,
+    });
+  }
+}
+
+function applyRoundResourceTax(state) {
+  const count = roundResourceTaxCount(state);
+  if (!count) return;
+  const kind = state.finalRecurrence ? "Archetype" : "Dreambeast";
+  const plural = count === 1 ? "" : "s";
+  logMoment(
+    state,
+    `Dusk. ${count} ${kind}${plural} still stand. Repress ${count} from the Waking Mind.`,
+    { durationMs: 14000 },
+  );
+  repressTopPsycheFromDeck(state, count);
+}
+
+function applyTutorialMeetEnd(state) {
+  if (state.tutorialFlags?.meetPenaltyDone) return;
+  const beasts = roamingDreambeastsInSpawnOrder(state);
+  if (!beasts.length) return;
+  state.tutorialFlags.meetPenaltyDone = true;
+  logMoment(
+    state,
+    "Dusk: Mandrake still stands. One Psyche is Repressed from the Waking Mind. The beast stays until you win.",
+    { durationMs: 14000 },
+  );
+  repressTopPsycheFromDeck(state, 1);
+  addLog(state, "Tutorial — a leftover Dreambeast Represses 1 Psyche from the Waking Mind at dusk.");
+}
+
+export function applyMeetEndConsequences(state) {
+  if (state.tutorialMode) {
+    applyTutorialMeetEnd(state);
+    return;
+  }
+  repressWastelandStanders(state);
+  applyRoundResourceTax(state);
+}
+
+export function meetEndPreview(state) {
+  const count = roundResourceTaxCount(state);
+  if (count <= 0) return null;
+  return { beastCount: count, repressCount: count, forgetCount: 0, relief: 0 };
+}
+
+export { isRoamingBeast };
