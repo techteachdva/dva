@@ -286,7 +286,7 @@ const ACCEPT_EFFECTS = {
   "goofus-bird": { type: "repress-mindstream-and-object", suit: "lucidity", count: 1 },
   watcher: { type: "discard-per-wastelands" },
   oni: { type: "repress-top-psyche-and-mindstream", psyche: 2, suit: "willpower", mind: 1 },
-  wendigo: { type: "wendigo-accept" },
+  devourer: { type: "devourer-accept" },
   minotaur: { type: "forget", ids: ["endless-hallway", "silver-mist"] },
   "ghost-light": { type: "repress-mindstream", suit: "willpower", count: 1 },
   vampyre: { type: "discard-half-dreamers" },
@@ -322,7 +322,7 @@ const FAIL_EFFECTS = {
   "goofus-bird": { type: "discard-hand", count: 2 },
   watcher: { type: "discard-hand", count: 2 },
   oni: { type: "repress-hand", count: 2 },
-  wendigo: { type: "repress-hand", count: 2 },
+  devourer: { type: "repress-hand", count: 2 },
   minotaur: { type: "repress-hand", count: 3 },
   "ghost-light": { type: "repress-hand", count: 3 },
   vampyre: { type: "discard-hand", count: 3 },
@@ -430,8 +430,8 @@ function runSimpleEffect(state, actor, effect, helpers) {
     case "move-beast-and-dreamer":
       beginUnicornMove(state, actor);
       break;
-    case "wendigo-accept":
-      beginWendigoAccept(state, actor);
+    case "devourer-accept":
+      beginDevourerAccept(state, actor);
       break;
     default:
       break;
@@ -491,13 +491,13 @@ function beginUnicornMove(state, actor) {
   });
 }
 
-function beginWendigoAccept(state, actor) {
+function beginDevourerAccept(state, actor) {
   const high = psycheInHand(actor).filter((c) => (c.value || 0) >= 3);
   if (high.length) {
     offerEffectChoice(state, actor, {
       source: "beast",
-      cardId: "wendigo",
-      title: "Wendigo",
+      cardId: "devourer",
+      title: "Devourer",
       message: "Repress a Psyche of value 3 or more, or Repress 3 Psyche.",
       choices: [
         ...high.map((c) => ({ id: c.instanceId, label: `Repress ${c.name} (${c.value})` })),
@@ -506,7 +506,7 @@ function beginWendigoAccept(state, actor) {
     });
     return;
   }
-  enqueueRepressFromHand(state, actor, 3, { reason: "Wendigo: Repress 3 Psyche." });
+  enqueueRepressFromHand(state, actor, 3, { reason: "Devourer: Repress 3 Psyche." });
 }
 
 registerEffectResolver("automaton", (state, choiceId) => {
@@ -552,13 +552,13 @@ registerEffectResolver("automaton", (state, choiceId) => {
   return true;
 });
 
-registerEffectResolver("wendigo", (state, choiceId) => {
+registerEffectResolver("devourer", (state, choiceId) => {
   const pending = state.pendingEffectChoice;
   const player = state.players.find((p) => p.id === pending?.playerId);
   state.pendingEffectChoice = null;
   if (!player) return false;
   if (choiceId === "repress-3") {
-    enqueueRepressFromHand(state, player, 3, { reason: "Wendigo: Repress 3 Psyche." });
+    enqueueRepressFromHand(state, player, 3, { reason: "Devourer: Repress 3 Psyche." });
     return true;
   }
   const card = (player.hand || []).find((c) => c.instanceId === choiceId);
@@ -802,7 +802,7 @@ export function applyRejectReward(state, encounter, actor, helpers = {}) {
   }
 }
 
-registerEffectResolver("wendigo-reject", (state, choiceId, helpers) => {
+registerEffectResolver("devourer-reject", (state, choiceId, helpers) => {
   const pending = state.pendingEffectChoice;
   const player = state.players.find((p) => p.id === pending?.playerId);
   state.pendingEffectChoice = null;

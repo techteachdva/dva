@@ -733,11 +733,11 @@
     }
   },
   {
-    "id": "wendigo",
-    "name": "Wendigo",
+    "id": "devourer",
+    "name": "Devourer",
     "suit": "willpower",
     "beastKind": "nightmare",
-    "flavor": "I'll eat you piece by piece!",
+    "flavor": "There is always room for more.",
     "accept": 9,
     "reject": 9,
     "repress": 9,
@@ -750,7 +750,7 @@
       "count": 2
     },
     "type": "dreambeast",
-    "image": "images/dreambeasts/wendigo.webp",
+    "image": "images/dreambeasts/devourer.webp",
     "failEffect": {
       "type": "repress-hand",
       "count": 5

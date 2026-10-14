@@ -1051,7 +1051,7 @@ Affected Landscape.
 
 === PAGE 44 ===
 Oni
- Wendigo
+ Devourer
 “You killed my brother, prepare to die!”
 Repress top Willpower Mindstream &
 Repress Top 2 Psyche.

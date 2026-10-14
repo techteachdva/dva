@@ -6,10 +6,17 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "41.2";
+export const SOMNIA_VERSION = "41.3";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "41.3",
+    title: "The Devourer",
+    notes: [
+      "A new Dreambeast fixes an old, poor design choice.",
+    ],
+  },
   {
     version: "41.2",
     title: "Watch, Then Play",

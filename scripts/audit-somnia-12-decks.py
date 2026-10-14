@@ -39,7 +39,7 @@ PDF_DREAMBEASTS = [
     "Black Dog", "Basilisk", "Baku", "Chimera",
     "Sandman", "Sincubus", "Mandrake", "Goofus Bird",
     "The Watcher", "Gorgon",
-    "Oni", "Wendigo", "Minotaur", "Ghost Light",
+    "Oni", "Devourer", "Minotaur", "Ghost Light",
     "Pooka", "Shadows", "Cheshire Cat", "Masked Figure",
     "Winged Turtle", "Vampyre",
 ]
