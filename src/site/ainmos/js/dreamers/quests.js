@@ -1,3 +1,4 @@
+import { BOSS_LADDER } from "../encounters/boss-ladder.js";
 /**
  * Tracks game events for Archetype quest validation.
  * Quest conditions persist once met so players can spend Power Tokens later.
@@ -7,7 +8,8 @@ import { discardToMindstream } from "../cards/mindstream-supply.js";
 
 export function createQuestTracker() {
   return {
-    meetBoss: { cerberus: false, double: false, leviathan: false },
+    meetBoss: {},
+    bossSuits: { lucidity: false, elasticity: false, willpower: false },
     meetOnLandscape: {},
     mindstreamOnLandscape: {},
     mindstreamOnSuit: {},
@@ -33,6 +35,10 @@ export function recordQuestEvent(state, event, data = {}) {
   switch (event) {
     case "meet_boss":
       if (data.bossId) t.meetBoss[data.bossId] = true;
+      if (data.suit) {
+        if (!t.bossSuits) t.bossSuits = { lucidity: false, elasticity: false, willpower: false };
+        t.bossSuits[data.suit] = true;
+      }
       break;
     case "meet_on_landscape":
       t.meetOnLandscape[data.landscapeId] = (t.meetOnLandscape[data.landscapeId] || 0) + 1;
@@ -112,6 +118,9 @@ const QUEST_CHECKS = {
   "defeat cerberus": (t) => t.meetBoss.cerberus,
   "defeat double": (t) => t.meetBoss.double,
   "defeat leviathan": (t) => t.meetBoss.leviathan,
+  "defeat a lucidity boss": (t) => !!t.bossSuits?.lucidity,
+  "defeat an elasticity boss": (t) => !!t.bossSuits?.elasticity,
+  "defeat a willpower boss": (t) => !!t.bossSuits?.willpower,
   "1 dreamer sacrifices 1 object": (t) => t.sacrificedObject,
   "have 10 psyche": (_t, state) => anyDreamerPsycheHand(state, 10),
   "1 dreamer holds 10 psyche cards": (_t, state) => anyDreamerPsycheHand(state, 10),
@@ -291,12 +300,20 @@ function activeQuestLandscapeIdsFor(state, arch) {
   return [...ids];
 }
 
-const BOSS_QUEST_IDS = ["cerberus", "double", "leviathan"];
+const BOSS_QUEST_IDS = BOSS_LADDER.map((entry) => entry.id);
 
-function bossIdFromQuest(text) {
+function bossIdFromQuest(text, state = null) {
   const n = normalizeQuest(text);
   if (!n.includes("defeat") && !n.includes("meet")) return null;
-  return BOSS_QUEST_IDS.find((id) => n.includes(id)) || null;
+  const named = BOSS_QUEST_IDS.find((id) => n.includes(id));
+  if (named) return named;
+  // "Defeat a Lucidity Boss": the next Boss of that suit still ahead or standing.
+  const suit = n.match(/(lucidity|elasticity|willpower) boss/)?.[1];
+  if (!suit || !state) return null;
+  const standing = (state.board || []).flatMap((tile) => listedEncounters(tile))
+    .find((enc) => enc?.boss && enc.suit === suit);
+  if (standing) return standing.refId || standing.id;
+  return (state.dreamDeck || []).find((card) => card?.boss && card.suit === suit)?.id || null;
 }
 
 function listedEncounters(tile) {
@@ -330,7 +347,7 @@ function bossAlreadyMet(state, bossId) {
 
 /** Where a boss quest's Dreambeast is, or how many turns until its dream is drawn. */
 export function bossQuestHint(state, questText) {
-  const bossId = bossIdFromQuest(questText);
+  const bossId = bossIdFromQuest(questText, state);
   if (!bossId || !state) return "";
   const tile = bossOnBoard(state, bossId);
   if (tile?.name) return `On ${tile.name}`;

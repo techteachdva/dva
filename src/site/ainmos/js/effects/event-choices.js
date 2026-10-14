@@ -37,7 +37,7 @@ import {
 } from "../encounters/dreambeasts.js";
 import { countAffectedLandscapes } from "../board/event-landscapes.js";
 import { recordCancellableDiscard } from "../dreamers/dreamer-powers.js";
-import { discardDreamCard, isBossDreamCard, isDreambeastLike } from "../cards/dream-deck.js";
+import { discardDreamCard, isBossDreamCard, isDreambeastLike, popDiscardableDream } from "../cards/dream-deck.js";
 import { isHighStat, isLowStat } from "../dreamers/stat-tier.js";
 
 function alive(state) {
@@ -970,7 +970,7 @@ registerEffectResolver("chewed-to-dust", (state, choiceId) => {
   state.pendingEffectChoice = null;
   if (choiceId === "psyche" && player) discardPsyche(state, player, psycheCards(player).slice(0, 3));
   else if (state.dreamDeck?.length) {
-    discardDreamCard(state, state.dreamDeck.pop());
+    discardDreamCard(state, popDiscardableDream(state));
     addLog(state, "Chewed to Dust: discarded 1 Dream.");
   }
   return true;
@@ -1694,7 +1694,7 @@ registerEffectResolver("a-way-out-forms", (state, choiceId) => {
 });
 
 export function beginMistSwirls(state, player) {
-  if (state.dreamDeck.length) discardDreamCard(state, state.dreamDeck.pop());
+  if (state.dreamDeck.length) discardDreamCard(state, popDiscardableDream(state));
   addLog(state, "Mist Swirls: discarded 1 Dream.");
   if (!isHighStat(player, "lucidity") || !psycheCards(player).length) return;
   offerEffectChoice(state, player, {

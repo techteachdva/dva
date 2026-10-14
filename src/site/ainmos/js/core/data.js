@@ -1,3 +1,4 @@
+import { ladderForLength, bossDreamCard, DREAMS_PER_ANTE } from "../encounters/boss-ladder.js";
 import { random } from "./rng.js";
 import { getEventResolution } from "../effects/event-resolutions.js";
 import { getDreamResolution } from "../cards/dream-resolutions.js";
@@ -54,10 +55,11 @@ function enrichMindstreamEvents(mindstream, catalog) {
   return out;
 }
 
+/** Ainmos: a night is Antes. Each Ante is 2 Dreams, then a Boss Dream. */
 export const LENGTHS = {
-  daydream: { label: "Daydream", points: 8, soloPoints: 4, dreams: 11 },
-  nap: { label: "Nap", points: 12, soloPoints: 6, dreams: 14 },
-  deep: { label: "Deep Sleep", points: 24, soloPoints: 12, dreams: 18 },
+  daydream: { label: "Daydream", points: 8, soloPoints: 4, antes: 4, dreams: 8 },
+  nap: { label: "Nap", points: 12, soloPoints: 6, antes: 7, dreams: 14 },
+  deep: { label: "Deep Sleep", points: 24, soloPoints: 12, antes: 10, dreams: 20 },
 };
 
 /** ~33% boon / 66% hazard in weighted session draws. */
@@ -103,7 +105,8 @@ function pickWeightedUnique(items, count, isHazard) {
 }
 
 /** Deck insert indices (0-based) — bosses appear on Reveal rounds 3, 6, and 9. */
-export const BOSS_DREAM_DECK_SLOTS = [2, 5, 8];
+/** Deck index of each Ante's Boss Dream (the 3rd, 6th, 9th… card). */
+export const BOSS_DREAM_DECK_SLOTS = Array.from({ length: 10 }, (_, i) => i * 3 + 2);
 
 export const PHASES = ["Reveal", "Explore", "Meet"];
 
@@ -415,33 +418,19 @@ export function buildDreamDeck(dreams, sessionCount) {
     Math.min(sessionCount, uniqueDreams.length),
     (d) => !DREAM_BOON_IDS.has(d.id),
   );
-  const picked = pickedTemplates.map((d) => ({ ...d, instanceId: uid("dream") }));
-
-  const finals = dreams.filter((d) => d.type === "final");
-  const neverWake = finals.find((d) => d.id === "you-never-wake");
-  const startCard = finals.find((d) => d.id === "final-recurrence");
-  const effectFinals = shuffle(
-    finals.filter((d) => d.id !== "you-never-wake" && d.id !== "final-recurrence"),
-  ).map((d) => ({ ...d, instanceId: uid("dream") }));
-
-  return [
-    ...picked,
-    ...(startCard ? [{ ...startCard, instanceId: uid("dream") }] : []),
-    ...effectFinals,
-    ...(neverWake ? [{ ...neverWake, instanceId: uid("dream") }] : []),
-  ];
+  // Ainmos has no Final Recurrence: the last Boss Dream ends the night.
+  return pickedTemplates.map((d) => ({ ...d, instanceId: uid("dream") }));
 }
 
-export function insertBossDreams(deck, dreambeasts) {
-  const bosses = ["cerberus", "double", "leviathan"]
-    .map((id) => dreambeasts.find((b) => b.id === id))
-    .filter(Boolean)
-    .map((b) => ({ ...b, type: "boss-dream", instanceId: uid("boss"), awake: b.id === "leviathan" ? false : undefined }));
-
-  const copy = [...deck];
-  bosses.forEach((boss, index) => {
-    const slots = BOSS_DREAM_DECK_SLOTS;
-    if (slots[index] <= copy.length) copy.splice(slots[index], 0, boss);
+/** Lay the night out as Antes: 2 Dreams, then that Ante's Boss Dream from the ladder. */
+export function insertBossDreams(deck, dreambeasts, lengthKey = "daydream") {
+  const ladder = ladderForLength(lengthKey);
+  const night = [];
+  let next = 0;
+  ladder.forEach((entry) => {
+    for (let i = 0; i < DREAMS_PER_ANTE && next < deck.length; i += 1) night.push(deck[next++]);
+    const beast = dreambeasts.find((b) => b.id === entry.id);
+    if (beast) night.push(bossDreamCard(beast, entry, uid));
   });
-  return copy;
+  return night;
 }

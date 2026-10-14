@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.1-fork";
-const RUNTIME_CACHE = "ainmos-runtime-0.1-fork";
+const CACHE_NAME = "ainmos-0.2-ten-nightmares";
+const RUNTIME_CACHE = "ainmos-runtime-0.2-ten-nightmares";
 
 const PRECACHE = [
   "./",
@@ -55,6 +55,8 @@ const PRECACHE = [
   "./js/meta/changelog.js",
   "./js/ui/click-feedback.js",
   "./js/ui/vault-panel.js",
+  "./js/ui/night-bar.js",
+  "./js/encounters/boss-ladder.js",
   "./js/ui/compact-chrome.js",
   "./js/core/data.js",
   "./js/cards/deck-pressure.js",

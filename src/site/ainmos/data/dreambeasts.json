@@ -150,7 +150,8 @@
     "failEffect": {
       "type": "repress-hand",
       "count": 5
-    }
+    },
+    "boss": true
   },
   {
     "id": "mindless",
@@ -183,7 +184,8 @@
           "count": 5
         }
       ]
-    }
+    },
+    "boss": true
   },
   {
     "id": "automaton",
@@ -360,7 +362,8 @@
       "type": "repress-mindstream",
       "suit": "elasticity",
       "count": 4
-    }
+    },
+    "boss": true
   },
   {
     "id": "unicorn",
@@ -487,7 +490,8 @@
           "count": 3
         }
       ]
-    }
+    },
+    "boss": true
   },
   {
     "id": "chimera",
@@ -754,7 +758,8 @@
     "failEffect": {
       "type": "repress-hand",
       "count": 5
-    }
+    },
+    "boss": true
   },
   {
     "id": "minotaur",
@@ -908,7 +913,8 @@
           "count": 2
         }
       ]
-    }
+    },
+    "boss": true
   },
   {
     "id": "cheshire-cat",
@@ -1001,6 +1007,7 @@
     "failEffect": {
       "type": "repress-hand",
       "count": 5
-    }
+    },
+    "boss": true
   }
 ]

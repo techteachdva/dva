@@ -1,3 +1,4 @@
+import { BOSS_LADDER } from "./boss-ladder.js";
 /**
  * Canonical Meet Phase flow (Ainmos 26+) — one source of truth.
  *
@@ -60,7 +61,7 @@ export function stampEncounterSpawnOrder(state, encounter) {
   return encounter;
 }
 
-const BOSS_IDS = new Set(["cerberus", "double", "leviathan"]);
+const BOSS_IDS = new Set(BOSS_LADDER.map((entry) => entry.id));
 
 function isBossEncounter(encounter) {
   if (!encounter) return false;

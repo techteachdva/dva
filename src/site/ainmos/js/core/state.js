@@ -1,3 +1,4 @@
+import { finalBossForLength } from "../encounters/boss-ladder.js";
 import { createQuestTracker, recordQuestEvent, isQuestConditionMet } from "../dreamers/quests.js";
 import { FINAL_ARCHETYPE_POWER } from "../dreamers/final-recurrence-rules.js";
 import { buildHexBoard, adjacentTiles, hexDistance } from "./hex.js";
@@ -122,7 +123,17 @@ export function createInitialState(data, options) {
     : board.find((t) => !t.center && t.revealed && !t.wasteland);
 
   const psycheDeck = buildPsycheDeck(data.psyche);
-  const dreamDeck = insertBossDreams(buildDreamDeck(data.dreams, length.dreams), data.dreambeasts);
+  const dreamDeck = insertBossDreams(buildDreamDeck(data.dreams, length.dreams), data.dreambeasts, options.lengthKey);
+  // The Night Bar reads this plan: every card of the night, in order, with its Ante.
+  const nightPlan = dreamDeck.map((card, index) => ({
+    instanceId: card.instanceId,
+    boss: !!card.boss,
+    bossId: card.boss ? card.id : null,
+    name: card.name,
+    image: card.image,
+    suit: card.boss ? card.suit : null,
+    ante: Math.floor(index / 3) + 1,
+  }));
   const archetypeDeck = shuffle(data.archetypes.map((a) => ({ ...a, instanceId: uid("arch") })));
   const mindstreamDecks = buildMindstreamDecks(data.mindstream, data.dreambeasts);
   const mindstreamDiscard = { lucidity: [], elasticity: [], willpower: [] };
@@ -194,6 +205,10 @@ export function createInitialState(data, options) {
     phaseIndex: 0,
     round: 1,
     lengthKey: options.lengthKey,
+    nightPlan,
+    finalBossId: finalBossForLength(options.lengthKey)?.id || null,
+    bossesDefeated: [],
+    nightOver: false,
     boardMode,
     landscapeTileDeck: freeform ? buildLandscapeTileDeck(landscapes) : [],
     landscapeVault: [],
@@ -801,6 +816,12 @@ export function beginRoundReveal(state) {
   state.hunterShoveUsed = false;
   state.weaverSwapUsed = false;
   resetVaultRoundCounters(state);
+  // A new round with no Dream left to draw: the night is over.
+  if (!state.tutorialMode && !(state.dreamDeck || []).length) {
+    state.nightOver = true;
+    checkDefeat(state);
+    if (state.status !== "playing") return;
+  }
 
   state.players.forEach((player) => {
     if (!player.alive) return;
@@ -1235,7 +1256,28 @@ function grantGoalBedSprint(state) {
   }
 }
 
+/** Ainmos: the night is won when the final Boss falls and the Archetype goal is met. */
+export function finalBossDefeated(state) {
+  return !!state.finalBossId && (state.bossesDefeated || []).includes(state.finalBossId);
+}
+
 export function checkVictory(state) {
+  if (state.status !== "playing") return;
+  const goal = state.scoringGoalPoints || state.goalPoints || 0;
+  if (goal > 0 && state.acquiredPoints >= goal) state.archetypeGoalReached = true;
+  if (finalBossDefeated(state) && state.archetypeGoalReached) {
+    state.status = "won";
+    addLog(state, "The last Boss falls and the Archetype goal is met. You wake!");
+    return;
+  }
+  if (state.archetypeGoalReached && !state.victoryPendingLogged) {
+    state.victoryPendingLogged = true;
+    addLog(state, "Archetype goal reached. Defeat the final Boss to wake.");
+  }
+}
+
+/** Somnia's Bed-sprint victory, kept for reference by older code paths. */
+export function checkVictorySomnia(state) {
   if (state.finalRecurrence) {
     if (state.status !== "playing") return;
     const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
@@ -1294,9 +1336,12 @@ export function checkDefeat(state) {
     }
     return;
   }
-  if (state.dreamDeck.length === 0 && state.acquiredPoints < state.goalPoints) {
+  // Ainmos: the night ends after the final Boss round. Not waking by then loses.
+  if (state.nightOver) {
     state.status = "lost";
-    addLog(state, "The Dream Deck is exhausted. You never wake up.");
+    addLog(state, finalBossDefeated(state)
+      ? "The night ends with the Archetype goal unmet. You never wake up."
+      : "The night ends with the final Boss still standing. You never wake up.");
   }
 }
 

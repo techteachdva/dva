@@ -37,7 +37,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 0.1</span>
+        <span class="version-label">v 0.2</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Ainmos" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -54,9 +54,9 @@
       </div>
       <div id="hud" class="hud">
         <div class="hud-item hud-goal-wrap" title="Archetype points scored / points required to wake."><span class="label">Goal:</span><span id="hud-goal">0/8</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span></div>
-        <div class="hud-item hud-dreams-wrap"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
+        <div class="hud-item hud-dreams-wrap hud-night-wrap" title="The night: every Dream left to right, grouped in Antes. Each Ante ends with its Boss, face up."><span class="label">Night</span><span id="hud-night-bar" class="night-bar" role="group"></span><span id="hud-dreams" class="night-count">16</span></div>
         <div class="hud-item hud-mind-wrap" id="hud-mind-wrap" title="The Waking Mind: Psyche left to draw (deck plus discard). Each Dreambeast still standing at dusk Represses 1. Remember to win cards back."><span class="label">Mind</span><span id="hud-mind">0</span><span id="hud-mind-dusk" class="hud-mind-dusk hidden"></span></div>
-        <div class="hud-item hud-round-wrap"><span class="label">Round</span><span id="hud-round">1</span><span id="hud-boss-rounds" class="hud-boss-rounds" aria-hidden="true"></span></div>
+        <div class="hud-item hud-round-wrap"><span class="label">Round</span><span id="hud-round">1</span></div>
         <div class="hud-feed-cluster">
           <button type="button" id="btn-moment-history" class="btn btn-icon btn-moment-history hud-moment-history-btn" title="Moment narration history" aria-label="Moment narration history">!</button>
           <button type="button" id="btn-dream-feed" class="btn btn-icon btn-dream-feed hud-dream-feed-btn" title="Dream Guide — feed and rules" aria-label="Open Dream Guide">?</button>

@@ -7,7 +7,10 @@
     "suit": "lucidity",
     "passive": "All Dreamers +1 Lucidity",
     "power": null,
-    "quests": ["Defeat Double", "1 Dreamer sacrifices 1 Object"]
+    "quests": [
+      "Defeat a Lucidity Boss",
+      "1 Dreamer sacrifices 1 Object"
+    ]
   },
   {
     "id": "innocent",
@@ -17,7 +20,10 @@
     "suit": "lucidity",
     "passive": null,
     "power": "Remember 3: discard up to 3 Psyche, Return that many +1",
-    "quests": ["Draw Mindstream on any Lucidity Landscape", "Meet a Lucidity Dreambeast"]
+    "quests": [
+      "Draw Mindstream on any Lucidity Landscape",
+      "Meet a Lucidity Dreambeast"
+    ]
   },
   {
     "id": "caregiver",
@@ -27,7 +33,10 @@
     "suit": "willpower",
     "passive": null,
     "power": "The Dreamer with the fewest Psyche draws 5, up to the hand limit",
-    "quests": ["Draw Mindstream on Sea of Teeth or Field of Broken Glass", "Meet a Dreambeast on Sea of Teeth or Field of Broken Glass"]
+    "quests": [
+      "Draw Mindstream on Sea of Teeth or Field of Broken Glass",
+      "Meet a Dreambeast on Sea of Teeth or Field of Broken Glass"
+    ]
   },
   {
     "id": "lover",
@@ -37,7 +46,10 @@
     "suit": "elasticity",
     "passive": null,
     "power": "Return 1 Object from the Subconscious",
-    "quests": ["Draw Mindstream on Awards or The Party", "Meet a Dreambeast on Awards or The Party"]
+    "quests": [
+      "Draw Mindstream on Awards or The Party",
+      "Meet a Dreambeast on Awards or The Party"
+    ]
   },
   {
     "id": "explorer",
@@ -47,17 +59,23 @@
     "suit": "elasticity",
     "passive": null,
     "power": "Move 1 Dreamer or 1 Dreambeast to any Landscape matching its suit",
-    "quests": ["Draw Mindstream on Endless Ocean or Lava", "Meet a Dreambeast on Endless Ocean or Lava"]
+    "quests": [
+      "Draw Mindstream on Endless Ocean or Lava",
+      "Meet a Dreambeast on Endless Ocean or Lava"
+    ]
   },
   {
     "id": "magician",
     "name": "Magician",
     "points": 4,
     "image": "images/archetypes/archetype-magician.webp",
-    "suit": "lucidity",
+    "suit": "elasticity",
     "passive": "All Dreamers +1 Elasticity",
     "power": null,
-    "quests": ["Defeat Cerberus", "1 Dreamer sacrifices 1 Object"]
+    "quests": [
+      "Defeat an Elasticity Boss",
+      "1 Dreamer sacrifices 1 Object"
+    ]
   },
   {
     "id": "orphan",
@@ -67,7 +85,10 @@
     "suit": "willpower",
     "passive": null,
     "power": "Everyone draws 2 Psyche",
-    "quests": ["Draw Mindstream on any Willpower Landscape", "Meet a Willpower Dreambeast"]
+    "quests": [
+      "Draw Mindstream on any Willpower Landscape",
+      "Meet a Willpower Dreambeast"
+    ]
   },
   {
     "id": "fool",
@@ -77,7 +98,10 @@
     "suit": "elasticity",
     "passive": null,
     "power": "Remember Dreamers+1: discard up to that many Psyche, Return that many +1",
-    "quests": ["Draw Mindstream on Insanity or Black Void", "Meet a Dreambeast on Insanity or Black Void"]
+    "quests": [
+      "Draw Mindstream on Insanity or Black Void",
+      "Meet a Dreambeast on Insanity or Black Void"
+    ]
   },
   {
     "id": "creator",
@@ -87,7 +111,10 @@
     "suit": "lucidity",
     "passive": null,
     "power": "Each Dreamer returns 1 Dreambeast from the Subconscious",
-    "quests": ["Draw Mindstream on Day in the Life or Inner Sanctum", "Meet a Dreambeast on Day in the Life or Inner Sanctum"]
+    "quests": [
+      "Draw Mindstream on Day in the Life or Inner Sanctum",
+      "Meet a Dreambeast on Day in the Life or Inner Sanctum"
+    ]
   },
   {
     "id": "ruler",
@@ -97,7 +124,10 @@
     "suit": "willpower",
     "passive": null,
     "power": "Each Dreamer returns 1 Event from the Subconscious",
-    "quests": ["Draw Mindstream on Tranquil Grove or Endless Hallway", "Meet a Dreambeast on Tranquil Grove or Endless Hallway"]
+    "quests": [
+      "Draw Mindstream on Tranquil Grove or Endless Hallway",
+      "Meet a Dreambeast on Tranquil Grove or Endless Hallway"
+    ]
   },
   {
     "id": "warrior",
@@ -107,7 +137,10 @@
     "suit": "willpower",
     "passive": "All Dreamers +1 Willpower",
     "power": null,
-    "quests": ["Defeat Leviathan", "1 Dreamer sacrifices 1 Object"]
+    "quests": [
+      "Defeat a Willpower Boss",
+      "1 Dreamer sacrifices 1 Object"
+    ]
   },
   {
     "id": "outlaw",
@@ -117,6 +150,9 @@
     "suit": "elasticity",
     "passive": null,
     "power": "The acting Dreamer draws 1 Object from the discard",
-    "quests": ["Draw Mindstream on any Elasticity Landscape", "Meet an Elasticity Dreambeast"]
+    "quests": [
+      "Draw Mindstream on any Elasticity Landscape",
+      "Meet an Elasticity Dreambeast"
+    ]
   }
 ]

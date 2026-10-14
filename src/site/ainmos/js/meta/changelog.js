@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.1";
+export const SOMNIA_VERSION = "0.2";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.2",
+    title: "Ten Nightmares",
+    notes: [
+      "A night is a run of Antes: two Dreams, then a Boss. Daydream climbs 4 Antes, Nap 7, Deep Sleep 10.",
+      "The Boss ladder runs from rung 10 to rung 1: Winged Turtle, Shadows, Jackalope, Baku, Mindless, Devourer, Bogey, Cerberus, Double, Leviathan. These ten no longer wander the Mindstream.",
+      "Wake by defeating the night's final Boss with the Archetype goal met. If the last round ends first, you never wake. There is no Final Recurrence.",
+      "The Night Bar across the top shows every Dream of the night, face down, with each Ante's Boss face up so you can plan for it.",
+      "Sage, Magician, and Warrior now ask you to defeat a Lucidity, Elasticity, or Willpower Boss.",
+    ],
+  },
   {
     version: "0.1",
     title: "The Mirror Dream",

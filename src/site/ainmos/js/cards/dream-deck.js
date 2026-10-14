@@ -1,3 +1,4 @@
+import { BOSS_LADDER } from "../encounters/boss-ladder.js";
 /** Dream deck draw/discard — boss Dreambeasts always spawn instead of vanishing. */
 
 import { uid } from "../core/data.js";
@@ -14,7 +15,8 @@ import { markDreamFeedNudge } from "../ui/fx.js";
 import { queueBossStingerFx } from "../board/board-fx.js";
 import { repressCard, normalizeSubconscious, listSubconsciousCards } from "../dreamers/subconscious.js";
 
-const BOSS_IDS = new Set(["cerberus", "double", "leviathan"]);
+/** Ainmos: every rung of the Boss ladder is a Boss. */
+const BOSS_IDS = new Set(BOSS_LADDER.map((entry) => entry.id));
 
 export function isBossDreamCard(card) {
   if (!card) return false;
@@ -101,6 +103,18 @@ export function takeDreamFromDeck(state) {
   if (!card) return null;
   consumeRevealedTop(state, "dream");
   return card;
+}
+
+/**
+ * Effects that throw away "the bottom Dream" take the last ordinary Dream instead,
+ * so they never drag the night's Boss forward early.
+ */
+export function popDiscardableDream(state) {
+  const deck = state.dreamDeck || [];
+  for (let i = deck.length - 1; i >= 0; i -= 1) {
+    if (!isBossDreamCard(deck[i])) return deck.splice(i, 1)[0];
+  }
+  return null;
 }
 
 export function discardDreamsFromDeck(state, count) {

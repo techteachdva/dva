@@ -1,3 +1,4 @@
+import { isLadderBoss, anteForBoss } from "../encounters/boss-ladder.js";
 import {
   getPhase,
   activePlayer,
@@ -2153,8 +2154,13 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     recordQuestEvent(state, "meet_on_landscape", { landscapeId });
     recordQuestEvent(state, "meet_beast_suit", { suit: encounter.suit });
     notifyTutorialEncounterResolved(state, landscapeId);
-    if (encounter.boss || encounter.id === "cerberus" || encounter.id === "double" || encounter.id === "leviathan") {
-      recordQuestEvent(state, "meet_boss", { bossId: encounter.id });
+    if (encounter.boss || isLadderBoss(encounter)) {
+      const bossId = encounter.refId || encounter.id;
+      recordQuestEvent(state, "meet_boss", { bossId, suit: encounter.suit });
+      if (!(state.bossesDefeated || []).includes(bossId)) {
+        state.bossesDefeated = [...(state.bossesDefeated || []), bossId];
+        logMoment(state, `${encounter.name} falls. Ante ${anteForBoss(bossId) || "?"} is cleared.`, { boss: true });
+      }
     }
     removeEncounterFromLandscape(state, landscapeId, encounter);
   }

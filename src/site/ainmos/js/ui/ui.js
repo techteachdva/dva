@@ -1,3 +1,4 @@
+import { renderNightBar } from "./night-bar.js";
 import { holdMusic } from "../audio/audio.js";
 import { getPhase, activePlayer, headPlayer, tileEncounters, encounterKey, allDreamersOnBed, archetypeRowOf, focusRowArchetype } from "../core/state.js";
 import {
@@ -4205,6 +4206,7 @@ export function renderHud(state, hint = "") {
 
   const dreamsLeft = state.dreamDeck.length;
   if (dreamsEl) dreamsEl.textContent = String(dreamsLeft);
+  renderNightBar(state);
   if (dreamsWrap) {
     dreamsWrap.classList.remove("hud-urgent-critical", "hud-urgent-warn");
     const urgency = dreamsUrgencyClass(dreamsLeft);

@@ -147,6 +147,12 @@ function claimFirstInstall(registration) {
 }
 
 async function registerWorker() {
+  // Local development serves fresh files: no worker, and drop any old one.
+  if (["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)) {
+    const regs = await navigator.serviceWorker?.getRegistrations?.() || [];
+    regs.forEach((reg) => reg.unregister());
+    return;
+  }
   if (!pwaEnabled()) return null;
   const swUrl = new URL("../../sw.js", import.meta.url);
   try {

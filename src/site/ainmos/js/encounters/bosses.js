@@ -1,3 +1,4 @@
+import { BOSS_LADDER } from "./boss-ladder.js";
 import {
   addLog,
   landscapeById,
@@ -7,7 +8,7 @@ import {
 import { repressCard } from "../dreamers/subconscious.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
 
-const BOSS_IDS = new Set(["cerberus", "double", "leviathan"]);
+const BOSS_IDS = new Set(BOSS_LADDER.map((entry) => entry.id));
 
 function repressTopPsyche(state, count) {
   let n = 0;

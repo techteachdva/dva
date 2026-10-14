@@ -10,7 +10,7 @@ import {
 } from "../core/data.js";
 import { MINDSTREAM_SUIT_IDS, countMindstreamCirculation } from "./mindstream-supply.js";
 import { repressCard } from "../dreamers/subconscious.js";
-import { discardDreamCard } from "./dream-deck.js";
+import { discardDreamCard, popDiscardableDream } from "./dream-deck.js";
 
 const SOURCE_IDS = ["dream", "psyche", ...MINDSTREAM_SUIT_IDS];
 const TIER_RANK = { soft: 1, critical: 2, severe: 3 };
@@ -308,7 +308,9 @@ export function setSourceRemaining(state, id, want) {
   if (id === "dream") {
     state.dreamDiscard = state.dreamDiscard || [];
     while (state.dreamDeck.length > keep) {
-      discardDreamCard(state, state.dreamDeck.pop());
+      const card = popDiscardableDream(state);
+      if (!card) break;
+      discardDreamCard(state, card);
     }
     return remainingForSource(state, id);
   }

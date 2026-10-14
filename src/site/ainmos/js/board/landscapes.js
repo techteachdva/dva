@@ -841,6 +841,8 @@ function assembleFinalRecurrenceDeck(state) {
 }
 
 export function triggerBedFinalRecurrence(state, reason) {
+  // Ainmos has no Final Recurrence. The Bed stays; the night goes on to its last Boss.
+  if (!state.tutorialMode) return false;
   if (state.finalRecurrence) return;
 
   assembleFinalRecurrenceDeck(state);
