@@ -25,7 +25,7 @@ const SOURCE = path.join(REPO, `src/site/${GAME}`);
 const OUT_DIR = path.join(REPO, `dist/${GAME}-standalone`);
 const OUT_ZIP = path.join(REPO, `dist/${GAME}-standalone.zip`);
 /** Ainmos shares Somnia's art, audio, fonts, and movie. */
-const SHARED_FROM_SOMNIA = GAME === "ainmos" ? ["images", "audio", "fonts", "media"] : [];
+const SHARED_FROM_SOMNIA = GAME === "ainmos" ? ["images", "audio", "fonts"] : [];
 
 const GOOGLE_FONTS_CSS =
   "https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Kalnia+Glaze&family=Source+Sans+3:wght@400;600&display=swap";

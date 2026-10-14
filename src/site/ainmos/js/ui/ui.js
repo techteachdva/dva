@@ -1,7 +1,6 @@
 import { runSummaryHtml } from "./run-summary.js";
 import { bestForm, DREAM_FORMS, formLevel, PSYCHE_UPGRADES, upgradeLabel } from "../cards/dream-forms.js";
 import { renderNightBar } from "./night-bar.js";
-import { holdMusic } from "../audio/audio.js";
 import { getPhase, activePlayer, headPlayer, tileEncounters, encounterKey, finalBossDefeated, archetypeRowOf, focusRowArchetype } from "../core/state.js";
 import {
   coopMeetPlayTotal,
@@ -7708,56 +7707,6 @@ export function showTutorialBrief(html, onBegin) {
   beginBtn.addEventListener("click", handler);
 }
 
-/**
- * Tutorial intro movie. Plays full screen with the game music held; Skip or the end of the movie
- * calls onDone. If the browser blocks autoplay with sound, a Play button starts it.
- */
-export function playIntroMovie(onDone) {
-  const overlay = document.getElementById("intro-movie");
-  const video = document.getElementById("intro-movie-video");
-  const playBtn = document.getElementById("intro-movie-play");
-  const skipBtn = document.getElementById("intro-movie-skip");
-  if (!overlay || !video || !skipBtn) {
-    onDone?.();
-    return;
-  }
-  let done = false;
-  const finish = () => {
-    if (done) return;
-    done = true;
-    video.pause();
-    video.removeEventListener("ended", finish);
-    skipBtn.removeEventListener("click", finish);
-    playBtn?.removeEventListener("click", start);
-    document.removeEventListener("keydown", onKey, true);
-    overlay.classList.add("hidden");
-    document.body.classList.remove("intro-movie-open");
-    holdMusic(false);
-    onDone?.();
-  };
-  const start = () => {
-    playBtn?.classList.add("hidden");
-    const attempt = video.play();
-    if (attempt?.catch) {
-      attempt.catch(() => playBtn?.classList.remove("hidden"));
-    }
-  };
-  const onKey = (event) => {
-    if (event.key !== "Escape") return;
-    event.preventDefault();
-    event.stopPropagation();
-    finish();
-  };
-  holdMusic(true);
-  overlay.classList.remove("hidden");
-  document.body.classList.add("intro-movie-open");
-  video.currentTime = 0;
-  video.addEventListener("ended", finish);
-  skipBtn.addEventListener("click", finish);
-  playBtn?.addEventListener("click", start);
-  document.addEventListener("keydown", onKey, true);
-  start();
-}
 
 export function hideTutorialBrief() {
   document.getElementById("tutorial-brief")?.classList.add("hidden");

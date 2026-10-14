@@ -5,7 +5,6 @@ import { hexRingCoords, POOL_RING3_CORNER_SLOTS, hexKey } from "../core/hex.js";
 import { burstSparkles, playDreamWarble } from "../ui/fx.js";
 import { playSfx } from "../audio/audio.js";
 import { cardBackForDeckId } from "../cards/card-backs.js";
-import { showOpeningHook } from "./opening-hook.js";
 
 const ROW_STEP_MS = 70;
 const TILE_BASE_MS = 350;
@@ -269,9 +268,6 @@ export function playOpeningCinematic(state) {
     });
     document.removeEventListener("pointerdown", finish, true);
     document.removeEventListener("keydown", finish, true);
-    // Board tiles use opening-tile-place (0.3s) after their flight.
-    // END_MS is past the last of those delays, so the overlay follows the entrance.
-    window.setTimeout(() => showOpeningHook(state), 0);
   };
   later(finish, END_MS);
   // An impatient Dreamer skips with any tap or key.

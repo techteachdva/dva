@@ -14,7 +14,7 @@ import { fileURLToPath } from "url";
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const AINMOS = join(ROOT, "src/site/ainmos");
 const SOMNIA = join(ROOT, "src/site/somnia");
-const SHARED = ["images/", "audio/", "fonts/", "media/"];
+const SHARED = ["images/", "audio/", "fonts/"];
 const PORT = Number(process.env.PORT) || Number(process.argv[2]) || 8788;
 
 const TYPES = {

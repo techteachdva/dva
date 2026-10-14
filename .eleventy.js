@@ -555,9 +555,9 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/site/uriel");
   eleventyConfig.addPassthroughCopy("src/site/dragon-trail");
   eleventyConfig.addPassthroughCopy("src/site/somnia");
-  // Ainmos (Somnia's roguelike mirror) ships its own code and shares Somnia's art, audio, fonts, and movie.
+  // Ainmos (Somnia's roguelike mirror) ships its own code and shares Somnia's art, audio, and fonts.
   eleventyConfig.addPassthroughCopy("src/site/ainmos");
-  ["images", "audio", "fonts", "media"].forEach((dir) => {
+  ["images", "audio", "fonts"].forEach((dir) => {
     eleventyConfig.addPassthroughCopy({ [`src/site/somnia/${dir}`]: `ainmos/${dir}` });
   });
   eleventyConfig.addPassthroughCopy("src/site/physix");

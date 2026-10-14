@@ -117,7 +117,6 @@ const PRECACHE = [
   "./js/effects/object-effects.js",
   "./js/effects/objects.js",
   "./js/flow/opening-cinematic.js",
-  "./js/flow/opening-hook.js",
   "./js/ui/panel-layout.js",
   "./js/ui/pause-menu.js",
   "./js/ui/table-polish.js",

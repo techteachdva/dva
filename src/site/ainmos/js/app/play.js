@@ -156,7 +156,6 @@ import { requestEndPhase } from "../flow/phase-skip.js";
 import { initDevConsole } from "../dev/dev-console.js";
 import { enableDevMode } from "../dev/dev-commands.js";
 import { narrate, logMoment } from "../core/narrator.js";
-import { openingHookText, showOpeningHook } from "../flow/opening-hook.js";
 import { cancelPendingReturn, toggleRepressPick, confirmRepressStep } from "../dreamers/subconscious.js";
 import { replayChosenDream } from "../cards/dream-replay.js";
 import { getLandscapePickHighlights, resolveStaleLandscapePick, cancelLandscapePick } from "../board/landscapes.js";
@@ -289,7 +288,6 @@ import {
   suppressDreamerOverlay,
   showTutorialStep,
   showTutorialBrief,
-  playIntroMovie,
   hideTutorialBrief,
   updateTutorialStepUI,
   hideTutorial,
@@ -371,7 +369,6 @@ const DOCK_SELECT_DELAY_MS = 280;
 let tutorialAutoAdvanceTimer = null;
 let fullscreenReady = false;
 /** The tutorial intro movie waits for the first click on the table. */
-let pendingIntroMovie = null;
 const lastCardClick = { id: null, time: 0 };
 let lastRepressPickerKey = null;
 let lastReturnPickerKey = null;
@@ -602,11 +599,6 @@ function bindFullscreenPrompt() {
     if (fullscreenReady) return;
     fullscreenReady = true;
     prompt.classList.add("hidden");
-    if (pendingIntroMovie) {
-      const playMovie = pendingIntroMovie;
-      pendingIntroMovie = null;
-      playMovie();
-    }
     startGameRadio();
     keepScreenAwake();
     const wantsCinematic = state && !launchConfig?.resumeSaveId && !state.tutorialMode;
@@ -649,7 +641,6 @@ function bindFullscreenPrompt() {
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       if (playOpeningCinematic(state) === 0) {
         document.body.classList.remove("opening-cinematic-pending");
-        showOpeningHook(state);
       }
     } else {
       document.body.classList.remove("opening-cinematic-pending");
@@ -1129,7 +1120,7 @@ async function startGame(config) {
       track === "advanced" ? "The longer night" : "You are dreaming",
       track === "advanced"
         ? "The Weaver and The Hunter are already in Meet. The sparkles lead the rest."
-        : openingHookText(state),
+        : "The sparkles lead the way.",
       ["Click Continue. The sparkles lead the way."],
     );
   } else {
@@ -1150,7 +1141,7 @@ async function startGame(config) {
     narrate(
       state,
       "You are dreaming",
-      openingHookText(state),
+      "Endure the Dream, build the dream, and climb the Bosses.",
       ["The opening Dream is on the table. Read Bright and Dim."],
     );
   }
@@ -1181,11 +1172,8 @@ async function startGame(config) {
     };
     if (track === "advanced") {
       showTutorialBrief(advancedTutorialBriefHtml(), beginTutorial);
-    } else if (fullscreenReady) {
-      playIntroMovie(beginTutorial);
     } else {
-      // Wait for the Enter the Dreamscape click: browsers only play a movie with sound after a click.
-      pendingIntroMovie = () => playIntroMovie(beginTutorial);
+      beginTutorial();
     }
   }
 }
