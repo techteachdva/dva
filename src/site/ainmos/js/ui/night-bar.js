@@ -25,7 +25,9 @@ function bossStanding(state, bossId) {
 function drawnArt(state, plan) {
   const found = (state.dreamDiscard || []).find((c) => c.instanceId === plan.instanceId)
     || (state.activeDream?.instanceId === plan.instanceId ? state.activeDream : null);
-  return found?.image || plan.image || "";
+  const src = found?.image || plan.image || "";
+  // Absolute: a url() inside a CSS variable resolves against the stylesheet, not the page.
+  return src ? new URL(src, document.baseURI).href : "";
 }
 
 export function renderNightBar(state) {

@@ -7,6 +7,7 @@
  *   dist/somnia-standalone.zip  upload this to itch.io
  *
  * Usage: npm run package:somnia-standalone
+ *        npm run package:ainmos   (same build for Ainmos, Somnia's roguelike fork)
  */
 
 import fs from "fs";
@@ -16,9 +17,15 @@ import { execFileSync } from "child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(__dirname, "..");
-const SOURCE = path.join(REPO, "src/site/somnia");
-const OUT_DIR = path.join(REPO, "dist/somnia-standalone");
-const OUT_ZIP = path.join(REPO, "dist/somnia-standalone.zip");
+const GAME = process.argv.includes("--game") && process.argv[process.argv.indexOf("--game") + 1] === "ainmos"
+  ? "ainmos"
+  : "somnia";
+const NAME = GAME === "ainmos" ? "Ainmos" : "Somnia";
+const SOURCE = path.join(REPO, `src/site/${GAME}`);
+const OUT_DIR = path.join(REPO, `dist/${GAME}-standalone`);
+const OUT_ZIP = path.join(REPO, `dist/${GAME}-standalone.zip`);
+/** Ainmos shares Somnia's art, audio, fonts, and movie. */
+const SHARED_FROM_SOMNIA = GAME === "ainmos" ? ["images", "audio", "fonts", "media"] : [];
 
 const GOOGLE_FONTS_CSS =
   "https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Kalnia+Glaze&family=Source+Sans+3:wght@400;600&display=swap";
@@ -31,7 +38,7 @@ const HTML_FILES = [
   { file: "play.html", module: "js/app/play.js" },
 ];
 
-const FILE_PROTOCOL_WARNING = String.raw`<div id="file-protocol-warning" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#0b0a14;color:#e8e4ff;font-family:system-ui,sans-serif;text-align:center">
+const FILE_PROTOCOL_WARNING_SOMNIA = String.raw`<div id="file-protocol-warning" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#0b0a14;color:#e8e4ff;font-family:system-ui,sans-serif;text-align:center">
   <div style="max-width:40rem">
     <h1 style="font-size:1.75rem;margin:0 0 1rem">Open Somnia with the launcher</h1>
     <p style="line-height:1.6;color:#9b93c4;margin:0 0 1rem">
@@ -47,6 +54,7 @@ const FILE_PROTOCOL_WARNING = String.raw`<div id="file-protocol-warning" style="
     </p>
   </div>
 </div>`;
+const FILE_PROTOCOL_WARNING = FILE_PROTOCOL_WARNING_SOMNIA.split("Somnia").join(NAME);
 
 function rimraf(dir) {
   if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
@@ -103,7 +111,7 @@ function injectBootLoader(html, moduleSrc) {
   if (location.protocol === "file:") {
     function mount() {
       document.body.innerHTML = ${JSON.stringify(FILE_PROTOCOL_WARNING)};
-      document.title = "Somnia — use Start Somnia.bat";
+      document.title = ${JSON.stringify(`${NAME} — use Start ${NAME}.bat`)};
     }
     if (document.body) mount();
     else document.addEventListener("DOMContentLoaded", mount);
@@ -179,19 +187,18 @@ function patchHtml(filePath, moduleSrc) {
   fs.writeFileSync(filePath, html, "utf8");
 }
 
+function copyLauncher(from, to) {
+  const text = fs.readFileSync(path.join(REPO, from), "utf8");
+  // Keep the server file name the launchers call; rename only what the player reads.
+  const named = text.split("Somnia").join(NAME);
+  fs.writeFileSync(path.join(to), named, "utf8");
+  if (to.endsWith(".command")) fs.chmodSync(to, 0o755);
+}
+
 function writeLaunchers(outDir) {
-  fs.copyFileSync(
-    path.join(REPO, "scripts/somnia-standalone-server.ps1"),
-    path.join(outDir, "somnia-server.ps1")
-  );
-  fs.copyFileSync(
-    path.join(REPO, "scripts/somnia-standalone-launch.bat"),
-    path.join(outDir, "Start Somnia.bat")
-  );
-  fs.copyFileSync(
-    path.join(REPO, "scripts/somnia-standalone-launch.command"),
-    path.join(outDir, "Start Somnia.command")
-  );
+  copyLauncher("scripts/somnia-standalone-server.ps1", path.join(outDir, "somnia-server.ps1"));
+  copyLauncher("scripts/somnia-standalone-launch.bat", path.join(outDir, `Start ${NAME}.bat`));
+  copyLauncher("scripts/somnia-standalone-launch.command", path.join(outDir, `Start ${NAME}.command`));
 }
 
 async function downloadFonts(outDir) {
@@ -249,7 +256,7 @@ function readSomniaVersion() {
 
 function writeManifest(outDir) {
   const manifest = {
-    name: "Somnia",
+    name: NAME,
     version: readSomniaVersion(),
     standalone: true,
     pwaWorker: false,
@@ -330,12 +337,16 @@ function countFiles(dir) {
 
 async function main() {
   if (!fs.existsSync(SOURCE)) {
-    throw new Error(`Somnia source not found: ${SOURCE}`);
+    throw new Error(`${NAME} source not found: ${SOURCE}`);
   }
 
-  console.log("Packaging Somnia standalone build…");
+  console.log(`Packaging ${NAME} standalone build…`);
   rimraf(OUT_DIR);
   copyDir(SOURCE, OUT_DIR);
+  SHARED_FROM_SOMNIA.forEach((dir) => {
+    const from = path.join(REPO, "src/site/somnia", dir);
+    if (fs.existsSync(from)) copyDir(from, path.join(OUT_DIR, dir));
+  });
 
   for (const { file, module } of HTML_FILES) {
     patchHtml(path.join(OUT_DIR, file), module);
@@ -367,12 +378,12 @@ async function main() {
   console.log(`  Zip:    ${path.relative(REPO, OUT_ZIP)} (${zipMb} MB)`);
   console.log("");
   console.log("Local test (do not open index.html directly):");
-  console.log(`  Double-click ${path.join(path.relative(REPO, OUT_DIR), "Start Somnia.bat")}`);
-  console.log("  Or: npx serve dist/somnia-standalone");
+  console.log(`  Double-click ${path.join(path.relative(REPO, OUT_DIR), `Start ${NAME}.bat`)}`);
+  console.log(`  Or: npx serve dist/${GAME}-standalone`);
   console.log("");
   console.log("itch.io upload:");
   console.log("  1. Create project → Kind of project: HTML");
-  console.log("  2. Upload dist/somnia-standalone.zip");
+  console.log(`  2. Upload dist/${GAME}-standalone.zip`);
   console.log("  3. Check “This file will be played in the browser”");
   console.log("  4. Set index.html as the page to run (should auto-detect)");
 }

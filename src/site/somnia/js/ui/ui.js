@@ -2716,7 +2716,7 @@ function renderGhostSlots(board, state, size, bounds, boardOptions) {
     el.style.top = `${y + bounds.offsetY}px`;
     el.style.zIndex = String((card ? 3000 : 500) + Math.round(y + bounds.offsetY));
     if (card) {
-      el.style.setProperty("--ghost-image", `url('${card.image}')`);
+      el.style.setProperty("--ghost-image", `url('${new URL(card.image, document.baseURI).href}')`);
       el.setAttribute("aria-label", `Place ${card.name} here`);
       el.title = `Place ${card.name} here`;
     } else {

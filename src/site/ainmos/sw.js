@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.8-first-night";
-const RUNTIME_CACHE = "ainmos-runtime-0.8-first-night";
+const CACHE_NAME = "ainmos-0.8-first-night-b";
+const RUNTIME_CACHE = "ainmos-runtime-0.8-first-night-b";
 
 const PRECACHE = [
   "./",
