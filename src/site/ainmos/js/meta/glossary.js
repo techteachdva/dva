@@ -18,7 +18,7 @@ const TERMS = [
   {
     term: "Dusk",
     group: "round",
-    text: "The end of each round. Each Dreambeast still on the board (each Remaining Archetype during Final Recurrence) Represses 1 Psyche from the Waking Mind. The −1 badge on a beast and the Mind counter's forecast show what dusk will take.",
+    text: "The end of each round. Each Dreambeast still on the board Represses 1 Psyche from the Waking Mind. Some Bosses act at dusk too: the Baku eats a Dream, the Devourer eats an Object, Leviathan Forgets a Landscape. The −1 badge on a beast and the Mind counter's forecast show what dusk will take.",
   },
   {
     term: "Memory Landscape",
@@ -47,7 +47,7 @@ const TERMS = [
     term: "Acquire",
     group: "win",
     aka: "commit",
-    text: "Take a face-up Archetype for its points once both of its quests are already true. Acquire is free: no Power Token and no Meet action. A finished Object set can also Acquire an Archetype that is still in the deck. In Final Recurrence, winning the Power 12 dice battle Acquires that Archetype at once.",
+    text: "Take a face-up Archetype for its points once both of its quests are already true. Acquire is free: no Power Token and no Meet action. A finished Object set can also Acquire an Archetype that is still in the deck. In Ainmos, Acquiring gives the Archetype's points; its power is a Boon.",
   },
   {
     term: "Active Archetype",
@@ -168,7 +168,49 @@ const TERMS = [
     term: "Dream Deck",
     group: "win",
     aka: "clock",
-    text: "The round clock. Daydream has 11 regular Dreams, Nap 14, Deep Sleep 18. Boss Dreams are inserted so they tend to appear on rounds 3, 6, and 9. After the regular Dreams comes The Final Recurrence, then the rest of the endgame, then You Never Wake Up. If this deck is empty before you wake, you lose.",
+    text: "The round clock, shown as the Night Bar across the top. It is laid out in Antes: two Dreams, then a Boss. Daydream has 4 Antes, Nap 7, Deep Sleep 10. When the final Boss round ends, the night is over.",
+  },
+  {
+    term: "Ante",
+    group: "win",
+    aka: "night bar",
+    text: "One step of the night: two Dreams, then a Boss Dream. The Boss is face up on the Night Bar from the start. Defeat it to clear the Ante and choose a Boon. The round after a Boss arrives is dawn: the Waking Mind reshuffles and everyone draws 3.",
+  },
+  {
+    term: "Boss Ladder",
+    group: "meet",
+    aka: "turtle shadows jackalope baku mindless devourer bogey cerberus double leviathan",
+    text: "Ten Bosses from rung 10 to rung 1: Winged Turtle, Shadows, Jackalope, Baku, Mindless, Devourer, Bogey, Cerberus, Double, Leviathan. Each bends one rule while it stands. A short night stops partway up: Daydream ends on the Baku, Nap on the Bogey.",
+  },
+  {
+    term: "Dream Form",
+    group: "meet",
+    aka: "echo ladder chord trinity trifecta unity",
+    text: "A spread pattern that adds dice. Echo: two of one value. Ladder: three in a row. Chord: three of one suit. Trinity: one of each suit. Trifecta: three of a kind. Unity: three 1s. A spread counts as its best Form. Every Form starts at +1 die and gains +1 per level.",
+  },
+  {
+    term: "Psyche Upgrade",
+    group: "cards",
+    aka: "chaotic vivid lucid recurring",
+    text: "One upgrade per Psyche card, for the whole night. Chaotic: a d6 value, rolled when drawn. Vivid: a second suit. Lucid: any suit, same value. Recurring: returns to hand after a spread. A new upgrade replaces the old; the same one again changes nothing.",
+  },
+  {
+    term: "Lost & Found",
+    group: "cards",
+    aka: "shop insight reroll",
+    text: "Opens between rounds: three Objects (1–5 Psyche value of their suit) and one Insight (3–6 of any suit: a Form level or a Psyche upgrade). Look again for 1 Power Token. Draw the Dream when you leave.",
+  },
+  {
+    term: "Boon",
+    group: "win",
+    aka: "study wider vault deep pockets",
+    text: "Chosen when a Boss falls, 1 of 3, kept all night. Archetype powers (1 Power Token) and the Sage, Magician, and Warrior passives are Boons. So are Study, Wider Vault, and Deep Pockets.",
+  },
+  {
+    term: "Dreamscape Reset",
+    group: "places",
+    aka: "reset vault empty",
+    text: "When the Dreamscape Vault and the tile deck are both empty, the next round begins with only The Bed. Every Landscape shuffles back into the tile deck, Dreambeasts on them are Repressed, Bosses drift to The Bed, and every Dreamer wakes on The Bed.",
   },
   {
     term: "Dreambeast",
@@ -223,11 +265,7 @@ const TERMS = [
     group: "meet",
     text: "One of the two Dreambeast kinds. Rested, Visionary, and Weaver are Fantasy Dreamers. Matching the beast's kind adds 1 to your Power.",
   },
-  {
-    term: "Final Recurrence",
-    group: "win",
-    text: "The end of the dream. It starts when The Final Recurrence is drawn, or when every Landscape except The Bed is Wasteland. Goal points reset. The two cheapest Archetypes left appear on The Bed. Defeat each with one Meet action: pool up to 3 Psyche, including that Archetype's suit, and win a dice battle against Power 12. Clear them all within 3 rounds to wake. Each one still standing at dusk Represses 1 from the Waking Mind.",
-  },
+
   {
     term: "Fool",
     group: "people",
@@ -237,7 +275,7 @@ const TERMS = [
     term: "Forget",
     group: "map",
     aka: "forgotten wasteland",
-    text: "Turn a Landscape into Wasteland. Encounters there are Repressed. Each Dreamer standing there Represses 1 Psyche. The Bed cannot be Forgotten. If every other hex is Wasteland, Final Recurrence begins. You can Reveal a Wasteland again later.",
+    text: "Turn a Landscape into Wasteland. Encounters there are Repressed. Each Dreamer standing there Represses 1 Psyche. The Bed cannot be Forgotten. You can Reveal a Wasteland again later. Forgetting a Landscape still in the Vault sets it aside until the Dreamscape Reset.",
   },
   {
     term: "Give Turn",
@@ -401,11 +439,7 @@ const TERMS = [
     group: "win",
     text: "One of the two tasks on a face-up Archetype. A quest stays done once it is done, even if the Landscape is later Forgotten, and it counts for every Archetype that asks for it. Both must be true before Acquire. Winning the fight is what counts as Meeting a beast. Drawing the Mindstream is the other half for most Archetypes.",
   },
-  {
-    term: "Remaining Archetype",
-    group: "win",
-    text: "An Archetype summoned by Final Recurrence: the two cheapest left appear. It stands on The Bed like a Dreambeast. It is Power 12. Win the dice battle to Acquire it immediately.",
-  },
+
   {
     term: "Repress",
     group: "cards",
@@ -636,8 +670,8 @@ export function playerPrimerHtml() {
       <div class="player-primer-grid">
         <section>
           <h3>Win and lose</h3>
-          <p><strong>Win.</strong> Both quests true on any face-up Archetype, then <strong>Acquire</strong> for free. Innocent, Orphan, and Outlaw are 2 points: draw that suit's Mindstream and win a Meet against a beast of that suit. Most others are 3 and name two Landscapes. Sage, Magician, and Warrior are 4: defeat their boss and sacrifice one Object. Daydream 8, Nap 12, Deep Sleep 24. Then every living Dreamer stands on The Bed.</p>
-          <p><strong>Lose.</strong> The <strong>Waking Mind</strong> runs dry (watch the Mind counter). The sixth death. The Dream Deck empties first. In Final Recurrence, an Archetype still stands on The Bed after 3 rounds.</p>
+          <p><strong>Win.</strong> Both quests true on any face-up Archetype, then <strong>Acquire</strong> for free. Innocent, Orphan, and Outlaw are 2 points: draw that suit's Mindstream and win a Meet against a beast of that suit. Most others are 3 and name two Landscapes. Sage, Magician, and Warrior are 4: defeat a Boss of their suit and sacrifice one Object. Reach Daydream 8, Nap 12, or Deep Sleep 24, and defeat the night's final Boss, to wake.</p>
+          <p><strong>Lose.</strong> The <strong>Waking Mind</strong> runs dry (watch the Mind counter). The sixth death. The final Boss round ends before you wake.</p>
           <h3>Remember</h3>
           <p>Each beast still out at <strong>dusk</strong> Represses 1 Psyche from the Mind. <strong>Remember N</strong>: discard up to N Psyche, Return that many +1. Memory Landscapes (Tranquil Grove, Silver Mist, Day in the Life, Black Void), Remember Objects, and fixed Brights all Remember.</p>
           <h3>One formula</h3>

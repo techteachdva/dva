@@ -2081,9 +2081,11 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     onDone?.();
   };
 
+  const guidedFirst = state.guided && !state.guidedFirstFightDone;
+  if (guidedFirst) state.guidedFirstFightDone = true;
   const scriptedWinner = state.tutorialMode
     ? (state.tutorialFlags?.nextBattleWinner || "dreamer")
-    : null;
+    : guidedFirst ? "dreamer" : null;
 
   if (globalThis.__SOMNIA_REAL_DICE__ && !state.tutorialMode) {
     playDiceBattle({

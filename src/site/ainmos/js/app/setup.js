@@ -496,14 +496,14 @@ function launchGame(config = null) {
   window.location.href = playUrl.href;
 }
 
-function launchTutorialMode(track = "basic") {
-  const advanced = track === "advanced";
-  if (advanced && !hasCompletedBasicTutorial()) return;
+/** Ainmos First Night: a real Daydream with hints until the Winged Turtle falls. */
+function launchTutorialMode(_track = "basic") {
   launchGame({
     lengthKey: "daydream",
-    selectedDreamerIds: advanced ? ["the-weaver", "the-hunter"] : [...TUTORIAL_DREAMER_IDS],
-    tutorialMode: true,
-    tutorialTrack: advanced ? "advanced" : "basic",
+    boardMode: "freeform",
+    selectedDreamerIds: [...TUTORIAL_DREAMER_IDS],
+    guided: true,
+    gentleStart: true,
     launchedAt: Date.now(),
   });
 }

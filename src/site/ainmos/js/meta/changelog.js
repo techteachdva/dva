@@ -6,10 +6,18 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.7";
+export const SOMNIA_VERSION = "0.8";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.8",
+    title: "First Night",
+    notes: [
+      "First Night on the menu is a real Daydream with gentle hints. Each hint shows once, the first time its moment comes, and never locks a click. The first Dream is gentle and the first fight is a sure win. When the Winged Turtle falls, the training wheels come off.",
+      "The Dream Guide and glossary now teach Ainmos: Antes and the Boss ladder, Dream Forms, Psyche upgrades, the Lost & Found, Boons, and the Dreamscape Reset.",
+    ],
+  },
   {
     version: "0.7",
     title: "The Story of the Night",

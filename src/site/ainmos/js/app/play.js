@@ -1,3 +1,5 @@
+import { renderCoach } from "../ui/coach-panel.js";
+import { maybeEndGuidance } from "../tutorial/coach.js";
 import { buildRunSummary } from "../ui/run-summary.js";
 import { renderBoonDraft } from "../ui/boon-panel.js";
 import { chooseBoon } from "../dreamers/boons.js";
@@ -151,7 +153,7 @@ import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } f
 import { requestEndPhase } from "../flow/phase-skip.js";
 import { initDevConsole } from "../dev/dev-console.js";
 import { enableDevMode } from "../dev/dev-commands.js";
-import { narrate } from "../core/narrator.js";
+import { narrate, logMoment } from "../core/narrator.js";
 import { openingHookText, showOpeningHook } from "../flow/opening-hook.js";
 import { cancelPendingReturn, toggleRepressPick, confirmRepressStep } from "../dreamers/subconscious.js";
 import { replayChosenDream } from "../cards/dream-replay.js";
@@ -1134,6 +1136,7 @@ async function startGame(config) {
       gentleStart: !!config.gentleStart,
       seed: config.seed || null,
       boardMode: config.boardMode || "fixed",
+      guided: !!config.guided,
     });
     resolveOpeningDream(state, getEffectHelpers());
     // Hide the table until the opening deal plays (removed when it starts/skips).
@@ -2495,6 +2498,10 @@ function renderBoardArea() {
     }
   };
   renderDreamForms(state);
+  if (maybeEndGuidance(state)) {
+    logMoment(state, "Training wheels off. The Turtle has fallen; the rest of the night is yours.");
+  }
+  renderCoach(state, { onChange: () => renderAll() });
   renderBoonDraft(state, {
     onChoose: (boonId) => {
       if (chooseBoon(state, boonId)) playSfx("acquire");

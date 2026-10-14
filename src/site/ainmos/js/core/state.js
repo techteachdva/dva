@@ -208,6 +208,8 @@ export function createInitialState(data, options) {
     phaseIndex: 0,
     round: 1,
     lengthKey: options.lengthKey,
+    guided: !!options.guided,
+    coachSeen: [],
     boonCatalog: (data.archetypes || []).map((a) => ({ ...a })),
     boons: [],
     pendingBoonDraft: null,

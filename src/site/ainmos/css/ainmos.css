@@ -846,3 +846,107 @@ html[data-form="phone"] .night-ante { gap: 1px; }
 }
 
 .rs-breakdown { margin: 0; }
+
+/* ---- Guided First Ante hints --------------------------------------------- */
+
+.coach-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--hand-h, 30vh) + 0.9rem);
+  transform: translateX(-50%);
+  z-index: 880;
+  width: min(30rem, calc(100% - 1.5rem));
+  pointer-events: none;
+}
+
+.coach-hint[hidden] { display: none; }
+
+.coach-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.7rem;
+  padding: 0.7rem 0.9rem 0.6rem;
+  border-radius: 16px;
+  background: var(--dc-glass);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 40px rgba(4, 2, 14, 0.55), 0 0 30px rgba(200, 184, 236, 0.18);
+  pointer-events: auto;
+  animation: coach-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.coach-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--dc-iridescent);
+  opacity: 0.6;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.coach-spark {
+  grid-row: 1 / span 2;
+  font-size: 1.4rem;
+  color: var(--dc-ink);
+  text-shadow: 0 0 12px var(--dc-mint), 0 0 24px var(--dc-lavender);
+  animation: dc-bob 3s ease-in-out infinite;
+}
+
+.coach-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dc-powder);
+}
+
+.coach-text {
+  margin: 0.15rem 0 0;
+  font-family: var(--dc-whisper);
+  font-size: 0.9rem;
+  line-height: 1.38;
+  color: var(--dc-ink);
+}
+
+.coach-actions {
+  grid-column: 2;
+  display: flex;
+  gap: 0.45rem;
+  justify-content: flex-end;
+  margin-top: 0.45rem;
+}
+
+.coach-btn {
+  padding: 0.25rem 0.85rem;
+  border: 1px solid rgba(182, 230, 214, 0.5);
+  border-radius: 999px;
+  background: rgba(182, 230, 214, 0.12);
+  color: var(--dc-ink);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.coach-btn-quiet {
+  border-color: rgba(200, 184, 236, 0.25);
+  background: transparent;
+  color: var(--muted);
+}
+
+@keyframes coach-in {
+  from { opacity: 0; transform: translateY(10px); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-card, .coach-spark { animation: none; }
+}
