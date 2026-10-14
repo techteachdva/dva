@@ -1,3 +1,5 @@
+import { objectLimit, objectCount } from "../shop/lost-found.js";
+import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
 import { addLog } from "../core/state.js";
 import { logMoment } from "../core/narrator.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
@@ -143,7 +145,39 @@ export function onObjectDrawn(state, player, card, helpers) {
   }
   player.objects.push(card);
   addLog(state, `${player.name} draws ${card.name}.`);
+  enforceObjectLimit(state, player);
 }
+
+/** Ainmos: a Dreamer past the Object limit lets one Object go (to the Object discard). */
+export function enforceObjectLimit(state, player) {
+  const limit = objectLimit(state);
+  if (objectCount(player) <= limit) return false;
+  const held = [...(player.objects || []), ...(player.persistent || [])];
+  offerEffectChoice(state, player, {
+    cardId: "object-limit",
+    title: "Too many Objects",
+    message: `${player.name} can hold ${limit} Objects. Let one go.`,
+    choices: held.map((obj) => ({ id: obj.instanceId, label: `Let go of ${obj.name}` })),
+  });
+  return true;
+}
+
+registerEffectResolver("object-limit", (state, choiceId) => {
+  const pending = state.pendingEffectChoice;
+  const player = state.players.find((p) => p.id === pending?.playerId);
+  state.pendingEffectChoice = null;
+  if (!player) return true;
+  const fromHand = (player.objects || []).find((o) => o.instanceId === choiceId);
+  const fromPlay = (player.persistent || []).find((o) => o.instanceId === choiceId);
+  const card = fromHand || fromPlay;
+  if (!card) return true;
+  player.objects = (player.objects || []).filter((o) => o.instanceId !== choiceId);
+  player.persistent = (player.persistent || []).filter((o) => o.instanceId !== choiceId);
+  discardToMindstream(state, card);
+  addLog(state, `${player.name} lets ${card.name} go.`);
+  enforceObjectLimit(state, player);
+  return true;
+});
 
 function resolveObjectEffect(state, player, card, helpers) {
   const effectId = card.refId || card.id;

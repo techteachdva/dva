@@ -175,6 +175,7 @@ const {
 } = subconscious;
 const { revealableTiles, forgettableTiles, cancelLandscapePick, revealCapacity, pendingPlacementCard } = landscapesMod;
 const vaultMod = await mod("board/dreamscape-vault.js");
+const shopMod = await mod("shop/lost-found.js");
 const { isFreeformBoard, vaultCards, placementSlots } = vaultMod;
 // Ainmos always builds a Freeform Board.
 const BOARD_MODE = "freeform";
@@ -210,7 +211,7 @@ const {
 const { runPendingBoardFx } = boardFx;
 
 const helpers = getEffectHelpers();
-const STEP_CAP = 2200;
+const STEP_CAP = 4000;
 const STUCK_LIMIT = 14;
 
 const ROSTERS = {
@@ -833,6 +834,11 @@ function someoneToFight(state) {
 }
 
 function act(state) {
+  // Ainmos: the bot leaves the Lost & Found without shopping (shopping policy comes later).
+  if (state.lostFound?.open) {
+    shopMod.closeLostFound(state);
+    return true;
+  }
   focusBestDream(state);
   if (placeRememberObjects(state)) return true;
   if (trySacrifice(state)) return true;
@@ -974,6 +980,8 @@ function playGame(playerCount, index) {
       try { runPendingBoardFx(); } catch { /* fx is cosmetic */ }
       tryAcquire(state);
       if (state.status !== "playing") break;
+      // Ainmos: the bot leaves the Lost & Found first (shopping policy comes later).
+      if (state.lostFound?.open) shopMod.closeLostFound(state);
       const pending = resolveOnePending(state);
       if (state.status !== "playing") break;
       if (!pending && !act(state) && state.status === "playing" && !state.landscapePick && !state.pendingMindstreamChoice && !state.pendingDreamChoice) {

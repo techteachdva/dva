@@ -1,3 +1,5 @@
+import { closeLostFound } from "../shop/lost-found.js";
+import { isBlockingGameChoice } from "../core/state.js";
 /**
  * Shared Ainmos bot helpers + in-browser spectator runner.
  * Used by the winrate sim (Node) and the `ai watch` / `ai start` dev commands.
@@ -537,6 +539,13 @@ export function createSpectatorBot({
       think("AI: step cap reached.");
       stop();
       return false;
+    }
+
+    if (state.lostFound?.open && !isBlockingGameChoice(state)) {
+      think("Leave the Lost & Found");
+      closeLostFound(state);
+      renderAll?.();
+      return true;
     }
 
     if (isDiceBattleOpen() || state.diceBattle) {

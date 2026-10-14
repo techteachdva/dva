@@ -1,3 +1,4 @@
+import { openLostFound } from "../shop/lost-found.js";
 import { rollChaoticValue } from "../cards/dream-forms.js";
 import { resetDreamscape } from "../board/landscapes.js";
 import { finalBossForLength } from "../encounters/boss-ladder.js";
@@ -846,6 +847,8 @@ export function beginRoundReveal(state) {
   });
 
   addLog(state, `Round ${state.round}: Reveal — each Dreamer draws 2 Psyche.`);
+  // Ainmos: between rounds, the Lost & Found opens before the Dream is drawn.
+  if (state.status === "playing") openLostFound(state);
 }
 
 /** Between Antes: the discard shuffles back into the Waking Mind, then each Dreamer draws 3. */

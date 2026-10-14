@@ -1,3 +1,4 @@
+import { isLostFoundOpen } from "../shop/lost-found.js";
 import { bestForm } from "../cards/dream-forms.js";
 import { isLadderBoss, anteForBoss } from "../encounters/boss-ladder.js";
 import {
@@ -1317,6 +1318,10 @@ export function drawAdditionalDream(state, onShowModal) {
 
 export function drawDreamCard(state, onShowModal) {
   if (state.dreamDrawn) return null;
+  if (isLostFoundOpen(state)) {
+    addLog(state, "Leave the Lost & Found, then draw the Dream.");
+    return null;
+  }
   const head = headPlayer(state);
 
   if (state.skipNextDreamDraw) {

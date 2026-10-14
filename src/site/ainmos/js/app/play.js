@@ -1,3 +1,13 @@
+import { renderLostFound } from "../ui/lost-found-panel.js";
+import {
+  buyLostFoundObject,
+  buyLostFoundInsight,
+  rerollLostFound,
+  setLostFoundBuyer,
+  closeLostFound,
+} from "../shop/lost-found.js";
+import { onObjectDrawn } from "../effects/objects.js";
+import { spendPowerTokens } from "../cards/power-tokens.js";
 import { renderDreamForms } from "../ui/ui.js";
 import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, playSfx, playLandscapeSfx } from "../audio/audio.js";
 import { initClickFeedback } from "../ui/click-feedback.js";
@@ -435,6 +445,8 @@ async function init() {
 
   if (new URLSearchParams(window.location.search).get("dev") === "1") {
     enableDevMode();
+    // Dev only: poke the live table from the console.
+    window.__ainmos = { state: () => state, render: () => renderAll() };
   }
 
   const config = readLaunchConfig();
@@ -2480,6 +2492,38 @@ function renderBoardArea() {
     }
   };
   renderDreamForms(state);
+  renderLostFound(state, {
+    onBuy: (index) => {
+      const result = buyLostFoundObject(state, index, (s, p, card) => onObjectDrawn(s, p, card, getEffectHelpers()));
+      if (!result.ok) addLog(state, result.reason);
+      else playSfx("acquire");
+      renderAll();
+    },
+    onInsight: (choice) => {
+      const result = buyLostFoundInsight(state, choice);
+      if (!result.ok) addLog(state, result.reason);
+      else playSfx("sparkle");
+      renderAll();
+    },
+    onReroll: () => {
+      const result = rerollLostFound(state, (s, p, n) => spendPowerTokens(s, p, n, { reason: "Lost & Found: look again." }));
+      if (!result.ok) addLog(state, result.reason);
+      renderAll();
+    },
+    onBuyer: (playerId) => {
+      setLostFoundBuyer(state, playerId);
+      renderAll();
+    },
+    onClose: () => {
+      closeLostFound(state);
+      renderAll();
+    },
+    onBlocked: (reason) => {
+      if (reason) addLog(state, reason);
+      renderAll();
+    },
+    onRefresh: () => renderAll(),
+  });
   renderDreamscapeVault(state, {
     onSelect: (index) => {
       if (handleVaultTileSelect(state, index)) playSfx("select");

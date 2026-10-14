@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.4";
+export const SOMNIA_VERSION = "0.5";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.5",
+    title: "Lost & Found",
+    notes: [
+      "Between rounds the Lost & Found opens: three Objects from one shared Object deck, and one Insight. Draw the Dream when you leave it.",
+      "An Object costs 1–5 Psyche value of its own suit. Wild, Lucid, and Vivid cards count. The window shows exactly which cards you will pay; overpaying is lost.",
+      "The Insight is a Dream Form level (3) or a Psyche upgrade (Chaotic 3, Vivid 4, Lucid 5, Recurring 6), paid in Psyche value of any suit.",
+      "Look again for 1 Power Token: new Objects and a new Insight. Unbought Objects sink under the deck.",
+      "Each Dreamer can hold 6 Objects. Past that, choose one to let go. The three Nothing curses are gone from the Object deck.",
+    ],
+  },
   {
     version: "0.4",
     title: "Dream Forms",
