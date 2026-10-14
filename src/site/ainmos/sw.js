@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.10-solo-night";
-const RUNTIME_CACHE = "ainmos-runtime-0.10-solo-night";
+const CACHE_NAME = "ainmos-0.11-windows";
+const RUNTIME_CACHE = "ainmos-runtime-0.11-windows";
 
 const PRECACHE = [
   "./",
@@ -56,6 +56,8 @@ const PRECACHE = [
   "./js/meta/changelog.js",
   "./js/ui/click-feedback.js",
   "./js/ui/vault-panel.js",
+  "./js/ui/vault-screen.js",
+  "./js/ui/ante-screen.js",
   "./js/ui/night-bar.js",
   "./js/cards/dream-forms.js",
   "./js/shop/lost-found.js",

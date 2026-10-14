@@ -148,6 +148,8 @@ import {
   prepareMindstreamMeet,
 } from "../core/game.js";
 import { renderDreamscapeVault } from "../ui/vault-panel.js";
+import { renderVaultScreen, resumeVaultScreen } from "../ui/vault-screen.js";
+import { renderAnteScreen, anteScreenWanted } from "../ui/ante-screen.js";
 import { createSpectatorBot } from "../dev/bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "../encounters/dreambeasts.js";
 import { requestEndPhase } from "../flow/phase-skip.js";
@@ -1508,6 +1510,8 @@ function maybeAutoDrawDream() {
   if (getPhase(state) !== "Reveal" || state.dreamDrawn || !(state.dreamDeck || []).length) return;
   if (state.lostFound?.open || state.pendingBoonDraft || isBlockingGameChoice(state)) return;
   if (document.body.classList.contains("opening-cinematic-pending")) return;
+  // The Ante screen comes first; the Dream follows when you walk in.
+  if (anteScreenWanted(state)) return;
   if (autoDreamRound === state.round) return;
   autoDreamRound = state.round;
   window.setTimeout(() => {
@@ -2564,8 +2568,36 @@ function renderBoardArea() {
     },
     onRefresh: () => renderAll(),
   });
+  renderAnteScreen(state, {
+    onEnter: () => {
+      playSfx("phase");
+      renderAll();
+    },
+    onRetry: () => renderAll(),
+  });
+  renderVaultScreen(state, {
+    onSelect: (index) => {
+      if (handleVaultTileSelect(state, index)) playSfx("select");
+      renderAll();
+    },
+    onRefresh: () => {
+      handleVaultRefresh(state);
+      playSfx("select");
+      renderAll();
+    },
+    onPeek: () => renderAll(),
+    onDone: () => {
+      const advance = getPhaseAdvanceAction(state, buildPhaseHandlers());
+      if (advance && !advance.disabled) advance.onClick();
+      else renderAll();
+    },
+    onBlocked: (reason) => {
+      if (reason) flashMoment(reason);
+    },
+  });
   renderDreamscapeVault(state, {
     onSelect: (index) => {
+      resumeVaultScreen();
       if (handleVaultTileSelect(state, index)) playSfx("select");
       renderAll();
     },

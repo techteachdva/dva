@@ -180,7 +180,7 @@ const TERMS = [
     term: "Mini-Boss",
     group: "win",
     aka: "mini boss",
-    text: "An ordinary Dreambeast that guards an Ante. It rises on The Bed with the Ante's second Dream, face up on the Night Bar from the start. Its Power is two under that Ante's Boss (2 in the first Ante). Beat it before it bleeds you at dusk.",
+    text: "An ordinary Dreambeast that guards an Ante. It rises on The Bed with the Ante's second Dream, face up on the Night Bar from the start. Its Power is two under that Ante's Boss (2 in the first Ante). Beat it for +1 Power Token, before it bleeds you at dusk.",
   },
   {
     term: "Long Night",

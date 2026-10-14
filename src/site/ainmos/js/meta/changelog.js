@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.10";
+export const SOMNIA_VERSION = "0.11";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.11",
+    title: "Windows",
+    notes: [
+      "Each Ante opens on its own screen: the Dream, the Mini-Boss, and the Boss with its twist, and what beating each one pays. Walk in when you are ready.",
+      "Mini-Bosses pay a bounty: +1 Power Token when one falls.",
+      "During Reveal the Dreamscape Vault fills the screen. Each Landscape shows what it does and whether a quest wants it. Choose one, place it on the board, and the Vault returns for the next.",
+      "The phase opener and the Dream screen now match the Lost & Found: one window language, one set of buttons.",
+      "Fix: Repressing cards from your hand works again. The Confirm button had slipped out of sight behind the hand.",
+    ],
+  },
   {
     version: "0.10",
     title: "Solo Night",

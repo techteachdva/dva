@@ -2124,6 +2124,9 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
   });
 }
 
+/** Power Tokens a fallen Mini-Boss pays. */
+export const MINI_BOSS_BOUNTY = 1;
+
 function resolveDiceMeet(state, ctx, dreamerWins) {
   const { isReject, encounter, tile, actor, selected } = ctx;
 
@@ -2190,6 +2193,12 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
         checkVictory(state);
         if (state.status === "playing") offerBoonDraft(state, encounter.name);
       }
+    }
+    // Ainmos: a Mini-Boss pays a bounty, like a blind cleared before the Boss.
+    if (encounter.miniBoss) {
+      state.minisDefeated = (state.minisDefeated || 0) + 1;
+      const paid = grantPowerTokens(state, actor, MINI_BOSS_BOUNTY);
+      logMoment(state, `Mini-Boss ${encounter.name} falls.${paid ? ` +${paid} Power Token.` : ""}`, { boss: true });
     }
     removeEncounterFromLandscape(state, landscapeId, encounter);
   }

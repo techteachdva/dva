@@ -228,6 +228,8 @@ export function createInitialState(data, options) {
     landscapeVault: [],
     landscapesSetAside: [],
     vaultRefreshesThisRound: 0,
+    anteIntroSeen: 0,
+    minisDefeated: 0,
     seed,
     seedFlags,
     gameId: buildGameId(openingNeighbor?.name, seed),
