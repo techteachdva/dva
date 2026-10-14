@@ -83,30 +83,6 @@ function matchesSpawnBeast(card, { beastKind = null, filter = null } = {}) {
   return true;
 }
 
-function discardRestOfMindstream(state, suit, extra = []) {
-  const deck = state.mindstreamDecks[suit];
-  const discard = state.mindstreamDiscard[suit];
-  extra.forEach((card) => discard.push(card));
-  while (deck.length) discard.push(deck.shift());
-  reshuffleMindstreamDiscardIfNeeded(state, suit);
-}
-
-function noteBeastMill(state, found) {
-  if (!state || typeof document === "undefined" || !found?.card) return;
-  if (!state.pendingBeastMill || state.pendingBeastMill.playing) {
-    state.pendingBeastMill = { steps: [] };
-  }
-  state.pendingBeastMill.steps.push({
-    suit: found.suit,
-    passed: found.passed || [],
-    milledRest: found.milledRest || 0,
-    beast: found.card,
-    tileId: null,
-    encounterId: null,
-    discarded: false,
-  });
-}
-
 /** The Dreambeast just placed on a landscape. The mill cinematic flies it there. */
 export function stampBeastMillTile(state, tileId, encounter) {
   const steps = state?.pendingBeastMill?.steps;
@@ -129,34 +105,6 @@ export function stampBeastMillDiscard(state) {
   const last = steps?.[steps.length - 1];
   if (!last || last.tileId) return;
   last.discarded = true;
-}
-
-/**
- * Draw from the top until a matching Dreambeast.
- * Spawn (millRest) discards every other card in that suit, then reshuffles.
- * A two-beast draw discards only the cards turned over before the hit.
- * If this suit has no match, the cards go back and the pile is unchanged.
- */
-function cycleSuitForDreambeast(state, suit, options, millRest) {
-  reshuffleMindstreamDiscardIfNeeded(state, suit);
-  const deck = state.mindstreamDecks[suit];
-  const skipped = [];
-  while (deck.length) {
-    const card = deck.shift();
-    if (matchesSpawnBeast(card, options)) {
-      let milledRest = 0;
-      if (millRest) {
-        milledRest = deck.length;
-        discardRestOfMindstream(state, suit, skipped);
-      } else if (skipped.length && state.mindstreamDiscard[suit]) {
-        skipped.forEach((passed) => state.mindstreamDiscard[suit].push(passed));
-      }
-      return { card, suit, passed: skipped.slice(), milledRest };
-    }
-    skipped.push(card);
-  }
-  skipped.forEach((card) => deck.push(card));
-  return null;
 }
 
 /**
@@ -186,16 +134,17 @@ export function pullFromMindstreamByType(state, type, { suit = null, filter = nu
  * turned over before each Dreambeast are discarded — the rest of the suit stays.
  */
 export function pullDreambeastFromMindstream(state, options = {}) {
-  const { suit = null, beastKind = null, filter = null, millRest = true } = options;
-  const opts = { beastKind, filter };
-  for (const s of suitsToSearch(suit)) {
-    const found = cycleSuitForDreambeast(state, s, opts, millRest);
-    if (found) {
-      noteBeastMill(state, found);
-      return found;
-    }
-  }
-  return null;
+  // Ainmos: Mindstream holds no Dreambeasts. Effects that call one up draw from
+  // the night's Nightmare pool (the ordinary beasts not guarding an Ante).
+  const { suit = null, beastKind = null, filter = null } = options;
+  const pool = state.nightmarePool || [];
+  const fits = (card, strictSuit) => matchesSpawnBeast({ ...card, type: "dreambeast" }, { beastKind, filter })
+    && (!strictSuit || !suit || card.suit === suit);
+  let index = pool.findIndex((card) => fits(card, true));
+  if (index < 0) index = pool.findIndex((card) => fits(card, false));
+  if (index < 0) return null;
+  const [card] = pool.splice(index, 1);
+  return { card: { ...card, type: "dreambeast" }, suit: card.suit, passed: [], milledRest: 0 };
 }
 
 export function ensureObjectPiles(state) {

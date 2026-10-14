@@ -127,6 +127,8 @@ export function createInitialState(data, options) {
 
   const psycheDeck = buildPsycheDeck(data.psyche);
   const dreamDeck = insertBossDreams(buildDreamDeck(data.dreams, length.dreams), data.dreambeasts, options.lengthKey);
+  const nightmarePool = (dreamDeck.nightmarePool || []).map((beast) => ({ ...beast, instanceId: uid("beast") }));
+  delete dreamDeck.nightmarePool;
   // The Night Bar reads this plan: every card of the night, in order, with its Ante.
   const nightPlan = dreamDeck.map((card, index) => ({
     instanceId: card.instanceId,
@@ -136,6 +138,9 @@ export function createInitialState(data, options) {
     image: card.image,
     suit: card.boss ? card.suit : null,
     ante: Math.floor(index / 3) + 1,
+    mini: card.miniBoss
+      ? { id: card.miniBoss.id, name: card.miniBoss.name, image: card.miniBoss.image, suit: card.miniBoss.suit, power: card.miniBoss.accept }
+      : null,
   }));
   const archetypeDeck = shuffle(data.archetypes.map((a) => ({ ...a, instanceId: uid("arch") })));
   const mindstreamDecks = buildMindstreamDecks(data.mindstream, data.dreambeasts);
@@ -214,9 +219,10 @@ export function createInitialState(data, options) {
     boons: [],
     pendingBoonDraft: null,
     nightPlan,
+    nightmarePool,
     finalBossId: finalBossForLength(options.lengthKey)?.id || null,
     bossesDefeated: [],
-    nightOver: false,
+    longNight: false,
     boardMode,
     landscapeTileDeck: freeform ? buildLandscapeTileDeck(landscapes) : [],
     landscapeVault: [],
@@ -443,7 +449,7 @@ export function readyRowArchetype(state) {
 
 export function addLog(state, message) {
   state.log.unshift(message);
-  state.log = state.log.slice(0, 40);
+  state.log = state.log.slice(0, globalThis.__AINMOS_LOG_CAP || 40);
 }
 
 function peekCardSummary(card) {
@@ -850,11 +856,15 @@ export function beginRoundReveal(state) {
   }
   // Ainmos: the Vault ran dry last round, so the Dreamscape resets now.
   if (isFreeformBoard(state) && vaultExhausted(state)) resetDreamscape(state);
-  // A new round with no Dream left to draw: the night is over.
+  // Ainmos: no Dream left to draw. The night does not end; the Long Night begins,
+  // and the Waking Mind is the clock until you wake or forget yourself.
   if (!state.tutorialMode && !(state.dreamDeck || []).length) {
-    state.nightOver = true;
-    checkDefeat(state);
-    if (state.status !== "playing") return;
+    if (!state.longNight) {
+      state.longNight = true;
+      addLog(state, `The Dream Deck is empty. The Long Night begins: each dusk Represses ${LONG_NIGHT_TAX} more from the Waking Mind until you wake.`);
+    }
+    state.longNightRounds = (state.longNightRounds || 0) + 1;
+    state.dreamDrawn = true;
   }
 
   state.players.forEach((player) => {
@@ -1304,13 +1314,13 @@ export function checkDefeat(state) {
     }
     return;
   }
-  // Ainmos: the night ends after the final Boss round. Not waking by then loses.
-  if (state.nightOver) {
-    state.status = "lost";
-    addLog(state, finalBossDefeated(state)
-      ? "The night ends with the Archetype goal unmet. You never wake up."
-      : "The night ends with the final Boss still standing. You never wake up.");
-  }
+}
+
+/** The Long Night's dusk toll grows by this much every round: 2, then 4, then 6. */
+export const LONG_NIGHT_TAX = 2;
+
+export function longNightToll(state) {
+  return state?.longNight ? LONG_NIGHT_TAX * Math.max(1, state.longNightRounds || 1) : 0;
 }
 
 export function acquireArchetype(state, player, onAcquireFn, { skipQuestCheck = false, archetype: chosen = null } = {}) {

@@ -6,10 +6,23 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.9";
+export const SOMNIA_VERSION = "0.10";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.10",
+    title: "Solo Night",
+    notes: [
+      "Ainmos is now a solo run. Choose one Dreamer; every hand, action, and fight is yours. Fights and Mindstream draws repeat as long as your Meet actions last.",
+      "Dreambeasts arrive on the Dream Deck timer. Each Ante is a Dream, a Dream that brings a Mini-Boss to The Bed, then a Boss that lands on a random Landscape. Mini-Bosses are face up on the Night Bar.",
+      "Mindstream is Events and Power Tokens only. The Draw-a-Dream cards and the Events and Objects that called up beasts are gone. City and Lava now move Dreambeasts.",
+      "Dreams are conditions you survive: no Bright side, one card, one button.",
+      "Every creature is 1 Power weaker, and ties now go to you.",
+      "The night no longer ends with the Dream Deck. The Long Night begins: each dusk Represses 2, then 4, then 6 more from the Waking Mind until you wake or forget.",
+      "Faster flow: each round opens on its Dream by itself, and each phase opens on one full screen with your hand, a live preview, and big buttons.",
+    ],
+  },
   {
     version: "0.9",
     title: "Wide Awake",

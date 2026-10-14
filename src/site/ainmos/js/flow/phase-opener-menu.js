@@ -1,15 +1,13 @@
 /**
- * Fullscreen phase-opener: pick which Dreamer opens Reveal / Explore / Meet and with which card.
- * Shows every living Dreamer's hand so the table can switch focus without hunting chips.
+ * Ainmos phase opener: one full screen per phase. Your hand, big; the cards
+ * that can open the phase are lit; a live preview says what the spend buys.
  */
-import { getPhase, activePlayer, isBlockingGameChoice } from "../core/state.js";
+import { getPhase, isBlockingGameChoice } from "../core/state.js";
 import {
   phaseOpeningActive,
   phaseSuitForOpening,
-  phaseTokenValue,
   canUsePhasePowerToken,
   findPhaseContributor,
-  bestPhaseContributor,
   projectedPhaseBudget,
   totalStat,
   SUIT_LABELS,
@@ -20,7 +18,6 @@ import {
 import { isDreambeastPsycheCard } from "../dreamers/subconscious.js";
 import { renderCard, hideUtilityModal, isUtilityModalMinimized } from "../ui/ui.js";
 import {
-  currentRailBeat,
   isInteractiveTutorialActive,
   isTutorialActionAllowed,
   tutorialActionBlocked,
@@ -45,22 +42,24 @@ function isOpenerCard(card, state) {
   return cardCountsAsSuit(card, suit, state) || isWildPsyche(card);
 }
 
-function openerTitle(phase, suitLabel) {
-  if (phase === "Reveal") return `Who opens Reveal?`;
-  if (phase === "Explore") return `Who opens Explore?`;
-  if (phase === "Meet") return `Who opens Meet?`;
-  return `Who opens this phase?`;
+function openerTitle(phase) {
+  if (phase === "Reveal") return "Build the dream";
+  if (phase === "Explore") return "Walk the dream";
+  if (phase === "Meet") return "Meet what waits";
+  return "Open the phase";
 }
 
 function openerLead(phase, suitLabel) {
-  const token = `A Power Token opens as 1 + that Dreamer's ${suitLabel}. Skip Phase leaves without spending.`;
-  if (phase === "Reveal") {
-    return `Spend 1 ${suitLabel} Psyche, or 1 Power Token. Card value (or 1) plus Lucidity is how many Landscapes the team may place from the Dreamscape Vault. ${token}`;
-  }
-  if (phase === "Explore") {
-    return `Spend 1 ${suitLabel} Psyche, or 1 Power Token. Card value (or 1) plus Elasticity is the team's shared moves. ${token}`;
-  }
-  return `Spend 1 ${suitLabel} Psyche, or 1 Power Token. Card value (or 1) plus Willpower is the team's shared Meet actions. ${token}`;
+  if (phase === "Reveal") return `Spend 1 ${suitLabel}. Its value plus your Lucidity places that many Landscapes from the Vault.`;
+  if (phase === "Explore") return `Spend 1 ${suitLabel}. Its value plus your Elasticity is how many steps you take.`;
+  return `Spend 1 ${suitLabel}. Its value plus your Willpower is how many Meet actions you get: fights, draws, Landscape actions.`;
+}
+
+/** What one point of the phase budget buys, for the live preview. */
+function budgetUnit(phase, n) {
+  if (phase === "Reveal") return n === 1 ? "Landscape" : "Landscapes";
+  if (phase === "Explore") return n === 1 ? "step" : "steps";
+  return n === 1 ? "action" : "actions";
 }
 
 function confirmLabel(phase) {
@@ -111,19 +110,6 @@ function selectOpenerToken(state, player) {
     const idx = state.players.findIndex((p) => p.id === player.id);
     if (idx >= 0) state.activePlayerIndex = idx;
   }
-  openerRenderAll?.();
-}
-
-function focusDreamerRow(state, player) {
-  const idx = state.players.findIndex((p) => p.id === player.id);
-  if (isInteractiveTutorialActive(state)) {
-    const beat = currentRailBeat(state);
-    if (beat?.playerIndex != null && idx !== beat.playerIndex) {
-      tutorialActionBlocked(state);
-      return;
-    }
-  }
-  if (idx >= 0) state.activePlayerIndex = idx;
   openerRenderAll?.();
 }
 
@@ -235,7 +221,6 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   const phase = getPhase(state);
   const suit = phaseSpendSuit(state);
   const suitLabel = SUIT_LABELS[suit] || "Psyche";
-  const best = bestPhaseContributor(state);
   const contributor = findPhaseContributor(state);
   const kind = confirmKind(phase);
   const canConfirm = !!contributor && projectedPhaseBudget(state, contributor) >= 1;
@@ -257,109 +242,65 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   }
 
   const alive = (state.players || []).filter((p) => p.alive);
-  const rows = alive.map((player) => {
-    const isBest = best?.id === player.id;
-    const isFocus = activePlayer(state)?.id === player.id;
-    const isOpener = contributor?.id === player.id;
-    const bonus = totalStat(player, suit, state);
-    const ifSpend = projectedPhaseBudget(state, player);
-    const tokenOn = state.phaseTokenAsPsyche === player.id;
-    const tokenOk = canUsePhasePowerToken(state, player) || tokenOn;
-
-    return `
-      <section class="phase-opener-dreamer${isFocus ? " is-focus" : ""}${isOpener ? " is-opener" : ""}${isBest ? " is-best" : ""}" data-player-id="${player.id}">
-        <header class="phase-opener-dreamer-head">
-          <button type="button" class="phase-opener-focus-btn" data-focus-id="${player.id}" aria-pressed="${isFocus}">
-            <img src="${player.dreamer?.image || ""}" alt="" class="phase-opener-avatar" />
-            <span class="phase-opener-name">${player.name}${player.isHead ? " ★" : ""}</span>
-          </button>
-          <div class="phase-opener-meta">
-            <span class="phase-opener-stat">${suitIconHtml(suit, { size: 12 })} +${bonus}</span>
-            <span class="phase-opener-budget">→ ${ifSpend}</span>
-            ${isBest ? `<span class="phase-opener-badge">Best</span>` : ""}
-            ${isOpener ? `<span class="phase-opener-badge opener">Opening</span>` : ""}
-          </div>
-          <button type="button" class="btn btn-sm phase-opener-token${tokenOn ? " on" : ""}" data-token-id="${player.id}" ${tokenOk ? "" : "disabled"} title="Spend 1 Power Token as 1 + ${suitLabel} ${bonus}">
-            ${tokenOn ? `Token · 1+${bonus}` : `Token · 1+${bonus} (${player.powerTokens || 0})`}
-          </button>
-        </header>
-        <div class="phase-opener-hands">
-          <div class="phase-opener-hand-row" data-hand-for="${player.id}"></div>
-        </div>
-      </section>
-    `;
-  }).join("");
+  // Ainmos is solo: the opener is always the one living Dreamer.
+  const player = alive[0];
+  const bonus = player ? totalStat(player, suit, state) : 0;
+  const tokenOn = !!player && state.phaseTokenAsPsyche === player.id;
+  const tokenOk = !!player && (canUsePhasePowerToken(state, player) || tokenOn);
+  const tint = phase === "Reveal" ? "reveal" : phase === "Explore" ? "explore" : "meet";
+  const hasOpenerCard = !!player && (player.hand || []).some((c) => isOpenerCard(c, state));
+  const idleNote = hasOpenerCard
+    ? `pick a ${suitLabel} card`
+    : (tokenOk ? `no ${suitLabel}: use a Power Token or Skip` : `no ${suitLabel} in hand: Skip`);
 
   body.innerHTML = `
-    <div id="phase-opener-menu" class="phase-opener-menu" data-phase="${phase}" data-suit="${suit || ""}" data-count="${alive.length}">
+    <div id="phase-opener-menu" class="phase-opener-menu phase-opener-solo" data-phase="${phase}" data-suit="${suit || ""}" data-count="1">
       <header class="phase-opener-header fullscreen-browser-header">
-        <p class="phase-opener-kicker">${suitIconHtml(suit, { size: 16 })} ${suitLabel}</p>
-        <h2>${openerTitle(phase, suitLabel)}</h2>
+        <p class="phase-opener-kicker">${suitIconHtml(suit, { size: 16 })} ${phase} · ${suitLabel}</p>
+        <h2>${openerTitle(phase)}</h2>
         <p class="fullscreen-browser-lead">${openerLead(phase, suitLabel)}</p>
       </header>
-      <div class="phase-opener-grid fullscreen-browser-body" data-count="${alive.length}">${rows}</div>
-      <footer class="phase-opener-footer">
-        <div class="phase-opener-summary" aria-live="polite">
-          ${contributor
-            ? `<strong>${contributor.name}</strong> opens with ${phaseTokenValue(state, contributor) ? `1 Power Token (1 + ${suitLabel} ${totalStat(contributor, suit, state)})` : "1 Psyche"} → <strong>${projected}</strong> for the team`
-            : `Spend a matching ${suitLabel} card, a Power Token (1 + that Dreamer's ${suitLabel}), or skip.`}
+      <div class="phase-opener-solo-stage fullscreen-browser-body">
+        <div class="phase-opener-preview${canConfirm ? " is-ready" : ""}" aria-live="polite">
+          <span class="phase-opener-preview-num">${canConfirm ? projected : "—"}</span>
+          <span class="phase-opener-preview-unit">${canConfirm ? budgetUnit(phase, projected) : idleNote}</span>
+          <span class="phase-opener-preview-stat">${suitIconHtml(suit, { size: 12 })} ${suitLabel} +${bonus}</span>
         </div>
+        <div class="phase-opener-hand-row phase-opener-solo-hand" data-hand-for="${player?.id || ""}"></div>
+      </div>
+      <footer class="phase-opener-footer">
         <div class="phase-opener-actions">
           <button type="button" id="btn-view-board" class="btn btn-phase-opener-skip">View board</button>
-          <button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip">Skip Phase</button>
-          <button type="button" id="btn-spread-opener" class="btn primary btn-phase-opener-confirm tint-${phase === "Reveal" ? "reveal" : phase === "Explore" ? "explore" : "meet"}" data-tutorial-action="${kind}" ${canConfirm ? "" : "disabled"}>
-            ${confirmLabel(phase)}${canConfirm ? ` (${projected})` : ""}
+          <button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip">Skip</button>
+          <button type="button" class="btn btn-phase-opener-skip phase-opener-token${tokenOn ? " on" : ""}" data-token-id="${player?.id || ""}" ${tokenOk ? "" : "disabled"} title="Spend 1 Power Token as 1 + ${suitLabel} ${bonus}">
+            Power Token · ${player?.powerTokens || 0}
+          </button>
+          <button type="button" id="btn-spread-opener" class="btn primary btn-phase-opener-confirm tint-${tint}" data-tutorial-action="${kind}" ${canConfirm ? "" : "disabled"}>
+            ${confirmLabel(phase)}
           </button>
         </div>
       </footer>
     </div>
   `;
 
-  alive.forEach((player) => {
-    const handEl = body.querySelector(`[data-hand-for="${player.id}"]`);
-    if (!handEl) return;
-    const suited = (player.hand || []).filter((c) => isOpenerCard(c, state));
-    const other = (player.hand || []).filter((c) => !isOpenerCard(c, state));
-
-    if (!suited.length && !other.length) {
-      handEl.innerHTML = `<p class="phase-opener-empty">Empty hand</p>`;
-      return;
-    }
-    if (!suited.length) {
-      const note = document.createElement("p");
-      note.className = "phase-opener-empty";
-      note.textContent = `No ${suitLabel}`;
-      handEl.appendChild(note);
-    }
-    suited.forEach((card) => {
-      const selected = state.selectedHand.includes(card.instanceId);
-      handEl.appendChild(renderCard(card, {
-        mini: true,
-        selected,
+  const handEl = body.querySelector(".phase-opener-solo-hand");
+  if (player && handEl) {
+    const hand = (player.hand || []).filter((c) => c.type !== "psyche-power");
+    if (!hand.length) handEl.innerHTML = `<p class="phase-opener-empty">Your hand is empty.</p>`;
+    hand.forEach((card) => {
+      const usable = isOpenerCard(card, state);
+      const el = renderCard(card, {
+        selected: usable && state.selectedHand.includes(card.instanceId),
         playerId: player.id,
-        onClick: () => selectOpenerCard(state, player, card),
-      }));
+        onClick: usable ? () => selectOpenerCard(state, player, card) : undefined,
+      });
+      el.classList.add(usable ? "opener-usable" : "opener-unusable");
+      handEl.appendChild(el);
     });
-    other.forEach((card) => {
-      handEl.appendChild(renderCard(card, {
-        mini: true,
-        dense: true,
-        playerId: player.id,
-        onClick: () => focusDreamerRow(state, player),
-      }));
-    });
-  });
-
-  body.querySelectorAll("[data-focus-id]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const player = state.players.find((p) => p.id === btn.getAttribute("data-focus-id"));
-      if (player) focusDreamerRow(state, player);
-    });
-  });
+  }
 
   body.querySelectorAll("[data-token-id]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const player = state.players.find((p) => p.id === btn.getAttribute("data-token-id"));
       if (player) selectOpenerToken(state, player);
     });
   });

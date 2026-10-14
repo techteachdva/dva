@@ -93,7 +93,7 @@ import {
   recordCancellableMove,
 } from "../dreamers/dreamer-powers.js";
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "../effects/objects.js";
-import { isBossDreamCard } from "../cards/dream-deck.js";
+import { isBossDreamCard, spawnMiniBoss } from "../cards/dream-deck.js";
 import { resumeObjectEffect } from "../effects/object-effects.js";
 import { hasPsycheHealth, allyHandCount, isWildPsyche, isTradablePsyche, TRADE_OFFER_LIMIT, psycheMatchesSuit } from "../cards/psyche.js";
 import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx, queueAcceptAllyFx } from "../board/board-fx.js";
@@ -132,7 +132,6 @@ import { flashPhaseEntryMoments } from "../ui/moment-overlay.js";
 import { playSfx } from "../audio/audio.js";
 import { markPhasePulse, markDreamFeedNudge, playPhaseSpendFlash } from "../ui/fx.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
-import { COOP_PLAY_TIP } from "../meta/guide.js";
 import { notifyTutorialEncounterResolved, classifyPhaseAction, exploreMoveLockActive } from "../tutorial/tutorial-mode.js";
 import {
   resolveCardEffect,
@@ -221,11 +220,15 @@ function tableUniqueKey(player, actionId) {
   return player?.landscapeId ? `${actionId}@${player.landscapeId}` : actionId;
 }
 
+/** Ainmos is solo: a fight or a Mindstream draw repeats as long as Meet actions last. */
+const SOLO_REPEATABLE_KEYS = new Set(["meet", "landscape:draw-mindstream"]);
+
 function hasUsedMeetAction(state, player, key) {
   const actionId = landscapeActionIdFromKey(key);
   if (isTableUniqueLandscapeAction(actionId)) {
     return (state.usedUniqueActionsThisMeet || []).includes(tableUniqueKey(player, actionId));
   }
+  if (SOLO_REPEATABLE_KEYS.has(key)) return false;
   return usedMeetActionList(state, player).includes(key);
 }
 
@@ -874,7 +877,8 @@ export function getPhaseActions(state, handlers) {
 
   if (phase === "Reveal") {
     const head = headPlayer(state);
-    actions.push({
+    // Ainmos draws each round's Dream on its own; only the tutorial shows the button.
+    if (state.tutorialMode) actions.push({
       label: "Draw & Resolve Dream",
       kind: "drawDream",
       hint: `${head.name} is Head ★ — anyone may click after the group agrees`,
@@ -1350,11 +1354,12 @@ export function drawDreamCard(state, onShowModal) {
     `Dream: ${card.name}`,
     card.text || card.effect || "The Dreamscape shifts.",
     card.type === "boss-dream" || card.boss
-      ? [`${card.name} awakens on The Bed`]
+      ? [`${card.name} awakens on the Dreamscape`]
       : ["Resolve the Dream effect before continuing"],
   );
 
   resolveCardEffect(state, card, head, getEffectHelpers());
+  spawnMiniBoss(state, card);
   if (isBossDreamCard(card) && state.tutorialFlags) state.tutorialFlags.bossDrawn = true;
 
   checkDefeat(state);
@@ -3181,10 +3186,10 @@ export function endPhase(state) {
     state,
     `${phase} Phase begins`,
     phase === "Reveal"
-      ? `${COOP_PLAY_TIP} Head Dreamer (★) draws the Dream once. One Dreamer spends Lucidity to set team reveals.`
+      ? "Endure the Dream, then spend Lucidity to place Landscapes."
       : phase === "Explore"
-        ? `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves — then Dreamers take turns spending them (Pass Turn or Give Turn to hand off).`
-        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. When the round ends, each Dreambeast still on the board Represses 1 Psyche from the Waking Mind. Fail hits when Accept or Repress loses. Beasts stay until you win a dice battle.`,
+        ? "Spend Elasticity for steps. Head for the beasts."
+        : "Spend Willpower for actions. Fight as often as you have them. Every beast left standing bleeds you at dusk.",
     [],
     { moment: `${phase} Phase begins.` },
   );
@@ -3221,39 +3226,26 @@ export function getPhaseHint(state) {
   }
 
   const phase = getPhase(state);
-  const head = headPlayer(state);
   if (phase === "Reveal") {
-    const parts = [COOP_PLAY_TIP];
-    if (!state.dreamDrawn) parts.push(`${head.name} (★) Draw & Resolve the Dream first.`);
-    else if (!state.revealLandscapeUsed) parts.push("One Dreamer spends Lucidity for team reveals.");
-    else parts.push("When reveals are spent, tap the circular Next Phase button at the top-right of the map.");
-    return parts.join(" ");
+    if (!state.dreamDrawn) return "The Dream is coming.";
+    if (!state.revealLandscapeUsed) return "Spend Lucidity to place Landscapes.";
+    return "When your Landscapes are placed, tap Next.";
   }
   if (phase === "Explore") {
     const legal = getLegalExploreTargets(state).length;
-    if (!state.exploreActivated) {
-      return `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves.`;
-    }
-    const holder = actionTurnHolder(state);
-    const turnNote = holder
-      ? `${holder.name}'s turn to move — Pass Turn, or Give Turn on another Dreamer's radial.`
-      : "Tap a glowing hex to move.";
-    return `${COOP_PLAY_TIP} ${state.exploreMovesLeft} team move(s) · ${legal} hexes reachable. ${turnNote}`;
+    if (!state.exploreActivated) return "Spend Elasticity for steps.";
+    return `${state.exploreMovesLeft} step${state.exploreMovesLeft === 1 ? "" : "s"} left · ${legal} hexes in reach. Tap a glowing hex to move.`;
   }
   if (phase === "Meet") {
     if (state.meetActionBudget === 0) {
-      return `${COOP_PLAY_TIP} One Dreamer spends Willpower for shared Meet actions. Beasts still standing Repress 1 Psyche from the Waking Mind at dusk.`;
+      return "Spend Willpower for Meet actions. Beasts still standing bleed you at dusk.";
     }
     const pool = coopMeetPlayTotal(state);
     const count = allSelectedCards(state).length;
     const actionsLeft = Math.max(0, state.meetActionBudget - (state.meetActionsUsed || 0));
-    const holder = actionTurnHolder(state);
-    const turnNote = holder && actionsLeft > 0
-      ? ` · ${holder.name}'s turn`
-      : "";
     const actionsTail = actionsLeft > 0
       ? ` · ${actionsLeft} action${actionsLeft === 1 ? "" : "s"} left`
-      : " · Next Phase when actions are spent";
-    return `${COOP_PLAY_TIP} ${state.meetActionsUsed}/${state.meetActionBudget} actions · pool ${count}/3 (${pool})${actionsTail}${turnNote}.`;
+      : " · tap Next when you are done";
+    return `Spread ${count}/3 (Power ${pool})${actionsTail}.`;
   }
 }

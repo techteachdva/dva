@@ -68,3 +68,16 @@ Archetype points ×2 + each Boss's climb (11 − rung) + best spread Power + 20 
 ## Next playtest
 
 At dawn after a Boss, does the draw of 3 feel like a reward the table earned, or like the one moment that decides whether the next Ante is survivable?
+
+## 0.10 Solo Night (2026-10-14)
+
+Phil's calls after playing 0.9, now locked:
+
+- **Solo only.** One Dreamer per run, chosen at the menu. Goals use the solo points (4 / 6 / 12). In Meet, fights and Draw Mindstream repeat while actions last; each Landscape's unique action is still once per Meet.
+- **Dreambeasts on the Dream Deck timer.** Ante = Dream, Dream + Mini-Boss (an ordinary beast, Power 2/4/4/5/6/6/7/8/8/9 by Ante, rises on The Bed), Boss Dream (lands on a random placed non-Wasteland Landscape; The Bed only if nothing else is placed). The non-Mini ordinary beasts form the Nightmare pool for the few Dreams whose Dim spawns.
+- **Mindstream = Events + Power Tokens.** No beasts, no Draw-a-Dream cards, no spawning Events. Chess Objects are out of the shop. City and Lava move Dreambeasts instead of spawning them.
+- **Dreams are always bad.** No Bright side; the Dim effect resolves on a one-button screen.
+- **Power −1** across the ladder (Turtle 1/2/3 … Leviathan 11) and **ties go to the Dreamer** (Power+2 is ~75%, was ~54%).
+- **The Long Night.** An empty Dream Deck no longer loses. Each dusk Represses 2 × (Long Night rounds) extra from the Waking Mind.
+
+Bot sim (crude solo bot, 40 per length, two runs): Daydream 42–45%, Nap 22–37%, Deep Sleep 12–20%; 0 errors, 0 step caps. Most bot losses are an unmet Archetype goal (the bot hunts beasts over quests).

@@ -818,3 +818,10 @@
   scale: -1 1;
   filter: hue-rotate(-12deg) saturate(0.92);
 }
+
+/* ---- Ainmos menu: one Dreamer, one clean row of cards ------------------------------------------ */
+
+body.ainmos #screen-setup .dreamer-pick-stats { display: none; }
+body.ainmos #screen-setup #btn-advanced-tutorial { display: none !important; }
+body.ainmos #screen-setup .dreamer-pick .game-card.dreamer { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+body.ainmos #screen-setup .dreamer-pick:hover .game-card.dreamer { transform: translateY(-6px); }

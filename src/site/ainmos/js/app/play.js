@@ -1104,9 +1104,11 @@ async function startGame(config) {
     return;
   }
 
+  // Ainmos is a solo run: one Dreamer, whatever the launch config asked for.
   const selectedDreamers = config.selectedDreamerIds
     .map((id) => gameData.dreamers.find((d) => d.id === id))
-    .filter(Boolean);
+    .filter(Boolean)
+    .slice(0, 1);
 
   if (!selectedDreamers.length) {
     window.location.replace("index.html");
@@ -1494,6 +1496,28 @@ function maybeFocusTutorialLandscape() {
   if (focus.key === lastTutorialCameraKey) return;
   lastTutorialCameraKey = focus.key;
   focusOnLandscape(focus.tileId, { zoom: focus.zoom });
+}
+
+/**
+ * Ainmos flow: a round opens on its Dream. Nobody clicks "Draw Dream"; the card
+ * arrives on its own a beat after the table settles (shop, Boon, and dawn first).
+ */
+let autoDreamRound = 0;
+function maybeAutoDrawDream() {
+  if (!state || state.tutorialMode || state.status !== "playing") return;
+  if (getPhase(state) !== "Reveal" || state.dreamDrawn || !(state.dreamDeck || []).length) return;
+  if (state.lostFound?.open || state.pendingBoonDraft || isBlockingGameChoice(state)) return;
+  if (document.body.classList.contains("opening-cinematic-pending")) return;
+  if (autoDreamRound === state.round) return;
+  autoDreamRound = state.round;
+  window.setTimeout(() => {
+    if (getPhase(state) !== "Reveal" || state.dreamDrawn || state.lostFound?.open || state.pendingBoonDraft) {
+      autoDreamRound = 0;
+      return;
+    }
+    drawDreamCard(state, showModal);
+    renderAll();
+  }, 450);
 }
 
 function buildPhaseHandlers() {
@@ -2816,7 +2840,8 @@ function renderAll() {
     stackSize: undoStackSize(),
     onUndo: back.run,
   }, {
-    visible: getPhase(state) === "Reveal",
+    // Ainmos draws the Dream itself; the button stays only for the tutorial.
+    visible: getPhase(state) === "Reveal" && !!state.tutorialMode,
     disabled: !!state.dreamDrawn || !isTutorialActionAllowed(state, "drawDream"),
     label: "Draw Dream",
     hint: state.dreamDrawn
@@ -2832,6 +2857,7 @@ function renderAll() {
     },
   });
   renderPhaseActions(phaseActions, advanceAction, state);
+  maybeAutoDrawDream();
 
   renderBoardArea();
   focusRepressOwner();
@@ -2921,6 +2947,9 @@ function renderAll() {
     } else if (!blockingChoice || picking?.source === "objects") {
       renderMeetPoolGuide(state);
       renderHand(state, onHandCardClick, getNewHandCardIds(state));
+    } else {
+      // Ainmos: your hand is always on screen, even while a choice holds the table.
+      renderHand(state, () => {}, getNewHandCardIds(state));
     }
     if (!blockingChoice) {
       renderSpreadTray(state, onHandCardClick, (() => {

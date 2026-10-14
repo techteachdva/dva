@@ -182,7 +182,7 @@ function noteSubconsciousCleared(state, before) {
   // 41.0: a clear Subconscious is its own reward (a full Waking Mind). It no longer replays a Dream.
   state.log = state.log || [];
   state.log.unshift("The Subconscious is clear. Everything you forgot, you remembered.");
-  state.log = state.log.slice(0, 40);
+  state.log = state.log.slice(0, globalThis.__AINMOS_LOG_CAP || 40);
 }
 
 export function removeFromSubconscious(state, instanceId) {
@@ -244,7 +244,7 @@ export function finalizeReturn(state, cards, { log = true } = {}) {
     if (log) {
       const names = returned.map((c) => c.name || `${c.suit} ${c.value}`).join(", ");
       state.log.unshift(`Returned ${returned.length} from Subconscious: ${names}.`);
-      state.log = state.log.slice(0, 40);
+      state.log = state.log.slice(0, globalThis.__AINMOS_LOG_CAP || 40);
     }
   }
   return returned;
@@ -395,7 +395,7 @@ function playerById(state, id) {
 
 function logRepress(state, message) {
   state.log.unshift(message);
-  state.log = state.log.slice(0, 40);
+  state.log = state.log.slice(0, globalThis.__AINMOS_LOG_CAP || 40);
 }
 
 function sourceCards(player, source) {

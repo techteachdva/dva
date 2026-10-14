@@ -2,6 +2,7 @@ import { BOSS_LADDER } from "../encounters/boss-ladder.js";
 /** Dream deck draw/discard — boss Dreambeasts always spawn instead of vanishing. */
 
 import { uid } from "../core/data.js";
+import { random } from "../core/rng.js";
 import {
   addLog,
   allEncountersOnBoard,
@@ -57,6 +58,28 @@ export function collapseDuplicateBosses(state) {
   });
 }
 
+/** Bosses land on a random placed Landscape (never Wasteland); The Bed only when it stands alone. */
+function bossLandingTile(state) {
+  const open = (state.board || []).filter((tile) => tile.revealed && !tile.wasteland && !tile.center && tile.id !== "bed");
+  if (!open.length) return (state.board || []).find((tile) => tile.center || tile.id === "bed") || null;
+  return open[Math.floor(random() * open.length)];
+}
+
+/**
+ * The Ante's second Dream brings its Mini-Boss to The Bed, once, whether the
+ * Dream is drawn or eaten.
+ */
+export function spawnMiniBoss(state, dream) {
+  const mini = dream?.miniBoss;
+  if (!mini || dream.miniSpawned) return false;
+  dream.miniSpawned = true;
+  setEncounterOnLandscape(state, "bed", { ...mini, instanceId: mini.instanceId || uid("mini") });
+  logMoment(state, `Mini-Boss: ${mini.name} (Power ${mini.accept}) rises on The Bed.`, { boss: true });
+  markDreamFeedNudge();
+  queueBossStingerFx(mini.id, "bed");
+  return true;
+}
+
 export function spawnBossEncounterOnBed(state, card) {
   if (!isBossDreamCard(card)) return false;
   // The round a Boss arrives closes its Ante; dawn follows next round.
@@ -77,10 +100,12 @@ export function spawnBossEncounterOnBed(state, card) {
     awake: card.id === "leviathan" || card.refId === "leviathan" ? true : card.awake,
     instanceId: card.instanceId || uid("enc"),
   };
-  setEncounterOnLandscape(state, "bed", encounter);
-  logMoment(state, `${card.name} awakens on The Bed!${card.twistText ? ` ${card.twist}: ${card.twistText}` : ""}`, { boss: true });
+  const tile = bossLandingTile(state);
+  if (!tile) return false;
+  setEncounterOnLandscape(state, tile.id, encounter);
+  logMoment(state, `Boss: ${card.name} awakens on ${tile.name}!${card.twistText ? ` ${card.twist}: ${card.twistText}` : ""}`, { boss: true });
   markDreamFeedNudge();
-  queueBossStingerFx(card.id, "bed");
+  queueBossStingerFx(card.id, tile.id);
   return true;
 }
 
@@ -97,6 +122,7 @@ export function discardDreamCard(state, card) {
     pushDreamDiscard(state, card);
     return;
   }
+  spawnMiniBoss(state, card);
   pushDreamDiscard(state, card);
 }
 

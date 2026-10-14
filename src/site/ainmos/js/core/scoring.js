@@ -2,12 +2,6 @@ import { alliesInHand } from "../cards/psyche.js";
 import { goalPointsForTable } from "./data.js";
 import { ladderEntry } from "../encounters/boss-ladder.js";
 
-/** Fewer Dreamers at the table, awarded only for a win. 6 is 0, each Dreamer fewer is +5. */
-export function dreamerCountBonus(playerCount, won) {
-  if (!won) return 0;
-  const count = Math.max(1, Math.min(6, Number(playerCount) || 6));
-  return (6 - count) * 5;
-}
 
 function difficultyPoints(state) {
   if (state.scoringGoalPoints != null) return state.scoringGoalPoints;
@@ -29,8 +23,7 @@ export function bossClimbPoints(state) {
  * + every defeated Boss's climb (11 minus its rung)
  * + the best spread's Power
  * + 20 for waking
- * + 1 per Object, Power Token, and ally still held by living Dreamers
- * + the small-table bonus on a win.
+ * + 1 per Object, Power Token, and ally still held.
  * Psyche left in hand no longer scores: spend it.
  */
 export function calculateFinalScore(state) {
@@ -51,8 +44,7 @@ export function calculateFinalScore(state) {
   const bossPoints = bossClimbPoints(state);
   const bestSpread = state.runStats?.bestSpread?.power || 0;
   const escapeBonus = won ? 20 : 0;
-  const dreamerBonus = dreamerCountBonus(state.players?.length || 0, won);
-  const total = archetypePoints + bossPoints + bestSpread + escapeBonus + objects + tokens + allies + dreamerBonus;
+  const total = archetypePoints + bossPoints + bestSpread + escapeBonus + objects + tokens + allies;
 
   return {
     archetypePoints,
@@ -67,7 +59,6 @@ export function calculateFinalScore(state) {
     allies,
     dreams: 0,
     escapeBonus,
-    dreamerBonus,
     total,
   };
 }
@@ -79,7 +70,6 @@ export function formatScoreBreakdown(breakdown) {
     `Best spread: ${breakdown.bestSpread}`,
     `Wake: ${breakdown.escapeBonus || 0}`,
     `Objects, tokens, allies: ${breakdown.objects + breakdown.tokens + breakdown.allies}`,
-    `Dreamer table: ${breakdown.dreamerBonus || 0}`,
     `Total score: ${breakdown.total}`,
   ];
 }

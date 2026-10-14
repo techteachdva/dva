@@ -21,6 +21,7 @@ import {
   landscapeById,
   moveEncounterBetweenLandscapes,
   repressTopPsycheFromDeck,
+  longNightToll,
 } from "../core/state.js";
 import { adjacentTiles, hexDistance } from "../core/hex.js";
 import { logMoment } from "../core/narrator.js";
@@ -136,7 +137,7 @@ function roundResourceTaxCount(state) {
   if (state.finalRecurrence) {
     return (state.finalArchetypes || []).filter((arch) => !arch.defeated).length;
   }
-  return roamingDreambeastsInSpawnOrder(state).length;
+  return roamingDreambeastsInSpawnOrder(state).length + longNightToll(state);
 }
 
 /** Cards the dusk mill will take from the Waking Mind when this round ends. */
@@ -165,10 +166,13 @@ function applyRoundResourceTax(state) {
   const count = roundResourceTaxCount(state);
   if (!count) return;
   const kind = state.finalRecurrence ? "Archetype" : "Dreambeast";
-  const plural = count === 1 ? "" : "s";
+  const beasts = count - longNightToll(state);
+  const plural = beasts === 1 ? "" : "s";
   logMoment(
     state,
-    `Dusk. ${count} ${kind}${plural} still stand. Repress ${count} from the Waking Mind.`,
+    state.longNight
+      ? `Dusk in the Long Night. Repress ${count} from the Waking Mind${beasts ? ` (${beasts} for the ${kind}${plural} still standing)` : ""}.`
+      : `Dusk. ${count} ${kind}${plural} still stand. Repress ${count} from the Waking Mind.`,
     { durationMs: 14000 },
   );
   repressTopPsycheFromDeck(state, count);

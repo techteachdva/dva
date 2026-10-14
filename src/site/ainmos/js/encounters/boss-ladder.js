@@ -14,75 +14,82 @@ export const BOSS_LADDER = Object.freeze([
   {
     rung: 10,
     id: "winged-turtle",
-    power: 4,
-    stack: [2, 3, 4],
+    power: 3,
+    stack: [1, 2, 3],
     twist: "All the way down",
-    twistText: "Three turtles stand stacked. Beat the Power 2, then the 3, then the 4.",
+    twistText: "Three turtles stand stacked. Beat the Power 1, then the 2, then the 3.",
   },
   {
     rung: 9,
     id: "shadows",
-    power: 7,
+    power: 6,
     twist: "Lights out",
     twistText: "While the Shadows stand, Lucidity Landscape actions go dark.",
   },
   {
     rung: 8,
     id: "jackalope",
-    power: 7,
+    power: 6,
     twist: "Hop",
     twistText: "At the start of each Meet, the Jackalope hops 2 hexes. A tight Dreamscape corners it.",
   },
   {
     rung: 7,
     id: "baku",
-    power: 8,
+    power: 7,
     twist: "Dream eater",
     twistText: "If the Baku stands at dusk, it eats the next card of the Dream Deck.",
   },
   {
     rung: 6,
     id: "mindless",
-    power: 9,
+    power: 8,
     twist: "No mind",
     twistText: "Dreamer stats add nothing against the Mindless.",
   },
   {
     rung: 5,
     id: "devourer",
-    power: 9,
+    power: 8,
     twist: "Hunger",
     twistText: "If the Devourer stands at dusk, the table Represses 1 Object in play.",
   },
   {
     rung: 4,
     id: "bogey",
-    power: 10,
+    power: 9,
     twist: "Under the Bed",
     twistText: "While the Bogey stands, The Bed's action is shut, and anyone ending Meet on The Bed Represses 1 Psyche.",
   },
   {
     rung: 3,
     id: "cerberus",
-    power: 11,
+    power: 10,
     twist: "The gate",
     twistText: "While Cerberus stands, no one enters or leaves The Bed.",
   },
   {
     rung: 2,
     id: "double",
-    power: 11,
+    power: 10,
     twist: "Mirror",
     twistText: "The Double gains Power equal to the fighter's matching stat.",
   },
   {
     rung: 1,
     id: "leviathan",
-    power: 12,
+    power: 11,
     twist: "Rising tide",
     twistText: "Each dusk Leviathan stands, the edge Landscape farthest from The Bed is Forgotten.",
   },
 ]);
+
+/** Mini-Boss Power by Ante: two under that Ante's Boss, two in the first. */
+const MINI_BOSS_POWER = Object.freeze([2, 4, 4, 5, 6, 6, 7, 8, 8, 9]);
+
+export function miniBossPower(ante) {
+  return MINI_BOSS_POWER[Math.max(0, Math.min(MINI_BOSS_POWER.length - 1, (ante || 1) - 1))];
+}
 
 /** Antes per night length. Each Ante is 2 Dreams + 1 Boss Dream. */
 export const ANTES_BY_LENGTH = Object.freeze({ daydream: 4, nap: 7, deep: 10 });

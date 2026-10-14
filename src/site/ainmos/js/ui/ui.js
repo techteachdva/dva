@@ -4173,8 +4173,12 @@ function renderTurnPlaque(state) {
   }
 
   plaque.classList.remove("hidden");
-  nameEl.textContent = holder.name;
-  if (phaseEl) phaseEl.textContent = phaseNote;
+  // Ainmos is solo: the plaque names the phase and what is left, not whose turn it is.
+  const [phaseName, left] = phaseNote.split(" · ");
+  const labelEl = plaque.querySelector(".turn-plaque-label");
+  if (labelEl) labelEl.textContent = phaseName || "Now";
+  nameEl.textContent = left || holder.name;
+  if (phaseEl) phaseEl.textContent = "";
   if (passBtn) {
     passBtn.classList.toggle("hidden", !canPass);
     passBtn.textContent = "Pass";
@@ -4776,7 +4780,6 @@ export function showEndScreen(won, message, scoreResult = null, dream = null) {
         <li>Accepted allies: <strong>${b.allies}</strong></li>
         <li>Dreams remaining: <strong>${b.dreams}</strong></li>
         <li>Escape: <strong>${b.escapeBonus || 0}</strong></li>
-        <li>Dreamer table: <strong>${b.dreamerBonus || 0}</strong></li>
       </ul>
     `;
     leaderboardEl?.classList.remove("hidden");
@@ -4924,9 +4927,15 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
     `;
   };
 
-  const good = choices.find((c) => c.role === "good") || choices[0];
-  const bad = choices.find((c) => c.role === "bad") || choices[1];
+  // Ainmos: a Dream has one way through. One card, one big button under it.
+  const single = choices.length === 1;
+  const good = single ? null : (choices.find((c) => c.role === "good") || choices[0]);
+  const bad = single ? null : (choices.find((c) => c.role === "bad") || choices[1]);
   const flee = choices.find((c) => c.role === "flee");
+  const only = single ? choices[0] : null;
+  const mini = kind === "dream" && card.miniBoss
+    ? `<p class="ms-choice-mini">Mini-Boss: <strong>${card.miniBoss.name}</strong> (Power ${card.miniBoss.accept}) rises on The Bed.</p>`
+    : "";
 
   const kindLabel = {
     event: "Event",
@@ -4949,7 +4958,7 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
   `).join("");
 
   body.innerHTML = `
-    <div class="ms-choice-fullscreen" data-kind="${kind}" data-suit="${ui.suit || ""}">
+    <div class="ms-choice-fullscreen${single ? " ms-choice-fullscreen--single" : ""}" data-kind="${kind}" data-suit="${ui.suit || ""}">
       <div class="ms-choice-bleed" style="${artStyle}" aria-hidden="true"></div>
       <div class="ms-choice-stage">
         <aside class="ms-choice-rail ms-choice-rail--left">${renderBtn(good)}</aside>
@@ -4958,11 +4967,13 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
             <p class="ms-choice-kicker">${kindLabel}</p>
             <h2 class="ms-choice-title">${ui.title || card.name || "Choose"}</h2>
             ${ui.message ? `<p class="ms-choice-message">${ui.message}</p>` : ""}
+            ${mini}
             ${ui.landscapeHint ? `<p class="ms-choice-landscapes">${ui.landscapeHint}</p>` : ""}
             ${landscapeFigs ? `<div class="ms-choice-landscape-row">${landscapeFigs}</div>` : ""}
           </div>
           <div class="ms-choice-card-frame">${cardImg}</div>
           ${flee ? `<div class="ms-choice-flee-slot">${renderBtn(flee)}</div>` : ""}
+          ${only ? `<div class="ms-choice-single-slot">${renderBtn(only)}</div>` : ""}
         </div>
         <aside class="ms-choice-rail ms-choice-rail--right">${renderBtn(bad)}</aside>
       </div>
@@ -4975,6 +4986,7 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
   const closeBtn = modal?.querySelector(".utility-close");
   if (closeBtn) closeBtn.hidden = true;
 
+  if (single) requestAnimationFrame(() => body.querySelector(".ms-choice-single-slot [data-choice]")?.focus());
   body.querySelectorAll("[data-choice]").forEach((btn) => {
     if (btn.disabled) return;
     btn.addEventListener("click", () => {

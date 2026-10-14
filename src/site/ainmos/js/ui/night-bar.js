@@ -2,12 +2,15 @@
  * Ainmos Night Strip: the whole Dream Deck as a progress bar across the very
  * top of the screen.
  *
- * Every card of the night sits left to right, grouped by Ante. Each Dream has
- * a tick; below it, one pip for every Dreambeast that arrived during that
- * Dream's round (coloured by suit). Ordinary Dreams are face down until drawn,
- * then show their art. Boss Dreams are face up from the start so the table can
- * plan for them: dim while ahead, pulsing while standing, starlit once beaten.
+ * Every card of the night sits left to right, grouped by Ante: a Dream, a
+ * Dream that brings the Ante's Mini-Boss to The Bed, then the Boss Dream. Each
+ * card has a tick; below it, one pip for every Dreambeast that arrived during
+ * that round (coloured by suit). Ordinary Dreams are face down until drawn.
+ * Mini-Bosses and Bosses are face up from the start so you can plan for them.
+ * When the deck runs dry, the counter turns into the Long Night's toll.
  */
+
+import { longNightToll } from "../core/state.js";
 
 import { ladderEntry, antesForLength } from "../encounters/boss-ladder.js";
 
@@ -91,9 +94,14 @@ export function renderNightBar(state) {
       </span>`;
     }
     const art = drawn ? drawnArt(state, p) : "";
-    const label = `${drawn ? `Dream ${index + 1}: ${p.name || "drawn"}.` : `Dream ${index + 1}: still asleep.`}${spawnLabel(spawns)}`;
-    return `<span class="night-card night-dream${drawn ? " is-drawn" : ""}${isNext ? " is-next" : ""}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+    const miniNote = p.mini ? ` Mini-Boss: ${p.mini.name}, Power ${p.mini.power}, rises on The Bed.` : "";
+    const label = `${drawn ? `Dream ${index + 1}: ${p.name || "drawn"}.` : `Dream ${index + 1}: still asleep.`}${miniNote}${spawnLabel(spawns)}`;
+    const miniBadge = p.mini
+      ? `<span class="night-mini suit-${escapeHtml(p.mini.suit || "none")}" style="--night-art:url('${escapeHtml(absolute(p.mini.image))}')"><b>${p.mini.power}</b></span>`
+      : "";
+    return `<span class="night-card night-dream${drawn ? " is-drawn" : ""}${isNext ? " is-next" : ""}${p.mini ? " has-mini" : ""}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
       <span class="night-face"${art ? ` style="--night-art:url('${escapeHtml(art)}')"` : ""}></span>
+      ${miniBadge}
       <span class="night-tick" aria-hidden="true"></span>
       ${spawnPips(spawns)}
     </span>`;
@@ -115,11 +123,18 @@ export function renderNightBar(state) {
   const anteEl = document.getElementById("hud-ante");
   if (anteEl) anteEl.textContent = `${ante}/${antes}`;
 
-  const key = `${groups.join("")}|${nextIndex}|${left}`;
+  const toll = longNightToll(state);
+  const key = `${groups.join("")}|${nextIndex}|${left}|${toll}`;
   if (key === lastKey) return;
   lastKey = key;
-  host.setAttribute("aria-label", `The night: Ante ${ante} of ${antes}, ${left} of ${plan.length} Dreams left`);
+  host.classList.toggle("is-long-night", !!state.longNight);
+  host.setAttribute("aria-label", state.longNight
+    ? `The Long Night: dusk Represses ${toll} more from the Waking Mind`
+    : `The night: Ante ${ante} of ${antes}, ${left} of ${plan.length} Dreams left`);
+  const counter = state.longNight
+    ? `<span class="night-left night-long" title="The Long Night: the Dream Deck is empty. Each dusk Represses this many more from the Waking Mind, and it grows."><b>−${toll}</b><small>Long Night</small></span>`
+    : `<span class="night-left" title="Dreams left in the night"><b>${left}</b><small>left</small></span>`;
   host.innerHTML = `
     <div class="night-track">${groups.join("")}</div>
-    <span class="night-left" title="Dreams left in the night"><b>${left}</b><small>left</small></span>`;
+    ${counter}`;
 }

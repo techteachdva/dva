@@ -19,7 +19,6 @@ import { showSomniaChangelogModal } from "../meta/changelog.js";
 import {
   renderDreamerPicker,
   renderSetupIntro,
-  hideDreamerDetailTooltip,
   hideUtilityModal,
 } from "../ui/ui.js";
 import { hasSeenTutorial, hasCompletedBasicTutorial, hasUsedGentleStart } from "../meta/guide.js";
@@ -71,8 +70,9 @@ async function runMenuSplash(startedAt) {
   await dissolveMenuSplash();
 }
 
+/** Ainmos is played by one Dreamer. */
 function playerCount() {
-  return Number(document.getElementById("setup-players").value);
+  return 1;
 }
 
 function updateBeginDreamButton() {
@@ -182,43 +182,15 @@ function applyFirstVisitMenu() {
     advanced.setAttribute("aria-disabled", basicDone ? "false" : "true");
   }
   if (hint) {
-    hint.innerHTML = basicDone
-      ? "Replay <strong>Tutorial</strong> or <strong>Advanced Tutorial</strong> any time. Open <strong>?</strong> during a dream for the Dream Guide."
-      : (firstVisit
-        ? "New here? <strong>Tutorial</strong> is two guided rounds. You can also <strong>Begin Dreaming</strong>, or leave the lesson early and come back. The longer night unlocks when you finish."
-        : "Tutorial Mode walks you through two guided rounds. Finish it to unlock the Advanced Tutorial. Open <strong>?</strong> anytime for rules.");
+    hint.innerHTML = "Pick one Dreamer and <strong>Begin Dreaming</strong>. New here? <strong>First Night</strong> is a real Daydream with gentle hints until the first Boss falls.";
   }
   if (firstVisit && tutorial) {
     tutorial.title = "Two guided rounds with step-by-step coaching";
   }
 }
 
-function refreshLengthOptions() {
-  const solo = playerCount() === 1;
-  const select = document.getElementById("setup-length");
-  const hint = document.getElementById("setup-length-hint");
-  const labels = solo
-    ? {
-      daydream: "Daydream — 4 pts · 11 Dreams",
-      nap: "Nap — 6 pts · 14 Dreams",
-      deep: "Deep Sleep — 12 pts · 18 Dreams",
-    }
-    : {
-      daydream: "Daydream — 8 pts · 11 Dreams",
-      nap: "Nap — 12 pts · 14 Dreams",
-      deep: "Deep Sleep — 24 pts · 18 Dreams",
-    };
-  if (select) {
-    [...select.options].forEach((opt) => {
-      if (labels[opt.value]) opt.textContent = labels[opt.value];
-    });
-  }
-  if (hint) {
-    hint.textContent = solo
-      ? "One Dreamer. A closer goal: 4, 6, or 12 points. The Death Clock is still 6. The first Meet tax is ignored."
-      : "Same rules on every night. Daydream is the first one. Nap and Deep Sleep ask for more points.";
-  }
-}
+/** The length labels live in index.html; nothing changes with the table size any more. */
+function refreshLengthOptions() {}
 
 const BOARD_MODE_KEY = "ainmos.boardMode";
 const BOARD_MODE_HINTS = {
@@ -263,12 +235,6 @@ function bindSetup() {
   document.getElementById("btn-start").addEventListener("click", () => launchGame());
   document.getElementById("btn-continue")?.addEventListener("click", () => {
     launchGame({ resumeSaveId: "autosave" });
-  });
-  document.getElementById("setup-players").addEventListener("change", () => {
-    selectedDreamerIds = [];
-    hideDreamerDetailTooltip();
-    refreshLengthOptions();
-    refreshDreamerPicker();
   });
   document.getElementById("btn-tutorial-mode")?.addEventListener("click", () => launchTutorialMode("basic"));
   document.getElementById("btn-advanced-tutorial")?.addEventListener("click", () => {
@@ -462,13 +428,9 @@ function bindModal() {
   document.querySelector("#utility-modal .utility-close")?.addEventListener("click", hideUtilityModal);
 }
 
+/** One Dreamer per run: picking another swaps to it. */
 function toggleDreamer(id) {
-  const count = playerCount();
-  if (selectedDreamerIds.includes(id)) {
-    selectedDreamerIds = selectedDreamerIds.filter((x) => x !== id);
-  } else if (selectedDreamerIds.length < count) {
-    selectedDreamerIds.push(id);
-  }
+  selectedDreamerIds = selectedDreamerIds.includes(id) ? [] : [id];
   refreshDreamerPicker();
 }
 

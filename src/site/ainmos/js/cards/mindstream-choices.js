@@ -494,40 +494,33 @@ export function beginDreamCardChoice(state, card, player, helpers = {}) {
 
   const resolution = getDreamResolution(card.refId || card.id);
   if (!resolution) return false;
-  const bright = assessDreamGood(state, player, resolution);
 
+  // Ainmos: a Dream is a condition you survive. No Bright side, no choice:
+  // one full-screen card, one button, and the Dream takes its toll.
   state.pendingMindstreamChoice = {
     kind: "dream",
     ui: "mindstream-fullscreen",
+    single: true,
     cardId: card.id,
     dreamId: card.id,
     playerId: player.id,
     card,
     title: card.name,
-    message: resolutionRulesText(resolution) || card.text || "The Dream demands a choice.",
+    message: resolution.bad.hint || card.text || "The Dream takes its toll.",
     suit: "lucidity",
     choices: [
-      {
-        id: "good",
-        role: "good",
-        shape: "lucidity",
-        label: resolution.good.label,
-        hint: resolution.good.hint,
-        disabled: !bright.ok,
-        disabledReason: bright.reason,
-      },
       {
         id: "bad",
         role: "bad",
         shape: "willpower",
         label: resolution.bad.label,
-        hint: `${resolution.bad.hint} · Free`,
+        hint: "Endure it",
         disabled: false,
       },
     ],
     helpers,
   };
-  logMoment(state, `${card.name} — choose your path.`);
+  logMoment(state, `${card.name}: ${resolution.bad.label}.`);
   return true;
 }
 
@@ -735,7 +728,7 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
       state.pendingMindstreamChoice = null;
       return true;
     }
-    const sideId = choiceId === "good" ? "good" : "bad";
+    const sideId = "bad"; // Ainmos: every Dream resolves its toll.
     if (state.tutorialFlags?.forceDreamDim && sideId === "good") {
       addLog(state, "Tutorial — take Dim. Bright spends cards this lesson still needs.");
       return false;

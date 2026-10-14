@@ -42,8 +42,6 @@ export function buildRunSummary(state) {
 
   const formsPlayed = stats.formsPlayed || {};
   const favorite = Object.entries(formsPlayed).sort((a, b) => b[1] - a[1])[0];
-  const byDreamer = Object.values(stats.byDreamer || {});
-  const mvp = byDreamer.sort((a, b) => b.won - a.won)[0];
 
   return {
     won: state.status === "won",
@@ -53,7 +51,6 @@ export function buildRunSummary(state) {
     ladder,
     bestSpread: stats.bestSpread || null,
     favoriteForm: favorite ? { name: formById(favorite[0])?.name, count: favorite[1], level: formLevel(state, favorite[0]) } : null,
-    mvp: mvp && mvp.won ? mvp : null,
     archetypes: state.players.flatMap((p) => (p.acquiredArchetypes || []).map((a) => ({ name: a.name, points: a.points, image: a.image }))),
     boons: takenBoons(state).map((b) => b.name),
     grid: [
@@ -103,7 +100,6 @@ export function runSummaryHtml(summary, breakdown) {
           <h4>Best spread</h4>
           ${bestHtml}
           ${summary.favoriteForm ? `<h4>Favorite Form</h4><p>${esc(summary.favoriteForm.name)}, played ${summary.favoriteForm.count}× (level ${summary.favoriteForm.level})</p>` : ""}
-          ${summary.mvp ? `<h4>Most fights won</h4><p>${esc(summary.mvp.name)}: ${summary.mvp.won}</p>` : ""}
           ${summary.boons.length ? `<h4>Boons</h4><p>${summary.boons.map(esc).join(" · ")}</p>` : ""}
           ${summary.archetypes.length ? `<h4>Archetypes</h4><p>${summary.archetypes.map((a) => `${esc(a.name)} (${a.points})`).join(" · ")}</p>` : ""}
         </div>
@@ -118,7 +114,6 @@ export function runSummaryHtml(summary, breakdown) {
         <li>Best spread <strong>${b.bestSpread ?? 0}</strong></li>
         <li>Wake <strong>${b.escapeBonus ?? 0}</strong></li>
         <li>Objects, tokens, allies <strong>${(b.objects || 0) + (b.tokens || 0) + (b.allies || 0)}</strong></li>
-        <li>Dreamer table <strong>${b.dreamerBonus ?? 0}</strong></li>
       </ul>
     </section>`;
 }

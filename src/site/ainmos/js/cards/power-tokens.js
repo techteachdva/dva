@@ -8,7 +8,7 @@ export const MAX_POWER_TOKEN_POOL = 24;
 function log(state, message) {
   if (!state?.log) return;
   state.log.unshift(message);
-  state.log = state.log.slice(0, 40);
+  state.log = state.log.slice(0, globalThis.__AINMOS_LOG_CAP || 40);
 }
 
 export function powerTokensHeld(state) {

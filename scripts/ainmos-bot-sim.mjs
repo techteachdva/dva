@@ -612,9 +612,18 @@ function stepToward(state, player, targetId) {
   return best;
 }
 
+/** Ainmos solo: a standing beast bleeds the Waking Mind every dusk, so hunt the nearest one first. */
+function huntTarget(state, player) {
+  const here = landscapeById(state, player.landscapeId);
+  if (!here || psycheCards(player).length < 2) return null;
+  const tiles = state.board.filter((tile) => tile.revealed && !tile.wasteland && beastsOn(tile).length);
+  return tiles.length ? closest(here, tiles).id : null;
+}
+
 function destination(state, player) {
   const here = landscapeById(state, player.landscapeId);
-  if (!state.finalRecurrence && state.acquiredPoints >= state.goalPoints) return "bed";
+  const hunt = huntTarget(state, player);
+  if (hunt) return hunt;
   if (!state.finalRecurrence && subPsyche(state) > 0 && !rememberObject(player, "persistent")
     && (mindRunway(state) <= LOW_RUNWAY || handSurplus(player) >= 2)) {
     const mem = nearestMemoryTile(state, player);
@@ -1002,11 +1011,15 @@ function lossReason(state, steps, error) {
   return "other";
 }
 
-function playGame(playerCount, index) {
-  const selectedDreamers = ROSTERS[playerCount].map((id) => DREAMER_BY_ID[id]);
+/** Ainmos is solo: each game is one Dreamer, rotating through the roster. */
+const SOLO_DREAMERS = DATA.dreamers.filter((d) => !d.hidden);
+
+function playGame(lengthKey, index) {
+  const dreamer = SOLO_DREAMERS[index % SOLO_DREAMERS.length];
+  const selectedDreamers = [dreamer];
   const state = createInitialState(DATA, {
-    lengthKey: "nap",
-    seed: `nap-${playerCount}p-${index}`,
+    lengthKey,
+    seed: `${lengthKey}-solo-${index}`,
     selectedDreamers,
     boardMode: BOARD_MODE,
   });
@@ -1073,6 +1086,12 @@ function playGame(playerCount, index) {
     state.status = "lost";
   }
   const won = state.status === "won";
+  // AINMOS_TRACE=1 prints the whole log of game 1 at each length.
+  if (process.env.AINMOS_TRACE && index === 1) {
+    console.log(`
+--- trace ${lengthKey} ${state.players[0]?.dreamer?.id} ${state.status} ---`);
+    (state.log || []).forEach((line) => console.log(typeof line === "string" ? line : (line.text || JSON.stringify(line))));
+  }
   return {
     won,
     reason: won ? "win" : lossReason(state, steps, error),
@@ -1092,6 +1111,11 @@ function playGame(playerCount, index) {
     insights: state.botShop?.insights || 0,
     formLevels: Object.values(state.formLevels || {}).reduce((sum, level) => sum + (level - 1), 0),
     bossesDefeated: (state.bossesDefeated || []).length,
+    dreamer: state.players[0]?.dreamer?.id || "",
+    goalMet: !!state.archetypeGoalReached,
+    finalDown: (state.bossesDefeated || []).includes(state.finalBossId),
+    fightsWon: state.runStats?.fightsWon || 0,
+    fightsLost: state.runStats?.fightsLost || 0,
     nightSpawns: Object.values(state.nightSpawns || {}).flat().filter((s) => !s.boss).length,
     boons: (state.boons || []).length,
     remember: { ...(state.rememberStats || {}) },
@@ -1153,6 +1177,8 @@ function summarize(rows) {
     avgFormLevelsGained: +mean(rows.map((r) => r.formLevels || 0)).toFixed(2),
     avgBossesDefeated: +mean(rows.map((r) => r.bossesDefeated || 0)).toFixed(2),
     avgBeastSpawns: +mean(rows.map((r) => r.nightSpawns || 0)).toFixed(2),
+    avgFightsWon: +mean(rows.map((r) => r.fightsWon || 0)).toFixed(2),
+    avgFightsLost: +mean(rows.map((r) => r.fightsLost || 0)).toFixed(2),
     avgBoons: +mean(rows.map((r) => r.boons || 0)).toFixed(2),
     rememberBySource: rows.reduce((acc, r) => {
       for (const [k, v] of Object.entries(r.remember || {})) acc[k] = +(((acc[k] || 0) + v / rows.length)).toFixed(2);
@@ -1170,10 +1196,11 @@ function argPer() {
 }
 
 const per = argPer();
+if (process.env.AINMOS_TRACE) globalThis.__AINMOS_LOG_CAP = 5000;
 const started = Date.now();
 const byPlayers = {};
 const samples = {};
-for (const count of [2, 3, 4]) {
+for (const count of ["daydream", "nap", "deep"]) {
   const rows = [];
   const otherTails = [];
   const errorSamples = [];
@@ -1184,11 +1211,22 @@ for (const count of [2, 3, 4]) {
     if (row.error && errorSamples.length < 5) errorSamples.push(row.error);
     if ((i + 1) % 25 === 0 || i + 1 === per) {
       const wins = rows.filter((r) => r.won).length;
-      process.stdout.write(`\r${count}p ${i + 1}/${per}  wins ${wins}  ${((Date.now() - started) / 1000).toFixed(0)}s`);
+      process.stdout.write(`\r${count} ${i + 1}/${per}  wins ${wins}  ${((Date.now() - started) / 1000).toFixed(0)}s`);
     }
   }
   process.stdout.write("\n");
   byPlayers[count] = summarize(rows);
+  byPlayers[count].byDreamer = Object.fromEntries(SOLO_DREAMERS.map((d) => {
+    const mine = rows.filter((r) => r.dreamer === d.id);
+    return [d.id, mine.length ? +(mine.filter((r) => r.won).length / mine.length).toFixed(2) : null];
+  }));
+  const lost = rows.filter((r) => !r.won);
+  byPlayers[count].lossSplit = {
+    goalOnly: lost.filter((r) => !r.goalMet && r.finalDown).length,
+    bossOnly: lost.filter((r) => r.goalMet && !r.finalDown).length,
+    both: lost.filter((r) => !r.goalMet && !r.finalDown).length,
+  };
+  byPlayers[count].lossReasons = rows.filter((r) => !r.won).reduce((acc, r) => ({ ...acc, [r.reason]: (acc[r.reason] || 0) + 1 }), {});
   samples[count] = { otherTails, errorSamples };
 }
 

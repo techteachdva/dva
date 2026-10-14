@@ -81,7 +81,7 @@ const TERMS = [
     term: "Bed",
     group: "places",
     aka: "the bed",
-    text: "The center hex. It starts face-up and can never be Forgotten. Its Meet action is Dream Onward, once per table: on a Fixed Board, Reveal 1 Landscape; on a Freeform Board, flip the top tile of the deck and place it free or put it back. When your points are done, every living Dreamer must stand on The Bed to wake. Bosses spawn here.",
+    text: "The center hex. It starts face-up and can never be Forgotten. Its Meet action is Dream Onward, once per Meet: flip the top tile of the deck and place it, or put it back. Each Ante's Mini-Boss rises here.",
   },
   {
     term: "Dreamscape Vault",
@@ -93,13 +93,13 @@ const TERMS = [
     term: "Boss",
     group: "meet",
     aka: "cerberus double leviathan",
-    text: "Cerberus, Double, and Leviathan. Each is Power 11 and appears on The Bed, usually on Reveal rounds 3, 6, and 9. At the start of Meet, a boss steps one hex toward the nearest Dreamer unless a Dreamer is already on its hex. You Accept or Repress them like any other Dreambeast. Cerberus on Accept Represses the top 3 Psyche. Double on Accept Forgets Day in the Life and Scary Classroom.",
+    text: "The last card of each Ante. A Boss lands on a random placed Landscape, then stalks one hex toward you at the start of each Meet. Each bends one rule while it stands. Defeat it to clear the Ante and choose a Boon. The final Boss is the top of the night's ladder.",
   },
   {
     term: "Bright",
     group: "cards",
     aka: "good path toll gate",
-    text: "The paid path on a Dream or Event. Dim is the other path, and it is free. On a Dream, Bright stays shut until its condition is true, and it costs a Repress, a discarded Psyche, or a Forgotten Landscape. On an Event, Bright opens when a Landscape named on the card is revealed. If it is not, you may Dream it open: pay Bright's cost plus 1 Lucidity Psyche to Reveal that Landscape, then take Bright. Bright pays what it prints. The card remembers which path you chose.",
+    text: "The paid path on an Event. Bright opens when a Landscape named on the card is placed. If it is not, you may Dream it open: pay Bright's cost plus 1 Lucidity Psyche to bring that Landscape in, then take Bright. Dreams have no Bright side.",
   },
   {
     term: "Caregiver",
@@ -131,7 +131,7 @@ const TERMS = [
   {
     term: "Death Clock",
     group: "win",
-    text: "A shared count of deaths. It starts at 0. The sixth death ends the game at once. The Dreamer who takes that tick does not redraw.",
+    text: "A count of deaths. It starts at 0. The sixth death ends the run at once.",
   },
   {
     term: "Deep Sleep",
@@ -142,7 +142,7 @@ const TERMS = [
     term: "Dim",
     group: "cards",
     aka: "bad path",
-    text: "The free path on a Dream or Event. You can always choose it. It does not pay Bright's toll. On an Event, Dim Represses a card or Forgets Landscapes, and it gives no reward. The card remembers that you chose Dim.",
+    text: "The free path on an Event. You can always choose it. It Represses a card or Forgets Landscapes and gives no reward. Every Dream is Dim: you endure it.",
   },
   {
     term: "Discard",
@@ -157,24 +157,36 @@ const TERMS = [
   {
     term: "Draw Dream",
     group: "round",
-    text: "During Reveal, draw the top Dream and resolve its Bright or Dim choice. Do this before spending Lucidity. The button sits to the left of Next Phase. The Head Dreamer is the one named on that draw.",
+    text: "Each round opens on its Dream. It is drawn for you at the start of Reveal, and you endure it before spending Lucidity.",
   },
   {
     term: "Dream",
     group: "cards",
-    text: "One card from the Dream Deck, drawn at the start of Reveal. Every Dream, including the first, offers Bright and Dim. Bright costs something and may be shut. Dim is free. Only the path you choose happens.",
+    text: "One card from the Dream Deck, drawn at the start of each round. A Dream is a condition you survive: it Represses, Forgets, or spawns, and there is no way around it. The second Dream of each Ante also brings that Ante's Mini-Boss to The Bed.",
   },
   {
     term: "Dream Deck",
     group: "win",
     aka: "clock",
-    text: "The round clock, shown as the Night Bar across the top. It is laid out in Antes: two Dreams, then a Boss. Daydream has 4 Antes, Nap 7, Deep Sleep 10. When the final Boss round ends, the night is over.",
+    text: "The round clock, shown as the Night Bar across the top. It is laid out in Antes: a Dream, a Dream with the Mini-Boss, then the Boss. Daydream has 4 Antes, Nap 7, Deep Sleep 10. When it runs dry, the Long Night begins.",
   },
   {
     term: "Ante",
     group: "win",
     aka: "night bar",
-    text: "One step of the night: two Dreams, then a Boss Dream. The Boss is face up on the Night Bar from the start. Defeat it to clear the Ante and choose a Boon. The round after a Boss arrives is dawn: the Waking Mind reshuffles and everyone draws 3.",
+    text: "One step of the night: a Dream, a Dream that brings the Mini-Boss to The Bed, then a Boss Dream. Mini-Boss and Boss are face up on the Night Bar from the start. Defeat the Boss to clear the Ante and choose a Boon. The round after a Boss arrives is dawn: the Waking Mind reshuffles and you draw 3.",
+  },
+  {
+    term: "Mini-Boss",
+    group: "win",
+    aka: "mini boss",
+    text: "An ordinary Dreambeast that guards an Ante. It rises on The Bed with the Ante's second Dream, face up on the Night Bar from the start. Its Power is two under that Ante's Boss (2 in the first Ante). Beat it before it bleeds you at dusk.",
+  },
+  {
+    term: "Long Night",
+    group: "win",
+    aka: "deck empty",
+    text: "When the Dream Deck runs dry and you have not woken, the night goes on. Each dusk Represses 2 more from the Waking Mind than the last (2, then 4, then 6), on top of 1 for every beast still standing. Beat the final Boss and meet the Archetype goal before you forget yourself.",
   },
   {
     term: "Boss Ladder",
@@ -216,12 +228,12 @@ const TERMS = [
     term: "Dreambeast",
     group: "meet",
     aka: "encounter beast",
-    text: "A creature on a Landscape. It has one Power, a suit, and a Fantasy or Nightmare kind. During Meet, the Dreamer standing on its hex may Accept or Repress it. A beast left on the board at round end Represses 1 Psyche from the top of the Psyche Deck. It stays until you win a fight against it.",
+    text: "A creature on a Landscape. It has one Power, a suit, and a Fantasy or Nightmare kind. Dreambeasts arrive only on the Dream Deck timer: Mini-Bosses, Bosses, and a few Dreams. During Meet, fight the one on your hex. A beast left standing at dusk Represses 1 Psyche from the Waking Mind. It stays until you beat it.",
   },
   {
     term: "Dreamer",
     group: "people",
-    text: "A player. The table picks 2, 3, or 4. Each has Lucidity, Elasticity, and Willpower that add up to 3, a free passive once a round, and a power that costs 1 Power Token. You share one map, one Dream Deck, and one fate.",
+    text: "You. Choose one at the start of the run. Each has Lucidity, Elasticity, and Willpower that add up to 3, a free passive once a round, and a power that costs 1 Power Token.",
   },
   {
     term: "Dreamscape",
@@ -242,7 +254,7 @@ const TERMS = [
   {
     term: "Event",
     group: "cards",
-    text: "A Mindstream card that is not a Dreambeast, an Object draw, or a Power Token. It names one or two Landscapes. Bright is open only while one of those Landscapes is revealed. Dim Represses something or Forgets a Landscape.",
+    text: "A Mindstream card that is not a Power Token. It names one or two Landscapes. Bright is open only while one of those Landscapes is placed. Dim Represses something or Forgets a Landscape.",
   },
   {
     term: "Explore",
@@ -280,7 +292,7 @@ const TERMS = [
   {
     term: "Give Turn",
     group: "round",
-    text: "Hand the rest of the shared Reveals, moves, or Meet actions to a Dreamer you choose. Pass Turn sends them clockwise instead.",
+    text: "A table rule from Somnia. Ainmos is played by one Dreamer, so every action is yours.",
   },
   {
     term: "Hand limit",
@@ -291,7 +303,7 @@ const TERMS = [
     term: "Head Dreamer",
     group: "round",
     aka: "head star",
-    text: "The Dreamer marked with a star. They are the one named when the round's Dream is drawn. At the end of the round the star moves clockwise to the next living Dreamer.",
+    text: "A table rule from Somnia. In Ainmos you are the only Dreamer, so you draw every Dream.",
   },
   {
     term: "Hold the Line",
@@ -352,12 +364,12 @@ const TERMS = [
     term: "Meet",
     group: "round",
     aka: "meet phase",
-    text: "The third phase. At the start, each boss steps toward the nearest Dreamer. One Dreamer spends 1 Willpower, or 1 Power Token (that counts as 1 plus their Willpower). The table shares that many actions. Spend them to fight, Draw Mindstream, use a Landscape action, or activate a Persistent Object. The Dreamer who opened takes the first action, then Pass Turn moves clockwise. Each unused action draws 1 Psyche.",
+    text: "The third phase. At the start, each Boss steps toward you. Spend 1 Willpower, or 1 Power Token (that counts as 1 plus your Willpower). You get that many actions: fight the beast on your hex (as often as you have actions), Draw Mindstream, use your Landscape's action, or tap a Persistent Object. Each unused action draws 1 Psyche.",
   },
   {
     term: "Mindstream",
     group: "cards",
-    text: "Three decks, one per suit. They hold Dreambeasts, Events, Power Token cards, and extra Dream draws. Objects are not in these decks. Draw Mindstream costs 1 Meet action and is repeatable. If a suit is entirely in the Subconscious, with nothing left in its deck, discard, or in play, the table loses.",
+    text: "Three decks, one per suit, of Events and Power Token cards. No Dreambeasts live here. Draw Mindstream costs 1 Meet action and is repeatable. If a suit is entirely in the Subconscious, with nothing left in its deck, discard, or in play, you lose.",
   },
   {
     term: "Must-play",
@@ -405,7 +417,7 @@ const TERMS = [
     term: "Pass Turn",
     group: "round",
     aka: "pass token",
-    text: "Send the action clockwise without spending the budget. After the Dreamer who opened the phase takes the first action, Pass Turn walks the remaining Reveals, moves, or Meet actions around the table.",
+    text: "A table rule from Somnia. Ainmos is played by one Dreamer, so every action is yours.",
   },
   {
     term: "Persistent",
@@ -416,7 +428,7 @@ const TERMS = [
     term: "Power",
     group: "meet",
     aka: "beast power dreamer power dice",
-    text: "How many dice a side rolls. A Dreambeast has one Power, used for both Accept and Repress. Yours is the Psyche you play, plus your matching stat, affinity, suit match, jewelry and sticks, a doubled body card, Hold the Line, and up to 3 Power Tokens. Recommended Power is the beast's Power + 2. You may play less.",
+    text: "How many dice a side rolls. A Dreambeast has one Power. Yours is the Psyche you play, plus your matching stat, affinity, suit match, your Dream Form, and up to 3 Power Tokens. Recommended Power is the beast's Power + 2. You may play less. Ties go to you.",
   },
   {
     term: "Power Token",
@@ -461,7 +473,7 @@ const TERMS = [
     term: "Reveal",
     group: "round",
     aka: "reveal phase",
-    text: "The first phase. Draw the Dream and choose Bright or Dim. Then one Dreamer spends 1 Lucidity, or 1 Power Token (that counts as 1 plus their Lucidity). Each Reveal places one Landscape from the Dreamscape Vault on a glowing slot beside the dream. Each unused Reveal draws 1 Psyche, passed around the table.",
+    text: "The first phase. The Dream is drawn and endured. Then spend 1 Lucidity, or 1 Power Token (that counts as 1 plus your Lucidity). Each Reveal places one Landscape from the Dreamscape Vault on a glowing slot beside the dream. Each unused Reveal draws 1 Psyche.",
   },
   {
     term: "Ruler",
@@ -492,7 +504,7 @@ const TERMS = [
   {
     term: "Trade",
     group: "meet",
-    text: "Free during Meet. The other Dreamer must be on your hex or next to it. Each of you may offer up to 3 Psyche. Both hands are visible.",
+    text: "A table rule from Somnia. Ainmos is played by one Dreamer, so there is no one to trade with.",
   },
   {
     term: "Visionary",
@@ -531,7 +543,7 @@ const TERMS = [
   {
     term: "You Never Wake Up",
     group: "win",
-    text: "The last card of the Dream Deck. Drawing it loses the game.",
+    text: "How a night is lost: the Waking Mind runs dry, or the Death Clock strikes six. The Long Night makes the first one come fast.",
   },
   {
     term: "Awards",
@@ -551,7 +563,7 @@ const TERMS = [
   {
     term: "City",
     group: "places",
-    text: "A Willpower Landscape. Once this Meet, draw 1 Psyche.",
+    text: "A Willpower Landscape. Once this Meet, move up to 2 Dreambeasts 1 Landscape each: lure a Boss in, or push a beast away.",
   },
   {
     term: "Day in the Life",
@@ -601,7 +613,7 @@ const TERMS = [
   {
     term: "Lava",
     group: "places",
-    text: "A Willpower Landscape. Once this Meet, spawn a Dreambeast: cycle a Mindstream until a beast appears, place it on a matching Landscape, and discard the rest.",
+    text: "A Willpower Landscape. Once this Meet, move up to 2 Dreambeasts 1 Landscape each: lure a Boss in, or push a beast away.",
   },
   {
     term: "Road",
@@ -667,29 +679,28 @@ function escapeHtml(value) {
 export function playerPrimerHtml() {
   return `
     <div class="player-primer">
-      <p class="player-primer-lead">2–4 Dreamers, one team. Build the dream, grow stronger, and climb a ladder of Bosses. Defeat the night's <strong>final Boss</strong> with your Archetype goal met to wake.</p>
+      <p class="player-primer-lead">One Dreamer, one night. Build the dream, beat a ladder of Bosses, and wake by felling the <strong>final Boss</strong> with your Archetype goal met.</p>
       <div class="player-primer-grid">
         <section>
           <h3>The night</h3>
-          <p>A run of <strong>Antes</strong>: two Dreams, then a <strong>Boss</strong> that bends one rule. The Night Bar shows them all. Beat a Boss to choose a <strong>Boon</strong>; at dawn everyone draws 3.</p>
-          <p>Each round is <strong>Reveal</strong>, <strong>Explore</strong>, <strong>Meet</strong>. One Dreamer spends 1 card of that suit: its value plus their stat is the table's shared actions.</p>
+          <p>Each <strong>Ante</strong> is three rounds: a Dream, a Dream that brings a <strong>Mini-Boss</strong> to The Bed, then a <strong>Boss</strong> on a random Landscape. The Night Bar shows them all.</p>
+          <p>Every <strong>Dream</strong> hurts. Endure it, then play the round.</p>
         </section>
         <section>
-          <h3>Build and fight</h3>
-          <p><strong>Reveal:</strong> each Lucidity places a Landscape from the Dreamscape Vault beside the dream.</p>
-          <p><strong>Fight</strong> with 1–3 Psyche and roll that many d6; 5s and 6s succeed. A pattern makes a <strong>Dream Form</strong> (Echo, Ladder, Chord, Trinity, Trifecta, Unity) for extra dice.</p>
+          <h3>Each round</h3>
+          <p><strong>Reveal</strong>, <strong>Explore</strong>, <strong>Meet</strong>. Spend 1 card of that suit: its value plus your stat is your budget. Place Landscapes, walk, then fight.</p>
+          <p><strong>Fight</strong> with 1–3 Psyche: roll that many d6, 5s and 6s succeed, ties go to you. Patterns make <strong>Dream Forms</strong> for extra dice.</p>
         </section>
         <section>
-          <h3>Between rounds</h3>
-          <p>The <strong>Lost &amp; Found</strong> sells Objects for Psyche of their suit, and one Insight that levels a Form or upgrades a card.</p>
-          <p><strong>Lose:</strong> the Waking Mind runs dry, the sixth death, or the last Boss round ends first.</p>
+          <h3>Grow and survive</h3>
+          <p>Beat a Boss for a <strong>Boon</strong>. Shop the <strong>Lost &amp; Found</strong> between rounds. Each beast left at dusk bleeds your Waking Mind.</p>
+          <p>When the Dream Deck runs dry, the <strong>Long Night</strong> bleeds you harder every dusk until you wake or forget.</p>
           <p class="player-primer-more">Psyche is your health and your coin. In game, <strong>?</strong> explains every rule.</p>
         </section>
       </div>
     </div>
   `;
 }
-
 
 function termHay(entry) {
   return `${entry.term} ${entry.aka || ""} ${entry.text}`.toLowerCase();

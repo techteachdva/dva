@@ -27,7 +27,7 @@ const HINTS = [
   {
     id: "welcome",
     title: "Welcome to Ainmos",
-    text: "A night is a run of Antes: two Dreams, then a Boss. The Night Bar across the top shows every card, with each Boss face up. Answer the Dream, then spend Lucidity to build the dream around The Bed.",
+    text: "A night is a run of Antes: a Dream, a Dream with a Mini-Boss, then a Boss. The Night Bar across the top shows them all. Every Dream hurts; endure it, then spend Lucidity to build the dream around The Bed.",
     when: (s) => s.round === 1 && (s.board || []).length <= 1,
   },
   {
@@ -55,13 +55,13 @@ const HINTS = [
   {
     id: "explore",
     title: "Walk the dream",
-    text: "Explore moves your Dreamers one step at a time. Wasteland costs a Psyche, so keep the dream tight.",
+    text: "Explore moves you one step at a time. Head for the beasts: each one standing at dusk bleeds your Waking Mind. Wasteland costs a Psyche.",
     when: (s) => getPhase(s) === "Explore",
   },
   {
     id: "meet",
     title: "Meet",
-    text: "Fight the Dreambeast on your hex with 1 to 3 Psyche. Aim for its Power + 2. Draw Mindstream on a Landscape to bring a beast out.",
+    text: "Fight the Dreambeast on your hex with 1 to 3 Psyche. Aim for its Power + 2; ties go to you. You can fight again as long as you have actions.",
     when: (s) => getPhase(s) === "Meet",
   },
   {
@@ -85,13 +85,19 @@ const HINTS = [
   {
     id: "boss-ahead",
     title: "The Boss is next",
-    text: "The next Dream is the Winged Turtle: three stacked fights, Power 2, then 3, then 4. Hover a Boss on the Night Bar to read its twist.",
+    text: "The next Dream is the Winged Turtle: three stacked fights, Power 1, then 2, then 3. Hover a Boss on the Night Bar to read its twist.",
     when: (s) => next(s)?.boss && !s.dreamDrawn,
   },
   {
+    id: "mini-boss",
+    title: "A Mini-Boss rises",
+    text: "The Ante's second Dream brings a Mini-Boss to The Bed. It is weaker than the Boss, but it bleeds you every dusk it stands. Beat it while it is close.",
+    when: (s) => (s.board || []).some((t) => (t.encounters || []).some((e) => e?.miniBoss)),
+  },
+  {
     id: "boss-arrived",
-    title: "A Boss stands on The Bed",
-    text: "Every Boss bends one rule while it stands. Defeat it to clear the Ante and choose a Boon.",
+    title: "A Boss has woken",
+    text: "Bosses land on a random Landscape and stalk toward you each Meet. Each bends one rule while it stands. Defeat it to clear the Ante and choose a Boon.",
     when: (s) => (s.board || []).some((t) => (t.encounters || []).some((e) => e?.boss)),
   },
   {

@@ -1,6 +1,6 @@
 /**
  * Dreambeast dice battle — Accept/Reject resolution (Ainmos 28.0).
- * Each side rolls Nd6; 5–6 is a success. Most successes wins. Ties favor the beast.
+ * Each side rolls Nd6; 5–6 is a success. Most successes wins. Ainmos: ties go to the Dreamer.
  * Dice spin freely, then brake onto a face. 5s and 6s light up.
  */
 import { playSfx } from "../audio/audio.js";
@@ -228,17 +228,17 @@ export function playDiceBattle(opts) {
 
   if (forceWinner === "dreamer") {
     let guard = 12;
-    while (countSuccesses(dreamerFaces) <= countSuccesses(beastFaces) && guard-- > 0) {
+    while (countSuccesses(dreamerFaces) < countSuccesses(beastFaces) && guard-- > 0) {
       dreamerFaces = rollD6(dCount);
       beastFaces = rollD6(bCount);
     }
-    if (countSuccesses(dreamerFaces) <= countSuccesses(beastFaces)) {
+    if (countSuccesses(dreamerFaces) < countSuccesses(beastFaces)) {
       dreamerFaces = dreamerFaces.map(() => 6);
       beastFaces = beastFaces.map(() => 1);
     }
   } else if (forceWinner === "beast") {
     let guard = 12;
-    while (countSuccesses(dreamerFaces) > countSuccesses(beastFaces) && guard-- > 0) {
+    while (countSuccesses(dreamerFaces) >= countSuccesses(beastFaces) && guard-- > 0) {
       dreamerFaces = rollD6(dCount);
       beastFaces = rollD6(bCount);
     }
@@ -259,7 +259,7 @@ export function playDiceBattle(opts) {
 
   let dreamerSuccesses = countSuccesses(dreamerFaces);
   let beastSuccesses = countSuccesses(beastFaces);
-  let dreamerWins = dreamerSuccesses > beastSuccesses;
+  let dreamerWins = dreamerSuccesses >= beastSuccesses;
   const result = () => ({
     dreamerWins,
     dreamerSuccesses,
@@ -389,7 +389,7 @@ export function playDiceBattle(opts) {
   const recount = () => {
     dreamerSuccesses = countSuccesses(dreamerFaces);
     beastSuccesses = countSuccesses(beastFaces);
-    dreamerWins = dreamerSuccesses > beastSuccesses;
+    dreamerWins = dreamerSuccesses >= beastSuccesses;
     if (activeBattle) activeBattle.result = result();
     if (scoreD) scoreD.textContent = String(dreamerSuccesses);
     if (scoreB) scoreB.textContent = String(beastSuccesses);

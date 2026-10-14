@@ -1,4 +1,4 @@
-import { ladderForLength, bossDreamCard, DREAMS_PER_ANTE } from "../encounters/boss-ladder.js";
+import { ladderForLength, bossDreamCard, DREAMS_PER_ANTE, BOSS_LADDER, miniBossPower } from "../encounters/boss-ladder.js";
 import { random } from "./rng.js";
 import { getEventResolution } from "../effects/event-resolutions.js";
 import { getDreamResolution } from "../cards/dream-resolutions.js";
@@ -120,11 +120,14 @@ const MINDSTREAM_SUITS = ["lucidity", "elasticity", "willpower"];
 
 /** Canonical Mindstream deck: 56 cards per suit. Objects live in their own suited decks. */
 export const MINDSTREAM_COMPOSITION = {
-  dreambeasts: 10,
+  dreambeasts: 0,
   events: 35,
   powerToken: 8,
-  drawDream: 3,
+  drawDream: 0,
 };
+
+/** Events that call up a Dreambeast stay out of Ainmos Mindstream: beasts come on the Dream Deck timer. */
+const SPAWNING_EVENT_TEXT = /\bspawn\b|draw 2 (dreambeasts|encounters)/i;
 export const MINDSTREAM_DECK_SIZE = Object.values(MINDSTREAM_COMPOSITION).reduce((sum, n) => sum + n, 0);
 
 export function shuffle(array) {
@@ -339,9 +342,10 @@ export function buildMindstreamDecks(mindstreamData, dreambeasts = []) {
       deck.push(mindstreamDreambeastCard(beast, suit));
     });
 
+    const calmEvents = events.filter((evt) => !SPAWNING_EVENT_TEXT.test(evt.text || ""));
     pickWeightedUnique(
-      events,
-      MINDSTREAM_COMPOSITION.events,
+      calmEvents,
+      Math.min(MINDSTREAM_COMPOSITION.events, calmEvents.length),
       (evt) => !MINDSTREAM_EVENT_BOON_IDS.has(evt.id),
     ).forEach((evt) => {
       deck.push(mindstreamEventCard(evt, suit));
@@ -362,11 +366,14 @@ export function buildMindstreamDecks(mindstreamData, dreambeasts = []) {
 }
 
 /** One copy of every Object of each suit. Accepting a Dreambeast draws from its suit. */
+/** The Chess set calls up Dreambeasts; in Ainmos they only arrive on the Dream Deck timer. */
+const SPAWNING_OBJECT_IDS = new Set(["ivory-pawn", "ebony-pawn", "marble-grid"]);
+
 export function buildObjectDecks(objects = []) {
   const decks = { lucidity: [], elasticity: [], willpower: [] };
   MINDSTREAM_SUITS.forEach((suit) => {
     decks[suit] = shuffle(
-      objects.filter((obj) => obj.suit === suit).map((obj) => ({
+      objects.filter((obj) => obj.suit === suit && !SPAWNING_OBJECT_IDS.has(obj.id)).map((obj) => ({
         ...obj,
         type: "object",
         suit,
@@ -422,15 +429,48 @@ export function buildDreamDeck(dreams, sessionCount) {
   return pickedTemplates.map((d) => ({ ...d, instanceId: uid("dream") }));
 }
 
-/** Lay the night out as Antes: 2 Dreams, then that Ante's Boss Dream from the ladder. */
+const LADDER_IDS = new Set(BOSS_LADDER.map((entry) => entry.id));
+
+/** Every Dreambeast that is not a rung of the Boss ladder: Mini-Bosses and the Nightmare pool. */
+export function ordinaryDreambeasts(dreambeasts = []) {
+  return dreambeasts.filter((b) => !b.boss && !LADDER_IDS.has(b.id));
+}
+
+/** A Mini-Boss: an ordinary Dreambeast, its Power set by the Ante it guards. */
+export function miniBossCard(beast, ante) {
+  const power = miniBossPower(ante);
+  return {
+    ...beast,
+    type: "dreambeast",
+    miniBoss: true,
+    ante,
+    accept: power,
+    reject: power,
+    repress: power,
+    instanceId: uid("mini"),
+  };
+}
+
+/**
+ * Lay the night out as Antes: a Dream, a Dream that brings the Ante's Mini-Boss
+ * to The Bed, then the Ante's Boss Dream from the ladder. Returns the night and
+ * the Nightmare pool (ordinary Dreambeasts not used as Mini-Bosses).
+ */
 export function insertBossDreams(deck, dreambeasts, lengthKey = "daydream") {
   const ladder = ladderForLength(lengthKey);
+  const minis = shuffle(ordinaryDreambeasts(dreambeasts));
   const night = [];
   let next = 0;
-  ladder.forEach((entry) => {
-    for (let i = 0; i < DREAMS_PER_ANTE && next < deck.length; i += 1) night.push(deck[next++]);
+  ladder.forEach((entry, index) => {
+    const ante = index + 1;
+    for (let i = 0; i < DREAMS_PER_ANTE && next < deck.length; i += 1) {
+      const dream = deck[next++];
+      if (i === DREAMS_PER_ANTE - 1 && minis.length) dream.miniBoss = miniBossCard(minis.shift(), ante);
+      night.push(dream);
+    }
     const beast = dreambeasts.find((b) => b.id === entry.id);
     if (beast) night.push(bossDreamCard(beast, entry, uid));
   });
+  night.nightmarePool = minis;
   return night;
 }
