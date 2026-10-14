@@ -1,3 +1,4 @@
+import { landscapeActionBlockedByBoss } from "../encounters/boss-twists.js";
 import {
   addLog,
   drawPsycheForPlayer,
@@ -1031,6 +1032,11 @@ function handOffDrawnMindstream(state, suit) {
 }
 
 export function executeLandscapeActionChoice(state, tile, player, actionId, helpers = {}) {
+  const shut = landscapeActionBlockedByBoss(state, tile, actionId);
+  if (shut) {
+    addLog(state, shut);
+    return { ok: false, refund: true, reason: shut };
+  }
   const landscapeName = tile.name;
 
   switch (actionId) {

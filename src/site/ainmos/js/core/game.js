@@ -1,3 +1,5 @@
+import { offerBoonDraft } from "../dreamers/boons.js";
+import { bossExtraPower, advanceBossStack } from "../encounters/boss-twists.js";
 import { isLostFoundOpen } from "../shop/lost-found.js";
 import { bestForm } from "../cards/dream-forms.js";
 import { isLadderBoss, anteForBoss } from "../encounters/boss-ladder.js";
@@ -2007,7 +2009,9 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
   }
   const isReject = mode === "reject" || mode === "repress";
   const verb = isReject ? "Repress" : "Accept";
-  const beastPower = encounterPower(encounter, !isReject);
+  const paySuitForTwist = isReject ? (encounter.rejectSuit || encounter.suit) : encounter.suit;
+  const beastPower = encounterPower(encounter, !isReject)
+    + bossExtraPower(encounter, actorForTwist(state) ? totalStat(actorForTwist(state), paySuitForTwist, state) : 0);
   const recommended = recommendedEncounterPower(encounter, !isReject);
   const selected = selectedCards(state, actor);
   const suitName = SUIT_LABELS[encounterPaySuit(encounter, !isReject)] || "Psyche";
@@ -2060,6 +2064,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     played,
     needed: beastPower,
     fromMindstreamDraw: fromMs,
+    form,
   };
 
   const recNote = played < recommended
@@ -2121,6 +2126,13 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
   trackPsycheDiscard(state, actor, discarded);
   returnRecurringPsyche(state, actor, discarded);
 
+  recordFightStats(state, ctx, dreamerWins);
+
+  // Winged Turtle: a win reveals the next turtle instead of ending the fight.
+  if (dreamerWins && encounter.boss && advanceBossStack(state, encounter, tile)) {
+    return;
+  }
+
   if (!dreamerWins) {
     if (state.tutorialMode) state.tutorialFlags.firstBattleLost = true;
     addLog(
@@ -2168,6 +2180,8 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
       if (!(state.bossesDefeated || []).includes(bossId)) {
         state.bossesDefeated = [...(state.bossesDefeated || []), bossId];
         logMoment(state, `${encounter.name} falls. Ante ${anteForBoss(bossId) || "?"} is cleared.`, { boss: true });
+        checkVictory(state);
+        if (state.status === "playing") offerBoonDraft(state, encounter.name);
       }
     }
     removeEncounterFromLandscape(state, landscapeId, encounter);
@@ -2991,6 +3005,39 @@ function canAutoActivateExplore(state) {
 }
 
 /** Freeform Board: tap an empty glowing hex to place the chosen Landscape there. */
+/** The Dreamer about to fight on the selected Landscape (used for the Double's twist). */
+function actorForTwist(state) {
+  const tileId = state.selectedLandscapeId;
+  return state.players.find((p) => p.alive && p.landscapeId === tileId) || null;
+}
+
+/** Ainmos run summary: wins, losses, and the best spread of the night. */
+function recordFightStats(state, ctx, won) {
+  const stats = (state.runStats = state.runStats || {});
+  if (won) stats.fightsWon = (stats.fightsWon || 0) + 1;
+  else stats.fightsLost = (stats.fightsLost || 0) + 1;
+  if (ctx.form?.id) {
+    stats.formsPlayed = stats.formsPlayed || {};
+    stats.formsPlayed[ctx.form.id] = (stats.formsPlayed[ctx.form.id] || 0) + 1;
+  }
+  const power = Number(ctx.played) || 0;
+  if (!stats.bestSpread || power > stats.bestSpread.power) {
+    stats.bestSpread = {
+      power,
+      won: !!won,
+      form: ctx.form?.name || null,
+      vs: ctx.encounter?.name || "",
+      dreamer: ctx.actor?.name || "",
+      cards: (ctx.selected || []).map((c) => ({ name: c.name, suit: c.suit, value: c.value, upgrade: c.upgrade || null })),
+      round: state.round,
+    };
+  }
+  stats.byDreamer = stats.byDreamer || {};
+  const mine = (stats.byDreamer[ctx.actor?.id] = stats.byDreamer[ctx.actor?.id] || { name: ctx.actor?.name, won: 0, lost: 0 });
+  if (won) mine.won += 1;
+  else mine.lost += 1;
+}
+
 /** Ainmos: Recurring Psyche spent on a spread comes back to the hand, win or lose. */
 function returnRecurringPsyche(state, actor, spent) {
   const back = (spent || []).filter((card) => card?.upgrade === "recurring");

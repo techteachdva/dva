@@ -78,7 +78,7 @@ export function spawnBossEncounterOnBed(state, card) {
     instanceId: card.instanceId || uid("enc"),
   };
   setEncounterOnLandscape(state, "bed", encounter);
-  logMoment(state, `${card.name} awakens on The Bed!`, { boss: true });
+  logMoment(state, `${card.name} awakens on The Bed!${card.twistText ? ` ${card.twist}: ${card.twistText}` : ""}`, { boss: true });
   markDreamFeedNudge();
   queueBossStingerFx(card.id, "bed");
   return true;
@@ -111,8 +111,12 @@ export function takeDreamFromDeck(state) {
  * Effects that throw away "the bottom Dream" take the last ordinary Dream instead,
  * so they never drag the night's Boss forward early.
  */
-export function popDiscardableDream(state) {
+export function popDiscardableDream(state, { fromTop = false } = {}) {
   const deck = state.dreamDeck || [];
+  if (fromTop) {
+    const index = deck.findIndex((card) => !isBossDreamCard(card));
+    return index >= 0 ? deck.splice(index, 1)[0] : null;
+  }
   for (let i = deck.length - 1; i >= 0; i -= 1) {
     if (!isBossDreamCard(deck[i])) return deck.splice(i, 1)[0];
   }

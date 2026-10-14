@@ -32,7 +32,7 @@
     "image": "images/archetypes/archetype-caregiver.webp",
     "suit": "willpower",
     "passive": null,
-    "power": "The Dreamer with the fewest Psyche draws 5, up to the hand limit",
+    "power": "The Dreamer with the fewest Psyche draws 3, up to the hand limit",
     "quests": [
       "Draw Mindstream on Sea of Teeth or Field of Broken Glass",
       "Meet a Dreambeast on Sea of Teeth or Field of Broken Glass"

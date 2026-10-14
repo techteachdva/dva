@@ -1,3 +1,5 @@
+import { renderBoonDraft } from "../ui/boon-panel.js";
+import { chooseBoon } from "../dreamers/boons.js";
 import { renderLostFound } from "../ui/lost-found-panel.js";
 import {
   buyLostFoundObject,
@@ -2492,6 +2494,12 @@ function renderBoardArea() {
     }
   };
   renderDreamForms(state);
+  renderBoonDraft(state, {
+    onChoose: (boonId) => {
+      if (chooseBoon(state, boonId)) playSfx("acquire");
+      renderAll();
+    },
+  });
   renderLostFound(state, {
     onBuy: (index) => {
       const result = buyLostFoundObject(state, index, (s, p, card) => onObjectDrawn(s, p, card, getEffectHelpers()));

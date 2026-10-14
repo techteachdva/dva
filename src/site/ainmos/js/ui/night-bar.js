@@ -53,7 +53,8 @@ export function renderNightBar(state) {
           : drawn
             ? "passed"
             : "ahead";
-      const label = `Ante ${p.ante} Boss: ${p.name}${entry ? `, Power ${entry.power}. ${entry.twist}: ${entry.twistText}` : ""}${state_ === "defeated" ? " Defeated." : state_ === "standing" ? " Standing on the Dreamscape." : ""}`;
+      const power = entry?.stack ? entry.stack.join(", then ") : entry?.power;
+      const label = `Ante ${p.ante} Boss: ${p.name}${entry ? `, Power ${power}. ${entry.twist}: ${entry.twistText}` : ""}${state_ === "defeated" ? " Defeated." : state_ === "standing" ? " Standing on the Dreamscape." : ""}`;
       return `<span class="night-card night-boss is-${state_} suit-${p.suit || "none"}${isNext ? " is-next" : ""}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
         <span class="night-boss-face" style="background-image:url('${escapeHtml(p.image)}')"></span>
         <span class="night-boss-rung">${entry?.rung ?? ""}</span>

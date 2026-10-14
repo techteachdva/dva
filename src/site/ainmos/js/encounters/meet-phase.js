@@ -1,3 +1,6 @@
+import { applyBossTwistsAtMeetStart, applyBossTwistsAtDusk, bossSkipsStep } from "./boss-twists.js";
+import { discardDreamCard, popDiscardableDream } from "../cards/dream-deck.js";
+import { forgetTile } from "../board/landscapes.js";
 import { BOSS_LADDER } from "./boss-ladder.js";
 /**
  * Canonical Meet Phase flow (Ainmos 26+) — one source of truth.
@@ -92,7 +95,7 @@ function nearestDreamerTile(state, fromTile) {
 /** Bosses hunt at the opening of Meet. A boss already sharing a hex stays. */
 function stepBossesTowardDreamers(state) {
   const bosses = allEncountersOnBoard(state).filter(({ encounter }) => (
-    isBossEncounter(encounter) && encounter.awake !== false
+    isBossEncounter(encounter) && encounter.awake !== false && !bossSkipsStep(encounter)
   ));
   bosses.forEach(({ tile, encounter }) => {
     if (!tile || dreamerSharesTile(state, tile.id)) return;
@@ -116,6 +119,7 @@ function stepBossesTowardDreamers(state) {
 export function applyMeetStartTax(state) {
   if (state.tutorialMode) return;
   stepBossesTowardDreamers(state);
+  applyBossTwistsAtMeetStart(state);
 }
 
 /** @deprecated Use applyMeetStartTax. */
@@ -190,6 +194,11 @@ export function applyMeetEndConsequences(state) {
     return;
   }
   repressWastelandStanders(state);
+  applyBossTwistsAtDusk(state, {
+    discardDream: discardDreamCard,
+    popDream: popDiscardableDream,
+    forgetTile,
+  });
   applyRoundResourceTax(state);
 }
 

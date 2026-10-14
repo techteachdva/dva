@@ -131,15 +131,25 @@ export function edgeLandscapes(state) {
 /**
  * Legal Explore targets: adjacent revealed tiles, or any revealed if free explore.
  */
+/** Ainmos: while Cerberus stands, no one enters or leaves The Bed. */
+function cerberusGuardsBed(state) {
+  return (state.board || []).some((tile) => (tile.encounters || (tile.encounter ? [tile.encounter] : []))
+    .some((enc) => enc?.boss && (enc.refId || enc.id) === "cerberus"));
+}
+
 export function getLegalMoveTargets(state, player, { freeMove = false } = {}) {
   const from = state.board.find((l) => l.id === player.landscapeId);
   if (!from) return [];
 
+  const guarded = cerberusGuardsBed(state);
+  if (guarded && from.id === "bed") return [];
+  const allowed = (t) => !(guarded && t.id === "bed");
+
   if (freeMove || state.freeExploreNextRound) {
-    return state.board.filter((t) => t.revealed);
+    return state.board.filter((t) => t.revealed && allowed(t));
   }
 
-  return adjacentTiles(state, from.id).filter((t) => t.revealed);
+  return adjacentTiles(state, from.id).filter((t) => t.revealed && allowed(t));
 }
 
 export function canMoveTo(state, player, targetId, { freeMove = false } = {}) {

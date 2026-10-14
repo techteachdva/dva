@@ -6,10 +6,20 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.5";
+export const SOMNIA_VERSION = "0.6";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.6",
+    title: "Twists and Boons",
+    notes: [
+      "Every Boss bends one rule while it stands. Winged Turtle is three fights (Power 2, then 3, then 4). Shadows darken Lucidity Landscape actions. Jackalope hops 2 hexes each Meet. Baku eats a Dream at dusk. Mindless ignores your stats. Devourer eats an Object in play at dusk. Bogey shuts The Bed and punishes sleeping there. Cerberus seals The Bed. Double gains your matching stat. Leviathan Forgets the farthest edge at dusk.",
+      "Archetypes are now points and quests only. Their powers and passives are Boss Boons: when a Boss falls, choose 1 of 3 Boons for the rest of the night.",
+      "Three new Boons: Study (1 Power Token, raise a Dream Form a level, once per round), Wider Vault (4 Landscapes in the Vault), and Deep Pockets (hold 1 more Object, up to 10).",
+      "The Caregiver Boon draws 3.",
+    ],
+  },
   {
     version: "0.5",
     title: "Lost & Found",

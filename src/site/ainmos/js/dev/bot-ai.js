@@ -1,3 +1,4 @@
+import { chooseBoon } from "../dreamers/boons.js";
 import { closeLostFound } from "../shop/lost-found.js";
 import { isBlockingGameChoice } from "../core/state.js";
 /**
@@ -541,6 +542,12 @@ export function createSpectatorBot({
       return false;
     }
 
+    if (state.pendingBoonDraft) {
+      think(`Take the Boon ${state.pendingBoonDraft.options[0].name}`);
+      chooseBoon(state, state.pendingBoonDraft.options[0].id);
+      renderAll?.();
+      return true;
+    }
     if (state.lostFound?.open && !isBlockingGameChoice(state)) {
       think("Leave the Lost & Found");
       closeLostFound(state);

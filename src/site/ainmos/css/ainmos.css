@@ -688,3 +688,15 @@ html[data-form="phone"] .night-ante { gap: 1px; }
   .lf-item-text, .lf-item-foot, .lf-picker { grid-column: 1 / -1; }
   .lf-foot { flex-direction: column-reverse; align-items: stretch; }
 }
+
+/* ---- Boss Boons ----------------------------------------------------------- */
+
+.boon-window { width: min(56rem, 100%); }
+
+.boon-art {
+  height: 10rem;
+  background-size: cover;
+  background-position: center 22%;
+}
+
+.boon-card.kind-archetype .lf-item-name { color: var(--dc-ink); }

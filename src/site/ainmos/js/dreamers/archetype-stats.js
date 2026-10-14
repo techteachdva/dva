@@ -1,3 +1,4 @@
+import { boonArchetypes } from "./boons.js";
 /** Quintessential Archetype passive stat bonuses while acquired. */
 
 const QUINTESSENTIAL = {
@@ -6,17 +7,12 @@ const QUINTESSENTIAL = {
   warrior: "willpower",
 };
 
+/**
+ * Ainmos: Archetype powers and passives come from Boss Boons, not from
+ * Acquiring the Archetype (which is points and quests only).
+ */
 export function teamAcquiredArchetypes(state) {
-  const seen = new Set();
-  const list = [];
-  state.players.forEach((p) => {
-    (p.acquiredArchetypes || []).forEach((arch) => {
-      if (seen.has(arch.id)) return;
-      seen.add(arch.id);
-      list.push(arch);
-    });
-  });
-  return list;
+  return boonArchetypes(state);
 }
 
 export function archetypeStatBonus(state, stat) {

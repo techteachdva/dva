@@ -208,6 +208,9 @@ export function createInitialState(data, options) {
     phaseIndex: 0,
     round: 1,
     lengthKey: options.lengthKey,
+    boonCatalog: (data.archetypes || []).map((a) => ({ ...a })),
+    boons: [],
+    pendingBoonDraft: null,
     nightPlan,
     finalBossId: finalBossForLength(options.lengthKey)?.id || null,
     bossesDefeated: [],
@@ -1397,6 +1400,7 @@ export function isBlockingGameChoice(state) {
   if (!state) return false;
   return !!(
     state.pendingDreamChoice
+    || state.pendingBoonDraft
     || state.pendingEffectChoice
     || state.pendingObjectChoice
     || state.pendingMindstreamChoice

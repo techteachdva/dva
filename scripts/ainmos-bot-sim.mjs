@@ -176,6 +176,7 @@ const {
 const { revealableTiles, forgettableTiles, cancelLandscapePick, revealCapacity, pendingPlacementCard } = landscapesMod;
 const vaultMod = await mod("board/dreamscape-vault.js");
 const shopMod = await mod("shop/lost-found.js");
+const boonMod = await mod("dreamers/boons.js");
 const { isFreeformBoard, vaultCards, placementSlots } = vaultMod;
 // Ainmos always builds a Freeform Board.
 const BOARD_MODE = "freeform";
@@ -982,6 +983,7 @@ function playGame(playerCount, index) {
       if (state.status !== "playing") break;
       // Ainmos: the bot leaves the Lost & Found first (shopping policy comes later).
       if (state.lostFound?.open) shopMod.closeLostFound(state);
+      if (state.pendingBoonDraft) boonMod.chooseBoon(state, state.pendingBoonDraft.options[0].id);
       const pending = resolveOnePending(state);
       if (state.status !== "playing") break;
       if (!pending && !act(state) && state.status === "playing" && !state.landscapePick && !state.pendingMindstreamChoice && !state.pendingDreamChoice) {

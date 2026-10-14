@@ -1,3 +1,4 @@
+import { statIgnoredBy } from "../encounters/boss-twists.js";
 import { bestForm } from "../cards/dream-forms.js";
 /** SOMNIA 18.5.1 rules helpers */
 
@@ -464,7 +465,7 @@ export function encounterDiceTotal(state, actor, selected, encounter, { accept =
   total += persistentMeetBonus(state, actor);
   if (encounter) total += dreamerMeetBonuses(actor.dreamer, encounter).total || 0;
   const suit = encounterPaySuit(encounter, accept);
-  if (suit && selectedHasPaySuit(cards, suit)) {
+  if (suit && selectedHasPaySuit(cards, suit) && !statIgnoredBy(encounter)) {
     total += totalStat(actor, suit, state);
   }
   total += state.anchorMeetSpreadBonus || 0;

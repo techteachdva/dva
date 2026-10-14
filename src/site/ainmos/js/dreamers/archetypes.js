@@ -1,3 +1,5 @@
+import { teamAcquiredArchetypes } from "./archetype-stats.js";
+import { DREAM_FORMS, formLevel, levelUpForm } from "../cards/dream-forms.js";
 import {
   addLog,
   allEncountersOnBoard,
@@ -206,11 +208,8 @@ export function resumeArchetypeFollowup() {
 /** Quintessential passives log on acquire; activatable powers cost 1 Power Token. */
 export function resolveOnAcquire(state, archetype, player) {
   if (!archetype) return;
-  if (isQuintessentialArchetype(archetype)) {
-    addLog(state, `${archetype.name} acquired: ${archetype.passive} (passive, while acquired).`);
-    return;
-  }
-  addLog(state, `${archetype.name} acquired. Spend 1 Power Token in any phase to use: ${archetype.power}`);
+  // Ainmos: Acquiring scores points. Powers and passives arrive as Boss Boons.
+  addLog(state, `${archetype.name} acquired: +${archetype.points} Archetype points.`);
 }
 
 export function useArchetypePower(state, archetype, player, helpers = {}) {
@@ -220,10 +219,13 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
     return false;
   }
 
-  const acquired = state.players.some((p) =>
-    (p.acquiredArchetypes || []).some((a) => a.id === archetype.id));
-  if (!acquired) {
-    addLog(state, "That Archetype has not been acquired.");
+  const held = teamAcquiredArchetypes(state).some((a) => a.id === archetype.id);
+  if (!held) {
+    addLog(state, "The table does not hold that Boon.");
+    return false;
+  }
+  if (archetype.id === "study" && state.studyUsedRound === state.round) {
+    addLog(state, "Study is once per round.");
     return false;
   }
 
@@ -244,7 +246,8 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
         psycheInHand(dreamer) < psycheInHand(best) ? dreamer : best
       ), living[0]);
       const need = handRoomForPsycheDraw(state, thinnest);
-      const drawCount = Math.min(5, need);
+      // Ainmos: the Caregiver Boon draws 3.
+      const drawCount = Math.min(3, need);
       if (!drawCount) {
         refundArchetypeToken(state, player, `${thinnest.name} is already at the hand limit. Token refunded.`);
         break;
@@ -288,6 +291,19 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
       }
       break;
 
+    case "study":
+      state.studyUsedRound = state.round;
+      offerEffectChoice(state, player, {
+        cardId: "study-boon",
+        title: "Study",
+        message: "Raise 1 Dream Form a level.",
+        choices: DREAM_FORMS.map((form) => ({
+          id: form.id,
+          label: `${form.name} (level ${formLevel(state, form.id)} → ${formLevel(state, form.id) + 1})`,
+        })),
+      });
+      break;
+
     case "creator":
       if (!returnOneEach(state, "dreambeast", "Dreambeast")) {
         refundArchetypeToken(state, player, "Creator Power: no Dreambeast in the Subconscious. Token refunded.");
@@ -303,3 +319,11 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
 export function handleArchetypePowerTilePick() {
   return false;
 }
+
+registerEffectResolver("study-boon", (state, choiceId) => {
+  state.pendingEffectChoice = null;
+  if (!DREAM_FORMS.some((form) => form.id === choiceId)) return true;
+  const level = levelUpForm(state, choiceId);
+  addLog(state, `Study: ${DREAM_FORMS.find((form) => form.id === choiceId).name} rises to level ${level}.`);
+  return true;
+});

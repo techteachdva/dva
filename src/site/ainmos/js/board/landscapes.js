@@ -167,7 +167,7 @@ export function revealOrPlaceLandscapes(state, count, { source = "Reveal" } = {}
   return shown;
 }
 
-function forgetTile(state, tile) {
+export function forgetTile(state, tile) {
   if (tile.id === "bed" || tile.center) {
     addLog(state, "The Bed cannot be forgotten.");
     return;
