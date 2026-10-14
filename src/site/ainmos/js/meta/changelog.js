@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.8";
+export const SOMNIA_VERSION = "0.9";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.9",
+    title: "Wide Awake",
+    notes: [
+      "The Night Bar spans the top of the screen. Every Dream and Boss sits in its Ante, with a tick for each card and a pip for every Dreambeast that arrived that round.",
+      "The table fills the screen. Commands sit in one bar under the Night Bar, the Dreamer info lives in a column on the right, and the decks sit in a small dock on the board. Objects are one shared deck.",
+      "Phones play sideways: the board takes the screen and the Table button opens the Dreamer info full screen.",
+      "No more walls of text. The menu primer opens only from the spiral, and the unused-actions note is now a First Night hint.",
+      "Fixes: the win banner no longer sends you to The Bed, Reveal help describes the Dreamscape Vault, and coach hints sit above the Lost & Found.",
+    ],
+  },
   {
     version: "0.8",
     title: "First Night",

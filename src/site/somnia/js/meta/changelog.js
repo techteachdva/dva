@@ -18,6 +18,7 @@ export const CHANGELOG = [
       "The Dreamscape Vault holds three face-up Landscapes. Refreshing it costs 1 Lucidity, +1 for each refresh already made this round.",
       "The Bed no longer draws 3 Psyche. Its action is Dream Onward, once per table each Meet: Reveal 1 Landscape, or on a Freeform Board flip the top tile and place it or put it back. Rest is earned, not camped.",
       "On a Freeform Board, Reveal effects place tiles from the Vault, Dream it open surfaces the named Landscape beside you, and a Forget aimed at a Landscape that was never placed sets it aside.",
+      "The menu no longer opens with a wall of text. Click the spiral for a short primer.",
     ],
   },
   {

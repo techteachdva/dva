@@ -1092,6 +1092,7 @@ function playGame(playerCount, index) {
     insights: state.botShop?.insights || 0,
     formLevels: Object.values(state.formLevels || {}).reduce((sum, level) => sum + (level - 1), 0),
     bossesDefeated: (state.bossesDefeated || []).length,
+    nightSpawns: Object.values(state.nightSpawns || {}).flat().filter((s) => !s.boss).length,
     boons: (state.boons || []).length,
     remember: { ...(state.rememberStats || {}) },
     mindAtEnd: wakingMindCount(state),
@@ -1151,6 +1152,7 @@ function summarize(rows) {
     avgInsights: +mean(rows.map((r) => r.insights || 0)).toFixed(2),
     avgFormLevelsGained: +mean(rows.map((r) => r.formLevels || 0)).toFixed(2),
     avgBossesDefeated: +mean(rows.map((r) => r.bossesDefeated || 0)).toFixed(2),
+    avgBeastSpawns: +mean(rows.map((r) => r.nightSpawns || 0)).toFixed(2),
     avgBoons: +mean(rows.map((r) => r.boons || 0)).toFixed(2),
     rememberBySource: rows.reduce((acc, r) => {
       for (const [k, v] of Object.entries(r.remember || {})) acc[k] = +(((acc[k] || 0) + v / rows.length)).toFixed(2);

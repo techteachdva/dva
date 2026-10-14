@@ -699,6 +699,7 @@ export function addEncounterOnLandscape(state, landscapeId, encounter) {
     card.spawnOrder = state.encounterSpawnSeq;
   }
   tileEncounters(tile).push(card);
+  if (!state._movingEncounter) recordNightSpawn(state, card);
   state.activeEncounter = card;
   state.activeEncounterLandscapeId = landscapeId;
   stampBeastMillTile(state, landscapeId, card);
@@ -746,8 +747,24 @@ export function moveEncounterBetweenLandscapes(state, fromId, toId, encounter) {
   const from = located?.tile?.id || fromId;
   if (!enc || !from || !toId) return false;
   removeEncounterFromLandscape(state, from, enc);
-  addEncounterOnLandscape(state, toId, enc);
+  state._movingEncounter = true;
+  try {
+    addEncounterOnLandscape(state, toId, enc);
+  } finally {
+    state._movingEncounter = false;
+  }
   return true;
+}
+
+/** Ainmos Night Strip: note a new Dreambeast against the Dream whose round it arrived in. */
+function recordNightSpawn(state, card) {
+  const plan = state.nightPlan;
+  if (!plan?.length || !card) return;
+  const drawn = plan.length - (state.dreamDeck?.length || 0);
+  const entry = plan[Math.min(plan.length - 1, Math.max(0, drawn - 1))];
+  if (!state.nightSpawns) state.nightSpawns = {};
+  if (!state.nightSpawns[entry.instanceId]) state.nightSpawns[entry.instanceId] = [];
+  state.nightSpawns[entry.instanceId].push({ suit: card.suit || null, boss: !!card.boss, name: card.name || "" });
 }
 
 export function countEncountersOnBoard(state, filterFn = () => true) {
@@ -1238,56 +1255,6 @@ export function allDreamersOnBed(state) {
   return alive.length > 0 && alive.every((p) => p.landscapeId === "bed");
 }
 
-function stepDreamerTowardBed(state, player) {
-  const bed = landscapeById(state, "bed");
-  const current = landscapeById(state, player.landscapeId);
-  if (!bed || !current || current.id === "bed") return false;
-  const adj = adjacentTiles(state, current.id).filter((tile) => tile.revealed);
-  const closer = adj
-    .filter((tile) => hexDistance(tile, bed) < hexDistance(current, bed))
-    .sort((a, b) => {
-      const waste = (tile) => (tile.wasteland ? 1 : 0);
-      return waste(a) - waste(b) || hexDistance(a, bed) - hexDistance(b, bed);
-    });
-  const dest = closer[0];
-  if (!dest) return false;
-  player.landscapeId = dest.id;
-  if (dest.wasteland && psycheHandCount(player) < 1) {
-    addLog(state, `${player.name} steps into Wasteland with no Psyche to pay.`);
-    applyDreamerDeath(state, player);
-    return false;
-  }
-  if (dest.wasteland) {
-    const card = (player.hand || []).find((entry) => !isDreambeastPsycheCard(entry));
-    if (card) {
-      player.hand = player.hand.filter((entry) => entry.instanceId !== card.instanceId);
-      if (!state.psycheDiscard) state.psycheDiscard = [];
-      state.psycheDiscard.push(card);
-      recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: dest.id });
-    }
-  }
-  recordQuestEvent(state, "move_player", { count: 1 });
-  return dest.name;
-}
-
-function grantGoalBedSprint(state) {
-  const moved = [];
-  for (const player of state.players.filter((entry) => entry.alive)) {
-    const steps = Math.max(0, effectiveDreamerStat(state, player.dreamer, "elasticity"));
-    const names = [];
-    for (let i = 0; i < steps; i += 1) {
-      if (!player.alive || player.landscapeId === "bed") break;
-      const name = stepDreamerTowardBed(state, player);
-      if (!name) break;
-      names.push(name);
-    }
-    if (names.length) moved.push(`${player.name} → ${names[names.length - 1]}`);
-  }
-  if (moved.length) {
-    addLog(state, `The goal is reached. Elasticity carries the table toward The Bed: ${moved.join("; ")}.`);
-  }
-}
-
 /** Ainmos: the night is won when the final Boss falls and the Archetype goal is met. */
 export function finalBossDefeated(state) {
   return !!state.finalBossId && (state.bossesDefeated || []).includes(state.finalBossId);
@@ -1305,37 +1272,6 @@ export function checkVictory(state) {
   if (state.archetypeGoalReached && !state.victoryPendingLogged) {
     state.victoryPendingLogged = true;
     addLog(state, "Archetype goal reached. Defeat the final Boss to wake.");
-  }
-}
-
-/** Somnia's Bed-sprint victory, kept for reference by older code paths. */
-export function checkVictorySomnia(state) {
-  if (state.finalRecurrence) {
-    if (state.status !== "playing") return;
-    const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
-    if (left === 0) {
-      state.status = "won";
-      addLog(state, "All Remaining Archetypes defeated. You wake up!");
-    }
-    return;
-  }
-  if ((state.scoringGoalPoints || state.goalPoints) > 0
-    && state.acquiredPoints >= (state.scoringGoalPoints || state.goalPoints)) {
-    state.archetypeGoalReached = true;
-  }
-  if (state.acquiredPoints >= state.goalPoints) {
-    if (!state.goalBedSprintUsed && !state.tutorialMode && state.status === "playing") {
-      state.goalBedSprintUsed = true;
-      grantGoalBedSprint(state);
-    }
-    if (state.status !== "playing") return;
-    if (allDreamersOnBed(state)) {
-      state.status = "won";
-      addLog(state, "The Dreamers wake up! You escaped the Dreamscape.");
-    } else if (!state.victoryPendingLogged) {
-      state.victoryPendingLogged = true;
-      addLog(state, "Archetype goal reached! All Dreamers must return to the Bed to wake up.");
-    }
   }
 }
 

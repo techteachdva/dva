@@ -461,7 +461,7 @@ const TERMS = [
     term: "Reveal",
     group: "round",
     aka: "reveal phase",
-    text: "The first phase. Draw the Dream and choose Bright or Dim. Then one Dreamer spends 1 Lucidity, or 1 Power Token (that counts as 1 plus their Lucidity). Click that many Wasteland hexes to turn them face-up. Each unused Reveal draws 1 Psyche, passed around the table. If the map is already open, the whole budget is draws.",
+    text: "The first phase. Draw the Dream and choose Bright or Dim. Then one Dreamer spends 1 Lucidity, or 1 Power Token (that counts as 1 plus their Lucidity). Each Reveal places one Landscape from the Dreamscape Vault on a glowing slot beside the dream. Each unused Reveal draws 1 Psyche, passed around the table.",
   },
   {
     term: "Ruler",
@@ -663,40 +663,33 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
+/** The short primer behind the menu spiral and the ? hub. Every term lives in the glossary. */
 export function playerPrimerHtml() {
   return `
     <div class="player-primer">
-      <p class="player-primer-lead">2–4 Dreamers, one team. Three Archetypes are face up: make one true, Acquire it, and repeat until the goal. Build the dream tile by tile, climb the ladder of Bosses, and defeat the night's <strong>final Boss</strong> with your goal met — before you forget yourself.</p>
+      <p class="player-primer-lead">2–4 Dreamers, one team. Build the dream, grow stronger, and climb a ladder of Bosses. Defeat the night's <strong>final Boss</strong> with your Archetype goal met to wake.</p>
       <div class="player-primer-grid">
         <section>
-          <h3>Win and lose</h3>
-          <p><strong>Win.</strong> Both quests true on any face-up Archetype, then <strong>Acquire</strong> for free. Innocent, Orphan, and Outlaw are 2 points: draw that suit's Mindstream and win a Meet against a beast of that suit. Most others are 3 and name two Landscapes. Sage, Magician, and Warrior are 4: defeat a Boss of their suit and sacrifice one Object. Reach Daydream 8, Nap 12, or Deep Sleep 24, and defeat the night's final Boss, to wake.</p>
-          <p><strong>Lose.</strong> The <strong>Waking Mind</strong> runs dry (watch the Mind counter). The sixth death. The final Boss round ends before you wake.</p>
-          <h3>Remember</h3>
-          <p>Each beast still out at <strong>dusk</strong> Represses 1 Psyche from the Mind. <strong>Remember N</strong>: discard up to N Psyche, Return that many +1. Memory Landscapes (Tranquil Grove, Silver Mist, Day in the Life, Black Void), Remember Objects, and fixed Brights all Remember.</p>
-          <h3>One formula</h3>
-          <p>Each phase, one Dreamer spends <strong>1 card</strong> of that color, or <strong>1 Power Token</strong> (counts as 1 + their stat). The table shares that total. The opener acts first. <strong>Pass Turn</strong> goes clockwise. <strong>Give Turn</strong> picks someone. Leftover actions each draw 1 Psyche. Skipping a phase you never opened is free.</p>
+          <h3>The night</h3>
+          <p>A run of <strong>Antes</strong>: two Dreams, then a <strong>Boss</strong> that bends one rule. The Night Bar shows them all. Beat a Boss to choose a <strong>Boon</strong>; at dawn everyone draws 3.</p>
+          <p>Each round is <strong>Reveal</strong>, <strong>Explore</strong>, <strong>Meet</strong>. One Dreamer spends 1 card of that suit: its value plus their stat is the table's shared actions.</p>
         </section>
         <section>
-          <h3>Reveal · Lucidity</h3>
-          <p>Draw the Dream first. <strong>Bright</strong> costs Psyche, usually of one suit, and stays shut until that cost can be paid. On an Event whose Landscape is still Wasteland, pay 1 more Lucidity to <strong>Dream it open</strong>. <strong>Dim</strong> is free and Represses cards or Forgets Landscapes. Then flip that many Wasteland hexes, or on a Freeform Board place that many Landscapes from the Dreamscape Vault.</p>
-          <h3>Explore · Elasticity</h3>
-          <p>Step to an adjacent hex. The Dreamer whose turn it is is the one who walks. Stepping onto Wasteland discards 1 Psyche.</p>
-          <h3>Meet · Willpower</h3>
-          <p>Bosses step toward the nearest Dreamer. Spend actions to fight, <strong>Draw Mindstream</strong> (repeatable), use the hex's one action (once for the table on that hex — its suit tells you the verb), or tap a Persistent Object (once each). The Bed Dreams Onward (Reveal or place 1 Landscape). Trade is free with someone on your hex or next door.</p>
+          <h3>Build and fight</h3>
+          <p><strong>Reveal:</strong> each Lucidity places a Landscape from the Dreamscape Vault beside the dream.</p>
+          <p><strong>Fight</strong> with 1–3 Psyche and roll that many d6; 5s and 6s succeed. A pattern makes a <strong>Dream Form</strong> (Echo, Ladder, Chord, Trinity, Trifecta, Unity) for extra dice.</p>
         </section>
         <section>
-          <h3>The fight</h3>
-          <p>Only the Dreamer on the hex plays. 1–3 Psyche. <strong>Accept</strong> pays the beast's suit: win and it joins your hand at half Power, and you draw an Object. <strong>Repress</strong> pays the next suit of the cycle — Lucidity represses Willpower, Willpower represses Elasticity, Elasticity represses Lucidity: win and it goes to the Subconscious and the reward happens. Roll that many d6. A 5 or 6 succeeds. More successes than the beast wins. Ties go to the beast. A Power Token adds a die only before the roll.</p>
-          <h3>Your hand</h3>
-          <p>Psyche is health and fuel. Start at 5. From round 2, draw 2. Limit 10. No Psyche when a payment is due: Death Clock +1, discard your Objects, return your tokens, draw 3 on The Bed.</p>
-          <h3>Round end</h3>
-          <p>Dusk: each beast still out Represses 1 Psyche from the Waking Mind. Standing on Wasteland Represses 1 from hand. The star moves clockwise. Open <strong>?</strong> for every term.</p>
+          <h3>Between rounds</h3>
+          <p>The <strong>Lost &amp; Found</strong> sells Objects for Psyche of their suit, and one Insight that levels a Form or upgrades a card.</p>
+          <p><strong>Lose:</strong> the Waking Mind runs dry, the sixth death, or the last Boss round ends first.</p>
+          <p class="player-primer-more">Psyche is your health and your coin. In game, <strong>?</strong> explains every rule.</p>
         </section>
       </div>
     </div>
   `;
 }
+
 
 function termHay(entry) {
   return `${entry.term} ${entry.aka || ""} ${entry.text}`.toLowerCase();

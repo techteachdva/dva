@@ -43,19 +43,9 @@ export function objectPrice(card) {
   return Math.max(1, Number(card?.price) || 2);
 }
 
-/** Uniform draw across the three Object piles: one shared deck in practice. */
+/** One shared Object deck (see drawObjectCard). */
 function drawSharedObject(state) {
-  ensureObjectPiles(state);
-  const piles = ["lucidity", "elasticity", "willpower"];
-  const sizes = piles.map((s) => (state.objectDecks[s] || []).length + (state.objectDiscard[s] || []).length);
-  const total = sizes.reduce((a, b) => a + b, 0);
-  if (!total) return null;
-  let roll = Math.floor(random() * total);
-  for (let i = 0; i < piles.length; i += 1) {
-    if (roll < sizes[i]) return drawObjectCard(state, piles[i]);
-    roll -= sizes[i];
-  }
-  return drawObjectCard(state, null);
+  return drawObjectCard(state);
 }
 
 function returnObjectToBottom(state, card) {

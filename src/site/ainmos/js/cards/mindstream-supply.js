@@ -1,3 +1,4 @@
+import { random } from "../core/rng.js";
 import { shuffle, uid } from "../core/data.js";
 import { queueReshuffleFx } from "../board/board-fx.js";
 
@@ -215,14 +216,26 @@ export function reshuffleObjectDiscardIfNeeded(state, suit) {
   return false;
 }
 
-/** Draw one Object. A suit draws only that deck. No suit searches every Object deck. */
-export function drawObjectCard(state, suit = null) {
+/** Draw one Object from a single suit's pile (used by the shared draw below). */
+function drawObjectFromPile(state, suit) {
+  if (!state.objectDecks[suit]) return null;
+  reshuffleObjectDiscardIfNeeded(state, suit);
+  return state.objectDecks[suit].length ? state.objectDecks[suit].shift() : null;
+}
+
+/**
+ * Ainmos: there is one shared Object deck. The three suit piles are only how it
+ * is stored; every draw picks among all Objects left, so `suit` is ignored.
+ */
+export function drawObjectCard(state, _suit = null) {
   ensureObjectPiles(state);
-  const order = suit ? [suit] : shuffle([...MINDSTREAM_SUIT_IDS]);
-  for (const s of order) {
-    if (!state.objectDecks[s]) continue;
-    reshuffleObjectDiscardIfNeeded(state, s);
-    if (state.objectDecks[s].length) return state.objectDecks[s].shift();
+  const sizes = MINDSTREAM_SUIT_IDS.map((s) => (state.objectDecks[s] || []).length + (state.objectDiscard[s] || []).length);
+  const total = sizes.reduce((a, b) => a + b, 0);
+  if (!total) return null;
+  let roll = Math.floor(random() * total);
+  for (let i = 0; i < MINDSTREAM_SUIT_IDS.length; i += 1) {
+    if (roll < sizes[i]) return drawObjectFromPile(state, MINDSTREAM_SUIT_IDS[i]);
+    roll -= sizes[i];
   }
   return null;
 }

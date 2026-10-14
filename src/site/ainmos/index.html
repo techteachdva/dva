@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/dreamscape.css">
   <link rel="stylesheet" href="css/ainmos.css">
 </head>
-<body class="menu-window menu-splash-active">
+<body class="menu-window menu-splash-active ainmos">
   <div id="menu-splash" class="menu-splash" aria-hidden="false">
     <div class="menu-splash-inner">
       <img
@@ -33,7 +33,7 @@
   <div id="app">
     <header class="top-bar">
       <button type="button" class="brand brand-logo-btn" id="btn-somnia-changelog" title="Ainmos Changelog &amp; Credits" aria-label="Open Ainmos Changelog and Credits">
-        <span class="version-label">v 0.8</span>
+        <span class="version-label">v 0.9</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Ainmos" />
         <p class="tagline">Cooperative Dreamscape Roguelike</p>
       </button>
@@ -44,12 +44,12 @@
 
     <main>
       <section id="screen-setup" class="screen active" aria-label="Main menu">
-        <button type="button" id="btn-menu-spiral" class="menu-spiral" aria-label="How Ainmos is played" aria-expanded="true" aria-controls="menu-intro" title="How Ainmos is played">
+        <button type="button" id="btn-menu-spiral" class="menu-spiral" aria-label="How Ainmos is played" aria-expanded="false" aria-controls="menu-intro" title="How Ainmos is played">
           <svg viewBox="0 0 64 64" aria-hidden="true">
             <path d="M32 34c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4-8-3.6-8-8 3.6-8 8-8 8 3.6 8 8-3.6 12-8 12-12-5.4-12-12 5.4-12 12-12 12 5.4 12 12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>
           </svg>
         </button>
-        <div id="menu-intro" class="menu-intro" role="dialog" aria-modal="true" aria-labelledby="menu-intro-title">
+        <div id="menu-intro" class="menu-intro hidden" role="dialog" aria-modal="true" aria-labelledby="menu-intro-title">
           <div class="menu-intro-card">
             <button type="button" id="btn-menu-intro-close" class="menu-intro-close" aria-label="Close">&times;</button>
             <h2 id="menu-intro-title">How a dream is played</h2>

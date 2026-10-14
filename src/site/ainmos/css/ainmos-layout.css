@@ -1,0 +1,1055 @@
+/* ==========================================================================
+   Ainmos table layout — one landscape screen on desktop, tablet, and phone.
+
+     ┌───────────────────── Night Strip (every Dream, every Ante) ─────────────┐
+     ├── command bar: logo · phase · Goal · Mind · Ante · Round · clock · menus ┤
+     │ info column │                  the Dreamscape                           │
+     │ Archetypes  │      (Vault, Draw Dream, Next Phase, deck dock)            │
+     │ Forms, Boons│                                                            │
+     ├─────────────┴── hand strip: Dreamers · Psyche hand · Objects ───────────┤
+
+   Somnia's stylesheet sizes the old layout through inline custom properties
+   (--hand-h, --sidebar-w, --topbar-h) written by panel-layout.js. This sheet
+   uses its own --ain-* sizes so it never fights that script, and wins on
+   specificity with the "html:root body.ainmos.play-window" prefix.
+   ========================================================================== */
+
+html:root body.ainmos.play-window {
+  --ain-night-h: clamp(46px, 6.6vh, 64px);
+  --ain-cmd-h: clamp(40px, 5.6vh, 50px);
+  --ain-info-w: clamp(220px, 19vw, 300px);
+  --ain-hand-h: clamp(150px, 25vh, 232px);
+  --map-chrome-left: 0px;
+  --hand-h: var(--ain-hand-h);
+}
+
+/* Tablets: a little tighter. */
+html[data-form="tablet"]:root body.ainmos.play-window {
+  --ain-night-h: 46px;
+  --ain-cmd-h: 44px;
+  --ain-info-w: clamp(200px, 22vw, 260px);
+  --ain-hand-h: clamp(140px, 23vh, 200px);
+}
+
+/* Phones (landscape): every pixel counts. The info column becomes a fullscreen menu. */
+html[data-form="phone"]:root body.ainmos.play-window {
+  --ain-night-h: 34px;
+  --ain-cmd-h: 38px;
+  --ain-info-w: 0px;
+  --ain-hand-h: clamp(96px, 30vh, 128px);
+}
+
+/* ---- Frame ---------------------------------------------------------------- */
+
+html:root body.ainmos.play-window #app {
+  display: grid;
+  grid-template-rows: auto var(--ain-cmd-h) minmax(0, 1fr);
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+html:root body.ainmos.play-window main {
+  min-height: 0;
+  height: 100%;
+}
+
+/* ---- The Night Strip ---------------------------------------------------------- */
+
+.night-strip {
+  position: relative;
+  z-index: 60;
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  height: var(--ain-night-h, 52px);
+  padding: 4px max(0.6rem, env(safe-area-inset-right)) 4px max(0.6rem, env(safe-area-inset-left));
+  background:
+    linear-gradient(180deg, rgba(36, 28, 66, 0.96), rgba(16, 13, 32, 0.96));
+  box-shadow: 0 1px 0 rgba(200, 184, 236, 0.18), 0 8px 24px rgba(4, 2, 14, 0.45);
+  overflow: hidden;
+}
+
+.night-strip[hidden] { display: none; }
+
+.night-strip::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--dc-lavender), var(--dc-mint), var(--dc-powder), transparent);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.night-track {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  gap: clamp(3px, 0.5vw, 8px);
+}
+
+.night-ante {
+  flex: 1 1 0;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 1px 3px 2px;
+  border-radius: 8px;
+  background: rgba(200, 184, 236, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(200, 184, 236, 0.1);
+  transition: background 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+}
+
+.night-ante.is-past { opacity: 0.55; }
+.night-ante.is-now {
+  background: linear-gradient(180deg, rgba(182, 230, 214, 0.12), rgba(200, 184, 236, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(182, 230, 214, 0.45), 0 0 14px rgba(182, 230, 214, 0.18);
+}
+
+.night-ante-label {
+  font-family: var(--font-display);
+  font-size: clamp(7px, 0.62vw, 10px);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.25;
+  color: rgba(226, 220, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+.night-ante.is-now .night-ante-label { color: var(--dc-mint); }
+
+.night-ante-cards {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.25fr;
+  gap: 2px;
+}
+
+.night-card {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 4px;
+  overflow: visible;
+}
+
+.night-face {
+  position: absolute;
+  inset: 0 0 7px 0;
+  border-radius: 4px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.5) 0 1px, transparent 1.5px),
+    linear-gradient(160deg, var(--dc-lavender), var(--dc-powder));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  opacity: 0.8;
+  transition: opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease;
+}
+
+.night-dream.is-drawn .night-face {
+  background: var(--night-art, none) center 35% / cover, rgba(40, 32, 70, 0.9);
+  opacity: 0.45;
+  filter: saturate(0.65);
+}
+
+.night-boss .night-face {
+  background: var(--night-art, none) center 28% / cover, rgba(40, 32, 70, 0.9);
+  opacity: 1;
+}
+
+.night-boss.suit-lucidity .night-face { box-shadow: inset 0 0 0 1.5px var(--lucidity); }
+.night-boss.suit-elasticity .night-face { box-shadow: inset 0 0 0 1.5px var(--elasticity); }
+.night-boss.suit-willpower .night-face { box-shadow: inset 0 0 0 1.5px var(--willpower); }
+
+.night-boss.is-ahead .night-face { filter: grayscale(0.5) brightness(0.72); }
+.night-boss.is-passed .night-face { filter: brightness(0.5); }
+.night-boss.is-standing .night-face { animation: night-boss-pulse 1.6s ease-in-out infinite; }
+.night-boss.is-defeated .night-face { filter: saturate(0.4) brightness(0.55); }
+.night-boss.is-defeated::after {
+  content: "✦";
+  position: absolute;
+  inset: 0 0 7px 0;
+  display: grid;
+  place-items: center;
+  color: var(--dc-mint);
+  font-size: clamp(10px, 1.2vw, 16px);
+  text-shadow: 0 0 8px var(--dc-mint);
+}
+
+/* The next Dream glows and lifts. */
+.night-card.is-next .night-face {
+  opacity: 1;
+  box-shadow: 0 0 0 1.5px var(--dc-mint), 0 0 12px rgba(159, 245, 255, 0.65);
+}
+
+.night-boss-rung {
+  position: absolute;
+  right: -3px;
+  top: -3px;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: rgba(14, 11, 28, 0.94);
+  color: var(--dc-ink);
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 13px;
+  text-align: center;
+  box-shadow: 0 0 0 1px rgba(200, 184, 236, 0.45);
+  z-index: 2;
+}
+
+/* Every Dream gets a tick along the bottom edge. */
+.night-tick {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1px;
+  height: 5px;
+  background: rgba(226, 220, 255, 0.55);
+  transform: translateX(-50%);
+}
+.night-card.is-drawn .night-tick,
+.night-boss.is-passed .night-tick,
+.night-boss.is-standing .night-tick,
+.night-boss.is-defeated .night-tick { background: var(--dc-mint); height: 6px; width: 2px; }
+
+/* One pip per Dreambeast that arrived during that Dream's round. */
+.night-pips {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.night-pip {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--muted);
+  box-shadow: 0 0 0 1px rgba(10, 8, 22, 0.8);
+}
+.night-pip.suit-lucidity { background: var(--lucidity); }
+.night-pip.suit-elasticity { background: var(--elasticity); }
+.night-pip.suit-willpower { background: var(--willpower); }
+.night-pip.is-boss { width: 7px; height: 7px; box-shadow: 0 0 0 1px rgba(10, 8, 22, 0.8), 0 0 6px var(--danger); }
+.night-pip-more { font-size: 7px; color: var(--dc-ink); line-height: 5px; }
+
+.night-left {
+  flex: none;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  min-width: 2.4rem;
+  padding: 0 0.3rem;
+  border-radius: 8px;
+  background: rgba(200, 184, 236, 0.08);
+  font-family: var(--font-display);
+  color: var(--dc-ink);
+}
+.night-left b { font-size: clamp(0.9rem, 1.4vw, 1.25rem); line-height: 1; }
+.night-left small { font-size: 0.55rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+@keyframes night-boss-pulse {
+  0%, 100% { box-shadow: inset 0 0 0 1.5px var(--danger), 0 0 4px rgba(255, 93, 122, 0.4); }
+  50% { box-shadow: inset 0 0 0 2px var(--danger), 0 0 12px rgba(255, 93, 122, 0.8); }
+}
+
+html[data-form="phone"] .night-ante-label { display: none; }
+html[data-form="phone"] .night-ante { padding: 2px; grid-template-rows: minmax(0, 1fr); }
+html[data-form="phone"] .night-left small { display: none; }
+html[data-form="phone"] .night-pip { width: 4px; height: 4px; }
+
+/* ---- Command bar --------------------------------------------------------------- */
+
+html:root body.ainmos.play-window .top-bar.play-top-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: clamp(0.3rem, 0.8vw, 0.8rem);
+  height: var(--ain-cmd-h);
+  min-height: var(--ain-cmd-h);
+  max-height: var(--ain-cmd-h);
+  padding: 0 max(0.6rem, env(safe-area-inset-right)) 0 max(0.6rem, env(safe-area-inset-left));
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(20, 16, 40, 0.94), rgba(12, 10, 26, 0.94));
+  border-bottom: 1px solid rgba(200, 184, 236, 0.14);
+}
+
+html:root body.ainmos.play-window .top-bar .brand {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+html:root body.ainmos.play-window .top-bar .brand-wordmark {
+  height: calc(var(--ain-cmd-h) - 12px);
+  width: auto;
+  max-width: 8.5rem;
+}
+
+html:root body.ainmos.play-window .top-bar .version-label { display: none; }
+
+html:root body.ainmos.play-window #phase-stepper {
+  flex: 0 1 auto;
+  min-width: 0;
+  transform: none;
+  margin: 0;
+}
+
+html:root body.ainmos.play-window #hud {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
+html:root body.ainmos.play-window #hud .hud-item {
+  flex: none;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(200, 184, 236, 0.14);
+  white-space: nowrap;
+}
+
+html:root body.ainmos.play-window #hud .hud-ante-wrap #hud-ante {
+  font-family: var(--font-display);
+  color: var(--dc-mint);
+}
+
+html:root body.ainmos.play-window #death-clock {
+  flex: none;
+  order: 3;
+}
+
+html:root body.ainmos.play-window #hud-suits {
+  flex: none;
+  order: 4;
+}
+
+html:root body.ainmos.play-window #header-actions {
+  flex: none;
+  order: 5;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+html:root body.ainmos.play-window #header-actions .btn {
+  min-height: calc(var(--ain-cmd-h) - 10px);
+  padding-block: 0;
+}
+
+/* Tablets and phones keep the essentials in the bar. */
+html[data-form="tablet"]:root body.ainmos.play-window #hud-suits,
+html[data-form="phone"]:root body.ainmos.play-window #hud-suits,
+html[data-form="phone"]:root body.ainmos.play-window #death-clock .death-clock-label,
+html[data-form="phone"]:root body.ainmos.play-window #hud .label,
+html[data-form="phone"]:root body.ainmos.play-window .hud-goal-bar,
+html[data-form="phone"]:root body.ainmos.play-window .top-bar .brand {
+  display: none;
+}
+
+html[data-form="phone"]:root body.ainmos.play-window #hud .hud-item { padding: 0.1rem 0.45rem; font-size: 0.78rem; }
+
+/* ---- The table grid -------------------------------------------------------------- */
+
+html:root body.ainmos.play-window #screen-game.active {
+  grid-template-columns: var(--ain-info-w) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) var(--ain-hand-h);
+  grid-template-areas:
+    "info table"
+    "hand hand";
+}
+
+html[data-form="phone"]:root body.ainmos.play-window #screen-game.active {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "table"
+    "hand";
+}
+
+html:root body.ainmos.play-window #screen-game .table-surface {
+  grid-area: table;
+  border-right: none;
+  border-left: 1px solid rgba(200, 184, 236, 0.12);
+}
+
+html:root body.ainmos.play-window #screen-game .board-viewport {
+  --map-chrome-left: 0px;
+  padding-left: 0;
+  min-height: 0;
+}
+
+/* The old drawers are gone from the frame. */
+html:root body.ainmos.play-window #btn-deck-drawer,
+html:root body.ainmos.play-window #resize-sidebar-right,
+html:root body.ainmos.play-window #resize-hand {
+  display: none;
+}
+
+/* ---- Info column (Archetypes, Encounter, Forms, Boons) ------------------------------ */
+
+html:root body.ainmos.play-window #screen-game #sidebar-right {
+  grid-area: info;
+  position: relative;
+  inset: auto;
+  transform: none;
+  width: auto;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: 0.6rem 0.65rem 1rem;
+  border: none;
+  border-right: 1px solid rgba(200, 184, 236, 0.12);
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(200, 184, 236, 0.1), transparent 60%),
+    linear-gradient(180deg, rgba(22, 18, 44, 0.96), rgba(12, 10, 26, 0.98));
+  visibility: visible;
+  opacity: 1;
+}
+
+html:root body.ainmos.play-window #sidebar-right h3 {
+  margin: 0.7rem 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dc-powder);
+}
+
+html:root body.ainmos.play-window #sidebar-right h3:first-of-type { margin-top: 0; }
+
+/* Phones: the info column is a fullscreen menu opened from the Table button. */
+html[data-form="phone"]:root body.ainmos.play-window #screen-game #sidebar-right {
+  display: none;
+}
+
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #screen-game #sidebar-right {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  padding: max(0.8rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 1.2rem max(1rem, env(safe-area-inset-left));
+  columns: 2 16rem;
+  column-gap: 1.2rem;
+  animation: lf-window-in 0.35s ease both;
+}
+
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #sidebar-right > * {
+  break-inside: avoid;
+}
+
+html:root body.ainmos.play-window #btn-sidebar-drawer {
+  display: none;
+}
+
+html[data-form="phone"]:root body.ainmos.play-window #btn-sidebar-drawer {
+  display: inline-flex;
+  position: fixed;
+  top: calc(var(--ain-night-h) + var(--ain-cmd-h) + 0.45rem);
+  left: max(0.5rem, env(safe-area-inset-left));
+  right: auto;
+  bottom: auto;
+  z-index: 70;
+  transform: none;
+  writing-mode: horizontal-tb;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(200, 184, 236, 0.35);
+  background: var(--dc-glass);
+  color: var(--dc-ink);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #btn-sidebar-drawer {
+  z-index: 960;
+  top: max(0.6rem, env(safe-area-inset-top));
+  left: auto;
+  right: max(0.6rem, env(safe-area-inset-right));
+}
+
+html[data-form="phone"]:root body.ainmos.play-window #sidebar-drawer-backdrop { display: none; }
+
+/* ---- Boons list ---------------------------------------------------------------------------- */
+
+.boon-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.boon-row {
+  display: grid;
+  grid-template-columns: 1.7rem 1fr auto;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px rgba(200, 184, 236, 0.12);
+}
+
+.boon-row.is-empty {
+  display: block;
+  font-family: var(--dc-whisper);
+  font-style: italic;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.boon-row-art,
+.boon-row-glyph {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center 20%;
+  box-shadow: 0 0 0 1px rgba(200, 184, 236, 0.35);
+}
+
+.boon-row-glyph { display: grid; place-items: center; color: var(--dc-mint); font-size: 0.9rem; }
+.boon-row-name { font-family: var(--font-display); font-size: 0.74rem; color: var(--text); }
+.boon-row-kind { font-family: var(--dc-whisper); font-style: italic; font-size: 0.66rem; color: var(--muted); }
+
+/* ---- Deck dock (bottom-left of the board) ------------------------------------------------- */
+
+html:root body.ainmos.play-window #screen-game #deck-column {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  top: auto;
+  right: auto;
+  z-index: 33;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 0.35rem;
+  width: auto;
+  height: auto;
+  max-height: none;
+  max-width: calc(100% - 7rem);
+  padding: 0.35rem 0.45rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  border-radius: 12px;
+  background: rgba(14, 11, 30, 0.72);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 0 1px rgba(200, 184, 236, 0.16), 0 10px 26px rgba(4, 2, 14, 0.45);
+  transform: none;
+  animation: none;
+}
+
+html:root body.ainmos.play-window #deck-column::-webkit-scrollbar { display: none; }
+
+html:root body.ainmos.play-window #deck-column .deck-rail-row {
+  flex: none;
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 0.15rem;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+html:root body.ainmos.play-window #deck-column .deck-rail-head {
+  display: block;
+  padding: 0;
+  text-align: center;
+}
+
+html:root body.ainmos.play-window #deck-column .deck-rail-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+html:root body.ainmos.play-window #deck-column .deck-rail-sub { display: none; }
+html:root body.ainmos.play-window #deck-column .deck-rail-meta { display: none; }
+
+html:root body.ainmos.play-window #deck-column .deck-rail-row.suit-lucidity .deck-rail-label { color: var(--lucidity); }
+html:root body.ainmos.play-window #deck-column .deck-rail-row.suit-elasticity .deck-rail-label { color: var(--elasticity); }
+html:root body.ainmos.play-window #deck-column .deck-rail-row.suit-willpower .deck-rail-label { color: var(--willpower); }
+
+html:root body.ainmos.play-window #deck-column .deck-rail-piles {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.2rem;
+  padding: 0;
+}
+
+html:root body.ainmos.play-window #deck-column .deck-rect-stack,
+html:root body.ainmos.play-window #deck-column .deck-rail-sep {
+  display: none;
+}
+
+html:root body.ainmos.play-window #deck-column .deck-rail-draw,
+html:root body.ainmos.play-window #deck-column .deck-rail-discard {
+  position: relative;
+  width: clamp(28px, 2.6vw, 40px);
+  height: clamp(40px, 3.7vw, 56px);
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+html:root body.ainmos.play-window #deck-column .deck-rail-draw > .deck-draw-back,
+html:root body.ainmos.play-window #deck-column .deck-rail-discard > .deck-discard-top-card,
+html:root body.ainmos.play-window #deck-column .deck-rail-discard > .deck-discard-empty {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  transform: none;
+}
+
+html:root body.ainmos.play-window #deck-column .deck-draw-back img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+html:root body.ainmos.play-window #deck-column .deck-rail-draw::after {
+  content: attr(data-count);
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: rgba(14, 11, 28, 0.95);
+  color: var(--dc-ink);
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  line-height: 1.05rem;
+  text-align: center;
+  box-shadow: 0 0 0 1px rgba(200, 184, 236, 0.45);
+  pointer-events: none;
+}
+
+html:root body.ainmos.play-window #deck-column .deck-peek-cards { display: none; }
+
+html[data-form="phone"]:root body.ainmos.play-window #deck-column .deck-rail-discard { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window #deck-column .deck-rail-label { font-size: 0.5rem; }
+
+/* ---- Hand strip ----------------------------------------------------------------------------- */
+
+html:root body.ainmos.play-window #screen-game.active .hand-bar {
+  grid-area: hand;
+  display: grid;
+  grid-template-columns: clamp(170px, 17vw, 240px) minmax(0, 1fr) clamp(170px, 19vw, 280px);
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "dreamers hand allies"
+    "dreamers hand objects"
+    "power    hand persistent";
+  gap: 0.2rem 0.7rem;
+  height: var(--ain-hand-h);
+  min-height: 0;
+  max-height: var(--ain-hand-h);
+  padding: 0.35rem max(0.6rem, env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom, 0px)) max(0.6rem, env(safe-area-inset-left));
+  overflow: hidden;
+  border-top: 1px solid rgba(200, 184, 236, 0.16);
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(200, 184, 236, 0.12), transparent 60%),
+    linear-gradient(180deg, rgba(16, 13, 32, 0.97), rgba(10, 8, 22, 0.99));
+}
+
+/* A hand prompt ("Repress an Object…") floats just above the hand, so the hand keeps its full height. */
+html:root body.ainmos.play-window #screen-game .hand-bar > .hand-choice-bar:not(.hidden) {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--ain-hand-h) + 0.35rem);
+  transform: translateX(-50%);
+  width: min(46rem, calc(100vw - 1.5rem));
+  min-height: 0;
+  height: auto;
+  z-index: 40;
+}
+
+/* The board's status note repeats the hand prompt; let the prompt speak alone. */
+html:root body.ainmos.play-window #screen-game:has(.hand-choice-bar:not(.hidden)) #table-bottom { visibility: hidden; }
+
+html:root body.ainmos.play-window #screen-game .hand-bar > * {
+  grid-column: auto;
+  grid-row: auto;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+}
+
+html:root body.ainmos.play-window #screen-game .hand-bar > .dreamer-dock { grid-area: dreamers; overflow: hidden; }
+html:root body.ainmos.play-window #screen-game .hand-bar > .power-section { grid-area: power; overflow: hidden; }
+html:root body.ainmos.play-window #screen-game .hand-bar > .psyche-hand-section { grid-area: hand; }
+html:root body.ainmos.play-window #screen-game .hand-bar > .allies-section { grid-area: allies; }
+html:root body.ainmos.play-window #screen-game .hand-bar > .objects-hand-section { grid-area: objects; }
+html:root body.ainmos.play-window #screen-game .hand-bar > .persistent-section { grid-area: persistent; }
+
+/* Keepsake rows: a tiny label, then the cards in a line. */
+html:root body.ainmos.play-window #screen-game .hand-bar > .allies-section,
+html:root body.ainmos.play-window #screen-game .hand-bar > .objects-hand-section,
+html:root body.ainmos.play-window #screen-game .hand-bar > .persistent-section {
+  display: grid;
+  grid-template-columns: 4.4rem minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 0;
+  height: auto;
+  padding: 0.1rem 0.4rem;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: inset 0 0 0 1px rgba(200, 184, 236, 0.1);
+  overflow: hidden;
+}
+
+html:root body.ainmos.play-window #screen-game .hand-bar .hand-hint { display: none; }
+
+html:root body.ainmos.play-window #screen-game .hand-bar .hand-header {
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+html:root body.ainmos.play-window #screen-game .hand-bar .hand-header h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dc-powder);
+}
+
+html:root body.ainmos.play-window #screen-game .hand-bar .objects-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 0;
+  max-height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* The hand gets the middle of the strip. */
+html:root body.ainmos.play-window #screen-game .hand-bar > .psyche-hand-section {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+html:root body.ainmos.play-window #screen-game .hand-bar #hand,
+html:root body.ainmos.play-window #screen-game .hand-bar #hand-primary {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+/* Phones: one row — Dreamers, hand, keepsakes. */
+html[data-form="phone"]:root body.ainmos.play-window #screen-game.active .hand-bar {
+  grid-template-columns: clamp(96px, 15vw, 140px) minmax(0, 1fr) clamp(110px, 20vw, 170px);
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "dreamers hand allies"
+    "dreamers hand objects"
+    "dreamers hand persistent";
+}
+
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar > .power-section { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar .psyche-hand-section .hand-header,
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar .dreamer-dock-header { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar > .allies-section,
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar > .objects-hand-section,
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar > .persistent-section {
+  grid-template-columns: 3.7rem minmax(0, 1fr);
+  gap: 0.2rem;
+}
+
+/* ---- Portrait phones: turn sideways ------------------------------------------------------------- */
+
+.rotate-hint { display: none; }
+
+html[data-form="phone"][data-orientation="portrait"] body.ainmos.play-window .rotate-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(60, 44, 110, 0.85), rgba(6, 4, 16, 0.97) 70%);
+  color: var(--dc-ink);
+}
+
+.rotate-hint-icon {
+  font-size: 3rem;
+  color: var(--dc-mint);
+  text-shadow: 0 0 18px var(--dc-mint);
+  animation: rotate-hint-turn 2.4s ease-in-out infinite;
+}
+
+.rotate-hint p {
+  margin: 0;
+  font-family: var(--dc-whisper);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--dc-lavender);
+}
+
+@keyframes rotate-hint-turn {
+  0%, 30% { transform: rotate(0deg); }
+  60%, 100% { transform: rotate(90deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotate-hint-icon,
+  .night-boss.is-standing .night-face { animation: none; }
+}
+
+/* ---- Fullscreen menus: bigger cards in the phase opener --------------------------------------- */
+
+html:root body.ainmos.play-window .phase-opener-menu .psyche-card,
+html:root body.ainmos.play-window .phase-opener .psyche-card {
+  --card-w: clamp(64px, 7vw, 108px);
+}
+
+/* ---- Command bar balance -------------------------------------------------------------------- */
+
+html:root body.ainmos.play-window #phase-stepper { flex: none; }
+html:root body.ainmos.play-window #hud { flex: 0 0 auto; justify-content: flex-start; }
+html:root body.ainmos.play-window #hud .hud-feed-cluster { display: flex; gap: 0.25rem; margin-left: 0.2rem; }
+html:root body.ainmos.play-window #hud-suits .hud-pill-name,
+html:root body.ainmos.play-window #death-clock .death-clock-label { display: none; }
+html:root body.ainmos.play-window #hud-suits { gap: 0.2rem; }
+html:root body.ainmos.play-window #hud-suits .hud-pill { padding: 0.1rem 0.45rem; }
+html:root body.ainmos.play-window #death-clock { padding: 0.15rem 0.5rem; }
+html:root body.ainmos.play-window .top-bar .brand-wordmark { max-width: 7rem; }
+
+/* ---- Info column: a compact Archetype card ------------------------------------------------------ */
+
+html:root body.ainmos.play-window #sidebar-right #active-archetype {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+html:root body.ainmos.play-window #sidebar-right #active-archetype .archetype-row-strip { order: -1; }
+
+html:root body.ainmos.play-window #sidebar-right #active-archetype > .game-card.portrait {
+  display: grid;
+  grid-template-columns: 4.2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: auto;
+  padding: 0.35rem;
+  text-align: left;
+}
+
+html:root body.ainmos.play-window #sidebar-right #active-archetype > .game-card.portrait .art {
+  width: 4.2rem;
+  height: 5.6rem;
+  margin: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+html:root body.ainmos.play-window #sidebar-right #active-archetype > .game-card.portrait .art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+html:root body.ainmos.play-window #sidebar-right #active-archetype > .game-card.portrait .body {
+  padding: 0;
+  text-align: left;
+}
+
+html:root body.ainmos.play-window #sidebar-right .quest-list.compact li { min-height: 0; padding-block: 0.25rem; }
+html:root body.ainmos.play-window #sidebar-right .quest-text { font-size: 0.74rem; line-height: 1.25; }
+
+/* ---- Phone landscape: everything on one small screen ------------------------------------------- */
+
+/* Shrink the command bar's controls rather than hiding them. */
+html[data-form="phone"]:root body.ainmos.play-window .top-bar.play-top-bar > * { zoom: 0.62; }
+html[data-form="phone"]:root body.ainmos.play-window .top-bar.play-top-bar { gap: 0.25rem; }
+
+/* The Vault becomes a slim column of thumbnails on the left edge. */
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault {
+  left: max(0.35rem, env(safe-area-inset-left));
+  right: auto;
+  top: 3.9rem;
+  bottom: auto;
+  transform: none;
+  width: 3.9rem;
+  max-height: calc(100% - 6.4rem);
+}
+
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-window { padding: 0.2rem; border-radius: 10px; }
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-titlebar,
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-whisper,
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-tile-name,
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-tile-meta,
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-hint,
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-why { display: none; }
+
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-tiles { flex-direction: column; gap: 0.2rem; }
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-tile {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding: 0.15rem;
+}
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-tile-hex { width: 2.3rem; height: 2.65rem; }
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-footer { margin-top: 0.25rem; }
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-btn { min-height: 1.6rem; padding: 0.1rem 0.3rem; font-size: 0.55rem; letter-spacing: 0.04em; }
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-btn > span:first-child { display: none; }
+
+/* The deck dock: small backs, no labels. */
+html[data-form="phone"]:root body.ainmos.play-window #screen-game #deck-column { zoom: 0.6; left: auto; right: 0.4rem; bottom: 0.4rem; max-width: none; }
+html[data-form="phone"]:root body.ainmos.play-window #deck-column .deck-rail-head { display: none; }
+
+/* Pinch to zoom on phones; the zoom buttons only crowd the board. */
+html[data-form="phone"]:root body.ainmos.play-window .board-camera-controls,
+html[data-form="phone"]:root body.ainmos.play-window .board-zoom-controls { display: none; }
+
+/* The Table button sits at the board's bottom-left, above the hand. */
+html[data-form="phone"]:root body.ainmos.play-window #btn-sidebar-drawer {
+  top: auto;
+  bottom: calc(var(--ain-hand-h) + 0.45rem + env(safe-area-inset-bottom, 0px));
+  left: max(0.45rem, env(safe-area-inset-left));
+  font-size: 0.6rem;
+  padding: 0.25rem 0.65rem;
+}
+
+html[data-form="phone"]:root body.ainmos.play-window #btn-map-back,
+html[data-form="phone"]:root body.ainmos.play-window #btn-draw-dream,
+html[data-form="phone"]:root body.ainmos.play-window #btn-next-phase { zoom: 0.72; }
+
+/* Phones: the HUD shrinks before the menus fall off the edge. */
+html[data-form="phone"]:root body.ainmos.play-window #hud { flex: 1 1 0; min-width: 0; overflow: hidden; }
+html[data-form="phone"]:root body.ainmos.play-window #btn-moment-history { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window #header-actions { flex: none; }
+
+/* Keepsake rows never grow past their grid row. */
+html:root body.ainmos.play-window #screen-game .hand-bar > .allies-section,
+html:root body.ainmos.play-window #screen-game .hand-bar > .objects-hand-section,
+html:root body.ainmos.play-window #screen-game .hand-bar > .persistent-section {
+  height: 100%;
+  max-height: 100%;
+}
+
+html:root body.ainmos.play-window #screen-game .hand-bar .objects-row {
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  padding: 0;
+}
+
+html:root body.ainmos.play-window #screen-game .hand-bar .objects-row > .game-card,
+html:root body.ainmos.play-window #screen-game .hand-bar .objects-row > button {
+  flex: none;
+  height: 100%;
+  max-height: 100%;
+  width: auto;
+  aspect-ratio: 5 / 7;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Phones: the Table button sits beside Back. */
+html[data-form="phone"]:root body.ainmos.play-window #btn-sidebar-drawer {
+  top: calc(var(--ain-night-h) + var(--ain-cmd-h) + 0.75rem);
+  bottom: auto;
+  left: calc(max(0.45rem, env(safe-area-inset-left)) + 3.4rem);
+}
+
+/* ---- Fullscreen choices on a sideways phone: Bright | card | Dim ------------------------------- */
+
+@media (orientation: landscape) and (max-height: 520px) {
+  body.ainmos .ms-choice-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.6rem;
+    height: 100dvh;
+    padding: 0.5rem max(0.6rem, env(safe-area-inset-right)) 0.5rem max(0.6rem, env(safe-area-inset-left));
+  }
+  body.ainmos .ms-choice-rail { order: initial; width: auto; height: auto; padding: 0; justify-content: center; }
+  body.ainmos .ms-choice-center { order: initial; display: flex; flex-direction: column; align-items: center; min-height: 0; height: 100%; }
+  body.ainmos .ms-choice-caption { flex: none; }
+  body.ainmos .ms-choice-title { font-size: 1.1rem; margin: 0; }
+  body.ainmos .ms-choice-message { font-size: 0.72rem; margin: 0.2rem 0; max-width: 34ch; }
+  body.ainmos .ms-choice-card-frame { flex: 1; min-height: 0; height: auto; max-height: none; }
+  body.ainmos .ms-choice-card { max-height: 100%; max-width: 36vw; object-fit: contain; }
+  body.ainmos .ms-choice-btn { width: 100%; max-width: 15rem; min-height: 5.2rem; padding: 0.5rem 0.7rem; }
+  body.ainmos .ms-choice-btn__label { font-size: 0.85rem; }
+  body.ainmos .ms-choice-btn__hint { font-size: 0.66rem; }
+}
+
+/* Round buttons in the command bar size to the bar. */
+html:root body.ainmos.play-window #hud .hud-feed-cluster .btn,
+html:root body.ainmos.play-window #header-actions .btn-icon {
+  width: calc(var(--ain-cmd-h) - 12px);
+  height: calc(var(--ain-cmd-h) - 12px);
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+/* Narrower windows drop the focused-Dreamer pills first (they live on the Dreamer chips too). */
+@media (max-width: 1200px) {
+  html:root body.ainmos.play-window #hud-suits { display: none; }
+  html:root body.ainmos.play-window #hud .hud-item { padding: 0.15rem 0.45rem; }
+}
+@media (max-width: 960px) {
+  html:root body.ainmos.play-window #hud .hud-round-wrap { display: none; }
+}

@@ -553,7 +553,7 @@ export function rulesRemHtml() {
           <p><strong>Head Dreamer (★)</strong> draws and resolves one <strong>Dream</strong> card each round — click <strong>Draw Dream</strong> left of Next Phase once the group agrees. Then <strong>one Dreamer</strong> spends 1 Lucidity card from the spread.</p>
           <ul>
             <li><strong>Setup:</strong> every Landscape is shuffled. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten</li>
-            <li><strong>Reveal budget</strong> = that 1 card's value + Lucidity bonuses (Dreamer, Objects, Acquired Archetypes) → click that many Wasteland hexes to flip Landscapes face-up</li>
+            <li><strong>Reveal budget</strong> = that 1 card's value + Lucidity bonuses (Dreamer, Objects, Acquired Archetypes) → place that many Landscapes from the Dreamscape Vault on glowing slots beside the dream</li>
             <li><strong>Unused Reveals</strong> draw 1 Psyche each, one Dreamer at a time, clockwise. If the map is already face-up, the whole Lucidity budget draws Psyche this way</li>
             <li>Draw the Dream first, then spend Lucidity</li>
             <li><strong>Round 1:</strong> each Dreamer already has 5 Psyche — no round-start draw</li>

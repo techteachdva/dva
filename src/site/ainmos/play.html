@@ -16,8 +16,9 @@
   <link rel="stylesheet" href="css/glass.css">
   <link rel="stylesheet" href="css/dreamscape.css">
   <link rel="stylesheet" href="css/ainmos.css">
+  <link rel="stylesheet" href="css/ainmos-layout.css">
 </head>
-<body class="in-game play-window">
+<body class="in-game play-window ainmos">
   <div id="final-nightmare-backdrop" class="final-nightmare-backdrop" aria-hidden="true"></div>
   <div id="final-recurrence-veil" class="final-recurrence-veil" aria-hidden="true"></div>
   <div id="fullscreen-prompt" class="fullscreen-prompt" role="button" tabindex="0">
@@ -34,10 +35,15 @@
     </div>
   </div>
 
+  <div class="rotate-hint" role="note">
+    <span class="rotate-hint-icon" aria-hidden="true">⟳</span>
+    <p>Turn your device sideways to dream.</p>
+  </div>
   <div id="app">
+    <div id="night-strip" class="night-strip" role="group" aria-label="The night" hidden></div>
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 0.8</span>
+        <span class="version-label">v 0.9</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Ainmos" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -54,7 +60,7 @@
       </div>
       <div id="hud" class="hud">
         <div class="hud-item hud-goal-wrap" title="Archetype points scored / points required to wake."><span class="label">Goal:</span><span id="hud-goal">0/8</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span></div>
-        <div class="hud-item hud-dreams-wrap hud-night-wrap" title="The night: every Dream left to right, grouped in Antes. Each Ante ends with its Boss, face up."><span class="label">Night</span><span id="hud-night-bar" class="night-bar" role="group"></span><span id="hud-dreams" class="night-count">16</span></div>
+        <div class="hud-item hud-ante-wrap" title="The Ante you are in, out of the night's Antes. Each Ante is two Dreams and a Boss."><span class="label">Ante</span><span id="hud-ante">1/4</span></div>
         <div class="hud-item hud-mind-wrap" id="hud-mind-wrap" title="The Waking Mind: Psyche left to draw (deck plus discard). Each Dreambeast still standing at dusk Represses 1. Remember to win cards back."><span class="label">Mind</span><span id="hud-mind">0</span><span id="hud-mind-dusk" class="hud-mind-dusk hidden"></span></div>
         <div class="hud-item hud-round-wrap"><span class="label">Round</span><span id="hud-round">1</span></div>
         <div class="hud-feed-cluster">
@@ -123,6 +129,8 @@
           <div id="acquired-archetypes" class="mini-card-row"></div>
           <h3 class="dream-forms-title">Dream Forms</h3>
           <ul id="dream-forms" class="dream-forms" aria-label="Dream Forms and their levels"></ul>
+          <h3 class="boons-title">Boons</h3>
+          <ul id="boon-list" class="boon-list" aria-label="Boons the table holds"></ul>
         </aside>
 
         <footer class="hand-bar" id="hand-bar">

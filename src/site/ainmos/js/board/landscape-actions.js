@@ -596,8 +596,10 @@ function swapEncountersByKeys(state, keyA, keyB) {
   if (!encA || !encB) return false;
   removeEncounterFromLandscape(state, tileAId, encA);
   removeEncounterFromLandscape(state, tileBId, encB);
+  state._movingEncounter = true;
   addEncounterOnLandscape(state, tileAId, encB);
   addEncounterOnLandscape(state, tileBId, encA);
+  state._movingEncounter = false;
   addLog(state, `Swapped ${encA.name} and ${encB.name}.`);
   return true;
 }
@@ -917,8 +919,10 @@ export function resumeLandscapeAction(state) {
     if (encA && encB) {
       removeEncounterFromLandscape(state, a.id, encA);
       removeEncounterFromLandscape(state, b.id, encB);
+      state._movingEncounter = true;
       addEncounterOnLandscape(state, a.id, encB);
       addEncounterOnLandscape(state, b.id, encA);
+      state._movingEncounter = false;
       addLog(state, `Swapped ${encA.name} and ${encB.name}.`);
     }
     return true;

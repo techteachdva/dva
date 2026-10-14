@@ -56,3 +56,25 @@ export function renderBoonDraft(state, { onChoose } = {}) {
     </section>`;
   host.querySelectorAll("[data-boon]").forEach((el) => el.addEventListener("click", () => onChoose?.(el.dataset.boon)));
 }
+
+/** The info column's Boon list: what the table has taken, and how each works. */
+export function renderBoonList(state) {
+  const host = document.getElementById("boon-list");
+  if (!host || !state) return;
+  const boons = Array.isArray(state.boons) ? state.boons : [];
+  const key = boons.map((b) => b.id).join("|");
+  if (host.dataset.key === key && host.childElementCount) return;
+  host.dataset.key = key;
+  if (!boons.length) {
+    host.innerHTML = `<li class="boon-row is-empty">Defeat a Boss to choose a Boon.</li>`;
+    return;
+  }
+  host.innerHTML = boons.map((boon) => `
+    <li class="boon-row kind-${esc(boon.kind)}" title="${esc(boon.text)}">
+      ${boon.image
+        ? `<span class="boon-row-art" style="background-image:url('${esc(new URL(boon.image, document.baseURI).href)}')"></span>`
+        : `<span class="boon-row-glyph" aria-hidden="true">${esc(boon.glyph || "✦")}</span>`}
+      <span class="boon-row-name">${esc(boon.name)}</span>
+      <span class="boon-row-kind">${kindLabel(boon)}</span>
+    </li>`).join("");
+}

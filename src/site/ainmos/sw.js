@@ -1,10 +1,10 @@
 /**
- * Somnia PWA worker. Bump CACHE_NAME on every ship so stale Home Screen
+ * Ainmos PWA worker. Bump CACHE_NAME on every ship so stale Home Screen
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.8-first-night-b";
-const RUNTIME_CACHE = "ainmos-runtime-0.8-first-night-b";
+const CACHE_NAME = "ainmos-0.9-wide-awake";
+const RUNTIME_CACHE = "ainmos-runtime-0.9-wide-awake";
 
 const PRECACHE = [
   "./",
@@ -15,6 +15,7 @@ const PRECACHE = [
   "./css/glass.css",
   "./css/dreamscape.css",
   "./css/ainmos.css",
+  "./css/ainmos-layout.css",
   "./css/fonts-local.css",
   "./fonts/font-0.woff2",
   "./fonts/font-1.woff2",
@@ -179,7 +180,7 @@ self.addEventListener("activate", (event) => {
     const keys = await caches.keys();
     await Promise.all(
       keys
-        .filter((key) => key.startsWith("somnia-") && key !== CACHE_NAME && key !== RUNTIME_CACHE)
+        .filter((key) => key.startsWith("ainmos-") && key !== CACHE_NAME && key !== RUNTIME_CACHE)
         .map((key) => caches.delete(key)),
     );
     await self.clients.claim();

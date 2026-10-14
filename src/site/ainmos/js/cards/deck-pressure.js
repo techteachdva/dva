@@ -4,7 +4,6 @@
  */
 import {
   LENGTHS,
-  BOSS_DREAM_DECK_SLOTS,
   PSYCHE_DECK_SIZE,
   MINDSTREAM_DECK_SIZE,
 } from "../core/data.js";
@@ -30,7 +29,7 @@ let lastSoftSig = "";
 export function ensureDeckCaps(state) {
   if (!state) return null;
   const length = LENGTHS[state.lengthKey];
-  const fallbackDream = (length?.dreams || 14) + BOSS_DREAM_DECK_SLOTS.length;
+  const fallbackDream = state.nightPlan?.length || ((length?.dreams || 8) + (length?.antes || 4));
   const current = state.deckCaps || {};
   state.deckCaps = {
     dream: current.dream || Math.max(fallbackDream, state.dreamDeck?.length || 0),

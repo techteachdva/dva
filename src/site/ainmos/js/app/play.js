@@ -1,7 +1,7 @@
 import { renderCoach } from "../ui/coach-panel.js";
 import { maybeEndGuidance } from "../tutorial/coach.js";
 import { buildRunSummary } from "../ui/run-summary.js";
-import { renderBoonDraft } from "../ui/boon-panel.js";
+import { renderBoonDraft, renderBoonList } from "../ui/boon-panel.js";
 import { chooseBoon } from "../dreamers/boons.js";
 import { renderLostFound } from "../ui/lost-found-panel.js";
 import {
@@ -246,7 +246,6 @@ import {
   hideModal,
   showMindstreamPicker,
   showLandscapeActionPicker,
-  maybeShowExcessPsycheIntro,
   showLandscapeDetail,
   showDreamerDetailOverlay,
   showDreamerDetail,
@@ -2498,6 +2497,7 @@ function renderBoardArea() {
     }
   };
   renderDreamForms(state);
+  renderBoonList(state);
   if (maybeEndGuidance(state)) {
     logMoment(state, "Training wheels off. The Turtle has fallen; the rest of the night is yours.");
   }
@@ -3023,13 +3023,6 @@ function renderAll() {
 
   const blocking = isBlockingGameChoice(state) && !repressChoiceActive();
   setUtilityModalRequired(blocking, blockingChoiceLabel(state));
-  if (!state.tutorialMode && !state.excessPsycheIntroShown) {
-    requestAnimationFrame(() => {
-      const modal = document.getElementById("utility-modal");
-      if (modal && !modal.classList.contains("hidden") && !modal.classList.contains("utility-modal-minimized")) return;
-      maybeShowExcessPsycheIntro(state);
-    });
-  }
   const utilityModal = document.getElementById("utility-modal");
   document.body.classList.toggle(
     "utility-modal-open",

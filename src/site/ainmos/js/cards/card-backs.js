@@ -16,6 +16,7 @@ export function cardBackForDeckId(deckId) {
   if (deckId === "psyche") return CARD_BACKS.psyche;
   if (deckId === "archetype") return CARD_BACKS.archetype;
   if (deckId === "dream") return CARD_BACKS.dream;
+  if (deckId === "object") return CARD_BACKS.archetype;
   if (deckId.startsWith("mindstream-")) {
     return CARD_BACKS[deckId.replace("mindstream-", "")] || CARD_BACKS.lucidity;
   }

@@ -37,6 +37,13 @@ const HINTS = [
     when: (s) => isFreeformBoard(s) && s.landscapePick?.mode === "reveal" && !s.landscapePick.flipCard,
   },
   {
+    id: "leftover",
+    title: "Nothing is wasted",
+    text: "Every Reveal, step, or Meet action you leave unspent draws 1 Psyche, passed around the table when the phase ends.",
+    when: (s) => (getPhase(s) === "Explore" && s.exploreActivated && (s.exploreMovesLeft || 0) > 0)
+      || (getPhase(s) === "Meet" && (s.meetActionBudget || 0) > (s.meetActionsUsed || 0)),
+  },
+  {
     id: "quest-tile",
     title: "A quest Landscape",
     text: "A tile in the Vault is named on a face-up Archetype's quest. Place it, then draw Mindstream or meet a Dreambeast there.",

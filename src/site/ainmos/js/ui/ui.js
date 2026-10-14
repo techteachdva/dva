@@ -2,7 +2,7 @@ import { runSummaryHtml } from "./run-summary.js";
 import { bestForm, DREAM_FORMS, formLevel, PSYCHE_UPGRADES, upgradeLabel } from "../cards/dream-forms.js";
 import { renderNightBar } from "./night-bar.js";
 import { holdMusic } from "../audio/audio.js";
-import { getPhase, activePlayer, headPlayer, tileEncounters, encounterKey, allDreamersOnBed, archetypeRowOf, focusRowArchetype } from "../core/state.js";
+import { getPhase, activePlayer, headPlayer, tileEncounters, encounterKey, finalBossDefeated, archetypeRowOf, focusRowArchetype } from "../core/state.js";
 import {
   coopMeetPlayTotal,
   meetPsycheActor,
@@ -3151,7 +3151,13 @@ const DECK_LABELS = {
   "object-lucidity": "✦ Object Lucidity",
   "object-elasticity": "✦ Object Elasticity",
   "object-willpower": "✦ Object Willpower",
+  object: "✦ Objects",
 };
+
+/** Ainmos: one shared Object deck, stored as three suit piles. */
+function allObjectPiles(piles) {
+  return [...(piles?.lucidity || []), ...(piles?.elasticity || []), ...(piles?.willpower || [])];
+}
 
 function discardPileForDeck(state, deckId) {
   switch (deckId) {
@@ -3164,6 +3170,7 @@ function discardPileForDeck(state, deckId) {
     case "object-lucidity": return state.objectDiscard?.lucidity || [];
     case "object-elasticity": return state.objectDiscard?.elasticity || [];
     case "object-willpower": return state.objectDiscard?.willpower || [];
+    case "object": return allObjectPiles(state.objectDiscard);
     default: return [];
   }
 }
@@ -3175,9 +3182,7 @@ function discardBinderPiles(state) {
     { id: "mindstream-lucidity", label: "Lucidity", icon: "◉", cards: [...(state.mindstreamDiscard?.lucidity || [])].filter(Boolean).reverse() },
     { id: "mindstream-elasticity", label: "Elasticity", icon: "⇄", cards: [...(state.mindstreamDiscard?.elasticity || [])].filter(Boolean).reverse() },
     { id: "mindstream-willpower", label: "Willpower", icon: "✊", cards: [...(state.mindstreamDiscard?.willpower || [])].filter(Boolean).reverse() },
-    { id: "object-lucidity", label: "Object Lucidity", icon: "✦", cards: [...(state.objectDiscard?.lucidity || [])].filter(Boolean).reverse() },
-    { id: "object-elasticity", label: "Object Elasticity", icon: "✦", cards: [...(state.objectDiscard?.elasticity || [])].filter(Boolean).reverse() },
-    { id: "object-willpower", label: "Object Willpower", icon: "✦", cards: [...(state.objectDiscard?.willpower || [])].filter(Boolean).reverse() },
+    { id: "object", label: "Objects", icon: "✦", cards: allObjectPiles(state.objectDiscard).filter(Boolean).reverse() },
   ];
 }
 
@@ -3609,6 +3614,7 @@ function drawPileForDeck(state, deckId) {
     case "object-lucidity": return state.objectDecks?.lucidity || [];
     case "object-elasticity": return state.objectDecks?.elasticity || [];
     case "object-willpower": return state.objectDecks?.willpower || [];
+    case "object": return allObjectPiles(state.objectDecks);
     default: return [];
   }
 }
@@ -3681,15 +3687,13 @@ function appendPeekCards(parent, cards, onViewPeek, deckId) {
   parent.appendChild(peekWrap);
 }
 
+/** Ainmos deck dock: the Night Strip shows the Dreams, and Objects are one shared deck. */
 const DECK_COLUMN_DEFS = [
-  { id: "dream", label: "Dream", emoji: "💤", kind: "dream" },
   { id: "psyche", label: "Psyche", emoji: "🃏", kind: "psyche" },
   { id: "mindstream-lucidity", label: "Mindstream", sub: "Lucidity", emoji: "◉", suit: "lucidity", kind: "mindstream" },
   { id: "mindstream-elasticity", label: "Mindstream", sub: "Elasticity", emoji: "⇄", suit: "elasticity", kind: "mindstream" },
   { id: "mindstream-willpower", label: "Mindstream", sub: "Willpower", emoji: "✊", suit: "willpower", kind: "mindstream" },
-  { id: "object-lucidity", label: "Object", sub: "Lucidity", emoji: "✦", suit: "lucidity", kind: "object" },
-  { id: "object-elasticity", label: "Object", sub: "Elasticity", emoji: "✦", suit: "elasticity", kind: "object" },
-  { id: "object-willpower", label: "Object", sub: "Willpower", emoji: "✦", suit: "willpower", kind: "object" },
+  { id: "object", label: "Objects", emoji: "✦", kind: "object" },
 ];
 
 let lastDeckColumnKey = "";
@@ -3812,6 +3816,7 @@ export function renderDecks(state, onViewDiscard, onViewPeek = null, onDrawPile 
     const drawZone = document.createElement("div");
     drawZone.className = "deck-rail-draw";
     drawZone.dataset.deckId = deck.id;
+    drawZone.dataset.count = String(drawCount);
     drawZone.title = `${drawCount} card${drawCount === 1 ? "" : "s"} in draw pile — click the card back`;
     const drawRects = document.createElement("div");
     drawRects.className = "deck-rect-stack deck-rect-stack-draw";
@@ -4221,15 +4226,11 @@ export function renderHud(state, hint = "") {
 
   const escapeBanner = document.getElementById("hud-escape-banner");
   if (escapeBanner) {
-    const needsBed = !state.finalRecurrence
-      && state.status === "playing"
-      && (state.acquiredPoints || 0) >= (state.goalPoints || 0);
-    if (needsBed) {
-      const onBed = allDreamersOnBed(state);
+    // Ainmos: the goal is half the win; the final Boss is the other half.
+    const goalMet = state.status === "playing" && !!state.archetypeGoalReached;
+    if (goalMet && !finalBossDefeated(state)) {
       escapeBanner.classList.remove("hidden");
-      escapeBanner.textContent = onBed
-        ? "Everyone is on The Bed — advance to wake up!"
-        : "Archetype goal reached! Every living Dreamer must stand on The Bed to escape.";
+      escapeBanner.textContent = "Archetype goal met. Defeat the final Boss to wake.";
     } else {
       escapeBanner.classList.add("hidden");
       escapeBanner.textContent = "";
@@ -4830,34 +4831,6 @@ function renderEndGameId(dream) {
       }
     });
   }
-}
-
-/** Once per dream, when a shared budget first opens. */
-export function maybeShowExcessPsycheIntro(state) {
-  if (!state || state.tutorialMode || state.status !== "playing" || state.excessPsycheIntroShown) return;
-  const phase = getPhase(state);
-  const open = (phase === "Reveal"
-      && state.landscapePick
-      && !state.landscapePick.freeReveal
-      && (state.landscapePick.remaining || 0) > 0)
-    || (phase === "Explore" && state.exploreActivated && (state.exploreMovesLeft || 0) > 0)
-    || (phase === "Meet" && (state.meetActionBudget || 0) > (state.meetActionsUsed || 0));
-  if (!open) return;
-  const modal = document.getElementById("utility-modal");
-  const body = document.getElementById("utility-modal-body");
-  if (!modal || !body || !modal.classList.contains("hidden")) return;
-  state.excessPsycheIntroShown = true;
-  body.innerHTML = `
-    <h2>Unused actions draw Psyche</h2>
-    <p>Any Reveal, move, or Meet action you do not spend draws <strong>1 Psyche</strong>.</p>
-    <p>The Dreamer whose turn it is draws that card. Then the turn passes clockwise, one card at a time.</p>
-    <p>Open that Dreamer and choose <strong>Draw 1 Psyche</strong>. Or end the phase, and the table draws whatever is left the same way.</p>
-    <div class="utility-actions">
-      <button type="button" class="btn primary" data-excess-intro-ok>Got it</button>
-    </div>
-  `;
-  body.querySelector("[data-excess-intro-ok]")?.addEventListener("click", () => hideUtilityModal(true));
-  modal.classList.remove("hidden", "utility-modal-minimized");
 }
 
 export function showLandscapeActionPicker(tile, choices, onPick) {
