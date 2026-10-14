@@ -29,7 +29,7 @@ import {
 } from "../dreamers/subconscious.js";
 import { applyBossAcceptEffect } from "./bosses.js";
 import { adjacentTiles, hexDistance } from "../core/hex.js";
-import { requestChooseTile, requestForgetLandscapes, forgetNamedLandscapes, forgetRandomLandscapes } from "../board/landscapes.js";
+import { requestChooseTile, requestForgetLandscapes, forgetNamedLandscapes, forgetRandomLandscapes, revealOrPlaceLandscapes } from "../board/landscapes.js";
 import { offerEffectChoice, registerEffectResolver } from "../effects/effect-choices.js";
 import { discardToMindstream } from "../cards/mindstream-supply.js";
 import { scaleFailCount } from "../cards/psyche-pressure.js";
@@ -756,13 +756,7 @@ export function applyRejectReward(state, encounter, actor, helpers = {}) {
       break;
     }
     case "reveal-landscapes": {
-      const hidden = state.board.filter((l) => !l.revealed && !l.center);
-      const n = Math.min(effect.count || 1, hidden.length);
-      hidden.slice(0, n).forEach((t) => revealLandscapeTile(state, t));
-      if (n) {
-        recordQuestEvent(state, "reveal_landscape", { count: n });
-        addLog(state, `Repress reward: Reveal ${n} Landscape${n === 1 ? "" : "s"}.`);
-      }
+      revealOrPlaceLandscapes(state, effect.count || 1, { source: "Repress reward" });
       break;
     }
     case "repress-hand": {

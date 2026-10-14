@@ -55,7 +55,7 @@ function openerTitle(phase, suitLabel) {
 function openerLead(phase, suitLabel) {
   const token = `A Power Token opens as 1 + that Dreamer's ${suitLabel}. Skip Phase leaves without spending.`;
   if (phase === "Reveal") {
-    return `Spend 1 ${suitLabel} Psyche, or 1 Power Token. Card value (or 1) plus Lucidity is how many Landscapes the team may reveal. ${token}`;
+    return `Spend 1 ${suitLabel} Psyche, or 1 Power Token. Card value (or 1) plus Lucidity is how many Landscapes the team may reveal, or place from the Dreamscape Vault on a Freeform Board. ${token}`;
   }
   if (phase === "Explore") {
     return `Spend 1 ${suitLabel} Psyche, or 1 Power Token. Card value (or 1) plus Elasticity is the team's shared moves. ${token}`;

@@ -22,7 +22,7 @@ import {
 } from "../dreamers/subconscious.js";
 import { discardToMindstream } from "../cards/mindstream-supply.js";
 import { discardDreamCard } from "../cards/dream-deck.js";
-import { requestChooseTile, forgetRandomLandscapes, forgetNamedLandscapes } from "../board/landscapes.js";
+import { requestChooseTile, forgetRandomLandscapes, forgetNamedLandscapes, revealOrPlaceLandscapes } from "../board/landscapes.js";
 import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
 
 function alive(state) {
@@ -272,13 +272,7 @@ function applyResolutionStep(state, player, step, helpers = {}) {
       break;
     }
     case "revealLandscapes": {
-      const hidden = state.board.filter((l) => !l.revealed && !l.center);
-      const n = Math.min(p.count || 1, hidden.length);
-      hidden.slice(0, n).forEach((t) => revealLandscapeTile(state, t));
-      if (n) {
-        recordQuestEvent(state, "reveal_landscape", { count: n });
-        addLog(state, `Reveal ${n} Landscape${n === 1 ? "" : "s"}.`);
-      }
+      revealOrPlaceLandscapes(state, p.count || 1, { source: "Bright" });
       break;
     }
     case "forgetLandscapes": {

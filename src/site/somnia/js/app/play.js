@@ -84,6 +84,10 @@ import {
   revealLandscape,
   activateExplore,
   handleBoardTileClick,
+  handleBoardSlotClick,
+  handleVaultTileSelect,
+  handleVaultRefresh,
+  handleBuryFlippedTile,
   gainMeetActions,
   meetEncounter,
   landscapeAction,
@@ -127,6 +131,7 @@ import {
   moveDreamer,
   prepareMindstreamMeet,
 } from "../core/game.js";
+import { renderDreamscapeVault } from "../ui/vault-panel.js";
 import { createSpectatorBot } from "../dev/bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "../encounters/dreambeasts.js";
 import { requestEndPhase } from "../flow/phase-skip.js";
@@ -310,6 +315,9 @@ function getSpectatorBot() {
       endPhase,
       spendExcessPsycheDraw,
       handleBoardTileClick,
+      handleBoardSlotClick,
+      handleVaultTileSelect,
+      handleBuryFlippedTile,
       moveDreamer,
       passMeetToken,
       meetEncounter: (s, mode, opts = {}) => meetEncounter(s, mode, { ...opts, instant: true }),
@@ -1109,6 +1117,7 @@ async function startGame(config) {
       selectedDreamers,
       gentleStart: !!config.gentleStart,
       seed: config.seed || null,
+      boardMode: config.boardMode || "fixed",
     });
     resolveOpeningDream(state, getEffectHelpers());
     // Hide the table until the opening deal plays (removed when it starts/skips).
@@ -2469,6 +2478,24 @@ function renderBoardArea() {
       openDreamerBoardRadial(null, result.playerId, result.tileId);
     }
   };
+  renderDreamscapeVault(state, {
+    onSelect: (index) => {
+      if (handleVaultTileSelect(state, index)) playSfx("select");
+      renderAll();
+    },
+    onRefresh: () => {
+      handleVaultRefresh(state);
+      renderAll();
+    },
+    onBury: () => {
+      handleBuryFlippedTile(state);
+      renderAll();
+    },
+    onBlocked: (reason) => {
+      if (reason) addLog(state, reason);
+      renderAll();
+    },
+  });
   renderBoard(state, commitLandscape, legalMoves, pickHighlights, (id) => {
     const tile = state.board.find((t) => t.id === id);
     if (tile?.revealed && !tile.wasteland) playLandscapeSfx(id);
@@ -2483,6 +2510,10 @@ function renderBoardArea() {
       },
     });
   }, {
+    onPlaceSlot: (q, r) => {
+      if (handleBoardSlotClick(state, q, r)) flashRevealOpenCursor();
+      renderAll();
+    },
     onDreamerTokenClick: (playerId, tileId, anchorEl, event) => {
       const playerIndex = state.players.findIndex((p) => p.id === playerId);
       if (playerIndex < 0) return;

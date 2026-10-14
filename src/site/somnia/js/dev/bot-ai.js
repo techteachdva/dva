@@ -39,7 +39,8 @@ import {
 } from "./bot-policy.js";
 import { focusRowArchetype } from "../core/state.js";
 import { handLimitForPlayer, resolveNothingChoice } from "../effects/objects.js";
-import { revealableTiles, forgettableTiles, cancelLandscapePick } from "../board/landscapes.js";
+import { revealableTiles, forgettableTiles, cancelLandscapePick, pendingPlacementCard } from "../board/landscapes.js";
+import { isFreeformBoard, vaultCards, placementSlots } from "../board/dreamscape-vault.js";
 import { getEventResolution } from "../effects/event-resolutions.js";
 import { resolveMindstreamChoice, canPayEventGood, assessDreamGood } from "../cards/mindstream-choices.js";
 import { getDreamResolution } from "../cards/dream-resolutions.js";
@@ -587,6 +588,35 @@ export function createSpectatorBot({
       }
     }
 
+    if (state.landscapePick?.mode === "reveal" && isFreeformBoard(state) && !state.landscapePick.excessOnly) {
+      // Freeform: take a quest tile from the Vault if one is up, and set it beside a Dreamer.
+      const quests = new Set(activeQuestLandscapeIds(state));
+      if (!pendingPlacementCard(state)) {
+        const cards = vaultCards(state);
+        const index = Math.max(0, cards.findIndex((c) => quests.has(c.id)));
+        if (cards.length) api.handleVaultTileSelect?.(state, index);
+      }
+      const card = pendingPlacementCard(state);
+      const slots = placementSlots(state);
+      const homes = state.players.filter((p) => p.alive)
+        .map((p) => state.board.find((t) => t.id === p.landscapeId))
+        .filter(Boolean);
+      const near = (s) => Math.min(99, ...homes.map((t) => (Math.abs(t.q - s.q) + Math.abs(t.r - s.r) + Math.abs(t.q + t.r - s.q - s.r)) / 2));
+      const slot = [...slots].sort((a, b) => near(a) - near(b))[0];
+      if (card && slot && api.handleBoardSlotClick?.(state, slot.q, slot.r)) {
+        think(`Place ${card.name}`);
+      } else if (state.landscapePick?.flipCard) {
+        think("Put the flipped tile back");
+        api.handleBuryFlippedTile?.(state);
+      } else if (api.spendExcessPsycheDraw?.(state)) {
+        think("Draw Psyche with a leftover Reveal");
+      } else {
+        cancelLandscapePick(state);
+      }
+      renderAll?.();
+      return true;
+    }
+
     if (state.landscapePick?.mode === "reveal" || state.landscapePick?.mode === "reveal-deck-tops") {
       const tiles = revealableTiles(state);
       const quests = new Set(activeQuestLandscapeIds(state));
@@ -711,7 +741,7 @@ export function createSpectatorBot({
         // Landscape actions
         if (tile?.revealed && !tile.wasteland) {
           const choices = getLandscapeActionChoices(tile);
-          const want = ["take-power", "draw-3-psyche", "draw-1-psyche", "draw-mindstream", "spawn-dreambeast"]
+          const want = ["take-power", "dream-onward", "draw-1-psyche", "draw-mindstream", "spawn-dreambeast"]
             .find((id) => choices.some((c) => c.id === id));
           if (want && api.performLandscapeAction) {
             state.selectedLandscapeId = tile.id;

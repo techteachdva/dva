@@ -1,5 +1,5 @@
 [
-  { "id": "bed", "name": "Bed", "suit": null, "starting": true, "center": true, "image": "images/landscapes/bed.webp", "wastelandImage": "images/landscapes/wasteland.webp", "landscapeActions": ["draw-3-psyche"] },
+  { "id": "bed", "name": "Bed", "suit": null, "starting": true, "center": true, "image": "images/landscapes/bed.webp", "wastelandImage": "images/landscapes/wasteland.webp", "landscapeActions": ["dream-onward"] },
   { "id": "city", "name": "City", "suit": "willpower", "starting": true, "image": "images/landscapes/city.webp", "uniqueAction": "spawn-dreambeast" },
   { "id": "forest", "name": "Forest", "suit": "elasticity", "starting": true, "image": "images/landscapes/forest.webp", "uniqueAction": "draw-any-mindstream" },
   { "id": "house", "name": "House", "suit": "willpower", "starting": true, "image": "images/landscapes/house.webp", "uniqueAction": "cycle-psyche" },

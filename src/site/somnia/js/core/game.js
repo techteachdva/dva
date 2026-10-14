@@ -111,7 +111,17 @@ import {
   discardToMindstream,
 } from "../cards/mindstream-supply.js";
 import { beginTransformationPick } from "../cards/dream-choices.js";
-import { beginRevealPicking, handleLandscapeTilePick, cancelLandscapePick, requestChooseTile, spendRevealOnMindstreamTop } from "../board/landscapes.js";
+import {
+  beginRevealPicking,
+  handleLandscapeTilePick,
+  cancelLandscapePick,
+  requestChooseTile,
+  spendRevealOnMindstreamTop,
+  placeLandscapeAt,
+  selectVaultTile,
+  refreshVaultDuringReveal,
+  buryFlippedTile,
+} from "../board/landscapes.js";
 import { narrate, logMoment } from "./narrator.js";
 import { flashPhaseEntryMoments } from "../ui/moment-overlay.js";
 import { playSfx } from "../audio/audio.js";
@@ -181,7 +191,7 @@ function meetActionKey(action, landscapeActionId = null) {
   return action;
 }
 
-const PER_DREAMER_LANDSCAPE_ACTIONS = new Set(["draw-3-psyche"]);
+const PER_DREAMER_LANDSCAPE_ACTIONS = new Set();
 
 function usedMeetActionList(state, player) {
   if (!player) return [];
@@ -2964,6 +2974,51 @@ function canAutoActivateExplore(state) {
   if (elaCards.length > PHASE_OPENER_MAX_CARDS) return false;
   if (elaCards.length >= 1) return true;
   return phaseTokenValue(state, player) >= 1;
+}
+
+/** Freeform Board: tap an empty glowing hex to place the chosen Landscape there. */
+export function handleBoardSlotClick(state, q, r) {
+  const pick = state.landscapePick;
+  if (pick?.mode !== "reveal") return false;
+  if (actionTurnActive(state) && !pick.bedFlip) {
+    const holder = actionTurnHolder(state);
+    const actor = activePlayer(state);
+    if (holder && actor && holder.id !== actor.id) {
+      addLog(state, `It is ${holder.name}'s turn to place a Landscape.`);
+      return false;
+    }
+  }
+  const beforeRemaining = pick.remaining;
+  const ok = placeLandscapeAt(state, q, r);
+  if (!ok) return false;
+  if (!state.landscapePick || (state.landscapePick.remaining || 0) < 1) {
+    clearActionTurn(state);
+  } else if ((state.landscapePick.remaining || 0) < beforeRemaining) {
+    passMeetToken(state);
+  }
+  if (state.pendingObjectFollowup) resumeObjectEffect(state, getEffectHelpers());
+  return true;
+}
+
+/** Freeform Board: choose a Dreamscape Vault tile for the next placement. */
+export function handleVaultTileSelect(state, index) {
+  return selectVaultTile(state, index);
+}
+
+/** Freeform Board: pay the rising cost to redeal the Dreamscape Vault. */
+export function handleVaultRefresh(state) {
+  const result = refreshVaultDuringReveal(state);
+  if (!result.ok) {
+    addLog(state, result.reason);
+    return result;
+  }
+  if (!state.landscapePick) clearActionTurn(state);
+  return result;
+}
+
+/** Freeform Board: put The Bed's flipped tile on the bottom of the tile deck. */
+export function handleBuryFlippedTile(state) {
+  return buryFlippedTile(state);
 }
 
 export function handleBoardTileClick(state, tileId) {

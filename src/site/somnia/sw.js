@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "somnia-41.3-devourer";
-const RUNTIME_CACHE = "somnia-runtime-41.3-devourer";
+const CACHE_NAME = "somnia-42.0-build-the-dream";
+const RUNTIME_CACHE = "somnia-runtime-42.0-build-the-dream";
 
 const PRECACHE = [
   "./",
@@ -13,6 +13,7 @@ const PRECACHE = [
   "./manifest.webmanifest",
   "./css/game.css",
   "./css/glass.css",
+  "./css/dreamscape.css",
   "./css/fonts-local.css",
   "./fonts/font-0.woff2",
   "./fonts/font-1.woff2",
@@ -44,6 +45,7 @@ const PRECACHE = [
   "./js/encounters/beast-mill-cinematic.js",
   "./js/board/board-fx.js",
   "./js/board/board-zoom.js",
+  "./js/board/dreamscape-vault.js",
   "./js/encounters/bosses.js",
   "./js/dev/bot-ai.js",
   "./js/dev/bot-policy.js",
@@ -51,6 +53,7 @@ const PRECACHE = [
   "./js/cards/card-fx.js",
   "./js/meta/changelog.js",
   "./js/ui/click-feedback.js",
+  "./js/ui/vault-panel.js",
   "./js/ui/compact-chrome.js",
   "./js/core/data.js",
   "./js/cards/deck-pressure.js",

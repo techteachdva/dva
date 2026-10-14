@@ -23,6 +23,24 @@ import { isEdgeLandscape } from "../core/hex.js";
 import { markTileForgotten } from "../ui/fx.js";
 import { queueTileForgetFx } from "./board-fx.js";
 import { recordCancellableMove } from "../dreamers/dreamer-powers.js";
+import {
+  isFreeformBoard,
+  vaultCards,
+  vaultExhausted,
+  refillVault,
+  refreshVault,
+  vaultRefreshCost,
+  placementSlots,
+  isPlacementSlot,
+  makeBoardTile,
+  isUnplacedLandscape,
+  setAsideUnplacedLandscape,
+  drawTopTile,
+  putTileOnBottom,
+  tileDeckCount,
+  takeUnplacedLandscape,
+  nearestPlacementSlot,
+} from "./dreamscape-vault.js";
 
 /** Revealed outer Landscapes — The Bed can never be forgotten. */
 export function forgettableTiles(state) {
@@ -31,10 +49,23 @@ export function forgettableTiles(state) {
 
 /** Every outer Landscape has been forgotten — face-down pool tiles do not count. */
 export function allOuterTilesWasteland(state) {
+  // Freeform: tiles still waiting in the Vault keep the dream alive.
+  if (isFreeformBoard(state) && !vaultExhausted(state)) return false;
   const outer = state.board.filter((t) => !t.center && t.id !== "bed");
   if (!outer.length) return false;
   if (outer.some((t) => t.revealed && !t.wasteland)) return false;
   return outer.some((t) => t.wasteland || t.forgotten);
+}
+
+/** Freeform: Landscapes the table can still place (Vault + tile deck). */
+export function placeableLandscapeCount(state) {
+  if (!isFreeformBoard(state)) return 0;
+  return vaultCards(state).length + tileDeckCount(state);
+}
+
+/** Reveals the table could still make: hidden or Forgotten tiles, plus Freeform tiles left to place. */
+export function revealCapacity(state) {
+  return revealableTiles(state).length + placeableLandscapeCount(state);
 }
 
 /** Tiles that can be revealed (wasteland back or hidden pool). */
@@ -64,6 +95,15 @@ export function beginRevealPicking(state, budget) {
     return markExcessReveals(state, budget);
   }
   state.landscapePick = { mode: "reveal", remaining: budget, picked: [] };
+  if (isFreeformBoard(state)) {
+    narrate(
+      state,
+      `Reveal budget: ${budget} — build the Dreamscape.`,
+      `Each Lucidity places one Landscape. Choose a tile in the Dreamscape Vault, then a glowing hex beside the dream. Refreshing the Vault costs ${vaultRefreshCost(state)} Lucidity. Unused Reveals draw 1 Psyche each, one Dreamer at a time.`,
+      [`${budget} Lucidity to spend`, "Pick a Vault tile, then a glowing hex"],
+    );
+    return true;
+  }
   narrate(
     state,
     `Reveal budget: ${budget} — click map tiles.`,
@@ -75,6 +115,10 @@ export function beginRevealPicking(state, budget) {
 
 export function beginFreeRevealPicking(state, budget, followup = null) {
   if (budget <= 0) return false;
+  if (isFreeformBoard(state) && !revealCapacity(state)) {
+    addLog(state, "Nothing is left to place from the Dreamscape Vault.");
+    return false;
+  }
   state.landscapePick = {
     mode: "reveal",
     remaining: budget,
@@ -85,10 +129,42 @@ export function beginFreeRevealPicking(state, budget, followup = null) {
   narrate(
     state,
     `Reveal ${budget} Landscape${budget === 1 ? "" : "s"}`,
-    `Click ${budget} hex tile${budget === 1 ? "" : "s"} on the map that show the Wasteland back.`,
+    isFreeformBoard(state)
+      ? `Place ${budget} Landscape${budget === 1 ? "" : "s"} from the Dreamscape Vault, free. Choose a Vault tile, then a glowing hex.`
+      : `Click ${budget} hex tile${budget === 1 ? "" : "s"} on the map that show the Wasteland back.`,
     [`${budget} tile(s) to reveal`],
   );
   return "pending";
+}
+
+/**
+ * Reveal N right now (Dream, Event, and reward text). Fixed Board flips hidden
+ * tiles. Freeform Board opens a free placement from the Vault instead.
+ */
+export function revealOrPlaceLandscapes(state, count, { source = "Reveal" } = {}) {
+  const n = Math.max(0, Math.floor(count || 0));
+  if (!n) return 0;
+  if (isFreeformBoard(state)) {
+    const capped = Math.min(n, revealCapacity(state));
+    if (!capped) return 0;
+    if (state.landscapePick?.mode === "reveal") {
+      // A Reveal is already open: bank the free placements onto it.
+      state.landscapePick.remaining = (state.landscapePick.remaining || 0) + capped;
+      return capped;
+    }
+    if (state.landscapePick) return 0;
+    beginFreeRevealPicking(state, capped);
+    addLog(state, `${source}: place ${capped} Landscape${capped === 1 ? "" : "s"} from the Dreamscape Vault.`);
+    return capped;
+  }
+  const hidden = state.board.filter((l) => !l.revealed && !l.center);
+  const shown = Math.min(n, hidden.length);
+  hidden.slice(0, shown).forEach((t) => revealLandscapeTile(state, t));
+  if (shown) {
+    recordQuestEvent(state, "reveal_landscape", { count: shown });
+    addLog(state, `${source}: Reveal ${shown} Landscape${shown === 1 ? "" : "s"}.`);
+  }
+  return shown;
 }
 
 function forgetTile(state, tile) {
@@ -329,25 +405,9 @@ export function handleLandscapeTilePick(state, tileId) {
     if (tile.revealed && !tile.wasteland) return false;
     if (pick.remaining <= 0) return false;
 
+    if (pick.flipCard) return false;
     revealLandscapeTile(state, tile);
-    pick.picked.push(tile.id);
-    pick.remaining -= 1;
-
-    narrate(
-      state,
-      `Revealed ${tile.name}.`,
-      `${tile.name} is now an active Landscape on the map.${pick.remaining > 0 ? ` Click ${pick.remaining} more tile(s), or continue when done.` : " Reveal complete for this action."}`,
-      pick.remaining > 0 ? [`${pick.remaining} reveal(s) left`] : ["Reveal action complete"],
-    );
-
-    if (pick.remaining <= 0) {
-      state.landscapePick = null;
-      if (!pick.freeReveal) state.revealLandscapeUsed = true;
-      recordQuestEvent(state, "reveal_landscape", { count: pick.picked.length });
-      if (pick.followup) state.pendingObjectFollowup = pick.followup;
-    } else if (revealableTiles(state).length === 0 && !pick.freeReveal && allLandscapesRevealed(state)) {
-      markExcessReveals(state, pick.remaining, { picked: pick.picked });
-    }
+    finishRevealStep(state, pick, tile, 1);
     return true;
   }
 
@@ -384,8 +444,167 @@ export function handleLandscapeTilePick(state, tileId) {
   return false;
 }
 
+/** Bookkeeping after one Reveal (flip, restore, or Freeform placement). */
+function finishRevealStep(state, pick, tile, spent = 1) {
+  pick.picked = pick.picked || [];
+  if (tile) pick.picked.push(tile.id);
+  pick.remaining -= spent;
+  const freeform = isFreeformBoard(state);
+  const more = freeform ? "Choose another Vault tile" : `Click ${pick.remaining} more tile(s)`;
+
+  if (tile) {
+    narrate(
+      state,
+      freeform ? `Placed ${tile.name}.` : `Revealed ${tile.name}.`,
+      `${tile.name} is now an active Landscape on the map.${pick.remaining > 0 ? ` ${more}, or continue when done.` : " Reveal complete for this action."}`,
+      pick.remaining > 0 ? [`${pick.remaining} reveal(s) left`] : ["Reveal action complete"],
+    );
+  }
+
+  if (pick.remaining <= 0) {
+    state.landscapePick = null;
+    if (!pick.freeReveal) state.revealLandscapeUsed = true;
+    recordQuestEvent(state, "reveal_landscape", { count: pick.picked.length });
+    if (pick.followup) state.pendingObjectFollowup = pick.followup;
+  } else if (!pick.freeReveal && !revealCapacity(state) && allLandscapesRevealed(state)) {
+    markExcessReveals(state, pick.remaining, { picked: pick.picked });
+  } else if (pick.freeReveal && !revealCapacity(state)) {
+    // Nothing left to place: a free Reveal simply ends.
+    state.landscapePick = null;
+    recordQuestEvent(state, "reveal_landscape", { count: pick.picked.length });
+    if (pick.followup) state.pendingObjectFollowup = pick.followup;
+  }
+}
+
+/**
+ * Freeform "Dream it open": a named Landscape still in the Vault or deck
+ * surfaces on the open hex nearest the Dreamer who called it.
+ */
+export function surfaceLandscapeNear(state, landscapeId, nearTileId = "bed") {
+  if (!isFreeformBoard(state)) return null;
+  const anchor = landscapeById(state, nearTileId) || landscapeById(state, "bed");
+  const slot = nearestPlacementSlot(state, anchor);
+  if (!slot) return null;
+  const card = takeUnplacedLandscape(state, landscapeId);
+  if (!card) return null;
+  const tile = makeBoardTile(card, slot.q, slot.r);
+  state.board.push(tile);
+  revealLandscapeTile(state, tile);
+  return tile;
+}
+
+/** Freeform: choose which Vault tile the next placement uses (tap again to clear). */
+export function selectVaultTile(state, index) {
+  const pick = state.landscapePick;
+  if (!isFreeformBoard(state) || pick?.mode !== "reveal" || pick.excessOnly) return false;
+  if (pick.flipCard || (pick.remaining || 0) <= 0) return false;
+  if (!vaultCards(state)[index]) return false;
+  pick.vaultIndex = pick.vaultIndex === index ? null : index;
+  return true;
+}
+
+/** The Landscape a tap on an empty hex would place right now, if any. */
+export function pendingPlacementCard(state) {
+  const pick = state.landscapePick;
+  if (!isFreeformBoard(state) || pick?.mode !== "reveal" || pick.excessOnly) return null;
+  if ((pick.remaining || 0) <= 0) return null;
+  if (pick.flipCard) return pick.flipCard;
+  const cards = vaultCards(state);
+  if (pick.vaultIndex != null && cards[pick.vaultIndex]) return cards[pick.vaultIndex];
+  return cards.length === 1 ? cards[0] : null;
+}
+
+/** Freeform: place the chosen Vault tile (or The Bed's flipped tile) on an empty hex. */
+export function placeLandscapeAt(state, q, r) {
+  const pick = state.landscapePick;
+  const card = pendingPlacementCard(state);
+  if (!card || !isPlacementSlot(state, q, r)) return false;
+  if (pick.flipCard) {
+    pick.flipCard = null;
+  } else {
+    const cards = vaultCards(state);
+    const index = cards.indexOf(card);
+    if (index < 0) return false;
+    cards.splice(index, 1);
+    pick.vaultIndex = null;
+    refillVault(state);
+  }
+  const tile = makeBoardTile(card, q, r);
+  state.board.push(tile);
+  revealLandscapeTile(state, tile);
+  finishRevealStep(state, pick, tile, 1);
+  return true;
+}
+
+/** Freeform Reveal: pay the escalating cost to redeal the Vault. */
+export function refreshVaultDuringReveal(state) {
+  const pick = state.landscapePick;
+  if (!isFreeformBoard(state) || pick?.mode !== "reveal" || pick.excessOnly) {
+    return { ok: false, reason: "Refresh the Vault while you spend Lucidity in Reveal." };
+  }
+  if (pick.freeReveal || pick.flipCard) {
+    return { ok: false, reason: "A free placement cannot refresh the Vault. Place the tile instead." };
+  }
+  if (!tileDeckCount(state)) {
+    return { ok: false, reason: "The tile deck is empty, so a refresh would deal the same tiles." };
+  }
+  const cost = vaultRefreshCost(state);
+  if ((pick.remaining || 0) < cost) {
+    return { ok: false, reason: `Refreshing costs ${cost} Lucidity and ${pick.remaining || 0} is left. Place a tile instead.` };
+  }
+  refreshVault(state);
+  pick.vaultIndex = null;
+  addLog(state, `The Dreamscape Vault refreshes for ${cost} Lucidity.`);
+  narrate(
+    state,
+    "The Vault shifts.",
+    `New Landscapes surface. The next refresh this round costs ${vaultRefreshCost(state)}.`,
+    [`${Math.max(0, pick.remaining - cost)} Lucidity left`],
+  );
+  finishRevealStep(state, pick, null, cost);
+  return { ok: true, cost };
+}
+
+/**
+ * The Bed, Freeform: flip the top tile of the deck (not the Vault).
+ * The table places it free, or puts it on the bottom.
+ */
+export function beginBedTileFlip(state) {
+  if (!isFreeformBoard(state)) return null;
+  const card = drawTopTile(state);
+  if (!card) return null;
+  state.landscapePick = {
+    mode: "reveal",
+    remaining: 1,
+    picked: [],
+    freeReveal: true,
+    flipCard: card,
+    bedFlip: true,
+  };
+  narrate(
+    state,
+    `The Bed dreams onward: ${card.name}.`,
+    `Place ${card.name} on a glowing hex beside the dream, free. Or put it on the bottom of the tile deck.`,
+    ["Tap a glowing hex", "Or put it back"],
+  );
+  addLog(state, `The Bed flips ${card.name} from the top of the tile deck.`);
+  return card;
+}
+
+/** Put The Bed's flipped tile on the bottom of the tile deck. */
+export function buryFlippedTile(state) {
+  const pick = state.landscapePick;
+  if (!pick?.flipCard) return false;
+  putTileOnBottom(state, pick.flipCard);
+  addLog(state, `${pick.flipCard.name} goes to the bottom of the tile deck.`);
+  state.landscapePick = null;
+  return true;
+}
+
 export function cancelLandscapePick(state) {
   if (!state.landscapePick) return;
+  // Never lose The Bed's flipped tile.
+  if (state.landscapePick.flipCard) putTileOnBottom(state, state.landscapePick.flipCard);
   const revealMode = state.landscapePick.mode === "reveal" || state.landscapePick.mode === "reveal-deck-tops";
   // Paid Lucidity spend is complete even if the team reveals 0 tiles.
   if (revealMode && !state.landscapePick.freeReveal) {
@@ -402,7 +621,8 @@ export function resolveStaleLandscapePick(state) {
   const pick = state.landscapePick;
   if (!pick) return;
 
-  if (pick.mode === "reveal" && pick.remaining > 0 && revealableTiles(state).length === 0) {
+  // Freeform: tiles still in the Vault (or The Bed's flipped tile) keep the pick alive.
+  if (pick.mode === "reveal" && pick.remaining > 0 && !pick.flipCard && revealCapacity(state) === 0) {
     if (!pick.freeReveal && allLandscapesRevealed(state)) {
       markExcessReveals(state, pick.remaining, { picked: pick.picked });
       return;
@@ -445,9 +665,10 @@ export function getLandscapePickHighlights(state) {
 
   if (pick.mode === "reveal") {
     return {
-      reveal: revealableTiles(state).map((t) => t.id),
+      reveal: pick.flipCard ? [] : revealableTiles(state).map((t) => t.id),
       forget: [],
       choose: [],
+      place: pendingPlacementCard(state) ? placementSlots(state).map((s) => `${s.q},${s.r}`) : [],
     };
   }
   if (pick.mode === "forget") {
@@ -505,6 +726,15 @@ export function forgetNamedLandscapes(state, ids, { preserveBeasts = false } = {
   let missed = 0;
   (ids || []).forEach((id) => {
     const tile = landscapeById(state, id);
+    // Freeform: a named Landscape still in the Vault or deck is set aside instead.
+    if (!tile && isUnplacedLandscape(state, id)) {
+      const card = setAsideUnplacedLandscape(state, id);
+      if (card) {
+        addLog(state, `${card.name} sinks out of the Dreamscape Vault. It is Forgotten.`);
+        forgotten.push(card);
+      }
+      return;
+    }
     if (!tile || tile.center || tile.id === "bed" || !tile.revealed || tile.wasteland) return;
     if (preserveBeasts && tileHasEncounters(tile)) {
       missed += 1;

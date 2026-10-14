@@ -152,6 +152,7 @@ const {
   moveDreamer, meetEncounter, spendExcessPsycheDraw, passActionTurnTo,
   handleBoardTileClick, handleQuestComplete, handleAcquire, handleDefeatFinalArchetype,
   performLandscapeAction, getEffectHelpers, actionTurnHolder, powerBonus, playObject,
+  handleBoardSlotClick, handleVaultTileSelect,
 } = gameMod;
 const { focusRowArchetype } = stateMod;
 const {
@@ -172,7 +173,31 @@ const { isWildPsyche } = psycheMod;
 const {
   isDreambeastPsycheCard, listSubconsciousCards, pickReturnCard, pickRepressCard, confirmRepressStep,
 } = subconscious;
-const { revealableTiles, forgettableTiles, cancelLandscapePick } = landscapesMod;
+const { revealableTiles, forgettableTiles, cancelLandscapePick, revealCapacity, pendingPlacementCard } = landscapesMod;
+const vaultMod = await mod("board/dreamscape-vault.js");
+const { isFreeformBoard, vaultCards, placementSlots } = vaultMod;
+const BOARD_MODE = (() => {
+  const idx = process.argv.indexOf("--board");
+  return idx >= 0 && process.argv[idx + 1] === "freeform" ? "freeform" : "fixed";
+})();
+
+/** Freeform: take a quest tile from the Vault if one is there, and place it next to a Dreamer. */
+function placeFromVault(state) {
+  if (!pendingPlacementCard(state)) {
+    const cards = vaultCards(state);
+    if (!cards.length) return false;
+    const quests = new Set(activeQuestLandscapeIds(state));
+    let index = cards.findIndex((c) => quests.has(c.id));
+    if (index < 0) index = 0;
+    handleVaultTileSelect(state, index);
+  }
+  const slots = placementSlots(state);
+  if (!slots.length) return false;
+  const dreamers = alive(state).map((p) => landscapeById(state, p.landscapeId)).filter(Boolean);
+  const score = (slot) => Math.min(...dreamers.map((t) => hexDistance(t, slot)), 99);
+  const best = [...slots].sort((a, b) => score(a) - score(b))[0];
+  return handleBoardSlotClick(state, best.q, best.r);
+}
 const { getLegalMoveTargets, hexDistance } = hexMod;
 const { activeQuestLandscapeIds, isQuestConditionMet, sacrificeHeldObject, listSacrificableObjects } = questsMod;
 const { undefeatedFinalArchetypes } = finalMod;
@@ -697,12 +722,16 @@ function resolveOnePending(state) {
     return true;
   }
   if (state.landscapePick?.mode === "reveal" || state.landscapePick?.mode === "reveal-deck-tops") {
-    if (state.landscapePick.excessOnly || !revealableTiles(state).length) {
+    if (state.landscapePick.excessOnly || !revealCapacity(state)) {
       if (!spendExcessPsycheDraw(state)) cancelLandscapePick(state);
       return true;
     }
     const who = holder(state);
     giveTurn(state, who);
+    if (isFreeformBoard(state) && (state.landscapePick.flipCard || !revealableTiles(state).length)) {
+      if (!placeFromVault(state) && !spendExcessPsycheDraw(state)) cancelLandscapePick(state);
+      return true;
+    }
     const tile = pickRevealTile(state);
     if (!tile || !handleBoardTileClick(state, tile.id)) {
       if (!spendExcessPsycheDraw(state)) cancelLandscapePick(state);
@@ -785,9 +814,9 @@ function usefulLandscapeAction(state, player) {
   if (!tile || tile.wasteland || !tile.revealed) return null;
   const usedMine = new Set(state.usedMeetActionsByPlayer?.[player.id] || []);
   if (questDrawHere(state, tile) && handCount(player) < 10) return "draw-mindstream";
-  const wantsHand = openQuests(state).some((quest) => quest.key.includes("10 psyche"));
-  if (tile.id === "bed" && (wantsHand || handCount(player) <= 5) && !usedMine.has("landscape:draw-3-psyche")) {
-    return "draw-3-psyche";
+  // 42.0: The Bed no longer draws 3. It Dreams Onward: Reveal or place 1 Landscape.
+  if (tile.id === "bed" && revealCapacity(state) > 0 && !usedMine.has("landscape:dream-onward")) {
+    return "dream-onward";
   }
   const beasts = state.board.reduce((n, entry) => n + beastsOn(entry).length, 0);
   if (beasts < alive(state).length && tile.suit && !tile.center && tile.id !== "bed" && handCount(player) < 8) {
@@ -925,6 +954,7 @@ function playGame(playerCount, index) {
     lengthKey: "nap",
     seed: `nap-${playerCount}p-${index}`,
     selectedDreamers,
+    boardMode: BOARD_MODE,
   });
   let steps = 0;
   let stuck = 0;
@@ -1089,7 +1119,8 @@ for (const count of [2, 3, 4]) {
 }
 
 const report = {
-  version: "41.0",
+  version: "42.0",
+  board: BOARD_MODE,
   length: "nap",
   lengthRules: "12 archetype points, 14 regular dreams, bosses at rounds 3/6/9",
   dice: "real d6, success on 5-6, strict more successes, ties to the beast",

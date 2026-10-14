@@ -81,7 +81,13 @@ const TERMS = [
     term: "Bed",
     group: "places",
     aka: "the bed",
-    text: "The center hex. It starts face-up and can never be Forgotten. During Meet, each Dreamer may Draw 3 Psyche there once. When your points are done, every living Dreamer must stand on The Bed to wake. Bosses spawn here.",
+    text: "The center hex. It starts face-up and can never be Forgotten. Its Meet action is Dream Onward, once per table: on a Fixed Board, Reveal 1 Landscape; on a Freeform Board, flip the top tile of the deck and place it free or put it back. When your points are done, every living Dreamer must stand on The Bed to wake. Bosses spawn here.",
+  },
+  {
+    term: "Dreamscape Vault",
+    group: "places",
+    aka: "vault freeform board tile deck refresh",
+    text: "Freeform Board only. Three Landscapes lie face up beside a shuffled tile deck. In Reveal, each Lucidity places one Vault tile on an empty hex touching the dream. Refresh redeals the Vault for 1 Lucidity, +1 for each refresh already made this round.",
   },
   {
     term: "Boss",
@@ -639,11 +645,11 @@ export function playerPrimerHtml() {
         </section>
         <section>
           <h3>Reveal · Lucidity</h3>
-          <p>Draw the Dream first. <strong>Bright</strong> costs Psyche, usually of one suit, and stays shut until that cost can be paid. On an Event whose Landscape is still Wasteland, pay 1 more Lucidity to <strong>Dream it open</strong>. <strong>Dim</strong> is free and Represses cards or Forgets Landscapes. Then flip that many Wasteland hexes.</p>
+          <p>Draw the Dream first. <strong>Bright</strong> costs Psyche, usually of one suit, and stays shut until that cost can be paid. On an Event whose Landscape is still Wasteland, pay 1 more Lucidity to <strong>Dream it open</strong>. <strong>Dim</strong> is free and Represses cards or Forgets Landscapes. Then flip that many Wasteland hexes, or on a Freeform Board place that many Landscapes from the Dreamscape Vault.</p>
           <h3>Explore · Elasticity</h3>
           <p>Step to an adjacent hex. The Dreamer whose turn it is is the one who walks. Stepping onto Wasteland discards 1 Psyche.</p>
           <h3>Meet · Willpower</h3>
-          <p>Bosses step toward the nearest Dreamer. Spend actions to fight, <strong>Draw Mindstream</strong> (repeatable), use the hex's one action (once for the table on that hex — its suit tells you the verb), or tap a Persistent Object (once each). The Bed's Draw 3 is once per Dreamer. Trade is free with someone on your hex or next door.</p>
+          <p>Bosses step toward the nearest Dreamer. Spend actions to fight, <strong>Draw Mindstream</strong> (repeatable), use the hex's one action (once for the table on that hex — its suit tells you the verb), or tap a Persistent Object (once each). The Bed Dreams Onward (Reveal or place 1 Landscape). Trade is free with someone on your hex or next door.</p>
         </section>
         <section>
           <h3>The fight</h3>

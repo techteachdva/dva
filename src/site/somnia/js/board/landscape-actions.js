@@ -16,7 +16,8 @@ import {
   revealedLandscapeTiles,
   rememberRevealedTops,
 } from "../core/state.js";
-import { requestChooseTile } from "./landscapes.js";
+import { requestChooseTile, beginFreeRevealPicking, beginBedTileFlip, revealableTiles } from "./landscapes.js";
+import { isFreeformBoard, tileDeckCount } from "./dreamscape-vault.js";
 import { SUIT_LABELS, totalStat } from "../core/rules.js";
 import { grantPowerTokens } from "../cards/power-tokens.js";
 import { queueMindstreamDrawFx, queueMindstreamDiscardFx, cancelQueuedMindstreamDrawFx } from "./board-fx.js";
@@ -133,6 +134,10 @@ export const LANDSCAPE_ACTION_DEFS = {
     label: "Draw 3 Psyche",
     description: "Draw 3 Psyche cards from the Psyche deck.",
   },
+  "dream-onward": {
+    label: "Dream Onward",
+    description: "Fixed Board: Reveal 1 Wasteland Landscape of your choice. Freeform Board: flip the top tile of the tile deck, then place it free or put it on the bottom.",
+  },
   "peek-then-move-1": {
     label: "Peek, then Move 1",
     description: "Glimpse one adjacent forgotten Landscape, then move 1 step.",
@@ -151,8 +156,7 @@ export const LANDSCAPE_ACTION_DEFS = {
   },
 };
 
-function actionCadence(actionId) {
-  if (actionId === "draw-3-psyche") return "Once per Dreamer this Meet.";
+function actionCadence(_actionId) {
   return "Once this Meet for the whole table.";
 }
 
@@ -1185,6 +1189,24 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
 
     case "cycle-psyche":
       return beginCyclePsyche(state, player, tile);
+
+    case "dream-onward": {
+      // 42.0: The Bed builds the dream instead of refilling a hand.
+      if (isFreeformBoard(state)) {
+        if (!tileDeckCount(state)) {
+          addLog(state, "The Bed has nothing left to dream: the tile deck is empty.");
+          return { ok: false, refund: true };
+        }
+        beginBedTileFlip(state);
+        return { ok: true, pending: true };
+      }
+      if (!revealableTiles(state).length) {
+        addLog(state, "The Bed has nothing left to dream: every Landscape is awake.");
+        return { ok: false, refund: true };
+      }
+      beginFreeRevealPicking(state, 1);
+      return { ok: true, pending: true };
+    }
 
     case "draw-3-psyche": {
       const drawn = drawPsycheForPlayer(state, player, 3);

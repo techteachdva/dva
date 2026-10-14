@@ -282,7 +282,7 @@ function placeShuffledDreamscape(board, landscapes, { revealRing1 = false } = {}
  * Tutorial keeps the six classic starters revealed on ring 1 so the script can teach House/City.
  * The SOMNIA seed reveals all of ring 1 (lucid start).
  */
-export function buildHexBoard(landscapes, { tutorialLayout = false, revealRing1 = false } = {}) {
+export function buildHexBoard(landscapes, { tutorialLayout = false, revealRing1 = false, freeform = false } = {}) {
   const all = landscapes.filter((l) => !l.hidden);
   const center = all.find((l) => l.center);
   const board = [];
@@ -290,6 +290,9 @@ export function buildHexBoard(landscapes, { tutorialLayout = false, revealRing1 
   if (center && STARTER_HEX.bed) {
     pushTile(board, center, STARTER_HEX.bed, { revealed: true, wasteland: false });
   }
+
+  // Freeform Board: The Bed alone. The rest wait in the Dreamscape Vault's tile deck.
+  if (freeform) return board;
 
   if (tutorialLayout) placeTutorialStarters(board, all);
   else placeShuffledDreamscape(board, all, { revealRing1 });

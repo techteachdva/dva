@@ -47,6 +47,8 @@ import { alliesInHand, psycheCardsInHand, allyHandCount, MAX_ALLIES_IN_HAND, MAX
 import { getQuestStatus, activeQuestLandscapeIds, sacrificeQuestOpen, listSacrificableObjects } from "../dreamers/quests.js";
 import { effectiveDreamerStat } from "../dreamers/archetype-stats.js";
 import { hexToPixel, boardPixelBounds, pixelToHex, hexKey, canTradeBetween, adjacentTiles } from "../core/hex.js";
+import { isFreeformBoard, placementSlots } from "../board/dreamscape-vault.js";
+import { pendingPlacementCard } from "../board/landscapes.js";
 import {
   subconsciousCount,
   subconsciousPilesForUI,
@@ -1766,6 +1768,8 @@ let lastBoardChromeKey = "";
 const boardGeom = { size: 0, offsetX: 0, offsetY: 0, width: 0, height: 0 };
 /** tileId -> <button.hex-tile> for the currently mounted board. */
 const tileEls = new Map();
+/** Freeform Board: empty hexes the next Landscape can land on, keyed "q,r". */
+const ghostEls = new Map();
 /** "q,r" -> tile for the currently mounted board. */
 const tilesByHex = new Map();
 /** Reused scratch objects for hit-testing (never allocated per tap). */
@@ -1780,9 +1784,15 @@ function tileZIndex(el, y, offsetY) {
   return (raised ? 4000 : 1000) + Math.round(y + offsetY);
 }
 
+/** Freeform Board: frame the open hexes too, so the table has room to grow. */
+function boardBounds(state, size) {
+  if (!isFreeformBoard(state)) return boardPixelBounds(state, size);
+  return boardPixelBounds({ board: [...state.board, ...placementSlots(state)] }, size);
+}
+
 function writeBoardGeometry(board, state, size) {
   const scale = size / HEX_BASE;
-  const bounds = boardPixelBounds(state, size);
+  const bounds = boardBounds(state, size);
   boardGeom.size = size;
   boardGeom.offsetX = bounds.offsetX;
   boardGeom.offsetY = bounds.offsetY;
@@ -1807,6 +1817,12 @@ function patchBoardGeometry(board, state, size) {
     el.style.top = `${y + bounds.offsetY}px`;
     el.style.zIndex = String(tileZIndex(el, y, bounds.offsetY));
   }
+  ghostEls.forEach((el, key) => {
+    const [q, r] = key.split(",").map(Number);
+    const { x, y } = hexToPixel(q, r, size);
+    el.style.left = `${x + bounds.offsetX}px`;
+    el.style.top = `${y + bounds.offsetY}px`;
+  });
 }
 
 function compactHexCap() {
@@ -1841,7 +1857,7 @@ function fitHexSize(state) {
   const chromeLeft = parseFloat(getComputedStyle(viewport).paddingLeft) || 0;
   const maxW = Math.max(160, viewport.clientWidth - chromeLeft - pad);
   const maxH = Math.max(160, viewport.clientHeight - pad);
-  const bounds = boardPixelBounds(state, HEX_BASE);
+  const bounds = boardBounds(state, HEX_BASE);
   const fit = Math.min(maxW / bounds.width, maxH / bounds.height);
   const hexMin = minHexSize();
   const base = Math.max(hexMin, Math.floor(HEX_BASE * fit));
@@ -1869,7 +1885,10 @@ function boardStructureKey(state) {
     .filter((p) => p.alive)
     .map((p) => `${p.id}:${p.landscapeId}:${p.dreamer?.image || ""}:${isDreamerTokenHidden(p.id) ? 1 : 0}`)
     .join("|");
-  return `${tiles.join("|")}#${occupants}`;
+  const ghosts = isFreeformBoard(state)
+    ? `#${placementSlots(state).map((s) => hexKey(s.q, s.r)).join(";")}@${pendingPlacementCard(state)?.id || ""}`
+    : "";
+  return `${tiles.join("|")}#${occupants}${ghosts}`;
 }
 
 function boardChromeKey(state, legalMoveIds, pickHighlights, turnHolderId = "") {
@@ -2263,6 +2282,12 @@ function onBoardTouchTap(event) {
     return;
   }
   boardTouchActivatedAt = Date.now();
+  const ghost = event.target instanceof Element ? event.target.closest(".hex-ghost.is-placeable") : null;
+  if (ghost?.dataset.slot) {
+    const [q, r] = ghost.dataset.slot.split(",").map(Number);
+    boardTouchCtx.boardOptions.onPlaceSlot?.(q, r);
+    return;
+  }
   const fromTarget = event.target instanceof Element ? event.target.closest(".hex-tile") : null;
   activateBoardTarget(event, fromTarget);
 }
@@ -2293,7 +2318,7 @@ function bindBoardTouchTap() {
 function patchBoardChrome(state, legalMoveIds, pickHighlights, size, turnHolderId = "") {
   const board = document.getElementById("hex-board");
   if (!board) return false;
-  const bounds = boardPixelBounds(state, size);
+  const bounds = boardBounds(state, size);
   const sets = {
     legalSet: new Set(legalMoveIds),
     revealSet: new Set(pickHighlights.reveal || []),
@@ -2449,6 +2474,7 @@ export function renderBoard(
   // Structural render: detach children in one operation, then rebuild.
   board.replaceChildren();
   tileEls.clear();
+  ghostEls.clear();
   tilesByHex.clear();
 
   const bounds = writeBoardGeometry(board, state, size);
@@ -2669,7 +2695,45 @@ export function renderBoard(
     }
     board.appendChild(el);
   });
+  renderGhostSlots(board, state, size, bounds, boardOptions);
   syncTurnHolderTokens(turnHolderId);
+}
+
+/**
+ * Freeform Board: every empty hex touching the dream is a faint outline.
+ * While a Landscape is chosen, they glow and a tap places it there.
+ */
+function renderGhostSlots(board, state, size, bounds, boardOptions) {
+  if (!isFreeformBoard(state)) return;
+  const card = pendingPlacementCard(state);
+  placementSlots(state).forEach(({ q, r }) => {
+    const { x, y } = hexToPixel(q, r, size);
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = `hex-ghost${card ? " is-placeable" : ""}`;
+    el.dataset.slot = hexKey(q, r);
+    el.style.left = `${x + bounds.offsetX}px`;
+    el.style.top = `${y + bounds.offsetY}px`;
+    el.style.zIndex = String((card ? 3000 : 500) + Math.round(y + bounds.offsetY));
+    if (card) {
+      el.style.setProperty("--ghost-image", `url('${card.image}')`);
+      el.setAttribute("aria-label", `Place ${card.name} here`);
+      el.title = `Place ${card.name} here`;
+    } else {
+      el.setAttribute("aria-label", "Open dream space");
+      el.tabIndex = -1;
+    }
+    el.innerHTML = `<span class="hex-ghost-face" aria-hidden="true"></span><span class="hex-ghost-cue" aria-hidden="true">${card ? "✧" : ""}</span>`;
+    el.addEventListener("click", (event) => {
+      if (touchTapJustHandled()) return;
+      if (consumeBoardClickSuppression()) return;
+      if (consumeBoardTapShield(event)) return;
+      if (!card) return;
+      boardOptions.onPlaceSlot?.(q, r);
+    });
+    ghostEls.set(hexKey(q, r), el);
+    board.appendChild(el);
+  });
 }
 
 export function renderPlayers(state, onSelectPlayer, onDoubleClickPlayer = null) {

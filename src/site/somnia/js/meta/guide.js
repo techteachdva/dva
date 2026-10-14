@@ -159,7 +159,7 @@ export function getCurrentObjective(state) {
       steps: [
         "A Dreamer lost all Psyche and died in the Dream.",
         "Their Objects are cleared and their Power Tokens return to the pool. The Mindstream is not touched.",
-        "They return to The Bed with 3 Psyche and no new Power Tokens. The Bed's Draw 3 is available as normal.",
+        "They return to The Bed with 3 Psyche and no new Power Tokens.",
       ],
     };
   }
@@ -526,7 +526,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 41.3. Cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 42.0. Cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -574,7 +574,7 @@ export function rulesRemHtml() {
             <li><strong>Start:</strong> each Boss steps 1 hex toward the nearest Dreamer, unless a Dreamer already shares its hex. There is no hand tax</li>
             <li><strong>Middle:</strong> action budget = that 1 card's value + Willpower bonuses. Spend on Encounters and Landscape actions. Accept and Repress are <strong>dice battles</strong>. You need at least 1 Psyche of the required suit (1–3 cards; allies extra). Beast Power = its dice. Recommended Dreamer Power is beast Power + 2 — you may play less and get lucky. +1d6 for matching Fantasy/Nightmare type and +1d6 for matching the beast's suit. Up to 3 Power Tokens add +1d6 each. 5s and 6s succeed</li>
             <li><strong>End of the round (dusk):</strong> each Dreambeast still on the board Represses 1 Psyche from the Waking Mind. During Final Recurrence, count undefeated Archetypes instead. If the Psyche deck and discard are both empty, you lose. Beasts stay until Accepted or Repressed. Fail hits only when Accept or Repress loses</li>
-            <li>Each Landscape offers <strong>Draw Mindstream</strong> (repeatable) and one <strong>unique action</strong> (once per table on that Landscape this Meet). A Landscape's suit tells you its verb: <strong>Lucidity</strong> sees and remembers (Remember 2, Flip Top 3, Draw 2 Keep 1, Swap Landscapes; Awards takes Power), <strong>Elasticity</strong> moves Dreamers, <strong>Willpower</strong> fights and bodies (spawn and move Dreambeasts, Cycle Psyche, Take Power). <strong>The Bed</strong> has Draw 3 Psyche, once per Dreamer this Meet</li>
+            <li>Each Landscape offers <strong>Draw Mindstream</strong> (repeatable) and one <strong>unique action</strong> (once per table on that Landscape this Meet). A Landscape's suit tells you its verb: <strong>Lucidity</strong> sees and remembers (Remember 2, Flip Top 3, Draw 2 Keep 1, Swap Landscapes; Awards takes Power), <strong>Elasticity</strong> moves Dreamers, <strong>Willpower</strong> fights and bodies (spawn and move Dreambeasts, Cycle Psyche, Take Power). <strong>The Bed</strong> has <strong>Dream Onward</strong>: Reveal 1 Landscape (Fixed Board), or flip the top tile of the deck and place it or put it back (Freeform Board). Once per table this Meet</li>
             <li><strong>Opening:</strong> any Dreamer may spend the suited Psyche, no matter whose turn it was. The Dreamer who opens takes the first action</li>
             <li><strong>Pass Token:</strong> after that first action, Pass Turn or Give Turn moves clockwise through the remaining shared actions. Next Phase can still end Meet early</li>
             <li><strong>Dreamer passives,</strong> once a round, free: Runner's first move costs no team move. Hunter may shove the beast 1 hex after their first battle if it stays. Rested draws 1 Psyche at round end if they opened no phase. Weaver swaps 1 Psyche with an adjacent Dreamer once per Meet</li>
@@ -691,8 +691,9 @@ export function rulesDetailsHtml() {
       <ul>
         <li><strong>Subconscious</strong> — face-up Repressed piles (Psyche, Dreambeasts, Mindstream by suit, Objects). Return puts those cards back into their discards so they can be drawn again; a Returned Psyche is +1 Waking Mind. <strong>Remember N</strong>: discard up to N Psyche, then Return that many +1</li>
         <li><strong>Trade</strong>: free during Meet. Partner stands on the same or adjacent hex. The trade window shows both hands, and each Dreamer offers up to 3 Psyche.</li>
-        <li><strong>Landscape actions</strong> — Draw matching Mindstream as often as you have Meet actions. Each unique Landscape action is once per table on that Landscape this Meet. <strong>The Bed:</strong> Draw 3 Psyche, once per Dreamer this Meet. Quests still name their Landscape even if it is forgotten</li>
-        <li><strong>Map setup</strong> — shuffle every Landscape. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten. Further Reveals require 1 Lucidity Psyche</li>
+        <li><strong>Landscape actions</strong> — Draw matching Mindstream as often as you have Meet actions. Each unique Landscape action is once per table on that Landscape this Meet. <strong>The Bed:</strong> Dream Onward, once per table this Meet. It builds the dream; it does not refill a hand. Quests still name their Landscape even if it is forgotten</li>
+        <li><strong>Fixed Board</strong> — shuffle every Landscape. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten. Further Reveals require 1 Lucidity Psyche</li>
+        <li><strong>Freeform Board</strong> — only The Bed is on the table. The other Landscapes are a shuffled tile deck, and 3 lie face up in the <strong>Dreamscape Vault</strong>. Each Lucidity places one Vault tile on an empty hex that touches the dream (up to 4 steps from The Bed). <strong>Refresh</strong> redeals the Vault for 1 Lucidity, +1 for each refresh already made this round. Forgetting a Landscape that was never placed sets it aside for the night</li>
         <li><strong>Forget</strong> — turns Landscapes to Wasteland; Encounters Repressed; Dreamers there lose 1 Psyche. If all outer tiles are Wasteland → <strong>Final Recurrence</strong></li>
       </ul>
 
@@ -715,7 +716,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 41.3</p>
+          <p class="info-hub-kicker">Somnia v 42.0</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">Capture the Archetypes. Stand on The Bed. Wake before the Dream Deck runs out.</p>
         </div>

@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="css/fonts-local.css">
   <link rel="stylesheet" href="css/game.css">
   <link rel="stylesheet" href="css/glass.css">
+  <link rel="stylesheet" href="css/dreamscape.css">
 </head>
 <body class="menu-window menu-splash-active">
   <div id="menu-splash" class="menu-splash" aria-hidden="false">
@@ -31,7 +32,7 @@
   <div id="app">
     <header class="top-bar">
       <button type="button" class="brand brand-logo-btn" id="btn-somnia-changelog" title="Somnia Changelog &amp; Credits" aria-label="Open Somnia Changelog and Credits">
-        <span class="version-label">v 41.3</span>
+        <span class="version-label">v 42.0</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Somnia" />
         <p class="tagline">Cooperative Dreamscape Roguelike</p>
       </button>
@@ -74,6 +75,22 @@
               </select>
             </label>
             <p class="field-hint" id="setup-length-hint">Same rules on every night. Daydream is the first one. Nap and Deep Sleep ask for more points.</p>
+            <div class="field field-board-mode">
+              <span id="setup-board-label">Board</span>
+              <div class="board-mode-options" role="radiogroup" aria-labelledby="setup-board-label">
+                <label class="board-mode-option">
+                  <input type="radio" name="setup-board" value="fixed" checked />
+                  <strong>Fixed</strong>
+                  <em>The classic hex map</em>
+                </label>
+                <label class="board-mode-option">
+                  <input type="radio" name="setup-board" value="freeform" />
+                  <strong>Freeform</strong>
+                  <em>Build the dream tile by tile</em>
+                </label>
+              </div>
+            </div>
+            <p class="field-hint" id="setup-board-hint">Fixed Board: every Landscape waits face down on the map.</p>
             <label class="field field-seed">
               <span>Seed <em class="field-optional">optional</em></span>
               <input type="text" id="setup-seed" maxlength="24" placeholder="e.g. SOMNIA or a Game ID" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" title="Same seed = same shuffle. Six secret keywords bend the rules…" />

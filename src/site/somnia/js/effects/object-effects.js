@@ -24,7 +24,7 @@ import {
 } from "../cards/mindstream-supply.js";
 import { encounterRejectCost, applyRejectReward, applyAcceptEffect } from "../encounters/dreambeasts.js";
 import { psycheCardValue } from "../cards/psyche.js";
-import { requestChooseTile, beginFreeRevealPicking } from "../board/landscapes.js";
+import { requestChooseTile, beginFreeRevealPicking, revealCapacity } from "../board/landscapes.js";
 import { edgeLandscapes } from "../core/hex.js";
 import { SUIT_LABELS } from "../core/rules.js";
 import { logMoment } from "../core/narrator.js";
@@ -622,8 +622,7 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
       returnN(state, 2);
       return true;
     }
-    const hidden = state.board.filter((l) => !l.revealed && !l.center);
-    const count = Math.min(hidden.length, dreamerCount(state) + 1);
+    const count = Math.min(revealCapacity(state), dreamerCount(state) + 1);
     if (count) beginFreeRevealPicking(state, count);
     return true;
   }
@@ -1307,8 +1306,7 @@ export function applySkeletonKeyAfterDream(state, player = null) {
 }
 
 export function revealWithAllSeeingEye(state) {
-  const hidden = state.board.filter((l) => !l.revealed && !l.center);
-  const count = Math.min(hidden.length, dreamerCount(state) + 1);
+  const count = Math.min(revealCapacity(state), dreamerCount(state) + 1);
   if (!count) {
     addLog(state, "The All Seeing Eye: no Landscapes left to reveal.");
     return;

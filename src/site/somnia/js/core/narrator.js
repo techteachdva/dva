@@ -42,6 +42,20 @@ export function narrate(state, shortMessage, detail = null, consequences = [], o
 export function getLandscapePickNarration(state) {
   const pick = state.landscapePick;
   if (!pick) return null;
+  if (pick.mode === "reveal" && state.boardMode === "freeform") {
+    if (pick.flipCard) {
+      return {
+        title: `The Bed dreams onward: ${pick.flipCard.name}`,
+        detail: `Tap a glowing hex beside the dream to place ${pick.flipCard.name}, free. Or put it back on the bottom of the tile deck.`,
+        consequences: [],
+      };
+    }
+    return {
+      title: "Build the Dreamscape",
+      detail: `Choose a Landscape in the Dreamscape Vault, then tap a glowing hex that touches the dream. Refreshing the Vault costs 1 Lucidity, +1 for each refresh this round.`,
+      consequences: pick.remaining > 0 ? [`${pick.remaining} placement(s) remaining`] : [],
+    };
+  }
   if (pick.mode === "reveal") {
     return {
       title: "Choose Landscapes to Reveal",

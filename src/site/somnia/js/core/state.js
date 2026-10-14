@@ -1,6 +1,15 @@
 import { createQuestTracker, recordQuestEvent, isQuestConditionMet } from "../dreamers/quests.js";
 import { FINAL_ARCHETYPE_POWER } from "../dreamers/final-recurrence-rules.js";
 import { buildHexBoard, adjacentTiles, hexDistance } from "./hex.js";
+import {
+  BOARD_MODES,
+  normalizeBoardMode,
+  buildLandscapeTileDeck,
+  refillVault,
+  resetVaultRoundCounters,
+  isFreeformBoard,
+  vaultExhausted,
+} from "../board/dreamscape-vault.js";
 import { effectiveDreamerStat } from "../dreamers/archetype-stats.js";
 import { playSfx } from "../audio/audio.js";
 import { markTileRevealed, markTileForgotten, markDreamFeedNudge } from "../ui/fx.js";
@@ -100,7 +109,14 @@ export function createInitialState(data, options) {
   const availableDreamers = data.dreamers.filter((d) => !usedDreamerIds.has(d.id));
 
   const tutorialLayout = Boolean(options.tutorialMode);
-  const board = buildHexBoard(landscapes, { tutorialLayout, revealRing1: seedFlags.somnia && !tutorialLayout });
+  // The tutorial teaches the Fixed Board.
+  const boardMode = tutorialLayout ? BOARD_MODES.FIXED : normalizeBoardMode(options.boardMode);
+  const freeform = boardMode === BOARD_MODES.FREEFORM;
+  const board = buildHexBoard(landscapes, {
+    tutorialLayout,
+    revealRing1: seedFlags.somnia && !tutorialLayout && !freeform,
+    freeform,
+  });
   const openingNeighbor = tutorialLayout
     ? null
     : board.find((t) => !t.center && t.revealed && !t.wasteland);
@@ -178,6 +194,11 @@ export function createInitialState(data, options) {
     phaseIndex: 0,
     round: 1,
     lengthKey: options.lengthKey,
+    boardMode,
+    landscapeTileDeck: freeform ? buildLandscapeTileDeck(landscapes) : [],
+    landscapeVault: [],
+    landscapesSetAside: [],
+    vaultRefreshesThisRound: 0,
     seed,
     seedFlags,
     gameId: buildGameId(openingNeighbor?.name, seed),
@@ -294,6 +315,7 @@ export function createInitialState(data, options) {
   };
 
   snapshotDeckCaps(state);
+  refillVault(state);
   resetPhaseFlags(state);
   state.phaseIndex = 0;
   addLog(state, `Round ${state.round}: Reveal Phase — each Dreamer begins with ${PSYCHE_STARTING_HAND} Psyche.`);
@@ -428,6 +450,10 @@ export function pileForDeckKey(state, deckKey) {
 
 export function allLandscapesRevealed(state) {
   const outer = (state.board || []).filter((t) => !t.center && t.id !== "bed");
+  if (isFreeformBoard(state)) {
+    // Freeform: done only when nothing is left to place and nothing is Wasteland.
+    return vaultExhausted(state) && outer.every((t) => t.revealed && !t.wasteland);
+  }
   return outer.length > 0 && outer.every((t) => t.revealed && !t.wasteland);
 }
 
@@ -774,6 +800,7 @@ export function beginRoundReveal(state) {
   state.immovableTaxUsed = false;
   state.hunterShoveUsed = false;
   state.weaverSwapUsed = false;
+  resetVaultRoundCounters(state);
 
   state.players.forEach((player) => {
     if (!player.alive) return;

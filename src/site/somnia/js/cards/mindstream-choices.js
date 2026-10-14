@@ -32,6 +32,8 @@ import { applyFailEffect } from "../encounters/dreambeasts.js";
 import { playDiceBattle, rollD6, countSuccesses } from "../encounters/dice-battle.js";
 import { grantPowerTokens } from "./power-tokens.js";
 import { uid } from "../core/data.js";
+import { isFreeformBoard, placementSlots, findUnplacedLandscape } from "../board/dreamscape-vault.js";
+import { surfaceLandscapeNear } from "../board/landscapes.js";
 
 const SUIT_LABELS = {
   lucidity: "Lucidity",
@@ -65,6 +67,13 @@ export function dreamItOpenTile(state, card) {
   for (const id of ids) {
     const tile = (state.board || []).find((t) => t.id === id);
     if (tile && !tile.center && (!tile.revealed || tile.wasteland)) return tile;
+  }
+  // Freeform Board: a named Landscape still in the Vault can surface beside you.
+  if (isFreeformBoard(state) && placementSlots(state).length) {
+    for (const id of ids) {
+      const card = findUnplacedLandscape(state, id);
+      if (card) return { id: card.id, name: card.name, unplaced: true };
+    }
   }
   return null;
 }
@@ -599,8 +608,11 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
           state.pendingMindstreamChoice = pending;
           return false;
         }
-        const tile = dreamItOpenTile(state, card);
-        revealLandscapeTile(state, tile);
+        const target = dreamItOpenTile(state, card);
+        const tile = target?.unplaced
+          ? surfaceLandscapeNear(state, target.id, player.landscapeId)
+          : target;
+        if (tile && !target?.unplaced) revealLandscapeTile(state, tile);
         recordQuestEvent(state, "reveal_landscape", { count: 1 });
         addLog(state, `${player.name} Dreams ${tile.name} open with 1 Lucidity.`);
         openedByDream = tile.name;

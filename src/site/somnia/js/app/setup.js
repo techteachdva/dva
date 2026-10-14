@@ -220,7 +220,46 @@ function refreshLengthOptions() {
   }
 }
 
+const BOARD_MODE_KEY = "somnia.boardMode";
+const BOARD_MODE_HINTS = {
+  fixed: "Fixed Board: every Landscape waits face down on the map.",
+  freeform: "Freeform Board: start with only The Bed. Spend Lucidity to place Landscapes from the Dreamscape Vault, and shape the dream yourself.",
+};
+
+function selectedBoardMode() {
+  const checked = document.querySelector("input[name='setup-board']:checked");
+  return checked?.value === "freeform" ? "freeform" : "fixed";
+}
+
+function refreshBoardModeHint() {
+  const hint = document.getElementById("setup-board-hint");
+  if (hint) hint.textContent = BOARD_MODE_HINTS[selectedBoardMode()];
+}
+
+function bindBoardMode() {
+  let saved = "fixed";
+  try {
+    saved = localStorage.getItem(BOARD_MODE_KEY) === "freeform" ? "freeform" : "fixed";
+  } catch {
+    saved = "fixed";
+  }
+  const radio = document.querySelector(`input[name='setup-board'][value='${saved}']`);
+  if (radio) radio.checked = true;
+  refreshBoardModeHint();
+  document.querySelectorAll("input[name='setup-board']").forEach((input) => {
+    input.addEventListener("change", () => {
+      try {
+        localStorage.setItem(BOARD_MODE_KEY, selectedBoardMode());
+      } catch {
+        /* private window: the choice simply is not remembered */
+      }
+      refreshBoardModeHint();
+    });
+  });
+}
+
 function bindSetup() {
+  bindBoardMode();
   document.getElementById("btn-start").addEventListener("click", () => launchGame());
   document.getElementById("btn-continue")?.addEventListener("click", () => {
     launchGame({ resumeSaveId: "autosave" });
@@ -438,6 +477,7 @@ function launchGame(config = null) {
   const seed = normalizeSeedInput(document.getElementById("setup-seed")?.value);
   const payload = config || {
     lengthKey,
+    boardMode: selectedBoardMode(),
     selectedDreamerIds: [...selectedDreamerIds],
     launchedAt: Date.now(),
     gentleStart: lengthKey === "daydream" && !hasUsedGentleStart(),

@@ -17,7 +17,8 @@ import {
 import { SUIT_LABELS } from "../core/rules.js";
 import { recordQuestEvent } from "./quests.js";
 import { adjacentTiles, hexDistance } from "../core/hex.js";
-import { revealableTiles } from "../board/landscapes.js";
+import { revealableTiles, revealCapacity, revealOrPlaceLandscapes } from "../board/landscapes.js";
+import { isFreeformBoard } from "../board/dreamscape-vault.js";
 import {
   reshuffleMindstreamDiscardIfNeeded,
   discardToMindstream,
@@ -441,11 +442,17 @@ export function beginDreamerPower(state) {
       clearDreamerPower(state);
       return { done: true };
     case "the-visionary": {
-      const available = revealableTiles(state).length;
+      const available = revealCapacity(state);
       const count = Math.min(alivePlayers(state).length + 1, available);
       if (!count) {
         addLog(state, "No Landscapes available to reveal.");
         clearDreamerPower(state);
+        return { done: true };
+      }
+      if (isFreeformBoard(state)) {
+        // Freeform: the Visionary places from the Dreamscape Vault, free.
+        clearDreamerPower(state);
+        revealOrPlaceLandscapes(state, count, { source: "Visionary Power" });
         return { done: true };
       }
       pending.step = "reveal-landscape";
@@ -499,11 +506,17 @@ export function resolveDreamerPowerChoice(state, choiceId) {
 
   if (pending.dreamerId === "the-visionary") {
     if (choiceId === "reveal-landscapes") {
-      const available = revealableTiles(state).length;
+      const available = revealCapacity(state);
       const count = Math.min(alivePlayers(state).length + 1, available);
       if (!count) {
         addLog(state, "No Landscapes available to reveal.");
         clearDreamerPower(state);
+        return { done: true };
+      }
+      if (isFreeformBoard(state)) {
+        // Freeform: the Visionary places from the Dreamscape Vault, free.
+        clearDreamerPower(state);
+        revealOrPlaceLandscapes(state, count, { source: "Visionary Power" });
         return { done: true };
       }
       pending.step = "reveal-landscape";
