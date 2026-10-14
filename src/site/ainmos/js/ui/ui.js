@@ -1,3 +1,4 @@
+import { runSummaryHtml } from "./run-summary.js";
 import { bestForm, DREAM_FORMS, formLevel, PSYCHE_UPGRADES, upgradeLabel } from "../cards/dream-forms.js";
 import { renderNightBar } from "./night-bar.js";
 import { holdMusic } from "../audio/audio.js";
@@ -4756,7 +4757,11 @@ export function showEndScreen(won, message, scoreResult = null, dream = null) {
 
   const breakdownEl = document.getElementById("end-score-breakdown");
   const leaderboardEl = document.getElementById("end-leaderboard");
-  if (scoreResult?.breakdown) {
+  if (scoreResult?.breakdown && scoreResult.summary) {
+    breakdownEl.classList.remove("hidden");
+    breakdownEl.innerHTML = runSummaryHtml(scoreResult.summary, scoreResult.breakdown);
+    leaderboardEl?.classList.remove("hidden");
+  } else if (scoreResult?.breakdown) {
     const b = scoreResult.breakdown;
     const goalLabel = b.goalReached ? "Archetype goal" : "Archetype points";
     breakdownEl.classList.remove("hidden");

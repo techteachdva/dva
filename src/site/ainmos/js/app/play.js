@@ -1,3 +1,4 @@
+import { buildRunSummary } from "../ui/run-summary.js";
 import { renderBoonDraft } from "../ui/boon-panel.js";
 import { chooseBoon } from "../dreamers/boons.js";
 import { renderLostFound } from "../ui/lost-found-panel.js";
@@ -2698,13 +2699,13 @@ function renderAll() {
           ? LENGTHS[state.lengthKey].label
           : `${state.goalPoints} pts`);
       const seconds = Math.max(0, Math.round((Date.now() - (state.gameStartedAt || Date.now())) / 1000));
-      pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel, won: true };
+      pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel, won: true, summary: buildRunSummary(state) };
     }
     const msg = state.tutorialVictory
       ? `You collected ${state.acquiredPoints} Archetype point${state.acquiredPoints === 1 ? "" : "s"} and woke on The Bed — the same escape as a real Daydream.`
       : (state.finalRecurrence
         ? "All Remaining Archetypes defeated in the Final Recurrence!"
-        : `You collected ${state.acquiredPoints} Archetype points and all Dreamers returned to the Bed!`);
+        : `The last Boss falls with ${state.acquiredPoints} Archetype points in hand. The dream lets you go.`);
     showEndScreen(
       true,
       msg,
@@ -2755,7 +2756,7 @@ function renderAll() {
           ? LENGTHS[state.lengthKey].label
           : `${state.scoringGoalPoints || state.goalPoints || 0} pts`;
         const seconds = Math.max(0, Math.round((Date.now() - (state.gameStartedAt || Date.now())) / 1000));
-        pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel, won: false };
+        pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel, won: false, summary: buildRunSummary(state) };
       }
       showEndScreen(
         false,

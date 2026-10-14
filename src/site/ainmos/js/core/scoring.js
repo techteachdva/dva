@@ -1,5 +1,6 @@
-import { psycheHandCount, alliesInHand } from "../cards/psyche.js";
+import { alliesInHand } from "../cards/psyche.js";
 import { goalPointsForTable } from "./data.js";
+import { ladderEntry } from "../encounters/boss-ladder.js";
 
 /** Fewer Dreamers at the table, awarded only for a win. 6 is 0, each Dreamer fewer is +5. */
 export function dreamerCountBonus(playerCount, won) {
@@ -14,47 +15,57 @@ function difficultyPoints(state) {
   return goalPointsForTable(state.lengthKey, state.players?.length || 1);
 }
 
-function goalWasReached(state) {
-  if (state.archetypeGoalReached || state.goalBedSprintUsed || state.victoryPendingLogged) return true;
-  const goal = difficultyPoints(state);
-  return goal > 0 && (state.acquiredPoints || 0) >= goal;
+/** Each defeated ladder Boss scores its climb: the Turtle 1, Leviathan 10. */
+export function bossClimbPoints(state) {
+  return (state.bossesDefeated || []).reduce((sum, id) => {
+    const entry = ladderEntry(id);
+    return sum + (entry ? 11 - entry.rung : 0);
+  }, 0);
 }
 
 /**
- * Final score keeps the table's Psyche, Objects, tokens, allies, and Dreams,
- * then adds the Archetype goal, the escape, and a small-table win bonus.
+ * Ainmos score:
+ *   Archetype points acquired x2 (not capped at the goal)
+ * + every defeated Boss's climb (11 minus its rung)
+ * + the best spread's Power
+ * + 20 for waking
+ * + 1 per Object, Power Token, and ally still held by living Dreamers
+ * + the small-table bonus on a win.
+ * Psyche left in hand no longer scores: spend it.
  */
 export function calculateFinalScore(state) {
-  let psyche = 0;
   let objects = 0;
   let tokens = 0;
   let allies = 0;
-
   state.players.filter((p) => p.alive).forEach((p) => {
-    psyche += psycheHandCount(p);
-    objects += p.objects?.length || 0;
+    objects += (p.objects?.length || 0) + (p.persistent?.length || 0);
     tokens += p.powerTokens || 0;
     allies += alliesInHand(p).length;
   });
 
   const won = state.status === "won";
   const difficulty = difficultyPoints(state);
-  const goalReached = goalWasReached(state);
-  const archetypePoints = goalReached ? 12 + difficulty : (state.acquiredPoints || 0);
-  const escapeBonus = won ? (state.finalRecurrence ? 10 : 15) : 0;
+  const acquired = state.acquiredPoints || 0;
+  const goalReached = acquired >= difficulty;
+  const archetypePoints = acquired * 2;
+  const bossPoints = bossClimbPoints(state);
+  const bestSpread = state.runStats?.bestSpread?.power || 0;
+  const escapeBonus = won ? 20 : 0;
   const dreamerBonus = dreamerCountBonus(state.players?.length || 0, won);
-  const dreams = state.dreamDeck?.length || 0;
-  const total = archetypePoints + psyche + objects + tokens + allies + dreams + escapeBonus + dreamerBonus;
+  const total = archetypePoints + bossPoints + bestSpread + escapeBonus + objects + tokens + allies + dreamerBonus;
 
   return {
     archetypePoints,
+    acquired,
     goalReached,
     difficulty,
-    psyche,
+    bossPoints,
+    bestSpread,
+    psyche: 0,
     objects,
     tokens,
     allies,
-    dreams,
+    dreams: 0,
     escapeBonus,
     dreamerBonus,
     total,
@@ -62,17 +73,12 @@ export function calculateFinalScore(state) {
 }
 
 export function formatScoreBreakdown(breakdown) {
-  const goalLine = breakdown.goalReached
-    ? `Archetype goal: ${breakdown.archetypePoints}`
-    : `Archetype points: ${breakdown.archetypePoints}`;
   return [
-    goalLine,
-    `Psyche in hands: ${breakdown.psyche}`,
-    `Objects: ${breakdown.objects}`,
-    `Power Tokens: ${breakdown.tokens}`,
-    `Accepted allies: ${breakdown.allies}`,
-    `Dreams remaining: ${breakdown.dreams}`,
-    `Escape: ${breakdown.escapeBonus || 0}`,
+    `Archetype points ×2: ${breakdown.archetypePoints}`,
+    `Bosses climbed: ${breakdown.bossPoints}`,
+    `Best spread: ${breakdown.bestSpread}`,
+    `Wake: ${breakdown.escapeBonus || 0}`,
+    `Objects, tokens, allies: ${breakdown.objects + breakdown.tokens + breakdown.allies}`,
     `Dreamer table: ${breakdown.dreamerBonus || 0}`,
     `Total score: ${breakdown.total}`,
   ];

@@ -6,10 +6,18 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.6";
+export const SOMNIA_VERSION = "0.7";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.7",
+    title: "The Story of the Night",
+    notes: [
+      "The end screen tells the night: the Ante you reached, every Boss on the ladder, your best spread card by card, your favorite Dream Form, the Dreamer who won the most fights, your Boons, and the numbers behind the score.",
+      "New score: Archetype points ×2, plus each Boss's climb (the Turtle 1 up to Leviathan 10), plus your best spread's Power, plus 20 for waking, plus 1 per Object, Power Token, and ally. Psyche left in hand no longer scores.",
+    ],
+  },
   {
     version: "0.6",
     title: "Twists and Boons",

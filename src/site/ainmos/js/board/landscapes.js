@@ -590,6 +590,8 @@ export function placeLandscapeAt(state, q, r) {
   const tile = makeBoardTile(card, q, r);
   state.board.push(tile);
   revealLandscapeTile(state, tile);
+  state.runStats = state.runStats || {};
+  state.runStats.landscapesPlaced = (state.runStats.landscapesPlaced || 0) + 1;
   finishRevealStep(state, pick, tile, 1);
   return true;
 }

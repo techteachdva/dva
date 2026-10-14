@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.6-twists-boons";
-const RUNTIME_CACHE = "ainmos-runtime-0.6-twists-boons";
+const CACHE_NAME = "ainmos-0.7-story";
+const RUNTIME_CACHE = "ainmos-runtime-0.7-story";
 
 const PRECACHE = [
   "./",
@@ -60,6 +60,7 @@ const PRECACHE = [
   "./js/shop/lost-found.js",
   "./js/ui/lost-found-panel.js",
   "./js/ui/boon-panel.js",
+  "./js/ui/run-summary.js",
   "./js/dreamers/boons.js",
   "./js/encounters/boss-twists.js",
   "./js/encounters/boss-ladder.js",
