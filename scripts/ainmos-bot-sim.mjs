@@ -405,6 +405,55 @@ function tryAcquire(state) {
 }
 
 /** Point the bot's quest logic at the row Dream closest to true. */
+/** Ainmos shopping: the richest hand buys Form Objects, Insights, and Remember taps, keeping a cushion. */
+function shopTurn(state) {
+  const shop = state.lostFound;
+  const buyer = [...alive(state)].sort((a, b) => handCount(b) - handCount(a))[0];
+  if (!shop?.open || !buyer) return;
+  shopMod.setLostFoundBuyer(state, buyer.id);
+  const give = (s, p, card) => objectsMod.onObjectDrawn(s, p, card, getEffectHelpers());
+  const stats = (state.botShop = state.botShop || { bought: 0, insights: 0 });
+  for (let guard = 0; guard < 4; guard += 1) {
+    if (handCount(buyer) < 7) break;
+    const formIndex = shop.objects.findIndex((o) => o.levelsForm && !shopMod.objectBlockReason(state, buyer, o));
+    const rememberIndex = handCount(buyer) >= 8
+      ? shop.objects.findIndex((o) => o.remember && !shopMod.objectBlockReason(state, buyer, o))
+      : -1;
+    const index = formIndex >= 0 ? formIndex : rememberIndex;
+    if (index < 0) break;
+    const result = shopMod.buyLostFoundObject(state, index, give);
+    if (!result.ok) break;
+    stats.bought += 1;
+    if (result.card?.levelsForm) {
+      focus(state, buyer);
+      playObject(state, result.card.instanceId);
+    }
+  }
+  const insight = shop.insight;
+  if (insight && handCount(buyer) >= 8) {
+    if (insight.kind === "form") {
+      if (shopMod.buyLostFoundInsight(state).ok) stats.insights += 1;
+    } else {
+      const target = shopMod.upgradeTargets(state, buyer).sort((a, b) => (b.value || 0) - (a.value || 0))[0];
+      if (target && shopMod.buyLostFoundInsight(state, { targetId: target.instanceId }).ok) stats.insights += 1;
+    }
+  }
+}
+
+/** Boon taste: stat passives first, then card draw, then Form study. */
+function pickBoon(options) {
+  const rank = (boon) => {
+    const id = boon.archetype?.id || boon.id;
+    if (["sage", "magician", "warrior"].includes(id)) return 10;
+    if (["orphan", "caregiver"].includes(id)) return 8;
+    if (["innocent", "fool", "study"].includes(id)) return 7;
+    if (id === "wider-vault") return 5;
+    if (id === "deep-pockets") return 3;
+    return 4;
+  };
+  return [...options].sort((a, b) => rank(b) - rank(a))[0].id;
+}
+
 function focusBestDream(state) {
   if (state.finalRecurrence) return;
   const best = bestRowArchetype(state);
@@ -961,6 +1010,8 @@ function playGame(playerCount, index) {
     selectedDreamers,
     boardMode: BOARD_MODE,
   });
+  // Ainmos experiment knob: a fixed Object limit (6 or 10).
+  if (process.env.AINMOS_OBJECT_LIMIT) state.objectLimit = Number(process.env.AINMOS_OBJECT_LIMIT);
   let steps = 0;
   let stuck = 0;
   let prev = "";
@@ -981,9 +1032,12 @@ function playGame(playerCount, index) {
       try { runPendingBoardFx(); } catch { /* fx is cosmetic */ }
       tryAcquire(state);
       if (state.status !== "playing") break;
-      // Ainmos: the bot leaves the Lost & Found first (shopping policy comes later).
-      if (state.lostFound?.open) shopMod.closeLostFound(state);
-      if (state.pendingBoonDraft) boonMod.chooseBoon(state, state.pendingBoonDraft.options[0].id);
+      // Ainmos: shop, then leave; draft the best Boon.
+      if (state.lostFound?.open && !state.pendingEffectChoice) {
+        shopTurn(state);
+        shopMod.closeLostFound(state);
+      }
+      if (state.pendingBoonDraft) boonMod.chooseBoon(state, pickBoon(state.pendingBoonDraft.options));
       const pending = resolveOnePending(state);
       if (state.status !== "playing") break;
       if (!pending && !act(state) && state.status === "playing" && !state.landscapePick && !state.pendingMindstreamChoice && !state.pendingDreamChoice) {
@@ -1034,6 +1088,11 @@ function playGame(playerCount, index) {
     phaseAtEnd: getPhase(state),
     pendingAtEnd: Object.keys(state).filter((k) => k.startsWith("pending") && state[k]).join(","),
     psycheReturned,
+    objectsBought: state.runStats?.objectsBought || 0,
+    insights: state.botShop?.insights || 0,
+    formLevels: Object.values(state.formLevels || {}).reduce((sum, level) => sum + (level - 1), 0),
+    bossesDefeated: (state.bossesDefeated || []).length,
+    boons: (state.boons || []).length,
     remember: { ...(state.rememberStats || {}) },
     mindAtEnd: wakingMindCount(state),
     handsAtEnd: alive(state).reduce((n, p) => n + (p.hand || []).length, 0),
@@ -1088,6 +1147,11 @@ function summarize(rows) {
     },
     deathClockBuckets: [0, 1, 2, 3, 4, 5, 6].map((n) => rows.filter((r) => r.deaths === n).length),
     avgPsycheReturned: +mean(rows.map((r) => r.psycheReturned || 0)).toFixed(1),
+    avgObjectsBought: +mean(rows.map((r) => r.objectsBought || 0)).toFixed(2),
+    avgInsights: +mean(rows.map((r) => r.insights || 0)).toFixed(2),
+    avgFormLevelsGained: +mean(rows.map((r) => r.formLevels || 0)).toFixed(2),
+    avgBossesDefeated: +mean(rows.map((r) => r.bossesDefeated || 0)).toFixed(2),
+    avgBoons: +mean(rows.map((r) => r.boons || 0)).toFixed(2),
     rememberBySource: rows.reduce((acc, r) => {
       for (const [k, v] of Object.entries(r.remember || {})) acc[k] = +(((acc[k] || 0) + v / rows.length)).toFixed(2);
       return acc;
