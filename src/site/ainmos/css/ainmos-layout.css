@@ -1566,10 +1566,10 @@ html:root body.ainmos {
   --dc-lavender: #e4dafc;
   --menu-zoom: 1;
 }
-
+/* Base text stays 16px; see below. */
 /* A larger base on screens with room for it (rem-sized text scales with it). */
-@media (min-height: 700px) and (min-width: 1000px) { html:root:has(body.ainmos.play-window) { font-size: 17px; } }
-@media (min-height: 900px) and (min-width: 1400px) { html:root:has(body.ainmos.play-window) { font-size: 18px; } }
+/* (0.19) No root font bump: full-screen layouts are measured in rem. Labels are sized directly instead. */
+
 
 /* Menus grow with the screen: about double on a laptop or desktop. */
 @media (min-height: 560px) and (min-width: 900px) { html:root body.ainmos { --menu-zoom: 1.35; } }
@@ -1592,8 +1592,8 @@ body.ainmos .lost-found .lf-window > .vs-board,
 body.ainmos .lost-found .lf-window > .cy-shelf { flex: 1 1 auto; }
 
 /* Follow-up menus and card pickers: the whole screen, not a little box. */
-body.ainmos #utility-modal .utility-content,
-body.ainmos #utility-modal .utility-content.card-choice-modal-wrap {
+body.ainmos #utility-modal .utility-content:not(.fullscreen-browser):not(.ms-choice-modal-wrap):not(.phase-opener-modal-wrap):not(.subconscious-binder-fullscreen),
+body.ainmos #utility-modal .utility-content:not(.fullscreen-browser):not(.ms-choice-modal-wrap):not(.phase-opener-modal-wrap):not(.subconscious-binder-fullscreen).card-choice-modal-wrap {
   zoom: var(--menu-zoom);
   width: calc(97vw / var(--menu-zoom)) !important;
   max-width: none !important;
@@ -1701,7 +1701,7 @@ body.ainmos #card-modal #modal-card > .game-card { max-height: none; }
   body.ainmos #lost-found .lf-item-text { max-height: 5.4em; }
   body.ainmos #lost-found .lf-item-art { min-height: 7rem; }
 }
-body.ainmos #utility-modal .utility-content { overflow-x: hidden; }
+body.ainmos #utility-modal .utility-content:not(.fullscreen-browser):not(.ms-choice-modal-wrap):not(.phase-opener-modal-wrap):not(.subconscious-binder-fullscreen) { overflow-x: hidden; }
 body.ainmos #utility-modal .card-choice-row.ain-fan { padding-left: 2rem; padding-right: 2rem; }
 
 /* Game screen: nothing below ~13px, nothing faint. */
@@ -1726,7 +1726,7 @@ html:root body.ainmos.play-window .vault-tile-meta { font-size: 13px; color: #f0
 html:root body.ainmos.play-window .event-landscape-state { font-size: 13px; }
 html:root body.ainmos.play-window .hand-bar :is(h2, h3, h4, .hand-bar-title, [class*="section-title"]) { font-size: 14px; color: #fff; }
 html:root body.ainmos.play-window .hand-bar > * > :is(h2, h3, h4) { font-size: 14px; letter-spacing: 0.08em; }
-html:root body.ainmos.play-window :is(#btn-next-phase, #btn-map-back, .hud-item, .death-clock-count) { font-size: 15px; }
+html:root body.ainmos.play-window :is(.hud-item, .death-clock-count) { font-size: 15px; }
 html:root body.ainmos.play-window [style*="opacity: 0.6"], html:root body.ainmos.play-window .is-ahead { opacity: 1; }
 html:root body.ainmos.play-window .night-ante:not(.is-now) .night-ante-label { color: #e4dcfb; }
 
@@ -1746,7 +1746,7 @@ html:root body.ainmos {
 
 /* Windows and menus: real frosted glass. */
 body.ainmos .lost-found .lf-window,
-body.ainmos #utility-modal .utility-content,
+body.ainmos #utility-modal .utility-content:not(.fullscreen-browser):not(.ms-choice-modal-wrap):not(.phase-opener-modal-wrap):not(.subconscious-binder-fullscreen),
 body.ainmos #card-modal .modal-content,
 body.ainmos #pause-menu .pause-panel {
   background: var(--glass-fill-strong) !important;
@@ -1952,3 +1952,159 @@ body.ainmos .dreamer-view .dreamer-inspect-cards > .game-card { width: clamp(64p
 body.ainmos .dreamer-detail-body.is-brief h2 { font-size: 1.8rem; color: #fff; }
 body.ainmos .dreamer-detail-body.is-brief .dreamer-detail-power-cost { display: none; }
 body.ainmos .dreamer-detail-body.is-brief :is(.dreamer-detail-power-text, .dreamer-detail-stat) { font-size: 1.1rem; color: #fff; }
+
+
+/* ==========================================================================
+   0.19 Fit: the Dream screen (and every full-screen Mindstream choice) is
+   exactly one window tall. The card takes what is left; nothing clips.
+   ========================================================================== */
+body.ainmos #utility-modal .ms-choice-fullscreen,
+body.ainmos #utility-modal .ms-choice-stage {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+}
+body.ainmos #utility-modal .ms-choice-stage { padding: 1.2vh 1rem 2.2vh; }
+body.ainmos #utility-modal .ms-choice-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  min-height: 0;
+  gap: 1.2vh;
+}
+body.ainmos #utility-modal .ms-choice-caption { flex: none; text-align: center; }
+body.ainmos #utility-modal .ms-choice-fullscreen .ms-choice-card-frame {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto !important;
+  max-height: none !important;
+  display: flex;
+  justify-content: center;
+}
+body.ainmos #utility-modal .ms-choice-fullscreen .ms-choice-card { max-height: 100%; height: 100%; width: auto; max-width: 90vw; object-fit: contain; }
+body.ainmos #utility-modal .ms-choice-single-slot { flex: none; padding-bottom: 0; }
+/* Readable heading, big and white. */
+body.ainmos #utility-modal .ms-choice-fullscreen--single .ms-choice-title { font-size: clamp(1.6rem, 4.2vh, 3rem); }
+body.ainmos #utility-modal .ms-choice-fullscreen--single .ms-choice-message { font-size: clamp(1rem, 2.2vh, 1.5rem); color: #fff; }
+body.ainmos #utility-modal .ms-choice-fullscreen .ms-choice-caption > :first-child { font-size: clamp(0.8rem, 1.6vh, 1.1rem); color: #fff; }
+body.ainmos #utility-modal .ms-choice-fullscreen--single .ms-choice-single-slot .ms-choice-btn { min-height: clamp(3.4rem, 8vh, 5.5rem); }
+body.ainmos #utility-modal .ms-choice-fullscreen--single .ms-choice-btn__label { font-size: clamp(1rem, 2.2vh, 1.5rem); }
+body.ainmos #utility-modal .ms-choice-fullscreen--single .ms-choice-btn__hint { font-size: clamp(0.85rem, 1.6vh, 1.1rem); }
+/* "Minimize — view board" sits in the top-left corner instead of under the screen. */
+body.ainmos #utility-modal .ms-choice-modal-wrap #utility-modal-body > .utility-actions {
+  position: absolute;
+  top: max(0.6rem, env(safe-area-inset-top));
+  left: max(0.6rem, env(safe-area-inset-left));
+  z-index: 5;
+  margin: 0;
+  padding: 0;
+}
+body.ainmos #utility-modal .ms-choice-modal-wrap #utility-modal-body > .utility-actions .btn { min-height: 2.4rem; font-size: 0.8rem; }
+/* Phones sideways: card left-of-center, button on the right (existing layout), but sized to the window. */
+@media (orientation: landscape) and (max-height: 520px) {
+  body.ainmos #utility-modal .ms-choice-fullscreen .ms-choice-card { max-width: 40vw; }
+  body.ainmos #utility-modal .ms-choice-modal-wrap #utility-modal-body > .utility-actions .btn { min-height: 2rem; font-size: 0.7rem; padding: 0.2rem 0.8rem; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  body.ainmos #utility-modal .ms-choice-fullscreen--single .ms-choice-center { align-items: flex-start; padding-left: 4vw; width: 100%; }
+  body.ainmos #utility-modal .ms-choice-fullscreen--single .ms-choice-caption { align-self: center; }
+  body.ainmos #utility-modal .ms-choice-fullscreen--single .ms-choice-card-frame { justify-content: flex-start; padding-left: 14vw; }
+  body.ainmos #utility-modal .ms-choice-fullscreen--single .ms-choice-single-slot {
+    position: fixed;
+    right: max(1.2rem, env(safe-area-inset-right));
+    left: auto;
+    top: 55%;
+    transform: translateY(-50%);
+  }
+}
+
+/* One screen, every screen: the Cycle, Vault, and Boon windows are exactly the
+   window's height. Shelves flex; art takes what's left; text scrolls in place. */
+body.ainmos :is(#cycle-screen, #vault-screen, #boon-draft) .lf-window {
+  height: calc(97vh / var(--menu-zoom));
+  height: calc(97dvh / var(--menu-zoom));
+  min-height: 0 !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+body.ainmos :is(#cycle-screen, #vault-screen, #boon-draft) .lf-window > * { flex: none; }
+body.ainmos :is(#cycle-screen, #vault-screen, #boon-draft) .lf-window > .lf-shelf {
+  flex: 1 1 0;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+}
+body.ainmos :is(#cycle-screen, #vault-screen, #boon-draft) .lf-item {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+body.ainmos :is(#cycle-screen, #vault-screen, #boon-draft) .lf-item > * { flex: none; }
+body.ainmos #cycle-screen .cy-art { flex: 1 1 0 !important; height: auto; min-height: 3.5rem; }
+body.ainmos :is(#cycle-screen, #vault-screen, #boon-draft) .lf-item-text { flex: 0 1 auto !important; min-height: 1.4em; overflow-y: auto; }
+body.ainmos :is(#cycle-screen, #vault-screen, #boon-draft) .lf-item :is(.cy-reward, .lf-item-foot) { margin-top: auto; }
+@media (max-height: 520px) {
+  body.ainmos #cycle-screen .lf-window { padding: 0.3rem 0.7rem 0.4rem; }
+  body.ainmos #cycle-screen .cy-ladder { padding-top: 0.2rem; padding-bottom: 0.2rem; }
+  body.ainmos #cycle-screen .lf-item { padding: 0.35rem 0.5rem 0.4rem; }
+}
+body.ainmos :is(#cycle-screen, #vault-screen, #boon-draft) .lf-window { height: calc(96vh / var(--menu-zoom)); height: calc(96dvh / var(--menu-zoom)); }
+body.ainmos :is(#cycle-screen, #vault-screen, #boon-draft, #lost-found):not([hidden]) { overflow: hidden; }
+@media (min-width: 900px) and (min-height: 560px) {
+  body.ainmos #lost-found .lf-window { height: calc(96dvh / var(--menu-zoom)); }
+}
+/* The narrow Dreamer dock column keeps its headings on one line. */
+html:root body.ainmos.play-window .hand-bar :is(.dreamer-dock, .power-section) h3 { font-size: 11.5px !important; letter-spacing: 0.04em; white-space: nowrap; }
+/* Narrower desktops: the HUD's Cycle shows its label and step; the Night Bar above already maps the phases. */
+@media (max-width: 1699px) {
+  html:root body.ainmos.play-window #hud-cycle .cycle-dreams { display: none; }
+}
+
+/* Card details for any illustrated card: art left at window height, words right. Fits every screen. */
+body.ainmos #card-modal .modal-content.card-view {
+  width: min(calc(94vw / var(--menu-zoom)), 60rem);
+  max-height: calc(94vh / var(--menu-zoom)) !important;
+  overflow-y: auto;
+}
+body.ainmos #card-modal .card-view .modal-detail {
+  display: grid;
+  grid-template-columns: auto minmax(14rem, 1fr);
+  grid-auto-rows: min-content;
+  column-gap: 1.4rem;
+  row-gap: 0.6rem;
+  align-items: start;
+}
+body.ainmos #card-modal .card-view .modal-detail > :is(.modal-art, .modal-art-fallback) {
+  grid-row: 1 / span 20;
+  width: auto;
+  height: auto;
+  max-width: min(42vw, 30rem);
+  max-height: calc(84vh / var(--menu-zoom));
+  object-fit: contain;
+  border-radius: 14px;
+}
+body.ainmos #card-modal .card-view .modal-detail > h2 {
+  margin: 0.2rem 0 0.2rem;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+body.ainmos #card-modal .card-view .modal-detail > :not(h2):not(.modal-art) { font-size: 1.1rem; line-height: 1.45; color: #fff; margin: 0; }
+body.ainmos #card-modal .card-view #modal-card-actions { margin-top: 0.8rem; }
+@media (max-width: 700px), (max-height: 520px) {
+  body.ainmos #card-modal .card-view .modal-detail { grid-template-columns: auto minmax(10rem, 1fr); column-gap: 0.8rem; }
+  body.ainmos #card-modal .card-view .modal-detail > :is(.modal-art, .modal-art-fallback) { max-height: calc(80vh / var(--menu-zoom)); max-width: 38vw; }
+  body.ainmos #card-modal .card-view .modal-detail > h2 { font-size: 1.3rem; }
+  body.ainmos #card-modal .card-view .modal-detail > :not(h2):not(.modal-art) { font-size: 0.9rem; }
+}
+body.ainmos #card-modal .card-view .modal-detail > #modal-card-actions { grid-column: 2; margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+body.ainmos #card-modal .card-view .modal-detail > #modal-card-actions .modal-object-fate { flex-basis: 100%; }
+@media (max-height: 520px) {
+  body.ainmos #card-modal .card-view .modal-detail > :is(.modal-art, .modal-art-fallback),
+  body.ainmos #card-modal .beast-view .modal-art { max-height: calc(100vh - 6rem); max-height: calc(100dvh - 6rem); }
+  body.ainmos #card-modal .modal-content:is(.card-view, .beast-view) { padding-top: 0.8rem; padding-bottom: 0.8rem; }
+}

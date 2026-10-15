@@ -155,6 +155,7 @@ import { dieIfHandEmptyAfterDream } from "../core/state.js";
 import { placeReturnedBeasts } from "../board/landscapes.js";
 import { initKeepsakeScrollers, refreshKeepsakeScrollers } from "../ui/keepsake-scroll.js";
 import { initCardFans } from "../ui/ui.js";
+import { initFitBars } from "../ui/fit-bar.js";
 import { createSpectatorBot } from "../dev/bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "../encounters/dreambeasts.js";
 import { requestEndPhase } from "../flow/phase-skip.js";
@@ -450,6 +451,7 @@ async function init() {
   bindImageDragGuard();
   initKeepsakeScrollers();
   initCardFans();
+  initFitBars();
   bindRestart();
   bindEndLeaderboard();
   bindPowerBonus();

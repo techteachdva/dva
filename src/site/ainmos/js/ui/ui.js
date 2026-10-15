@@ -1219,6 +1219,9 @@ function isDreamCard(card) {
 
 function dreamCardEffectText(card) {
   const resolution = getDreamResolution(card?.refId || card?.id);
+  // Ainmos: a Dream only hurts. Show the one thing it does, not the old Bright/Dim pair.
+  const bad = resolution?.bad;
+  if (bad?.label) return `<b>${bad.label}.</b>${bad.hint ? ` ${bad.hint}` : ""}`;
   return resolutionRulesText(resolution) || card.text || card.effect || "";
 }
 
@@ -1407,9 +1410,14 @@ export function showModal(card, options = {}) {
   const modal = document.getElementById("card-modal");
   const modalContent = modal?.querySelector(".modal-content");
   const container = document.getElementById("modal-card");
+  // The action buttons may be parked in the last card's text column: bring them home before clearing.
+  const actionsHome = document.getElementById("modal-card-actions");
+  if (actionsHome && modalContent && actionsHome.parentElement !== modalContent) modalContent.appendChild(actionsHome);
   container.innerHTML = "";
   modalContent?.classList.toggle("dreambeast-detail-modal", isDreambeastCard(card));
   modalContent?.classList.toggle("beast-view", isDreambeastCard(card));
+  // Every illustrated card (Dreams, Objects, Landscapes, Archetypes): art beside its text, sized to the window.
+  modalContent?.classList.toggle("card-view", !isDreambeastCard(card) && !!card?.image && card.type !== "psyche" && card.type !== "psyche-power");
   modalContent?.classList.toggle("dream-detail-modal", isDreamCard(card) && !isDreambeastCard(card));
   fillModalObjectActions(card, options);
 
@@ -1486,7 +1494,7 @@ export function showModal(card, options = {}) {
   title.textContent = card.name;
   detail.appendChild(title);
 
-  if (card.resolutionSide === "good" || card.resolutionSide === "bad") {
+  if (!isDreamCard(card) && (card.resolutionSide === "good" || card.resolutionSide === "bad")) {
     const bright = card.resolutionSide === "good";
     detail.classList.add(bright ? "choice-bright" : "choice-dim");
     const banner = document.createElement("p");
@@ -1602,6 +1610,8 @@ export function showModal(card, options = {}) {
   }
 
   container.appendChild(detail);
+  // Side-by-side views keep their buttons in the text column, always on screen.
+  if (actionsHome && modalContent?.classList.contains("card-view") && !actionsHome.hidden) detail.appendChild(actionsHome);
   modal.classList.remove("hidden");
   document.body.classList.add("card-detail-open");
 }

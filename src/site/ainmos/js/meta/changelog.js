@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.18";
+export const SOMNIA_VERSION = "0.19";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.19",
+    title: "Fits Every Screen",
+    notes: [
+      "The Dream screen fits the window on desktop, tablet, and phone: the card takes the space that is left and Endure it is always on screen. Minimize sits in the corner.",
+      "The Cycle screen, Vault, and Boon draft fit on one screen with no scrolling.",
+      "Card details (Dreams, Objects, Landscapes) show the art beside the words, with the buttons always in view. A Dream card shows the one thing it does.",
+      "The top bar always fits: on narrower screens it scales itself to keep Pause and the Subconscious on screen.",
+      "Full-screen layouts are no longer scaled twice, so nothing comes out oversized.",
+    ],
+  },
   {
     version: "0.18",
     title: "Clean View",
