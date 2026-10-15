@@ -83,7 +83,7 @@ function markExcessReveals(state, budget, extra = {}) {
   narrate(
     state,
     `Reveal budget: ${budget} — draw Psyche.`,
-    `Every Landscape is already face-up. Each leftover Reveal draws 1 Psyche. The Dreamer whose turn it is draws, then the turn passes clockwise.`,
+    `Every Landscape is already face-up. Each leftover Reveal banks 1 Glimmer ✧ for the Lost & Found.`,
     [`${budget} Psyche draw(s) left`],
   );
   return true;
@@ -99,7 +99,7 @@ export function beginRevealPicking(state, budget) {
     narrate(
       state,
       `Reveal budget: ${budget} — build the Dreamscape.`,
-      `Each Lucidity places one Landscape. Choose a tile in the Dreamscape Vault, then a glowing hex beside the dream. Refreshing the Vault costs ${vaultRefreshCost(state)} Lucidity. Unused Reveals draw 1 Psyche each, one Dreamer at a time.`,
+      `Each Lucidity places one Landscape. Choose a tile in the Dreamscape Vault, then a glowing hex beside the dream. Refreshing the Vault costs ${vaultRefreshCost(state)} Lucidity. Unused Reveals bank 1 Glimmer ✧ each for the Lost & Found.`,
       [`${budget} Lucidity to spend`, "Pick a Vault tile, then a glowing hex"],
     );
     return true;
@@ -107,7 +107,7 @@ export function beginRevealPicking(state, budget) {
   narrate(
     state,
     `Reveal budget: ${budget} — click map tiles.`,
-    `You spent Lucidity Psyche. Click up to ${budget} hex tiles on the map that show the Wasteland back to flip them to active Landscapes. Unused Reveals draw 1 Psyche each, one Dreamer at a time.`,
+    `You spent Lucidity Psyche. Click up to ${budget} hex tiles on the map that show the Wasteland back to flip them to active Landscapes. Unused Reveals bank 1 Glimmer ✧ each for the Lost & Found.`,
     [`${budget} tile(s) to reveal`, "Click the hex map in the center table"],
   );
   return true;

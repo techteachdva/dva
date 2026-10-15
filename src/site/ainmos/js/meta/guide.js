@@ -247,7 +247,7 @@ export function getCurrentObjective(state) {
         suit: "lucidity",
         title: "Spend Lucidity",
         steps: ["Spend 1 Lucidity, or 1 Power Token. Its value plus your Lucidity places that many Landscapes."],
-        tip: "Unused Reveals draw Psyche.",
+        tip: "Unused Reveals bank Glimmer ✧ for the Lost & Found.",
       };
     }
     return { phase: "Reveal", suit: "lucidity", title: "Reveal done", steps: ["Tap **Next** when you are ready to walk."] };
@@ -268,7 +268,7 @@ export function getCurrentObjective(state) {
         suit: "elasticity",
         title: "Walk the dream",
         steps: [`Tap a glowing hex to move. **${state.exploreMovesLeft}** step${state.exploreMovesLeft === 1 ? "" : "s"} left.`],
-        tip: "Entering Wasteland discards 1 Psyche. Unused steps draw Psyche.",
+        tip: "Entering Wasteland discards 1 Psyche. Unused steps bank Glimmer ✧.",
       };
     }
     return { phase: "Explore", suit: "elasticity", title: "Walk done", steps: ["Tap **Next** to Meet."] };
@@ -300,7 +300,7 @@ export function getCurrentObjective(state) {
       suit: "willpower",
       title: state.activeEncounter ? "Fight" : "Spend your actions",
       steps: lines,
-      tip: "Draw Mindstream, use your Landscape's action, or tap a Persistent Object. Unused actions draw Psyche.",
+      tip: "Draw Mindstream, use your Landscape's action, or tap a Persistent Object. Unused actions bank Glimmer ✧.",
     };
   }
 
@@ -423,7 +423,7 @@ export function infoHubHtml(options = {}) {
               <li class="suit-elasticity"><strong>Explore</strong> — spend 1 Elasticity for steps. Entering Wasteland discards 1 Psyche.</li>
               <li class="suit-willpower"><strong>Meet</strong> — spend 1 Willpower for actions: fight (as often as you have actions), Draw Mindstream, use your Landscape's action, or tap a Persistent Object.</li>
             </ul>
-            <p>A Power Token can open any phase as 1 plus your stat. Every unused Reveal, step, or action draws 1 Psyche.</p>
+            <p>A Power Token can open any phase as 1 plus your stat. Every unused Reveal, step, or action banks 1 Glimmer ✧, which pays toward the next Lost &amp; Found.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Fights</h3>

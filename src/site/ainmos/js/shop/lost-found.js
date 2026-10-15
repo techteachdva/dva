@@ -6,7 +6,11 @@
  *
  * Objects cost 1–5 Psyche value in their own suit. Insights cost 3–6 Psyche
  * value of any suit. Psyche is health and money at once, so every purchase is
- * a real choice. Overpaying is lost. A reroll costs 1 Power Token.
+ * a real choice. Overpaying is lost.
+ *
+ * Glimmer ✧ is what unused Reveals, steps, and Meet actions leave behind. It
+ * pays first, 1 value each, toward any price here, and 3 Glimmer (or 1 Power
+ * Token) looks again. Letting an Object go draws Psyche equal to its price.
  *
  * Each Dreamer may hold OBJECT_LIMIT Objects (in hand and in play together).
  */
@@ -28,6 +32,29 @@ export const LOST_FOUND_SLOTS = 3;
 export const OBJECT_LIMIT = 6;
 export const OBJECT_LIMIT_MAX = 10;
 export const REROLL_TOKEN_COST = 1;
+export const REROLL_GLIMMER_COST = 3;
+export const GLIMMER_MAX = 10;
+
+/** Glimmer banked for the next Lost & Found. */
+export function glimmerHeld(state) {
+  return Math.max(0, state?.glimmer || 0);
+}
+
+/** Bank Glimmer (capped). Returns how much was actually banked. */
+export function bankGlimmer(state, amount = 1) {
+  const before = glimmerHeld(state);
+  state.glimmer = Math.min(GLIMMER_MAX, before + Math.max(0, amount));
+  return state.glimmer - before;
+}
+
+/** How much of this price the banked Glimmer covers. */
+export function glimmerFor(state, price) {
+  return Math.min(glimmerHeld(state), Math.max(0, price));
+}
+
+function spendGlimmer(state, amount) {
+  if (amount > 0) state.glimmer = glimmerHeld(state) - amount;
+}
 
 const SUIT_NAME = { lucidity: "Lucidity", elasticity: "Elasticity", willpower: "Willpower" };
 
@@ -139,6 +166,7 @@ function payValue(card) {
  * Least overpay first, then fewest cards, then plain cards before Wild or upgraded ones.
  */
 export function paymentFor(player, price, { suit = null, excludeIds = [] } = {}) {
+  if (price <= 0) return { cards: [], total: 0, overpay: 0 };
   const pool = (player?.hand || [])
     .filter(payable)
     .filter((c) => !excludeIds.includes(c.instanceId))
@@ -179,13 +207,18 @@ function spendPayment(state, player, cards) {
 export function objectBlockReason(state, player, card) {
   if (!card) return "That shelf is empty.";
   if (!player) return "Choose a Dreamer to buy.";
-  if (objectCount(player) >= objectLimit(state)) {
-    return `${player.name} already holds ${objectLimit(state)} Objects. Play or discard one first.`;
-  }
-  if (!paymentFor(player, objectPrice(card), { suit: card.suit })) {
-    return `${player.name} needs ${objectPrice(card)} ${SUIT_NAME[card.suit] || ""} Psyche value.`;
+  // At the Object limit you may still buy: you then let one go (and draw its price).
+  const rest = objectPrice(card) - glimmerFor(state, objectPrice(card));
+  if (!paymentFor(player, rest, { suit: card.suit })) {
+    return `${player.name} needs ${rest} ${SUIT_NAME[card.suit] || ""} Psyche value${glimmerHeld(state) ? ` after ${glimmerFor(state, objectPrice(card))}✧` : ""}.`;
   }
   return "";
+}
+
+/** What an Object pays out when let go: its price in Psyche draws, nothing the round it was found. */
+export function letGoValue(state, card) {
+  if (!card || card.foundRound === state?.round) return 0;
+  return objectPrice(card);
 }
 
 /** Buy Object `index`. `giveObject(state, player, card)` places it (hand, or Must Play). */
@@ -195,10 +228,14 @@ export function buyLostFoundObject(state, index, giveObject) {
   const card = shop?.objects?.[index];
   const reason = objectBlockReason(state, player, card);
   if (reason) return { ok: false, reason };
-  const pay = paymentFor(player, objectPrice(card), { suit: card.suit });
+  const glim = glimmerFor(state, objectPrice(card));
+  const pay = paymentFor(player, objectPrice(card) - glim, { suit: card.suit });
+  spendGlimmer(state, glim);
   spendPayment(state, player, pay.cards);
   shop.objects.splice(index, 1);
-  addLog(state, `${player.name} finds ${card.name} in the Lost & Found for ${pay.cards.map((c) => c.name).join(" + ")}.`);
+  card.foundRound = state.round;
+  const paid = [glim ? `${glim}✧` : "", ...pay.cards.map((c) => c.name)].filter(Boolean).join(" + ");
+  addLog(state, `${player.name} finds ${card.name} in the Lost & Found for ${paid}.`);
   state.runStats = state.runStats || {};
   state.runStats.objectsBought = (state.runStats.objectsBought || 0) + 1;
   giveObject?.(state, player, card);
@@ -226,8 +263,9 @@ export function insightBlockReason(state, player, { targetId = null } = {}) {
     const eligible = (player.hand || []).filter((c) => payable(c) && !isWildPsyche(c) && c.upgrade !== insight.upgrade);
     if (!eligible.length) return `${player.name} has no plain Psyche to take this upgrade.`;
   }
-  if (insightCost(state) > 0 && !paymentFor(player, insight.price, { excludeIds: exclude })) {
-    return `${player.name} needs ${insight.price} Psyche value of any suit${insight.kind === "upgrade" ? ", besides the card being upgraded" : ""}.`;
+  const rest = insightCost(state) - glimmerFor(state, insightCost(state));
+  if (insightCost(state) > 0 && !paymentFor(player, rest, { excludeIds: exclude })) {
+    return `${player.name} needs ${rest} Psyche value of any suit${insight.kind === "upgrade" ? ", besides the card being upgraded" : ""}.`;
   }
   return "";
 }
@@ -238,8 +276,10 @@ function payForInsight(state, player, excludeIds = []) {
     state.freeInsights = freeInsightCount(state) - 1;
     return true;
   }
-  const pay = paymentFor(player, state.lostFound.insight.price, { excludeIds });
+  const glim = glimmerFor(state, state.lostFound.insight.price);
+  const pay = paymentFor(player, state.lostFound.insight.price - glim, { excludeIds });
   if (!pay) return false;
+  spendGlimmer(state, glim);
   spendPayment(state, player, pay.cards);
   return true;
 }
@@ -276,15 +316,24 @@ export function buyLostFoundInsight(state, { targetId = null, vividSuit = null }
   return { ok: true, message: `${name} rises to level ${level}.` };
 }
 
-/** Spend 1 Power Token to redeal the shelves and the Insight. */
+/** How a look-again would be paid right now: "glimmer", "token", or "" when it cannot. */
+export function rerollPayment(state, player = lostFoundBuyer(state)) {
+  if (glimmerHeld(state) >= REROLL_GLIMMER_COST) return "glimmer";
+  if ((player?.powerTokens || 0) >= REROLL_TOKEN_COST) return "token";
+  return "";
+}
+
+/** Spend 3 Glimmer (first) or 1 Power Token to redeal the shelves and the Insight. */
 export function rerollLostFound(state, spendTokens) {
   const shop = state?.lostFound;
   const player = lostFoundBuyer(state);
   if (!shop?.open || !player) return { ok: false, reason: "The Lost & Found is closed." };
-  if ((player.powerTokens || 0) < REROLL_TOKEN_COST) {
-    return { ok: false, reason: `${player.name} needs ${REROLL_TOKEN_COST} Power Token to look again.` };
+  const how = rerollPayment(state, player);
+  if (!how) {
+    return { ok: false, reason: `Looking again takes ${REROLL_GLIMMER_COST}✧ Glimmer or ${REROLL_TOKEN_COST} Power Token.` };
   }
-  spendTokens?.(state, player, REROLL_TOKEN_COST);
+  if (how === "glimmer") spendGlimmer(state, REROLL_GLIMMER_COST);
+  else spendTokens?.(state, player, REROLL_TOKEN_COST);
   (shop.objects || []).forEach((card) => returnObjectToBottom(state, card));
   shop.objects = [];
   for (let i = 0; i < LOST_FOUND_SLOTS; i += 1) {
@@ -295,6 +344,6 @@ export function rerollLostFound(state, spendTokens) {
   shop.rerolls = (shop.rerolls || 0) + 1;
   state.runStats = state.runStats || {};
   state.runStats.rerolls = (state.runStats.rerolls || 0) + 1;
-  addLog(state, `${player.name} spends a Power Token. The Lost & Found shifts.`);
+  addLog(state, `${player.name} spends ${how === "glimmer" ? `${REROLL_GLIMMER_COST} Glimmer` : "a Power Token"}. The Lost & Found shifts.`);
   return { ok: true };
 }

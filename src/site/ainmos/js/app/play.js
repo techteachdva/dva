@@ -169,7 +169,8 @@ import {
   resolveDreamerPowerDeckPick,
   resolveDreamerPowerHandPick,
 } from "../dreamers/dreamer-powers.js";
-import { resolveNothingChoice } from "../effects/objects.js";
+import { resolveNothingChoice, letGoObject } from "../effects/objects.js";
+import { letGoValue } from "../shop/lost-found.js";
 import { resolveObjectChoice } from "../effects/object-effects.js";
 import { resolveDreamChoice } from "../cards/dream-choices.js";
 import { resolveEffectChoice } from "../effects/effect-choices.js";
@@ -1701,6 +1702,15 @@ function onObjectCardClick(card, zone) {
     onUse: () => {
       hideModal();
       playObject(state, card.instanceId || card.id, { usePower: zone === "persistent" });
+      renderAll();
+    },
+    // Let it go for its price in Psyche, any time no other choice is waiting.
+    letGoDraw: letGoValue(state, card),
+    onLetGo: isBlockingGameChoice(state) ? null : () => {
+      hideModal();
+      const owner = state.players.find((p) => [...(p.objects || []), ...(p.persistent || [])]
+        .some((o) => o.instanceId === card.instanceId));
+      if (letGoObject(state, owner, card.instanceId)) playSfx("discard");
       renderAll();
     },
   });

@@ -21,6 +21,10 @@ import {
   objectCount,
   objectLimit,
   REROLL_TOKEN_COST,
+  REROLL_GLIMMER_COST,
+  glimmerHeld,
+  glimmerFor,
+  rerollPayment,
 } from "../shop/lost-found.js";
 import { PSYCHE_UPGRADES } from "../cards/dream-forms.js";
 
@@ -48,30 +52,45 @@ function payLine(cards) {
   return cards.map((c) => (c.wild || String(c.id || "").startsWith("wild-") ? "Wild 5" : `${SUIT_NAME[c.suit] || ""} ${c.value}`)).join(" + ");
 }
 
+/** A price tag; with Glimmer it shows the old price struck through and what is left to pay. */
+function priceTag(price, glim, title, extra = "") {
+  if (!glim) {
+    return `<span class="lf-price ${extra}" title="${esc(title)}"><b>${price}</b><i class="lf-pip" aria-hidden="true"></i></span>`;
+  }
+  const rest = price - glim;
+  return `<span class="lf-price ${extra} lf-price-glimmer" title="${esc(title)}, ${glim} paid by Glimmer"><s>${price}</s><b>${rest}</b><i class="lf-pip" aria-hidden="true"></i><em>−${glim}✧</em></span>`;
+}
+
+function payLabel(glim, cards) {
+  return [glim ? `${glim}✧ Glimmer` : "", cards.length ? payLine(cards) : ""].filter(Boolean).join(" + ") || "nothing";
+}
+
 function buyerHtml(state, buyer) {
   return state.players.filter((p) => p.alive).map((p) => `
     <button type="button" class="lf-buyer${p.id === buyer?.id ? " is-active" : ""}" data-lf-buyer="${esc(p.id)}" aria-pressed="${p.id === buyer?.id}">
       <span class="lf-buyer-face" style="background-image:url('${esc(p.dreamer?.image)}')"></span>
       <span class="lf-buyer-name">${esc(p.name)}</span>
-      <span class="lf-buyer-meta">${(p.hand || []).length} Psyche · ${objectCount(p)}/${objectLimit(state)} Objects · ${p.powerTokens || 0}⚡</span>
+      <span class="lf-buyer-meta">${(p.hand || []).length} Psyche · ${objectCount(p)}/${objectLimit(state)} Objects · ${p.powerTokens || 0}⚡ · ${glimmerHeld(state)}✧</span>
     </button>`).join("");
 }
 
 function objectHtml(state, buyer, card, index) {
   const price = objectPrice(card);
+  const glim = glimmerFor(state, price);
   const reason = objectBlockReason(state, buyer, card);
-  const pay = reason ? null : paymentFor(buyer, price, { suit: card.suit });
+  const pay = reason ? null : paymentFor(buyer, price - glim, { suit: card.suit });
+  const full = objectCount(buyer) >= objectLimit(state);
   return `
     <article class="lf-item suit-${esc(card.suit)}">
       <div class="lf-item-art" style="background-image:url('${esc(card.image)}')"></div>
-      <span class="lf-price" title="${price} ${SUIT_NAME[card.suit]} Psyche value"><b>${price}</b><i class="lf-pip" aria-hidden="true"></i></span>
+      ${priceTag(price, glim, `${price} ${SUIT_NAME[card.suit]} Psyche value`)}
       <h4 class="lf-item-name">${esc(card.name)}</h4>
       <p class="lf-item-kind">${kindLabel(card)} · ${SUIT_NAME[card.suit] || ""}</p>
       <p class="lf-item-text">${esc(card.text)}</p>
       <div class="lf-item-foot">
         ${reason
           ? `<p class="lf-why">${esc(reason)}</p>`
-          : `<p class="lf-pay">Pay ${esc(payLine(pay.cards))}${pay.overpay ? ` <span class="lf-over">(${pay.overpay} lost)</span>` : ""}</p>`}
+          : `<p class="lf-pay">Pay ${esc(payLabel(glim, pay.cards))}${pay.overpay ? ` <span class="lf-over">(${pay.overpay} lost)</span>` : ""}${full ? ` <span class="lf-over">· then let one Object go</span>` : ""}</p>`}
         <button type="button" class="lf-btn lf-buy" data-lf-buy="${index}" ${reason ? "aria-disabled=\"true\"" : ""}>Take it</button>
       </div>
     </article>`;
@@ -102,13 +121,14 @@ function insightHtml(state, buyer) {
   }
   const ready = !reason && (!isUpgrade || (pick.targetId && (insight.upgrade !== "vivid" || pick.vividSuit)));
   const free = insightCost(state) === 0;
-  const pay = !reason && !free ? paymentFor(buyer, insight.price, { excludeIds: pick.targetId ? [pick.targetId] : [] }) : null;
+  const glim = free ? 0 : glimmerFor(state, insight.price);
+  const pay = !reason && !free ? paymentFor(buyer, insight.price - glim, { excludeIds: pick.targetId ? [pick.targetId] : [] }) : null;
   return `
     <article class="lf-item lf-insight">
       <div class="lf-insight-sigil" aria-hidden="true">${isUpgrade ? "✧" : "❂"}</div>
       ${free
         ? `<span class="lf-price lf-price-free" title="Free: earned by Accepting a beast"><b>Free</b></span>`
-        : `<span class="lf-price lf-price-any" title="${insight.price} Psyche value of any suit"><b>${insight.price}</b><i class="lf-pip" aria-hidden="true"></i></span>`}
+        : priceTag(insight.price, glim, `${insight.price} Psyche value of any suit`, "lf-price-any")}
       <h4 class="lf-item-name">${esc(insightTitle(insight))}</h4>
       <p class="lf-item-kind">Insight · any suit</p>
       <p class="lf-item-text">${esc(insightText(insight))}</p>
@@ -118,7 +138,7 @@ function insightHtml(state, buyer) {
           ? `<p class="lf-why">${esc(reason)}</p>`
           : free
             ? `<p class="lf-pay">Free · you Accepted a beast${freeInsightCount(state) > 1 ? ` (${freeInsightCount(state)} owed)` : ""}</p>`
-            : pay ? `<p class="lf-pay">Pay ${esc(payLine(pay.cards))}${pay.overpay ? ` <span class="lf-over">(${pay.overpay} lost)</span>` : ""}</p>` : ""}
+            : pay ? `<p class="lf-pay">Pay ${esc(payLabel(glim, pay.cards))}${pay.overpay ? ` <span class="lf-over">(${pay.overpay} lost)</span>` : ""}</p>` : ""}
         ${isUpgrade && !pick.picking && !reason
           ? `<button type="button" class="lf-btn" data-lf-pick="1">Choose a card</button>`
           : `<button type="button" class="lf-btn lf-buy" data-lf-insight="1" ${ready ? "" : "aria-disabled=\"true\""}>Learn it</button>`}
@@ -158,6 +178,7 @@ export function renderLostFound(state, handlers = {}) {
     buyer?.id,
     buyer?.hand?.map((c) => c.instanceId),
     buyer?.powerTokens,
+    state.glimmer,
     objectCount(buyer),
     pick,
   ]);
@@ -166,9 +187,11 @@ export function renderLostFound(state, handlers = {}) {
   if (key === lastKey) return;
   lastKey = key;
 
-  const rerollBlocked = (buyer?.powerTokens || 0) < REROLL_TOKEN_COST
-    ? `${buyer?.name || "This Dreamer"} needs ${REROLL_TOKEN_COST} Power Token to look again.`
-    : "";
+  const rerollHow = rerollPayment(state, buyer);
+  const rerollBlocked = rerollHow
+    ? ""
+    : `Looking again takes ${REROLL_GLIMMER_COST}✧ Glimmer or ${REROLL_TOKEN_COST} Power Token.`;
+  const rerollLabel = rerollHow === "token" ? `Look again · ${REROLL_TOKEN_COST}⚡` : `Look again · ${REROLL_GLIMMER_COST}✧`;
 
   host.innerHTML = `
     <div class="lf-veil" aria-hidden="true"></div>
@@ -178,7 +201,7 @@ export function renderLostFound(state, handlers = {}) {
         <h3 id="lf-title" class="lf-title">Lost &amp; Found</h3>
         <span class="lf-round">Between rounds ${Math.max(1, (state.round || 2) - 1)} and ${state.round || 2}</span>
       </header>
-      <p class="lf-whisper">Things you forgot you had.</p>
+      <p class="lf-whisper">Things you forgot you had.${glimmerHeld(state) ? ` <span class="lf-glimmer">${glimmerHeld(state)}✧ Glimmer pays first</span>` : ` <span class="lf-glimmer is-empty">Leave Reveals, steps, or Meet actions unused to bank Glimmer ✧</span>`}</p>
       <div class="lf-buyers" role="group" aria-label="Who reaches in?">${buyerHtml(state, buyer)}</div>
       <div class="lf-shelf">
         ${shop.objects.length
@@ -187,7 +210,7 @@ export function renderLostFound(state, handlers = {}) {
         ${insightHtml(state, buyer)}
       </div>
       <footer class="lf-foot">
-        <button type="button" class="lf-btn lf-reroll" data-lf-reroll="1" ${rerollBlocked ? "aria-disabled=\"true\"" : ""} title="${esc(rerollBlocked || "Spend 1 Power Token to see different things.")}">Look again · ${REROLL_TOKEN_COST}⚡</button>
+        <button type="button" class="lf-btn lf-reroll" data-lf-reroll="1" ${rerollBlocked ? "aria-disabled=\"true\"" : ""} title="${esc(rerollBlocked || "See different things.")}">${rerollLabel}</button>
         <button type="button" class="lf-btn lf-continue" data-lf-close="1">Into the Dream →</button>
       </footer>
     </section>`;

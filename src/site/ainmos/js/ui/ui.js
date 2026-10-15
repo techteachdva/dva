@@ -1356,6 +1356,18 @@ function fillModalObjectActions(card, options = {}) {
   }
   btn.addEventListener("click", () => options.onUse?.());
   actions.appendChild(btn);
+  if (options.onLetGo) {
+    const letGo = document.createElement("button");
+    letGo.type = "button";
+    letGo.className = "btn ghost modal-let-go";
+    const draw = options.letGoDraw || 0;
+    letGo.textContent = draw ? `Let go · draw ${draw} Psyche` : "Let go";
+    letGo.title = draw
+      ? "Discard this Object and draw Psyche equal to its price. Makes room for a new set."
+      : "Found this round, so letting it go draws nothing yet.";
+    letGo.addEventListener("click", () => options.onLetGo?.());
+    actions.appendChild(letGo);
+  }
   actions.hidden = false;
 }
 
@@ -4348,6 +4360,13 @@ export function renderHud(state, hint = "") {
     paintPill("hud-elasticity", totalStat(focused, "elasticity", state));
     paintPill("hud-willpower", totalStat(focused, "willpower", state));
     paintPill("hud-power", focused.powerTokens || 0);
+    const glimmerNode = document.getElementById("hud-glimmer");
+    if (glimmerNode && glimmerNode.textContent !== String(state.glimmer || 0)) {
+      glimmerNode.textContent = String(state.glimmer || 0);
+      glimmerNode.parentElement?.classList.remove("is-pulse");
+      void glimmerNode.offsetWidth;
+      glimmerNode.parentElement?.classList.add("is-pulse");
+    }
     const suitBar = document.getElementById("hud-suits");
     if (suitBar) suitBar.title = focused.name;
   }

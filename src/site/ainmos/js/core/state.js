@@ -46,6 +46,7 @@ import {
   goalPointsForTable,
   uid,
   PSYCHE_STARTING_HAND,
+  DREAM_DRAW,
 } from "./data.js";
 import { discardToMindstream, pullObjectFromMindstream, objectForPlayer, reshuffleMindstreamDiscardIfNeeded, stampBeastMillTile } from "../cards/mindstream-supply.js";
 import { psycheHandCount, hasPsycheHealth } from "../cards/psyche.js";
@@ -875,12 +876,12 @@ export function beginRoundReveal(state) {
       handleDreamerDeath(state, player);
       return;
     }
-    drawPsycheForPlayer(state, player, 2);
+    drawPsycheForPlayer(state, player, DREAM_DRAW);
     const extra = extraPsycheDrawAtRoundStart(state, player);
     if (extra) drawPsycheForPlayer(state, player, extra);
   });
 
-  addLog(state, `Round ${state.round}: Reveal — each Dreamer draws 2 Psyche.`);
+  addLog(state, `Round ${state.round}: Reveal — each Dreamer draws ${DREAM_DRAW} Psyche.`);
   // Ainmos: between rounds, the Lost & Found opens before the Dream is drawn.
   if (state.status === "playing") openLostFound(state);
 }

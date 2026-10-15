@@ -149,6 +149,8 @@ export const PSYCHE_WILD_COUNT = 6;
 export const PSYCHE_POWER_TOKEN_COUNT = 0;
 export const PSYCHE_POWER_GRANT = 1;
 export const PSYCHE_STARTING_HAND = 5;
+/** Ainmos: Psyche each Dreamer draws as every Dream begins. */
+export const DREAM_DRAW = 4;
 export const PSYCHE_HAND_LIMIT = 10;
 export const PSYCHE_DECK_SIZE =
   (Object.values(PSYCHE_DISTRIBUTION).reduce((sum, n) => sum + n, 0) * 3)

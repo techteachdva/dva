@@ -32,7 +32,7 @@ function finishPhaseAdvance(state, onComplete) {
 
 /**
  * Advance immediately. Players may skip a phase without spending the opener Psyche.
- * Unused Reveal, Explore, and Meet actions draw Psyche as the phase ends.
+ * Unused Reveal, Explore, and Meet actions bank Glimmer as the phase ends.
  */
 export function requestEndPhase(state, onComplete = () => {}) {
   finishPhaseAdvance(state, onComplete);

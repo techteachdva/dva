@@ -1,6 +1,6 @@
 import { offerBoonDraft } from "../dreamers/boons.js";
 import { bossExtraPower, advanceBossStack } from "../encounters/boss-twists.js";
-import { isLostFoundOpen } from "../shop/lost-found.js";
+import { isLostFoundOpen, bankGlimmer, GLIMMER_MAX } from "../shop/lost-found.js";
 import { bestForm } from "../cards/dream-forms.js";
 import { isLadderBoss, anteForBoss } from "../encounters/boss-ladder.js";
 import {
@@ -468,7 +468,10 @@ function excessNoun(phase) {
   return "Reveal";
 }
 
-/** Spend 1 shared Reveal, move, or Meet action so the turn holder draws 1 Psyche. */
+/**
+ * Spend 1 unused Reveal, move, or Meet action. Ainmos banks it as 1 Glimmer for
+ * the next Lost & Found; only the tutorial lesson still draws Psyche.
+ */
 export function spendExcessPsycheDraw(state, { quiet = false } = {}) {
   const tutorialLesson = !!(state.tutorialMode && state.tutorialFlags?.excessPsycheLesson);
   if (state.tutorialMode && !tutorialLesson) return false;
@@ -498,11 +501,19 @@ export function spendExcessPsycheDraw(state, { quiet = false } = {}) {
     return false;
   }
 
-  const before = (state.psycheDeck?.length || 0) + (state.psycheDiscard?.length || 0);
   const noun = excessNoun(phase);
-  const drawn = drawPsycheForPlayer(state, holder, 1);
+  const banked = tutorialLesson ? 0 : bankGlimmer(state, 1);
+  if (!tutorialLesson && !quiet) {
+    addLog(state, banked
+      ? `1 unused ${noun} becomes 1 Glimmer.`
+      : `1 unused ${noun} fades: Glimmer is full (${GLIMMER_MAX}).`);
+  }
+  const before = (state.psycheDeck?.length || 0) + (state.psycheDiscard?.length || 0);
+  const drawn = tutorialLesson ? drawPsycheForPlayer(state, holder, 1) : [];
   const card = drawn[0];
-  if (card) {
+  if (!tutorialLesson) {
+    // Banked as Glimmer above.
+  } else if (card) {
     addLog(state, `${holder.name} spends 1 unused ${noun} and draws ${card.name || "a Psyche card"}.`);
     if (tutorialLesson && state.tutorialFlags) state.tutorialFlags.excessPsycheDrawn = true;
   } else if (before < 1) {
@@ -523,7 +534,7 @@ export function spendExcessPsycheDraw(state, { quiet = false } = {}) {
   return true;
 }
 
-/** Turn every unused phase action into a Psyche draw, one Dreamer at a time. */
+/** Turn every unused phase action into Glimmer as the phase ends. */
 export function convertExcessActionsToPsyche(state) {
   if (state.tutorialMode) return 0;
   const phase = getPhase(state);
@@ -539,7 +550,7 @@ export function convertExcessActionsToPsyche(state) {
     const noun = excessNoun(phase);
     logMoment(
       state,
-      `${drawn} unused ${noun}${drawn === 1 ? "" : "s"} drew ${drawn} Psyche.`,
+      `${drawn} unused ${noun}${drawn === 1 ? "" : "s"} → ${drawn} Glimmer ✧ for the Lost & Found (${state.glimmer || 0} banked).`,
     );
   }
   return drawn;
@@ -912,11 +923,11 @@ export function getPhaseActions(state, handlers) {
         : remFreeReveal && budget < 1
           ? "REM cycle: the first Reveal each round is free — no Lucidity needed."
           : excessOpen
-            ? "Each leftover Reveal draws 1 Psyche. The turn passes clockwise after every card."
+            ? "Each leftover Reveal banks 1 Glimmer ✧ for the Lost & Found."
             : mapOpen
               ? "The map is fully Revealed. Lucidity now draws Psyche."
               : best
-                ? `One Dreamer spends 1 Lucidity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus). Unused Reveals draw 1 Psyche each.`
+                ? `One Dreamer spends 1 Lucidity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus). Unused Reveals bank Glimmer ✧.`
                 : "One Dreamer spends Lucidity to set everyone's reveal budget.",
       section: "main",
       disabled: !state.dreamDrawn || state.revealLandscapeUsed || !!state.landscapePick || (budget < 1 && !remFreeReveal),
@@ -1126,7 +1137,8 @@ export function getPhaseActions(state, handlers) {
     }
   }
 
-  const excess = excessPsycheAction(state);
+  // Ainmos: leftovers bank Glimmer when the phase ends, so there is nothing to tap.
+  const excess = state.tutorialMode ? excessPsycheAction(state) : null;
   if (excess) actions.push(excess);
 
   return actions;
@@ -1203,7 +1215,7 @@ export function getPhaseAdvanceAction(state, handlers) {
     hint: spent
       ? `${label} — actions spent. Advance when ready.`
       : leftover > 0
-        ? `${label} — ${leftover} unused ${noun}${leftover === 1 ? "" : "s"} draw Psyche.`
+        ? `${label} — ${leftover} unused ${noun}${leftover === 1 ? "" : "s"} become Glimmer ✧ for the Lost & Found.`
         : `${label} — skip this phase without spending Psyche.`,
     onClick: handlers.nextPhase,
   };

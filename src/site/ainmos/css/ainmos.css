@@ -1329,3 +1329,18 @@ body.ainmos .phase-opener-solo-hand.ain-fan .game-card.selected { transform: rot
 @media (prefers-reduced-motion: reduce) {
   .psyche-card.upgrade-lucid::after, .psyche-card.upgrade-chaotic { animation: none; }
 }
+
+/* ── 0.16 Glimmer ✧: unused actions bank a discount for the Lost & Found ── */
+.hud-pill-glimmer .hud-pill-ring { background: radial-gradient(circle, #fff7c2 0%, #f5c84b 55%, #c98a1b 100%); box-shadow: 0 0 8px rgba(245, 200, 75, 0.7); }
+.hud-pill-glimmer.is-pulse { animation: glimmer-pulse 0.7s ease-out; }
+@keyframes glimmer-pulse {
+  0% { transform: scale(1); filter: brightness(1); }
+  35% { transform: scale(1.18); filter: brightness(1.6) drop-shadow(0 0 8px #f5c84b); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+.lf-glimmer { display: inline-block; margin-left: 0.5em; padding: 0.1em 0.6em; border-radius: 999px; background: rgba(245, 200, 75, 0.18); color: #f5d77a; font-weight: 700; font-style: normal; }
+.lf-glimmer.is-empty { background: transparent; color: inherit; opacity: 0.7; font-weight: 400; }
+.lf-price.lf-price-glimmer { gap: 0.25em; }
+.lf-price.lf-price-glimmer s { opacity: 0.55; font-size: 0.8em; }
+.lf-price.lf-price-glimmer em { font-style: normal; font-size: 0.72em; color: #f5d77a; font-weight: 800; }
+.modal-let-go { margin-left: 0.5em; }

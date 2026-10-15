@@ -414,6 +414,13 @@ function shopTurn(state) {
   const give = (s, p, card) => objectsMod.onObjectDrawn(s, p, card, getEffectHelpers());
   const stats = (state.botShop = state.botShop || { bought: 0, insights: 0 });
   for (let guard = 0; guard < 4; guard += 1) {
+    // Glimmer that covers a whole price is free money: spend it even on a thin hand.
+    const covered = shop.objects.findIndex((o) => (o.levelsForm || o.remember)
+      && (state.glimmer || 0) >= shopMod.objectPrice(o) && !shopMod.objectBlockReason(state, buyer, o));
+    if (covered >= 0) {
+      const res = shopMod.buyLostFoundObject(state, covered, give);
+      if (res.ok) { stats.bought += 1; stats.glimmerBuys = (stats.glimmerBuys || 0) + 1; if (res.card?.levelsForm) { focus(state, buyer); playObject(state, res.card.instanceId); } continue; }
+    }
     if (handCount(buyer) < 7) break;
     const formIndex = shop.objects.findIndex((o) => o.levelsForm && !shopMod.objectBlockReason(state, buyer, o));
     const rememberIndex = handCount(buyer) >= 8

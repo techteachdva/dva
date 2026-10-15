@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.15";
+export const SOMNIA_VERSION = "0.16";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.16",
+    title: "Glimmer",
+    notes: [
+      "Unused Reveals, steps, and Meet actions no longer heal you. Each one banks 1 Glimmer ✧ (up to 10) when the phase ends: no tapping.",
+      "In the Lost & Found, Glimmer pays first, 1 value of any price in any suit. 3 Glimmer looks again, so Power Tokens stay for phases.",
+      "Let go: tap any Object to discard it and draw Psyche equal to its price. A full row can still buy; it just lets one go after. Clearing room for a new set is a real play.",
+      "Each Dream now opens with 4 Psyche instead of 2, so your hand is fed without the busywork.",
+      "Glimmer sits on the HUD next to Power and pulses when it grows.",
+    ],
+  },
   {
     version: "0.15",
     title: "Every Object",

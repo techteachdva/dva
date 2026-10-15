@@ -207,10 +207,22 @@ const TERMS = [
     text: "One upgrade per Psyche card, for the whole night. Chaotic: a d6 value, rolled when drawn. Vivid: a second suit. Lucid: any suit, same value. Recurring: returns to hand after a spread. A new upgrade replaces the old; the same one again changes nothing.",
   },
   {
+    term: "Glimmer",
+    group: "cards",
+    aka: "glimmer discount leftover unused actions",
+    text: "✧ What an unused Reveal, step, or Meet action leaves behind when the phase ends (up to 10 banked). In the Lost & Found each Glimmer pays 1 value of any price, any suit, before your Psyche. 3 Glimmer looks again.",
+  },
+  {
+    term: "Let go",
+    group: "cards",
+    aka: "sell discard object clear room set",
+    text: "Tap an Object, then Let go: it goes to the discard and you draw Psyche equal to its price. An Object found this round draws nothing yet. This is how a full row makes room for a new set.",
+  },
+  {
     term: "Lost & Found",
     group: "cards",
     aka: "shop insight reroll",
-    text: "Opens between rounds: three Objects (1–5 Psyche value of their suit) and one Insight (3–6 of any suit: a Form level or a Psyche upgrade). Look again for 1 Power Token. Draw the Dream when you leave.",
+    text: "Opens between rounds: three Objects (1–5 Psyche value of their suit) and one Insight (3–6 of any suit: a Form level or a Psyche upgrade). Glimmer pays first. Look again for 3 Glimmer or 1 Power Token. At the Object limit you can still buy, then let one go. Draw the Dream when you leave.",
   },
   {
     term: "Boon",
@@ -260,7 +272,7 @@ const TERMS = [
     term: "Explore",
     group: "round",
     aka: "explore phase",
-    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First, every Dreambeast chases you one hex. Then spend 1 Elasticity, or 1 Power Token (that counts as 1 plus your Elasticity), for that many steps: tap a glowing hex to move. Stepping onto Wasteland discards 1 Psyche. Each unused step draws 1 Psyche.",
+    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First, every Dreambeast chases you one hex. Then spend 1 Elasticity, or 1 Power Token (that counts as 1 plus your Elasticity), for that many steps: tap a glowing hex to move. Stepping onto Wasteland discards 1 Psyche. Each unused step banks 1 Glimmer.",
   },
   {
     term: "Explorer",
@@ -364,7 +376,7 @@ const TERMS = [
     term: "Meet",
     group: "round",
     aka: "meet phase",
-    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle; the Boss waits in phase 9). At the start, each Boss steps toward you. Spend 1 Willpower, or 1 Power Token (that counts as 1 plus your Willpower). You get that many actions: fight the beast on your hex (as often as you have actions), Draw Mindstream, use your Landscape's action, or tap a Persistent Object. Each unused action draws 1 Psyche.",
+    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle; the Boss waits in phase 9). At the start, each Boss steps toward you. Spend 1 Willpower, or 1 Power Token (that counts as 1 plus your Willpower). You get that many actions: fight the beast on your hex (as often as you have actions), Draw Mindstream, use your Landscape's action, or tap a Persistent Object. Each unused action banks 1 Glimmer.",
   },
   {
     term: "Mindstream",
@@ -385,7 +397,7 @@ const TERMS = [
   {
     term: "Next Phase",
     group: "round",
-    text: "The round button at the top-right of the map. It ends the current phase. If you never opened the phase, you spend nothing. Leftover Reveals, moves, and Meet actions each draw 1 Psyche before the phase changes. During Reveal, if the Dream is not drawn yet, Next Phase draws it first.",
+    text: "The round button at the top-right of the map. It ends the current phase. If you never opened the phase, you spend nothing. Leftover Reveals, moves, and Meet actions each bank 1 Glimmer before the phase changes. During Reveal, if the Dream is not drawn yet, Next Phase draws it first.",
   },
   {
     term: "Nightmare",
@@ -439,7 +451,7 @@ const TERMS = [
     term: "Psyche",
     group: "cards",
     aka: "hand",
-    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They open phases, fight, and keep you alive. Round 1 starts at 5. From round 2, each living Dreamer draws 2 at the start of Reveal. The deck is six 1s, five 2s, four 3s, three 4s, and two 5s in each suit, plus 6 Wilds.",
+    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They open phases, fight, and keep you alive. Round 1 starts at 5. From round 2, each living Dreamer draws 4 as each Dream begins. Unused actions no longer draw: they bank Glimmer. The deck is six 1s, five 2s, four 3s, three 4s, and two 5s in each suit, plus 6 Wilds.",
   },
   {
     term: "Psyche Deck",
@@ -473,7 +485,7 @@ const TERMS = [
     term: "Reveal",
     group: "round",
     aka: "reveal phase",
-    text: "The first phase of each Dream (phases 1, 4, and 7 of a Cycle). The Dream is drawn and endured. Then spend 1 Lucidity, or 1 Power Token (that counts as 1 plus your Lucidity). Each Reveal places one Landscape from the Dreamscape Vault on a glowing slot beside the dream. Each unused Reveal draws 1 Psyche.",
+    text: "The first phase of each Dream (phases 1, 4, and 7 of a Cycle). The Dream is drawn and endured. Then spend 1 Lucidity, or 1 Power Token (that counts as 1 plus your Lucidity). Each Reveal places one Landscape from the Dreamscape Vault on a glowing slot beside the dream. Each unused Reveal banks 1 Glimmer.",
   },
   {
     term: "Ruler",

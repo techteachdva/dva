@@ -1,6 +1,6 @@
-import { objectLimit, objectCount } from "../shop/lost-found.js";
+import { objectLimit, objectCount, letGoValue } from "../shop/lost-found.js";
 import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
-import { addLog } from "../core/state.js";
+import { addLog, drawPsycheForPlayer } from "../core/state.js";
 import { logMoment } from "../core/narrator.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { repressCard, maybeClearFreshlyRepressed } from "../dreamers/subconscious.js";
@@ -162,9 +162,37 @@ export function enforceObjectLimit(state, player) {
   offerEffectChoice(state, player, {
     cardId: "object-limit",
     title: "Too many Objects",
-    message: `${player.name} can hold ${limit} Objects. Let one go.`,
-    choices: held.map((obj) => ({ id: obj.instanceId, label: `Let go of ${obj.name}` })),
+    message: `${player.name} can hold ${limit} Objects. Let one go: it draws Psyche equal to its price.`,
+    choices: held.map((obj) => {
+      const draw = letGoValue(state, obj);
+      return {
+        id: obj.instanceId,
+        label: `Let go of ${obj.name}`,
+        hint: draw ? `Draw ${draw} Psyche.` : "Found this round: draws nothing.",
+      };
+    }),
   });
+  return true;
+}
+
+/**
+ * Let an Object go: it returns to the Object discard and its holder draws
+ * Psyche equal to its price (nothing for one found this round). This is how a
+ * full row makes room for a new set.
+ */
+export function letGoObject(state, player, instanceId) {
+  if (!player) return false;
+  const card = [...(player.objects || []), ...(player.persistent || [])].find((o) => o.instanceId === instanceId);
+  if (!card) return false;
+  player.objects = (player.objects || []).filter((o) => o.instanceId !== instanceId);
+  player.persistent = (player.persistent || []).filter((o) => o.instanceId !== instanceId);
+  const draw = letGoValue(state, card);
+  delete card.foundRound;
+  discardToMindstream(state, card);
+  const drawn = draw ? drawPsycheForPlayer(state, player, draw).length : 0;
+  logMoment(state, drawn
+    ? `${player.name} lets ${card.name} go and draws ${drawn} Psyche.`
+    : `${player.name} lets ${card.name} go.`);
   return true;
 }
 
@@ -173,14 +201,7 @@ registerEffectResolver("object-limit", (state, choiceId) => {
   const player = state.players.find((p) => p.id === pending?.playerId);
   state.pendingEffectChoice = null;
   if (!player) return true;
-  const fromHand = (player.objects || []).find((o) => o.instanceId === choiceId);
-  const fromPlay = (player.persistent || []).find((o) => o.instanceId === choiceId);
-  const card = fromHand || fromPlay;
-  if (!card) return true;
-  player.objects = (player.objects || []).filter((o) => o.instanceId !== choiceId);
-  player.persistent = (player.persistent || []).filter((o) => o.instanceId !== choiceId);
-  discardToMindstream(state, card);
-  addLog(state, `${player.name} lets ${card.name} go.`);
+  if (!letGoObject(state, player, choiceId)) return true;
   enforceObjectLimit(state, player);
   return true;
 });
