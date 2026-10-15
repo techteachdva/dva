@@ -393,3 +393,8 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
   state.pendingMindstreamChoice = null;
   return false;
 }
+
+/** Kept so a stale cached bot-ai.js from 0.20 still loads; Events are now Archetype Events. */
+export function canPayEventGood() {
+  return false;
+}

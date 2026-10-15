@@ -3,8 +3,9 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.21-first-dreams";
-const RUNTIME_CACHE = "ainmos-runtime-0.15-every-object";
+const CACHE_NAME = "ainmos-0.21.1-first-dreams";
+/** Versioned with the release, so a new ship never serves last version's modules. */
+const RUNTIME_CACHE = `${CACHE_NAME}-runtime`;
 
 const PRECACHE = [
   "./",
@@ -176,7 +177,8 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await Promise.all(PRECACHE.map((url) => cache.add(url).catch(() => {})));
+    // Bypass the HTTP cache so the precache is this release, not a mix with the last one.
+    await Promise.all(PRECACHE.map((url) => cache.add(new Request(url, { cache: "reload" })).catch(() => {})));
   })());
 });
 
@@ -215,23 +217,24 @@ async function putRuntime(request, response) {
   await cache.put(request, response);
 }
 
+/** Pages and code: always try the network first so modules never mix versions; the cache is the offline fallback. */
 async function networkFirst(request) {
-  const cached = await caches.match(request);
-  const freshPromise = fetch(request).then((fresh) => {
+  try {
+    const fresh = await fetch(request, { cache: "no-cache" });
     if (fresh && fresh.ok) {
       const copy = fresh.clone();
       caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
+      return fresh;
     }
-    return fresh;
-  }).catch(() => null);
-
-  if (cached) {
-    freshPromise.catch(() => {});
-    return cached;
+    if (fresh) {
+      const cached = await caches.match(request, { cacheName: CACHE_NAME }) || await caches.match(request);
+      return cached || fresh;
+    }
+  } catch {
+    // offline: fall through to the cache
   }
-
-  const fresh = await freshPromise;
-  if (fresh) return fresh;
+  const cached = await caches.match(request, { cacheName: CACHE_NAME }) || await caches.match(request);
+  if (cached) return cached;
   if (isDocument(request)) {
     const fallback = await caches.match("./index.html");
     if (fallback) return fallback;
@@ -271,6 +274,10 @@ self.addEventListener("fetch", (event) => {
   }
   if (url.pathname.includes("/audio/") || url.pathname.includes("/images/")) {
     event.respondWith(cacheFirst(request));
+    return;
+  }
+  if (/\.(js|mjs|css|json|webmanifest)$/i.test(url.pathname)) {
+    event.respondWith(networkFirst(request));
     return;
   }
   if (isRuntimeAsset(url)) {
