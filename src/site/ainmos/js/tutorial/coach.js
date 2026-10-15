@@ -1,5 +1,5 @@
 /**
- * Ainmos Guided First Ante: light hints instead of a scripted tutorial.
+ * Ainmos Guided First Cycle: light hints instead of a scripted tutorial.
  *
  * A guided night is a real Daydream. Each hint shows once, the first time its
  * moment happens, and never blocks a click. When the Winged Turtle falls the
@@ -27,7 +27,7 @@ const HINTS = [
   {
     id: "welcome",
     title: "Welcome to Ainmos",
-    text: "A night is a run of Antes: a Dream, a Dream with a Mini-Boss, then a Boss. The Night Bar across the top shows them all. Every Dream hurts; endure it, then spend Lucidity to build the dream around The Bed.",
+    text: "A night is a run of Cycles. Each Cycle is 3 Dreams of Reveal, Explore, Meet: 9 phases, ending on a Boss. The Cycle tracker and the Night Bar at the top show where you are. Every Dream hurts; endure it, then spend Lucidity to build the dream around The Bed.",
     when: (s) => s.round === 1 && (s.board || []).length <= 1,
   },
   {
@@ -91,13 +91,13 @@ const HINTS = [
   {
     id: "mini-boss",
     title: "A Mini-Boss rises",
-    text: "The Ante's second Dream brings a Mini-Boss to The Bed. It is weaker than the Boss, but it bleeds you every dusk it stands. Beat it while it is close.",
+    text: "Dream 2 of each Cycle brings a Mini-Boss to The Bed. It is weaker than the Boss, but it bleeds you every dusk it stands. Beat it while it is close.",
     when: (s) => (s.board || []).some((t) => (t.encounters || []).some((e) => e?.miniBoss)),
   },
   {
     id: "boss-arrived",
     title: "A Boss has woken",
-    text: "Bosses land on a random Landscape and stalk toward you each Meet. Each bends one rule while it stands. Defeat it to clear the Ante and choose a Boon.",
+    text: "Bosses land on a random Landscape and stalk toward you each Meet. Each bends one rule while it stands. Defeat it to clear the Cycle and choose a Boon.",
     when: (s) => (s.board || []).some((t) => (t.encounters || []).some((e) => e?.boss)),
   },
   {

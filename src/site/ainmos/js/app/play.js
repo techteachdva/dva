@@ -149,7 +149,7 @@ import {
 } from "../core/game.js";
 import { renderDreamscapeVault } from "../ui/vault-panel.js";
 import { renderVaultScreen, resumeVaultScreen } from "../ui/vault-screen.js";
-import { renderAnteScreen, anteScreenWanted } from "../ui/ante-screen.js";
+import { renderCycleScreen, cycleScreenWanted } from "../ui/cycle-screen.js";
 import { createSpectatorBot } from "../dev/bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "../encounters/dreambeasts.js";
 import { requestEndPhase } from "../flow/phase-skip.js";
@@ -1498,8 +1498,8 @@ function maybeAutoDrawDream() {
   if (getPhase(state) !== "Reveal" || state.dreamDrawn || !(state.dreamDeck || []).length) return;
   if (state.lostFound?.open || state.pendingBoonDraft || isBlockingGameChoice(state)) return;
   if (document.body.classList.contains("opening-cinematic-pending")) return;
-  // The Ante screen comes first; the Dream follows when you walk in.
-  if (anteScreenWanted(state)) return;
+  // The Cycle screen comes first; the Dream follows when you walk in.
+  if (cycleScreenWanted(state)) return;
   if (autoDreamRound === state.round) return;
   autoDreamRound = state.round;
   window.setTimeout(() => {
@@ -2556,7 +2556,7 @@ function renderBoardArea() {
     },
     onRefresh: () => renderAll(),
   });
-  renderAnteScreen(state, {
+  renderCycleScreen(state, {
     onEnter: () => {
       playSfx("phase");
       renderAll();

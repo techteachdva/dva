@@ -1,5 +1,5 @@
 /**
- * The Guided First Ante hint card: a small floating note, never a lock.
+ * The Guided First Cycle hint card: a small floating note, never a lock.
  */
 
 import { currentCoachHint, dismissCoachHint, hideCoach, isGuided } from "../tutorial/coach.js";

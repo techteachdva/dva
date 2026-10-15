@@ -4278,7 +4278,8 @@ export function renderHud(state, hint = "") {
       : `Waking Mind: ${mind} Psyche left to draw. Nothing stands on the map, so dusk takes nothing.`;
   }
 
-  document.getElementById("hud-round").textContent = String(state.round);
+  const roundEl = document.getElementById("hud-round");
+  if (roundEl) roundEl.textContent = String(state.round);
   const clock = state.deathClock || 0;
   const clockCap = 6;
   const pips = document.getElementById("death-clock-pips");
@@ -4963,7 +4964,7 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
         <aside class="ms-choice-rail ms-choice-rail--left">${renderBtn(good)}</aside>
         <div class="ms-choice-center">
           <div class="ms-choice-caption">
-            <p class="ms-choice-kicker">${kindLabel}</p>
+            <p class="ms-choice-kicker">${kind === "dream" && ui.cycleLabel ? ui.cycleLabel : kindLabel}</p>
             <h2 class="ms-choice-title">${ui.title || card.name || "Choose"}</h2>
             ${ui.message ? `<p class="ms-choice-message">${ui.message}</p>` : ""}
             ${mini}

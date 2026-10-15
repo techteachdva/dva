@@ -709,7 +709,7 @@
 
 .rs-breakdown { margin: 0; }
 
-/* ---- Guided First Ante hints --------------------------------------------- */
+/* ---- Guided First Cycle hints --------------------------------------------- */
 
 .coach-hint {
   position: fixed;
@@ -906,18 +906,18 @@ body.ainmos #screen-setup .dreamer-pick:hover .game-card.dreamer { transform: tr
   .vs-hex, .vault-screen.is-leaving .lf-veil, .vault-screen.is-leaving .lf-window { animation: none !important; }
 }
 
-/* ---- The Ante screen (blind-select style, same window as the Lost & Found) ---------------------- */
+/* ---- The Cycle screen (same window as the Lost & Found) ---------------------------------------- */
 
-.ante-screen { z-index: 930; }
-.ante-screen.is-leaving .lf-veil { animation: lf-veil-out 0.26s ease both; }
-.ante-screen.is-leaving .lf-window { animation: lf-window-out 0.26s ease both; }
+.cycle-screen { z-index: 930; }
+.cycle-screen.is-leaving .lf-veil { animation: lf-veil-out 0.26s ease both; }
+.cycle-screen.is-leaving .lf-window { animation: lf-window-out 0.26s ease both; }
 
-.as-window { width: min(62rem, 100%); }
-.as-shelf { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.as-item { text-align: center; }
-.as-item .lf-item-text { text-align: left; }
+.cy-window { width: min(62rem, 100%); }
+.cy-shelf { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cy-item { text-align: center; }
+.cy-item .lf-item-text { text-align: left; }
 
-.as-art {
+.cy-art {
   height: 9rem;
   margin-bottom: 0.5rem;
   border-radius: 10px;
@@ -926,7 +926,7 @@ body.ainmos #screen-setup .dreamer-pick:hover .game-card.dreamer { transform: tr
   background-color: rgba(10, 8, 22, 0.55);
   box-shadow: inset 0 0 0 1.5px var(--pip), inset 0 0 30px rgba(200, 184, 236, 0.12);
 }
-.as-art-back {
+.cy-art-back {
   display: grid;
   place-items: center;
   background:
@@ -934,17 +934,17 @@ body.ainmos #screen-setup .dreamer-pick:hover .game-card.dreamer { transform: tr
     linear-gradient(160deg, var(--dc-lavender), var(--dc-powder));
   opacity: 0.85;
 }
-.as-art-back span { font-family: var(--font-display); font-size: 3rem; color: rgba(26, 21, 48, 0.55); }
-.as-boss .as-art { height: 10rem; animation: night-boss-pulse 2.4s ease-in-out infinite; }
+.cy-art-back span { font-family: var(--font-display); font-size: 3rem; color: rgba(26, 21, 48, 0.55); }
+.cy-boss .cy-art { height: 10rem; animation: night-boss-pulse 2.4s ease-in-out infinite; }
 
-.as-step {
+.cy-step {
   margin: 0 0 0.15rem;
   font-family: var(--dc-whisper);
   font-style: italic;
   font-size: 0.78rem;
   color: var(--muted);
 }
-.as-reward {
+.cy-reward {
   margin: auto 0 0;
   padding-top: 0.45rem;
   font-family: var(--font-display);
@@ -952,19 +952,19 @@ body.ainmos #screen-setup .dreamer-pick:hover .game-card.dreamer { transform: tr
   letter-spacing: 0.08em;
   color: #ffe2b0;
 }
-.as-foot { align-items: center; }
-.as-note { font-family: var(--dc-whisper); font-style: italic; font-size: 0.85rem; color: var(--muted); }
+.cy-foot { align-items: center; }
+.cy-note { font-family: var(--dc-whisper); font-style: italic; font-size: 0.85rem; color: var(--muted); }
 
 @media (max-width: 640px), (orientation: landscape) and (max-height: 520px) {
-  .as-shelf { gap: 0.5rem; }
-  .as-item { display: flex; padding: 0.4rem; }
-  .as-art, .as-boss .as-art { height: 4.6rem; }
-  .as-item .lf-item-text { font-size: 0.64rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .as-window .lf-whisper { margin: 0.2rem 0 0.3rem; font-size: 0.8rem; }
-  .as-window .lf-foot { flex-direction: row; margin-top: 0.5rem; padding-top: 0.5rem; }
+  .cy-shelf { gap: 0.5rem; }
+  .cy-item { display: flex; padding: 0.4rem; }
+  .cy-art, .cy-boss .cy-art { height: 4.6rem; }
+  .cy-item .lf-item-text { font-size: 0.64rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .cy-window .lf-whisper { margin: 0.2rem 0 0.3rem; font-size: 0.8rem; }
+  .cy-window .lf-foot { flex-direction: row; margin-top: 0.5rem; padding-top: 0.5rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .as-boss .as-art, .ante-screen.is-leaving .lf-veil, .ante-screen.is-leaving .lf-window { animation: none !important; }
+  .cy-boss .cy-art, .cycle-screen.is-leaving .lf-veil, .cycle-screen.is-leaving .lf-window { animation: none !important; }
 }
 
 /* Short screens: the whole Vault window, footer included, fits without scrolling. */
@@ -979,5 +979,102 @@ body.ainmos #screen-setup .dreamer-pick:hover .game-card.dreamer { transform: tr
   .vs-item .lf-item-kind { font-size: 0.66rem; margin: 0 0 0.15rem; }
   .vs-item .lf-btn { min-height: 1.9rem; padding: 0.15rem 0.6rem; }
   .vs-window .lf-foot .lf-btn { min-height: 2rem; padding: 0.2rem 0.8rem; }
-  .as-window .lf-whisper { display: none; }
+  .cy-window .lf-whisper { display: none; }
+}
+
+/* Cycle screen: the nine-phase map and the Boss ladder. */
+.cy-window .lf-title small { font-size: 0.6em; letter-spacing: 0.1em; }
+
+.cy-map {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0 0 0.8rem;
+}
+.cy-dream {
+  flex: 1 1 0;
+  max-width: 17rem;
+  padding: 0.35rem 0.4rem 0.45rem;
+  border-radius: 12px;
+  background: rgba(200, 184, 236, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(200, 184, 236, 0.14);
+}
+.cy-dream-name {
+  margin: 0 0 0.3rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dc-ink);
+}
+.cy-dream-name small { display: block; font-family: var(--dc-whisper); font-style: italic; text-transform: none; letter-spacing: 0; font-size: 0.72rem; color: #ffe2b0; }
+.cy-phases { display: flex; justify-content: space-between; gap: 0.2rem; }
+.cy-phase {
+  flex: 1 1 0;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 0.25rem 0.1rem;
+  border-radius: 8px;
+  background: rgba(10, 8, 22, 0.45);
+}
+.cy-phase.suit-lucidity { color: var(--lucidity); }
+.cy-phase.suit-elasticity { color: var(--elasticity); }
+.cy-phase.suit-willpower { color: var(--willpower); }
+.cy-phase.is-boss { color: #ff9fb3; background: rgba(80, 20, 40, 0.55); box-shadow: inset 0 0 0 1px rgba(255, 159, 179, 0.6); }
+.cy-phase-n { font-family: var(--font-display); font-size: 0.6rem; color: var(--muted); }
+.cy-phase-icon { font-size: 0.9rem; line-height: 1; }
+.cy-phase-name { font-size: 0.62rem; color: var(--dc-ink); }
+.cy-arrow { align-self: center; color: var(--muted); font-size: 1.2rem; }
+
+.cy-ladder {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 12px;
+  background: rgba(200, 184, 236, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(200, 184, 236, 0.12);
+}
+.cy-ladder-title { font-family: var(--dc-whisper); font-style: italic; font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+.cy-rungs { display: flex; align-items: flex-end; gap: 0.3rem; overflow-x: auto; }
+.cy-rung { position: relative; display: grid; justify-items: center; gap: 1px; }
+.cy-rung-face {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center 25%;
+  box-shadow: 0 0 0 1px rgba(200, 184, 236, 0.3);
+  filter: grayscale(0.6) brightness(0.6);
+}
+.cy-rung-power { font-family: var(--font-display); font-size: 0.66rem; color: var(--dc-ink); }
+.cy-rung-n { font-size: 0.56rem; color: var(--muted); }
+.cy-rung.is-now .cy-rung-face { filter: none; box-shadow: 0 0 0 2px #ffe2b0, 0 0 14px rgba(255, 210, 140, 0.55); width: 2.6rem; height: 2.6rem; }
+.cy-rung.is-now .cy-rung-power { color: #ffe2b0; }
+.cy-rung.is-beaten .cy-rung-face { filter: saturate(0.3) brightness(0.45); }
+.cy-rung.is-beaten::after { content: "✓"; position: absolute; top: 0.4rem; color: var(--dc-mint); font-weight: 700; }
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .cy-map { margin-bottom: 0.35rem; }
+  .cy-dream { padding: 0.2rem; }
+  .cy-dream-name { font-size: 0.62rem; margin-bottom: 0.15rem; }
+  .cy-dream-name small { display: inline; font-size: 0.6rem; }
+  .cy-phase { padding: 0.1rem; }
+  .cy-phase-name { display: none; }
+  .cy-ladder { margin-top: 0.35rem; padding: 0.2rem 0.4rem; }
+  .cy-ladder-title { display: none; }
+  .cy-rung-face { width: 1.5rem; height: 1.5rem; }
+  .cy-rung.is-now .cy-rung-face { width: 1.8rem; height: 1.8rem; }
+  .cy-window .lf-item-text { -webkit-line-clamp: 2; }
+}
+@media (max-width: 640px) {
+  .cy-map { flex-wrap: wrap; }
+  .cy-arrow { display: none; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .cy-art, .cy-boss .cy-art { height: 3.8rem; }
 }

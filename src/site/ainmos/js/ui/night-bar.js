@@ -2,8 +2,8 @@
  * Ainmos Night Strip: the whole Dream Deck as a progress bar across the very
  * top of the screen.
  *
- * Every card of the night sits left to right, grouped by Ante: a Dream, a
- * Dream that brings the Ante's Mini-Boss to The Bed, then the Boss Dream. Each
+ * Every card of the night sits left to right, grouped by Cycle: Dream 1,
+ * Dream 2 (it brings the Cycle's Mini-Boss to The Bed), then Dream 3, the Boss. Each
  * card has a tick; below it, one pip for every Dreambeast that arrived during
  * that round (coloured by suit). Ordinary Dreams are face down until drawn.
  * Mini-Bosses and Bosses are face up from the start so you can plan for them.
@@ -11,6 +11,8 @@
  */
 
 import { longNightToll } from "../core/state.js";
+import { cyclePosition, cyclePositionText, PHASE_SUITS, PHASE_NAMES, DREAMS_PER_CYCLE } from "../core/cycle.js";
+import { suitIconHtml } from "../core/rules.js";
 
 import { ladderEntry, antesForLength } from "../encounters/boss-ladder.js";
 
@@ -50,11 +52,43 @@ function spawnLabel(spawns) {
   return ` Dreambeasts that round: ${spawns.map((s) => s.name).join(", ")}.`;
 }
 
+/** The Cycle the night is in, by the Dream Deck (a standing Boss does not hold the clock back). */
 export function currentAnte(state) {
-  const plan = state.nightPlan || [];
-  const drawn = plan.length - (state.dreamDeck?.length || 0);
-  const cleared = (state.bossesDefeated || []).length;
-  return Math.min(antesForLength(state.lengthKey), Math.max(1, Math.ceil(drawn / 3) || 1, cleared + 1));
+  return cyclePosition(state).cycle;
+}
+
+/**
+ * The HUD Cycle tracker: "Cycle 2 of 4", then the Cycle's nine phases as three
+ * Dreams of Reveal · Explore · Meet, the current one lit, the last one the Boss.
+ */
+function renderCycleTracker(state) {
+  const host = document.getElementById("hud-cycle");
+  if (!host) return;
+  const pos = cyclePosition(state);
+  const text = cyclePositionText(state);
+  host.title = text;
+  host.setAttribute("aria-label", text);
+  if (pos.longNight) {
+    host.classList.add("is-long-night");
+    host.innerHTML = `<span class="cycle-label">Long Night</span>`;
+    return;
+  }
+  host.classList.remove("is-long-night");
+  const dreams = [];
+  for (let d = 1; d <= DREAMS_PER_CYCLE; d += 1) {
+    const pips = PHASE_SUITS.map((suit, i) => {
+      const step = (d - 1) * 3 + i + 1;
+      const when = step < pos.step ? "past" : step === pos.step ? "now" : "ahead";
+      const boss = d === DREAMS_PER_CYCLE && i === 2;
+      return `<span class="cycle-pip is-${when}${boss ? " is-boss" : ""}" title="Dream ${d} · ${PHASE_NAMES[i]}${boss ? " · the Boss" : ""}">${boss ? "♛" : suitIconHtml(suit, { className: "cycle-pip-icon", size: 10 })}</span>`;
+    }).join("");
+    const tag = d === 2 ? "Mini" : d === DREAMS_PER_CYCLE ? "Boss" : "";
+    dreams.push(`<span class="cycle-dream${d === pos.dream ? " is-now" : ""}" title="Dream ${d} of 3${tag ? ` · ${tag}` : ""}"><span class="cycle-dream-num">${d}</span>${pips}</span>`);
+  }
+  host.innerHTML = `
+    <span class="cycle-label">Cycle <b>${pos.cycle}</b> of ${pos.cycles}</span>
+    <span class="cycle-dreams">${dreams.join("")}</span>
+    <span class="cycle-step">${pos.step}/9</span>`;
 }
 
 export function renderNightBar(state) {
@@ -85,7 +119,7 @@ export function renderNightBar(state) {
             ? "passed"
             : "ahead";
       const power = entry?.stack ? entry.stack.join(", then ") : entry?.power;
-      const label = `Ante ${p.ante} Boss: ${p.name}${entry ? `, Power ${power}. ${entry.twist}: ${entry.twistText}` : ""}${status === "defeated" ? " Defeated." : status === "standing" ? " Standing on the Dreamscape." : ""}${spawnLabel(spawns)}`;
+      const label = `Cycle ${p.ante}, Dream 3 · Boss: ${p.name}${entry ? `, Power ${power}. ${entry.twist}: ${entry.twistText}` : ""}${status === "defeated" ? " Defeated." : status === "standing" ? " Standing on the Dreamscape." : ""}${spawnLabel(spawns)}`;
       return `<span class="night-card night-boss is-${status} suit-${p.suit || "none"}${isNext ? " is-next" : ""}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
         <span class="night-face" style="--night-art:url('${escapeHtml(absolute(p.image))}')"></span>
         <span class="night-boss-rung">${entry?.rung ?? ""}</span>
@@ -95,7 +129,8 @@ export function renderNightBar(state) {
     }
     const art = drawn ? drawnArt(state, p) : "";
     const miniNote = p.mini ? ` Mini-Boss: ${p.mini.name}, Power ${p.mini.power}, rises on The Bed.` : "";
-    const label = `${drawn ? `Dream ${index + 1}: ${p.name || "drawn"}.` : `Dream ${index + 1}: still asleep.`}${miniNote}${spawnLabel(spawns)}`;
+    const where = `Cycle ${Math.floor(index / 3) + 1}, Dream ${(index % 3) + 1}`;
+    const label = `${where}: ${drawn ? `${p.name || "drawn"}.` : "still asleep."}${miniNote}${spawnLabel(spawns)}`;
     const miniBadge = p.mini
       ? `<span class="night-mini suit-${escapeHtml(p.mini.suit || "none")}" style="--night-art:url('${escapeHtml(absolute(p.mini.image))}')"><b>${p.mini.power}</b></span>`
       : "";
@@ -113,15 +148,14 @@ export function renderNightBar(state) {
     const n = Math.floor(i / 3) + 1;
     const when = n < ante ? "past" : n === ante ? "now" : "ahead";
     groups.push(`<span class="night-ante is-${when}" data-ante="${n}">
-      <span class="night-ante-label">Ante ${n}</span>
+      <span class="night-ante-label">Cycle ${n}</span>
       <span class="night-ante-cards">${cells.slice(i, i + 3).join("")}</span>
     </span>`);
   }
 
   const left = state.dreamDeck?.length || 0;
   const antes = antesForLength(state.lengthKey);
-  const anteEl = document.getElementById("hud-ante");
-  if (anteEl) anteEl.textContent = `${ante}/${antes}`;
+  renderCycleTracker(state);
 
   const toll = longNightToll(state);
   const key = `${groups.join("")}|${nextIndex}|${left}|${toll}`;
@@ -130,7 +164,7 @@ export function renderNightBar(state) {
   host.classList.toggle("is-long-night", !!state.longNight);
   host.setAttribute("aria-label", state.longNight
     ? `The Long Night: dusk Represses ${toll} more from the Waking Mind`
-    : `The night: Ante ${ante} of ${antes}, ${left} of ${plan.length} Dreams left`);
+    : `The night: Cycle ${ante} of ${antes}, ${left} of ${plan.length} Dreams left`);
   const counter = state.longNight
     ? `<span class="night-left night-long" title="The Long Night: the Dream Deck is empty. Each dusk Represses this many more from the Waking Mind, and it grows."><b>−${toll}</b><small>Long Night</small></span>`
     : `<span class="night-left" title="Dreams left in the night"><b>${left}</b><small>left</small></span>`;

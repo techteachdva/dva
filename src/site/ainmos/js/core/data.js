@@ -55,7 +55,7 @@ function enrichMindstreamEvents(mindstream, catalog) {
   return out;
 }
 
-/** Ainmos: a night is Antes. Each Ante is 2 Dreams, then a Boss Dream. */
+/** Ainmos: a night is Cycles. Each Cycle is 2 Dreams, then a Boss Dream. */
 export const LENGTHS = {
   daydream: { label: "Daydream", points: 8, soloPoints: 4, antes: 4, dreams: 8 },
   nap: { label: "Nap", points: 12, soloPoints: 6, antes: 7, dreams: 14 },
@@ -105,7 +105,7 @@ function pickWeightedUnique(items, count, isHazard) {
 }
 
 /** Deck insert indices (0-based) — bosses appear on Reveal rounds 3, 6, and 9. */
-/** Deck index of each Ante's Boss Dream (the 3rd, 6th, 9th… card). */
+/** Deck index of each Cycle's Boss Dream (the 3rd, 6th, 9th… card). */
 export const BOSS_DREAM_DECK_SLOTS = Array.from({ length: 10 }, (_, i) => i * 3 + 2);
 
 export const PHASES = ["Reveal", "Explore", "Meet"];
@@ -436,7 +436,7 @@ export function ordinaryDreambeasts(dreambeasts = []) {
   return dreambeasts.filter((b) => !b.boss && !LADDER_IDS.has(b.id));
 }
 
-/** A Mini-Boss: an ordinary Dreambeast, its Power set by the Ante it guards. */
+/** A Mini-Boss: an ordinary Dreambeast, its Power set by the Cycle it guards. */
 export function miniBossCard(beast, ante) {
   const power = miniBossPower(ante);
   return {
@@ -452,8 +452,8 @@ export function miniBossCard(beast, ante) {
 }
 
 /**
- * Lay the night out as Antes: a Dream, a Dream that brings the Ante's Mini-Boss
- * to The Bed, then the Ante's Boss Dream from the ladder. Returns the night and
+ * Lay the night out as Cycles: a Dream, a Dream that brings the Cycle's Mini-Boss
+ * to The Bed, then the Cycle's Boss Dream from the ladder. Returns the night and
  * the Nightmare pool (ordinary Dreambeasts not used as Mini-Bosses).
  */
 export function insertBossDreams(deck, dreambeasts, lengthKey = "daydream") {

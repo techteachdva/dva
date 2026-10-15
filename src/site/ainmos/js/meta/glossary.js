@@ -81,7 +81,7 @@ const TERMS = [
     term: "Bed",
     group: "places",
     aka: "the bed",
-    text: "The center hex. It starts face-up and can never be Forgotten. Its Meet action is Dream Onward, once per Meet: flip the top tile of the deck and place it, or put it back. Each Ante's Mini-Boss rises here.",
+    text: "The center hex. It starts face-up and can never be Forgotten. Its Meet action is Dream Onward, once per Meet: flip the top tile of the deck and place it, or put it back. Each Cycle's Mini-Boss rises here.",
   },
   {
     term: "Dreamscape Vault",
@@ -93,7 +93,7 @@ const TERMS = [
     term: "Boss",
     group: "meet",
     aka: "cerberus double leviathan",
-    text: "The last card of each Ante. A Boss lands on a random placed Landscape, then stalks one hex toward you at the start of each Meet. Each bends one rule while it stands. Defeat it to clear the Ante and choose a Boon. The final Boss is the top of the night's ladder.",
+    text: "Dream 3 of every Cycle, waiting at the end of its ninth phase. A Boss lands on a random placed Landscape, then stalks one hex toward you at the start of each Meet. Each bends one rule while it stands. Defeat it to clear the Cycle and choose a Boon. The final Boss is the top of the night's ladder.",
   },
   {
     term: "Bright",
@@ -162,25 +162,25 @@ const TERMS = [
   {
     term: "Dream",
     group: "cards",
-    text: "One card from the Dream Deck, drawn at the start of each round. A Dream is a condition you survive: it Represses, Forgets, or spawns, and there is no way around it. The second Dream of each Ante also brings that Ante's Mini-Boss to The Bed.",
+    text: "One card from the Dream Deck, drawn at the start of each round. A Dream is a condition you survive: it Represses, Forgets, or spawns, and there is no way around it. Dream 2 of each Cycle also brings that Cycle's Mini-Boss to The Bed.",
   },
   {
     term: "Dream Deck",
     group: "win",
     aka: "clock",
-    text: "The round clock, shown as the Night Bar across the top. It is laid out in Antes: a Dream, a Dream with the Mini-Boss, then the Boss. Daydream has 4 Antes, Nap 7, Deep Sleep 10. When it runs dry, the Long Night begins.",
+    text: "The round clock, shown as the Night Bar across the top. It is laid out in Cycles of three Dreams: Dream 1, Dream 2 (the Mini-Boss), Dream 3 (the Boss). Daydream has 4 Cycles, Nap 7, Deep Sleep 10. When it runs dry, the Long Night begins.",
   },
   {
-    term: "Ante",
+    term: "Cycle",
     group: "win",
-    aka: "night bar",
-    text: "One step of the night: a Dream, a Dream that brings the Mini-Boss to The Bed, then a Boss Dream. Mini-Boss and Boss are face up on the Night Bar from the start. Defeat the Boss to clear the Ante and choose a Boon. The round after a Boss arrives is dawn: the Waking Mind reshuffles and you draw 3.",
+    aka: "sleep cycle, ante, night bar, nine phases",
+    text: "One sleep cycle of the night: 3 Dreams, and each Dream is one Reveal, Explore, Meet, so 9 phases in all. Dream 1 is a plain Dream. Dream 2 brings the Cycle's Mini-Boss to The Bed. Dream 3 brings the Boss, waiting at the end of phase 9. Daydream has 4 Cycles, Nap 7, Deep Sleep 10, and each Cycle's Boss is stronger than the last. Beat the Boss for a Boon; the next Dream is dawn, and you draw 3.",
   },
   {
     term: "Mini-Boss",
     group: "win",
     aka: "mini boss",
-    text: "An ordinary Dreambeast that guards an Ante. It rises on The Bed with the Ante's second Dream, face up on the Night Bar from the start. Its Power is two under that Ante's Boss (2 in the first Ante). Beat it for +1 Power Token, before it bleeds you at dusk.",
+    text: "An ordinary Dreambeast that guards a Cycle. It rises on The Bed with Dream 2 of the Cycle, face up on the Night Bar from the start. Its Power is two under that Cycle's Boss (2 in the first Cycle). Beat it for +1 Power Token, before it bleeds you at dusk.",
   },
   {
     term: "Long Night",
@@ -260,7 +260,7 @@ const TERMS = [
     term: "Explore",
     group: "round",
     aka: "explore phase",
-    text: "The second phase. One Dreamer spends 1 Elasticity, or 1 Power Token (that counts as 1 plus their Elasticity). The table shares that many moves. On your turn, click an adjacent hex to step. Pass Turn or Give Turn to let someone else walk. Stepping onto Wasteland discards 1 Psyche. Each unused move draws 1 Psyche, passed around the table.",
+    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). Spend 1 Elasticity, or 1 Power Token (that counts as 1 plus your Elasticity). You get that many steps: tap a glowing hex to move. Stepping onto Wasteland discards 1 Psyche. Each unused step draws 1 Psyche.",
   },
   {
     term: "Explorer",
@@ -364,7 +364,7 @@ const TERMS = [
     term: "Meet",
     group: "round",
     aka: "meet phase",
-    text: "The third phase. At the start, each Boss steps toward you. Spend 1 Willpower, or 1 Power Token (that counts as 1 plus your Willpower). You get that many actions: fight the beast on your hex (as often as you have actions), Draw Mindstream, use your Landscape's action, or tap a Persistent Object. Each unused action draws 1 Psyche.",
+    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle; the Boss waits in phase 9). At the start, each Boss steps toward you. Spend 1 Willpower, or 1 Power Token (that counts as 1 plus your Willpower). You get that many actions: fight the beast on your hex (as often as you have actions), Draw Mindstream, use your Landscape's action, or tap a Persistent Object. Each unused action draws 1 Psyche.",
   },
   {
     term: "Mindstream",
@@ -473,7 +473,7 @@ const TERMS = [
     term: "Reveal",
     group: "round",
     aka: "reveal phase",
-    text: "The first phase. The Dream is drawn and endured. Then spend 1 Lucidity, or 1 Power Token (that counts as 1 plus your Lucidity). Each Reveal places one Landscape from the Dreamscape Vault on a glowing slot beside the dream. Each unused Reveal draws 1 Psyche.",
+    text: "The first phase of each Dream (phases 1, 4, and 7 of a Cycle). The Dream is drawn and endured. Then spend 1 Lucidity, or 1 Power Token (that counts as 1 plus your Lucidity). Each Reveal places one Landscape from the Dreamscape Vault on a glowing slot beside the dream. Each unused Reveal draws 1 Psyche.",
   },
   {
     term: "Ruler",
@@ -683,7 +683,7 @@ export function playerPrimerHtml() {
       <div class="player-primer-grid">
         <section>
           <h3>The night</h3>
-          <p>Each <strong>Ante</strong> is three rounds: a Dream, a Dream that brings a <strong>Mini-Boss</strong> to The Bed, then a <strong>Boss</strong> on a random Landscape. The Night Bar shows them all.</p>
+          <p>A night is 4, 7, or 10 <strong>Cycles</strong>, like a night of sleep. Each Cycle is <strong>3 Dreams</strong>, and each Dream is one Reveal, Explore, Meet: <strong>9 phases</strong>. Dream 2 brings a <strong>Mini-Boss</strong> to The Bed; Dream 3 ends on the <strong>Boss</strong>. Each Cycle's Boss is stronger than the last.</p>
           <p>Every <strong>Dream</strong> hurts. Endure it, then play the round.</p>
         </section>
         <section>

@@ -1,8 +1,8 @@
 /* ==========================================================================
    Ainmos table layout — one landscape screen on desktop, tablet, and phone.
 
-     ┌───────────────────── Night Strip (every Dream, every Ante) ─────────────┐
-     ├── command bar: logo · phase · Goal · Mind · Ante · Round · clock · menus ┤
+     ┌───────────────────── Night Strip (every Dream, every Cycle) ─────────────┐
+     ├── command bar: logo · phase · Goal · Mind · Cycle · Round · clock · menus ┤
      │ info column │                  the Dreamscape                           │
      │ Archetypes  │      (Vault, Draw Dream, Next Phase, deck dock)            │
      │ Forms, Boons│                                                            │
@@ -1352,3 +1352,62 @@ body.ainmos .ms-choice-fullscreen--single .ms-choice-message { font-family: var(
   body.ainmos .phase-opener-solo-stage { padding: 0.4rem 0.2rem; }
   body.ainmos .phase-opener-solo .phase-opener-footer { padding: 0.4rem 0 0.3rem; }
 }
+
+/* ---- HUD Cycle tracker: Cycle N of M, three Dreams of Reveal · Explore · Meet ------------------ */
+
+html:root body.ainmos.play-window #hud .hud-cycle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.18rem 0.6rem;
+}
+.hud-cycle .cycle-label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dc-ink);
+  white-space: nowrap;
+}
+.hud-cycle .cycle-label b { font-size: 0.95rem; color: var(--dc-mint); }
+.hud-cycle .cycle-dreams { display: inline-flex; gap: 0.3rem; }
+.hud-cycle .cycle-dream {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 1px 3px 1px 2px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(200, 184, 236, 0.16);
+}
+.hud-cycle .cycle-dream.is-now { box-shadow: inset 0 0 0 1px var(--dc-mint), 0 0 10px rgba(182, 230, 214, 0.3); }
+.hud-cycle .cycle-dream-num {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  color: var(--muted);
+  padding: 0 2px;
+}
+.hud-cycle .cycle-pip {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  font-size: 9px;
+  line-height: 1;
+  color: rgba(232, 224, 255, 0.35);
+}
+.hud-cycle .cycle-pip.is-past { color: rgba(232, 224, 255, 0.6); background: rgba(200, 184, 236, 0.12); }
+.hud-cycle .cycle-pip.is-now {
+  color: #1a1530;
+  background: var(--dc-iridescent);
+  box-shadow: 0 0 10px rgba(182, 230, 214, 0.55);
+}
+.hud-cycle .cycle-pip.is-boss { color: #ff9fb3; }
+.hud-cycle .cycle-pip.is-boss.is-now { color: #1a1530; background: linear-gradient(135deg, #ffb3c4, #ffe2b0); }
+.hud-cycle .cycle-step { font-size: 0.66rem; color: var(--muted); }
+.hud-cycle.is-long-night .cycle-label { color: #ffb3c4; }
+
+html[data-form="phone"]:root body.ainmos.play-window #hud .hud-cycle { gap: 0.25rem; padding: 0.1rem 0.35rem; }
+html[data-form="phone"] .hud-cycle .cycle-step,
+html[data-form="phone"] .hud-cycle .cycle-dream-num { display: none; }
+html[data-form="phone"] .hud-cycle .cycle-pip { width: 11px; height: 11px; }

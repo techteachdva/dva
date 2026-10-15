@@ -129,7 +129,7 @@ export function createInitialState(data, options) {
   const dreamDeck = insertBossDreams(buildDreamDeck(data.dreams, length.dreams), data.dreambeasts, options.lengthKey);
   const nightmarePool = (dreamDeck.nightmarePool || []).map((beast) => ({ ...beast, instanceId: uid("beast") }));
   delete dreamDeck.nightmarePool;
-  // The Night Bar reads this plan: every card of the night, in order, with its Ante.
+  // The Night Bar reads this plan: every card of the night, in order, with its Cycle.
   const nightPlan = dreamDeck.map((card, index) => ({
     instanceId: card.instanceId,
     boss: !!card.boss,
@@ -885,7 +885,7 @@ export function beginRoundReveal(state) {
   if (state.status === "playing") openLostFound(state);
 }
 
-/** Between Antes: the discard shuffles back into the Waking Mind, then each Dreamer draws 3. */
+/** Between Cycles: the discard shuffles back into the Waking Mind, then each Dreamer draws 3. */
 export function anteDawn(state) {
   if (state.psycheDiscard?.length) {
     state.psycheDeck = shuffle([...(state.psycheDeck || []), ...state.psycheDiscard]);
@@ -895,7 +895,7 @@ export function anteDawn(state) {
   state.players.forEach((player) => {
     if (player.alive) drawPsycheForPlayer(state, player, 3);
   });
-  addLog(state, `Dawn between Antes: the Waking Mind reshuffles, and each Dreamer draws 3 Psyche.`);
+  addLog(state, `Dawn between Cycles: the Waking Mind reshuffles, and each Dreamer draws 3 Psyche.`);
 }
 
 export const DEATH_CLOCK_CAP = 6;

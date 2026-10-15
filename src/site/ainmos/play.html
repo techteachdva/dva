@@ -43,7 +43,7 @@
     <div id="night-strip" class="night-strip" role="group" aria-label="The night" hidden></div>
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 0.11</span>
+        <span class="version-label">v 0.12</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Ainmos" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -60,9 +60,8 @@
       </div>
       <div id="hud" class="hud">
         <div class="hud-item hud-goal-wrap" title="Archetype points scored / points required to wake."><span class="label">Goal:</span><span id="hud-goal">0/8</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span></div>
-        <div class="hud-item hud-ante-wrap" title="The Ante you are in, out of the night's Antes. Each Ante is two Dreams and a Boss."><span class="label">Ante</span><span id="hud-ante">1/4</span></div>
+        <div class="hud-item hud-cycle" id="hud-cycle" role="img" title="Cycle 1 of 4"></div>
         <div class="hud-item hud-mind-wrap" id="hud-mind-wrap" title="The Waking Mind: Psyche left to draw (deck plus discard). Each Dreambeast still standing at dusk Represses 1. Remember to win cards back."><span class="label">Mind</span><span id="hud-mind">0</span><span id="hud-mind-dusk" class="hud-mind-dusk hidden"></span></div>
-        <div class="hud-item hud-round-wrap"><span class="label">Round</span><span id="hud-round">1</span></div>
         <div class="hud-feed-cluster">
           <button type="button" id="btn-moment-history" class="btn btn-icon btn-moment-history hud-moment-history-btn" title="Moment narration history" aria-label="Moment narration history">!</button>
           <button type="button" id="btn-dream-feed" class="btn btn-icon btn-dream-feed hud-dream-feed-btn" title="Dream Guide — feed and rules" aria-label="Open Dream Guide">?</button>
@@ -264,7 +263,7 @@
 
   <div id="lost-found" class="lost-found" hidden></div>
   <div id="vault-screen" class="lost-found vault-screen" hidden></div>
-  <div id="ante-screen" class="lost-found ante-screen" hidden></div>
+  <div id="cycle-screen" class="lost-found cycle-screen" hidden></div>
   <div id="boon-draft" class="lost-found boon-draft" hidden></div>
   <div id="coach-hint" class="coach-hint" hidden></div>
   <div id="tutorial-brief" class="tutorial-brief hidden" role="dialog" aria-modal="true" aria-labelledby="tutorial-brief-title">

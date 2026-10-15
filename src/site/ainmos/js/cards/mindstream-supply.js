@@ -135,7 +135,7 @@ export function pullFromMindstreamByType(state, type, { suit = null, filter = nu
  */
 export function pullDreambeastFromMindstream(state, options = {}) {
   // Ainmos: Mindstream holds no Dreambeasts. Effects that call one up draw from
-  // the night's Nightmare pool (the ordinary beasts not guarding an Ante).
+  // the night's Nightmare pool (the ordinary beasts not guarding an Cycle).
   const { suit = null, beastKind = null, filter = null } = options;
   const pool = state.nightmarePool || [];
   const fits = (card, strictSuit) => matchesSpawnBeast({ ...card, type: "dreambeast" }, { beastKind, filter })

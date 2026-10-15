@@ -6,15 +6,25 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.11";
+export const SOMNIA_VERSION = "0.12";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
   {
+    version: "0.12",
+    title: "Cycles",
+    notes: [
+      "Antes are now Cycles, like a night of sleep. A night is 4, 7, or 10 Cycles. Each Cycle is 3 Dreams, and each Dream is one Reveal, Explore, Meet: 9 phases, ending on the Boss.",
+      "The top bar shows where you are: Cycle 2 of 4, three Dreams of Reveal · Explore · Meet with the current phase lit, and the Boss on phase 9.",
+      "The Cycle screen maps all nine phases, shows what Dream 2 and Dream 3 bring, and lines up every Boss of the night with its Power so you can see them grow stronger.",
+      "The Dream screen and each phase opener name the Cycle, the Dream, and the phase.",
+    ],
+  },
+  {
     version: "0.11",
     title: "Windows",
     notes: [
-      "Each Ante opens on its own screen: the Dream, the Mini-Boss, and the Boss with its twist, and what beating each one pays. Walk in when you are ready.",
+      "Each Cycle opens on its own screen: the Dream, the Mini-Boss, and the Boss with its twist, and what beating each one pays. Walk in when you are ready.",
       "Mini-Bosses pay a bounty: +1 Power Token when one falls.",
       "During Reveal the Dreamscape Vault fills the screen. Each Landscape shows what it does and whether a quest wants it. Choose one, place it on the board, and the Vault returns for the next.",
       "The phase opener and the Dream screen now match the Lost & Found: one window language, one set of buttons.",
@@ -26,7 +36,7 @@ export const CHANGELOG = [
     title: "Solo Night",
     notes: [
       "Ainmos is now a solo run. Choose one Dreamer; every hand, action, and fight is yours. Fights and Mindstream draws repeat as long as your Meet actions last.",
-      "Dreambeasts arrive on the Dream Deck timer. Each Ante is a Dream, a Dream that brings a Mini-Boss to The Bed, then a Boss that lands on a random Landscape. Mini-Bosses are face up on the Night Bar.",
+      "Dreambeasts arrive on the Dream Deck timer. Each Cycle is a Dream, a Dream that brings a Mini-Boss to The Bed, then a Boss that lands on a random Landscape. Mini-Bosses are face up on the Night Bar.",
       "Mindstream is Events and Power Tokens only. The Draw-a-Dream cards and the Events and Objects that called up beasts are gone. City and Lava now move Dreambeasts.",
       "Dreams are conditions you survive: no Bright side, one card, one button.",
       "Every creature is 1 Power weaker, and ties now go to you.",
@@ -38,7 +48,7 @@ export const CHANGELOG = [
     version: "0.9",
     title: "Wide Awake",
     notes: [
-      "The Night Bar spans the top of the screen. Every Dream and Boss sits in its Ante, with a tick for each card and a pip for every Dreambeast that arrived that round.",
+      "The Night Bar spans the top of the screen. Every Dream and Boss sits in its Cycle, with a tick for each card and a pip for every Dreambeast that arrived that round.",
       "The table fills the screen. Commands sit in one bar under the Night Bar, the Dreamer info lives in a column on the right, and the decks sit in a small dock on the board. Objects are one shared deck.",
       "Phones play sideways: the board takes the screen and the Table button opens the Dreamer info full screen.",
       "No more walls of text. The menu primer opens only from the spiral, and the unused-actions note is now a First Night hint.",
@@ -50,14 +60,14 @@ export const CHANGELOG = [
     title: "First Night",
     notes: [
       "First Night on the menu is a real Daydream with gentle hints. Each hint shows once, the first time its moment comes, and never locks a click. The first Dream is gentle and the first fight is a sure win. When the Winged Turtle falls, the training wheels come off.",
-      "The Dream Guide and glossary now teach Ainmos: Antes and the Boss ladder, Dream Forms, Psyche upgrades, the Lost & Found, Boons, and the Dreamscape Reset.",
+      "The Dream Guide and glossary now teach Ainmos: Cycles and the Boss ladder, Dream Forms, Psyche upgrades, the Lost & Found, Boons, and the Dreamscape Reset.",
     ],
   },
   {
     version: "0.7",
     title: "The Story of the Night",
     notes: [
-      "The end screen tells the night: the Ante you reached, every Boss on the ladder, your best spread card by card, your favorite Dream Form, the Dreamer who won the most fights, your Boons, and the numbers behind the score.",
+      "The end screen tells the night: the Cycle you reached, every Boss on the ladder, your best spread card by card, your favorite Dream Form, the Dreamer who won the most fights, your Boons, and the numbers behind the score.",
       "New score: Archetype points ×2, plus each Boss's climb (the Turtle 1 up to Leviathan 10), plus your best spread's Power, plus 20 for waking, plus 1 per Object, Power Token, and ally. Psyche left in hand no longer scores.",
     ],
   },
@@ -96,7 +106,7 @@ export const CHANGELOG = [
     title: "The Dream Re-forms",
     notes: [
       "When the Dreamscape Vault and the tile deck are both empty, the next round begins with a Dreamscape Reset: every Landscape but The Bed shuffles back into the tile deck, Dreambeasts on them are Repressed, Bosses drift back to The Bed, and every Dreamer wakes on The Bed.",
-      "Dawn between Antes: the round after a Boss arrives, the Waking Mind reshuffles and every Dreamer draws 3 Psyche.",
+      "Dawn between Cycles: the round after a Boss arrives, the Waking Mind reshuffles and every Dreamer draws 3 Psyche.",
       "The Bed no longer draws 3. It Dreams Onward: flip the top tile of the deck, then place it free or put it back.",
     ],
   },
@@ -104,10 +114,10 @@ export const CHANGELOG = [
     version: "0.2",
     title: "Ten Nightmares",
     notes: [
-      "A night is a run of Antes: two Dreams, then a Boss. Daydream climbs 4 Antes, Nap 7, Deep Sleep 10.",
+      "A night is a run of Cycles: two Dreams, then a Boss. Daydream climbs 4 Cycles, Nap 7, Deep Sleep 10.",
       "The Boss ladder runs from rung 10 to rung 1: Winged Turtle, Shadows, Jackalope, Baku, Mindless, Devourer, Bogey, Cerberus, Double, Leviathan. These ten no longer wander the Mindstream.",
       "Wake by defeating the night's final Boss with the Archetype goal met. If the last round ends first, you never wake. There is no Final Recurrence.",
-      "The Night Bar across the top shows every Dream of the night, face down, with each Ante's Boss face up so you can plan for it.",
+      "The Night Bar across the top shows every Dream of the night, face down, with each Cycle's Boss face up so you can plan for it.",
       "Sage, Magician, and Warrior now ask you to defeat a Lucidity, Elasticity, or Willpower Boss.",
     ],
   },

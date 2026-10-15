@@ -1,0 +1,191 @@
+/**
+ * The Cycle screen: the night's next Cycle, laid out before you walk into it.
+ *
+ * A Cycle is three Dreams, and each Dream is one Reveal · Explore · Meet: nine
+ * phases, the ninth ending on the Boss. The window (the same one as the Lost &
+ * Found) shows that map, the three Dreams with what each brings and pays, and
+ * the Boss ladder so you can see the Bosses grow stronger. One button walks you in.
+ */
+
+import { getPhase } from "../core/state.js";
+import { ladderEntry } from "../encounters/boss-ladder.js";
+import { cyclesForLength, PHASE_NAMES, PHASE_SUITS, DREAMS_PER_CYCLE } from "../core/cycle.js";
+import { suitIconHtml } from "../core/rules.js";
+
+const SUIT_NAME = { lucidity: "Lucidity", elasticity: "Elasticity", willpower: "Willpower" };
+
+let lastKey = "";
+let retryTimer = null;
+
+function esc(text) {
+  return String(text ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[ch]);
+}
+
+function absolute(src) {
+  return src ? new URL(src, document.baseURI).href : "";
+}
+
+/** Index in the night plan of the next card still in the Dream Deck. */
+function nextPlanIndex(state) {
+  const inDeck = new Set((state.dreamDeck || []).map((c) => c.instanceId));
+  return (state.nightPlan || []).findIndex((p) => inDeck.has(p.instanceId));
+}
+
+/** The Cycle about to begin, or 0 when no Cycle screen is due. */
+export function cycleAboutToBegin(state) {
+  if (!state || state.status !== "playing" || state.tutorialMode) return 0;
+  if (state.lostFound?.open || state.pendingBoonDraft) return 0;
+  if (typeof document !== "undefined" && document.body.classList.contains("opening-cinematic-pending")) return 0;
+  const next = nextPlanIndex(state);
+  if (next < 0) return 0;
+  let cycle = 0;
+  // Round 1 already holds the opening Dream; its Cycle is the first.
+  if (state.round === 1 && next === 1) cycle = 1;
+  else if (next % DREAMS_PER_CYCLE === 0 && getPhase(state) === "Reveal" && !state.dreamDrawn) cycle = next / DREAMS_PER_CYCLE + 1;
+  if (!cycle || cycle <= (state.anteIntroSeen || 0)) return 0;
+  return cycle;
+}
+
+export function cycleScreenWanted(state) {
+  return cycleAboutToBegin(state) > 0;
+}
+
+function bossPower(entry) {
+  if (!entry) return "?";
+  return entry.stack ? entry.stack.join("·") : String(entry.power);
+}
+
+/** Nine phases as three Dreams of Reveal · Explore · Meet; the last Meet is the Boss. */
+function phaseMapHtml() {
+  const tags = ["", "Mini-Boss rises", "Boss lands"];
+  return Array.from({ length: DREAMS_PER_CYCLE }, (_, d) => {
+    const phases = PHASE_SUITS.map((suit, i) => {
+      const n = d * 3 + i + 1;
+      const boss = d === DREAMS_PER_CYCLE - 1 && i === 2;
+      return `<span class="cy-phase suit-${suit}${boss ? " is-boss" : ""}">
+        <span class="cy-phase-n">${n}</span>
+        ${boss ? `<span class="cy-phase-icon" aria-hidden="true">♛</span>` : suitIconHtml(suit, { className: "cy-phase-icon", size: 14 })}
+        <span class="cy-phase-name">${boss ? "Boss" : PHASE_NAMES[i]}</span>
+      </span>`;
+    }).join("");
+    return `<div class="cy-dream">
+      <p class="cy-dream-name">Dream ${d + 1}${tags[d] ? ` <small>${tags[d]}</small>` : ""}</p>
+      <div class="cy-phases">${phases}</div>
+    </div>`;
+  }).join(`<span class="cy-arrow" aria-hidden="true">›</span>`);
+}
+
+/** Every Boss of the night, left to right, with its Power: the climb at a glance. */
+function ladderHtml(state, cycle) {
+  const defeated = new Set(state.bossesDefeated || []);
+  const bosses = (state.nightPlan || []).filter((p) => p.boss);
+  return bosses.map((p, i) => {
+    const entry = ladderEntry(p.bossId);
+    const n = i + 1;
+    const when = defeated.has(p.bossId) ? "beaten" : n < cycle ? "past" : n === cycle ? "now" : "ahead";
+    return `<span class="cy-rung is-${when}" title="Cycle ${n}: ${esc(p.name)}, Power ${esc(bossPower(entry))}${when === "beaten" ? " (beaten)" : ""}">
+      <span class="cy-rung-face" style="background-image:url('${esc(absolute(p.image))}')"></span>
+      <span class="cy-rung-power">${esc(bossPower(entry))}</span>
+      <span class="cy-rung-n">${n}</span>
+    </span>`;
+  }).join("");
+}
+
+/**
+ * @param {object} state
+ * @param {{ onEnter:()=>void, onRetry:()=>void }} handlers
+ */
+export function renderCycleScreen(state, handlers = {}) {
+  const host = document.getElementById("cycle-screen");
+  if (!host) return;
+  // While the opening plays, look again shortly so the Cycle screen follows it.
+  if (document.body.classList.contains("opening-cinematic-pending") && !retryTimer) {
+    retryTimer = window.setTimeout(() => {
+      retryTimer = null;
+      handlers.onRetry?.();
+    }, 500);
+  }
+  const cycle = cycleAboutToBegin(state);
+  document.body.classList.toggle("cycle-screen-open", !!cycle);
+  if (!cycle) {
+    if (!host.hidden) {
+      host.classList.add("is-leaving");
+      window.setTimeout(() => {
+        if (!document.body.classList.contains("cycle-screen-open")) {
+          host.hidden = true;
+          host.classList.remove("is-leaving");
+          host.innerHTML = "";
+        }
+      }, 260);
+    }
+    lastKey = "";
+    return;
+  }
+  host.hidden = false;
+  host.classList.remove("is-leaving");
+  const key = `${cycle}|${state.round}`;
+  if (key === lastKey) return;
+  lastKey = key;
+
+  const plan = state.nightPlan || [];
+  const [dream, second, boss] = plan.slice((cycle - 1) * 3, cycle * 3);
+  const mini = second?.mini;
+  const entry = boss?.bossId ? ladderEntry(boss.bossId) : null;
+  const cycles = cyclesForLength(state.lengthKey);
+  const finalCycle = cycle === cycles;
+  const openingDrawn = cycle === 1 && !!dream?.name && !!state.dreamDrawn;
+
+  host.innerHTML = `
+    <div class="lf-veil" aria-hidden="true"></div>
+    <section class="lf-window cy-window" role="dialog" aria-modal="true" aria-labelledby="cy-title">
+      <header class="lf-titlebar">
+        <span class="vault-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <h3 id="cy-title" class="lf-title">Cycle ${cycle} <small>of ${cycles}</small></h3>
+        <span class="lf-round">${finalCycle ? "The last Cycle" : `${cycles - cycle} more after this`}</span>
+      </header>
+      <p class="lf-whisper">${finalCycle ? "Three Dreams, nine phases. Beat this Boss with your goal met, and wake." : "Three Dreams, nine phases. The Boss waits at the end."}</p>
+      <div class="cy-map" aria-label="This Cycle: three Dreams of Reveal, Explore, Meet; the ninth phase is the Boss">${phaseMapHtml()}</div>
+      <div class="lf-shelf cy-shelf">
+        <article class="lf-item cy-item cy-dream-card">
+          <div class="cy-art cy-art-back" aria-hidden="true"><span>?</span></div>
+          <p class="cy-step">Dream 1 · phases 1–3</p>
+          <h4 class="lf-item-name">${openingDrawn ? esc(dream.name) : "A Dream"}</h4>
+          <p class="lf-item-kind">${openingDrawn ? "Drawn" : "Face down"}</p>
+          <p class="lf-item-text">Every Dream hurts. Endure it, then build, walk, and meet.</p>
+        </article>
+        <article class="lf-item cy-item cy-mini suit-${esc(mini?.suit || "none")}">
+          <div class="cy-art" style="background-image:url('${esc(absolute(mini?.image))}')"></div>
+          <p class="cy-step">Dream 2 · phases 4–6 · Mini-Boss</p>
+          <h4 class="lf-item-name">${esc(mini?.name || "A Dreambeast")}</h4>
+          <p class="lf-item-kind">Power ${mini?.power ?? "?"} · ${esc(SUIT_NAME[mini?.suit] || "")}</p>
+          <p class="lf-item-text">Rises on The Bed with Dream 2. Bleeds 1 Psyche every dusk it stands.</p>
+          <p class="cy-reward">Beat it: +1 Power Token</p>
+        </article>
+        <article class="lf-item cy-item cy-boss suit-${esc(boss?.suit || "none")}">
+          <div class="cy-art" style="background-image:url('${esc(absolute(boss?.image))}')"></div>
+          <p class="cy-step">Dream 3 · phases 7–9 · Boss</p>
+          <h4 class="lf-item-name">${esc(boss?.name || "The Boss")}</h4>
+          <p class="lf-item-kind">Power ${esc(entry?.stack ? entry.stack.join(", then ") : (entry?.power ?? "?"))} · ${esc(SUIT_NAME[boss?.suit] || "")}</p>
+          <p class="lf-item-text">${entry ? `<strong>${esc(entry.twist)}.</strong> ${esc(entry.twistText)}` : ""} Lands on a random Landscape and stalks you.</p>
+          <p class="cy-reward">Beat it: a Boon, then dawn (draw 3)</p>
+        </article>
+      </div>
+      <div class="cy-ladder" aria-label="The Boss of every Cycle and its Power">
+        <span class="cy-ladder-title">The Bosses grow stronger</span>
+        <span class="cy-rungs">${ladderHtml(state, cycle)}</span>
+      </div>
+      <footer class="lf-foot cy-foot">
+        <span class="cy-note">${state.boons?.length ? `${state.boons.length} Boon${state.boons.length === 1 ? "" : "s"} carried` : "No Boons yet"}</span>
+        <button type="button" class="lf-btn lf-continue" data-cy-enter="1">Begin Cycle ${cycle} →</button>
+      </footer>
+    </section>`;
+
+  const enter = host.querySelector("[data-cy-enter]");
+  enter?.addEventListener("click", () => {
+    state.anteIntroSeen = cycle;
+    handlers.onEnter?.();
+  });
+  requestAnimationFrame(() => enter?.focus());
+}

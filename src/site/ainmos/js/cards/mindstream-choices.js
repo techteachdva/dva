@@ -8,6 +8,7 @@
  */
 
 import { addLog, drawPsycheForPlayer, setEncounterOnLandscape, landscapeById, tileHasEncounters, revealLandscapeTile } from "../core/state.js";
+import { cyclePosition } from "../core/cycle.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { logMoment } from "../core/narrator.js";
 import { totalStat } from "../core/rules.js";
@@ -501,6 +502,11 @@ export function beginDreamCardChoice(state, card, player, helpers = {}) {
     kind: "dream",
     ui: "mindstream-fullscreen",
     single: true,
+    cycleLabel: (() => {
+      const pos = cyclePosition(state);
+      const tag = pos.dream === 2 ? " · Mini-Boss" : "";
+      return `Cycle ${pos.cycle} · Dream ${pos.dream} of 3${tag}`;
+    })(),
     cardId: card.id,
     dreamId: card.id,
     playerId: player.id,

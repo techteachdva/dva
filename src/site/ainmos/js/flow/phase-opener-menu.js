@@ -17,6 +17,7 @@ import {
 } from "../core/rules.js";
 import { isDreambeastPsycheCard } from "../dreamers/subconscious.js";
 import { renderCard, hideUtilityModal, isUtilityModalMinimized } from "../ui/ui.js";
+import { cyclePosition } from "../core/cycle.js";
 import {
   isInteractiveTutorialActive,
   isTutorialActionAllowed,
@@ -256,7 +257,10 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   body.innerHTML = `
     <div id="phase-opener-menu" class="phase-opener-menu phase-opener-solo" data-phase="${phase}" data-suit="${suit || ""}" data-count="1">
       <header class="phase-opener-header fullscreen-browser-header">
-        <p class="phase-opener-kicker">${suitIconHtml(suit, { size: 16 })} ${phase} · ${suitLabel}</p>
+        <p class="phase-opener-kicker">${suitIconHtml(suit, { size: 16 })} ${(() => {
+          const pos = cyclePosition(state);
+          return pos.longNight ? `The Long Night · ${phase}` : `Cycle ${pos.cycle} · Dream ${pos.dream} of 3 · ${phase} · phase ${pos.step} of 9`;
+        })()}</p>
         <h2>${openerTitle(phase)}</h2>
         <p class="fullscreen-browser-lead">${openerLead(phase, suitLabel)}</p>
       </header>

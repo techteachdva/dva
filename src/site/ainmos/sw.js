@@ -3,8 +3,8 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.11-windows";
-const RUNTIME_CACHE = "ainmos-runtime-0.11-windows";
+const CACHE_NAME = "ainmos-0.12-cycles";
+const RUNTIME_CACHE = "ainmos-runtime-0.12-cycles";
 
 const PRECACHE = [
   "./",
@@ -57,7 +57,8 @@ const PRECACHE = [
   "./js/ui/click-feedback.js",
   "./js/ui/vault-panel.js",
   "./js/ui/vault-screen.js",
-  "./js/ui/ante-screen.js",
+  "./js/ui/cycle-screen.js",
+  "./js/core/cycle.js",
   "./js/ui/night-bar.js",
   "./js/cards/dream-forms.js",
   "./js/shop/lost-found.js",

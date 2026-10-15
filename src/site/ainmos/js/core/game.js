@@ -537,7 +537,7 @@ export function convertExcessActionsToPsyche(state) {
     const noun = excessNoun(phase);
     logMoment(
       state,
-      `${drawn} unused ${noun}${drawn === 1 ? "" : "s"} drew Psyche, one card at a time around the table.`,
+      `${drawn} unused ${noun}${drawn === 1 ? "" : "s"} drew ${drawn} Psyche.`,
     );
   }
   return drawn;
@@ -912,7 +912,7 @@ export function getPhaseActions(state, handlers) {
           : excessOpen
             ? "Each leftover Reveal draws 1 Psyche. The turn passes clockwise after every card."
             : mapOpen
-              ? "The map is fully Revealed. Lucidity now draws Psyche, one card at a time around the table."
+              ? "The map is fully Revealed. Lucidity now draws Psyche."
               : best
                 ? `One Dreamer spends 1 Lucidity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus). Unused Reveals draw 1 Psyche each.`
                 : "One Dreamer spends Lucidity to set everyone's reveal budget.",
@@ -1201,7 +1201,7 @@ export function getPhaseAdvanceAction(state, handlers) {
     hint: spent
       ? `${label} — actions spent. Advance when ready.`
       : leftover > 0
-        ? `${label} — ${leftover} unused ${noun}${leftover === 1 ? "" : "s"} draw Psyche around the table.`
+        ? `${label} — ${leftover} unused ${noun}${leftover === 1 ? "" : "s"} draw Psyche.`
         : `${label} — skip this phase without spending Psyche.`,
     onClick: handlers.nextPhase,
   };
@@ -2189,7 +2189,7 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
       recordQuestEvent(state, "meet_boss", { bossId, suit: encounter.suit });
       if (!(state.bossesDefeated || []).includes(bossId)) {
         state.bossesDefeated = [...(state.bossesDefeated || []), bossId];
-        logMoment(state, `${encounter.name} falls. Ante ${anteForBoss(bossId) || "?"} is cleared.`, { boss: true });
+        logMoment(state, `${encounter.name} falls. Cycle ${anteForBoss(bossId) || "?"} is cleared.`, { boss: true });
         checkVictory(state);
         if (state.status === "playing") offerBoonDraft(state, encounter.name);
       }

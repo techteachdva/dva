@@ -66,7 +66,7 @@ function bossLandingTile(state) {
 }
 
 /**
- * The Ante's second Dream brings its Mini-Boss to The Bed, once, whether the
+ * The Cycle's second Dream brings its Mini-Boss to The Bed, once, whether the
  * Dream is drawn or eaten.
  */
 export function spawnMiniBoss(state, dream) {
@@ -82,7 +82,7 @@ export function spawnMiniBoss(state, dream) {
 
 export function spawnBossEncounterOnBed(state, card) {
   if (!isBossDreamCard(card)) return false;
-  // The round a Boss arrives closes its Ante; dawn follows next round.
+  // The round a Boss arrives closes its Cycle; dawn follows next round.
   state.bossArrivedThisRound = true;
   const existing = allEncountersOnBoard(state).find(({ encounter }) => (
     encounter.id === card.id || encounter.refId === card.id

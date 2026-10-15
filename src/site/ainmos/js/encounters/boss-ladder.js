@@ -1,7 +1,7 @@
 /**
  * Ainmos: the Boss ladder.
  *
- * A night is a run of Antes. Each Ante is two Dreams and then a Boss Dream.
+ * A night is a run of Cycles. Each Cycle is two Dreams and then a Boss Dream.
  * The ladder climbs from rung 10 (easiest) to rung 1 (Leviathan). Shorter
  * nights stop partway up: Daydream ends on rung 7, Nap on rung 4.
  *
@@ -84,14 +84,14 @@ export const BOSS_LADDER = Object.freeze([
   },
 ]);
 
-/** Mini-Boss Power by Ante: two under that Ante's Boss, two in the first. */
+/** Mini-Boss Power by Cycle: two under that Cycle's Boss, two in the first. */
 const MINI_BOSS_POWER = Object.freeze([2, 4, 4, 5, 6, 6, 7, 8, 8, 9]);
 
 export function miniBossPower(ante) {
   return MINI_BOSS_POWER[Math.max(0, Math.min(MINI_BOSS_POWER.length - 1, (ante || 1) - 1))];
 }
 
-/** Antes per night length. Each Ante is 2 Dreams + 1 Boss Dream. */
+/** Cycles per night length. Each Cycle is 2 Dreams + 1 Boss Dream. */
 export const ANTES_BY_LENGTH = Object.freeze({ daydream: 4, nap: 7, deep: 10 });
 export const DREAMS_PER_ANTE = 2;
 
@@ -120,7 +120,7 @@ export function isLadderBoss(cardOrId) {
   return BY_ID.has(id);
 }
 
-/** The Ante (1-based) a ladder Boss closes. */
+/** The Cycle (1-based) a ladder Boss closes. */
 export function anteForBoss(id) {
   const entry = ladderEntry(id);
   return entry ? 11 - entry.rung : null;

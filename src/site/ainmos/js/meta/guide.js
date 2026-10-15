@@ -414,7 +414,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>The Night</h3>
-            <p>Each <strong>Ante</strong> is three rounds: a Dream, a Dream that brings a <strong>Mini-Boss</strong> to The Bed, then a <strong>Boss</strong> that lands on a random Landscape and stalks you. Beat a Boss for a <strong>Boon</strong>; the next round is dawn and you draw 3. Every Dream hurts: you endure it. When the Dream Deck runs dry, the <strong>Long Night</strong> Represses 2, then 4, then 6 more at every dusk.</p>
+            <p>A night is 4, 7, or 10 <strong>Cycles</strong>. Each Cycle is <strong>3 Dreams</strong> of Reveal · Explore · Meet: <strong>9 phases</strong>. Dream 2 brings a <strong>Mini-Boss</strong> to The Bed; Dream 3 brings a <strong>Boss</strong> that lands on a random Landscape and stalks you, and each Boss is stronger than the last. Beat a Boss for a <strong>Boon</strong>; the next round is dawn and you draw 3. Every Dream hurts: you endure it. When the Dream Deck runs dry, the <strong>Long Night</strong> Represses 2, then 4, then 6 more at every dusk.</p>
           </div>
           <div class="info-hub-rule info-hub-rem">
             <h3>R.E.M. — Every Round</h3>
