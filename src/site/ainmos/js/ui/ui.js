@@ -2021,7 +2021,8 @@ function fitHexSize(state) {
   const pad = 10;
   const chromeLeft = parseFloat(getComputedStyle(viewport).paddingLeft) || 0;
   const maxW = Math.max(160, viewport.clientWidth - chromeLeft - pad);
-  const maxH = Math.max(160, viewport.clientHeight - pad);
+  const reserve = parseFloat(getComputedStyle(viewport).paddingBottom) || 0;
+  const maxH = Math.max(160, viewport.clientHeight - reserve - pad);
   const bounds = boardBounds(state, HEX_BASE);
   const fit = Math.min(maxW / bounds.width, maxH / bounds.height);
   const hexMin = minHexSize();

@@ -151,6 +151,7 @@ import { placeReturnedBeasts } from "../board/landscapes.js";
 import { initKeepsakeScrollers, refreshKeepsakeScrollers } from "../ui/keepsake-scroll.js";
 import { initCardFans } from "../ui/ui.js";
 import { initFitBars } from "../ui/fit-bar.js";
+import { initMenuBridge } from "../ui/menu-bridge.js";
 import { renderArchetypeChoice } from "../ui/archetype-choice.js";
 import { renderArchetypeWindow, renderWakeGoal } from "../ui/archetype-window.js";
 import { initFloatWindow, restoreFloatWindow } from "../ui/float-window.js";
@@ -447,6 +448,7 @@ async function init() {
   initKeepsakeScrollers();
   initCardFans();
   initFitBars();
+  initMenuBridge();
   bindRestart();
   bindEndLeaderboard();
   bindPowerBonus();

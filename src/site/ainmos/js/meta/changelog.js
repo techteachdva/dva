@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.21";
+export const SOMNIA_VERSION = "0.21.1";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.21.1",
+    title: "Steady Hands",
+    notes: [
+      "No more blinking between menus: when one menu leads to the next, the dream stays dim instead of flashing the table in between, and a click inside a menu no longer replays its fade.",
+      "The hand is exactly as tall as its cards, and only the cards take taps: the space around them clicks straight through to the board.",
+      "The board fits in the space above the hand, so the whole Dreamscape and your cards share the screen.",
+      "Hand cards are proper 5:7 cards again, not squashed.",
+      "Fixed a crash on load for players whose browser kept an old copy of the game: code is always fetched fresh when online.",
+    ],
+  },
   {
     version: "0.21",
     title: "First Dreams",

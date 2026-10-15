@@ -179,12 +179,17 @@ function getBoardEl() {
   return stage?.querySelector("#hex-board");
 }
 
+/** Space at the bottom of the viewport kept clear for the floating hand. */
+export function boardBottomReserve(el = viewport) {
+  return el ? parseFloat(getComputedStyle(el).paddingBottom) || 0 : 0;
+}
+
 export function centerBoardPan() {
   if (!viewport) return;
   const board = getBoardEl();
   if (!board) return;
   panX = (viewport.clientWidth - board.offsetWidth) / 2;
-  panY = (viewport.clientHeight - board.offsetHeight) / 2;
+  panY = (viewport.clientHeight - boardBottomReserve() - board.offsetHeight) / 2;
   applyTransform();
 }
 
@@ -238,7 +243,7 @@ function applyQueuedBoardFocus() {
   const tileCx = tileRect.left + tileRect.width / 2;
   const tileCy = tileRect.top + tileRect.height / 2;
   const vpCx = vpRect.left + vpRect.width / 2;
-  const vpCy = vpRect.top + vpRect.height / 2;
+  const vpCy = vpRect.top + (vpRect.height - boardBottomReserve()) / 2;
   panX += vpCx - tileCx;
   panY += vpCy - tileCy;
 

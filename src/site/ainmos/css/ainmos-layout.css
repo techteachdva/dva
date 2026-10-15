@@ -2593,3 +2593,50 @@ body.ainmos #utility-modal .ms-choice-modal-wrap #utility-modal-body > .utility-
 }
 /* The Dream screen covers the whole window, strip included. */
 body.ainmos #utility-modal.ms-choice-modal { inset: 0 !important; top: 0 !important; bottom: 0 !important; left: 0 !important; right: 0 !important; height: auto !important; }
+
+/* ==========================================================================
+   Tight hand (0.21.1): the fan is exactly as tall as its cards, only the
+   cards take taps, and the board fits in the space above them.
+   ========================================================================== */
+html:root body.ainmos.play-window {
+  --ain-card-h: clamp(108px, 16vh, 176px);
+  --ain-fan-h: calc(var(--ain-card-h) + 0.9rem);
+}
+html[data-form="tablet"]:root body.ainmos.play-window {
+  --ain-card-h: clamp(100px, 16vh, 156px);
+  --ain-fan-h: calc(var(--ain-card-h) + 0.9rem);
+}
+html[data-form="phone"]:root body.ainmos.play-window { --ain-fan-h: 0px; }
+
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar #hand-primary .game-card {
+  height: var(--ain-card-h) !important;
+  width: calc(var(--ain-card-h) * 5 / 7) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar #hand-primary {
+  padding: 0 0.4rem 0;
+}
+
+/* Empty space around the cards lets taps through to the board. */
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .psyche-hand-section > *,
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar #hand,
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar #hand-primary { pointer-events: none; }
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .psyche-hand-section .game-card,
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .psyche-hand-section button,
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .psyche-hand-section [role="button"],
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .psyche-hand-section .meet-pool-guide:not(.hidden) { pointer-events: auto; }
+
+/* The hand label tucks under the fan's right edge instead of floating over the board. */
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .psyche-hand-section .hand-header {
+  top: auto;
+  bottom: 0.15rem;
+  left: auto;
+  right: 0;
+  transform: none;
+  z-index: 0;
+  opacity: 0.85;
+}
+
+/* The board fits in the space above the hand, never under it. */
+html:root body.ainmos.play-window #screen-game .board-viewport { padding-bottom: var(--ain-fan-h); }

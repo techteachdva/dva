@@ -1460,3 +1460,33 @@ body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dr
 }
 body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card.wild .psyche-holo { display: none; }
 body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card.wild .psyche-suit { font-size: 22cqw; line-height: 1; background: none; -webkit-text-fill-color: #fff; }
+
+/* ---- Menu bridge: one menu hands off to the next without the table flashing through ---- */
+.menu-bridge {
+  position: fixed;
+  inset: 0;
+  z-index: 855;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(60, 44, 110, 0.55), rgba(6, 4, 16, 0.88) 70%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: opacity 0.35s ease;
+  visibility: hidden;
+}
+.menu-bridge.is-held {
+  opacity: 1;
+  visibility: visible;
+  transition: none;
+}
+.menu-bridge:not(.is-held) {
+  transition: opacity 0.35s ease, visibility 0s linear 0.35s;
+}
+.menu-bridge-lift #card-modal { z-index: 870; }
+@media (prefers-reduced-motion: reduce) {
+  .menu-bridge, .menu-bridge:not(.is-held) { transition: none; }
+}
+/* A menu rebuilt by a click inside it is already open: no second fade-in. */
+.lost-found.lf-settled:not(.is-leaving) .lf-veil,
+.lost-found.lf-settled:not(.is-leaving) .lf-window,
+.lost-found.lf-settled:not(.is-leaving) .lf-item { animation: none !important; }
