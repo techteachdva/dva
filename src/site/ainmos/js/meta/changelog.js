@@ -6,10 +6,18 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.17";
+export const SOMNIA_VERSION = "0.18";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.18",
+    title: "Clean View",
+    notes: [
+      "View a Dreambeast and see only what matters, big: its Power, suit and kind, any Boss rule, and what Accept or Repress wins you.",
+      "View a Dreamer and see their three stats, Psyche, Power Tokens, Objects, their Power in one line, and their cards.",
+    ],
+  },
   {
     version: "0.17",
     title: "Clear Glass",

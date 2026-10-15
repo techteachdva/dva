@@ -1,3 +1,4 @@
+import { ladderEntry } from "../encounters/boss-ladder.js";
 import { runSummaryHtml } from "./run-summary.js";
 import { bestForm, DREAM_FORMS, formLevel, PSYCHE_UPGRADES, upgradeLabel } from "../cards/dream-forms.js";
 import { renderNightBar } from "./night-bar.js";
@@ -1261,7 +1262,35 @@ function appendDreamModalDetail(detail, card) {
   }
 }
 
+/** Ainmos: a Dreambeast at a glance. Big Power, what winning gets you, any Boss rule. */
 function appendDreambeastModalDetail(detail, card) {
+  const power = encounterPower(card, true);
+  const suit = card.suit ? SUIT_LABELS[card.suit] : "";
+  const boss = ladderEntry(card.refId || card.id);
+  const rank = boss ? "Boss" : card.miniBoss ? "Mini-Boss" : "Dreambeast";
+  const powerText = boss?.stack ? boss.stack.join(" → ") : String(power);
+  const view = document.createElement("div");
+  view.className = `beast-view-body suit-${card.suit || "none"}`;
+  view.innerHTML = `
+    <div class="beast-view-head">
+      <span class="beast-view-power"><small>Power</small><b>${powerText}</b></span>
+      <span class="beast-view-tags">
+        <span class="beast-view-tag is-rank">${rank}</span>
+        ${suit ? `<span class="beast-view-tag suit-${card.suit}">${suitIconHtml(card.suit, { size: 18 })} ${suit}</span>` : ""}
+        ${card.beastKind ? `<span class="beast-view-tag">${beastKindLabel(card.beastKind)}</span>` : ""}
+      </span>
+    </div>
+    ${boss ? `<p class="beast-view-rule"><b>${boss.twist}.</b> ${boss.twistText}</p>` : ""}
+    <p class="beast-view-how">Fight it on its Landscape during Meet. Roll 5s and 6s; beat its Power.</p>
+    <div class="beast-view-wins">
+      <div class="beast-view-win is-accept"><b>Accept</b><span>${encounterAcceptSummary(card)}</span></div>
+      <div class="beast-view-win is-repress"><b>Repress</b><span>${encounterRejectSummary(card)}</span></div>
+    </div>
+    <p class="beast-view-threat">Left standing at dusk, it Represses 1 Psyche.</p>`;
+  detail.appendChild(view);
+}
+
+function appendDreambeastModalDetailLegacy(detail, card) {
   const rejectCost = encounterRejectCost(card);
   const rejectSuit = card.rejectSuit ? ` ${suitIconHtml(card.rejectSuit, { size: 14 })}` : "";
   const acceptSuit = card.suit ? ` ${suitIconHtml(card.suit, { size: 14 })}` : "";
@@ -1380,6 +1409,7 @@ export function showModal(card, options = {}) {
   const container = document.getElementById("modal-card");
   container.innerHTML = "";
   modalContent?.classList.toggle("dreambeast-detail-modal", isDreambeastCard(card));
+  modalContent?.classList.toggle("beast-view", isDreambeastCard(card));
   modalContent?.classList.toggle("dream-detail-modal", isDreamCard(card) && !isDreambeastCard(card));
   fillModalObjectActions(card, options);
 
@@ -1512,6 +1542,7 @@ export function showModal(card, options = {}) {
     }
   } else if (isDreambeastCard(card)) {
     appendDreambeastModalDetail(detail, card);
+    void appendDreambeastModalDetailLegacy;
   } else if (isDreamCard(card)) {
     appendDreamModalDetail(detail, card);
   } else {
@@ -6057,12 +6088,14 @@ function buildDreamerDetailHtml(dreamer, options = {}) {
     ? `<p class="dreamer-detail-affinity">Meet bonus: +1 Psyche vs ${beastKindLabel(affinity)} Dreambeasts · +1 when ${SUIT_LABELS[dreamerPrimarySuit(dreamer)]} matches the Dreambeast's suit</p>`
     : "";
 
+  // In play, keep it brief: name, stats, Power. Flavor and fine print stay on the menu screens.
+  const brief = !!player;
   const bodyHtml = `
-    <div class="dreamer-detail-body">
+    <div class="dreamer-detail-body${brief ? " is-brief" : ""}">
       <h2>${dreamer.name}</h2>
-      ${flavor ? `<blockquote class="dreamer-detail-flavor">${flavor}</blockquote>` : ""}
-      ${statusLine}
-      ${affinityLine}
+      ${flavor && !brief ? `<blockquote class="dreamer-detail-flavor">${flavor}</blockquote>` : ""}
+      ${brief ? "" : statusLine}
+      ${brief ? "" : affinityLine}
       ${dreamerDetailStatsHtml(dreamer, options.state || null)}
       <div class="dreamer-detail-power">
         <div class="dreamer-detail-power-label">Dreamer Power</div>
@@ -6283,15 +6316,23 @@ export function showDreamerDetail(dreamer, options = {}) {
     "card-choice-modal-wrap",
   );
   content?.classList.add("dreamer-detail-modal", "dreamer-inspect-modal");
+  content?.classList.remove("dreamer-view");
 
   const player = options.player || null;
   const tokens = player?.powerTokens ?? 0;
+  content?.classList.add("dreamer-view");
   body.innerHTML = `
-    <div class="dreamer-inspect">
+    <div class="dreamer-inspect dreamer-view-body">
       <div class="dreamer-inspect-portrait"></div>
       <div class="dreamer-inspect-info">
-        ${buildDreamerDetailHtml(dreamer, { ...options, textOnly: true })}
-        <p class="dreamer-inspect-tokens"><strong>${tokens}</strong> Power Token${tokens === 1 ? "" : "s"}</p>
+        <h2 class="dreamer-view-name">${dreamer.name}</h2>
+        ${dreamerDetailStatsHtml(dreamer, options.state || null)}
+        <div class="dreamer-view-facts">
+          <span class="dreamer-view-fact"><b>${psycheCardsInHand(player || {}).length}</b> Psyche</span>
+          <span class="dreamer-view-fact"><b>${tokens}</b> ⚡ Power</span>
+          <span class="dreamer-view-fact"><b>${(player?.objects?.length || 0) + (player?.persistent?.length || 0)}</b> Objects</span>
+        </div>
+        <p class="dreamer-view-power"><b>⚡ Power</b> ${dreamer.power}</p>
         <div class="dreamer-inspect-resources"></div>
       </div>
     </div>
@@ -6305,9 +6346,7 @@ export function showDreamerDetail(dreamer, options = {}) {
   const resources = body.querySelector(".dreamer-inspect-resources");
   if (resources && player) {
     appendInspectRow(resources, "Psyche", psycheCardsInHand(player), "No Psyche in hand.", player.id);
-    appendInspectRow(resources, "Allies", alliesInHand(player), "No allies.", player.id);
-    appendInspectRow(resources, "Objects", player.objects || [], "No Objects.", player.id);
-    appendInspectRow(resources, "Persistent", player.persistent || [], "No Persistent Objects.", player.id);
+    appendInspectRow(resources, "Objects", [...(player.persistent || []), ...(player.objects || [])], "No Objects.", player.id);
   }
 
   modal.classList.remove("hidden", "utility-modal-minimized");

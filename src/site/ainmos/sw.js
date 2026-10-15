@@ -3,7 +3,7 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.17-clear-glass";
+const CACHE_NAME = "ainmos-0.18-clean-view";
 const RUNTIME_CACHE = "ainmos-runtime-0.15-every-object";
 
 const PRECACHE = [

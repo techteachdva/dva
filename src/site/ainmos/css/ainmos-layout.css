@@ -1814,3 +1814,141 @@ html:root body.ainmos.play-window .hand-bar h3 { font-size: 14px !important; col
   body.ainmos #lost-found .lf-buyers { display: none; }
   body.ainmos #lost-found .lf-foot { flex: none; margin-top: 0.4rem; padding-top: 0.4rem; }
 }
+
+/* ==========================================================================
+   0.18 Clean View: Dreambeast and Dreamer pop-ups say only what matters, big.
+   ========================================================================== */
+
+/* Dreambeast: art on the left, the facts on the right. */
+body.ainmos #card-modal .modal-content.beast-view { width: min(calc(94vw / var(--menu-zoom)), 56rem); }
+body.ainmos #card-modal .beast-view .modal-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-rows: auto 1fr;
+  column-gap: 1.4rem;
+  align-items: start;
+}
+body.ainmos #card-modal .beast-view .modal-art {
+  grid-row: 1 / span 2;
+  width: 100%;
+  max-height: calc(80vh / var(--menu-zoom));
+  object-fit: contain;
+  border-radius: 14px;
+}
+body.ainmos #card-modal .beast-view .modal-detail > h2 {
+  margin: 0.2rem 0 0.6rem;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+body.ainmos .beast-view-body { display: grid; gap: 0.9rem; align-content: start; }
+body.ainmos .beast-view-head { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+body.ainmos .beast-view-power {
+  display: grid;
+  place-items: center;
+  min-width: 5.2rem;
+  padding: 0.4rem 0.9rem 0.5rem;
+  border-radius: 18px;
+  background: var(--glass-fill-strong);
+  box-shadow: var(--glass-edge), 0 0 24px rgba(255, 140, 170, 0.28);
+}
+body.ainmos .beast-view-power small { font: 700 0.75rem/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: #ffd6e2; }
+body.ainmos .beast-view-power b { font: 800 2.6rem/1.05 var(--font-display); color: #fff; }
+body.ainmos .beast-view-tags { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+body.ainmos .beast-view-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font: 700 1rem/1.2 var(--font-display);
+  color: #fff;
+  background: var(--glass-fill);
+  box-shadow: var(--glass-edge);
+}
+body.ainmos .beast-view-tag.is-rank { background: linear-gradient(135deg, rgba(255, 150, 180, 0.4), rgba(200, 184, 236, 0.25)); }
+body.ainmos .beast-view-rule {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  color: #fff;
+  background: rgba(255, 120, 150, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 170, 190, 0.4);
+}
+body.ainmos .beast-view-how,
+body.ainmos .beast-view-threat { margin: 0; font-size: 1.1rem; line-height: 1.4; color: #f4f0ff; }
+body.ainmos .beast-view-threat { color: #ffd6a0; }
+body.ainmos .beast-view-wins { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+body.ainmos .beast-view-win {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 16px;
+  background: var(--glass-fill);
+  box-shadow: var(--glass-edge);
+}
+body.ainmos .beast-view-win b { font: 800 1.2rem/1.1 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; }
+body.ainmos .beast-view-win.is-accept b { color: var(--dc-mint); }
+body.ainmos .beast-view-win.is-repress b { color: #ffc4d6; }
+body.ainmos .beast-view-win span { font-size: 1.05rem; line-height: 1.35; color: #fff; }
+@media (max-width: 700px), (max-height: 520px) {
+  body.ainmos #card-modal .beast-view .modal-detail { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr); column-gap: 0.8rem; }
+  body.ainmos #card-modal .beast-view .modal-detail > h2 { font-size: 1.3rem; }
+  body.ainmos .beast-view-power b { font-size: 1.8rem; }
+  body.ainmos :is(.beast-view-how, .beast-view-threat, .beast-view-rule, .beast-view-win span) { font-size: 0.9rem; }
+}
+
+/* Dreamer: portrait, three big stats, three facts, the Power, then the cards. */
+body.ainmos #utility-modal .utility-content.dreamer-view .dreamer-view-body {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.32fr) 1fr;
+  gap: 1.4rem;
+  align-items: start;
+}
+body.ainmos .dreamer-view .dreamer-inspect-portrait .game-card { width: 100%; height: auto; }
+body.ainmos .dreamer-view-name {
+  margin: 0 0 0.7rem;
+  font: 700 2rem/1.1 var(--font-display);
+  letter-spacing: 0.08em;
+  color: #fff !important;
+  background: none !important;
+  -webkit-text-fill-color: #fff;
+}
+body.ainmos .dreamer-view .dreamer-detail-stats { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+body.ainmos .dreamer-view .dreamer-detail-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 16px;
+  font-size: 1.05rem;
+  background: var(--glass-fill);
+  box-shadow: var(--glass-edge);
+}
+body.ainmos .dreamer-view .dreamer-detail-stat strong { font: 800 1.8rem/1 var(--font-display); color: #fff; }
+body.ainmos .dreamer-view-facts { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-bottom: 0.7rem; font-size: 1.1rem; color: #f4f0ff; }
+body.ainmos .dreamer-view-fact b { font: 800 1.4rem/1 var(--font-display); color: #fff; margin-right: 0.2rem; }
+body.ainmos .dreamer-view-power {
+  margin: 0 0 0.9rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  color: #fff;
+  background: var(--glass-fill);
+  box-shadow: var(--glass-edge);
+}
+body.ainmos .dreamer-view-power b { color: #f5d77a; margin-right: 0.4rem; }
+body.ainmos .dreamer-view .dreamer-inspect-row h3 { font: 700 1rem/1.2 var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; color: #fff; }
+body.ainmos .dreamer-view .dreamer-inspect-cards { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+body.ainmos .dreamer-view .dreamer-inspect-cards > .game-card { width: clamp(64px, 6.5vw, 104px); height: auto; aspect-ratio: 5 / 7; }
+@media (max-width: 700px), (max-height: 520px) {
+  body.ainmos #utility-modal .utility-content.dreamer-view .dreamer-view-body { grid-template-columns: minmax(6rem, 0.28fr) 1fr; gap: 0.8rem; }
+  body.ainmos .dreamer-view-name { font-size: 1.3rem; }
+}
+body.ainmos .dreamer-detail-body.is-brief h2 { font-size: 1.8rem; color: #fff; }
+body.ainmos .dreamer-detail-body.is-brief .dreamer-detail-power-cost { display: none; }
+body.ainmos .dreamer-detail-body.is-brief :is(.dreamer-detail-power-text, .dreamer-detail-stat) { font-size: 1.1rem; color: #fff; }
