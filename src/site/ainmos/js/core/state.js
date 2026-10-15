@@ -1265,6 +1265,11 @@ export function advancePhase(state) {
   const phase = getPhase(state);
 
   if (phase === "Meet") {
+    // Ainmos 0.24.1: Archetypes slip 1 Landscape away as Meet ends, so the next
+    // Explore can always reach one you are chasing. Dreambeasts still close in
+    // at the start of Explore.
+    const fled = stepArchetypesAway(state);
+    if (fled) addLog(state, `${fled} Archetype${fled === 1 ? " slips" : "s slip"} away from you as Meet ends.`);
     rewardRestedDreamers(state);
     passHeadDreamer(state);
     if (state.finalRecurrence && state.finalRecurrenceRoundsLeft != null) {
@@ -1287,9 +1292,6 @@ export function advancePhase(state) {
     addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");
     const chased = stepBeastsTowardDreamers(state);
     if (chased) addLog(state, `${chased} Dreambeast${chased === 1 ? " chases" : "s chase"} you.`);
-    // Ainmos: Archetypes keep their distance. Each steps 1 hex away if it can.
-    const fled = stepArchetypesAway(state);
-    if (fled) addLog(state, `${fled} Archetype${fled === 1 ? " slips" : "s slip"} away from you.`);
   } else if (getPhase(state) === "Meet") {
     applyMeetStartTax(state);
     if (state.anchorMeetSpreadPending) {

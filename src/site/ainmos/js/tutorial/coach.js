@@ -148,7 +148,7 @@ function openerStep(state, ctx = {}) {
     const near = nearestArchetype(state);
     const beasts = standingBeasts(state);
     let plan = "Nothing to chase yet: a short walk is fine.";
-    if (near) plan = `${near.arch.name} stands on ${near.tile.name}${near.dist != null ? `, ${plural(near.dist, "step")} away` : ""}. It slips 1 Landscape away each Explore, so take enough steps to reach it.`;
+    if (near) plan = `${near.arch.name} stands on ${near.tile.name}${near.dist != null ? `, ${plural(near.dist, "step")} away` : ""}. It holds still until Meet ends, so walk onto it now.`;
     else if (beasts.length) {
       const hereId = me(state)?.landscapeId;
       const withMe = beasts.find(({ tile }) => tile.id === hereId);
@@ -211,7 +211,7 @@ function archetypeChoiceStep(state) {
     id: "arch-choice",
     title: "Call an Archetype",
     text: "Choose 1 of 3. It appears on one of its two home Landscapes, as close to you as it can.",
-    why: `Archetypes are how you wake: Acquire ${goal} of them. Each one slips 1 Landscape away from you every Explore, so chase it down and Meet it.`,
+    why: `Archetypes are how you wake: Acquire ${goal} of them. Each one slips 1 Landscape away as Meet ends, so walk onto it during Explore and Meet it.`,
   };
 }
 
@@ -269,7 +269,7 @@ function tableStep(state, ctx = {}) {
         id: "explore-walk",
         title: "Walk the dream",
         text: `Tap a glowing Landscape next to you to step there. ${plural(left, "step")} left. ${goal}`,
-        why: "Archetypes slip away from you, and Dreambeasts chase you.",
+        why: "Dreambeasts chased you as Explore began. Archetypes hold still until Meet ends, then slip 1 Landscape away.",
       };
     }
     return {

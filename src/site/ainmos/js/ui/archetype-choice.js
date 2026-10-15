@@ -42,7 +42,7 @@ export function renderArchetypeChoice(state, { onChoose } = {}) {
         <h3 id="ac-title" class="lf-title">An Archetype Stirs</h3>
         <span class="lf-round">${state.acquiredPoints || 0} of ${goal} Acquired</span>
       </header>
-      <p class="lf-whisper">Call one into the dream. It appears on one of its two Landscapes and slips away from you each Explore.</p>
+      <p class="lf-whisper">Call one into the dream. It appears on one of its two Landscapes and slips 1 Landscape away from you as each Meet ends.</p>
       <div class="lf-shelf ac-shelf">
         ${options.map((arch) => {
           const placed = new Set(archetypeHomeTiles(state, arch).map((t) => t.id));

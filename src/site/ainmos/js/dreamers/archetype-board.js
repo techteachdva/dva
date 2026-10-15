@@ -4,7 +4,7 @@
  * The one goal of a night is to Acquire Archetypes (3, 6, or 12, by length).
  * The third Dream of every Cycle offers 1 of 3 Archetypes. The chosen one
  * appears on one of its two home Landscapes (if neither is placed, on The Bed)
- * and stays until Acquired. Each Explore it steps 1 hex away from the Dreamers.
+ * and stays until Acquired. As each Meet ends it steps 1 hex away from you.
  *
  * Meeting an Archetype costs 1 Meet action and opens with one of its Events,
  * drawn from the Events tied to its home Landscapes. Bright (only while one of
@@ -177,7 +177,7 @@ function nearestDreamerDistance(tile, dreamers) {
   return Math.min(...dreamers.map((d) => hexDistance(tile, d)));
 }
 
-/** Start of Explore: each Archetype steps 1 hex away from the nearest Dreamer, if it can. */
+/** End of Meet: each Archetype steps 1 hex away from you, if it can. */
 export function stepArchetypesAway(state) {
   if (state.tutorialMode) return 0;
   const dreamers = dreamerTiles(state);

@@ -26,7 +26,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "goal",
     title: "How You Win",
-    body: "The third Dream of each Cycle offers 1 of 3 Archetypes. The one you call appears on one of its two home Landscapes and slips away each Explore. Walk to it, Meet it (its Event, then a fight against Power 12 with a spread that makes a Form), and Acquire it. The Archetypes window tracks them.",
+    body: "The third Dream of each Cycle offers 1 of 3 Archetypes. The one you call appears on one of its two home Landscapes and slips 1 Landscape away as each Meet ends. Walk to it, Meet it (its Event, then a fight against Power 12 with a spread that makes a Form), and Acquire it. The Archetypes window tracks them.",
     target: "#archetype-window",
   },
   {

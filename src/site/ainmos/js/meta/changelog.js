@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.24";
+export const SOMNIA_VERSION = "0.24.1";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.24.1",
+    title: "Archetypes Wait",
+    notes: [
+      "Archetypes no longer run the moment Explore begins. They hold still through Explore and Meet, then slip 1 Landscape away as Meet ends, so a Dreamer who walks onto one during Explore can Meet it that same Dream.",
+      "Dreambeasts still close in 1 Landscape at the start of each Explore.",
+      "The rules, glossary, Cycle screen, Archetype choice, and First Night guide say when each one moves.",
+    ],
+  },
   {
     version: "0.24",
     title: "Landscapes Re-Explored",

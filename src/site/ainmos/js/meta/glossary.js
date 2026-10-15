@@ -189,7 +189,7 @@ const TERMS = [
   {
     term: "Archetype",
     group: "win",
-    text: "The goal. Twelve of them; a night asks for 3, 6, or all 12. The third Dream of each Cycle offers 1 of 3: the one you call appears on one of its two home Landscapes (The Bed if neither is placed) and slips 1 Landscape away from you each Explore. Meet it on its Landscape: its Event first (Bright or Dim), then a spread that makes a Dream Form against Power 12. Win, and it is Acquired: +1 toward waking, +2 Power Tokens, and its power.",
+    text: "The goal. Twelve of them; a night asks for 3, 6, or all 12. The third Dream of each Cycle offers 1 of 3: the one you call appears on one of its two home Landscapes (The Bed if neither is placed) and slips 1 Landscape away from you as each Meet ends. Meet it on its Landscape: its Event first (Bright or Dim), then a spread that makes a Dream Form against Power 12. Win, and it is Acquired: +1 toward waking, +2 Power Tokens, and its power.",
   },
   {
     term: "Back",
@@ -392,7 +392,7 @@ const TERMS = [
     term: "Explore",
     group: "round",
     aka: "explore phase",
-    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First every Dreambeast chases you one Landscape, and every Archetype slips one Landscape away. Then spend 1 Elasticity, or 1 Power Token (1 plus your Elasticity), for that many steps. Unused steps bank Glimmer.",
+    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First every Dreambeast chases you one Landscape. Archetypes hold still, so this is your chance to reach one. Then spend 1 Elasticity, or 1 Power Token (1 plus your Elasticity), for that many steps. Unused steps bank Glimmer.",
   },
   {
     term: "Explorer",
@@ -496,7 +496,7 @@ const TERMS = [
     term: "Meet",
     group: "round",
     aka: "meet phase",
-    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle). Spend 1 Willpower, or 1 Power Token (1 plus your Willpower), for that many Meet Actions. Each one can fight the Dreambeast on your Landscape, Meet the Archetype there (its Event, then the fight), use one of your Landscape's two actions, or tap a Persistent Object. Unused Meet Actions become Glimmer.",
+    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle). Spend 1 Willpower, or 1 Power Token (1 plus your Willpower), for that many Meet Actions. Each one can fight the Dreambeast on your Landscape, Meet the Archetype there (its Event, then the fight), use one of your Landscape's two actions, or tap a Persistent Object. Unused Meet Actions become Glimmer. As Meet ends, every Archetype slips 1 Landscape away.",
   },
   {
     term: "Mindstream",

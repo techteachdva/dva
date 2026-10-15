@@ -169,7 +169,7 @@ export function renderCycleScreen(state, handlers = {}) {
           <p class="cy-step">Dream 3 · phases 7–9 · Archetype</p>
           <h4 class="lf-item-name">Choose 1 of 3</h4>
           <p class="lf-item-kind">${offered.length ? esc(offered.map((x) => x.name).join(" · ")) : "No Archetypes left"}</p>
-          <p class="lf-item-text">It appears on one of its two Landscapes and slips away each Explore. Meet it, face its Event, and beat Power 12 with a Form.</p>
+          <p class="lf-item-text">It appears on one of its two Landscapes and slips 1 away as each Meet ends. Meet it, face its Event, and beat Power 12 with a Form.</p>
           <p class="cy-reward">Acquire it: +1 of ${goal}, +2 Power Tokens, its power</p>
         </article>
       </div>
