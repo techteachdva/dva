@@ -47,12 +47,12 @@ const TERMS = [
     term: "Acquire",
     group: "win",
     aka: "commit",
-    text: "Take a face-up Archetype for its points once both of its quests are already true. Acquire is free: no Power Token and no Meet action. A finished Object set can also Acquire an Archetype that is still in the deck. In Ainmos, Acquiring gives the Archetype's points; its power is a Boon.",
+    text: "Beat an Archetype's fight and it is yours: it counts 1 toward waking, pays 2 Power Tokens, and its power (or passive) joins your Archetype Powers. Completing an Object set also Acquires one, straight from the deck.",
   },
   {
     term: "Active Archetype",
     group: "win",
-    text: "Any of the three face-up Archetypes in the row. Each shows two quests. When both quests on any one are true, Acquire it, score its points, and the next Archetype in the deck fills the row. Click a row chip to focus one.",
+    text: "Gone. Archetypes now stand on the Dreamscape; the Archetypes window shows where.",
   },
   {
     term: "Affinity",
@@ -69,7 +69,7 @@ const TERMS = [
   {
     term: "Archetype",
     group: "win",
-    text: "The prize. Twelve of them, three face up at a time. Two-point Archetypes (Innocent, Orphan, Outlaw) ask for a Mindstream draw on any Landscape of their suit and a won Meet against a Dreambeast of that suit. Three-point Archetypes name two Landscapes. Four-point Archetypes (Sage, Magician, Warrior) ask you to defeat their boss and sacrifice one Object; they sit in the bottom half of the deck. Most have a power that costs 1 Power Token. Sage, Magician, and Warrior have no power; once Acquired they give every Dreamer +1 Lucidity, Elasticity, or Willpower.",
+    text: "The goal. Twelve of them; a night asks for 3, 6, or all 12. The third Dream of each Cycle offers 1 of 3: the one you call appears on one of its two home Landscapes (The Bed if neither is placed) and slips 1 Landscape away from you each Explore. Meet it on its Landscape: its Event first (Bright or Dim), then a spread that makes a Dream Form against Power 12. Win, and it is Acquired: +1 toward waking, +2 Power Tokens, and its power.",
   },
   {
     term: "Back",
@@ -93,18 +93,18 @@ const TERMS = [
     term: "Boss",
     group: "meet",
     aka: "cerberus double leviathan",
-    text: "Dream 3 of every Cycle, waiting at the end of its ninth phase. A Boss lands on a random placed Landscape and, like every Dreambeast, chases you one hex at the start of each Explore. Each bends one rule while it stands. Defeat it to clear the Cycle and choose a Boon. The final Boss is the top of the night's ladder.",
+    text: "Each Cycle's Dreambeast: the Winged Turtle first, climbing to Leviathan. It lands on a Landscape of its suit (The Bed if none), chases you each Explore, bends one rule while it stands, and Represses 1 Psyche every dusk. Beating it is optional but stops the bleeding: Accept for an Object and a free Insight, or Repress for Psyche.",
   },
   {
     term: "Bright",
     group: "cards",
     aka: "good path toll gate",
-    text: "The paid path on an Event. Bright opens when a Landscape named on the card is placed. If it is not, you may Dream it open: pay Bright's cost plus 1 Lucidity Psyche to bring that Landscape in, then take Bright. Dreams have no Bright side.",
+    text: "The good side of an Archetype's Event. Only while one of the Event's Landscapes is placed, and it costs Psyche of the Event's suit. It helps the coming fight: more dice, a weaker Archetype, no Form needed, a wider spread, a doubled stat, or a spread that comes back if you lose.",
   },
   {
     term: "Caregiver",
     group: "people",
-    text: "A 3-point Archetype. Power: the Dreamer with the fewest Psyche draws up to 5, stopping at the hand limit. Costs 1 Power Token.",
+    text: "A Willpower Archetype. It appears on Sea of Teeth or Field of Broken Glass, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Draw 3 Psyche, up to your hand limit.",
   },
   {
     term: "Cerberus",
@@ -114,13 +114,13 @@ const TERMS = [
   {
     term: "Creator",
     group: "people",
-    text: "A 3-point Archetype. Power: each Dreamer Returns 1 Dreambeast from the Subconscious. Costs 1 Power Token.",
+    text: "A Lucidity Archetype. It appears on Day in the Life or Inner Sanctum, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Return 1 Dreambeast from the Subconscious onto any placed Landscape.",
   },
   {
     term: "Daydream",
     group: "win",
     aka: "length difficulty",
-    text: "The short game. Acquire 8 points before a Dream Deck of 11 regular Dreams runs out. Same rules as Nap and Deep Sleep. The goal is closer.",
+    text: "The short night: Acquire 3 Archetypes within 4 Cycles.",
   },
   {
     term: "Death",
@@ -136,13 +136,13 @@ const TERMS = [
   {
     term: "Deep Sleep",
     group: "win",
-    text: "The long game. Acquire 24 points before a Dream Deck of 18 regular Dreams runs out. Same rules as Daydream and Nap.",
+    text: "The long night: Acquire all 12 Archetypes within 13 Cycles.",
   },
   {
     term: "Dim",
     group: "cards",
     aka: "bad path",
-    text: "The free path on an Event. You can always choose it. It Represses a card or Forgets Landscapes and gives no reward. Every Dream is Dim: you endure it.",
+    text: "The free side of an Archetype's Event. It makes the coming fight harder: a stronger Archetype, fewer cards, no stats, a stricter Form, a costlier loss, or fewer dice.",
   },
   {
     term: "Discard",
@@ -168,31 +168,31 @@ const TERMS = [
     term: "Dream Deck",
     group: "win",
     aka: "clock",
-    text: "The round clock, shown as the Night Bar across the top. It is laid out in Cycles of three Dreams: Dream 1, Dream 2 (the Mini-Boss), Dream 3 (the Boss). Daydream has 4 Cycles, Nap 7, Deep Sleep 10. When it runs dry, the Long Night begins.",
+    text: "The night's timeline, three cards per Cycle: a Dream, the Cycle's Dreambeast, and an Archetype Dream. When it runs out, the Long Night begins; Archetypes still standing can still be Acquired.",
   },
   {
     term: "Cycle",
     group: "win",
     aka: "sleep cycle, ante, night bar, nine phases",
-    text: "One sleep cycle of the night: 3 Dreams, and each Dream is one Reveal, Explore, Meet, so 9 phases in all. Dream 1 is a plain Dream. Dream 2 brings the Cycle's Mini-Boss to The Bed. Dream 3 brings the Boss, waiting at the end of phase 9. Daydream has 4 Cycles, Nap 7, Deep Sleep 10, and each Cycle's Boss is stronger than the last. Beat the Boss for a Boon; the next Dream is dawn, and you draw 3.",
+    text: "Three Dreams, nine phases. Dream 1: a Dream card to survive. Dream 2: the Cycle's Dreambeast lands. Dream 3: choose 1 of 3 Archetypes to appear. Then dawn: the Waking Mind reshuffles and you draw 3. A night is 4, 7, or 13 Cycles.",
   },
   {
     term: "Mini-Boss",
     group: "win",
     aka: "mini boss",
-    text: "An ordinary Dreambeast that guards a Cycle. It rises on The Bed with Dream 2 of the Cycle, face up on the Night Bar from the start. Its Power is two under that Cycle's Boss (3 in the first Cycle). Beat it for +1 Power Token, before it bleeds you at dusk.",
+    text: "Gone. Each Cycle's second Dream brings its Dreambeast instead.",
   },
   {
     term: "Long Night",
     group: "win",
     aka: "deck empty",
-    text: "When the Dream Deck runs dry and you have not woken, the night goes on. Each dusk Represses 2 more from the Waking Mind than the last (2, then 4, then 6), on top of 1 for every beast still standing. Beat the final Boss and meet the Archetype goal before you forget yourself.",
+    text: "The Dream Deck is empty: no more Archetypes will be called, but those standing can still be Acquired. Each dusk Represses more from the Waking Mind until you wake or forget yourself.",
   },
   {
     term: "Boss Ladder",
     group: "meet",
     aka: "turtle shadows jackalope baku mindless devourer bogey cerberus double leviathan",
-    text: "Ten Bosses from rung 10 to rung 1: Winged Turtle, Shadows, Jackalope, Baku, Mindless, Devourer, Bogey, Cerberus, Double, Leviathan. Each bends one rule while it stands. A short night stops partway up: Daydream ends on the Baku, Nap on the Bogey.",
+    text: "The Dreambeasts of the night, one per Cycle, growing from Power 4 to 12. A Deep Sleep night past the ladder adds Power 12 Nightmares.",
   },
   {
     term: "Dream Form",
@@ -228,7 +228,7 @@ const TERMS = [
     term: "Boon",
     group: "win",
     aka: "study wider vault deep pockets",
-    text: "Chosen when a Boss falls, 1 of 3, kept all night. Archetype powers (1 Power Token) and the Sage, Magician, and Warrior passives are Boons. So are Study, Wider Vault, and Deep Pockets.",
+    text: "The power or passive of an Archetype you have Acquired, listed under Archetype Powers on the left.",
   },
   {
     term: "Dreamscape Reset",
@@ -266,18 +266,18 @@ const TERMS = [
   {
     term: "Event",
     group: "cards",
-    text: "A Mindstream card that is not a Power Token. It names one or two Landscapes. Bright is open only while one of those Landscapes is placed. Dim Represses something or Forgets a Landscape.",
+    text: "Every Meet with an Archetype opens with one of its Events, drawn from those tied to its two home Landscapes. Bright is open while one of the Event's Landscapes is placed: pay its Psyche cost for a strong edge in the fight. Dim is free and makes the fight harder.",
   },
   {
     term: "Explore",
     group: "round",
     aka: "explore phase",
-    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First, every Dreambeast chases you one hex. Then spend 1 Elasticity, or 1 Power Token (that counts as 1 plus your Elasticity), for that many steps: tap a glowing hex to move. Stepping onto Wasteland discards 1 Psyche. Each unused step banks 1 Glimmer.",
+    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First every Dreambeast chases you one Landscape, and every Archetype slips one Landscape away. Then spend 1 Elasticity, or 1 Power Token (1 plus your Elasticity), for that many steps. Stepping onto Wasteland discards 1 Psyche. Unused steps bank Glimmer.",
   },
   {
     term: "Explorer",
     group: "people",
-    text: "A 3-point Archetype. Power: move 1 Dreamer or 1 Dreambeast onto a Landscape of its suit. Costs 1 Power Token.",
+    text: "A Elasticity Archetype. It appears on Endless Ocean or Lava, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Move yourself or any Dreambeast to any placed Landscape.",
   },
   {
     term: "Fail",
@@ -293,7 +293,7 @@ const TERMS = [
   {
     term: "Fool",
     group: "people",
-    text: "A 3-point Archetype. Power: Return a number of Subconscious cards equal to Dreamers + 2. Costs 1 Power Token.",
+    text: "A Elasticity Archetype. It appears on Insanity or Black Void, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Place 2 Landscapes from the Dreamscape Vault, free.",
   },
   {
     term: "Forget",
@@ -338,7 +338,7 @@ const TERMS = [
   {
     term: "Innocent",
     group: "people",
-    text: "A 2-point Lucidity Archetype. Quests: Draw Mindstream on any Lucidity Landscape, and win a Meet against a Lucidity Dreambeast. Power: Return 4 cards from the Subconscious. Costs 1 Power Token.",
+    text: "A Lucidity Archetype. It appears on Candy Mountain or The Attic, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Remember 3: discard up to 3 Psyche, Return that many +1.",
   },
   {
     term: "Instant",
@@ -359,7 +359,7 @@ const TERMS = [
   {
     term: "Lover",
     group: "people",
-    text: "A 3-point Archetype. Power: Return 1 Object from the Subconscious. Costs 1 Power Token.",
+    text: "A Elasticity Archetype. It appears on Awards or The Party, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Draw 1 Object from the Object deck.",
   },
   {
     term: "Lucidity",
@@ -370,18 +370,18 @@ const TERMS = [
   {
     term: "Magician",
     group: "people",
-    text: "A 4-point Archetype. Quests: defeat Cerberus, and have one Dreamer sacrifice one Object. No paid power. Once Acquired, every Dreamer has +1 Elasticity.",
+    text: "A Elasticity Archetype. It appears on Desert or Forest, and its Events come from those two Landscapes. Once Acquired: +1 Elasticity, always.",
   },
   {
     term: "Meet",
     group: "round",
     aka: "meet phase",
-    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle; the Boss waits in phase 9). At the start, each Boss steps toward you. Spend 1 Willpower, or 1 Power Token (that counts as 1 plus your Willpower). You get that many actions: fight the beast on your hex (as often as you have actions), Draw Mindstream, use your Landscape's action, or tap a Persistent Object. Each unused action banks 1 Glimmer.",
+    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle). Spend 1 Willpower, or 1 Power Token (1 plus your Willpower), for that many actions: fight the Dreambeast on your Landscape, Meet the Archetype there (its Event, then the fight), use your Landscape's action, or tap a Persistent Object. Unused actions bank Glimmer.",
   },
   {
     term: "Mindstream",
     group: "cards",
-    text: "Three decks, one per suit, of Events and Power Token cards. No Dreambeasts live here. Draw Mindstream costs 1 Meet action and is repeatable. If a suit is entirely in the Subconscious, with nothing left in its deck, discard, or in play, you lose.",
+    text: "The Events. They no longer sit on Landscapes to be drawn; each Archetype draws its own Events when you Meet it.",
   },
   {
     term: "Must-play",
@@ -392,7 +392,7 @@ const TERMS = [
   {
     term: "Nap",
     group: "win",
-    text: "The middle game. Acquire 12 points before a Dream Deck of 14 regular Dreams runs out. Same rules as Daydream and Deep Sleep.",
+    text: "The middle night: Acquire 6 Archetypes within 7 Cycles.",
   },
   {
     term: "Next Phase",
@@ -418,12 +418,12 @@ const TERMS = [
   {
     term: "Orphan",
     group: "people",
-    text: "A 2-point Willpower Archetype. Quests: Draw Mindstream on any Willpower Landscape, and win a Meet against a Willpower Dreambeast. Power: every Dreamer draws 2 Psyche. Costs 1 Power Token.",
+    text: "A Willpower Archetype. It appears on House or Suburbia, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Your next fight rolls +3 dice.",
   },
   {
     term: "Outlaw",
     group: "people",
-    text: "A 2-point Elasticity Archetype. Quests: Draw Mindstream on any Elasticity Landscape, and win a Meet against an Elasticity Dreambeast. Power: draw 1 Object from the discard. Costs 1 Power Token.",
+    text: "A Elasticity Archetype. It appears on Road or The Basement, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Banish the Dreambeast on your Landscape without a fight (not a Boss); no reward.",
   },
   {
     term: "Pass Turn",
@@ -445,7 +445,7 @@ const TERMS = [
   {
     term: "Power Token",
     group: "cards",
-    text: "A token, not a Psyche card. The pool holds 24. Each Dreamer starts with 1. A Mindstream Power Token card lets you take 1, or Return one Subconscious card per Dreamer. A token does three things: open a phase as 1 plus that Dreamer's stat, add 1 die to a spread before you roll (max 3), or use a Dreamer or Archetype power. It does not Acquire. Dying returns your tokens to the pool.",
+    text: "A token, not a Psyche card. You start with 2; each Archetype you Acquire pays 2 more, and Suburbia, Awards, and Inner Sanctum each grant 1. Spend one to open a phase as 1 plus your stat, to add 1 die to a fight (up to 3), to use an Archetype's power or your Dreamer's power, or to look again in the Lost & Found.",
   },
   {
     term: "Psyche",
@@ -461,7 +461,7 @@ const TERMS = [
   {
     term: "Quest",
     group: "win",
-    text: "One of the two tasks on a face-up Archetype. A quest stays done once it is done, even if the Landscape is later Forgotten, and it counts for every Archetype that asks for it. Both must be true before Acquire. Winning the fight is what counts as Meeting a beast. Drawing the Mindstream is the other half for most Archetypes.",
+    text: "Gone. An Archetype appears on one of its two home Landscapes; walk there and Meet it.",
   },
 
   {
@@ -490,7 +490,7 @@ const TERMS = [
   {
     term: "Ruler",
     group: "people",
-    text: "A 3-point Archetype. Power: each Dreamer Returns 1 Event from the Subconscious. Costs 1 Power Token.",
+    text: "A Willpower Archetype. It appears on Tranquil Grove or Endless Hallway, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Earn a free Insight at the next Lost & Found.",
   },
   {
     term: "Runner",
@@ -501,7 +501,7 @@ const TERMS = [
   {
     term: "Sage",
     group: "people",
-    text: "A 4-point Archetype. Quests: defeat Double, and have one Dreamer sacrifice one Object. No paid power. Once Acquired, every Dreamer has +1 Lucidity.",
+    text: "A Lucidity Archetype. It appears on Sky or Silver Mist, and its Events come from those two Landscapes. Once Acquired: +1 Lucidity, always.",
   },
   {
     term: "Spread",
@@ -527,7 +527,7 @@ const TERMS = [
   {
     term: "Warrior",
     group: "people",
-    text: "A 4-point Archetype. Quests: defeat Leviathan, and have one Dreamer sacrifice one Object. No paid power. Once Acquired, every Dreamer has +1 Willpower.",
+    text: "A Willpower Archetype. It appears on Scary Classroom or City, and its Events come from those two Landscapes. Once Acquired: +1 Willpower, always.",
   },
   {
     term: "Wasteland",
@@ -575,7 +575,7 @@ const TERMS = [
   {
     term: "City",
     group: "places",
-    text: "A Willpower Landscape. Once this Meet, move up to 2 Dreambeasts 1 Landscape each: lure a Boss in, or push a beast away.",
+    text: "A Willpower Landscape, home of the Warrior. Call an Archetype: the nearest one steps 2 Landscapes toward you.",
   },
   {
     term: "Day in the Life",
@@ -585,7 +585,7 @@ const TERMS = [
   {
     term: "Desert",
     group: "places",
-    text: "A Lucidity Landscape. Once this Meet, every Dreamer steps 1 hex toward The Bed.",
+    text: "A Lucidity Landscape, home of the Magician. Gather Glimmer: bank 2 Glimmer for the next Lost & Found.",
   },
   {
     term: "Endless Hallway",
@@ -605,7 +605,7 @@ const TERMS = [
   {
     term: "Forest",
     group: "places",
-    text: "An Elasticity Landscape. Once this Meet, draw 1 card from any Mindstream.",
+    text: "An Elasticity Landscape, home of the Magician. Call an Archetype: the nearest one steps 2 Landscapes toward you.",
   },
   {
     term: "House",
@@ -635,7 +635,7 @@ const TERMS = [
   {
     term: "Scary Classroom",
     group: "places",
-    text: "A Lucidity Landscape. Once this Meet, discard 1 Psyche, then draw Psyche equal to its value.",
+    text: "A Lucidity Landscape, home of the Warrior. Gather Glimmer: bank 2 Glimmer for the next Lost & Found.",
   },
   {
     term: "Sea of Teeth",
@@ -650,7 +650,7 @@ const TERMS = [
   {
     term: "Sky",
     group: "places",
-    text: "A Lucidity Landscape. Once this Meet, look at one adjacent forgotten Landscape, then move 1 step.",
+    text: "A Lucidity Landscape, home of the Sage. Call an Archetype: the nearest one steps 2 Landscapes toward you.",
   },
   {
     term: "Suburbia",
@@ -660,7 +660,7 @@ const TERMS = [
   {
     term: "The Attic",
     group: "places",
-    text: "A Lucidity Landscape. Once this Meet, move 1 Dreamer 2 hexes.",
+    text: "A Lucidity Landscape, home of the Innocent. Gather Glimmer: bank 2 Glimmer for the next Lost & Found.",
   },
   {
     term: "The Basement",

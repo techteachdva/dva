@@ -250,7 +250,8 @@ function syncPsychePlayCursor(state) {
     })
     .join("");
 
-  const meetLine = breakdown.acceptNeed != null
+  // Ainmos: the fight buttons under the spread carry the matchup; the cursor just counts.
+  const meetLine = false && breakdown.acceptNeed != null
     ? `<span class="psyche-play-need">A ${breakdown.acceptTotal} vs P${breakdown.acceptNeed} (rec ${breakdown.acceptRec})${breakdown.rejectNeed != null ? ` · R ${breakdown.rejectTotal} vs P${breakdown.rejectNeed} (rec ${breakdown.rejectRec})` : ""}</span>`
     : "";
 

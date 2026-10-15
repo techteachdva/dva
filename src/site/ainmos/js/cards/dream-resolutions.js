@@ -115,9 +115,9 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Words Twist Back",
-      hint: "Repress 3 cards from the Lucidity Mindstream",
-      effect: "repressTopMindstream",
-      params: { suit: "lucidity", count: 3 },
+      hint: "Repress the top 3 of the Waking Mind",
+      effect: "repressTopPsycheDeck",
+      params: { count: 3 },
     },
   },
 
@@ -285,9 +285,9 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "The Shape You Refused",
-      hint: "Repress 2 cards from the Willpower Mindstream",
-      effect: "repressTopMindstream",
-      params: { suit: "willpower", count: 2 },
+      hint: "Repress the top 2 of the Waking Mind",
+      effect: "repressTopPsycheDeck",
+      params: { count: 2 },
     },
   },
 
@@ -418,9 +418,9 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Silence Eats Motion",
-      hint: "Repress 3 cards from the Elasticity Mindstream",
-      effect: "repressTopMindstream",
-      params: { suit: "elasticity", count: 3 },
+      hint: "Repress the top 3 of the Waking Mind",
+      effect: "repressTopPsycheDeck",
+      params: { count: 3 },
     },
   },
 
@@ -490,9 +490,9 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "The Third Eye Spills",
-      hint: "Repress 1 card from each Mindstream",
-      effect: "repressTopEachMindstream",
-      params: { count: 1 },
+      hint: "Repress the top 3 of the Waking Mind",
+      effect: "repressTopPsycheDeck",
+      params: { count: 3 },
     },
   },
 

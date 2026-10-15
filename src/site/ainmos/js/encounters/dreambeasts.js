@@ -165,14 +165,15 @@ function repressTopPsycheDeck(state, count) {
   return n;
 }
 
-function repressTopMindstream(state, suit, count = 1) {
-  const deck = state.mindstreamDecks?.[suit];
+/** Ainmos: what once Repressed Mindstream now Represses from the Waking Mind (the Psyche deck). */
+function repressTopMindstream(state, _suit, count = 1) {
+  const deck = state.psycheDeck;
   let n = 0;
   for (let i = 0; i < count && deck?.length; i += 1) {
     repressCard(state, deck.shift());
     n += 1;
   }
-  if (n) addLog(state, `Repress top ${n} ${SUIT_LABELS[suit] || suit} Mindstream card(s).`);
+  if (n) addLog(state, `Repress the top ${n} of the Waking Mind.`);
   return n;
 }
 

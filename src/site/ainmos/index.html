@@ -33,7 +33,7 @@
   <div id="app">
     <header class="top-bar">
       <button type="button" class="brand brand-logo-btn" id="btn-somnia-changelog" title="Ainmos Changelog &amp; Credits" aria-label="Open Ainmos Changelog and Credits">
-        <span class="version-label">v 0.19</span>
+        <span class="version-label">v 0.20</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Ainmos" />
         <p class="tagline">Cooperative Dreamscape Roguelike</p>
       </button>
@@ -63,12 +63,12 @@
             <label class="field">
               <span>Difficulty</span>
               <select id="setup-length">
-                <option value="daydream">Daydream — 4 Cycles · 4 pts</option>
-                <option value="nap">Nap — 7 Cycles · 6 pts</option>
-                <option value="deep">Deep Sleep — 10 Cycles · 12 pts</option>
+                <option value="daydream">Daydream — 3 Archetypes · 4 Cycles</option>
+                <option value="nap">Nap — 6 Archetypes · 7 Cycles</option>
+                <option value="deep">Deep Sleep — all 12 Archetypes · 13 Cycles</option>
               </select>
             </label>
-            <p class="field-hint" id="setup-length-hint">Climb every Boss and meet the Archetype goal to wake.</p>
+            <p class="field-hint" id="setup-length-hint">Acquire Archetypes. Each Cycle calls one; collect enough and you wake.</p>
             <label class="field field-seed">
               <span>Seed <em class="field-optional">optional</em></span>
               <input type="text" id="setup-seed" maxlength="24" placeholder="e.g. SOMNIA or a Game ID" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" title="Same seed = same shuffle. Six secret keywords bend the rules…" />
@@ -88,11 +88,11 @@
             </div>
             <div class="setup-launch-row">
               <button type="button" id="btn-start" class="btn begin-dream-btn" disabled>Begin Dreaming</button>
-              <button type="button" id="btn-tutorial-mode" class="btn btn-tutorial-menu" title="A guided Daydream: hints until the first Boss falls, then the night is yours.">First Night</button>
+              <button type="button" id="btn-tutorial-mode" class="btn btn-tutorial-menu" title="A guided Daydream: hints until your first Archetype, then the night is yours.">First Night</button>
             </div>
             <button type="button" id="btn-advanced-tutorial" class="btn btn-tutorial-menu btn-advanced-menu" hidden disabled title="Finish the Tutorial to unlock the longer night">Advanced Tutorial</button>
             <button type="button" id="btn-saved-dreams" class="btn btn-saved-dreams">Saved Dreams</button>
-            <p class="menu-tutorial-hint">Pick one Dreamer and <strong>Begin Dreaming</strong>. New here? <strong>First Night</strong> is a real Daydream with gentle hints until the first Boss falls.</p>
+            <p class="menu-tutorial-hint">Pick one Dreamer and <strong>Begin Dreaming</strong>. New here? <strong>First Night</strong> is a real Daydream with gentle hints until your first Archetype.</p>
             <button type="button" id="btn-pwa-install" class="btn btn-pwa-install hidden" hidden>Install Ainmos</button>
             <p id="pwa-install-hint" class="pwa-install-hint" hidden>On iPad: open Ainmos once while online, then Share → Add to Home Screen. The icon plays with no internet.</p>
           </div>

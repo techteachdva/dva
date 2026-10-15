@@ -23,6 +23,7 @@ import { isEdgeLandscape } from "../core/hex.js";
 import { markTileForgotten } from "../ui/fx.js";
 import { queueTileForgetFx } from "./board-fx.js";
 import { recordCancellableMove } from "../dreamers/dreamer-powers.js";
+import { rehomeArchetypesFrom } from "../dreamers/archetype-board.js";
 import {
   isFreeformBoard,
   vaultCards,
@@ -172,6 +173,7 @@ export function forgetTile(state, tile) {
     addLog(state, "The Bed cannot be forgotten.");
     return;
   }
+  rehomeArchetypesFrom(state, tile);
   tile.revealed = false;
   tile.wasteland = true;
   tile.forgotten = true;
@@ -536,6 +538,7 @@ export function resetDreamscape(state) {
   const bed = state.board.find((t) => t.center || t.id === "bed");
   if (!bed) return false;
   const outer = state.board.filter((t) => t !== bed);
+  outer.forEach((tile) => rehomeArchetypesFrom(state, tile));
   const bosses = [];
   let repressed = 0;
   outer.forEach((tile) => {

@@ -140,10 +140,11 @@ export function renderDreamscapeVault(state, handlers = {}) {
 
   host.innerHTML = `
     <div class="vault-window" role="region" aria-label="Dreamscape Vault">
-      <div class="vault-titlebar">
+      <div class="vault-titlebar" data-float-handle>
         <span class="vault-dots" aria-hidden="true"><i></i><i></i><i></i></span>
         <span class="vault-title">Dreamscape Vault</span>
         <span class="vault-deck" title="Landscapes asleep in the tile deck">${deck}<i aria-hidden="true">◇</i></span>
+        <button type="button" class="aw-min" data-float-min aria-label="Minimize the Vault">–</button>
       </div>
       <p class="vault-whisper">${escapeHtml(whisper)}</p>
       ${body}

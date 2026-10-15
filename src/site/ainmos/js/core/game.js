@@ -144,6 +144,19 @@ import {
 } from "../effects/effects.js";
 import { playDiceBattle, isDiceBattleOpen } from "../encounters/dice-battle.js";
 import {
+  archetypesOnTile,
+  findBoardArchetype,
+  drawArchetypeEvent,
+  fightRules,
+  formRuleProblem,
+  removeBoardArchetype,
+  ARCHETYPE_TOKEN_REWARD,
+} from "../dreamers/archetype-board.js";
+import { beginArchetypeEventChoice } from "../cards/mindstream-choices.js";
+import { queueArchetypeAcquireFx } from "../board/board-fx.js";
+import { sumEffectivePsycheValue, persistentMeetBonus } from "../effects/objects.js";
+import { repressFromWakingMind, autoReturnPsyche } from "../dreamers/subconscious.js";
+import {
   FINAL_ARCHETYPE_POWER,
   archetypeSpreadOpen,
   archetypeMeetLocked,
@@ -1036,6 +1049,7 @@ export function getPhaseActions(state, handlers) {
         });
       }
     }
+    archetypeMeetActions(state, handlers).forEach((action) => actions.push(action));
     if (state.finalRecurrence) {
       const onTile = landscapeById(state, state.selectedLandscapeId);
       undefeatedFinalArchetypes(onTile).forEach((arch) => {
@@ -1259,6 +1273,8 @@ export function getPhaseOpenerAction(state, handlers) {
 }
 
 const DREAMER_RADIAL_KINDS = new Set([
+  "faceArchetype",
+  "fightArchetype",
   "dreamerPower",
   "landscapeActionA",
   "landscapeActionB",
@@ -1276,6 +1292,8 @@ const DREAMER_RADIAL_KINDS = new Set([
 ]);
 
 const DREAMER_RADIAL_ORDER = [
+  "fightArchetype",
+  "faceArchetype",
   "dreamerPower",
   "landscapeActionA",
   "landscapeActionB",
@@ -1372,7 +1390,7 @@ export function drawDreamCard(state, onShowModal) {
       : ["Resolve the Dream effect before continuing"],
   );
 
-  if ((state.hollowDreams || 0) > 0 && !isBossDreamCard(card)) {
+  if ((state.hollowDreams || 0) > 0 && !isBossDreamCard(card) && card.type !== "archetype-dream") {
     state.hollowDreams -= 1;
     logMoment(state, `The Crystal Bell rings: ${card.name} passes and takes nothing.`);
   } else {
@@ -2231,7 +2249,9 @@ export function resolveBeastDefeat(state, { actor, encounter, landscapeId, isRej
     const bounty = Math.floor(encounterPower(encounter) / 2);
     const drawn = bounty > 0 ? drawPsycheForPlayer(state, actor, bounty) : [];
     if (drawn.length) trackPsycheDraw(state, actor, drawn.length);
-    logMoment(state, `${encounter.name} is Repressed. ${actor.name} draws ${drawn.length} Psyche.`);
+    // Banishing a nightmare frees the memories it held.
+    const freed = bounty > 0 ? autoReturnPsyche(state, bounty, encounter.name) : 0;
+    logMoment(state, `${encounter.name} is Repressed. ${actor.name} draws ${drawn.length} Psyche${freed ? ` and Returns ${freed}` : ""}.`);
   }
 
   if (landscapeId) {
@@ -2243,9 +2263,7 @@ export function resolveBeastDefeat(state, { actor, encounter, landscapeId, isRej
       recordQuestEvent(state, "meet_boss", { bossId, suit: encounter.suit });
       if (!(state.bossesDefeated || []).includes(bossId)) {
         state.bossesDefeated = [...(state.bossesDefeated || []), bossId];
-        logMoment(state, `${encounter.name} falls. Cycle ${anteForBoss(bossId) || "?"} is cleared.`, { boss: true });
-        checkVictory(state);
-        if (state.status === "playing") offerBoonDraft(state, encounter.name);
+        logMoment(state, `${encounter.name} falls. It stalks the Dreamscape no more.`, { boss: true });
       }
     }
     // Ainmos: a Mini-Boss pays a bounty, like a blind cleared before the Boss.
@@ -3201,6 +3219,8 @@ export function endPhase(state) {
   clearActionTurn(state);
   state.pendingMindstreamMeet = null;
   const leaving = getPhase(state);
+  // An Archetype's Event only lasts for the Meet it was drawn in.
+  if (leaving === "Meet") state.archetypeFight = null;
   if (leaving === "Reveal" && !state.dreamDrawn) {
     drawDreamCard(state);
     const block = phaseAdvanceBlockReason(state);
@@ -3292,4 +3312,173 @@ export function getPhaseHint(state) {
       : " · tap Next when you are done";
     return `Spread ${count}/3 (Power ${pool})${actionsTail}.`;
   }
+}
+
+// ── Ainmos: Meeting an Archetype ─────────────────────────────────────────
+
+/** The Dreamer standing on an Archetype's Landscape, or null. */
+function archetypeActor(state, tileId) {
+  return actorOnLandscape(state, tileId) || null;
+}
+
+/** Dice a spread rolls against an Archetype, with its Event's Bright or Dim applied. */
+export function archetypeFightDice(state, actor, cards, arch) {
+  if (!actor || !arch) return 0;
+  const rules = fightRules(state);
+  let total = state.pendingPowerBonus || 0;
+  total += sumEffectivePsycheValue(state, actor, cards);
+  total += persistentMeetBonus(state, actor, cards);
+  if (arch.suit && selectedHasPaySuit(cards, arch.suit)) total += totalStat(actor, arch.suit, state) * rules.statMult;
+  total += bestForm(state, cards)?.dice || 0;
+  total += state.nextFightDice || 0;
+  total += state.anchorMeetSpreadBonus || 0;
+  total += rules.dice;
+  return Math.max(1, total);
+}
+
+function archetypeSpread(state, actor) {
+  return selectedCards(state, actor).filter((card) => !isDreambeastPsycheCard(card) && card.type !== "psyche-power");
+}
+
+/** Why this spread cannot fight right now, or "". */
+export function archetypeFightProblem(state, arch) {
+  const fight = state.archetypeFight;
+  if (!fight || fight.archId !== arch?.id) return `Meet ${arch?.name || "the Archetype"} first: it opens with an Event.`;
+  const actor = archetypeActor(state, fight.tileId);
+  if (!actor) return `A Dreamer must stand with ${arch.name}.`;
+  const cards = archetypeSpread(state, actor);
+  const rules = fightRules(state);
+  if (!cards.length) return `Select 1–${rules.cap} Psyche that make a Dream Form, then Fight.`;
+  if (cards.length > rules.cap) return `This fight allows at most ${rules.cap} Psyche.`;
+  return formRuleProblem(cards, rules.formNeed);
+}
+
+function archetypeMeetActions(state, handlers) {
+  if (getPhase(state) !== "Meet" || !(state.meetActionBudget > 0)) return [];
+  const tile = landscapeById(state, state.selectedLandscapeId);
+  if (!tile) return [];
+  const actor = archetypeActor(state, tile.id);
+  return archetypesOnTile(state, tile.id).map((arch) => {
+    const fight = state.archetypeFight?.archId === arch.id ? state.archetypeFight : null;
+    if (fight) {
+      const rules = fightRules(state);
+      const dice = actor ? archetypeFightDice(state, actor, archetypeSpread(state, actor), arch) : 0;
+      const problem = archetypeFightProblem(state, arch);
+      return {
+        label: `Fight ${arch.name} · ${dice}d6 vs ${rules.power}`,
+        kind: "fightArchetype",
+        section: "encounter",
+        primary: true,
+        hint: problem || `${fight.label}: ${fight.hint}. Win to Acquire ${arch.name} (+${ARCHETYPE_TOKEN_REWARD} Power Tokens).`,
+        disabled: !!problem,
+        onClick: () => handlers.fightArchetype?.(arch.id),
+      };
+    }
+    const blocked = !actor
+      ? `Stand on ${tile.name} to Meet ${arch.name}.`
+      : state.archetypeFight
+        ? "Finish the Archetype fight you opened first."
+        : !canUseMeetAction(state, MEET_ACTIONS.MEET)
+          ? "No Meet actions left."
+          : "";
+    return {
+      label: `Meet ${arch.name}`,
+      kind: "faceArchetype",
+      section: "encounter",
+      primary: true,
+      hint: blocked || `1 Meet action: draw one of ${arch.name}'s Events (Bright or Dim), then fight Power ${fightRules({}).power} with a spread that makes a Form.`,
+      disabled: !!blocked,
+      onClick: () => handlers.faceArchetype?.(arch.id),
+    };
+  });
+}
+
+/** Spend 1 Meet action and draw the Archetype's Event. Bright or Dim sets up the fight. */
+export function faceArchetype(state, archId) {
+  const say = (message) => logMoment(state, message);
+  if (getPhase(state) !== "Meet" || !(state.meetActionBudget > 0)) {
+    say("Open Meet first, then Meet the Archetype on your Landscape.");
+    return false;
+  }
+  const found = findBoardArchetype(state, archId);
+  if (!found) return false;
+  const { tile, arch } = found;
+  const actor = archetypeActor(state, tile.id);
+  if (!actor) {
+    say(`Stand on ${tile.name} to Meet ${arch.name}.`);
+    return false;
+  }
+  if (state.archetypeFight) {
+    say("Finish the Archetype fight you opened first.");
+    return false;
+  }
+  state.selectedLandscapeId = tile.id;
+  if (!spendMeetAction(state, MEET_ACTIONS.MEET)) return false;
+  const event = drawArchetypeEvent(state, arch);
+  if (!event || !beginArchetypeEventChoice(state, event, actor, arch, tile.id)) {
+    state.archetypeFight = { archId: arch.id, tileId: tile.id, actorId: actor.id, side: "none", label: "No Event", hint: "Fight as it stands", mods: {} };
+    say(`${arch.name} waits. Pick your spread and fight.`);
+  }
+  return true;
+}
+
+/** Roll the opened Archetype fight. Win: Acquire it. Lose: the spread is spent and it stays. */
+export function fightArchetype(state, archId, onDone = null) {
+  const say = (message) => logMoment(state, message);
+  if (isDiceBattleOpen() || state.diceBattle) {
+    say("Finish the dice battle first.");
+    return false;
+  }
+  const found = findBoardArchetype(state, archId);
+  if (!found) return false;
+  const { arch } = found;
+  const problem = archetypeFightProblem(state, arch);
+  if (problem) {
+    say(problem);
+    return false;
+  }
+  const fight = state.archetypeFight;
+  const actor = archetypeActor(state, fight.tileId);
+  const rules = fightRules(state);
+  const dice = archetypeFightDice(state, actor, archetypeSpread(state, actor), arch);
+  addLog(state, `${actor.name} rolls ${dice}d6 against ${arch.name}'s Power ${rules.power}.`);
+
+  const finish = (dreamerWins) => {
+    state.diceBattle = null;
+    state.archetypeFight = null;
+    state.pendingPowerBonus = 0;
+    state.pendingPowerBonusTokens = 0;
+    state.nextFightDice = 0;
+    if (dreamerWins) {
+      const spent = discardAllSelected(state);
+      spent.forEach(({ player: owner, cards }) => trackPsycheDiscard(state, owner, cards));
+      removeBoardArchetype(state, arch.id);
+      const acquired = acquireFinalArchetype(state, actor, arch);
+      if (acquired) resolveOnAcquire(state, acquired, actor);
+      queueArchetypeAcquireFx(fight.tileId, arch.name);
+      logMoment(state, `${arch.name} is Acquired! +${ARCHETYPE_TOKEN_REWARD} Power Tokens, and its power is yours.`, { boss: true });
+      checkVictory(state);
+    } else if (rules.keepOnLoss) {
+      state.selectedHand = [];
+      logMoment(state, `${arch.name} holds. Bright keeps your spread in hand.`);
+    } else {
+      const spent = discardAllSelected(state);
+      spent.forEach(({ player: owner, cards }) => trackPsycheDiscard(state, owner, cards));
+      logMoment(state, `${arch.name} holds. The spread is spent.`);
+      if (rules.loseRepress > 0) repressFromWakingMind(state, rules.loseRepress, fight.label);
+    }
+    onDone?.();
+  };
+
+  if (globalThis.__SOMNIA_REAL_DICE__) {
+    playDiceBattle({ dreamerName: actor.name, beastName: arch.name, dreamerDice: dice, beastDice: rules.power, instant: true, onComplete: ({ dreamerWins }) => finish(dreamerWins) });
+    return true;
+  }
+  if (typeof document === "undefined" || globalThis.__SOMNIA_INSTANT_DICE__) {
+    playDiceBattle({ dreamerName: actor.name, beastName: arch.name, dreamerDice: dice, beastDice: rules.power, instant: true, onComplete: ({ dreamerWins }) => finish(dreamerWins) });
+    return true;
+  }
+  state.diceBattle = { archetypeId: arch.id, tileId: fight.tileId };
+  playDiceBattle({ dreamerName: actor.name, beastName: arch.name, dreamerDice: dice, beastDice: rules.power, onComplete: ({ dreamerWins }) => finish(dreamerWins) });
+  return true;
 }

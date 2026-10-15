@@ -941,3 +941,37 @@ export function dreambeastToHandCard(encounter) {
 export function isDreambeastPsycheCard(card) {
   return card?.type === "psyche-dreambeast" || card?.isDreambeastPsyche;
 }
+
+/**
+ * Ainmos: Return Psyche from the Subconscious on its own, highest value first,
+ * to the Psyche discard (it rejoins the Waking Mind at dawn). No picking, no taps.
+ * Returns how many came back.
+ */
+export function autoReturnPsyche(state, count, reason = "") {
+  state.subconscious = normalizeSubconscious(state.subconscious);
+  const pile = state.subconscious.psyche || [];
+  if (!pile.length || count <= 0) return 0;
+  const before = subconsciousCount(state.subconscious);
+  const picked = [...pile].sort((x, y) => (Number(y.value) || 0) - (Number(x.value) || 0)).slice(0, count);
+  const ids = new Set(picked.map((c) => c.instanceId));
+  state.subconscious.psyche = pile.filter((c) => !ids.has(c.instanceId));
+  picked.forEach((card) => routeReturnedToDiscard(state, card));
+  noteSubconsciousCleared(state, before);
+  state.returnStats = state.returnStats || {};
+  const key = reason || "Return";
+  state.returnStats[key] = (state.returnStats[key] || 0) + picked.length;
+  picked.forEach((card) => queueReturnFx(card));
+  logRepress(state, `${reason ? `${reason}: ` : ""}Return ${picked.length} Psyche from the Subconscious.`);
+  return picked.length;
+}
+
+/** Repress from the top of the Waking Mind (the Psyche deck), never from a hand. */
+export function repressFromWakingMind(state, count, reason = "") {
+  let n = 0;
+  for (let i = 0; i < count && (state.psycheDeck || []).length; i += 1) {
+    repressCard(state, state.psycheDeck.shift());
+    n += 1;
+  }
+  if (n) logRepress(state, `${reason ? `${reason}: ` : ""}Repress ${n} from the Waking Mind.`);
+  return n;
+}

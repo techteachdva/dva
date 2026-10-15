@@ -8,7 +8,7 @@ import * as localSaveStore from "./local-save-store.js";
 import { repairMisplacedBossDreams } from "../cards/dream-deck.js";
 import { ensureDeckCaps } from "../cards/deck-pressure.js";
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 const MAX_STATE_CHARS = 48000;
 
 /** Ainmos keeps its saves on this device until it has its own table. */

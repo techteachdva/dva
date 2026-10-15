@@ -92,7 +92,7 @@ export function miniBossPower(ante) {
 }
 
 /** Cycles per night length. Each Cycle is 2 Dreams + 1 Boss Dream. */
-export const ANTES_BY_LENGTH = Object.freeze({ daydream: 4, nap: 7, deep: 10 });
+export const ANTES_BY_LENGTH = Object.freeze({ daydream: 3, nap: 7, deep: 15 });
 export const DREAMS_PER_ANTE = 2;
 
 const BY_ID = new Map(BOSS_LADDER.map((rung) => [rung.id, rung]));
@@ -103,7 +103,7 @@ export function antesForLength(lengthKey) {
 
 /** The Bosses a night of this length will meet, in order (rung 10 first). */
 export function ladderForLength(lengthKey) {
-  return BOSS_LADDER.slice(0, antesForLength(lengthKey));
+  return BOSS_LADDER.slice(0, Math.min(BOSS_LADDER.length, antesForLength(lengthKey)));
 }
 
 export function finalBossForLength(lengthKey) {

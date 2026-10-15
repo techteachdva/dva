@@ -20,14 +20,14 @@ export const TUTORIAL_STEPS = [
   {
     id: "welcome",
     title: "Welcome to Ainmos",
-    body: "You are Dreamers trapped in a collapsing Dreamscape. Cooperate to earn Archetype points and defeat the night's final Boss — or never wake up. Any Dreamer may open a phase and acts first. Then Pass Turn or Give Turn.",
+    body: "You are a Dreamer in a collapsing Dreamscape. One goal: Acquire Archetypes (3, 6, or 12) before the night runs out, or never wake up.",
     target: null,
   },
   {
     id: "goal",
     title: "How You Win",
-    body: "Three Archetypes are face up (right panel). Make both quests true on any one of them, Acquire it for points, and a new one takes its place. Repeat until you reach your goal. Round 1's Dream is already drawn. Later rounds, the Head Dreamer draws a new Dream.",
-    target: "#active-archetype",
+    body: "The third Dream of each Cycle offers 1 of 3 Archetypes. The one you call appears on one of its two home Landscapes and slips away each Explore. Walk to it, Meet it (its Event, then a fight against Power 12 with a spread that makes a Form), and Acquire it. The Archetypes window tracks them.",
+    target: "#archetype-window",
   },
   {
     id: "suits",
@@ -300,7 +300,7 @@ export function getCurrentObjective(state) {
       suit: "willpower",
       title: state.activeEncounter ? "Fight" : "Spend your actions",
       steps: lines,
-      tip: "Draw Mindstream, use your Landscape's action, or tap a Persistent Object. Unused actions bank Glimmer ✧.",
+      tip: "Fight the Dreambeast here, Meet the Archetype here, use your Landscape's action, or tap a Persistent Object. Unused actions bank Glimmer ✧.",
     };
   }
 
@@ -409,25 +409,29 @@ export function infoHubHtml(options = {}) {
         <section class="info-hub-rules" aria-label="Rules highlights">
           <div class="info-hub-rule">
             <h3>Win &amp; Lose</h3>
-            <p><strong>Win:</strong> defeat the night's final Boss with your Archetype goal met: <strong>4</strong> points on a Daydream, <strong>6</strong> on a Nap, <strong>12</strong> in Deep Sleep. When both quests on a face-up Archetype are true, <strong>Acquire</strong> it for free.</p>
+            <p><strong>Win:</strong> Acquire <strong>3</strong> Archetypes on a Daydream, <strong>6</strong> on a Nap, <strong>all 12</strong> in Deep Sleep.</p>
             <p><strong>Lose:</strong> the Waking Mind runs dry (watch the <strong>Mind</strong> counter and its dusk forecast), or the sixth death.</p>
           </div>
           <div class="info-hub-rule">
             <h3>The Night</h3>
-            <p>A night is 4, 7, or 10 <strong>Cycles</strong>. Each Cycle is <strong>3 Dreams</strong> of Reveal · Explore · Meet: <strong>9 phases</strong>. Dream 2 brings a <strong>Mini-Boss</strong> to The Bed; Dream 3 brings a <strong>Boss</strong> that lands on a random Landscape, and every beast chases you one hex at the start of Explore; and each Boss is stronger than the last. Beat a Boss for a <strong>Boon</strong>; the next round is dawn and you draw 3. Every Dream hurts: you endure it. When the Dream Deck runs dry, the <strong>Long Night</strong> Represses 2, then 4, then 6 more at every dusk.</p>
+            <p>A night is 4, 7, or 13 <strong>Cycles</strong>. Each Cycle is <strong>3 Dreams</strong> of Reveal · Explore · Meet: <strong>9 phases</strong>. Dream 1 is a <strong>Dream</strong> to endure. Dream 2 brings the Cycle's <strong>Dreambeast</strong> to a Landscape of its suit; it chases you and bleeds you every dusk. Dream 3 lets you call <strong>1 of 3 Archetypes</strong>. Then dawn: you draw 3. When the Dream Deck runs dry, the <strong>Long Night</strong> Represses 2, then 4, then 6 more at every dusk.</p>
           </div>
           <div class="info-hub-rule info-hub-rem">
             <h3>R.E.M. — Every Round</h3>
             <ul>
               <li class="suit-lucidity"><strong>Reveal</strong> — the Dream is drawn and endured. Spend 1 Lucidity: its value plus your Lucidity places that many Landscapes from the Vault.</li>
               <li class="suit-elasticity"><strong>Explore</strong> — spend 1 Elasticity for steps. Entering Wasteland discards 1 Psyche.</li>
-              <li class="suit-willpower"><strong>Meet</strong> — spend 1 Willpower for actions: fight (as often as you have actions), Draw Mindstream, use your Landscape's action, or tap a Persistent Object.</li>
+              <li class="suit-willpower"><strong>Meet</strong> — spend 1 Willpower for actions: fight a Dreambeast, Meet an Archetype, use your Landscape's action, or tap a Persistent Object.</li>
             </ul>
             <p>A Power Token can open any phase as 1 plus your stat. Every unused Reveal, step, or action banks 1 Glimmer ✧, which pays toward the next Lost &amp; Found.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Fights</h3>
             <p>Play 1–3 Psyche, at least one of the beast's suit. Your Power is their values plus your matching stat, your Dream Form, and up to 3 Power Tokens. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Accept draws an Object and earns a free Insight at the next Lost & Found. Repress banishes it and draws Psyche equal to half its Power, rounded down. Lose and the cards are spent; the beast stays.</p>
+          </div>
+          <div class="info-hub-rule">
+            <h3>Archetypes</h3>
+            <p>Meeting one costs 1 action and opens with one of its <strong>Events</strong>. <strong>Bright</strong> (only while one of the Event's Landscapes is placed) costs Psyche and helps the fight. <strong>Dim</strong> is free and hurts it. Then play a spread that makes a <strong>Dream Form</strong> against Power 12. Win: +1 Archetype, +2 Power Tokens, and its power is yours.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Between Rounds</h3>
@@ -437,7 +441,7 @@ export function infoHubHtml(options = {}) {
             <h3>Remember</h3>
             <p><strong>Remember N:</strong> discard up to N Psyche, then Return that many plus 1 from the Subconscious. Memory Landscapes, Remember Objects, and some Boons Remember.</p>
           </div>
-          <p class="info-hub-footer">Back in the top-left undoes the last action. Acquire is free once both quests are true.</p>
+          <p class="info-hub-footer">Back in the top-left undoes the last action.</p>
         </section>
       </div>
       </div>

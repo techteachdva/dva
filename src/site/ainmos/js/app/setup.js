@@ -182,7 +182,7 @@ function applyFirstVisitMenu() {
     advanced.setAttribute("aria-disabled", basicDone ? "false" : "true");
   }
   if (hint) {
-    hint.innerHTML = "Pick one Dreamer and <strong>Begin Dreaming</strong>. New here? <strong>First Night</strong> is a real Daydream with gentle hints until the first Boss falls.";
+    hint.innerHTML = "Pick one Dreamer and <strong>Begin Dreaming</strong>. New here? <strong>First Night</strong> is a real Daydream with gentle hints until your first Archetype.";
   }
   if (firstVisit && tutorial) {
     tutorial.title = "Two guided rounds with step-by-step coaching";

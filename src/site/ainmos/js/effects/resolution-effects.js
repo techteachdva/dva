@@ -45,13 +45,16 @@ function discardSuit(state, player, suit, count) {
   });
 }
 
-function repressTopMindstream(state, suit, count = 1) {
-  const deck = state.mindstreamDecks?.[suit];
+/** Ainmos: Mindstream Represses now come from the Waking Mind (the Psyche deck). */
+function repressTopMindstream(state, _suit, count = 1) {
+  const deck = state.psycheDeck;
   if (!deck?.length) return;
+  let n = 0;
   for (let i = 0; i < count && deck.length; i += 1) {
     repressCard(state, deck.shift());
+    n += 1;
   }
-  addLog(state, `Repress ${count} from top of ${suit} Mindstream.`);
+  addLog(state, `Repress the top ${n} of the Waking Mind.`);
 }
 
 function repressTopPsyche(state, count = 1) {

@@ -57,9 +57,10 @@ function enrichMindstreamEvents(mindstream, catalog) {
 
 /** Ainmos: a night is Cycles. Each Cycle is 2 Dreams, then a Boss Dream. */
 export const LENGTHS = {
-  daydream: { label: "Daydream", points: 8, soloPoints: 4, antes: 4, dreams: 8 },
-  nap: { label: "Nap", points: 12, soloPoints: 6, antes: 7, dreams: 14 },
-  deep: { label: "Deep Sleep", points: 24, soloPoints: 12, antes: 10, dreams: 20 },
+  // Ainmos: the goal is a count of Archetypes. Each Cycle offers one, with a Cycle to spare.
+  daydream: { label: "Daydream", points: 3, soloPoints: 3, antes: 3, dreams: 3 },
+  nap: { label: "Nap", points: 6, soloPoints: 6, antes: 7, dreams: 7 },
+  deep: { label: "Deep Sleep", points: 12, soloPoints: 12, antes: 15, dreams: 15 },
 };
 
 /** ~33% boon / 66% hazard in weighted session draws. */
@@ -453,26 +454,44 @@ export function miniBossCard(beast, ante) {
   };
 }
 
+/** The Archetype Dream: the third Dream of every Cycle. Drawing it offers 1 of 3 Archetypes. */
+export function archetypeDreamCard(ante) {
+  return {
+    id: "archetype-dream",
+    type: "archetype-dream",
+    name: "An Archetype Stirs",
+    text: "Choose 1 of 3 Archetypes. It appears on one of its two Landscapes.",
+    image: "images/archetypes/archetype-sage.webp",
+    ante,
+    instanceId: uid("archdream"),
+  };
+}
+
 /**
- * Lay the night out as Cycles: a Dream, a Dream that brings the Cycle's Mini-Boss
- * to The Bed, then the Cycle's Boss Dream from the ladder. Returns the night and
- * the Nightmare pool (ordinary Dreambeasts not used as Mini-Bosses).
+ * Lay the night out as Cycles of three Dreams:
+ *   1. a Dream card (it hurts; survive it),
+ *   2. the Cycle's Dreambeast, landing on a Landscape of its suit,
+ *   3. an Archetype Dream: choose 1 of 3 Archetypes to appear.
+ * The Dreambeasts climb the Boss ladder; a night longer than the ladder adds
+ * Power 12 Nightmares. Returns the night and the Nightmare pool.
  */
 export function insertBossDreams(deck, dreambeasts, lengthKey = "daydream") {
-  const ladder = ladderForLength(lengthKey);
+  const cycles = (LENGTHS[lengthKey] || LENGTHS.daydream).antes;
+  const ladder = BOSS_LADDER;
   const minis = shuffle(ordinaryDreambeasts(dreambeasts));
   const night = [];
-  let next = 0;
-  ladder.forEach((entry, index) => {
-    const ante = index + 1;
-    for (let i = 0; i < DREAMS_PER_ANTE && next < deck.length; i += 1) {
-      const dream = deck[next++];
-      if (i === DREAMS_PER_ANTE - 1 && minis.length) dream.miniBoss = miniBossCard(minis.shift(), ante);
-      night.push(dream);
-    }
-    const beast = dreambeasts.find((b) => b.id === entry.id);
+  for (let c = 0; c < cycles; c += 1) {
+    const ante = c + 1;
+    if (deck[c]) night.push(deck[c]);
+    const entry = ladder[c];
+    const beast = entry && dreambeasts.find((b) => b.id === entry.id);
     if (beast) night.push(bossDreamCard(beast, entry, uid));
-  });
+    else if (minis.length) {
+      const extra = { ...miniBossCard(minis.shift(), ante), accept: 12, reject: 12, repress: 12 };
+      night.push({ ...extra, type: "boss-dream", boss: true, nightmare: true, ante, instanceId: uid("boss") });
+    }
+    night.push(archetypeDreamCard(ante));
+  }
   night.nightmarePool = minis;
   return night;
 }

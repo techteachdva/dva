@@ -49,6 +49,6 @@ export function cyclePosition(state) {
 export function cyclePositionText(state) {
   const pos = cyclePosition(state);
   if (pos.longNight) return "The Long Night: every Cycle is spent. Each dusk takes more.";
-  const boss = pos.dream === DREAMS_PER_CYCLE ? " (Boss)" : pos.dream === 2 ? " (Mini-Boss)" : "";
+  const boss = pos.dream === DREAMS_PER_CYCLE ? " (Archetype)" : pos.dream === 2 ? " (Dreambeast)" : "";
   return `Cycle ${pos.cycle} of ${pos.cycles} · Dream ${pos.dream} of ${DREAMS_PER_CYCLE}${boss} · ${PHASE_NAMES[pos.phase - 1]} · phase ${pos.step} of ${PHASES_PER_CYCLE}`;
 }

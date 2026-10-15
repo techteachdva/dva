@@ -131,6 +131,8 @@ import {
   handleQuestComplete,
   handleUseArchetypePower,
   handleDefeatFinalArchetype,
+  faceArchetype,
+  fightArchetype,
   handleSacrificeForFinal,
   endPhase,
   spendExcessPsycheDraw,
@@ -156,6 +158,10 @@ import { placeReturnedBeasts } from "../board/landscapes.js";
 import { initKeepsakeScrollers, refreshKeepsakeScrollers } from "../ui/keepsake-scroll.js";
 import { initCardFans } from "../ui/ui.js";
 import { initFitBars } from "../ui/fit-bar.js";
+import { renderArchetypeChoice } from "../ui/archetype-choice.js";
+import { renderArchetypeWindow, renderWakeGoal } from "../ui/archetype-window.js";
+import { initFloatWindow, restoreFloatWindow } from "../ui/float-window.js";
+import { chooseArchetype } from "../dreamers/archetype-board.js";
 import { createSpectatorBot } from "../dev/bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "../encounters/dreambeasts.js";
 import { requestEndPhase } from "../flow/phase-skip.js";
@@ -612,9 +618,19 @@ function bindFullscreenPrompt() {
     startGameRadio();
     keepScreenAwake();
     const wantsCinematic = state && !launchConfig?.resumeSaveId && !state.tutorialMode;
+    // Never leave the table hidden: if fullscreen hangs, give up on the opening after a moment.
+    window.setTimeout(() => {
+      if (document.body.classList.contains("opening-cinematic-pending")) {
+        document.body.classList.remove("opening-cinematic-pending");
+        renderAll();
+      }
+    }, 4000);
     try {
       if (document.fullscreenEnabled && !document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
+        await Promise.race([
+          document.documentElement.requestFullscreen(),
+          new Promise((resolve) => window.setTimeout(resolve, 1500)),
+        ]);
       }
     } catch {
       /* fullscreen denied or unsupported — game still runs */
@@ -1662,6 +1678,14 @@ function buildPhaseHandlers() {
       handleDefeatFinalArchetype(state, id, () => renderAll());
       renderAll();
     },
+    faceArchetype: (id) => {
+      if (faceArchetype(state, id)) playSfx("select");
+      renderAll();
+    },
+    fightArchetype: (id) => {
+      fightArchetype(state, id, () => renderAll());
+      renderAll();
+    },
     sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
     nextPhase: () => { requestEndPhase(state, () => renderAll()); },
     skipPhase: () => { requestEndPhase(state, () => renderAll()); },
@@ -1879,18 +1903,33 @@ function openArchetypeBoardRadial(anchorEl, arch, tileId) {
   }
   state.selectedLandscapeId = tileId;
   const handlers = buildPhaseHandlers();
+  const fightOpen = state.archetypeFight?.archId === arch.id;
+  const meetOpen = getPhase(state) === "Meet" && (state.meetActionBudget || 0) > 0;
   const options = [
-    {
-      id: "defeat",
-      label: `Defeat ${arch.name}`,
-      hint: `Pool up to 3 Psyche, including ${SUIT_LABELS[arch.suit] || arch.suit || "its suit"}, then roll against Power 12. A win Acquires it now.`,
-      primary: true,
-      onPick: () => handlers.defeatFinalArchetype(arch.id),
-    },
+    fightOpen
+      ? {
+        id: "fight",
+        label: `Fight ${arch.name}`,
+        hint: `${state.archetypeFight.label}: ${state.archetypeFight.hint}. Select a spread that makes a Form, then Fight.`,
+        primary: true,
+        onPick: () => handlers.fightArchetype(arch.id),
+      }
+      : {
+        id: "meet",
+        label: `Meet ${arch.name}`,
+        hint: !occupant
+          ? `Walk onto this Landscape to Meet ${arch.name}.`
+          : meetOpen
+            ? "1 Meet action: its Event first (Bright or Dim), then the fight."
+            : "Open Meet first.",
+        primary: true,
+        disabled: !occupant || !meetOpen || !!state.archetypeFight,
+        onPick: () => handlers.faceArchetype(arch.id),
+      },
     {
       id: "view",
       label: "View",
-      hint: "Remaining Archetype on this Landscape",
+      hint: `${arch.name}: Power 12`,
       onPick: () => showModal({ ...arch, type: arch.type || "archetype" }),
     },
   ];
@@ -2549,6 +2588,23 @@ function renderBoardArea() {
     logMoment(state, "Training wheels off. The Turtle has fallen; the rest of the night is yours.");
   }
   renderCoach(state, { onChange: () => renderAll() });
+  renderArchetypeWindow(state, {
+    onFocus: (tileId) => {
+      state.selectedLandscapeId = tileId;
+    },
+  });
+  renderWakeGoal(state);
+  const vaultHost = document.getElementById("dreamscape-vault");
+  if (vaultHost && !vaultHost.hidden) {
+    initFloatWindow(vaultHost, "vault");
+    restoreFloatWindow(vaultHost, "vault");
+  }
+  renderArchetypeChoice(state, {
+    onChoose: (archId) => {
+      if (chooseArchetype(state, archId)) playSfx("acquire");
+      renderAll();
+    },
+  });
   renderBoonDraft(state, {
     onChoose: (boonId) => {
       if (chooseBoon(state, boonId)) playSfx("acquire");
@@ -3023,7 +3079,9 @@ function renderAll() {
             opener.onClick?.();
           },
         };
-      })());
+      })(), getPhase(state) === "Meet" && (state.meetActionBudget || 0) > 0
+        ? getPhaseActions(state, handlers).filter((a) => ["fightArchetype", "meetAccept", "meetReject"].includes(a.kind))
+        : []);
     }
   }
   renderHandChoiceBar(state, () => {

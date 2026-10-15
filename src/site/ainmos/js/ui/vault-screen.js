@@ -11,7 +11,12 @@
 import { isBlockingGameChoice } from "../core/state.js";
 import { isFreeformBoard, vaultCards, tileDeckCount, vaultRefreshCost } from "../board/dreamscape-vault.js";
 import { LANDSCAPE_ACTION_DEFS } from "../board/landscape-actions.js";
-import { activeQuestLandscapeIds } from "../dreamers/quests.js";
+/** Landscapes that are homes of the Archetypes the next Archetype Dream will offer. */
+function upcomingHomes(state) {
+  const map = new Map();
+  (state.archetypeDeck || []).slice(0, 3).forEach((arch) => (arch.landscapes || []).forEach((id) => map.set(id, arch.name)));
+  return map;
+}
 
 const SUIT_NAME = { lucidity: "Lucidity", elasticity: "Elasticity", willpower: "Willpower" };
 
@@ -65,14 +70,15 @@ export function resumeVaultScreen() {
 
 function cardHtml(card, index, questIds) {
   const action = LANDSCAPE_ACTION_DEFS[card.uniqueAction || card.landscapeActions?.[0]] || null;
-  const quest = questIds.has(card.id);
+  const home = questIds.get(card.id);
+  const quest = !!home;
   return `
     <article class="lf-item vs-item suit-${esc(card.suit || "none")}${quest ? " is-quest" : ""}">
       <div class="vs-hex" style="background-image:url('${esc(absolute(card.image))}')"></div>
-      ${quest ? `<span class="vs-quest" title="An Archetype quest names this Landscape">Quest</span>` : ""}
+      ${quest ? `<span class="vs-quest" title="The ${esc(home)} can appear here when it is called">★ ${esc(home)}'s home</span>` : ""}
       <h4 class="lf-item-name">${esc(card.name)}</h4>
       <p class="lf-item-kind">${esc(SUIT_NAME[card.suit] || "Landscape")} Landscape</p>
-      ${action ? `<p class="lf-item-text"><strong>${esc(action.label)}.</strong> ${esc(action.description)}</p>` : `<p class="lf-item-text">Draw its Mindstream during Meet.</p>`}
+      ${action ? `<p class="lf-item-text"><strong>${esc(action.label)}.</strong> ${esc(action.description)}</p>` : ""}
       <div class="lf-item-foot">
         <button type="button" class="lf-btn lf-buy vs-pick" data-vs-pick="${index}">Dream it</button>
       </div>
@@ -115,8 +121,8 @@ export function renderVaultScreen(state, handlers = {}) {
   const cost = vaultRefreshCost(state);
   const remaining = pick.remaining || 0;
   const free = !!pick.freeReveal;
-  const questIds = new Set(activeQuestLandscapeIds(state));
-  const key = [cards.map((c) => c.id).join(","), deck, cost, remaining, free, [...questIds].join(",")].join("|");
+  const questIds = upcomingHomes(state);
+  const key = [cards.map((c) => c.id).join(","), deck, cost, remaining, free, [...questIds.keys()].join(",")].join("|");
   host.hidden = false;
   host.classList.remove("is-leaving");
   if (key === lastKey) return;

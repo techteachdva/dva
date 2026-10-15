@@ -683,7 +683,7 @@ export function renderDreamForms(state) {
   }).join("");
 }
 
-export function renderSpreadTray(state, onCardClick, openerAction = null) {
+export function renderSpreadTray(state, onCardClick, openerAction = null, fightActions = []) {
   const tray = document.getElementById("spread-tray");
   if (!tray) return;
 
@@ -733,6 +733,35 @@ export function renderSpreadTray(state, onCardClick, openerAction = null) {
     fan.appendChild(el);
   });
   schedulePsycheFan(fan);
+
+  // Ainmos: the spread tray is where a spread is used. Fight buttons sit right under the cards.
+  const fights = (fightActions || []).filter(Boolean);
+  if (fights.length) {
+    const bar = document.createElement("div");
+    bar.className = "spread-fight-bar";
+    fights.forEach((action) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `spread-fight-btn kind-${action.kind || "fight"}${action.primary ? " is-primary" : ""}`;
+      btn.textContent = action.label;
+      btn.title = action.hint || action.label;
+      btn.disabled = !!action.disabled;
+      btn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (btn.disabled) return;
+        action.onClick?.();
+      });
+      bar.appendChild(btn);
+      if (action.disabled && action.hint) {
+        const why = document.createElement("p");
+        why.className = "spread-fight-why";
+        why.textContent = action.hint;
+        bar.appendChild(why);
+      }
+    });
+    tray.appendChild(bar);
+  }
 
   if (cards.length === 1 && openerAction) {
     const opener = document.createElement("button");
@@ -3232,13 +3261,8 @@ export function renderCoopMeetHands(state, onCardClick) {
     : "";
   renderActiveDreamerHand(state, onCardClick, {
     title: msPrep ? `${player.name} — Mindstream Meet` : `${player.name} — Meet Hand`,
-    statsText: archFight
-      ? `Pool ${poolCount}/3 = ${poolTotal}d6 vs Power ${FINAL_ARCHETYPE_POWER}${prepNote}`
-      : meetActor
-        ? (isActor
-          ? `Pool ${poolCount}/3 = ${poolTotal}${bonusText}${pending}${acceptBit}${prepNote}`
-          : `${meetActor.name} may pool`)
-        : "Pool 1–3",
+    // Ainmos: need to know. The fight buttons under the spread carry the dice; this just guides the pick.
+    statsText: poolCount ? `Spread ${poolCount} Psyche · fight below` : "Pick 1–3 Psyche to fight",
     canClickCard: (card) => card.type === "psyche-power" || tableSpread || !meetActor || isActor,
   });
 }
@@ -5053,7 +5077,8 @@ export function showMindstreamChoiceFullscreen(ui, onPick) {
     dreambeast: "Dreambeast",
     dream: "Dream",
     "power-token": "Power",
-  }[kind] || "Mindstream";
+    "archetype-event": ui.kicker || "An Archetype's Event",
+  }[kind] || "Event";
 
   const artStyle = art ? `background-image:url('${art}')` : "";
   const cardImg = art

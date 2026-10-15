@@ -57,6 +57,8 @@ import {
   resolveAllPowerCardsInHands,
 } from "../cards/power-tokens.js";
 import { applyMeetStartTax, stepBeastsTowardDreamers } from "../encounters/meet-phase.js";
+import { stepArchetypesAway, archetypeBoon, ARCHETYPE_TOKEN_REWARD, ARCHETYPE_RETURN } from "../dreamers/archetype-board.js";
+import { autoReturnPsyche } from "../dreamers/subconscious.js";
 import { seedRandomness, mintSeedSuffix, specialSeedFlag, buildGameId, normalizeSeedInput } from "./rng.js";
 import { snapshotDeckCaps } from "../cards/deck-pressure.js";
 
@@ -132,6 +134,7 @@ export function createInitialState(data, options) {
   delete dreamDeck.nightmarePool;
   // The Night Bar reads this plan: every card of the night, in order, with its Cycle.
   const nightPlan = dreamDeck.map((card, index) => ({
+    kind: card.type === "archetype-dream" ? "archetype" : card.boss ? "beast" : "dream",
     instanceId: card.instanceId,
     boss: !!card.boss,
     bossId: card.boss ? card.id : null,
@@ -179,7 +182,7 @@ export function createInitialState(data, options) {
     name: dreamer.name,
     dreamer,
     landscapeId: "bed",
-    powerTokens: 0,
+    powerTokens: 1,
     hand: dealStartingPsyche(PSYCHE_STARTING_HAND),
     objects: [],
     persistent: [],
@@ -200,15 +203,18 @@ export function createInitialState(data, options) {
     stackBeastKindToTop(mindstreamDecks, seedFlags.fantasy ? "fantasy" : "nightmare");
   }
 
-  orderArchetypeDeckForRow(archetypeDeck);
-
   if (options.gentleStart) {
     pinFirstById(archetypeDeck, "innocent");
     pinOpeningDream(dreamDeck, data.dreams, "quiet");
   }
 
-  const archetypeRow = archetypeDeck.splice(0, ARCHETYPE_ROW_SIZE).map(freshRowArchetype);
-  const activeArchetype = archetypeRow[0];
+  // Ainmos: no Archetype row or quests. Archetypes come out one per Cycle, onto the board.
+  const archetypeRow = [];
+  const activeArchetype = null;
+  // Every Event, with its Landscapes. Each Archetype draws from the Events tied to its homes.
+  const eventCatalog = Object.values(data.mindstream || {}).flat()
+    .filter((card) => card?.type === "event")
+    .map(({ id, name, suit, image, landscapes }) => ({ id, name, suit, image, type: "event", landscapes: landscapes || [] }));
 
   const state = {
     phaseIndex: 0,
@@ -300,6 +306,10 @@ export function createInitialState(data, options) {
     gameStartedAt: Date.now(),
     questRoundFlags: { discardedOnBed: false },
     finalArchetypes: [],
+    eventCatalog,
+    archetypeEventDecks: {},
+    pendingArchetypeChoice: null,
+    archetypeFight: null,
     freeExploreNextRound: false,
     pendingRespawn: null,
     trade: null,
@@ -906,8 +916,12 @@ export function anteDawn(state) {
     if (player.alive) drawPsycheForPlayer(state, player, 3);
   });
   addLog(state, `Dawn between Cycles: the Waking Mind reshuffles, and each Dreamer draws 3 Psyche.`);
+  autoReturnPsyche(state, DAWN_RETURN, "Dawn");
   (onDawn.hooks || []).forEach((fn) => fn(state));
 }
+
+/** Psyche the dawn between Cycles Returns from the Subconscious. */
+export const DAWN_RETURN = 3;
 
 export const DEATH_CLOCK_CAP = 6;
 /** @deprecated Personal caps are gone. The table shares DEATH_CLOCK_CAP. */
@@ -1159,18 +1173,32 @@ export function markFinalArchetypeDefeated(state, archetypeId) {
   });
 }
 
+/**
+ * Ainmos: Acquiring an Archetype is the whole goal. Each one counts 1 toward
+ * waking, pays 2 Power Tokens, and hands over its power (or passive) as a Boon.
+ */
+function grantAcquiredArchetype(state, player, archetype) {
+  state.acquiredPoints = (state.acquiredPoints || 0) + 1;
+  const boon = archetypeBoon(archetype);
+  if (!(state.boons || []).some((b) => b.id === boon.id)) state.boons = [...(state.boons || []), boon];
+  const paid = grantPowerTokens(state, player, ARCHETYPE_TOKEN_REWARD, { logQuest: false });
+  // Integration: an Acquired Archetype brings back what you had lost.
+  autoReturnPsyche(state, ARCHETYPE_RETURN, archetype.name);
+  const goal = state.scoringGoalPoints || state.goalPoints || 0;
+  if (goal > 0 && state.acquiredPoints >= goal) state.archetypeGoalReached = true;
+  addLog(state, `${player.name} Acquires ${archetype.name}: ${state.acquiredPoints}/${goal || "?"} Archetypes${paid ? `, +${paid} Power Tokens` : ""}. Its power is yours.`);
+}
+
 export function acquireFinalArchetype(state, player, archetype) {
   if (!player || !archetype) return null;
   const copy = {
     ...archetype,
+    points: 1,
     defeated: true,
     questProgress: [true, true],
   };
   player.acquiredArchetypes.push(copy);
-  state.acquiredPoints += archetype.points || 0;
-  const goal = state.scoringGoalPoints || 0;
-  if (goal > 0 && (state.acquiredPoints || 0) >= goal) state.archetypeGoalReached = true;
-  addLog(state, `${player.name} acquires ${archetype.name} (+${archetype.points || 0}). Its power is ready.`);
+  grantAcquiredArchetype(state, player, copy);
   return copy;
 }
 
@@ -1184,10 +1212,7 @@ export function acquireArchetypeFromDeck(state, player, archetypeId) {
     questProgress: (archetype.quests || []).map(() => true),
   };
   player.acquiredArchetypes.push(copy);
-  state.acquiredPoints += archetype.points || 0;
-  const goal = state.scoringGoalPoints || state.goalPoints || 0;
-  if (goal > 0 && (state.acquiredPoints || 0) >= goal) state.archetypeGoalReached = true;
-  addLog(state, `${player.name} acquires ${archetype.name} from the deck (+${archetype.points || 0} points).`);
+  grantAcquiredArchetype(state, player, copy);
   checkVictory(state);
   return copy;
 }
@@ -1257,6 +1282,9 @@ export function advancePhase(state) {
     addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");
     const chased = stepBeastsTowardDreamers(state);
     if (chased) addLog(state, `${chased} Dreambeast${chased === 1 ? " chases" : "s chase"} you.`);
+    // Ainmos: Archetypes keep their distance. Each steps 1 hex away if it can.
+    const fled = stepArchetypesAway(state);
+    if (fled) addLog(state, `${fled} Archetype${fled === 1 ? " slips" : "s slip"} away from you.`);
   } else if (getPhase(state) === "Meet") {
     applyMeetStartTax(state);
     if (state.anchorMeetSpreadPending) {
@@ -1267,7 +1295,7 @@ export function advancePhase(state) {
       t.revealed && tileHasEncounters(t) && state.players.some((p) => p.alive && p.landscapeId === t.id),
     );
     if (meetHere) state.selectedLandscapeId = meetHere.id;
-    addLog(state, "Meet Phase — spend Willpower for shared Actions. Bosses step toward the nearest Dreamer. Dreambeasts stay until Accepted or Repressed.");
+    addLog(state, "Meet Phase — spend Willpower for Meet actions. Fight a Dreambeast on your Landscape, or Meet an Archetype there.");
   }
 }
 
@@ -1313,18 +1341,14 @@ export function finalBossDefeated(state) {
   return !!state.finalBossId && (state.bossesDefeated || []).includes(state.finalBossId);
 }
 
+/** Ainmos: one goal. Acquire the night's count of Archetypes and you wake. */
 export function checkVictory(state) {
   if (state.status !== "playing") return;
   const goal = state.scoringGoalPoints || state.goalPoints || 0;
-  if (goal > 0 && state.acquiredPoints >= goal) state.archetypeGoalReached = true;
-  if (finalBossDefeated(state) && state.archetypeGoalReached) {
+  if (goal > 0 && (state.acquiredPoints || 0) >= goal) {
+    state.archetypeGoalReached = true;
     state.status = "won";
-    addLog(state, "The last Boss falls and the Archetype goal is met. You wake!");
-    return;
-  }
-  if (state.archetypeGoalReached && !state.victoryPendingLogged) {
-    state.victoryPendingLogged = true;
-    addLog(state, "Archetype goal reached. Defeat the final Boss to wake.");
+    addLog(state, `${goal} Archetypes Acquired. You wake!`);
   }
 }
 
@@ -1360,7 +1384,7 @@ export function checkDefeat(state) {
 }
 
 /** The Long Night's dusk toll grows by this much every round: 2, then 4, then 6. */
-export const LONG_NIGHT_TAX = 2;
+export const LONG_NIGHT_TAX = 1;
 
 export function longNightToll(state) {
   return state?.longNight ? LONG_NIGHT_TAX * Math.max(1, state.longNightRounds || 1) : 0;
@@ -1403,6 +1427,7 @@ export function isBlockingGameChoice(state) {
     || state.landscapePick
     || state.pendingDreamerPower?.ui
     || state.pendingDreamReplay
+    || state.pendingArchetypeChoice
   );
 }
 

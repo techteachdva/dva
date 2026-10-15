@@ -35,6 +35,9 @@ import { grantPowerTokens } from "./power-tokens.js";
 import { uid } from "../core/data.js";
 import { isFreeformBoard, placementSlots, findUnplacedLandscape } from "../board/dreamscape-vault.js";
 import { surfaceLandscapeNear } from "../board/landscapes.js";
+import { archetypeEventSides, BRIGHT_RETURN } from "../dreamers/archetype-board.js";
+import { autoReturnPsyche } from "../dreamers/subconscious.js";
+import { paymentFor } from "../shop/lost-found.js";
 
 const SUIT_LABELS = {
   lucidity: "Lucidity",
@@ -585,9 +588,109 @@ function resolveFlee(state, pending, helpers) {
  * Resolve a pending Mindstream/Dream fullscreen choice.
  * @returns {boolean} true if handled
  */
+/**
+ * Ainmos: an Archetype Meet opens with one of its Events. Bright (while one of
+ * the Event's Landscapes is placed) costs Psyche of its suit and helps the
+ * coming fight. Dim is free and makes the fight harder.
+ */
+export function beginArchetypeEventChoice(state, event, player, arch, tileId) {
+  if (!event || !player || !arch) return false;
+  const resolution = getEventResolution(event.refId || event.id);
+  const sides = archetypeEventSides(event, resolution);
+  const suit = event.suit || resolution?.suit || "lucidity";
+  const landscapesOk = hasAffectedLandscapes(state, event) || !(event.landscapes?.length);
+  const pay = paymentFor(player, sides.bright.cost, { suit });
+  const ids = eventLandscapeIds(event);
+  const names = eventLandscapeNames(state, event);
+  const revealed = revealedLandscapeIds(state.board);
+  const gate = landscapesOk
+    ? `Bright is open: ${names.filter((_, i) => revealed.has(ids[i])).join(" or ") || "its Landscape"} is placed.`
+    : `Bright needs ${names.join(" or ")} placed on the Dreamscape.`;
+  const payText = pay
+    ? `Pay ${pay.cards.map((c) => `${SUIT_LABELS[c.suit] || "Wild"} ${c.value}`).join(" + ")}`
+    : `Needs ${sides.bright.cost} ${SUIT_LABELS[suit]} Psyche`;
+  state.pendingMindstreamChoice = {
+    kind: "archetype-event",
+    ui: "mindstream-fullscreen",
+    cardId: event.id,
+    playerId: player.id,
+    card: { ...event, type: "event" },
+    archId: arch.id,
+    tileId,
+    title: event.name,
+    kicker: `${arch.name}'s Event`,
+    message: `Before you face ${arch.name}, the dream turns.`,
+    suit,
+    landscapeHint: gate,
+    landscapeStatus: gate,
+    landscapeChips: ids.map((id, index) => ({
+      id,
+      name: names[index],
+      image: landscapeImageForId(id, state.board),
+      revealed: revealed.has(id),
+    })),
+    sides,
+    choices: [
+      {
+        id: "good",
+        role: "good",
+        shape: suit,
+        label: `Bright: ${sides.bright.label}`,
+        hint: `${sides.bright.hint} · ${payText}`,
+        disabled: !landscapesOk || !pay,
+        disabledReason: !landscapesOk ? gate : `Bright costs ${sides.bright.cost} ${SUIT_LABELS[suit]} Psyche.`,
+      },
+      {
+        id: "bad",
+        role: "bad",
+        shape: suit,
+        label: `Dim: ${sides.dim.label}`,
+        hint: `${sides.dim.hint} · Free`,
+        disabled: false,
+      },
+    ],
+  };
+  state.pendingMindstreamChoice.needsDrawCinematic = true;
+  logMoment(state, `${arch.name} sends ${event.name}. Bright or Dim?`);
+  return true;
+}
+
+function resolveArchetypeEvent(state, pending, choiceId) {
+  const player = playerById(state, pending.playerId);
+  const sides = pending.sides;
+  let side = choiceId === "good" ? "bright" : "dim";
+  if (side === "bright") {
+    const pay = player && paymentFor(player, sides.bright.cost, { suit: pending.suit });
+    if (!pay) {
+      addLog(state, "Bright's cost cannot be paid. The dream turns Dim.");
+      side = "dim";
+    } else {
+      const ids = new Set(pay.cards.map((c) => c.instanceId));
+      player.hand = player.hand.filter((c) => !ids.has(c.instanceId));
+      state.psycheDiscard = [...(state.psycheDiscard || []), ...pay.cards];
+      autoReturnPsyche(state, BRIGHT_RETURN, `${pending.title} (Bright)`);
+    }
+  }
+  const chosen = sides[side];
+  state.pendingMindstreamChoice = null;
+  state.archetypeFight = {
+    archId: pending.archId,
+    tileId: pending.tileId,
+    actorId: pending.playerId,
+    eventName: pending.title,
+    side,
+    label: chosen.label,
+    hint: chosen.hint,
+    mods: { ...chosen.mods },
+  };
+  logMoment(state, `${pending.title}: ${side === "bright" ? "Bright" : "Dim"}, ${chosen.label}. ${chosen.hint}. Now pick your spread and fight.`);
+  return true;
+}
+
 export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
   const pending = state.pendingMindstreamChoice;
   if (!pending) return false;
+  if (pending.kind === "archetype-event") return resolveArchetypeEvent(state, pending, choiceId);
   const player = playerById(state, pending.playerId);
   const card = pending.card;
   const h = { ...pending.helpers, ...helpers };

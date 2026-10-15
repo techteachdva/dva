@@ -139,7 +139,7 @@
     "repress": 9,
     "rejectSuit": "willpower",
     "fail": "Repress 5 Psyche from hand.",
-    "effect": "Repress top Psyche & 1 Elasticity Mindstream.",
+    "effect": "Repress the top 2 of the Waking Mind.",
     "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
@@ -349,8 +349,8 @@
     "reject": 7,
     "repress": 7,
     "rejectSuit": "willpower",
-    "fail": "Repress top 4 Elasticity Mindstream cards.",
-    "effect": "Repress top 3 Elasticity Mindstream.",
+    "fail": "Repress the top 4 of the Waking Mind.",
+    "effect": "Repress the top 3 of the Waking Mind.",
     "rejectReward": "Return 2 Repressed.",
     "rejectEffect": {
       "type": "return-subconscious",
@@ -503,8 +503,8 @@
     "reject": 8,
     "repress": 8,
     "rejectSuit": "elasticity",
-    "fail": "Repress top 5 Lucidity Mindstream cards.",
-    "effect": "Repress top 2 Lucidity Mindstream.",
+    "fail": "Repress the top 5 of the Waking Mind.",
+    "effect": "Repress the top 2 of the Waking Mind.",
     "rejectReward": "Return 1 Psyche.",
     "rejectEffect": {
       "type": "return-subconscious",
@@ -654,8 +654,8 @@
     "reject": 9,
     "repress": 9,
     "rejectSuit": "elasticity",
-    "fail": "Repress top 5 Lucidity Mindstream cards.",
-    "effect": "Repress 1 Lucidity Mindstream, Discard 1 Object.",
+    "fail": "Repress the top 5 of the Waking Mind.",
+    "effect": "Repress the top 1 of the Waking Mind, Discard 1 Object.",
     "rejectReward": "Return 2 Repressed.",
     "rejectEffect": {
       "type": "return-subconscious",
@@ -712,8 +712,8 @@
     "reject": 9,
     "repress": 9,
     "rejectSuit": "lucidity",
-    "fail": "Repress top 3 Psyche and top 2 Willpower Mindstream.",
-    "effect": "Repress top Willpower Mindstream & top 2 Psyche.",
+    "fail": "Repress the top 5 of the Waking Mind.",
+    "effect": "Repress the top 3 of the Waking Mind.",
     "rejectReward": "Draw 1 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
@@ -808,7 +808,7 @@
     "repress": 9,
     "rejectSuit": "lucidity",
     "fail": "Repress 5 Psyche from hand.",
-    "effect": "Repress top Willpower Mindstream.",
+    "effect": "Repress the top 1 of the Waking Mind.",
     "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
@@ -866,7 +866,7 @@
     "repress": 7,
     "rejectSuit": "lucidity",
     "fail": "Repress 4 Psyche from hand.",
-    "effect": "Repress top Willpower Mindstream.",
+    "effect": "Repress the top 1 of the Waking Mind.",
     "rejectReward": "Draw 2 Psyche.",
     "rejectEffect": {
       "type": "draw-object",

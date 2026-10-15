@@ -15,6 +15,7 @@ import { logMoment } from "../core/narrator.js";
 import { markDreamFeedNudge } from "../ui/fx.js";
 import { queueBossStingerFx } from "../board/board-fx.js";
 import { repressCard, normalizeSubconscious, listSubconsciousCards } from "../dreamers/subconscious.js";
+import { spawnTopArchetype } from "../dreamers/archetype-board.js";
 
 /** Ainmos: every rung of the Boss ladder is a Boss. */
 const BOSS_IDS = new Set(BOSS_LADDER.map((entry) => entry.id));
@@ -58,11 +59,12 @@ export function collapseDuplicateBosses(state) {
   });
 }
 
-/** Bosses land on a random placed Landscape (never Wasteland); The Bed only when it stands alone. */
-function bossLandingTile(state) {
+/** A Cycle's Dreambeast lands on a random placed Landscape of its suit; The Bed when none is placed. */
+function bossLandingTile(state, card = null) {
   const open = (state.board || []).filter((tile) => tile.revealed && !tile.wasteland && !tile.center && tile.id !== "bed");
-  if (!open.length) return (state.board || []).find((tile) => tile.center || tile.id === "bed") || null;
-  return open[Math.floor(random() * open.length)];
+  const suited = card?.suit ? open.filter((tile) => tile.suit === card.suit) : [];
+  if (!suited.length) return (state.board || []).find((tile) => tile.center || tile.id === "bed") || null;
+  return suited[Math.floor(random() * suited.length)];
 }
 
 /**
@@ -82,8 +84,6 @@ export function spawnMiniBoss(state, dream) {
 
 export function spawnBossEncounterOnBed(state, card) {
   if (!isBossDreamCard(card)) return false;
-  // The round a Boss arrives closes its Cycle; dawn follows next round.
-  state.bossArrivedThisRound = true;
   const existing = allEncountersOnBoard(state).find(({ encounter }) => (
     encounter.id === card.id || encounter.refId === card.id
   ));
@@ -100,10 +100,10 @@ export function spawnBossEncounterOnBed(state, card) {
     awake: card.id === "leviathan" || card.refId === "leviathan" ? true : card.awake,
     instanceId: card.instanceId || uid("enc"),
   };
-  const tile = bossLandingTile(state);
+  const tile = bossLandingTile(state, card);
   if (!tile) return false;
   setEncounterOnLandscape(state, tile.id, encounter);
-  logMoment(state, `Boss: ${card.name} awakens on ${tile.name}!${card.twistText ? ` ${card.twist}: ${card.twistText}` : ""}`, { boss: true });
+  logMoment(state, `Dreambeast: ${card.name} (Power ${card.accept}) lands on ${tile.name}!${card.twistText ? ` ${card.twist}: ${card.twistText}` : ""}`, { boss: true });
   markDreamFeedNudge();
   queueBossStingerFx(card.id, tile.id);
   return true;
@@ -117,6 +117,13 @@ function pushDreamDiscard(state, card) {
 /** Any time a Dream leaves the deck, bosses spawn on The Bed instead of dying in discard. */
 export function discardDreamCard(state, card) {
   if (!card) return;
+  // An Archetype Dream is never lost: if an effect eats it, the top Archetype appears anyway.
+  if (card.type === "archetype-dream") {
+    state.bossArrivedThisRound = true;
+    spawnTopArchetype(state);
+    pushDreamDiscard(state, card);
+    return;
+  }
   if (isBossDreamCard(card)) {
     spawnBossEncounterOnBed(state, card);
     pushDreamDiscard(state, card);
@@ -139,12 +146,13 @@ export function takeDreamFromDeck(state) {
  */
 export function popDiscardableDream(state, { fromTop = false } = {}) {
   const deck = state.dreamDeck || [];
+  const ordinary = (card) => !isBossDreamCard(card) && card.type !== "archetype-dream";
   if (fromTop) {
-    const index = deck.findIndex((card) => !isBossDreamCard(card));
+    const index = deck.findIndex(ordinary);
     return index >= 0 ? deck.splice(index, 1)[0] : null;
   }
   for (let i = deck.length - 1; i >= 0; i -= 1) {
-    if (!isBossDreamCard(deck[i])) return deck.splice(i, 1)[0];
+    if (ordinary(deck[i])) return deck.splice(i, 1)[0];
   }
   return null;
 }

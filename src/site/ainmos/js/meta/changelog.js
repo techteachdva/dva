@@ -6,10 +6,27 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.19";
+export const SOMNIA_VERSION = "0.20";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.20",
+    title: "One Goal",
+    notes: [
+      "One goal: Acquire Archetypes. A Daydream asks for 3, a Nap for 6, Deep Sleep for all 12. Every Archetype counts the same.",
+      "Every Cycle is a Dream to survive, then the Cycle's Dreambeast lands on a Landscape of its suit, then you call 1 of 3 Archetypes.",
+      "An Archetype appears on one of its two home Landscapes (The Bed if neither is placed) and slips one Landscape away from you each Explore. Dreambeasts still chase.",
+      "Meeting an Archetype opens with one of its Events: Bright (only while its Landscape is placed) costs Psyche, helps the fight, and Returns 2; Dim is free and makes the fight harder. Then beat Power 12 with a spread that makes a Dream Form.",
+      "Acquire an Archetype: +1 toward waking, +2 Power Tokens, Return 4 from the Subconscious, and its power is yours. You start with 2 Power Tokens.",
+      "Cards flow both ways again: dawn Returns 3, Repressing a Dreambeast Returns half its Power, and every old Mindstream Repress now takes from the Waking Mind, not your hand.",
+      "Landscapes no longer draw Mindstream. Forest, Sky, and City Call an Archetype 2 steps toward you; The Attic, Desert, and Scary Classroom bank Glimmer. The Vault stars the homes of the Archetypes about to be offered.",
+      "The night does not end on its last Cycle: the Long Night keeps the rounds going until you finish, and its toll now grows by 1 a dusk.",
+      "New table: your Psyche hand floats over the board; the bottom bar is Power Tokens and Objects; the left rail is your Wake count, Archetype Powers, and Dream Forms, with no scrolling.",
+      "A movable, minimizable Archetypes window tracks every Archetype in play; the Dreamscape Vault moves and minimizes too. Fight buttons sit right under your selected spread.",
+      "Golden ripples and echoes when an Archetype appears, slips away, or is Acquired.",
+    ],
+  },
   {
     version: "0.19",
     title: "Fits Every Screen",

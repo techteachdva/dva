@@ -471,6 +471,21 @@ export function queueArchetypePowerFx(archetype) {
   if (archetype) queue.push({ type: "archetype-power", archetype });
 }
 
+/** An Archetype appears on a Landscape: a golden ripple that echoes. */
+export function queueArchetypeArriveFx(tileId, name = "") {
+  queue.push({ type: "archetype-arrive", tileId, name });
+}
+
+/** An Archetype is Acquired: the table splashes, ripples, and echoes. */
+export function queueArchetypeAcquireFx(tileId, name = "") {
+  queue.push({ type: "archetype-acquire", tileId, name });
+}
+
+/** An Archetype slips one Landscape away. */
+export function queueArchetypeFleeFx(tileId) {
+  queue.push({ type: "archetype-flee", tileId });
+}
+
 export function queueBossStingerFx(bossId, tileId = "bed") {
   queue.push({ type: "boss-stinger", bossId, tileId });
 }
@@ -834,6 +849,48 @@ export function runPendingBoardFx() {
       floatLabel(c.x, c.y - 22, evt.archetype?.name || "Archetype Power", "fx-gain", delay);
       playSfx("acquire");
       delay += step * 0.6;
+    } else if (evt.type === "archetype-arrive") {
+      const tile = hexTileEl(evt.tileId || "bed");
+      const c = centerOf(tile) || boardCenter();
+      flashEl(tile, "hex-arch-arrive", 1400);
+      if (c) {
+        burstSparkles(c.x, c.y, 18, "#f5d77a");
+        burstSparkles(c.x, c.y, 12, "#c9a0ff");
+        playPointRipple(c.x, c.y, "fx-arch-ripple", 1200);
+        window.setTimeout(() => playPointRipple(c.x, c.y, "fx-arch-ripple fx-echo", 1200), 260);
+        floatLabel(c.x, c.y - 34, `★ ${evt.name || "An Archetype"}`, "fx-arch-label", delay);
+      }
+      playSfx("sparkle");
+      delay += step * 1.2;
+    } else if (evt.type === "archetype-acquire") {
+      const tile = hexTileEl(evt.tileId || "bed");
+      const c = centerOf(tile) || boardCenter();
+      flashEl(tile, "hex-arch-arrive", 1600);
+      if (c) {
+        burstSparkles(c.x, c.y, 30, "#f5d77a");
+        burstSparkles(c.x, c.y, 20, "#b6e6d6");
+        burstSparkles(c.x, c.y, 16, "#c9a0ff");
+        [0, 220, 460].forEach((ms) => window.setTimeout(() => playPointRipple(c.x, c.y, `fx-arch-ripple${ms ? " fx-echo" : ""}`, 1300), ms));
+        floatLabel(c.x, c.y - 40, `${evt.name || "Archetype"} Acquired`, "fx-arch-label fx-arch-big", delay);
+      }
+      const goal = document.getElementById("wake-goal");
+      if (goal) window.setTimeout(() => {
+        const g = centerOf(goal);
+        if (g) burstSparkles(g.x, g.y, 18, "#f5d77a");
+        flashEl(goal, "wake-pulse", 1200);
+      }, 500);
+      playDreamRipple("bright");
+      playHaptic("success");
+      playSfx("acquire");
+      delay += step * 1.6;
+    } else if (evt.type === "archetype-flee") {
+      const tile = hexTileEl(evt.tileId);
+      const c = centerOf(tile);
+      if (c) {
+        burstSparkles(c.x, c.y, 8, "#f5d77a");
+        playPointRipple(c.x, c.y, "fx-arch-ripple fx-soft", 900);
+      }
+      delay += step * 0.4;
     } else if (evt.type === "boss-stinger") {
       playBossFlash();
       playBossStinger(evt.bossId);
@@ -843,7 +900,7 @@ export function runPendingBoardFx() {
       if (c) {
         burstSparkles(c.x, c.y, 22, "#e84848");
         burstSparkles(c.x, c.y, 14, "#f0c96a");
-        floatLabel(c.x, c.y - 32, "☠ Boss", "fx-boss-label", delay);
+        floatLabel(c.x, c.y - 32, "☠ Dreambeast", "fx-boss-label", delay);
         playPointRipple(c.x, c.y, "fx-boss-ripple");
       }
       delay += step * 1.2;

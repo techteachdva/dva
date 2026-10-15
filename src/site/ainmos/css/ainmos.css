@@ -1344,3 +1344,58 @@ body.ainmos .phase-opener-solo-hand.ain-fan .game-card.selected { transform: rot
 .lf-price.lf-price-glimmer s { opacity: 0.55; font-size: 0.8em; }
 .lf-price.lf-price-glimmer em { font-style: normal; font-size: 0.72em; color: #f5d77a; font-weight: 800; }
 .modal-let-go { margin-left: 0.5em; }
+
+/* ── 0.20 Archetype juice: golden ripples that echo ── */
+.fx-arch-ripple {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  margin-left: -17px;
+  margin-top: -17px;
+  border-radius: 50%;
+  border: 2px solid rgba(245, 215, 122, 0.85);
+  box-shadow: 0 0 22px rgba(245, 215, 122, 0.55), inset 0 0 14px rgba(201, 160, 255, 0.45);
+  pointer-events: none;
+  animation: fx-point-ripple 1.15s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+.fx-arch-ripple.fx-echo { border-color: rgba(182, 230, 214, 0.7); box-shadow: 0 0 18px rgba(182, 230, 214, 0.5); }
+.fx-arch-ripple.fx-soft { border-width: 1px; opacity: 0.7; }
+.fx-arch-label {
+  color: #fff3c4;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 10px rgba(245, 215, 122, 0.9), 0 0 22px rgba(201, 160, 255, 0.7), 0 2px 3px rgba(0, 0, 0, 0.9);
+}
+.fx-arch-label.fx-arch-big { font-size: 1.5rem; }
+.hex-arch-arrive { animation: hex-arch-glow 1.4s ease-out; }
+@keyframes hex-arch-glow {
+  0% { filter: brightness(1) drop-shadow(0 0 0 rgba(245, 215, 122, 0)); }
+  30% { filter: brightness(1.45) drop-shadow(0 0 18px rgba(245, 215, 122, 0.95)); }
+  100% { filter: brightness(1) drop-shadow(0 0 0 rgba(245, 215, 122, 0)); }
+}
+.wake-pulse { animation: wake-pulse 1.2s ease-out; }
+@keyframes wake-pulse {
+  0% { box-shadow: var(--glass-edge), 0 0 0 0 rgba(245, 215, 122, 0.8); }
+  40% { box-shadow: var(--glass-edge), 0 0 0 10px rgba(245, 215, 122, 0); transform: scale(1.03); }
+  100% { box-shadow: var(--glass-edge); transform: scale(1); }
+}
+/* A newly filled Wake slot pops in. */
+.wake-slot.is-got, .aw-pip.is-got { animation: slot-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes slot-pop { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+/* Archetype rows shimmer with a holographic sweep. */
+.aw-row { position: relative; overflow: hidden; }
+.aw-row::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.16) 48%, rgba(182, 230, 214, 0.14) 52%, transparent 65%);
+  transform: translateX(-120%);
+  animation: aw-sheen 5.5s ease-in-out infinite;
+  pointer-events: none;
+}
+.aw-row.is-here::after, .aw-row.is-fight::after { animation-duration: 2.4s; }
+@keyframes aw-sheen { 0%, 60% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+@media (prefers-reduced-motion: reduce) {
+  .aw-row::after, .wake-slot.is-got, .aw-pip.is-got, .hex-arch-arrive, .wake-pulse { animation: none !important; }
+}

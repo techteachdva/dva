@@ -153,6 +153,7 @@ const {
   handleBoardTileClick, handleQuestComplete, handleAcquire, handleDefeatFinalArchetype,
   performLandscapeAction, getEffectHelpers, actionTurnHolder, powerBonus, playObject,
   handleBoardSlotClick, handleVaultTileSelect,
+  faceArchetype, fightArchetype, archetypeFightDice,
 } = gameMod;
 const { focusRowArchetype } = stateMod;
 const {
@@ -175,6 +176,8 @@ const {
 } = subconscious;
 const { revealableTiles, forgettableTiles, cancelLandscapePick, revealCapacity, pendingPlacementCard } = landscapesMod;
 const vaultMod = await mod("board/dreamscape-vault.js");
+const archBoard = await mod("dreamers/archetype-board.js");
+const formsMod = await mod("cards/dream-forms.js");
 const shopMod = await mod("shop/lost-found.js");
 const boonMod = await mod("dreamers/boons.js");
 const { isFreeformBoard, vaultCards, placementSlots } = vaultMod;
@@ -186,8 +189,11 @@ function placeFromVault(state) {
   if (!pendingPlacementCard(state)) {
     const cards = vaultCards(state);
     if (!cards.length) return false;
-    const quests = new Set(activeQuestLandscapeIds(state));
-    let index = cards.findIndex((c) => quests.has(c.id));
+    const homes = new Set([
+      ...archBoard.boardArchetypes(state).flatMap(({ arch }) => arch.landscapes || []),
+      ...(state.archetypeDeck || []).slice(0, 3).flatMap((arch) => arch.landscapes || []),
+    ]);
+    let index = cards.findIndex((c) => homes.has(c.id));
     if (index < 0) index = 0;
     handleVaultTileSelect(state, index);
   }
@@ -627,8 +633,18 @@ function huntTarget(state, player) {
   return tiles.length ? closest(here, tiles).id : null;
 }
 
+function archetypeTarget(state, player) {
+  const here = landscapeById(state, player.landscapeId);
+  if (!here || psycheCards(player).length < 3) return null;
+  const list = archBoard.boardArchetypes(state);
+  if (!list.length) return null;
+  return list.map((e) => e.tile).sort((a, b) => hexDistance(a, here) - hexDistance(b, here))[0].id;
+}
+
 function destination(state, player) {
   const here = landscapeById(state, player.landscapeId);
+  const chase = archetypeTarget(state, player);
+  if (chase) return chase;
   const hunt = huntTarget(state, player);
   if (hunt) return hunt;
   if (!state.finalRecurrence && subPsyche(state) > 0 && !rememberObject(player, "persistent")
@@ -745,7 +761,75 @@ function resolveObject(state) {
   else state.pendingObjectChoice = null;
 }
 
+/** Choose the offered Archetype whose placed home is nearest; otherwise the first. */
+function pickArchetype(state) {
+  const options = archBoard.archetypeChoiceOptions(state);
+  const me = alive(state)[0];
+  const here = me ? landscapeById(state, me.landscapeId) : null;
+  const score = (arch) => {
+    const homes = archBoard.archetypeHomeTiles(state, arch);
+    if (!homes.length) return 50;
+    return Math.min(...homes.map((t) => (here ? hexDistance(t, here) : 0)));
+  };
+  return [...options].sort((x, y) => score(x) - score(y))[0];
+}
+
+/** Best spread against an Archetype: within the cap, meeting the Form rule, most dice. */
+function bestArchetypeSpread(state, player, arch) {
+  const rules = archBoard.fightRules(state);
+  let best = null;
+  for (const combo of combinations(psycheCards(player), rules.cap)) {
+    if (archBoard.formRuleProblem(combo, rules.formNeed)) continue;
+    const dice = archetypeFightDice(state, player, combo, arch);
+    const value = combo.reduce((s, c) => s + (Number(c.value) || 0), 0);
+    if (!best || dice > best.dice || (dice === best.dice && value < best.value)) best = { combo, dice, value };
+  }
+  return best;
+}
+
+function tryArchetype(state, player) {
+  if (!player) return false;
+  const tile = landscapeById(state, player.landscapeId);
+  const here = archBoard.archetypesOnTile(state, tile?.id);
+  if (!here.length) return false;
+  const arch = here[0];
+  focus(state, player);
+  state.selectedLandscapeId = tile.id;
+  if (state.archetypeFight?.archId === arch.id) {
+    const spread = bestArchetypeSpread(state, player, arch);
+    if (!spread) {
+      state.archetypeFight = null;
+      return false;
+    }
+    state.selectedHand = spread.combo.map((c) => c.instanceId);
+    const gap = archBoard.fightRules(state).power - spread.dice;
+    if (gap > 0) addTokenDice(state, player, Math.min(3, gap));
+    const ok = fightArchetype(state, arch.id);
+    if (!ok) state.archetypeFight = null;
+    state.botArch = state.botArch || { fights: 0, wins: 0 };
+    state.botArch.fights += 1;
+    return true;
+  }
+  if (state.archetypeFight) return false;
+  // Only open the Meet with a hand that can make a Form.
+  if (!bestArchetypeSpread(state, player, arch)) return false;
+  return faceArchetype(state, arch.id);
+}
+
 function resolveOnePending(state) {
+  if (state.pendingArchetypeChoice) {
+    const pick = pickArchetype(state);
+    if (pick) archBoard.chooseArchetype(state, pick.id);
+    else state.pendingArchetypeChoice = null;
+    return true;
+  }
+  if (state.pendingMindstreamChoice?.kind === "archetype-event") {
+    const good = state.pendingMindstreamChoice.choices.find((c) => c.id === "good" && !c.disabled);
+    const me = state.players.find((p) => p.id === state.pendingMindstreamChoice.playerId);
+    const keep = me ? psycheCards(me).length : 0;
+    resolveMindstreamChoice(state, good && keep >= 4 ? "good" : "bad", helpers);
+    return true;
+  }
   if (state.beastsToReturn?.length && !state.landscapePick) {
     landscapesMod.placeReturnedBeasts(state);
     return true;
@@ -882,14 +966,11 @@ function usefulLandscapeAction(state, player) {
   const tile = landscapeById(state, player.landscapeId);
   if (!tile || tile.wasteland || !tile.revealed) return null;
   const usedMine = new Set(state.usedMeetActionsByPlayer?.[player.id] || []);
-  if (questDrawHere(state, tile) && handCount(player) < 10) return "draw-mindstream";
+  if (tile.uniqueAction === "lure-archetype" && !usedMine.has("landscape:lure-archetype")
+    && archBoard.boardArchetypes(state).some(({ tile: at }) => at.id !== tile.id)) return "lure-archetype";
   // 42.0: The Bed no longer draws 3. It Dreams Onward: Reveal or place 1 Landscape.
   if (tile.id === "bed" && revealCapacity(state) > 0 && !usedMine.has("landscape:dream-onward")) {
     return "dream-onward";
-  }
-  const beasts = state.board.reduce((n, entry) => n + beastsOn(entry).length, 0);
-  if (beasts < alive(state).length && tile.suit && !tile.center && tile.id !== "bed" && handCount(player) < 8) {
-    return "draw-mindstream";
   }
   return null;
 }
@@ -960,6 +1041,7 @@ function act(state) {
     if ((state.meetActionsUsed || 0) >= state.meetActionBudget) return false;
     const who = holder(state);
     const tile = landscapeById(state, who?.landscapeId);
+    if (tryArchetype(state, who)) return true;
     const beast = beastsOn(tile)[0];
     if (beast && fightBeast(state, who, beast)) return true;
     if (state.finalRecurrence && fightFinal(state, who)) return true;
@@ -1046,12 +1128,14 @@ function playGame(lengthKey, index, setup = null) {
   let enteredFinal = false;
   let lastSub = subPsyche(state);
   let psycheReturned = 0;
+  let psycheRepressed = 0;
   let firstAcquireRound = null;
   try {
     while (state.status === "playing" && steps < STEP_CAP) {
       steps += 1;
       const nowSub = subPsyche(state);
       if (nowSub < lastSub) psycheReturned += lastSub - nowSub;
+      if (nowSub > lastSub) psycheRepressed += nowSub - lastSub;
       lastSub = nowSub;
       if (firstAcquireRound == null && (state.acquiredPoints || 0) > 0) firstAcquireRound = state.round;
       if (state.finalRecurrence) enteredFinal = true;
@@ -1121,6 +1205,8 @@ function playGame(lengthKey, index, setup = null) {
     phaseAtEnd: getPhase(state),
     pendingAtEnd: Object.keys(state).filter((k) => k.startsWith("pending") && state[k]).join(","),
     psycheReturned,
+    psycheRepressed,
+    subAtEnd: subPsyche(state),
     objectsBought: state.runStats?.objectsBought || 0,
     insights: state.botShop?.insights || 0,
     formLevels: Object.values(state.formLevels || {}).reduce((sum, level) => sum + (level - 1), 0),
@@ -1136,6 +1222,7 @@ function playGame(lengthKey, index, setup = null) {
     mindAtEnd: wakingMindCount(state),
     handsAtEnd: alive(state).reduce((n, p) => n + (p.hand || []).length, 0),
     firstAcquireRound,
+    archFights: state.botArch?.fights || 0,
   };
 }
 
@@ -1186,6 +1273,8 @@ function summarize(rows) {
     },
     deathClockBuckets: [0, 1, 2, 3, 4, 5, 6].map((n) => rows.filter((r) => r.deaths === n).length),
     avgPsycheReturned: +mean(rows.map((r) => r.psycheReturned || 0)).toFixed(1),
+    avgPsycheRepressed: +mean(rows.map((r) => r.psycheRepressed || 0)).toFixed(1),
+    avgSubAtEnd: +mean(rows.map((r) => r.subAtEnd || 0)).toFixed(1),
     avgObjectsBought: +mean(rows.map((r) => r.objectsBought || 0)).toFixed(2),
     avgInsights: +mean(rows.map((r) => r.insights || 0)).toFixed(2),
     avgFormLevelsGained: +mean(rows.map((r) => r.formLevels || 0)).toFixed(2),
@@ -1200,6 +1289,7 @@ function summarize(rows) {
     }, {}),
     avgMindAtEnd: +mean(rows.map((r) => r.mindAtEnd || 0)).toFixed(1),
     avgHandsAtEnd: +mean(rows.map((r) => r.handsAtEnd || 0)).toFixed(1),
+    avgArchFights: +mean(rows.map((r) => r.archFights || 0)).toFixed(2),
   };
 }
 

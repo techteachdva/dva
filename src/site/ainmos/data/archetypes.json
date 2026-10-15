@@ -2,157 +2,181 @@
   {
     "id": "sage",
     "name": "Sage",
-    "points": 4,
+    "points": 1,
     "image": "images/archetypes/archetype-sage.webp",
     "suit": "lucidity",
     "passive": "+1 Lucidity",
     "power": null,
-    "quests": [
-      "Defeat a Lucidity Boss",
-      "1 Dreamer sacrifices 1 Object"
-    ]
+    "quests": [],
+    "landscapes": [
+      "sky",
+      "silver-mist"
+    ],
+    "home": "Appears on Sky or Silver Mist"
   },
   {
     "id": "innocent",
     "name": "Innocent",
-    "points": 2,
+    "points": 1,
     "image": "images/archetypes/archetype-innocent.webp",
     "suit": "lucidity",
     "passive": null,
     "power": "Remember 3: discard up to 3 Psyche, Return that many +1",
-    "quests": [
-      "Draw Mindstream on any Lucidity Landscape",
-      "Meet a Lucidity Dreambeast"
-    ]
+    "quests": [],
+    "landscapes": [
+      "candy-mountain",
+      "the-attic"
+    ],
+    "home": "Appears on Candy Mountain or The Attic"
   },
   {
     "id": "caregiver",
     "name": "Caregiver",
-    "points": 3,
+    "points": 1,
     "image": "images/archetypes/archetype-caregiver.webp",
     "suit": "willpower",
     "passive": null,
     "power": "Draw 3 Psyche, up to your hand limit",
-    "quests": [
-      "Draw Mindstream on Sea of Teeth or Field of Broken Glass",
-      "Meet a Dreambeast on Sea of Teeth or Field of Broken Glass"
-    ]
+    "quests": [],
+    "landscapes": [
+      "sea-of-teeth",
+      "field-of-broken-glass"
+    ],
+    "home": "Appears on Sea of Teeth or Field of Broken Glass"
   },
   {
     "id": "lover",
     "name": "Lover",
-    "points": 3,
+    "points": 1,
     "image": "images/archetypes/archetype-lover.webp",
     "suit": "elasticity",
     "passive": null,
     "power": "Draw 1 Object from the Object deck",
-    "quests": [
-      "Draw Mindstream on Awards or The Party",
-      "Meet a Dreambeast on Awards or The Party"
-    ]
+    "quests": [],
+    "landscapes": [
+      "awards",
+      "the-party"
+    ],
+    "home": "Appears on Awards or The Party"
   },
   {
     "id": "explorer",
     "name": "Explorer",
-    "points": 3,
+    "points": 1,
     "image": "images/archetypes/archetype-explorer.webp",
     "suit": "elasticity",
     "passive": null,
     "power": "Move yourself or any Dreambeast to any placed Landscape",
-    "quests": [
-      "Draw Mindstream on Endless Ocean or Lava",
-      "Meet a Dreambeast on Endless Ocean or Lava"
-    ]
+    "quests": [],
+    "landscapes": [
+      "endless-ocean",
+      "lava"
+    ],
+    "home": "Appears on Endless Ocean or Lava"
   },
   {
     "id": "magician",
     "name": "Magician",
-    "points": 4,
+    "points": 1,
     "image": "images/archetypes/archetype-magician.webp",
     "suit": "elasticity",
     "passive": "+1 Elasticity",
     "power": null,
-    "quests": [
-      "Defeat an Elasticity Boss",
-      "1 Dreamer sacrifices 1 Object"
-    ]
+    "quests": [],
+    "landscapes": [
+      "desert",
+      "forest"
+    ],
+    "home": "Appears on Desert or Forest"
   },
   {
     "id": "orphan",
     "name": "Orphan",
-    "points": 2,
+    "points": 1,
     "image": "images/archetypes/archetype-orphan.webp",
     "suit": "willpower",
     "passive": null,
     "power": "Your next fight rolls +3 dice",
-    "quests": [
-      "Draw Mindstream on any Willpower Landscape",
-      "Meet a Willpower Dreambeast"
-    ]
+    "quests": [],
+    "landscapes": [
+      "house",
+      "suburbia"
+    ],
+    "home": "Appears on House or Suburbia"
   },
   {
     "id": "fool",
     "name": "Fool",
-    "points": 3,
+    "points": 1,
     "image": "images/archetypes/archetype-fool.webp",
     "suit": "elasticity",
     "passive": null,
     "power": "Place 2 Landscapes from the Dreamscape Vault, free",
-    "quests": [
-      "Draw Mindstream on Insanity or Black Void",
-      "Meet a Dreambeast on Insanity or Black Void"
-    ]
+    "quests": [],
+    "landscapes": [
+      "insanity",
+      "black-void"
+    ],
+    "home": "Appears on Insanity or Black Void"
   },
   {
     "id": "creator",
     "name": "Creator",
-    "points": 3,
+    "points": 1,
     "image": "images/archetypes/archetype-creator.webp",
     "suit": "lucidity",
     "passive": null,
     "power": "Return 1 Dreambeast from the Subconscious onto any placed Landscape",
-    "quests": [
-      "Draw Mindstream on Day in the Life or Inner Sanctum",
-      "Meet a Dreambeast on Day in the Life or Inner Sanctum"
-    ]
+    "quests": [],
+    "landscapes": [
+      "day-in-the-life",
+      "inner-sanctum"
+    ],
+    "home": "Appears on Day in the Life or Inner Sanctum"
   },
   {
     "id": "ruler",
     "name": "Ruler",
-    "points": 3,
+    "points": 1,
     "image": "images/archetypes/archetype-ruler.webp",
     "suit": "willpower",
     "passive": null,
     "power": "Earn a free Insight at the next Lost & Found",
-    "quests": [
-      "Draw Mindstream on Tranquil Grove or Endless Hallway",
-      "Meet a Dreambeast on Tranquil Grove or Endless Hallway"
-    ]
+    "quests": [],
+    "landscapes": [
+      "tranquil-grove",
+      "endless-hallway"
+    ],
+    "home": "Appears on Tranquil Grove or Endless Hallway"
   },
   {
     "id": "warrior",
     "name": "Warrior",
-    "points": 4,
+    "points": 1,
     "image": "images/archetypes/archetype-warrior.webp",
     "suit": "willpower",
     "passive": "+1 Willpower",
     "power": null,
-    "quests": [
-      "Defeat a Willpower Boss",
-      "1 Dreamer sacrifices 1 Object"
-    ]
+    "quests": [],
+    "landscapes": [
+      "scary-classroom",
+      "city"
+    ],
+    "home": "Appears on Scary Classroom or City"
   },
   {
     "id": "outlaw",
     "name": "Outlaw",
-    "points": 2,
+    "points": 1,
     "image": "images/archetypes/archetype-outlaw.webp",
     "suit": "elasticity",
     "passive": null,
     "power": "Banish the Dreambeast on your Landscape without a fight (not a Boss); no reward",
-    "quests": [
-      "Draw Mindstream on any Elasticity Landscape",
-      "Meet an Elasticity Dreambeast"
-    ]
+    "quests": [],
+    "landscapes": [
+      "road",
+      "the-basement"
+    ],
+    "home": "Appears on Road or The Basement"
   }
 ]

@@ -34,10 +34,14 @@ function absolute(src) {
   return src ? new URL(src, document.baseURI).href : "";
 }
 
-function drawnArt(state, plan) {
-  const found = (state.dreamDiscard || []).find((c) => c.instanceId === plan.instanceId)
+function drawnCard(state, plan) {
+  return (state.dreamDiscard || []).find((c) => c.instanceId === plan.instanceId)
     || (state.activeDream?.instanceId === plan.instanceId ? state.activeDream : null);
-  return absolute(found?.image || plan.image || "");
+}
+
+function drawnArt(state, plan) {
+  const found = drawnCard(state, plan);
+  return absolute(found?.chosen?.image || found?.image || plan.image || "");
 }
 
 function spawnPips(spawns) {
@@ -79,10 +83,9 @@ function renderCycleTracker(state) {
     const pips = PHASE_SUITS.map((suit, i) => {
       const step = (d - 1) * 3 + i + 1;
       const when = step < pos.step ? "past" : step === pos.step ? "now" : "ahead";
-      const boss = d === DREAMS_PER_CYCLE && i === 2;
-      return `<span class="cycle-pip is-${when}${boss ? " is-boss" : ""}" title="Dream ${d} · ${PHASE_NAMES[i]}${boss ? " · the Boss" : ""}">${boss ? "♛" : suitIconHtml(suit, { className: "cycle-pip-icon", size: 10 })}</span>`;
+      return `<span class="cycle-pip is-${when}" title="Dream ${d} · ${PHASE_NAMES[i]}">${suitIconHtml(suit, { className: "cycle-pip-icon", size: 10 })}</span>`;
     }).join("");
-    const tag = d === 2 ? "Mini" : d === DREAMS_PER_CYCLE ? "Boss" : "";
+    const tag = d === 2 ? "Dreambeast" : d === DREAMS_PER_CYCLE ? "Archetype" : "Dream";
     dreams.push(`<span class="cycle-dream${d === pos.dream ? " is-now" : ""}" title="Dream ${d} of 3${tag ? ` · ${tag}` : ""}"><span class="cycle-dream-num">${d}</span>${pips}</span>`);
   }
   host.innerHTML = `
@@ -109,6 +112,16 @@ export function renderNightBar(state) {
     const drawn = !inDeck.has(p.instanceId);
     const isNext = index === nextIndex;
     const spawns = spawnsBy[p.instanceId];
+    if (p.kind === "archetype") {
+      const card = drawn ? drawnCard(state, p) : null;
+      const chosen = card?.chosen;
+      const label = `Cycle ${p.ante}, Dream 3 · An Archetype: ${chosen ? `${chosen.name} answered.` : "choose 1 of 3."}`;
+      return `<span class="night-card night-arch${chosen ? " is-drawn" : ""}${isNext ? " is-next" : ""}${chosen ? ` suit-${escapeHtml(chosen.suit || "none")}` : ""}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+        <span class="night-face"${chosen ? ` style="--night-art:url('${escapeHtml(absolute(chosen.image))}')"` : ""}></span>
+        ${chosen ? "" : `<span class="night-arch-glyph" aria-hidden="true">★</span>`}
+        <span class="night-tick" aria-hidden="true"></span>
+      </span>`;
+    }
     if (p.boss) {
       const entry = ladderEntry(p.bossId);
       const status = defeated.has(p.bossId)
@@ -119,7 +132,7 @@ export function renderNightBar(state) {
             ? "passed"
             : "ahead";
       const power = entry?.stack ? entry.stack.join(", then ") : entry?.power;
-      const label = `Cycle ${p.ante}, Dream 3 · Boss: ${p.name}${entry ? `, Power ${power}. ${entry.twist}: ${entry.twistText}` : ""}${status === "defeated" ? " Defeated." : status === "standing" ? " Standing on the Dreamscape." : ""}${spawnLabel(spawns)}`;
+      const label = `Cycle ${p.ante}, Dream 2 · Dreambeast: ${p.name}${entry ? `, Power ${power}. ${entry.twist}: ${entry.twistText}` : ""}${status === "defeated" ? " Defeated." : status === "standing" ? " Standing on the Dreamscape." : ""}${spawnLabel(spawns)}`;
       return `<span class="night-card night-boss is-${status} suit-${p.suit || "none"}${isNext ? " is-next" : ""}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
         <span class="night-face" style="--night-art:url('${escapeHtml(absolute(p.image))}')"></span>
         <span class="night-boss-rung">${entry?.rung ?? ""}</span>

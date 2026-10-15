@@ -213,8 +213,8 @@ export function resumeArchetypeFollowup() {
 /** Quintessential passives log on acquire; activatable powers cost 1 Power Token. */
 export function resolveOnAcquire(state, archetype, player) {
   if (!archetype) return;
-  // Ainmos: Acquiring scores points. Powers and passives arrive as Boss Boons.
-  addLog(state, `${archetype.name} acquired: +${archetype.points} Archetype points.`);
+  // Ainmos: the Acquire itself (count, tokens, Boon) is granted in state.js.
+  addLog(state, `${archetype.name}'s ${archetype.passive ? "passive" : "power"} is yours.`);
 }
 
 export function useArchetypePower(state, archetype, player, helpers = {}) {

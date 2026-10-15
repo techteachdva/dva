@@ -41,6 +41,8 @@ import { offerEffectChoice, registerEffectResolver } from "../effects/effect-cho
 import { beginRemember } from "../effects/remember.js";
 import { recordCancellableMove } from "../dreamers/dreamer-powers.js";
 import { discardDreamCard, isBossDreamCard, spawnBossEncounterOnBed } from "../cards/dream-deck.js";
+import { boardArchetypes, lureArchetype } from "../dreamers/archetype-board.js";
+import { bankGlimmer } from "../shop/lost-found.js";
 
 export const LANDSCAPE_ACTION_DEFS = {
   "draw-mindstream": {
@@ -78,6 +80,14 @@ export const LANDSCAPE_ACTION_DEFS = {
   "swap-archetypes": {
     label: "Swap Archetypes",
     description: "Swap the Active Archetype with the next Archetype in the deck.",
+  },
+  "lure-archetype": {
+    label: "Call an Archetype",
+    description: "The nearest Archetype steps 2 Landscapes toward you.",
+  },
+  "bank-glimmer": {
+    label: "Gather Glimmer",
+    description: "Bank 2 Glimmer for the next Lost & Found.",
   },
   "take-power": {
     label: "Take Power",
@@ -978,8 +988,9 @@ export function getUniqueLandscapeActionChoices(tile) {
   }];
 }
 
-export function canDrawMindstreamOnLandscape(tile) {
-  return !!(tile?.revealed && !tile.hidden && !tile.wasteland && tile.suit);
+/** Ainmos: Landscapes no longer draw Mindstream. Events open Archetype Meets instead. */
+export function canDrawMindstreamOnLandscape(_tile) {
+  return false;
 }
 
 export function getLandscapeActionSummary(tile) {
@@ -1155,6 +1166,31 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       state.archetypeDeck.push(prev);
       addLog(state, `${landscapeName}: ${prev.name} goes to the bottom of the deck. ${next.name} is the dream to chase.`);
       return { ok: true };
+    }
+
+    case "lure-archetype": {
+      const here = state.board.find((t) => t.id === player.landscapeId) || tile;
+      const nearest = boardArchetypes(state)
+        .filter(({ tile: at }) => at.id !== here.id)
+        .sort((x, y) => hexDistance(x.tile, here) - hexDistance(y.tile, here))[0];
+      if (!nearest) {
+        addLog(state, `${landscapeName}: no Archetype stands elsewhere to call.`);
+        return { ok: false, refund: true };
+      }
+      const first = lureArchetype(state, nearest.arch.id, here.id);
+      if (first) lureArchetype(state, nearest.arch.id, here.id);
+      if (!first) {
+        addLog(state, `${landscapeName}: ${nearest.arch.name} has no open path toward you.`);
+        return { ok: false, refund: true };
+      }
+      addLog(state, `${landscapeName}: ${player.name} calls ${nearest.arch.name} closer.`);
+      return { ok: true };
+    }
+
+    case "bank-glimmer": {
+      const got = bankGlimmer(state, 2);
+      addLog(state, `${landscapeName}: ${got} Glimmer gathered for the Lost & Found.`);
+      return got ? { ok: true } : { ok: false, refund: true, reason: "Glimmer is full." };
     }
 
     case "take-power": {

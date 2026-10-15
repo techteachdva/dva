@@ -1,9 +1,9 @@
-/** Brief notices stacked at the bottom of the table viewport — up to 6 at once. */
+/** Brief notices stacked at the bottom of the table viewport — up to 2 at once, need to know. */
 
-const DEFAULT_DURATION_MS = 14000;
-const MAX_VISIBLE = 6;
+const DEFAULT_DURATION_MS = 7000;
+const MAX_VISIBLE = 2;
 const HISTORY_MAX = 80;
-const REDUCED_MOTION_MS = 11000;
+const REDUCED_MOTION_MS = 9000;
 
 let activeToasts = [];
 let momentHistory = [];

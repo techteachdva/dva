@@ -43,7 +43,7 @@
     <div id="night-strip" class="night-strip" role="group" aria-label="The night" hidden></div>
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 0.19</span>
+        <span class="version-label">v 0.20</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Ainmos" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -60,7 +60,7 @@
         <span class="hud-pill hud-pill-glimmer" title="Glimmer: unused Reveals, steps, and Meet actions. Pays toward the next Lost &amp; Found."><span class="hud-pill-ring" aria-hidden="true"></span><span class="hud-pill-name">Glimmer</span><span id="hud-glimmer">0</span></span>
       </div>
       <div id="hud" class="hud">
-        <div class="hud-item hud-goal-wrap" title="Archetype points scored / points required to wake."><span class="label">Goal:</span><span id="hud-goal">0/8</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span></div>
+        <div class="hud-item hud-goal-wrap" title="Archetypes Acquired / Archetypes needed to wake."><span class="label">Archetypes</span><span id="hud-goal">0/3</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span></div>
         <div class="hud-item hud-cycle" id="hud-cycle" role="img" title="Cycle 1 of 4"></div>
         <div class="hud-item hud-mind-wrap" id="hud-mind-wrap" title="The Waking Mind: Psyche left to draw (deck plus discard). Each Dreambeast still standing at dusk Represses 1. Remember to win cards back."><span class="label">Mind</span><span id="hud-mind">0</span><span id="hud-mind-dusk" class="hud-mind-dusk hidden"></span></div>
         <div class="hud-feed-cluster">
@@ -95,7 +95,8 @@
               <span id="turn-plaque-phase" class="turn-plaque-phase"></span>
               <button type="button" id="turn-plaque-pass" class="turn-plaque-pass hidden" title="Pass your turn — next Dreamer uses the remaining moves/actions">Pass</button>
             </div>
-            <div id="dreamscape-vault" class="dreamscape-vault" hidden></div>
+            <div id="dreamscape-vault" class="dreamscape-vault float-window" hidden></div>
+            <div id="archetype-window" class="archetype-window float-window" hidden></div>
             <div class="board-zoom-stage" id="board-zoom-stage">
               <div id="hex-board" class="hex-board"></div>
             </div>
@@ -121,16 +122,23 @@
         <div id="sidebar-drawer-backdrop" class="chrome-drawer-backdrop hidden"></div>
         <aside class="sidebar right sidebar-v14" id="sidebar-right">
           <div class="resize-handle resize-col edge-left" id="resize-sidebar-right" title="Drag to resize sidebar"></div>
-          <h3>Active Archetype</h3>
-          <div id="active-archetype" class="active-card-slot"></div>
-          <h3>Encounter</h3>
-          <div id="active-encounter" class="active-card-slot"></div>
-          <h3>Acquired</h3>
-          <div id="acquired-archetypes" class="mini-card-row"></div>
-          <h3 class="dream-forms-title">Dream Forms</h3>
-          <ul id="dream-forms" class="dream-forms" aria-label="Dream Forms and their levels"></ul>
-          <h3 class="boons-title">Boons</h3>
-          <ul id="boon-list" class="boon-list" aria-label="Boons the table holds"></ul>
+          <section class="rail-wake" aria-label="Your goal">
+            <h3>Wake</h3>
+            <div id="wake-goal" class="wake-goal"></div>
+          </section>
+          <section class="rail-powers" aria-label="Powers of your Archetypes">
+            <h3 class="boons-title">Archetype Powers</h3>
+            <ul id="boon-list" class="boon-list" aria-label="Powers of your Acquired Archetypes"></ul>
+          </section>
+          <section class="rail-forms" aria-label="Dream Forms">
+            <h3 class="dream-forms-title">Dream Forms</h3>
+            <ul id="dream-forms" class="dream-forms" aria-label="Dream Forms and their levels"></ul>
+          </section>
+          <div class="rail-legacy" hidden aria-hidden="true">
+            <div id="active-archetype" class="active-card-slot"></div>
+            <div id="active-encounter" class="active-card-slot"></div>
+            <div id="acquired-archetypes" class="mini-card-row"></div>
+          </div>
         </aside>
 
         <footer class="hand-bar" id="hand-bar">
@@ -274,6 +282,7 @@
   <div id="vault-screen" class="lost-found vault-screen" hidden></div>
   <div id="cycle-screen" class="lost-found cycle-screen" hidden></div>
   <div id="boon-draft" class="lost-found boon-draft" hidden></div>
+  <div id="archetype-choice" class="lost-found archetype-choice" hidden></div>
   <div id="coach-hint" class="coach-hint" hidden></div>
   <div id="tutorial-brief" class="tutorial-brief hidden" role="dialog" aria-modal="true" aria-labelledby="tutorial-brief-title">
     <div class="tutorial-brief-backdrop"></div>

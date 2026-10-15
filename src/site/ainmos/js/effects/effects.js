@@ -17,6 +17,7 @@ import { onObjectDrawn } from "./objects.js";
 import { beginMindstreamCardChoice, beginDreamCardChoice } from "../cards/mindstream-choices.js";
 import { beginEventOrWaste } from "../board/event-landscapes.js";
 import { isBossDreamCard, spawnBossEncounterOnBed } from "../cards/dream-deck.js";
+import { beginArchetypeChoice, isArchetypeDream } from "../dreamers/archetype-board.js";
 
 function alivePlayers(state) {
   return state.players.filter((p) => p.alive);
@@ -152,6 +153,12 @@ export function resolveCardEffect(state, card, player, helpers) {
 
   if (isBossDreamCard(card)) {
     spawnBossEncounterOnBed(state, card);
+    return;
+  }
+  // The third Dream of a Cycle: choose 1 of 3 Archetypes. Dawn follows next round.
+  if (isArchetypeDream(card)) {
+    state.bossArrivedThisRound = true;
+    beginArchetypeChoice(state);
     return;
   }
 
