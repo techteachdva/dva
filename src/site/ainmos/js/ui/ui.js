@@ -1,3 +1,4 @@
+import { phaseActionsText, unusedGlimmerText } from "../core/cycle.js";
 import { ladderEntry } from "../encounters/boss-ladder.js";
 import { runSummaryHtml } from "./run-summary.js";
 import { bestForm, DREAM_FORMS, formLevel, PSYCHE_UPGRADES, upgradeLabel } from "../cards/dream-forms.js";
@@ -1458,7 +1459,7 @@ export function showModal(card, options = {}) {
           <span class="psyche-suit large wild-gradient">★</span>
         </div>
         <h2>Wild Psyche</h2>
-        <p>Counts as <strong>5 Psyche of any suit</strong> when played. After playing, Repress this card and the top <strong>5 cards</strong> of the Psyche Deck (shuffle the discard into a new draw pile if needed). If the Psyche Deck and discard are both empty, the table loses immediately.</p>
+        <p>Counts as <strong>5 Psyche of any suit</strong> when played. After playing, Repress this card and the top <strong>5 cards</strong> of the Psyche Deck (shuffle the discard into a new draw pile if needed). If the Psyche Deck and discard are both empty, you lose immediately.</p>
       `;
     } else if (card.type === "psyche-power") {
       detail.innerHTML = `
@@ -4193,7 +4194,7 @@ function phaseBudgetChipLabel(state) {
     if (!state.dreamDrawn) return null;
     if (state.landscapePick?.mode === "choose") return "Choose a hex";
     if (state.landscapePick?.mode === "reveal" && state.landscapePick.remaining > 0) {
-      return `${state.landscapePick.remaining} reveal${state.landscapePick.remaining === 1 ? "" : "s"} · unused → ✧`;
+      return `${phaseActionsText("Reveal", state.landscapePick.remaining)} · unused → ${state.landscapePick.remaining} ✧`;
     }
     if (state.landscapePick?.excessOnly && state.landscapePick.remaining > 0) {
       return `${state.landscapePick.remaining} psyche`;
@@ -4206,12 +4207,12 @@ function phaseBudgetChipLabel(state) {
   }
   if (phase === "Explore") {
     if (!state.exploreActivated) return phaseOpeningActive(state) ? "Spend Elasticity" : null;
-    return `${state.exploreMovesLeft} move${state.exploreMovesLeft === 1 ? "" : "s"} · unused → ✧`;
+    return `${phaseActionsText("Explore", state.exploreMovesLeft)} · unused → ${state.exploreMovesLeft} ✧`;
   }
   if (phase === "Meet") {
     if (!state.meetActionBudget) return phaseOpeningActive(state) ? "Spend Willpower" : null;
     const left = Math.max(0, state.meetActionBudget - state.meetActionsUsed);
-    return `${state.meetActionsUsed}/${state.meetActionBudget} actions${left ? " · unused → ✧" : ""}`;
+    return left ? `${phaseActionsText("Meet", left)} · unused → ${left} ✧` : "Meet Actions spent";
   }
   return null;
 }
@@ -4238,17 +4239,17 @@ function renderTurnPlaque(state) {
   if (holder) {
     if (phase === "Meet" && (state.meetActionBudget || 0) > 0 && state.meetActionsUsed < state.meetActionBudget) {
       active = true;
-      phaseNote = `Meet · ${Math.max(0, (state.meetActionBudget || 0) - (state.meetActionsUsed || 0))} left`;
+      phaseNote = `Meet · ${Math.max(0, (state.meetActionBudget || 0) - (state.meetActionsUsed || 0))}`;
     } else if (phase === "Explore" && state.exploreActivated && (state.exploreMovesLeft || 0) > 0) {
       active = true;
-      phaseNote = `Explore · ${state.exploreMovesLeft} move${state.exploreMovesLeft === 1 ? "" : "s"}`;
+      phaseNote = `Explore · ${state.exploreMovesLeft}`;
     } else if (
       phase === "Reveal"
       && (state.landscapePick?.mode === "reveal" || state.landscapePick?.mode === "reveal-deck-tops")
       && (state.landscapePick?.remaining || 0) > 0
     ) {
       active = true;
-      phaseNote = `Reveal · ${state.landscapePick.remaining} left`;
+      phaseNote = `Reveal · ${state.landscapePick.remaining}`;
     }
   }
 
@@ -4266,11 +4267,14 @@ function renderTurnPlaque(state) {
 
   plaque.classList.remove("hidden");
   // Ainmos is solo: the plaque names the phase and what is left, not whose turn it is.
+  // 0.24: the plaque says both jobs of the Psyche you spent: Actions now, Glimmer later.
   const [phaseName, left] = phaseNote.split(" · ");
+  const n = Number(left) || 0;
   const labelEl = plaque.querySelector(".turn-plaque-label");
   if (labelEl) labelEl.textContent = phaseName || "Now";
-  nameEl.textContent = left || holder.name;
-  if (phaseEl) phaseEl.textContent = "";
+  nameEl.textContent = phaseActionsText(phaseName, n);
+  if (phaseEl) phaseEl.textContent = unusedGlimmerText(n);
+  plaque.title = `${phaseActionsText(phaseName, n)} left. Any you leave unused become ${n} Glimmer ✧ for the next Lost & Found.`;
   if (passBtn) {
     passBtn.classList.toggle("hidden", !canPass);
     passBtn.textContent = "Pass";

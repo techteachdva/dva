@@ -541,7 +541,7 @@ function tileToCard(tile) {
  * Ainmos Dreamscape Reset. When the Vault and tile deck are both empty, the
  * next round begins with the dream dissolving: every Landscape but The Bed
  * shuffles back into the tile deck, ordinary Dreambeasts on them are discarded,
- * Bosses drift back to The Bed, and every Dreamer wakes on The Bed.
+ * Bosses drift back to The Bed, and you wake on The Bed.
  */
 export function resetDreamscape(state) {
   if (!isFreeformBoard(state)) return false;
@@ -576,7 +576,7 @@ export function resetDreamscape(state) {
   state.dreamscapeResets = (state.dreamscapeResets || 0) + 1;
   logMoment(
     state,
-    `The Dreamscape dissolves and re-forms. Every Dreamer wakes on The Bed.${repressed ? ` ${repressed} Dreambeast${repressed === 1 ? " is" : "s are"} discarded.` : ""}${bosses.length ? " The Boss drifts back to The Bed." : ""}`,
+    `The Dreamscape dissolves and re-forms. You wake on The Bed.${repressed ? ` ${repressed} Dreambeast${repressed === 1 ? " is" : "s are"} discarded.` : ""}${bosses.length ? " The Boss drifts back to The Bed." : ""}`,
   );
   return true;
 }

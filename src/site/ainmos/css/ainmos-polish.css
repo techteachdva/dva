@@ -669,3 +669,9 @@ html:root body.ainmos.play-window #dreamscape-vault .vault-title { flex: 1 1 aut
 html:root body.ainmos.play-window #dreamscape-vault .vault-deck { flex: 0 0 auto; }
 html:root body.ainmos.play-window #dreamscape-vault .vault-title { overflow: hidden; text-overflow: clip; letter-spacing: 0.06em; }
 html:is([data-form="tablet"], [data-form="phone"]):root body.ainmos.play-window #dreamscape-vault .vault-title { font-size: 0.68em; }
+
+/* 0.24: the Vault card names the Landscape's second action quietly. */
+body.ainmos .vs-item .vs-call { display: block; margin-top: 0.2rem; font-size: 0.85em; opacity: 0.72; font-style: italic; }
+/* The turn plaque carries its Glimmer line. */
+body.ainmos .turn-plaque .turn-plaque-phase { font-size: 0.68rem; font-weight: 700; opacity: 0.85; white-space: nowrap; }
+body.ainmos .turn-plaque { max-width: min(46vw, 20rem); }

@@ -300,7 +300,7 @@ export function getCurrentObjective(state) {
       suit: "willpower",
       title: state.activeEncounter ? "Fight" : "Spend your actions",
       steps: lines,
-      tip: "Fight the Dreambeast here, Meet the Archetype here, use your Landscape's action, or tap a Persistent Object. Unused actions bank Glimmer ✧.",
+      tip: "Fight the Dreambeast here, Meet the Archetype here, use one of your Landscape's two actions, or tap a Persistent Object. Unused Meet Actions become Glimmer ✧.",
     };
   }
 
@@ -421,7 +421,7 @@ export function infoHubHtml(options = {}) {
             <ul>
               <li class="suit-lucidity"><strong>Reveal</strong> — the Dream is drawn and endured. Spend 1 Lucidity: its value plus your Lucidity places that many Landscapes from the Vault.</li>
               <li class="suit-elasticity"><strong>Explore</strong> — spend 1 Elasticity for steps.</li>
-              <li class="suit-willpower"><strong>Meet</strong> — spend 1 Willpower for actions: fight a Dreambeast, Meet an Archetype, use your Landscape's action, or tap a Persistent Object.</li>
+              <li class="suit-willpower"><strong>Meet</strong> — spend 1 Willpower for Meet Actions: fight a Dreambeast, Meet an Archetype, use one of your Landscape's two actions (Call a Dreambeast of its suit, or its own action), or tap a Persistent Object.</li>
             </ul>
             <p>A Power Token can open any phase as 1 plus your stat. Every unused Reveal, step, or action banks 1 Glimmer ✧, which pays toward the next Lost &amp; Found.</p>
           </div>
@@ -440,7 +440,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule info-hub-glimmer">
             <h3>Glimmer ✧</h3>
-            <p><strong>Any</strong> Reveal, step, or Meet action you leave unspent becomes <strong>1 Glimmer</strong> when the phase ends (up to 10 banked, shown at the top). In the <strong>Lost &amp; Found</strong> at the start of the next round, Glimmer pays first: 1 value of any price, in any suit. 3 Glimmer looks again. The Attic, Desert, and Scary Classroom bank 2 more.</p>
+            <p><strong>Any</strong> Reveal, step, or Meet action you leave unspent becomes <strong>1 Glimmer</strong> when the phase ends (up to 10 banked, shown at the top). In the <strong>Lost &amp; Found</strong> at the start of the next round, Glimmer pays first: 1 value of any price, in any suit. 3 Glimmer looks again. Awards banks 6.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Between Rounds</h3>
@@ -448,7 +448,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Remember</h3>
-            <p><strong>Remember N:</strong> discard up to N Psyche, then Return that many plus 1 from the Subconscious. You choose which Psyche come back. Memory Landscapes, Remember Objects, and the Innocent Remember.</p>
+            <p><strong>Remember N:</strong> discard up to N Psyche, then Return that many plus 1 from the Subconscious. You choose which Psyche come back. Tranquil Grove, Remember Objects, and the Innocent Remember.</p>
           </div>
           <p class="info-hub-footer">Back in the top-left undoes the last action.</p>
         </section>

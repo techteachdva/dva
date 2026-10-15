@@ -128,7 +128,7 @@ function bannerCopy(rows, tier) {
     ? list[0]
     : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
   if (tier === "severe") {
-    return `The Dreamscape is unstable — ${joined}. About 1% remains. Return Psyche from the Subconscious or the table loses.`;
+    return `The Dreamscape is unstable — ${joined}. About 1% remains. Return Psyche from the Subconscious or you lose.`;
   }
   if (tier === "critical") {
     return `Critical — ${joined}. Return Psyche from the Subconscious before these decks run out.`;

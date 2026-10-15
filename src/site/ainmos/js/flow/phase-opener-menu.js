@@ -1,3 +1,4 @@
+import { unusedGlimmerText } from "../core/cycle.js";
 /**
  * Ainmos phase opener: one full screen per phase. Your hand, big; the cards
  * that can open the phase are lit; a live preview says what the spend buys.
@@ -51,16 +52,15 @@ function openerTitle(phase) {
 }
 
 function openerLead(phase, suitLabel) {
-  if (phase === "Reveal") return `Spend 1 ${suitLabel}. Its value plus your Lucidity places that many Landscapes from the Vault.`;
-  if (phase === "Explore") return `Spend 1 ${suitLabel}. Its value plus your Elasticity is how many steps you take.`;
-  return `Spend 1 ${suitLabel}. Its value plus your Willpower is how many Meet actions you get: fights, draws, Landscape actions.`;
+  const glimmer = "Any you leave unused become Glimmer ✧ for the next Lost & Found.";
+  if (phase === "Reveal") return `Spend 1 ${suitLabel}. Its value plus your Lucidity is your Reveal Actions: each places a Landscape from the Vault. ${glimmer}`;
+  if (phase === "Explore") return `Spend 1 ${suitLabel}. Its value plus your Elasticity is your Explore Actions: each is 1 step. ${glimmer}`;
+  return `Spend 1 ${suitLabel}. Its value plus your Willpower is your Meet Actions: fight a Dreambeast, Meet an Archetype, or use a Landscape's actions. ${glimmer}`;
 }
 
 /** What one point of the phase budget buys, for the live preview. */
 function budgetUnit(phase, n) {
-  if (phase === "Reveal") return n === 1 ? "Landscape" : "Landscapes";
-  if (phase === "Explore") return n === 1 ? "step" : "steps";
-  return n === 1 ? "action" : "actions";
+  return `${phase} Action${n === 1 ? "" : "s"} · ${unusedGlimmerText(n)}`;
 }
 
 function confirmLabel(phase) {
@@ -275,7 +275,7 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
       <footer class="phase-opener-footer">
         <div class="phase-opener-actions">
           <button type="button" id="btn-view-board" class="btn btn-phase-opener-skip">View board</button>
-          <button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip">Skip</button>
+          <button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip" title="Skip: keep your cards. No Actions, and no Glimmer.">Skip</button>
           <button type="button" class="btn btn-phase-opener-skip phase-opener-token${tokenOn ? " on" : ""}" data-token-id="${player?.id || ""}" ${tokenOk ? "" : "disabled"} title="Spend 1 Power Token as 1 + ${suitLabel} ${bonus}">
             Power Token · ${player?.powerTokens || 0}
           </button>

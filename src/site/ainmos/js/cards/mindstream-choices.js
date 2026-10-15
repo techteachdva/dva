@@ -128,7 +128,7 @@ function dreamTollAffordable(state, player, toll) {
   if (toll.kind === "repressAll") {
     const short = (state.players || []).filter((p) => p.alive).some((p) => (p.hand?.length || 0) < toll.count);
     if (!short) return { ok: true, reason: "" };
-    return { ok: false, reason: `Bright costs each Dreamer Repress ${toll.count} Psyche, and a hand is short.` };
+    return { ok: false, reason: `Bright costs: Repress ${toll.count} Psyche, and a hand is short.` };
   }
   if (toll.kind === "repress") {
     if (hand >= toll.count) return { ok: true, reason: "" };

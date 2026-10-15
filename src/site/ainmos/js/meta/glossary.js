@@ -16,6 +16,126 @@ const GROUPS = [
 /** @type {{ term: string, group: string, aka?: string, text: string }[]} */
 const TERMS = [
   {
+    term: "City",
+    group: "places",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Rally (Your next fight rolls +2 dice), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Forest",
+    group: "places",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Hide in the Trees (At the next Explore, Dreambeasts do not chase you), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "House",
+    group: "places",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Lock the Doors (At this dusk, Dreambeasts Repress nothing), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Road",
+    group: "places",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Move Your Dreamer 2 Spaces (Move your Dreamer to a Landscape 2 steps away), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Sky",
+    group: "places",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Call an Archetype (The nearest Archetype steps 2 Landscapes toward you), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Suburbia",
+    group: "places",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Pawn Shop (Discard 1 of your Objects, then draw Psyche up to your hand limit), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Lava",
+    group: "places",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Scorch (The Dreambeast on your Landscape loses 2 Power for good (never below 1)), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Black Void",
+    group: "places",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Sink and Surface (Repress 1 to 3 Psyche from your hand, then Return that many of your choice from the Subconscious), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Field of Broken Glass",
+    group: "places",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Shatter and Swap (Swap the places of 2 Landscapes on the Dreamscape. Everything on them moves too), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "The Attic",
+    group: "places",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Collector's Fair (A stall of up to 3 Objects that belong to sets. Buy one with Psyche of its suit), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "The Basement",
+    group: "places",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Lure a Dreambeast (The nearest Dreambeast moves onto your Landscape), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Desert",
+    group: "places",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Mirage (Place 2 Landscapes from the Dreamscape Vault for free), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Endless Hallway",
+    group: "places",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Endless Doors (Move your Dreamer to any placed Elasticity Landscape), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "The Party",
+    group: "places",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Dance with Dreambeasts (Move up to 2 Dreambeasts 1 Landscape each), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Awards",
+    group: "places",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Grand Prize (Bank 6 Glimmer for the next Lost & Found), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Sea of Teeth",
+    group: "places",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Feeding Frenzy (Every Dreambeast steps 1 Landscape toward you), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Endless Ocean",
+    group: "places",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Ride the Tide (Move your Dreamer to any Landscape next to an Archetype), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Candy Mountain",
+    group: "places",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Sugar Rush (Your next Explore gets +2 steps), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Scary Classroom",
+    group: "places",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Study (Discard 3 Psyche to raise one Dream Form 1 level for the rest of the night), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Tranquil Grove",
+    group: "places",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Remember 2 (Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious, your choice), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Day in the Life",
+    group: "places",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Daily Routine (Name a suit. Draw the next Psyche of that suit from the Psyche deck), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Insanity",
+    group: "places",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Madness (Discard your whole hand, then draw that many Psyche), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Inner Sanctum",
+    group: "places",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Inner Sanctum (Return 1 Psyche of your choice from the Subconscious straight to your hand), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
+    term: "Silver Mist",
+    group: "places",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Clear the Mist (Redeal the Dreamscape Vault for free), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+  },
+  {
     term: "Dusk",
     group: "round",
     text: "The end of each round. Each Dreambeast still on the board Represses 1 Psyche from the Waking Mind into the Subconscious. Some Bosses act at dusk too: the Baku eats a Dream, the Devourer makes the table Discard an Object, Leviathan Forgets a Landscape. The −1 badge on a beast and the Mind counter's forecast show what dusk will take.",
@@ -23,19 +143,19 @@ const TERMS = [
   {
     term: "Memory Landscape",
     group: "places",
-    text: "Tranquil Grove, Silver Mist, Day in the Life, and Black Void. Their action is Remember 2, once per table on each of them every Meet. Every Lucidity Landscape sees or remembers; Elasticity Landscapes move Dreamers; Willpower Landscapes fight and move beasts.",
+    text: "Tranquil Grove's action is Remember 2. Black Void's Sink and Surface lets you trade Psyche with the Subconscious. Lucidity Landscapes see and remember, Elasticity Landscapes move you, and Willpower Landscapes fight.",
   },
   {
     term: "Remember",
     group: "cards",
     aka: "remember n",
-    text: "Remember N: discard up to N Psyche from your hand, then Return that many Psyche plus 1 from the Subconscious, your choice. Discard none and you still Return 1. Every Psyche you Return is +1 Waking Mind. Memory Landscapes Remember 2. Remember Objects and the Innocent Remember too.",
+    text: "Remember N: discard up to N Psyche from your hand, then Return that many Psyche plus 1 from the Subconscious, your choice. Discard none and you still Return 1. Every Psyche you Return is +1 Waking Mind. Tranquil Grove Remembers 2; Remember Objects and the Innocent Remember too.",
   },
   {
     term: "Waking Mind",
     group: "win",
     aka: "mind psyche deck",
-    text: "The Psyche deck plus its discard: the Psyche you can still draw. The Mind counter in the top bar shows it, and what dusk will take. If it empties, you forget yourself and the table loses. Remember wins it back.",
+    text: "The Psyche deck plus its discard: the Psyche you can still draw. The Mind counter in the top bar shows it, and what dusk will take. If it empties, you forget yourself and you lose. Remember wins it back.",
   },
   {
     term: "Accept",
@@ -277,7 +397,7 @@ const TERMS = [
   {
     term: "Explorer",
     group: "people",
-    text: "A Elasticity Archetype. It appears on Endless Ocean or Lava, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Move yourself or any Dreambeast to any placed Landscape.",
+    text: "An Elasticity Archetype. It appears on Endless Ocean or Lava, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Move yourself or any Dreambeast to any placed Landscape.",
   },
   {
     term: "Fail",
@@ -293,7 +413,7 @@ const TERMS = [
   {
     term: "Fool",
     group: "people",
-    text: "A Elasticity Archetype. It appears on Insanity or Black Void, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Place 2 Landscapes from the Dreamscape Vault, free.",
+    text: "An Elasticity Archetype. It appears on Insanity or Black Void, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Place 2 Landscapes from the Dreamscape Vault, free.",
   },
   {
     term: "Forget",
@@ -349,7 +469,7 @@ const TERMS = [
     term: "Landscape",
     group: "map",
     aka: "hex tile",
-    text: "One hex on the Dreamscape. It has a suit and one action, which the table may use once each Meet for 1 Meet action. Quests can still name a Landscape after it has been Forgotten.",
+    text: "One hex on the Dreamscape, with a suit and two Meet actions: Call a Dreambeast of its suit, and one action no other Landscape has. Each works once per Meet on that Landscape and costs 1 Meet Action.",
   },
   {
     term: "Leviathan",
@@ -359,7 +479,7 @@ const TERMS = [
   {
     term: "Lover",
     group: "people",
-    text: "A Elasticity Archetype. It appears on Awards or The Party, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Draw 1 Object from the Object deck.",
+    text: "An Elasticity Archetype. It appears on Awards or The Party, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Draw 1 Object from the Object deck.",
   },
   {
     term: "Lucidity",
@@ -370,13 +490,13 @@ const TERMS = [
   {
     term: "Magician",
     group: "people",
-    text: "A Elasticity Archetype. It appears on Desert or Forest, and its Events come from those two Landscapes. Once Acquired: +1 Elasticity, always.",
+    text: "An Elasticity Archetype. It appears on Desert or Forest, and its Events come from those two Landscapes. Once Acquired: +1 Elasticity, always.",
   },
   {
     term: "Meet",
     group: "round",
     aka: "meet phase",
-    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle). Spend 1 Willpower, or 1 Power Token (1 plus your Willpower), for that many actions: fight the Dreambeast on your Landscape, Meet the Archetype there (its Event, then the fight), use your Landscape's action, or tap a Persistent Object. Unused actions bank Glimmer.",
+    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle). Spend 1 Willpower, or 1 Power Token (1 plus your Willpower), for that many Meet Actions. Each one can fight the Dreambeast on your Landscape, Meet the Archetype there (its Event, then the fight), use one of your Landscape's two actions, or tap a Persistent Object. Unused Meet Actions become Glimmer.",
   },
   {
     term: "Mindstream",
@@ -423,7 +543,7 @@ const TERMS = [
   {
     term: "Outlaw",
     group: "people",
-    text: "A Elasticity Archetype. It appears on Road or The Basement, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Banish the Dreambeast on your Landscape without a fight (not a Boss); no reward.",
+    text: "An Elasticity Archetype. It appears on Road or The Basement, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Banish the Dreambeast on your Landscape without a fight (not a Boss); no reward.",
   },
   {
     term: "Pass Turn",
@@ -474,7 +594,7 @@ const TERMS = [
     term: "Rested",
     group: "people",
     aka: "the rested",
-    text: "Lucidity 2, Elasticity 1, Willpower 0. Fantasy. Passive: if they opened no phase this round, they draw 1 Psyche at round end. Power (1 token): each Dreamer draws 1 from the Psyche discard.",
+    text: "Lucidity 2, Elasticity 1, Willpower 0. Fantasy. Passive: if they opened no phase this round, they draw 1 Psyche at round end. Power (1 token): Draw 1 from the Psyche discard.",
   },
   {
     term: "Return",
@@ -557,127 +677,7 @@ const TERMS = [
     group: "win",
     text: "How a night is lost: the Waking Mind runs dry, or the Death Clock strikes six. The Long Night makes the first one come fast.",
   },
-  {
-    term: "Awards",
-    group: "places",
-    text: "A Lucidity Landscape. Its action, once each Meet for the table (Return 2 Psyche): Return 2 Psyche of your choice from the Subconscious.",
-  },
-  {
-    term: "Black Void",
-    group: "places",
-    text: "A Lucidity Landscape. Its action, once each Meet for the table (Remember 2): Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
-  },
-  {
-    term: "Candy Mountain",
-    group: "places",
-    text: "A Elasticity Landscape. Its action, once each Meet for the table (Move 1 Dreamer): Move 1 Dreamer 2 Landscapes in any direction.",
-  },
-  {
-    term: "City",
-    group: "places",
-    text: "A Willpower Landscape. Its action, once each Meet for the table (Call an Archetype): The nearest Archetype steps 2 Landscapes toward you.",
-  },
-  {
-    term: "Day in the Life",
-    group: "places",
-    text: "A Lucidity Landscape. Its action, once each Meet for the table (Remember 2): Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
-  },
-  {
-    term: "Desert",
-    group: "places",
-    text: "A Lucidity Landscape. Its action, once each Meet for the table (Gather Glimmer): Bank 2 Glimmer for the next Lost & Found.",
-  },
-  {
-    term: "Endless Hallway",
-    group: "places",
-    text: "A Elasticity Landscape. Its action, once each Meet for the table (Move 2 Dreamers): Move 2 Dreamers 1 Landscape in any direction.",
-  },
-  {
-    term: "Endless Ocean",
-    group: "places",
-    text: "A Elasticity Landscape. Its action, once each Meet for the table (Move 1 Dreamer): Move 1 Dreamer 2 Landscapes in any direction.",
-  },
-  {
-    term: "Field of Broken Glass",
-    group: "places",
-    text: "A Lucidity Landscape. Its action, once each Meet for the table (Swap Landscapes): Swap the positions of 2 Landscapes on the Dreamscape.",
-  },
-  {
-    term: "Forest",
-    group: "places",
-    text: "A Elasticity Landscape. Its action, once each Meet for the table (Call an Archetype): The nearest Archetype steps 2 Landscapes toward you.",
-  },
-  {
-    term: "House",
-    group: "places",
-    text: "A Willpower Landscape. Its action, once each Meet for the table (Cycle Psyche): Discard a Psyche card, then draw Psyche equal to its value.",
-  },
-  {
-    term: "Inner Sanctum",
-    group: "places",
-    text: "A Willpower Landscape. Its action, once each Meet for the table (Return 2 Psyche): Return 2 Psyche of your choice from the Subconscious.",
-  },
-  {
-    term: "Insanity",
-    group: "places",
-    text: "A Willpower Landscape. Its action, once each Meet for the table (Cycle Psyche): Discard a Psyche card, then draw Psyche equal to its value.",
-  },
-  {
-    term: "Lava",
-    group: "places",
-    text: "A Willpower Landscape. Its action, once each Meet for the table (Move 2 Dreambeasts): Move 2 Dreambeasts 1 Landscape in any direction.",
-  },
-  {
-    term: "Road",
-    group: "places",
-    text: "A Elasticity Landscape. Its action, once each Meet for the table (Move 2 Dreamers): Move 2 Dreamers 1 Landscape in any direction.",
-  },
-  {
-    term: "Scary Classroom",
-    group: "places",
-    text: "A Lucidity Landscape. Its action, once each Meet for the table (Gather Glimmer): Bank 2 Glimmer for the next Lost & Found.",
-  },
-  {
-    term: "Sea of Teeth",
-    group: "places",
-    text: "A Willpower Landscape. Its action, once each Meet for the table (Move 2 Dreambeasts): Move 2 Dreambeasts 1 Landscape in any direction.",
-  },
-  {
-    term: "Silver Mist",
-    group: "places",
-    text: "A Lucidity Landscape. Its action, once each Meet for the table (Remember 2): Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
-  },
-  {
-    term: "Sky",
-    group: "places",
-    text: "A Lucidity Landscape. Its action, once each Meet for the table (Call an Archetype): The nearest Archetype steps 2 Landscapes toward you.",
-  },
-  {
-    term: "Suburbia",
-    group: "places",
-    text: "A Willpower Landscape. Its action, once each Meet for the table (Return 2 Psyche): Return 2 Psyche of your choice from the Subconscious.",
-  },
-  {
-    term: "The Attic",
-    group: "places",
-    text: "A Lucidity Landscape. Its action, once each Meet for the table (Gather Glimmer): Bank 2 Glimmer for the next Lost & Found.",
-  },
-  {
-    term: "The Basement",
-    group: "places",
-    text: "A Willpower Landscape. Its action, once each Meet for the table (Move 2 Dreambeasts): Move 2 Dreambeasts 1 Landscape in any direction.",
-  },
-  {
-    term: "The Party",
-    group: "places",
-    text: "A Elasticity Landscape. Its action, once each Meet for the table (Move 2 Dreamers): Move 2 Dreamers 1 Landscape in any direction.",
-  },
-  {
-    term: "Tranquil Grove",
-    group: "places",
-    text: "A Lucidity Landscape. Its action, once each Meet for the table (Remember 2): Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
-  },
-];
+                                                ];
 
 function escapeHtml(value) {
   return String(value)

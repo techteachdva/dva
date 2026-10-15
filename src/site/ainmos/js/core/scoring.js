@@ -69,7 +69,7 @@ export function formatScoreBreakdown(breakdown) {
     `Bosses climbed: ${breakdown.bossPoints}`,
     `Best spread: ${breakdown.bestSpread}`,
     `Wake: ${breakdown.escapeBonus || 0}`,
-    `Objects, tokens, allies: ${breakdown.objects + breakdown.tokens + breakdown.allies}`,
+    `Objects and tokens: ${breakdown.objects + breakdown.tokens}`,
     `Total score: ${breakdown.total}`,
   ];
 }

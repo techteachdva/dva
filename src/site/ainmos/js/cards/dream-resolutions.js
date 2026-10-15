@@ -30,7 +30,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Cornered",
-      hint: "Spawn Encounters on every Dreamer",
+      hint: "A Dreambeast appears on your Landscape",
       effect: "spawnEncountersOnDreamers",
       params: {},
     },
@@ -39,7 +39,7 @@ export const DREAM_RESOLUTIONS = {
   heroism: {
     good: {
       label: "Stand Over the Fallen",
-      hint: "Discard 2 Willpower — every Dreamer draws 2 Psyche",
+      hint: "Discard 2 Willpower — draw 2 Psyche",
       toll: { kind: "psyche", count: 2, suit: "willpower" },
       gate: { kind: "suit", suit: "willpower", count: 2, label: "Hold 2 Willpower Psyche" },
       effect: "drawPsycheAll",
@@ -47,7 +47,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Glory Turns Hollow",
-      hint: "Each Dreamer Discards 1 Object",
+      hint: "Discard 1 Object",
       effect: "repressObjectsAll",
       params: { count: 1 },
     },
@@ -64,7 +64,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Bleed Out",
-      hint: "Each Dreamer Represses 2 Psyche",
+      hint: "Repress 2 Psyche",
       effect: "repressPsycheAll",
       params: { count: 2 },
     },
@@ -73,15 +73,15 @@ export const DREAM_RESOLUTIONS = {
   judgement: {
     good: {
       label: "Face the Tribunal",
-      hint: "Each Dreamer Represses 3 Psyche — Return 3 Psyche from the Subconscious",
+      hint: "Repress 3 Psyche — Return 3 Psyche from the Subconscious",
       toll: { kind: "repressAll", count: 3 },
-      gate: { kind: "tableHand", count: 3, label: "Every Dreamer holds 3 Psyche" },
+      gate: { kind: "tableHand", count: 3, label: "You hold 3 Psyche" },
       effect: "returnAllDreambeasts",
       params: {},
     },
     bad: {
       label: "The Verdict Hunts",
-      hint: "Spawn 1 Dreambeast on each Dreamer's Landscape",
+      hint: "A Dreambeast appears on your Landscape",
       effect: "spawnEncountersOnDreamers",
       params: {},
     },
@@ -124,7 +124,7 @@ export const DREAM_RESOLUTIONS = {
   mortality: {
     good: {
       label: "Bargain With Death",
-      hint: "Discard 3 Willpower — every Dreamer draws 1 Psyche",
+      hint: "Discard 3 Willpower — draw 1 Psyche",
       toll: { kind: "psyche", count: 3, suit: "willpower" },
       gate: { kind: "suit", suit: "willpower", count: 3, label: "Hold 3 Willpower Psyche" },
       effect: "drawPsycheAll",
@@ -132,7 +132,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "The Reaper Takes Relics",
-      hint: "Each Dreamer Discards 2 Objects",
+      hint: "Discard 2 Objects",
       effect: "repressObjectsAll",
       params: { count: 2 },
     },
@@ -260,7 +260,7 @@ export const DREAM_RESOLUTIONS = {
   wanderlust: {
     good: {
       label: "Walk Until Dawn",
-      hint: "Forget 1 Landscape if you hold Elasticity — all Dreamers draw 2 Psyche",
+      hint: "Forget 1 Landscape if you hold Elasticity — draw 2 Psyche",
       toll: { kind: "forget", count: 1 },
       gate: { kind: "suit", suit: "elasticity", count: 1, label: "Hold an Elasticity Psyche" },
       effect: "drawPsycheAll",
@@ -334,7 +334,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Relics Sink Away",
-      hint: "Each Dreamer Discards 1 Object",
+      hint: "Discard 1 Object",
       effect: "repressObjectsAll",
       params: { count: 1 },
     },
@@ -351,7 +351,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Rivals Flood The Bed",
-      hint: "Spawn an Encounter here",
+      hint: "A Dreambeast appears on your Landscape",
       effect: "spawnEncounter",
       params: {},
     },
@@ -393,7 +393,7 @@ export const DREAM_RESOLUTIONS = {
   "well-being": {
     good: {
       label: "Breathe Deep",
-      hint: "Discard 2 Lucidity — every Dreamer draws 2 Psyche",
+      hint: "Discard 2 Lucidity — draw 2 Psyche",
       toll: { kind: "psyche", count: 2, suit: "lucidity" },
       gate: { kind: "suit", suit: "lucidity", count: 2, label: "Hold 2 Lucidity Psyche" },
       effect: "drawPsycheAll",
@@ -401,7 +401,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Comfort Numbs the Table",
-      hint: "Each Dreamer Represses 1 Psyche",
+      hint: "Repress 1 Psyche",
       effect: "repressPsycheAll",
       params: { count: 1 },
     },
@@ -461,7 +461,7 @@ export const DREAM_RESOLUTIONS = {
   homeostasis: {
     good: {
       label: "Balance the Scales",
-      hint: "Discard 2 Psyche if you hold Lucidity and Elasticity — all Dreamers draw 2 Psyche",
+      hint: "Discard 2 Psyche if you hold Lucidity and Elasticity — draw 2 Psyche",
       toll: { kind: "psyche", count: 2 },
       gate: {
         kind: "suits",
@@ -473,7 +473,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Equilibrium Shatters",
-      hint: "All repress 1 Psyche",
+      hint: "Repress 1 Psyche",
       effect: "repressPsycheAll",
       params: { count: 1 },
     },
@@ -499,7 +499,7 @@ export const DREAM_RESOLUTIONS = {
   delta: {
     good: {
       label: "Ride the Slow Wave",
-      hint: "Discard 2 Elasticity — every Dreamer draws 1 Psyche",
+      hint: "Discard 2 Elasticity — draw 1 Psyche",
       toll: { kind: "psyche", count: 2, suit: "elasticity" },
       gate: { kind: "suit", suit: "elasticity", count: 2, label: "Hold 2 Elasticity Psyche" },
       effect: "drawPsycheAll",
@@ -524,7 +524,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Arousal Without Rest",
-      hint: "Each Dreamer Represses 2 Psyche",
+      hint: "Repress 2 Psyche",
       effect: "repressPsycheAll",
       params: { count: 2 },
     },

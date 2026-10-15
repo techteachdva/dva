@@ -418,7 +418,7 @@ export function revealBudget(state, player) {
 export function exploreBudget(state, player) {
   const played = sumSelectedValue(state, player, "elasticity") + phaseTokenValue(state, player);
   if (played < 1) return 0;
-  return played + totalStat(player, "elasticity", state) + objectBudgetBonus(player, "Explore");
+  return played + totalStat(player, "elasticity", state) + objectBudgetBonus(player, "Explore") + (state.sugarRushSteps || 0);
 }
 
 export function meetActionBudgetFromWillpower(state, player) {
@@ -637,7 +637,7 @@ export function validateEncounterPlayShape(encounter, cards, { accept = true } =
   if (!(cards || []).length) {
     return {
       ok: false,
-      message: "Play 1 to 3 Psyche (allies extra). Include at least 1 of the required suit.",
+      message: "Play 1 to 3 Psyche. Include at least 1 of the required suit.",
     };
   }
   const paySuit = encounterPaySuit(encounter, accept);

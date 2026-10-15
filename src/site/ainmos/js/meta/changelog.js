@@ -6,10 +6,23 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.23";
+export const SOMNIA_VERSION = "0.24";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.24",
+    title: "Landscapes Re-Explored",
+    notes: [
+      "Every Landscape has two Meet actions: Call a Dreambeast of its suit (Power 3 + the Cycle; beat it for a Power Token or a random Object), and one action no other Landscape has.",
+      "24 Landscapes, 24 different actions. Lucidity sees and remembers: Call an Archetype, Sink and Surface, Shatter and Swap, Collector's Fair (a stall of set Objects), Mirage (place 2 Landscapes free), Grand Prize (bank 6 Glimmer), Study (Discard 3 Psyche to level a Dream Form), Remember 2, Daily Routine, Clear the Mist.",
+      "Elasticity moves you: Hide in the Trees, Move Your Dreamer 2 Spaces, Endless Doors, Dance with Dreambeasts, Ride the Tide, Sugar Rush. Willpower fights: Rally, Lock the Doors, Pawn Shop, Scorch, Lure a Dreambeast, Feeding Frenzy, Madness, Inner Sanctum.",
+      "The Psyche you spend to open a phase does two jobs, and the game now says so everywhere: the top of the screen reads '4 Meet Actions · If unused: 4 Glimmer ✧', and so do the phase menu, the top bar, and the Vault.",
+      "Skipping a phase keeps your card but banks no Glimmer; the Skip button says so.",
+      "Solo wording everywhere: no more 'each Dreamer', 'Move 2 Dreamers', allies, or Trade. Dreams, the glossary, the rules, and the First Night guide speak to you.",
+      "The Shadows shut Lucidity Landscapes' own actions, but you can still Call a Dreambeast there.",
+    ],
+  },
   {
     version: "0.23",
     title: "Repress/Return Psyche",

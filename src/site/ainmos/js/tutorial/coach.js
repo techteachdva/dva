@@ -140,7 +140,7 @@ function openerStep(state, ctx = {}) {
       id: "open-reveal",
       title: "Phase 1 · Reveal",
       text: "Pick a blue Lucidity card, then press Open Reveal.",
-      why: "Its value plus your Lucidity is how many Landscapes you place this phase. A bigger dream gives Archetypes room to land and you more places to go.",
+      why: "The Psyche you spend does two jobs. Its value plus your Lucidity is your Reveal Actions (each places a Landscape), and any you leave unused become Glimmer ✧ for the Lost & Found. The top of the screen always shows both.",
       target: "#btn-spread-opener",
     };
   }
@@ -160,7 +160,7 @@ function openerStep(state, ctx = {}) {
       id: "open-explore",
       title: "Phase 2 · Explore",
       text: `Pick a gold Elasticity card, then press Open Explore. ${plan}`,
-      why: "Its value plus your Elasticity is how many steps you get. Every step you don't take becomes 1 Glimmer ✧.",
+      why: "Its value plus your Elasticity is your Explore Actions: 1 step each. Any you don't take become Glimmer ✧.",
       target: "#btn-spread-opener",
     };
   }
@@ -172,16 +172,16 @@ function openerStep(state, ctx = {}) {
       id: "open-meet-target",
       title: "Phase 3 · Meet",
       text: `Something waits on ${hereTile.name}. Pick a red Willpower card, then press Open Meet.`,
-      why: "Its value plus your Willpower is how many Meet actions you get. A fight, an Archetype Meet, and a Landscape action each cost 1.",
+      why: "Its value plus your Willpower is your Meet Actions. A fight, an Archetype Meet, and each of a Landscape's two actions cost 1. Leftovers become Glimmer ✧.",
       target: "#btn-spread-opener",
     };
   }
   return {
     id: pos.cycle === 1 && pos.dream === 1 ? "open-meet-empty-first" : "open-meet-empty",
     title: "Phase 3 · Meet",
-    text: "Nothing waits on your Landscape this time. Skip to keep your Willpower card, or open Meet anyway to bank Glimmer ✧.",
-    why: "Meet is where you fight Dreambeasts and Acquire Archetypes. Every action you open but don't use becomes 1 Glimmer ✧, which pays in the Lost & Found. Skipping keeps the card but banks nothing.",
-    target: "#btn-skip-phase",
+    text: "No Dreambeast or Archetype here, but your Landscape still has two actions: Call a Dreambeast to fight for a Power Token or Object, or its own action. Open Meet to use them, or Skip to keep the card.",
+    why: "Every Meet Action you open but don't use becomes 1 Glimmer ✧ for the Lost & Found. Skipping keeps your card but banks nothing.",
+    target: "#btn-spread-opener",
   };
 }
 
@@ -190,7 +190,7 @@ function vaultStep(state) {
   return {
     id: "vault",
     title: "Build the dream",
-    text: `Choose a Landscape, then tap a glowing hex next to the dream to place it. ${left} Lucidity left. Press Done placing when you're happy.`,
+    text: `Choose a Landscape, then tap a glowing hex next to the dream to place it. ${left} Reveal Action${left === 1 ? "" : "s"} left. Press Done placing when you're happy.`,
     why: "★ marks a home of an Archetype you may call this Cycle. Place those near The Bed and your Archetype can appear close by. Each Landscape also has an action you can use in Meet.",
   };
 }
@@ -242,7 +242,7 @@ function tableStep(state, ctx = {}) {
     return {
       id: "reveal-table",
       title: "Build the dream",
-      text: `Pick a Landscape in the Dreamscape panel, then tap a glowing hex. ${left} Lucidity left.`,
+      text: `Pick a Landscape in the Dreamscape panel, then tap a glowing hex. ${left} Reveal Action${left === 1 ? "" : "s"} left.`,
       target: "#dreamscape-vault",
     };
   }
@@ -329,7 +329,7 @@ function tableStep(state, ctx = {}) {
     id: pos.dream === 1 && pos.cycle === 1 ? "meet-empty-first" : "meet-empty",
     title: "End the round",
     text: actionsLeft > 0
-      ? "Nothing to fight here. Use your Landscape's action if you like, then press End Round (top right)."
+      ? "Nothing to fight here. Use one of your Landscape's two actions (tap the Landscape): Call a Dreambeast to fight for a reward, or its own action. Or press End Round (top right) and bank the rest as Glimmer."
       : "Press End Round (top right).",
     why: beasts.length
       ? `At dusk each standing Dreambeast Represses 1 from your Waking Mind. Then the next Dream begins.`

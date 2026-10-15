@@ -936,7 +936,7 @@ export const OBJECT_EFFECTS = {
       cardId: "ebony-pawn",
       step: "spawned",
       title: "Ebony Pawn",
-      detail: "Choose a Landscape for the Nightmare Encounter.",
+      detail: "Choose a Landscape for the Nightmare Dreambeast.",
       allowedIds: empty,
     });
     if (state.pendingObjectFollowup) resumeObjectEffect(state);
@@ -1005,7 +1005,7 @@ export const OBJECT_EFFECTS = {
       drawPsycheForPlayer(state, p, 2);
       enqueueReturnCards(state, 2, p, { reason: `${p.name}: Return 2 Psyche.` });
     });
-    if (players.length) addLog(state, "Tear of Moon: each Dreamer draws 2 Psyche and Returns 2 Psyche.");
+    if (players.length) addLog(state, "Tear of Moon: Draw 2 Psyche and Returns 2 Psyche.");
   },
 
   "spark-of-sun": (state) => {
@@ -1014,7 +1014,7 @@ export const OBJECT_EFFECTS = {
       drawPsycheForPlayer(state, p, 2);
       enqueueReturnCards(state, 2, p, { reason: `${p.name}: Return 2 Psyche.` });
     });
-    if (players.length) addLog(state, "Spark of Sun: each Dreamer draws 2 Psyche and Returns 2 Psyche.");
+    if (players.length) addLog(state, "Spark of Sun: Draw 2 Psyche and Returns 2 Psyche.");
   },
 
   coins: (state, player) => {

@@ -948,7 +948,7 @@ export function getPhaseActions(state, handlers) {
     if (state.dreamDrawn && !state.revealLandscapeUsed) actions.push(phaseTokenAction("Lucidity"));
     actions.push(...objectFreeActions());
     actions.push(dreamerPowerAction());
-    actions.push(...questActions());
+    if (state.activeArchetype?.quests?.length) actions.push(...questActions());
     actions.push(...archetypePowerActions());
   }
 
@@ -989,7 +989,7 @@ export function getPhaseActions(state, handlers) {
     }
     actions.push(...objectFreeActions());
     actions.push(dreamerPowerAction());
-    actions.push(...questActions());
+    if (state.activeArchetype?.quests?.length) actions.push(...questActions());
     actions.push(...archetypePowerActions());
   }
 
@@ -1103,18 +1103,19 @@ export function getPhaseActions(state, handlers) {
       });
     });
     actions.push(...objectFreeActions());
-    actions.push({
-      label: "Trade",
-      kind: "trade",
-      section: "actions",
-      hint: canStartTrade(state)
-        ? "Free. Each Dreamer offers up to 3 Psyche. Same hex or next door."
-        : "Free during Meet. Partner must stand on the same or adjacent hex.",
-      disabled: !canStartTrade(state),
-      onClick: handlers.tradeAction,
-    });
+    // Ainmos is solo: there is no one to Trade with.
+    if (state.players.filter((p) => p.alive).length > 1) {
+      actions.push({
+        label: "Trade",
+        kind: "trade",
+        section: "actions",
+        hint: "Free during Meet. Partner must stand on the same or adjacent hex.",
+        disabled: !canStartTrade(state),
+        onClick: handlers.tradeAction,
+      });
+    }
     actions.push(dreamerPowerAction());
-    actions.push(...questActions());
+    if (state.activeArchetype?.quests?.length) actions.push(...questActions());
     actions.push(...archetypePowerActions());
     const meetPass = passTurnAction(state);
     if (meetPass) actions.push(meetPass);
@@ -1467,7 +1468,7 @@ export function activateExplore(state) {
   if (freeRound) {
     budget = Math.max(budget, state.players.filter((p) => p.alive).length);
     state.freeExploreNextRound = false;
-    logMoment(state, "Travel Dream — free movement for every Dreamer this Explore Phase.");
+    logMoment(state, "Travel Dream — free movement this Explore Phase.");
   }
 
   if (!player && !freeRound) {
@@ -1497,6 +1498,10 @@ export function activateExplore(state) {
   if (player && (elaCards.length || tokenValue)) recordPhaseOpener(state, player);
   state.exploreMovesLeft = budget;
   state.exploreActivated = true;
+  if (state.sugarRushSteps) {
+    addLog(state, `Sugar Rush adds ${state.sugarRushSteps} steps.`);
+    state.sugarRushSteps = 0;
+  }
   const insulationBonus = consumeInsulationMoves(state);
   if (insulationBonus) {
     state.exploreMovesLeft += insulationBonus;
@@ -1979,13 +1984,13 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     const limit = handLimitForPlayer(state, actor);
     const staying = actor.hand.filter((c) => !selected.some((s) => s.instanceId === c.instanceId)).length;
     if (staying >= limit) {
-      say(`${actor.name}'s hand is full (${limit} cards). Spend Psyche or allies first.`);
+      say(`${actor.name}'s hand is full (${limit} cards). Spend some Psyche first.`);
       return;
     }
   }
 
   if (selected.filter((c) => !isDreambeastPsycheCard(c)).length > 3) {
-    say("Play up to 3 Psyche cards for an Encounter (allies don't count).");
+    say("Play up to 3 Psyche cards against a Dreambeast.");
     return;
   }
 
@@ -2204,6 +2209,10 @@ export function resolveBeastDefeat(state, { actor, encounter, landscapeId }) {
   // is your pick: a Power Token or a random Object.
   addLog(state, `${actor.name} Accepts ${encounter.name}.`);
   offerBeastReward(state, actor, encounter);
+  if (!encounter.boss && !encounter.miniBoss && Array.isArray(state.nightmarePool)) {
+    const { called, basePower, ...card } = encounter;
+    state.nightmarePool.push({ ...card, accept: basePower || card.accept });
+  }
 
   if (landscapeId) {
     recordQuestEvent(state, "meet_on_landscape", { landscapeId });

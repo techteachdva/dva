@@ -24,7 +24,7 @@ export const BOSS_LADDER = Object.freeze([
     id: "shadows",
     power: 7,
     twist: "Lights out",
-    twistText: "While the Shadows stand, Lucidity Landscape actions go dark.",
+    twistText: "While the Shadows stand, Lucidity Landscapes' own actions go dark (Calling a Dreambeast still works).",
   },
   {
     rung: 8,

@@ -89,9 +89,9 @@ export function moveBlockedByBoss(state, fromId, toId) {
 
 /** Shadows dim Lucidity actions; the Bogey shuts The Bed. Returns a reason, or "". */
 export function landscapeActionBlockedByBoss(state, tile, actionId) {
-  if (!tile || actionId === "draw-mindstream") return "";
+  if (!tile || actionId === "draw-mindstream" || actionId === "call-dreambeast") return "";
   if (tile.suit === "lucidity" && bossStands(state, "shadows")) {
-    return `The Shadows darken ${tile.name}. Its action is shut while they stand. Draw Mindstream still works.`;
+    return `The Shadows darken ${tile.name}. Its own action is shut while they stand; Calling a Dreambeast still works.`;
   }
   if ((tile.id === "bed" || tile.center) && bossStands(state, "bogey")) {
     return "The Bogey is under The Bed. Its action is shut while the Bogey stands.";

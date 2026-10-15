@@ -17,8 +17,14 @@ import {
   revealedLandscapeTiles,
   rememberRevealedTops,
 } from "../core/state.js";
-import { requestChooseTile, beginFreeRevealPicking, beginBedTileFlip, revealableTiles } from "./landscapes.js";
-import { isFreeformBoard, tileDeckCount } from "./dreamscape-vault.js";
+import { requestChooseTile, beginFreeRevealPicking, beginBedTileFlip, revealableTiles, revealCapacity } from "./landscapes.js";
+import { isFreeformBoard, tileDeckCount, refreshVault } from "./dreamscape-vault.js";
+import { cyclePosition } from "../core/cycle.js";
+import { DREAM_FORMS, formLevel, levelUpForm } from "../cards/dream-forms.js";
+import { paymentFor } from "../shop/lost-found.js";
+import { onObjectDrawn, handLimitForPlayer } from "../effects/objects.js";
+import { logMoment } from "../core/narrator.js";
+import { stepBeastsTowardDreamers } from "../encounters/meet-phase.js";
 import { SUIT_LABELS, totalStat } from "../core/rules.js";
 import { queueMindstreamDrawFx, queueMindstreamDiscardFx, cancelQueuedMindstreamDrawFx } from "./board-fx.js";
 import { adjacentTiles, hexDistance } from "../core/hex.js";
@@ -27,6 +33,9 @@ import {
   returnableCards,
   requestReturnCards,
   finalizeReturn,
+  enqueueDiscardFromHand,
+  enqueueRepressFromHand,
+  enqueueReturnCards,
 } from "../dreamers/subconscious.js";
 import {
   encounterFromDreambeastCard,
@@ -34,6 +43,8 @@ import {
   reorderMindstreamTop,
   pullDreambeastFromMindstream,
   stampBeastMillDiscard,
+  objectForPlayer,
+  discardToMindstream,
 } from "../cards/mindstream-supply.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { shuffle } from "../core/data.js";
@@ -44,103 +55,62 @@ import { discardDreamCard, isBossDreamCard, spawnBossEncounterOnBed } from "../c
 import { boardArchetypes, lureArchetype } from "../dreamers/archetype-board.js";
 import { bankGlimmer } from "../shop/lost-found.js";
 
+/**
+ * Ainmos 0.24 Landscapes Re-Explored. Every Landscape offers two Meet actions:
+ * Call a Dreambeast of its suit, and one action no other Landscape has.
+ * Lucidity Landscapes see and remember, Elasticity Landscapes move you, and
+ * Willpower Landscapes fight. Each action works once per Meet on its Landscape.
+ */
+export const CALL_DREAMBEAST = "call-dreambeast";
+
 export const LANDSCAPE_ACTION_DEFS = {
-  "swap-psyche": {
-    label: "Swap 2 Psyche",
-    description: "Swap Psyche cards between two Dreamers.",
+  [CALL_DREAMBEAST]: {
+    label: "Call a Dreambeast",
+    description: "A Dreambeast of this Landscape's suit appears here (Power 3 + the Cycle). Beat it for a Power Token or a random Object. Left standing at dusk, it Represses 1 Psyche.",
   },
-  "move-2-dreamers-1": {
-    label: "Move 2 Dreamers",
-    description: "Move 2 Dreamers 1 Landscape in any direction.",
-  },
-  "swap-landscapes": {
-    label: "Swap Landscapes",
-    description: "Swap the positions of 2 Landscapes on the Dreamscape.",
-  },
-  "move-1-dreamer-2": {
-    label: "Move 1 Dreamer",
-    description: "Move 1 Dreamer 2 Landscapes in any direction.",
-  },
-  "move-2-dreambeasts-1": {
-    label: "Move 2 Dreambeasts",
-    description: "Move 2 Dreambeasts 1 Landscape in any direction.",
-  },
-  "all-toward-bed": {
-    label: "Toward Bed",
-    description: "All Dreamers move 1 Landscape toward The Bed.",
-  },
-  "lure-archetype": {
-    label: "Call an Archetype",
-    description: "The nearest Archetype steps 2 Landscapes toward you.",
-  },
-  "bank-glimmer": {
-    label: "Gather Glimmer",
-    description: "Bank 2 Glimmer for the next Lost & Found.",
-  },
-  "take-power": {
-    label: "Return 2 Psyche",
-    description: "Return 2 Psyche of your choice from the Subconscious.",
-  },
-  "swap-dreambeasts": {
-    label: "Swap Dreambeasts",
-    description: "Swap 2 active Dreambeasts between Landscapes.",
-  },
-  "remember-2": {
-    label: "Remember 2",
-    description: "Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
-  },
-  "return-2": {
-    label: "Return 2 Psyche",
-    description: "Return 2 Psyche of your choice from the Subconscious.",
-  },
-  "cycle-psyche": {
-    label: "Cycle Psyche",
-    description: "Discard a Psyche card, then draw Psyche equal to its value.",
-  },
-  "return-psyche": {
-    label: "Return Psyche",
-    description: "Return 1 Psyche card from the Subconscious.",
-  },
-  "replay-dream": {
-    label: "Replay Dream",
-    description: "Take the last discarded Dream and resolve it again.",
-  },
-  "return-1": {
-    label: "Return 1 Psyche",
-    description: "Return 1 Psyche of your choice from the Subconscious.",
-  },
-  "return-object": {
-    label: "Return 1 Psyche",
-    description: "Return 1 Psyche of your choice from the Subconscious.",
-  },
-  "draw-3-psyche": {
-    label: "Draw 3 Psyche",
-    description: "Draw 3 Psyche cards from the Psyche deck.",
-  },
-  "dream-onward": {
-    label: "Dream Onward",
-    description: "Flip the top tile of the Landscape deck, then place it free or put it on the bottom.",
-  },
-  "peek-then-move-1": {
-    label: "Peek, then Move 1",
-    description: "Look at the top tile of the Landscape deck, then move 1 step.",
-  },
-  "draw-psyche-equal-to-elasticity": {
-    label: "Draw your Elasticity",
-    description: "Draw Psyche equal to your Elasticity.",
-  },
-  "move-1-dreamer-1": {
-    label: "Move 1 Step",
-    description: "Move 1 Dreamer 1 Landscape.",
-  },
-  "draw-1-psyche": {
-    label: "Draw 1 Psyche",
-    description: "Draw 1 Psyche card.",
-  },
+  // Lucidity: see and remember.
+  "lure-archetype": { label: "Call an Archetype", description: "The nearest Archetype steps 2 Landscapes toward you." },
+  "remember-2": { label: "Remember 2", description: "Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious, your choice." },
+  "swap-landscapes": { label: "Shatter and Swap", description: "Swap the places of 2 Landscapes on the Dreamscape. Everything on them moves too." },
+  "grand-prize": { label: "Grand Prize", description: "Bank 6 Glimmer for the next Lost & Found." },
+  "bank-glimmer": { label: "Gather Glimmer", description: "Bank 2 Glimmer for the next Lost & Found." },
+  "dream-onward": { label: "Dream Onward", description: "Flip the top Landscape of the deck, then place it free or put it on the bottom." },
+  "return-2": { label: "Return 2 Psyche", description: "Return 2 Psyche of your choice from the Subconscious." },
+  "pop-quiz": { label: "Pop Quiz", description: "Draw 2 Psyche, then Discard 1 Psyche from your hand." },
+  "rest": { label: "Rest", description: "Return 1 Psyche of your choice from the Subconscious, then draw 1 Psyche." },
+  "routine": { label: "Daily Routine", description: "Name a suit. Draw the next Psyche of that suit from the Psyche deck." },
+  "clear-mist": { label: "Clear the Mist", description: "Redeal the Dreamscape Vault for free." },
+  "study": { label: "Study", description: "Discard 3 Psyche to raise one Dream Form 1 level for the rest of the night." },
+  "collectors-fair": { label: "Collector's Fair", description: "A stall of up to 3 Objects that belong to sets. Buy one with Psyche of its suit." },
+  "sink-surface": { label: "Sink and Surface", description: "Repress 1 to 3 Psyche from your hand, then Return that many of your choice from the Subconscious." },
+  "mirage": { label: "Mirage", description: "Place 2 Landscapes from the Dreamscape Vault for free." },
+  // Elasticity: move.
+  "hide": { label: "Hide in the Trees", description: "At the next Explore, Dreambeasts do not chase you." },
+  "move-1-dreamer-2": { label: "Move Your Dreamer 2 Spaces", description: "Move your Dreamer to a Landscape 2 steps away." },
+  "endless-doors": { label: "Endless Doors", description: "Move your Dreamer to any placed Elasticity Landscape." },
+  "move-2-dreambeasts-1": { label: "Dance with Dreambeasts", description: "Move up to 2 Dreambeasts 1 Landscape each." },
+  "ride-tide": { label: "Ride the Tide", description: "Move your Dreamer to any Landscape next to an Archetype." },
+  "sugar-rush": { label: "Sugar Rush", description: "Your next Explore gets +2 steps." },
+  // Willpower: fight.
+  "rally": { label: "Rally", description: "Your next fight rolls +2 dice." },
+  "cycle-psyche": { label: "Cycle Psyche", description: "Discard 1 Psyche, then draw Psyche equal to its value." },
+  "lock-doors": { label: "Lock the Doors", description: "At this dusk, Dreambeasts Repress nothing." },
+  "scorch": { label: "Scorch", description: "The Dreambeast on your Landscape loses 2 Power for good (never below 1)." },
+  "lure-beast": { label: "Lure a Dreambeast", description: "The nearest Dreambeast moves onto your Landscape." },
+  "frenzy": { label: "Feeding Frenzy", description: "Every Dreambeast steps 1 Landscape toward you." },
+  "madness": { label: "Madness", description: "Discard your whole hand, then draw that many Psyche." },
+  "pawn-shop": { label: "Pawn Shop", description: "Discard 1 of your Objects, then draw Psyche up to your hand limit." },
+  "sanctum": { label: "Inner Sanctum", description: "Return 1 Psyche of your choice from the Subconscious straight to your hand." },
+  // Older actions that some effects still name.
+  "swap-dreambeasts": { label: "Swap Dreambeasts", description: "Swap 2 Dreambeasts between their Landscapes." },
+  "return-1": { label: "Return 1 Psyche", description: "Return 1 Psyche of your choice from the Subconscious." },
+  "draw-1-psyche": { label: "Draw 1 Psyche", description: "Draw 1 Psyche." },
+  "draw-3-psyche": { label: "Draw 3 Psyche", description: "Draw 3 Psyche." },
+  "move-1-dreamer-1": { label: "Move Your Dreamer 1 Space", description: "Move your Dreamer 1 Landscape." },
 };
 
 function actionCadence(_actionId) {
-  return "Once this Meet for the whole table.";
+  return "Once each Meet on this Landscape.";
 }
 
 function alivePlayers(state) {
@@ -587,6 +557,75 @@ registerEffectResolver("landscape-action", (state, choiceId) => {
   const actionId = pending?.payload?.actionId;
   const player = playerById(state, pending?.playerId);
 
+
+  if (actionId === "study") {
+    state.pendingEffectChoice = null;
+    if (!player) return true;
+    levelUpForm(state, choiceId, 1);
+    const form = DREAM_FORMS.find((f) => f.id === choiceId);
+    logMoment(state, `Study: ${form?.name || "a Dream Form"} rises to level ${formLevel(state, choiceId)}.`);
+    enqueueDiscardFromHand(state, player, 3, { reason: "Study: Discard 3 Psyche.", strict: true });
+    return true;
+  }
+
+  if (actionId === "collectors-fair") {
+    state.pendingEffectChoice = null;
+    if (!player || choiceId === "leave") return true;
+    const card = takeObjectFromDecks(state, choiceId);
+    if (!card) return true;
+    const pay = paymentFor(player, card.price || 1, { suit: card.suit });
+    if (!pay) {
+      putObjectBack(state, card);
+      return true;
+    }
+    const ids = new Set(pay.cards.map((c) => c.instanceId));
+    player.hand = player.hand.filter((c) => !ids.has(c.instanceId));
+    state.psycheDiscard.push(...pay.cards);
+    onObjectDrawn(state, player, objectForPlayer(card), rememberLandscapeHelpers());
+    logMoment(state, `Collector's Fair: ${player.name} buys ${card.name}.`);
+    return true;
+  }
+
+  if (actionId === "sink-surface") {
+    state.pendingEffectChoice = null;
+    const n = Math.max(1, Number(choiceId) || 1);
+    if (!player) return true;
+    enqueueRepressFromHand(state, player, n, { reason: `Sink and Surface: Repress ${n} Psyche.`, strict: true });
+    enqueueReturnCards(state, n, player, { reason: `Sink and Surface: Return ${n} Psyche of your choice.` });
+    return true;
+  }
+
+  if (actionId === "pawn-shop") {
+    state.pendingEffectChoice = null;
+    if (!player) return true;
+    const obj = [...(player.objects || []), ...(player.persistent || [])].find((o) => o.instanceId === choiceId);
+    if (!obj) return true;
+    player.objects = (player.objects || []).filter((o) => o.instanceId !== choiceId);
+    player.persistent = (player.persistent || []).filter((o) => o.instanceId !== choiceId);
+    discardToMindstream(state, obj);
+    const room = Math.max(0, handLimitForPlayer(state, player) - player.hand.length);
+    const drawn = room ? drawPsycheForPlayer(state, player, room) : [];
+    logMoment(state, `Pawn Shop: ${player.name} pawns ${obj.name} and draws ${drawn.length} Psyche.`);
+    return true;
+  }
+
+  if (actionId === "routine") {
+    state.pendingEffectChoice = null;
+    if (!player) return true;
+    if (!state.psycheDeck.some((c) => c.suit === choiceId) && state.psycheDiscard?.length) {
+      state.psycheDeck.push(...shuffle(state.psycheDiscard.splice(0)));
+    }
+    const idx = state.psycheDeck.findIndex((c) => c.suit === choiceId);
+    if (idx < 0) {
+      addLog(state, `No ${SUIT_LABELS[choiceId] || choiceId} Psyche is left to draw.`);
+      return true;
+    }
+    const [card] = state.psycheDeck.splice(idx, 1);
+    player.hand.push(card);
+    logMoment(state, `Daily Routine: ${player.name} draws ${card.name}.`);
+    return true;
+  }
+
   if (actionId === "cycle-psyche") {
     if (choiceId !== "confirm") {
       const order = pending.order || [];
@@ -803,28 +842,21 @@ export function resumeLandscapeAction(state) {
 
 export function getUniqueLandscapeActionChoices(tile) {
   if (!tile?.revealed || tile.hidden || tile.wasteland) return [];
-
-  if (tile.landscapeActions?.length) {
-    return tile.landscapeActions.map((id) => {
-      const def = LANDSCAPE_ACTION_DEFS[id] || { label: id, description: "" };
-      return {
-        id,
-        ...def,
-        description: `${def.description || ""} ${actionCadence(id)}`.trim(),
-      };
+  const ids = tile.landscapeActions?.length
+    ? [...tile.landscapeActions]
+    : [tile.uniqueAction].filter(Boolean);
+  if (tile.suit && !tile.center && !ids.includes(CALL_DREAMBEAST)) ids.push(CALL_DREAMBEAST);
+  return ids
+    .filter((id) => LANDSCAPE_ACTION_DEFS[id])
+    .map((id) => {
+      const def = LANDSCAPE_ACTION_DEFS[id];
+      const suitName = SUIT_LABELS[tile.suit] || "";
+      const label = def.label;
+      const description = id === CALL_DREAMBEAST && suitName
+        ? def.description.replace("this Landscape's suit", suitName)
+        : def.description;
+      return { id, ...def, label, description: `${description} ${actionCadence(id)}`.trim() };
     });
-  }
-
-  if (!tile.uniqueAction) return [];
-
-  const def = LANDSCAPE_ACTION_DEFS[tile.uniqueAction];
-  if (!def) return [];
-
-  return [{
-    id: tile.uniqueAction,
-    ...def,
-    description: `${def.description} ${actionCadence(tile.uniqueAction)}`,
-  }];
 }
 
 /** Ainmos: Landscapes no longer draw Mindstream. Events open Archetype Meets instead. */
@@ -961,6 +993,198 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
 
     // 0.23: Power Tokens only come from Dreambeasts and Archetypes; old Take Power tiles Return 2 Psyche.
     case "take-power":
+      return { ok: true, ...returnTypedCard(state, null, 2) };
+
+    case CALL_DREAMBEAST:
+      return callDreambeast(state, tile);
+
+    case "pop-quiz": {
+      const drawn = drawPsycheForPlayer(state, player, 2);
+      if (!drawn.length) return { ok: false, refund: true, reason: "The Psyche deck is empty." };
+      addLog(state, `${landscapeName}: ${player.name} draws ${drawn.length} Psyche, then Discards 1.`);
+      enqueueDiscardFromHand(state, player, 1, { reason: `${landscapeName}: Discard 1 Psyche.`, strict: true });
+      return { ok: true };
+    }
+
+    case "rest": {
+      const back = returnTypedCard(state, null, 1);
+      const drawn = drawPsycheForPlayer(state, player, 1);
+      addLog(state, `${landscapeName}: ${player.name} rests and draws ${drawn.length} Psyche.`);
+      if (back.ok === false && !drawn.length) return { ok: false, refund: true };
+      return back.pending ? { ok: true, pending: true } : { ok: true };
+    }
+
+    case "routine":
+      offerEffectChoice(state, player, {
+        cardId: "landscape-action",
+        title: "Daily Routine",
+        message: "Name a suit. You draw the next Psyche of that suit.",
+        choices: ["lucidity", "elasticity", "willpower"].map((suit) => ({ id: suit, label: SUIT_LABELS[suit] })),
+        payload: { actionId: "routine" },
+      });
+      return { ok: true, pending: true };
+
+    case "clear-mist": {
+      if (!refreshVault(state)) return { ok: false, refund: true, reason: "The Vault has nothing to redeal." };
+      state.vaultRefreshesThisRound = Math.max(0, (state.vaultRefreshesThisRound || 1) - 1);
+      addLog(state, `${landscapeName}: the Vault is redealt.`);
+      return { ok: true };
+    }
+
+    case "hide":
+      state.hideFromBeasts = true;
+      logMoment(state, `${landscapeName}: you hide. At the next Explore, Dreambeasts do not chase you.`);
+      return { ok: true };
+
+    case "endless-doors": {
+      const doors = state.board.filter((t) => t.revealed && t.suit === "elasticity" && t.id !== player.landscapeId);
+      if (!doors.length) return { ok: false, refund: true, reason: "No other Elasticity Landscape is placed." };
+      requestChooseTile(state, { allowedIds: doors.map((t) => t.id), action: "movePlayer", playerId: player.id, title: "Endless Doors", detail: "Step through to any Elasticity Landscape." });
+      return { ok: true };
+    }
+
+    case "ride-tide": {
+      const near = new Set();
+      boardArchetypes(state).forEach(({ tile: at }) => adjacentTiles(state, at.id).forEach((t) => {
+        if (t.revealed && t.id !== player.landscapeId) near.add(t.id);
+      }));
+      if (!near.size) return { ok: false, refund: true, reason: "No Archetype stands on the Dreamscape." };
+      requestChooseTile(state, { allowedIds: [...near], action: "movePlayer", playerId: player.id, title: "Ride the Tide", detail: "Wash up next to an Archetype." });
+      return { ok: true };
+    }
+
+    case "sugar-rush":
+      state.sugarRushSteps = (state.sugarRushSteps || 0) + 2;
+      logMoment(state, `${landscapeName}: Sugar Rush! Your next Explore gets +2 steps.`);
+      return { ok: true };
+
+    case "rally":
+      state.nextFightDice = (state.nextFightDice || 0) + 2;
+      logMoment(state, `${landscapeName}: you rally. Your next fight rolls +2 dice.`);
+      return { ok: true };
+
+    case "lock-doors":
+      state.duskSparedRound = state.round;
+      logMoment(state, `${landscapeName}: the doors are locked. Dreambeasts Repress nothing at this dusk.`);
+      return { ok: true };
+
+    case "scorch": {
+      const here = encounterOnLandscape(state, player.landscapeId);
+      if (!here) return { ok: false, refund: true, reason: "No Dreambeast stands on your Landscape." };
+      here.accept = Math.max(1, (Number(here.accept) || 1) - 2);
+      logMoment(state, `${landscapeName}: ${here.name} is scorched to Power ${here.accept}.`);
+      return { ok: true };
+    }
+
+    case "lure-beast": {
+      const here = landscapeById(state, player.landscapeId) || tile;
+      const nearest = allEncountersOnBoard(state)
+        .filter(({ tile: at }) => at.id !== here.id)
+        .sort((x, y) => hexDistance(x.tile, here) - hexDistance(y.tile, here))[0];
+      if (!nearest) return { ok: false, refund: true, reason: "No other Dreambeast stands on the Dreamscape." };
+      moveEncounterBetweenLandscapes(state, nearest.tile.id, here.id, nearest.encounter);
+      logMoment(state, `${landscapeName}: ${nearest.encounter.name} is lured onto ${here.name}.`);
+      return { ok: true };
+    }
+
+    case "frenzy": {
+      const moved = stepBeastsTowardDreamers(state, { force: true });
+      if (!moved) return { ok: false, refund: true, reason: "No Dreambeast can step toward you." };
+      logMoment(state, `${landscapeName}: ${moved} Dreambeast${moved === 1 ? "" : "s"} step toward you.`);
+      return { ok: true };
+    }
+
+    case "madness": {
+      const n = player.hand.length;
+      if (!n) return { ok: false, refund: true, reason: "Your hand is empty." };
+      state.psycheDiscard.push(...player.hand.splice(0));
+      state.selectedHand = [];
+      const drawn = drawPsycheForPlayer(state, player, n);
+      logMoment(state, `${landscapeName}: madness! ${player.name} throws away ${n} Psyche and draws ${drawn.length}.`);
+      return { ok: true };
+    }
+
+    case "grand-prize": {
+      const got = bankGlimmer(state, 6);
+      logMoment(state, `${landscapeName}: Grand Prize! ${got} Glimmer banked for the Lost & Found.`);
+      return got ? { ok: true } : { ok: false, refund: true, reason: "Glimmer is full." };
+    }
+
+    case "study": {
+      if ((player.hand || []).length < 3) return { ok: false, refund: true, reason: "Study costs 3 Psyche from your hand." };
+      offerEffectChoice(state, player, {
+        cardId: "landscape-action",
+        title: "Study",
+        message: "Choose a Dream Form to raise 1 level. Then Discard 3 Psyche.",
+        choices: DREAM_FORMS.map((form) => ({ id: form.id, label: `${form.name} (level ${formLevel(state, form.id)} to ${formLevel(state, form.id) + 1})` })),
+        payload: { actionId: "study" },
+      });
+      return { ok: true, pending: true };
+    }
+
+    case "collectors-fair": {
+      const stall = setObjectsForFair(state);
+      if (!stall.length) return { ok: false, refund: true, reason: "No set Objects are left in the Object decks." };
+      offerEffectChoice(state, player, {
+        cardId: "landscape-action",
+        title: "Collector's Fair",
+        message: "Buy one set Object with Psyche of its suit, or walk away.",
+        choices: [
+          ...stall.map((card) => {
+            const pay = paymentFor(player, card.price || 1, { suit: card.suit });
+            return {
+              id: card.instanceId,
+              label: `${card.name} · ${card.price || 1} ${SUIT_LABELS[card.suit] || ""}`,
+              hint: pay ? card.text : `Not enough ${SUIT_LABELS[card.suit] || ""} Psyche. ${card.text}`,
+              disabled: !pay,
+            };
+          }),
+          { id: "leave", label: "Walk away", hint: "Buy nothing." },
+        ],
+        payload: { actionId: "collectors-fair" },
+      });
+      return { ok: true, pending: true };
+    }
+
+    case "sink-surface": {
+      const max = Math.min(3, (player.hand || []).length);
+      if (!max) return { ok: false, refund: true, reason: "Your hand is empty." };
+      offerEffectChoice(state, player, {
+        cardId: "landscape-action",
+        title: "Sink and Surface",
+        message: "How many Psyche sink into the Subconscious? You Return that many of your choice.",
+        choices: Array.from({ length: max }, (_, i) => ({ id: String(i + 1), label: `${i + 1} Psyche` })),
+        payload: { actionId: "sink-surface" },
+      });
+      return { ok: true, pending: true };
+    }
+
+    case "mirage": {
+      const n = Math.min(2, revealCapacity(state));
+      if (n < 1) return { ok: false, refund: true, reason: "There is nothing left to place." };
+      beginFreeRevealPicking(state, n);
+      logMoment(state, `${landscapeName}: a mirage. Place ${n} Landscape${n === 1 ? "" : "s"} from the Vault for free.`);
+      return { ok: true, pending: true };
+    }
+
+    case "pawn-shop": {
+      const owned = [...(player.objects || []), ...(player.persistent || [])];
+      if (!owned.length) return { ok: false, refund: true, reason: "You have no Object to pawn." };
+      offerEffectChoice(state, player, {
+        cardId: "landscape-action",
+        title: "Pawn Shop",
+        message: "Discard which Object? You draw Psyche up to your hand limit.",
+        choices: owned.map((o) => ({ id: o.instanceId, label: o.name })),
+        payload: { actionId: "pawn-shop" },
+      });
+      return { ok: true, pending: true };
+    }
+
+    case "sanctum": {
+      if (!returnableCards(state).length) return { ok: false, refund: true, reason: "No Psyche waits in the Subconscious." };
+      state.returnToHandPlayerId = player.id;
+      return { ok: true, ...returnTypedCard(state, null, 1) };
+    }
 
     case "swap-dreambeasts":
       return beginSwapDreambeasts(state);
@@ -1024,5 +1248,53 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       addLog(state, `Unknown landscape action: ${actionId}`);
       return { ok: false, refund: true };
   }
+}
+
+const SUITS = ["lucidity", "elasticity", "willpower"];
+
+/** Up to 3 set Objects still in the Object decks, one per suit when it can. */
+function setObjectsForFair(state) {
+  const fits = (c) => (c.tags || []).length && c.subtype !== "must-play";
+  const out = [];
+  SUITS.forEach((suit) => {
+    const card = (state.objectDecks?.[suit] || []).find(fits);
+    if (card) out.push(card);
+  });
+  SUITS.forEach((suit) => (state.objectDecks?.[suit] || []).forEach((c) => {
+    if (out.length < 3 && fits(c) && !out.includes(c)) out.push(c);
+  }));
+  return out;
+}
+
+function takeObjectFromDecks(state, instanceId) {
+  for (const suit of SUITS) {
+    const deck = state.objectDecks?.[suit] || [];
+    const i = deck.findIndex((c) => c.instanceId === instanceId);
+    if (i >= 0) return deck.splice(i, 1)[0];
+  }
+  return null;
+}
+
+function putObjectBack(state, card) {
+  const deck = state.objectDecks?.[card.suit];
+  if (deck) deck.push(card);
+}
+
+/** Call a Dreambeast of this Landscape's suit. Its Power is 3 + the Cycle, never above its printed Power. */
+function callDreambeast(state, tile) {
+  if (!tile?.suit) return { ok: false, refund: true, reason: "The Bed calls no Dreambeast." };
+  if (encounterOnLandscape(state, tile.id)) {
+    return { ok: false, refund: true, reason: `A Dreambeast already stands on ${tile.name}.` };
+  }
+  const pulled = pullDreambeastFromMindstream(state, { suit: tile.suit });
+  if (!pulled) return { ok: false, refund: true, reason: "No Dreambeast answers the call." };
+  const beast = encounterFromDreambeastCard(pulled.card);
+  const printed = Number(beast.accept) || 5;
+  beast.basePower = printed;
+  beast.accept = Math.min(printed, 3 + (cyclePosition(state).cycle || 1));
+  beast.called = true;
+  addEncounterOnLandscape(state, tile.id, beast);
+  logMoment(state, `${beast.name} answers the call on ${tile.name}: Power ${beast.accept}.`);
+  return { ok: true };
 }
 

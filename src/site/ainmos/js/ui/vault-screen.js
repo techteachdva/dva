@@ -78,7 +78,7 @@ function cardHtml(card, index, questIds) {
       ${quest ? `<span class="vs-quest" title="The ${esc(home)} can appear here when it is called">★ ${esc(home)}'s home</span>` : ""}
       <h4 class="lf-item-name">${esc(card.name)}</h4>
       <p class="lf-item-kind">${esc(SUIT_NAME[card.suit] || "Landscape")} Landscape</p>
-      ${action ? `<p class="lf-item-text"><strong>${esc(action.label)}.</strong> ${esc(action.description)}</p>` : ""}
+      ${action ? `<p class="lf-item-text"><strong>${esc(action.label)}.</strong> ${esc(action.description)} <span class="vs-call">Or Call ${card.suit === "elasticity" ? "an" : "a"} ${esc(SUIT_NAME[card.suit] || "")} Dreambeast.</span></p>` : ""}
       <div class="lf-item-foot">
         <button type="button" class="lf-btn lf-buy vs-pick" data-vs-pick="${index}">Dream it</button>
       </div>
@@ -146,7 +146,9 @@ export function renderVaultScreen(state, handlers = {}) {
         <span class="lf-round">${deck} asleep in the deck</span>
       </header>
       <p class="lf-whisper">What does the dream become next?</p>
-      <div class="vs-budget" aria-live="polite"><b>${remaining}</b> ${noun}${free && remaining !== 1 ? "s" : ""} left</div>
+      <div class="vs-budget" aria-live="polite">${free
+        ? `<b>${remaining}</b> ${noun}${remaining !== 1 ? "s" : ""} left`
+        : `<b>${remaining}</b> Reveal Action${remaining === 1 ? "" : "s"} left · If unused: ${remaining} Glimmer ✧`}</div>
       <div class="lf-shelf vs-shelf">${cards.map((card, index) => cardHtml(card, index, questIds)).join("")}</div>
       <footer class="lf-foot">
         <button type="button" class="lf-btn" data-vs-peek="1">View the dream</button>

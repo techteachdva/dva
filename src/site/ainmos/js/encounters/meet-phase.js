@@ -97,8 +97,13 @@ function nearestDreamerTile(state, fromTile) {
  * the nearest Dreamer. A beast already on your hex stays; a sleeping Leviathan
  * and Bosses whose twist moves them their own way do not step.
  */
-export function stepBeastsTowardDreamers(state) {
+export function stepBeastsTowardDreamers(state, { force = false } = {}) {
   if (state.tutorialMode) return 0;
+  if (!force && state.hideFromBeasts) {
+    state.hideFromBeasts = false;
+    addLog(state, "You stay hidden. The Dreambeasts lose your trail this Explore.");
+    return 0;
+  }
   let moved = 0;
   const beasts = allEncountersOnBoard(state).filter(({ encounter }) => (
     encounter.awake !== false && !(isBossEncounter(encounter) && bossSkipsStep(encounter))

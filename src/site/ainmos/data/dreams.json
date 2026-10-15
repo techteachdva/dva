@@ -11,21 +11,21 @@
     "name": "Chase",
     "type": "dream",
     "image": "images/dreams/chase.webp",
-    "text": "Spawn Encounters on every Dreamer"
+    "text": "A Dreambeast appears on your Landscape"
   },
   {
     "id": "heroism",
     "name": "Heroism",
     "type": "dream",
     "image": "images/dreams/heroism.webp",
-    "text": "Each Dreamer Discards 1 Object"
+    "text": "Discard 1 Object"
   },
   {
     "id": "injury",
     "name": "Injury",
     "type": "dream",
     "image": "images/dreams/injury.webp",
-    "text": "Each Dreamer Represses 2 Psyche",
+    "text": "Repress 2 Psyche",
     "copies": 2
   },
   {
@@ -33,7 +33,7 @@
     "name": "Judgement",
     "type": "dream",
     "image": "images/dreams/judgement.webp",
-    "text": "Spawn 1 Dreambeast on each Dreamer's Landscape"
+    "text": "A Dreambeast appears on your Landscape"
   },
   {
     "id": "loss",
@@ -54,7 +54,7 @@
     "name": "Mortality",
     "type": "dream",
     "image": "images/dreams/mortality.webp",
-    "text": "Each Dreamer Discards 2 Objects",
+    "text": "Discard 2 Objects",
     "copies": 2
   },
   {
@@ -139,14 +139,14 @@
     "name": "Misplaced",
     "type": "dream",
     "image": "images/dreams/misplaced.webp",
-    "text": "Each Dreamer Discards 1 Object"
+    "text": "Discard 1 Object"
   },
   {
     "id": "rivalry",
     "name": "Rivalry",
     "type": "dream",
     "image": "images/dreams/rivalry.webp",
-    "text": "Spawn an Encounter here"
+    "text": "A Dreambeast appears on your Landscape"
   },
   {
     "id": "temptation",
@@ -168,7 +168,7 @@
     "name": "Well Being",
     "type": "dream",
     "image": "images/dreams/well-being.webp",
-    "text": "Each Dreamer Represses 1 Psyche"
+    "text": "Repress 1 Psyche"
   },
   {
     "id": "quiet",
@@ -190,7 +190,7 @@
     "name": "Beta",
     "type": "dream",
     "image": "images/dreams/beta.webp",
-    "text": "Each Dreamer Represses 2 Psyche"
+    "text": "Repress 2 Psyche"
   },
   {
     "id": "circadia",
@@ -211,7 +211,7 @@
     "name": "Homeostasis",
     "type": "dream",
     "image": "images/dreams/homeostasis.webp",
-    "text": "All repress 1 Psyche"
+    "text": "Repress 1 Psyche"
   },
   {
     "id": "pineal-purge",

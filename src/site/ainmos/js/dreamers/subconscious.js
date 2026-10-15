@@ -255,10 +255,13 @@ export function finalizeReturn(state, cards, { log = true } = {}) {
       returned.push(removed);
       return;
     }
-    routeReturnedToDiscard(state, removed);
+    const toHand = state.returnToHandPlayerId && state.players?.find((p) => p.id === state.returnToHandPlayerId);
+    if (toHand && removed.type === "psyche") toHand.hand.push(removed);
+    else routeReturnedToDiscard(state, removed);
     if (typeof document !== "undefined") queueReturnFx(removed);
     returned.push(removed);
   });
+  state.returnToHandPlayerId = null;
   if (returned.length) {
     recordQuestEvent(state, "return_cards", { count: returned.length });
     if (log) {
@@ -392,9 +395,13 @@ export function toggleReturnPick(state, instanceId) {
 }
 
 export function cancelPendingReturn(state) {
-  if (!state.pendingReturn) return;
+  if (!state.pendingReturn) {
+    state.returnToHandPlayerId = null;
+    return;
+  }
   const picked = state.pendingReturn.picked;
   if (picked.length) finalizeReturn(state, picked);
+  state.returnToHandPlayerId = null;
   state.pendingReturn = null;
   advanceResolutionQueue(state);
 }

@@ -17,6 +17,16 @@ export const PHASES_PER_CYCLE = DREAMS_PER_CYCLE * PHASES_PER_DREAM;
 export const PHASE_NAMES = ["Reveal", "Explore", "Meet"];
 export const PHASE_SUITS = ["lucidity", "elasticity", "willpower"];
 
+/** "3 Meet Actions" — every phase budget is a count of that phase's Actions. */
+export function phaseActionsText(phase, n) {
+  return `${n} ${phase} Action${n === 1 ? "" : "s"}`;
+}
+
+/** The second job of the Psyche you spend: whatever you leave unused becomes Glimmer. */
+export function unusedGlimmerText(n) {
+  return `If unused: ${n} Glimmer ✧`;
+}
+
 export function cyclesForLength(lengthKey) {
   return antesForLength(lengthKey);
 }
