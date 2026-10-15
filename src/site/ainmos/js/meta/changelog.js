@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.16";
+export const SOMNIA_VERSION = "0.17";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.17",
+    title: "Clear Glass",
+    notes: [
+      "Every menu fills the screen and scales with it: the Lost & Found, Vault, Cycle screen, card pickers, and card details are about twice as big on a laptop or desktop.",
+      "Cards in menus are at least half again as large, and a full fan of cards always fits on screen.",
+      "The Lost & Found fits on one screen with its buttons always in view; long card text scrolls inside its card.",
+      "Bigger, brighter text everywhere: no faint greys, no tiny labels on the HUD, the Night Bar, the side panel, or the hand bar.",
+      "Dreamcore glass all over: windows, tiles, panels, and buttons are frosted lilac glass with a pearly edge, and scrollbars shimmer instead of glaring white.",
+    ],
+  },
   {
     version: "0.16",
     title: "Glimmer",

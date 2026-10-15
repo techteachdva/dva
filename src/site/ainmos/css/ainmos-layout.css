@@ -1552,3 +1552,265 @@ html:root body.ainmos.play-window .utility-choice-dock {
   pointer-events: none;
 }
 .object-set-badge.is-complete { background: linear-gradient(90deg, #ffe2b0, #ffd08a); }
+
+/* ==========================================================================
+   0.17 Readable: bigger, higher-contrast text everywhere, and every menu
+   scaled up until it fills the screen.
+   ========================================================================== */
+
+/* Contrast: muted greys become near-white; body text is white. */
+html:root body.ainmos {
+  --text: #ffffff;
+  --muted: #ddd6f7;
+  --dc-ink: #ffffff;
+  --dc-lavender: #e4dafc;
+  --menu-zoom: 1;
+}
+
+/* A larger base on screens with room for it (rem-sized text scales with it). */
+@media (min-height: 700px) and (min-width: 1000px) { html:root:has(body.ainmos.play-window) { font-size: 17px; } }
+@media (min-height: 900px) and (min-width: 1400px) { html:root:has(body.ainmos.play-window) { font-size: 18px; } }
+
+/* Menus grow with the screen: about double on a laptop or desktop. */
+@media (min-height: 560px) and (min-width: 900px) { html:root body.ainmos { --menu-zoom: 1.35; } }
+@media (min-height: 720px) and (min-width: 1200px) { html:root body.ainmos { --menu-zoom: 1.6; } }
+@media (min-height: 900px) and (min-width: 1500px) { html:root body.ainmos { --menu-zoom: 1.9; } }
+@media (min-height: 1200px) and (min-width: 2000px) { html:root body.ainmos { --menu-zoom: 2.4; } }
+
+/* Full-screen windows: Lost & Found, Vault, Cycle, Boon draft. */
+body.ainmos .lost-found { padding: 0.5vh 0.5vw; }
+body.ainmos .lost-found .lf-window {
+  zoom: var(--menu-zoom);
+  width: calc(98vw / var(--menu-zoom));
+  min-height: calc(97vh / var(--menu-zoom));
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+}
+body.ainmos .lost-found .lf-window > .lf-shelf,
+body.ainmos .lost-found .lf-window > .vs-board,
+body.ainmos .lost-found .lf-window > .cy-shelf { flex: 1 1 auto; }
+
+/* Follow-up menus and card pickers: the whole screen, not a little box. */
+body.ainmos #utility-modal .utility-content,
+body.ainmos #utility-modal .utility-content.card-choice-modal-wrap {
+  zoom: var(--menu-zoom);
+  width: calc(97vw / var(--menu-zoom)) !important;
+  max-width: none !important;
+  min-height: calc(60vh / var(--menu-zoom));
+  max-height: calc(96vh / var(--menu-zoom)) !important;
+  overflow-y: auto;
+}
+body.ainmos #card-modal .modal-content {
+  zoom: var(--menu-zoom);
+  max-height: calc(96vh / var(--menu-zoom)) !important;
+}
+body.ainmos #pause-menu .pause-panel,
+body.ainmos #pause-menu > :not(.pause-veil):first-of-type { zoom: var(--menu-zoom); }
+
+/* Readable menu text: no tiny type, solid colors instead of faint gradients. */
+body.ainmos :is(.lost-found, #utility-modal, #card-modal, #pause-menu) {
+  color: #fff;
+  font-size: 1rem;
+}
+body.ainmos :is(.lf-item-text, .lf-pay, .lf-why, .lf-buyer-meta, .lf-round, .lf-item-kind, .cy-step, .cy-note, .card-choice-hint, .landscape-action-desc, .modal-object-fate) {
+  font-size: max(0.88rem, 1em) !important;
+  color: #f4f0ff !important;
+  opacity: 1 !important;
+}
+body.ainmos :is(.lf-whisper, .lf-item-text, .card-choice-hint) { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9); }
+body.ainmos .lf-why { color: #ffd6a0 !important; }
+body.ainmos .lf-item-name { font-size: max(1.05rem, 1em); color: #fff; }
+body.ainmos .lf-item {
+  background: linear-gradient(180deg, rgba(30, 22, 58, 0.92), rgba(16, 11, 34, 0.94));
+}
+body.ainmos #utility-modal :is(.dreamer-power-pick, .landscape-action-pick) {
+  min-height: 4rem;
+  padding: 0.8rem 1.1rem;
+  font-size: 1.05rem;
+  background: linear-gradient(180deg, rgba(42, 32, 80, 0.95), rgba(24, 17, 50, 0.95));
+}
+body.ainmos #utility-modal .utility-actions .btn:not(.dreamer-power-pick):not(.landscape-action-pick) {
+  min-height: 3rem;
+  font-size: 0.95rem;
+}
+body.ainmos #utility-modal #utility-modal-body > p,
+body.ainmos #utility-modal :is(.dreamer-power-modal, .card-choice-picker) > p { font-size: 1.05rem; color: #fff; }
+
+/* Card pickers: the fan keeps its shape but each card is about twice the hand's size. */
+body.ainmos #utility-modal .ain-fan > .game-card,
+body.ainmos #utility-modal .ain-fan > .card-choice-wrap { width: clamp(84px, min(11vw, 20vh), 150px) !important; }
+body.ainmos #utility-modal .card-choice-row > .card-choice-wrap > :not(.game-card) { font-size: 0.85rem; color: #fff; }
+
+/* The game screen: bigger, brighter labels on the HUD, the side panel, and the log. */
+html:root body.ainmos.play-window :is(#hud .hud-item, .hud-pill, .night-bar, #phase-stepper) { color: #fff; }
+html:root body.ainmos.play-window .hud-pill-name { opacity: 1; color: #f4f0ff; }
+html:root body.ainmos.play-window :is(.info-panel, .side-panel, #game-log, .log-entry, .moment-overlay-stack) {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+html:root body.ainmos.play-window :is(small, .muted, .sub, .hint) { color: #e4dcfb; opacity: 1; }
+
+/* Menu cards are at least 1.5× their old size (old fan: min(9vw, 16vh), 76–128px).
+   Sizes divide by the menu zoom so the cards land at a true 1.5× on screen. */
+body.ainmos #utility-modal .ain-fan > .game-card,
+body.ainmos #utility-modal .ain-fan > .card-choice-wrap,
+body.ainmos #utility-modal .card-choice-row > .card-choice-wrap {
+  width: calc(clamp(114px, min(13.5vw, 24vh), 192px) / var(--menu-zoom)) !important;
+}
+body.ainmos .lost-found .lf-item-art { height: 10.8rem; }
+body.ainmos .lost-found .cy-art { min-height: 9rem; }
+body.ainmos .lost-found .lf-shelf { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+body.ainmos #card-modal .modal-art,
+body.ainmos #card-modal #modal-card > .game-card { max-height: none; }
+/* Wide screens: the whole shelf on one row, so nothing hides below the fold. */
+@media (min-width: 900px) {
+  body.ainmos .lost-found .lf-shelf { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); grid-auto-flow: column; }
+  body.ainmos .lost-found .lf-item-art { height: 8.6rem; }
+}
+@media (min-height: 720px) and (max-height: 899px) and (min-width: 1200px) { html:root body.ainmos { --menu-zoom: 1.45; } }
+
+/* Fit, don't scroll: the Lost & Found is exactly one screen. Buttons always show;
+   art takes whatever height is left; long text scrolls inside its own card. */
+@media (min-height: 560px) and (min-width: 900px) { html:root body.ainmos { --menu-zoom: 1.2; } }
+@media (min-height: 800px) and (min-width: 1200px) { html:root body.ainmos { --menu-zoom: 1.5; } }
+@media (min-height: 1000px) and (min-width: 1500px) { html:root body.ainmos { --menu-zoom: 1.85; } }
+@media (min-height: 1300px) and (min-width: 2000px) { html:root body.ainmos { --menu-zoom: 2.3; } }
+@media (min-width: 900px) and (min-height: 560px) {
+  body.ainmos #lost-found .lf-window {
+    height: calc(97vh / var(--menu-zoom));
+    min-height: 0;
+    overflow: hidden;
+  }
+  body.ainmos #lost-found .lf-shelf { flex: 1 1 0; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+  body.ainmos #lost-found .lf-item { min-height: 0; overflow: hidden; }
+  body.ainmos #lost-found .lf-item-art { flex: 1 1 0; height: auto; min-height: 5rem; }
+  body.ainmos #lost-found .lf-item-text { flex: 0 1 auto; min-height: 2.6em; overflow-y: auto; }
+  body.ainmos #lost-found .lf-item-foot { flex: none; margin-top: auto; }
+  body.ainmos #lost-found .lf-foot { flex: none; }
+  /* One Dreamer: the buyer chip is a slim status line. */
+  body.ainmos #lost-found .lf-buyers:not(:has(.lf-buyer + .lf-buyer)) { margin-bottom: 0.5rem; }
+  body.ainmos #lost-found .lf-buyers:not(:has(.lf-buyer + .lf-buyer)) .lf-buyer { grid-template-columns: auto auto; grid-template-rows: auto; padding: 0.25rem 0.9rem; }
+  body.ainmos #lost-found .lf-buyers:not(:has(.lf-buyer + .lf-buyer)) .lf-buyer-face { display: none; }
+  body.ainmos #lost-found .lf-whisper { margin: 0.3rem 0 0.4rem; }
+}
+/* Tall screens: keep the art big rather than the letters enormous. */
+@media (min-height: 1000px) and (min-width: 1500px) { html:root body.ainmos { --menu-zoom: 1.55; } }
+@media (min-height: 1300px) and (min-width: 2000px) { html:root body.ainmos { --menu-zoom: 2; } }
+@media (min-width: 900px) and (min-height: 560px) {
+  body.ainmos #lost-found .lf-item-text { max-height: 5.4em; }
+  body.ainmos #lost-found .lf-item-art { min-height: 7rem; }
+}
+body.ainmos #utility-modal .utility-content { overflow-x: hidden; }
+body.ainmos #utility-modal .card-choice-row.ain-fan { padding-left: 2rem; padding-right: 2rem; }
+
+/* Game screen: nothing below ~13px, nothing faint. */
+html:root body.ainmos.play-window {
+  --ain-info-w: clamp(250px, 22vw, 380px);
+  --panel-zoom: 1;
+}
+@media (min-height: 700px) and (min-width: 1200px) { html:root body.ainmos.play-window { --panel-zoom: 1.15; } }
+@media (min-height: 950px) and (min-width: 1600px) { html:root body.ainmos.play-window { --panel-zoom: 1.25; } }
+html:root body.ainmos.play-window #sidebar-right > * { zoom: var(--panel-zoom); }
+html:root body.ainmos.play-window #sidebar-right :is(h2, h3) { font-size: 1rem; color: #fff; }
+html:root body.ainmos.play-window #sidebar-right :is(p, li, span, small) { color: #f4f0ff; }
+
+html:root body.ainmos.play-window .night-ante-label { font-size: 13px; color: #fff; }
+html:root body.ainmos.play-window .night-boss-rung { font-size: 11px; font-weight: 800; }
+html:root body.ainmos.play-window :is(.cycle-dream-num, .cycle-step, .cycle-label) { font-size: 15px; color: #fff; }
+html:root body.ainmos.play-window .deck-rail-label { font-size: 13px; font-weight: 700; }
+html:root body.ainmos.play-window .deck-discard-empty { color: #e4dcfb; }
+html:root body.ainmos.play-window :is(.vault-title, .vault-deck) { font-size: 14px; color: #fff; }
+html:root body.ainmos.play-window .vault-tile-name { font-size: 15px; }
+html:root body.ainmos.play-window .vault-tile-meta { font-size: 13px; color: #f0eaff; }
+html:root body.ainmos.play-window .event-landscape-state { font-size: 13px; }
+html:root body.ainmos.play-window .hand-bar :is(h2, h3, h4, .hand-bar-title, [class*="section-title"]) { font-size: 14px; color: #fff; }
+html:root body.ainmos.play-window .hand-bar > * > :is(h2, h3, h4) { font-size: 14px; letter-spacing: 0.08em; }
+html:root body.ainmos.play-window :is(#btn-next-phase, #btn-map-back, .hud-item, .death-clock-count) { font-size: 15px; }
+html:root body.ainmos.play-window [style*="opacity: 0.6"], html:root body.ainmos.play-window .is-ahead { opacity: 1; }
+html:root body.ainmos.play-window .night-ante:not(.is-now) .night-ante-label { color: #e4dcfb; }
+
+/* ==========================================================================
+   Dreamcore glass, everywhere: translucent lilac glass, a pearly top edge,
+   an iridescent hairline, soft bloom. Text gets a shadow so it stays crisp.
+   (No backdrop-filter on the hand bar: it would trap the fixed choice bar.)
+   ========================================================================== */
+
+html:root body.ainmos {
+  --glass-fill: linear-gradient(160deg, rgba(214, 196, 255, 0.16), rgba(150, 196, 230, 0.07) 45%, rgba(40, 30, 80, 0.38));
+  --glass-fill-strong: linear-gradient(160deg, rgba(214, 196, 255, 0.2), rgba(150, 196, 230, 0.09) 45%, rgba(30, 22, 64, 0.62));
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.34), inset 0 0 0 1px rgba(226, 214, 255, 0.2), inset 0 -18px 30px -24px rgba(182, 230, 214, 0.35);
+  --glass-bloom: 0 12px 40px rgba(6, 3, 20, 0.5), 0 0 28px rgba(200, 184, 236, 0.14);
+  --glass-text-shadow: 0 1px 2px rgba(8, 4, 22, 0.95), 0 0 10px rgba(8, 4, 22, 0.6);
+}
+
+/* Windows and menus: real frosted glass. */
+body.ainmos .lost-found .lf-window,
+body.ainmos #utility-modal .utility-content,
+body.ainmos #card-modal .modal-content,
+body.ainmos #pause-menu .pause-panel {
+  background: var(--glass-fill-strong) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+  box-shadow: var(--glass-edge), var(--glass-bloom) !important;
+  border-radius: 22px;
+}
+body.ainmos .lf-veil { background-color: rgba(20, 12, 44, 0.35); }
+
+/* Tiles inside windows: lighter panes of glass. */
+body.ainmos .lf-item,
+body.ainmos #utility-modal :is(.dreamer-power-pick, .landscape-action-pick) {
+  background: var(--glass-fill) !important;
+  box-shadow: var(--glass-edge), 0 8px 24px rgba(6, 3, 20, 0.35) !important;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+body.ainmos .lf-item.lf-insight { box-shadow: var(--glass-edge), 0 0 0 1.5px rgba(182, 230, 214, 0.55), 0 0 26px rgba(182, 230, 214, 0.25) !important; }
+body.ainmos .lf-item-art,
+body.ainmos .cy-art { background-color: rgba(255, 255, 255, 0.04); border-radius: 12px; }
+
+/* Game-screen panels: glass sheets over the night. */
+html:root body.ainmos.play-window #sidebar-right,
+html:root body.ainmos.play-window .hand-section,
+html:root body.ainmos.play-window .top-bar.play-top-bar {
+  background: var(--glass-fill) !important;
+  box-shadow: var(--glass-edge) !important;
+}
+html:root body.ainmos.play-window .hand-section { border-radius: 16px; border: none; }
+html:root body.ainmos.play-window #sidebar-right { border-radius: 0 18px 18px 0; }
+
+/* Crisp text on glass. */
+body.ainmos :is(.lost-found, #utility-modal, #card-modal, #pause-menu, #sidebar-right, .hand-bar, .top-bar, .night-bar) :is(p, span, small, li, h2, h3, h4, strong, em, label) {
+  text-shadow: var(--glass-text-shadow);
+}
+body.ainmos :is(.lf-title, #utility-modal h2) { text-shadow: none; filter: drop-shadow(0 1px 2px rgba(8, 4, 22, 0.9)); }
+body.ainmos .game-card :is(p, span, small, strong, em) { text-shadow: none; }
+
+/* Pill buttons: glass with a pearly rim. */
+body.ainmos :is(.lf-btn, #utility-modal .utility-actions .btn):not(.lf-continue):not(.primary) {
+  background: var(--glass-fill) !important;
+  box-shadow: var(--glass-edge) !important;
+  color: #fff !important;
+}
+
+/* Scrollbars: thin iridescent, never the stark white default. */
+body.ainmos * { scrollbar-width: thin; scrollbar-color: rgba(200, 184, 236, 0.55) transparent; }
+body.ainmos ::-webkit-scrollbar { width: 8px; height: 8px; }
+body.ainmos ::-webkit-scrollbar-track { background: transparent; }
+body.ainmos ::-webkit-scrollbar-thumb { border-radius: 8px; background: linear-gradient(180deg, var(--dc-lavender), var(--dc-mint)); }
+html:root body.ainmos.play-window .hand-bar .hand-section h3,
+html:root body.ainmos.play-window .hand-bar h3 { font-size: 14px !important; color: #fff !important; opacity: 1 !important; letter-spacing: 0.1em; }
+/* Phones sideways: the same one-screen Lost & Found, tighter. */
+@media (max-height: 559px) and (min-width: 600px) {
+  body.ainmos #lost-found .lf-window { height: 97vh; min-height: 0; overflow: hidden; padding: 0.3rem 0.7rem 0.5rem; }
+  body.ainmos #lost-found .lf-shelf { flex: 1 1 0; min-height: 0; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); grid-auto-flow: column; grid-template-rows: minmax(0, 1fr); gap: 0.5rem; }
+  body.ainmos #lost-found .lf-item { min-height: 0; overflow: hidden; padding: 0.4rem 0.5rem 0.5rem; }
+  body.ainmos #lost-found .lf-item-art { flex: 1 1 0; height: auto; min-height: 3rem; margin-bottom: 0.3rem; }
+  body.ainmos #lost-found .lf-item-text { flex: 0 1 auto; max-height: 3.9em; overflow-y: auto; font-size: 0.8rem !important; }
+  body.ainmos #lost-found .lf-item-name { font-size: 0.9rem; }
+  body.ainmos #lost-found .lf-item-foot { flex: none; margin-top: auto; }
+  body.ainmos #lost-found .lf-titlebar { padding: 0.1rem 0 0.25rem; }
+  body.ainmos #lost-found .lf-whisper { margin: 0.2rem 0; font-size: 0.85rem; }
+  body.ainmos #lost-found .lf-buyers { display: none; }
+  body.ainmos #lost-found .lf-foot { flex: none; margin-top: 0.4rem; padding-top: 0.4rem; }
+}

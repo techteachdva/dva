@@ -310,7 +310,10 @@ function layoutPsycheFan(container) {
   if (!n) return;
   const spread = container.classList.contains("spread-tray-fan");
   const cardW = cards[0].offsetWidth || (spread ? 118 : 64);
-  const avail = Math.max(cardW, container.clientWidth || cardW);
+  // Measure the content box (no padding), and leave room for the outer cards' tilt.
+  const cs = getComputedStyle(container);
+  const inner = (container.clientWidth || cardW) - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+  const avail = Math.max(cardW, inner - cardW * 0.25);
   const mid = (n - 1) / 2;
   const maxRot = spread ? Math.min(5, 1.2 + n * 0.35) : Math.min(12, 3 + n * 0.8);
   const pip = spread ? cardW + 24 : 22;
