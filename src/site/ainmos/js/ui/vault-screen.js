@@ -151,7 +151,7 @@ export function renderVaultScreen(state, handlers = {}) {
       <footer class="lf-foot">
         <button type="button" class="lf-btn" data-vs-peek="1">View the dream</button>
         <button type="button" class="lf-btn lf-reroll" data-vs-refresh="1" ${refreshBlocked ? "aria-disabled=\"true\"" : ""} title="${esc(refreshBlocked || `Redeal the Vault. Each refresh this round costs 1 more.`)}">Refresh · ${cost}✧</button>
-        <button type="button" class="lf-btn lf-continue" data-vs-done="1" title="Stop placing. Each Lucidity left draws 1 Psyche.">Done placing →</button>
+        <button type="button" class="lf-btn lf-continue" data-vs-done="1" title="Stop placing. Each Lucidity left becomes 1 Glimmer ✧ for the Lost &amp; Found.">Done placing →</button>
       </footer>
     </section>`;
 

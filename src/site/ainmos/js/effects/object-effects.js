@@ -1426,7 +1426,7 @@ const ACTIVATIONS = {
   "to-beast": elementMove((state) => beastTileIds(state), "no Dreambeast to move to."),
   "to-bed": elementMove(() => ["bed"], "you are already on The Bed."),
   "to-quest": elementMove((state) => activeQuestLandscapeIds(state), "no quest Landscape is placed."),
-  "to-boss": elementMove((state) => beastTileIds(state, (e) => e.boss || e.miniBoss), "no Boss or Mini-Boss stands."),
+  "to-boss": elementMove((state) => beastTileIds(state, (e) => e.boss || e.miniBoss), "no Dreambeast stands."),
 };
 
 /** Why an Instant cannot be played right now (it stays in hand), or "" when it can. */

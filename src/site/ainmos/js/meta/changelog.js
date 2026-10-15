@@ -6,10 +6,25 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.21.1";
+export const SOMNIA_VERSION = "0.22";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.22",
+    title: "Polish Pass",
+    notes: [
+      "First Night has a real guide now. It reads the screen you're on and tells you what to do next, points at the button, and explains each rule the first time it matters: the Waking Mind, Reveal, Explore, Meet, Glimmer, the Lost & Found, Dreambeasts, Archetypes, Bright and Dim, Dream Forms, and the dice. It walks your first two Cycles, then steps back.",
+      "The guide never covers what it's talking about. It sits in the left rail on the table, docks beside every menu (the menu makes room), waits in the corner on Dream and Event screens, and folds into a small pill on tablets and phones.",
+      "Your first Archetype fight on a First Night is kind, like your first Dreambeast fight.",
+      "Psyche cards are poker cards: tight corners, a solid printed face, a corner index you can read on a fanned card, and a clean numeral (the 4 no longer shows its traced outline). Hand cards are a little larger.",
+      "Phones: your hand lives in a drawer. Tap Hand (it shows your count per suit) and the whole hand slides up at a readable size; it opens by itself when a fight wants a spread. The bottom strip is slimmer, so the board gets more room.",
+      "Notices are small sentence-case whispers instead of big banners, and phones show one at a time.",
+      "The bottom bar is slimmer: Power Tokens sit in two tidy rows, and empty Object slots say where Objects come from.",
+      "Title screen: Dreamer cards show their art across the top with the name beneath it, and the difficulty and Begin Dreaming labels fit.",
+      "Smaller fixes: the Vault panel's name fits, the opener no longer shows a stray dash before you pick a card, Done placing says leftover Lucidity becomes Glimmer, and the Dream screen, Crystal Bell, and Fire say Dreambeast, not Mini-Boss.",
+    ],
+  },
   {
     version: "0.21.1",
     title: "Steady Hands",

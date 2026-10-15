@@ -3335,15 +3335,19 @@ export function fightArchetype(state, archId, onDone = null) {
     onDone?.();
   };
 
+  // A guided First Night is kind to its first Archetype fight, as it is to its first Dreambeast.
+  const guidedFirst = state.guided && !state.guidedDone && !state.guidedFirstArchetypeDone;
+  if (guidedFirst) state.guidedFirstArchetypeDone = true;
+  const forceWinner = guidedFirst ? "dreamer" : null;
   if (globalThis.__SOMNIA_REAL_DICE__) {
-    playDiceBattle({ dreamerName: actor.name, beastName: arch.name, dreamerDice: dice, beastDice: rules.power, instant: true, onComplete: ({ dreamerWins }) => finish(dreamerWins) });
+    playDiceBattle({ dreamerName: actor.name, beastName: arch.name, dreamerDice: dice, beastDice: rules.power, forceWinner, instant: true, onComplete: ({ dreamerWins }) => finish(dreamerWins) });
     return true;
   }
   if (typeof document === "undefined" || globalThis.__SOMNIA_INSTANT_DICE__) {
-    playDiceBattle({ dreamerName: actor.name, beastName: arch.name, dreamerDice: dice, beastDice: rules.power, instant: true, onComplete: ({ dreamerWins }) => finish(dreamerWins) });
+    playDiceBattle({ dreamerName: actor.name, beastName: arch.name, dreamerDice: dice, beastDice: rules.power, forceWinner, instant: true, onComplete: ({ dreamerWins }) => finish(dreamerWins) });
     return true;
   }
   state.diceBattle = { archetypeId: arch.id, tileId: fight.tileId };
-  playDiceBattle({ dreamerName: actor.name, beastName: arch.name, dreamerDice: dice, beastDice: rules.power, onComplete: ({ dreamerWins }) => finish(dreamerWins) });
+  playDiceBattle({ dreamerName: actor.name, beastName: arch.name, dreamerDice: dice, beastDice: rules.power, forceWinner, onComplete: ({ dreamerWins }) => finish(dreamerWins) });
   return true;
 }

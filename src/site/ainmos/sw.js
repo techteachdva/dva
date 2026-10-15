@@ -3,7 +3,7 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.21.1-steady-hands";
+const CACHE_NAME = "ainmos-0.22-polish-pass";
 /** Versioned with the release, so a new ship never serves last version's modules. */
 const RUNTIME_CACHE = `${CACHE_NAME}-runtime`;
 
@@ -17,6 +17,7 @@ const PRECACHE = [
   "./css/dreamscape.css",
   "./css/ainmos.css",
   "./css/ainmos-layout.css",
+  "./css/ainmos-polish.css",
   "./css/fonts-local.css",
   "./fonts/font-0.woff2",
   "./fonts/font-1.woff2",
@@ -75,6 +76,7 @@ const PRECACHE = [
   "./js/ui/boon-panel.js",
   "./js/ui/run-summary.js",
   "./js/ui/coach-panel.js",
+  "./js/ui/hand-drawer.js",
   "./js/tutorial/coach.js",
   "./js/dreamers/boons.js",
   "./js/encounters/boss-twists.js",

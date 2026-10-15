@@ -273,6 +273,11 @@ function attachCardActions(el, { onClick, onInspect }) {
   return el;
 }
 
+/** A poker-style corner index: the value over a small suit mark, top left. */
+function psycheCornerHtml(valueHtml, suitHtml, suitClassName = "") {
+  return `<span class="psyche-corner ${suitClassName}" aria-hidden="true"><span class="psyche-corner-value">${valueHtml}</span><span class="psyche-corner-suit">${suitHtml}</span></span>`;
+}
+
 function psychePipHtml(valueHtml, suitHtml, suitClassName = "", suitTitle = "") {
   const titleAttr = suitTitle ? ` title="${suitTitle}"` : "";
   return `<span class="psyche-pip">
@@ -391,6 +396,7 @@ function renderPsycheDreambeastCard(card, { selected, onClick, onInspect, mini, 
   el.innerHTML = `
     <span class="psyche-holo psyche-holo-${card.suit || "wild"}" aria-hidden="true"></span>
     ${selected ? `<span class="psyche-quanta psyche-quanta-${card.suit}" aria-hidden="true"></span>` : ""}
+    ${psycheCornerHtml("3", symbol, suitClass(card.suit))}
     ${psychePipHtml("3", symbol, suitClass(card.suit))}
     <span class="psyche-dreambeast-badge" title="Accepted Dreambeast">⚔</span>
     <span class="psyche-label">${card.name.split(" ")[0]}</span>
@@ -431,6 +437,7 @@ function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini,
       <span class="psyche-holo psyche-holo-gold" aria-hidden="true"></span>
       ${selected ? `<span class="psyche-quanta psyche-quanta-gold" aria-hidden="true"></span>
       <span class="psyche-sparkle" aria-hidden="true"></span>` : ""}
+      ${psycheCornerHtml("⚡", `+${card.powerTokens ?? 1}`)}
       ${psychePipHtml("⚡", `+${card.powerTokens ?? 1}`)}
       <span class="psyche-label">Power</span>
     `;
@@ -455,6 +462,7 @@ function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini,
     el.innerHTML = `
       <span class="psyche-holo psyche-holo-wild" aria-hidden="true"></span>
       ${selected ? `<span class="psyche-quanta" aria-hidden="true"></span>` : ""}
+      ${psycheCornerHtml("5", "★", "wild-gradient")}
       ${psychePipHtml("5", "★", "wild-gradient", "Wild — any suit")}
       <span class="psyche-label">Wild</span>
     `;
@@ -464,6 +472,7 @@ function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini,
     el.innerHTML = `
       <span class="psyche-holo psyche-holo-${card.suit}" aria-hidden="true"></span>
       ${selected ? `<span class="psyche-quanta psyche-quanta-${card.suit}" aria-hidden="true"></span>` : ""}
+      ${psycheCornerHtml(card.value, symbol, suitClass(card.suit))}
       ${psychePipHtml(card.value, symbol, suitClass(card.suit))}
       <span class="psyche-label">${label}</span>
       ${upgradeBadgeHtml(card)}
@@ -3144,7 +3153,7 @@ export function renderObjects(state, onCardClick) {
 
   if (!player.objects.length) {
     container.classList.add("empty");
-    container.textContent = "No Objects";
+    container.textContent = "No Objects yet · the Lost & Found sells them";
   } else {
     container.classList.remove("empty");
     player.objects.forEach((card) => mountObject(container, card, "hand"));
@@ -3153,7 +3162,7 @@ export function renderObjects(state, onCardClick) {
   if (persistentEl) {
     if (!player.persistent?.length) {
       persistentEl.classList.add("empty");
-      persistentEl.textContent = "None";
+      persistentEl.textContent = "Persistent Objects you keep stay here";
     } else {
       persistentEl.classList.remove("empty");
       player.persistent.forEach((card) => mountObject(persistentEl, card, "persistent"));

@@ -216,7 +216,7 @@ export function beginDreamCardChoice(state, card, player, helpers = {}) {
     single: true,
     cycleLabel: (() => {
       const pos = cyclePosition(state);
-      const tag = pos.dream === 2 ? " · Mini-Boss" : "";
+      const tag = pos.dream === 2 ? " · Dreambeast" : pos.dream === 3 ? " · Archetype" : "";
       return `Cycle ${pos.cycle} · Dream ${pos.dream} of 3${tag}`;
     })(),
     cardId: card.id,

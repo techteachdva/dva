@@ -266,7 +266,7 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
       </header>
       <div class="phase-opener-solo-stage fullscreen-browser-body">
         <div class="phase-opener-preview${canConfirm ? " is-ready" : ""}" aria-live="polite">
-          <span class="phase-opener-preview-num">${canConfirm ? projected : "—"}</span>
+          <span class="phase-opener-preview-num${canConfirm ? "" : " is-empty"}">${canConfirm ? projected : ""}</span>
           <span class="phase-opener-preview-unit">${canConfirm ? budgetUnit(phase, projected) : idleNote}</span>
           <span class="phase-opener-preview-stat">${suitIconHtml(suit, { size: 12 })} ${suitLabel} +${bonus}</span>
         </div>

@@ -1,4 +1,5 @@
 import { renderCoach } from "../ui/coach-panel.js";
+import { renderHandDrawer } from "../ui/hand-drawer.js";
 import { maybeEndGuidance } from "../tutorial/coach.js";
 import { buildRunSummary } from "../ui/run-summary.js";
 import { renderBoonDraft, renderBoonList } from "../ui/boon-panel.js";
@@ -161,7 +162,7 @@ import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } f
 import { requestEndPhase } from "../flow/phase-skip.js";
 import { initDevConsole } from "../dev/dev-console.js";
 import { enableDevMode } from "../dev/dev-commands.js";
-import { narrate, logMoment } from "../core/narrator.js";
+import { narrate } from "../core/narrator.js";
 import { cancelPendingReturn, toggleRepressPick, confirmRepressStep } from "../dreamers/subconscious.js";
 import { replayChosenDream } from "../cards/dream-replay.js";
 import { getLandscapePickHighlights, resolveStaleLandscapePick, cancelLandscapePick } from "../board/landscapes.js";
@@ -2522,10 +2523,9 @@ function renderBoardArea() {
   };
   renderDreamForms(state);
   renderBoonList(state);
-  if (maybeEndGuidance(state)) {
-    logMoment(state, "Training wheels off. The Turtle has fallen; the rest of the night is yours.");
-  }
+  maybeEndGuidance(state);
   renderCoach(state, { onChange: () => renderAll() });
+  renderHandDrawer(state);
   renderArchetypeWindow(state, {
     onFocus: (tileId) => {
       state.selectedLandscapeId = tileId;

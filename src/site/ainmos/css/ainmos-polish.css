@@ -1,0 +1,671 @@
+/* ==========================================================================
+   Ainmos 0.22 Polish Pass. Loaded last, so these rules settle the older
+   layered overrides in ainmos.css and ainmos-layout.css.
+   1. Psyche cards are poker cards: 5:7, a tight corner, an opaque printed
+      face, a corner index, and a clean numeral (no traced outline).
+   2. The First Night guide.
+   3. Desktop table: info when you need it, a clear board when you don't.
+   4. Tablet and phone: the hand drawer, small notices.
+   ========================================================================== */
+
+/* ---- 1. Psyche cards: poker cards ------------------------------------------------------------- */
+
+html body.ainmos .game-card.psyche-card {
+  --pc-face: linear-gradient(160deg, #6a6f8c 0%, #3c4060 55%, #1d2036 100%);
+  --pc-ink: #fff;
+  container-type: inline-size;
+  aspect-ratio: 5 / 7;
+  border: none !important;
+  border-radius: 7px !important;
+  background: var(--pc-face) !important;
+  color: var(--pc-ink);
+  opacity: 1;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 6px 14px rgba(4, 2, 14, 0.5) !important;
+}
+html body.ainmos .game-card.psyche-card.lucidity { --pc-face: linear-gradient(160deg, #5f9dff 0%, #2f5fcc 52%, #182f70 100%); }
+html body.ainmos .game-card.psyche-card.elasticity { --pc-face: linear-gradient(160deg, #ffd666 0%, #d89c1e 52%, #6d4a09 100%); }
+html body.ainmos .game-card.psyche-card.willpower { --pc-face: linear-gradient(160deg, #ff7f72 0%, #d4383c 52%, #69151a 100%); }
+html body.ainmos .game-card.psyche-card.wild {
+  --pc-face:
+    radial-gradient(circle at 50% 46%, rgba(20, 12, 40, 0.5), rgba(20, 12, 40, 0.12) 62%),
+    conic-gradient(from 210deg, #ff6b9d, #f5d77a, #5bd6a8, #5b9bff, #c9a0ff, #ff6b9d);
+}
+html body.ainmos .game-card.psyche-card.psyche-power { --pc-face: linear-gradient(160deg, #ffe39a 0%, #d9a63a 52%, #6e4c0e 100%); --pc-ink: #fffaf0; }
+
+/* The printed inner frame of a real card. */
+html body.ainmos .game-card.psyche-card::before {
+  content: "";
+  position: absolute;
+  inset: 5cqw;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* Corner index: the value over a small suit mark, readable on a fanned card. */
+html body.ainmos .game-card.psyche-card .psyche-corner {
+  position: absolute;
+  top: 7cqw;
+  left: 8cqw;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1cqw;
+  min-width: 18cqw;
+  line-height: 1;
+  pointer-events: none;
+}
+html body.ainmos .game-card.psyche-card .psyche-corner-value {
+  font: 700 25cqw/0.86 var(--font-display, serif);
+  color: var(--pc-ink);
+  -webkit-text-stroke: 0;
+  text-shadow: 0 1px 0 rgba(10, 6, 24, 0.55), 0 2px 6px rgba(10, 6, 24, 0.45);
+}
+html body.ainmos .game-card.psyche-card .psyche-corner-suit {
+  display: flex;
+  font: 700 11cqw/1 var(--font-display, serif);
+  color: var(--pc-ink);
+  filter: drop-shadow(0 1px 1px rgba(10, 6, 24, 0.6));
+}
+html body.ainmos .game-card.psyche-card .psyche-corner-suit svg { width: 13cqw; height: 13cqw; }
+html body.ainmos .game-card.psyche-card .psyche-corner .suit-icon { color: var(--pc-ink) !important; }
+
+/* Centre: one big clean numeral over its suit sigil. */
+html body.ainmos .game-card.psyche-card .psyche-pip {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 3;
+  display: grid !important;
+  place-content: center;
+  justify-items: center;
+  gap: 3cqw;
+  padding: 6cqw 0 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+html body.ainmos .game-card.psyche-card .psyche-value {
+  font: 700 46cqw/0.88 var(--font-display, serif) !important;
+  color: var(--pc-ink) !important;
+  -webkit-text-stroke: 0 !important;
+  text-shadow: 0 2px 0 rgba(10, 6, 24, 0.4), 0 0 16px rgba(255, 255, 255, 0.25) !important;
+}
+html body.ainmos .game-card.psyche-card .psyche-suit,
+html body.ainmos .game-card.psyche-card .psyche-suit .suit-icon {
+  display: flex;
+  color: var(--pc-ink) !important;
+  filter: drop-shadow(0 1px 2px rgba(10, 6, 24, 0.55));
+}
+html body.ainmos .game-card.psyche-card .psyche-suit svg { width: 22cqw !important; height: 22cqw !important; }
+html body.ainmos .game-card.psyche-card.wild .psyche-suit { font-size: 20cqw; line-height: 1; background: none; -webkit-text-fill-color: #fff; }
+html body.ainmos .game-card.psyche-card.psyche-power .psyche-suit { font: 700 14cqw/1 var(--font-display, serif); }
+
+/* The suit name, small along the foot, inside the frame. */
+html body.ainmos .game-card.psyche-card .psyche-label {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 8cqw !important;
+  z-index: 3;
+  margin: 0;
+  text-align: center;
+  font: 700 8cqw/1 var(--font-display, serif) !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82) !important;
+  opacity: 1 !important;
+  text-shadow: 0 1px 2px rgba(10, 6, 24, 0.6);
+}
+html body.ainmos .game-card.psyche-card.has-upgrade .psyche-label { opacity: 0 !important; }
+html body.ainmos .game-card.psyche-card .psyche-holo { mix-blend-mode: soft-light; }
+
+/* States: chosen cards glow white; cards that can't be used step back but stay readable. */
+html body.ainmos .game-card.psyche-card.selected {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+    0 0 0 2px #fff,
+    0 0 22px rgba(255, 255, 255, 0.55),
+    0 10px 20px rgba(4, 2, 14, 0.55) !important;
+}
+html body.ainmos .game-card.psyche-card.phase-suggested:not(.selected) {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 0 0 1.5px rgba(245, 215, 122, 0.85),
+    0 0 16px rgba(245, 215, 122, 0.4),
+    0 6px 14px rgba(4, 2, 14, 0.5) !important;
+}
+html body.ainmos .phase-opener-solo-hand .game-card.psyche-card.opener-usable:not(.selected) {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 0 18px rgba(255, 255, 255, 0.22),
+    0 6px 14px rgba(4, 2, 14, 0.5) !important;
+}
+html body.ainmos .phase-opener-solo-hand .game-card.psyche-card.opener-unusable { opacity: 0.55 !important; filter: saturate(0.4) brightness(0.8) !important; }
+html body.ainmos .game-card.psyche-card:disabled { opacity: 0.6; }
+
+/* The desktop hand: slightly larger poker cards, a tighter fan. */
+html:root body.ainmos.play-window {
+  --ain-card-h: clamp(118px, 17.5vh, 196px);
+  --ain-fan-h: calc(var(--ain-card-h) + 0.9rem);
+}
+html[data-form="tablet"]:root body.ainmos.play-window {
+  --ain-card-h: clamp(104px, 16.5vh, 164px);
+  --ain-fan-h: calc(var(--ain-card-h) + 0.9rem);
+}
+html[data-form="phone"]:root body.ainmos.play-window { --ain-fan-h: 0px; }
+
+/* ---- 2. The First Night guide ----------------------------------------------------------------- */
+
+:root { --guide-w: clamp(280px, 18.5vw, 360px); }
+.coach-hint {
+  position: fixed;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+  transform: none;
+  z-index: 12100;
+  width: var(--guide-w);
+  max-width: calc(100vw - 1rem);
+  pointer-events: none;
+}
+.coach-hint[hidden] { display: none; }
+.coach-hint.is-docked { left: 16px; top: 50%; transform: translateY(-50%); }
+.coach-hint.is-corner { bottom: calc(var(--ain-bar-h, 100px) + 14px); }
+.coach-hint.is-rail { width: auto; }
+.coach-hint.is-min { width: auto; }
+.coach-hint.is-min.is-docked { top: auto; bottom: 16px; transform: none; }
+.coach-hint.is-min.is-rail, .coach-hint.is-min.is-corner { top: auto; bottom: calc(var(--ain-bar-h, 100px) + 14px); }
+
+html body.ainmos .coach-card {
+  display: block;
+  padding: 0.65rem 0.8rem 0.6rem;
+  border-radius: 14px;
+  background: linear-gradient(170deg, rgba(44, 34, 84, 0.96), rgba(20, 15, 40, 0.97));
+  box-shadow: 0 14px 34px rgba(4, 2, 14, 0.6), 0 0 26px rgba(200, 184, 236, 0.16);
+  max-height: min(70vh, 30rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+html body.ainmos .coach-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(200, 184, 236, 0.18);
+}
+html body.ainmos .coach-head .coach-spark { font-size: 0.95rem; line-height: 1; }
+html body.ainmos .coach-goal {
+  flex: 1 1 auto;
+  font: 600 clamp(0.68rem, 0.6rem + 0.15vw, 0.8rem)/1.2 var(--font-display, serif);
+  letter-spacing: 0.06em;
+  color: #f5d77a;
+}
+html body.ainmos .coach-min {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid rgba(200, 184, 236, 0.3);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dc-ink, #f2ecff);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+html body.ainmos .coach-min:hover { background: rgba(200, 184, 236, 0.15); }
+html body.ainmos .coach-title {
+  margin: 0;
+  font: 700 clamp(0.95rem, 0.8rem + 0.25vw, 1.15rem)/1.2 var(--font-display, serif);
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: #fff;
+}
+html body.ainmos .coach-text {
+  margin: 0.25rem 0 0;
+  font: 400 clamp(0.88rem, 0.76rem + 0.22vw, 1.05rem)/1.42 var(--font-body, "Source Sans 3", system-ui, sans-serif);
+  color: #ece6fb;
+}
+html body.ainmos .coach-why {
+  margin: 0.45rem 0 0;
+  padding: 0.4rem 0.55rem;
+  border-left: 2px solid rgba(182, 230, 214, 0.7);
+  border-radius: 0 8px 8px 0;
+  background: rgba(182, 230, 214, 0.08);
+  font: italic 400 clamp(0.8rem, 0.7rem + 0.2vw, 0.96rem)/1.4 var(--font-body, "Source Sans 3", system-ui, sans-serif);
+  color: #d6efe7;
+}
+html body.ainmos .coach-actions { display: flex; justify-content: flex-end; gap: 0.4rem; margin-top: 0.5rem; }
+html body.ainmos .coach-btn { font-size: 0.66rem; padding: 0.28rem 0.8rem; }
+html body.ainmos .coach-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 18rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(245, 215, 122, 0.55);
+  border-radius: 999px;
+  background: rgba(30, 22, 58, 0.94);
+  box-shadow: 0 8px 20px rgba(4, 2, 14, 0.5), 0 0 16px rgba(245, 215, 122, 0.22);
+  color: #fff;
+  font: 600 0.78rem/1.1 var(--font-display, serif);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: auto;
+  cursor: pointer;
+  animation: guide-pill-in 0.35s ease both;
+}
+html body.ainmos .coach-pill span:last-child { overflow: hidden; text-overflow: ellipsis; }
+@keyframes guide-pill-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* Menus slide over to make room for the docked guide on wide screens. */
+body.guide-docked .lost-found { padding-left: calc(var(--guide-w) + 2rem); }
+body.guide-docked .utility-content.phase-opener-modal-wrap #utility-modal-body { padding-left: calc(var(--guide-w) + 2rem) !important; }
+
+/* The control the guide is talking about breathes gold. */
+.guide-target {
+  outline: 2px solid rgba(245, 215, 122, 0.95) !important;
+  outline-offset: 3px;
+  animation: guide-target-pulse 1.6s ease-in-out infinite;
+}
+@keyframes guide-target-pulse {
+  0%, 100% { outline-color: rgba(245, 215, 122, 0.95); outline-offset: 3px; }
+  50% { outline-color: rgba(245, 215, 122, 0.35); outline-offset: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide-target, html body.ainmos .coach-pill { animation: none; }
+}
+
+/* Phones and small tablets: a pill above the hand strip; tap it to read. */
+.coach-hint.is-compact {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--ain-bar-h, 90px) + var(--ain-fan-h, 0px) + 0.5rem);
+  width: min(24rem, calc(100vw - 1rem));
+  display: flex;
+  justify-content: center;
+}
+.coach-hint.is-compact.is-min { width: auto; }
+html body.ainmos .coach-hint.is-compact .coach-card { max-height: 42vh; padding: 0.5rem 0.65rem; }
+html body.ainmos .coach-hint.is-compact .coach-text { font-size: 0.82rem; }
+html body.ainmos .coach-hint.is-compact .coach-why { font-size: 0.76rem; }
+.coach-hint.is-compact.is-top { top: max(0.4rem, env(safe-area-inset-top)); bottom: auto; }
+body.guide-docked.ainmos .lost-found .lf-window { width: calc((98vw - var(--guide-w) - 2.5rem) / var(--menu-zoom, 1)); }
+
+/* ---- 3. Desktop polish -------------------------------------------------------------------------- */
+
+/* The opener's preview: no stray dash before a card is picked. */
+body.ainmos .phase-opener-preview-num.is-empty { display: none; }
+.coach-hint.is-docked.is-low { top: auto; bottom: 16px; transform: none; }
+
+/* Notices: small, sentence-case whispers with a gold edge, not shouting banners. */
+html body.ainmos .moment-toast {
+  max-width: min(100%, 30rem);
+  padding: 0.38rem 0.75rem 0.4rem 0.85rem;
+  text-align: left;
+  font: 500 0.84rem/1.35 "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: #f3ecd8;
+  background: linear-gradient(90deg, rgba(36, 26, 66, 0.94), rgba(16, 12, 32, 0.92));
+  border: none;
+  border-left: 3px solid rgba(245, 215, 122, 0.85);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+html body.ainmos .moment-toast.moment-toast-boss { border-left-color: #ff8a7a; }
+html body.ainmos .moment-toast.moment-toast-victory { border-left-color: #b6e6d6; }
+html body.ainmos .moment-overlay-stack { align-items: flex-end; gap: 0.3rem; }
+html body.ainmos #table-action-cue.table-action-cue {
+  max-width: 30rem;
+  margin-left: auto;
+  padding: 0.25rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  line-height: 1.3;
+  text-align: right;
+  color: #d8d2ee;
+  background: rgba(10, 8, 22, 0.6);
+  border: none;
+}
+
+/* The bottom bar: slimmer, and Power Tokens laid out in two tidy rows. */
+html:not([data-form="phone"]):root body.ainmos.play-window { --ain-bar-h: clamp(70px, 8.6vh, 94px); }
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game.active .hand-bar.hand-bar.hand-bar {
+  grid-template-columns: clamp(180px, 14vw, 250px) minmax(0, 1.6fr) minmax(0, 1fr);
+}
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "head head" "chips acts";
+  column-gap: 0.45rem;
+  row-gap: 0.2rem;
+  align-items: center;
+}
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section .hand-header {
+  grid-area: head;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin: 0;
+}
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section .power-token-stats {
+  display: flex;
+  gap: 0.35rem;
+  font-size: 0.62rem;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section #power-tokens {
+  grid-area: chips;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-content: center;
+  max-width: 7.5rem;
+}
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section .power-token-chip {
+  width: 1.65rem;
+  height: 1.65rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  font-size: 0.8rem;
+}
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section #power-token-actions {
+  grid-area: acts;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section .power-bonus-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section .power-bonus-btn {
+  min-height: 1.45rem;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+/* Empty keep slots read as a quiet hint, not a heading. */
+html:root body.ainmos.play-window #screen-game .hand-bar :is(#objects-hand, .objects-row, .persistent-row).empty,
+html:root body.ainmos.play-window #screen-game .hand-bar .empty {
+  font-size: 0.74rem;
+  font-style: italic;
+  opacity: 0.6;
+}
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section .power-token-pool { display: none; }
+
+/* ---- 4. Phones: a slim strip, the hand in a drawer, small notices ------------------------------- */
+
+html[data-form="phone"]:root body.ainmos.play-window { --ain-bar-h: clamp(46px, 13vh, 56px); --ain-fan-h: 0px; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game.active .hand-bar.hand-bar.hand-bar {
+  grid-template-columns: auto auto minmax(0, 1fr) minmax(0, 0.8fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "power handbtn objects persistent";
+  column-gap: 0.35rem;
+  align-items: stretch;
+}
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .power-section {
+  flex-direction: row;
+  gap: 0.25rem;
+  padding: 0.15rem 0.3rem;
+}
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section .power-token-chip { width: 1.5rem; height: 1.5rem; min-height: 0; font-size: 0.7rem; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section .power-bonus-row { display: flex; flex-direction: row; gap: 0.2rem; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section .power-bonus-btn { min-height: 1.7rem; font-size: 0.6rem; padding: 0 0.35rem; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > :is(.objects-hand-section, .persistent-section) .keep-header { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar .empty { font-size: 0.6rem; }
+
+/* The Hand button. */
+.hand-drawer-btn { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .hand-drawer-btn {
+  grid-area: handbtn;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: center;
+  height: calc(var(--ain-bar-h) - 0.5rem);
+  padding: 0 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: linear-gradient(160deg, rgba(91, 76, 160, 0.95), rgba(40, 30, 80, 0.95));
+  color: #fff;
+  font: 700 0.72rem/1 var(--font-display, serif);
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 12px rgba(4, 2, 14, 0.45);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.hand-drawer-btn .hd-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #1a1530;
+  font-size: 0.7rem;
+}
+.hand-drawer-btn .hd-suits { display: inline-flex; gap: 0.25rem; }
+.hand-drawer-btn .hd-suit { display: inline-flex; align-items: center; gap: 0.12rem; font: 600 0.66rem/1 "Source Sans 3", system-ui, sans-serif; }
+.hand-drawer-btn .hd-suit::before { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--dot); }
+.hand-drawer-btn .hd-picked { font: 600 0.62rem/1 "Source Sans 3", system-ui, sans-serif; color: #f5d77a; }
+.hand-drawer-btn.is-wanted { animation: hd-wanted 1.4s ease-in-out infinite; }
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #screen-game .hand-bar.hand-bar.hand-bar > .hand-drawer-btn { background: linear-gradient(160deg, #f5d77a, #d9a63a); color: #1a1530; }
+@keyframes hd-wanted { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 215, 122, 0.7); } 50% { box-shadow: 0 0 0 6px rgba(245, 215, 122, 0); } }
+
+/* The drawer. */
+.hand-drawer-close { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window:not(.hand-drawer-open) #screen-game .hand-bar.hand-bar.hand-bar > .psyche-hand-section { display: none !important; }
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #screen-game .hand-bar.hand-bar.hand-bar > .psyche-hand-section {
+  position: fixed !important;
+  left: max(0.4rem, env(safe-area-inset-left));
+  right: max(0.4rem, env(safe-area-inset-right));
+  bottom: calc(var(--ain-bar-h) + 0.2rem);
+  top: auto;
+  transform: none;
+  width: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0.35rem 0.5rem 0.4rem;
+  border-radius: 16px;
+  background: linear-gradient(170deg, rgba(40, 30, 80, 0.97), rgba(16, 12, 34, 0.97)) !important;
+  box-shadow: 0 -8px 26px rgba(4, 2, 14, 0.6), inset 0 0 0 1px rgba(200, 184, 236, 0.25) !important;
+  pointer-events: auto;
+  z-index: 80;
+  animation: hd-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+@keyframes hd-up { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #screen-game .hand-bar.hand-bar.hand-bar #hand,
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #screen-game .hand-bar.hand-bar.hand-bar #hand-primary {
+  height: clamp(110px, 40vh, 190px) !important;
+  max-height: none !important;
+  pointer-events: auto;
+}
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #screen-game .hand-bar.hand-bar.hand-bar #hand-primary {
+  display: flex;
+  justify-content: center;
+  align-items: center !important;
+  gap: 0.3rem;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 0.5rem 0.3rem 0.2rem !important;
+}
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #screen-game .hand-bar.hand-bar.hand-bar #hand-primary .game-card {
+  height: calc(clamp(110px, 40vh, 190px) - 1.4rem) !important;
+  width: auto !important;
+  aspect-ratio: 5 / 7;
+  margin-left: 0 !important;
+  flex: 0 0 auto;
+  transform: none !important;
+}
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #screen-game .hand-bar.hand-bar.hand-bar #hand-primary .game-card.selected {
+  transform: translateY(-8px) !important;
+}
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #screen-game .hand-bar.hand-bar.hand-bar > .psyche-hand-section .hand-header { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open .hand-drawer-close {
+  display: block;
+  position: absolute;
+  top: -0.9rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  background: #2a2050;
+  color: #fff;
+  font: 700 0.66rem/1 var(--font-display, serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Phone notices: one small line at a time. */
+html[data-form="phone"] body.ainmos .moment-toast {
+  max-width: min(70vw, 22rem);
+  padding: 0.22rem 0.5rem 0.24rem 0.55rem;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  border-left-width: 2px;
+  border-radius: 6px;
+}
+html[data-form="phone"] body.ainmos .moment-overlay-stack .moment-toast:nth-child(n+2) { display: none; }
+html[data-form="phone"] body.ainmos #table-action-cue.table-action-cue { display: none !important; }
+html[data-form="tablet"] body.ainmos .moment-toast { font-size: 0.76rem; max-width: 24rem; }
+html[data-form="tablet"] body.ainmos .moment-overlay-stack .moment-toast:nth-child(n+3) { display: none; }
+/* Compact guide: title and one instruction; the rule waits behind "Why?". */
+html body.ainmos .coach-hint.is-compact .coach-head { margin-bottom: 0.2rem; padding-bottom: 0.2rem; }
+html body.ainmos .coach-hint.is-compact .coach-title { font-size: 0.82rem; }
+html body.ainmos .coach-hint.is-compact .coach-actions { margin-top: 0.25rem; }
+html body.ainmos .coach-hint.is-compact .coach-actions .coach-btn { padding: 0.18rem 0.6rem; font-size: 0.58rem; }
+html body.ainmos .coach-why-fold { margin-top: 0.25rem; }
+html body.ainmos .coach-why-fold summary { cursor: pointer; font: 600 0.7rem/1.2 var(--font-display, serif); color: #b6e6d6; letter-spacing: 0.05em; }
+html body.ainmos .coach-why-fold .coach-why { margin-top: 0.25rem; }
+html body.ainmos .coach-hint.is-compact .coach-goal { font-size: 0.6rem; }
+.coach-hint.is-compact { width: min(30rem, calc(100vw - 1rem)); }
+/* Phones: the phase pill over the board is a small tag, not a banner. */
+html[data-form="phone"] body.ainmos #turn-plaque.turn-plaque { scale: 0.68; transform-origin: 50% 0; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .hand-drawer-btn {
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: calc(var(--ain-bar-h) - 0.5rem) !important;
+  aspect-ratio: auto !important;
+  border-radius: 999px !important;
+  position: relative;
+  inset: auto;
+  transform: none;
+  margin: 0;
+}
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .power-section { overflow: hidden; align-items: center; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .power-section #power-tokens { display: flex; gap: 2px; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .power-section {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100%;
+  min-height: 0;
+  padding: 0 0.35rem !important;
+}
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .power-section #power-tokens { order: 1; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .power-section #power-token-actions { order: 2; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .power-section .power-token-chip { flex: 0 0 1.55rem; width: 1.55rem !important; height: 1.55rem !important; border-radius: 50% !important; padding: 0 !important; }
+
+/* Docked guide on mid-size screens: menus step down one zoom notch so nothing clips. */
+@media (min-height: 560px) and (min-width: 900px) { html:root body.ainmos.guide-docked { --menu-zoom: 1; } }
+@media (min-height: 720px) and (min-width: 1200px) { html:root body.ainmos.guide-docked { --menu-zoom: 1.3; } }
+@media (min-height: 900px) and (min-width: 1500px) { html:root body.ainmos.guide-docked { --menu-zoom: 1.6; } }
+@media (min-height: 1200px) and (min-width: 2000px) { html:root body.ainmos.guide-docked { --menu-zoom: 2.1; } }
+
+/* ---- Title screen ---------------------------------------------------------------------------- */
+
+/* Dreamer cards: art across the top, the name and stats beneath it, never on top of the face. */
+body.ainmos #screen-setup .dreamer-live-card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 10px !important;
+}
+body.ainmos #screen-setup .dreamer-live-card > .art {
+  position: relative !important;
+  inset: auto !important;
+  flex: 0 0 auto;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 4 / 3;
+  margin: 0 !important;
+  overflow: hidden;
+  border-radius: 0 !important;
+}
+body.ainmos #screen-setup .dreamer-live-card > .art img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+body.ainmos #screen-setup .dreamer-live-card .dreamer-live-face {
+  position: relative !important;
+  inset: auto !important;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.3rem 0.4rem 0.4rem !important;
+  background: linear-gradient(180deg, rgba(24, 18, 46, 0.96), rgba(12, 9, 26, 0.98)) !important;
+  text-align: left;
+}
+body.ainmos #screen-setup .dreamer-live-card .dreamer-live-name {
+  font-size: clamp(0.6rem, 0.72vw, 0.86rem) !important;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 !important;
+}
+body.ainmos #screen-setup .dreamer-live-card .dreamer-live-stats { font-size: clamp(0.55rem, 0.62vw, 0.74rem) !important; gap: 0.3rem; }
+body.ainmos #screen-setup .dreamer-live-card .dreamer-live-power span {
+  display: block;
+  font-size: clamp(0.48rem, 0.52vw, 0.62rem) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The difficulty select shows its whole label. */
+body.ainmos #screen-setup select { font-size: clamp(0.78rem, 0.9vw, 1rem) !important; text-overflow: ellipsis; }
+/* Begin Dreaming stays on one line. */
+body.ainmos #screen-setup #btn-start { white-space: nowrap; font-size: clamp(1rem, 1.5vw, 1.6rem); }
+body.ainmos #screen-setup .dreamer-live-card .dreamer-live-name { font-size: clamp(0.56rem, 0.64vw, 0.8rem) !important; letter-spacing: 0.02em; }
+body.ainmos #screen-setup .dreamer-live-card .dreamer-live-power span { letter-spacing: 0.02em !important; font-size: clamp(0.46rem, 0.48vw, 0.58rem) !important; }
+
+/* The floating Vault panel: its name fits. */
+html:root body.ainmos.play-window #dreamscape-vault .vault-titlebar .vault-dots { display: none; }
+html:root body.ainmos.play-window #dreamscape-vault .vault-title { white-space: nowrap; overflow: visible; text-overflow: clip; }
+/* Desktop hand: the cards speak for themselves; the label steps out of their way, and the fan never dips into the bar. */
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .psyche-hand-section .hand-header { display: none; }
+html:not([data-form="phone"]):root body.ainmos.play-window #screen-game .hand-bar.hand-bar #hand-primary { padding-bottom: 0.5rem !important; }
+html:root body.ainmos.play-window #dreamscape-vault .vault-titlebar { gap: 0.3rem; }
+html:root body.ainmos.play-window #dreamscape-vault .vault-title { flex: 1 1 auto; min-width: 0; font-size: 0.82em; }
+html:root body.ainmos.play-window #dreamscape-vault .vault-deck { flex: 0 0 auto; }
+html:root body.ainmos.play-window #dreamscape-vault .vault-title { overflow: hidden; text-overflow: clip; letter-spacing: 0.06em; }
+html:is([data-form="tablet"], [data-form="phone"]):root body.ainmos.play-window #dreamscape-vault .vault-title { font-size: 0.68em; }

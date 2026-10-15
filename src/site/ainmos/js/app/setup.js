@@ -182,10 +182,10 @@ function applyFirstVisitMenu() {
     advanced.setAttribute("aria-disabled", basicDone ? "false" : "true");
   }
   if (hint) {
-    hint.innerHTML = "Pick one Dreamer and <strong>Begin Dreaming</strong>. New here? <strong>First Night</strong> is a real Daydream with gentle hints until your first Archetype.";
+    hint.innerHTML = "Pick one Dreamer and <strong>Begin Dreaming</strong>. New here? <strong>First Night</strong> is a real Daydream with a guide that walks you through your first two Cycles, step by step.";
   }
   if (firstVisit && tutorial) {
-    tutorial.title = "Two guided rounds with step-by-step coaching";
+    tutorial.title = "A real Daydream with a step-by-step guide through your first two Cycles";
   }
 }
 
@@ -458,7 +458,7 @@ function launchGame(config = null) {
   window.location.href = playUrl.href;
 }
 
-/** Ainmos First Night: a real Daydream with hints until the Winged Turtle falls. */
+/** Ainmos First Night: a real Daydream with the step-by-step guide for its first two Cycles. */
 function launchTutorialMode(_track = "basic") {
   launchGame({
     lengthKey: "daydream",
