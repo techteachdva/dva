@@ -40,8 +40,8 @@ const TERMS = [
   {
     term: "Accept",
     group: "meet",
-    aka: "befriend",
-    text: "One way to win a dice battle. Pay the Dreambeast's own suit. If you have more successes than it does, it leaves the map, joins your hand as an ally worth half its Power (rounded down), and you draw 1 Object of its suit. Its printed Accept effect also happens.",
+    aka: "befriend, free insight",
+    text: "One way to win a fight. Play at least one card of the Dreambeast's own suit. Win (ties go to you) and the beast leaves the map, its Accept effect resolves, you draw an Object of its suit, and a free Insight waits for you at the next Lost & Found. Rerolling the shop keeps it free.",
   },
   {
     term: "Acquire",
@@ -64,7 +64,7 @@ const TERMS = [
     term: "Ally",
     group: "cards",
     aka: "befriended dreambeast",
-    text: "A Dreambeast you Accepted. It stays in your hand and is worth half its Power, rounded down. Allies do not count toward the 3-card spread and do not pay costs. Spent allies are Repressed. They count toward the 10-card hand limit.",
+    text: "Ainmos has no allies. Accepting a Dreambeast earns a free Insight at the next Lost & Found instead.",
   },
   {
     term: "Archetype",
@@ -126,7 +126,7 @@ const TERMS = [
     term: "Death",
     group: "win",
     aka: "respawn",
-    text: "If a Dreamer must pay a Psyche cost and has no Psyche left, they die. Allies do not count as Psyche for this. The Death Clock ticks. Their Objects are discarded, their Power Tokens return to the pool, and they draw 3 Psyche on The Bed. The Mindstream is not touched.",
+    text: "If you start a Dream with no Psyche, or the Dream takes your last Psyche, or you must pay a Psyche cost with none left, you die. The Death Clock ticks. Your Objects are discarded, your Power Tokens return to the pool, and you wake on The Bed with 5 fresh Psyche. The sixth death ends the run.",
   },
   {
     term: "Death Clock",
@@ -342,7 +342,7 @@ const TERMS = [
   {
     term: "Leviathan",
     group: "meet",
-    text: "A boss. Power 11, spawned on The Bed. Accept befriends it. Repress sends it to the Subconscious, and it stays there. The Warrior's quest is to defeat Leviathan and sacrifice one Object.",
+    text: "A boss. Power 11, spawned on The Bed. Accept earns a free Insight. Repress sends it to the Subconscious, and it stays there. The Warrior's quest is to defeat Leviathan and sacrifice one Object.",
   },
   {
     term: "Lover",
@@ -456,7 +456,7 @@ const TERMS = [
     term: "Repress",
     group: "cards",
     aka: "banish subconscious",
-    text: "Two uses of one word. As a fight: pay the next suit of the cycle — Lucidity represses Willpower, Willpower represses Elasticity, Elasticity represses Lucidity — and if you win, the beast goes to the Subconscious and its reward happens. As a cost: a Repressed card leaves play and sits face-up in the Subconscious. It is not in the discard until someone Returns it.",
+    text: "Two uses of one word. As a fight: pay the next suit around the wheel (Lucidity represses Willpower, Willpower represses Elasticity, Elasticity represses Lucidity). Win, and the beast goes to the Subconscious and you draw Psyche equal to half its Power, rounded down. As a cost: a Repressed card leaves play and sits face-up in the Subconscious. It is not in the discard until someone Returns it.",
   },
   {
     term: "Rested",

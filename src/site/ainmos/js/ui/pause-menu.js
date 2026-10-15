@@ -202,6 +202,14 @@ function renderGameTab() {
       </div>
       <p id="pause-save-status" class="pause-hint" aria-live="polite"></p>
     </div>
+    ${hooks.canEndNight?.() ? `
+    <div class="pause-section">
+      <h3>End this night</h3>
+      <p class="pause-hint">Let the dream go and see how far you climbed. The run ends as a loss.</p>
+      <div class="pause-btn-row">
+        <button type="button" class="btn pause-exit-btn" id="pause-end-night">Let the night go</button>
+      </div>
+    </div>` : ""}
     <div class="pause-section">
       <h3>Device saves</h3>
       <div id="pause-local-save-list" class="pause-save-list"></div>
@@ -288,6 +296,18 @@ function bindGameControls(root) {
     } catch (e) {
       setStatus(e.message || "Could not save to cloud.", true);
     }
+  });
+
+  // Two taps: the first asks, the second ends the run.
+  root.querySelector("#pause-end-night")?.addEventListener("click", (event) => {
+    const btn = event.currentTarget;
+    if (btn.dataset.armed !== "1") {
+      btn.dataset.armed = "1";
+      btn.textContent = "Tap again to end the run";
+      return;
+    }
+    closePauseMenu();
+    gameSaveHooks?.endNight?.();
   });
 
   root.querySelector("#pause-exit-menu")?.addEventListener("click", () => {

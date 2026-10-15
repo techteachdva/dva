@@ -6,10 +6,20 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.12";
+export const SOMNIA_VERSION = "0.13";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.13",
+    title: "Wake Again",
+    notes: [
+      "Death works. Start a Dream with no Psyche, or let the Dream take your last card, or owe a cost with nothing to pay, and you die and wake on The Bed with 5 fresh Psyche. No more sitting out a round with an empty hand.",
+      "Accepting a Dreambeast no longer gives an ally card. It draws an Object and earns a free Insight at the next Lost & Found, and a reroll keeps it free.",
+      "Repressing a Dreambeast draws Psyche equal to half its Power, rounded down.",
+      "Pause → Save → Let the night go ends a run you are done with and shows its summary.",
+    ],
+  },
   {
     version: "0.12",
     title: "Cycles",

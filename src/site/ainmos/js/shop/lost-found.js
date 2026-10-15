@@ -205,6 +205,18 @@ export function buyLostFoundObject(state, index, giveObject) {
   return { ok: true, card, paid: pay.cards };
 }
 
+/** Free Insights earned by Accepting beasts. One covers the Insight on offer, whatever it rolls to. */
+export function freeInsightCount(state) {
+  return Math.max(0, state?.freeInsights || 0);
+}
+
+/** What the Insight costs right now: nothing while a free one is owed. */
+export function insightCost(state) {
+  const insight = state?.lostFound?.insight;
+  if (!insight) return 0;
+  return freeInsightCount(state) > 0 ? 0 : insight.price;
+}
+
 export function insightBlockReason(state, player, { targetId = null } = {}) {
   const insight = state?.lostFound?.insight;
   if (!insight) return "The Insight is gone for this round.";
@@ -214,10 +226,22 @@ export function insightBlockReason(state, player, { targetId = null } = {}) {
     const eligible = (player.hand || []).filter((c) => payable(c) && !isWildPsyche(c) && c.upgrade !== insight.upgrade);
     if (!eligible.length) return `${player.name} has no plain Psyche to take this upgrade.`;
   }
-  if (!paymentFor(player, insight.price, { excludeIds: exclude })) {
+  if (insightCost(state) > 0 && !paymentFor(player, insight.price, { excludeIds: exclude })) {
     return `${player.name} needs ${insight.price} Psyche value of any suit${insight.kind === "upgrade" ? ", besides the card being upgraded" : ""}.`;
   }
   return "";
+}
+
+/** Pay for the Insight: spend a free one if owed, otherwise the cheapest cards. */
+function payForInsight(state, player, excludeIds = []) {
+  if (insightCost(state) === 0) {
+    state.freeInsights = freeInsightCount(state) - 1;
+    return true;
+  }
+  const pay = paymentFor(player, state.lostFound.insight.price, { excludeIds });
+  if (!pay) return false;
+  spendPayment(state, player, pay.cards);
+  return true;
 }
 
 /** Cards in the buyer's hand that could take the offered upgrade. */
@@ -237,16 +261,14 @@ export function buyLostFoundInsight(state, { targetId = null, vividSuit = null }
   if (insight.kind === "upgrade") {
     const target = (player.hand || []).find((c) => c.instanceId === targetId);
     if (!target) return { ok: false, reason: "Choose the Psyche card to upgrade." };
-    const pay = paymentFor(player, insight.price, { excludeIds: [targetId] });
     const result = applyPsycheUpgrade(target, insight.upgrade, { vividSuit });
     if (!result.ok) return { ok: false, reason: result.message };
-    spendPayment(state, player, pay.cards);
+    payForInsight(state, player, [targetId]);
     shop.insight = null;
     addLog(state, `${player.name} gains an Insight: ${result.message}`);
     return { ok: true, message: result.message };
   }
-  const pay = paymentFor(player, insight.price);
-  spendPayment(state, player, pay.cards);
+  payForInsight(state, player);
   const level = levelUpForm(state, insight.formId);
   shop.insight = null;
   const name = formById(insight.formId)?.name;

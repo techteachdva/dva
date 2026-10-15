@@ -14,6 +14,7 @@ import {
   completeQuest,
   acquireArchetype,
   checkDefeat,
+  dieIfHandEmpty,
   checkVictory,
   landscapeById,
   markFinalArchetypeDefeated,
@@ -72,12 +73,11 @@ import {
   encounterPowerLabel,
   encounterAcceptSummary,
   encounterRejectSummary,
-  applyRejectReward,
   applyAcceptEffect,
   applyFailEffect,
 } from "../encounters/dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
-import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "../dreamers/subconscious.js";
+import { repressCard, listSubconsciousCards, isDreambeastPsycheCard } from "../dreamers/subconscious.js";
 import { queueCardTrade } from "../cards/card-fx.js";
 import { random } from "./rng.js";
 import { getDreamResolution } from "../cards/dream-resolutions.js";
@@ -96,7 +96,7 @@ import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPl
 import { isBossDreamCard, spawnMiniBoss } from "../cards/dream-deck.js";
 import { resumeObjectEffect } from "../effects/object-effects.js";
 import { hasPsycheHealth, allyHandCount, isWildPsyche, isTradablePsyche, TRADE_OFFER_LIMIT, psycheMatchesSuit } from "../cards/psyche.js";
-import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx, queueAcceptAllyFx } from "../board/board-fx.js";
+import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx } from "../board/board-fx.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "../dreamers/archetypes.js";
 import { getActivatableArchetypePowers } from "../dreamers/archetype-stats.js";
 import { offerEffectChoice, registerEffectResolver } from "../effects/effect-choices.js";
@@ -2162,10 +2162,9 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     addLog(state, `${actor.name} Accepts ${encounter.name}. ${encounter.effect || ""}`);
     applyAcceptEffect(state, encounter, actor, getEffectHelpers());
 
-    const handCard = dreambeastToHandCard(encounter);
-    actor.hand.push(handCard);
-    queueAcceptAllyFx(actor.id, tile.id, handCard);
-    addLog(state, `${encounter.name} joins ${actor.name}'s hand as a ${handCard.value} ${SUIT_LABELS[encounter.suit] || encounter.suit} Psyche ally.`);
+    // Ainmos: no ally card. Accepting a beast earns a free Insight at the next Lost & Found.
+    state.freeInsights = (state.freeInsights || 0) + 1;
+    logMoment(state, `${encounter.name} is Accepted. A free Insight waits at the next Lost & Found.`);
     const suitLabel = SUIT_LABELS[encounter.suit] || encounter.suit || "suited";
     const reward = drawObjects(state, actor, 1, getEffectHelpers(), encounter.suit);
     if (reward.length) {
@@ -2174,9 +2173,13 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
       logMoment(state, `The ${suitLabel} Object deck is empty.`);
     }
   } else {
-    addLog(state, `${actor.name} Represses ${encounter.name}. ${encounter.rejectReward || ""}`);
+    addLog(state, `${actor.name} Represses ${encounter.name}.`);
     repressCard(state, { ...encounter, type: "dreambeast" });
-    applyRejectReward(state, encounter, actor, getEffectHelpers());
+    // Ainmos: Repress draws Psyche equal to half the beast's Power, rounded down.
+    const bounty = Math.floor(encounterPower(encounter) / 2);
+    const drawn = bounty > 0 ? drawPsycheForPlayer(state, actor, bounty) : [];
+    if (drawn.length) trackPsycheDraw(state, actor, drawn.length);
+    logMoment(state, `${encounter.name} is Repressed. ${actor.name} draws ${drawn.length} Psyche.`);
   }
 
   const landscapeId = state.activeEncounterLandscapeId;
@@ -3187,6 +3190,7 @@ export function endPhase(state) {
     advancePhase(state);
   }
   checkDefeat(state);
+  dieIfHandEmpty(state, { onlyIfStuck: true });
   const phase = getPhase(state);
   flashPhaseEntryMoments(state, phase);
   markPhasePulse();

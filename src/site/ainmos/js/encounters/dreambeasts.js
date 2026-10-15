@@ -90,14 +90,16 @@ export function encounterPowerLabel(encounter, accept = true) {
   return `${verb} · Power ${power} · Rec ${power + 2}`;
 }
 
+/** Ainmos: Accept draws an Object and owes you a free Insight at the next Lost & Found. */
 export function encounterAcceptSummary(encounter) {
   const suit = SUIT_LABELS[encounter?.suit] || encounter?.suit || "matching";
-  const value = Math.floor(Number(encounter?.accept || 0) / 2);
-  return `Gain a ${value} ${suit} Psyche ally`;
+  return `Draw a ${suit} Object and earn a free Insight`;
 }
 
+/** Ainmos: Repress draws Psyche equal to half the beast's Power, rounded down. */
 export function encounterRejectSummary(encounter) {
-  return encounter?.rejectReward || "Repress the Dreambeast into the Subconscious";
+  const n = Math.floor(encounterPower(encounter) / 2);
+  return n > 0 ? `Banish it and draw ${n} Psyche` : "Banish it to the Subconscious";
 }
 
 export function dreamerMeetBonuses(dreamer, encounter) {

@@ -45,6 +45,7 @@ export function buildRunSummary(state) {
 
   return {
     won: state.status === "won",
+    gaveUp: !!state.gaveUp,
     ante,
     antes,
     round: state.round,
@@ -76,7 +77,9 @@ function cardChip(card) {
 export function runSummaryHtml(summary, breakdown) {
   const headline = summary.won
     ? `Woke after Cycle ${summary.ante} of ${summary.antes}`
-    : `Lost in Cycle ${summary.ante} of ${summary.antes}`;
+    : summary.gaveUp
+      ? `Let go in Cycle ${summary.ante} of ${summary.antes}`
+      : `Lost in Cycle ${summary.ante} of ${summary.antes}`;
   const ladder = summary.ladder.map((boss) => `
     <li class="rs-boss is-${boss.status}" title="${esc(boss.name)}: ${esc(boss.status)}">
       <span class="rs-boss-face" style="background-image:url('${esc(boss.image)}')"></span>

@@ -427,7 +427,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Fights</h3>
-            <p>Play 1–3 Psyche, at least one of the beast's suit. Your Power is their values plus your matching stat, your Dream Form, and up to 3 Power Tokens. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Accept befriends it as an ally and draws an Object. Repress banishes it. Lose and the cards are spent; the beast stays.</p>
+            <p>Play 1–3 Psyche, at least one of the beast's suit. Your Power is their values plus your matching stat, your Dream Form, and up to 3 Power Tokens. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Accept draws an Object and earns a free Insight at the next Lost & Found. Repress banishes it and draws Psyche equal to half its Power, rounded down. Lose and the cards are spent; the beast stays.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Between Rounds</h3>

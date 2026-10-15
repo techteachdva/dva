@@ -13,6 +13,8 @@ import {
   objectBlockReason,
   paymentFor,
   insightBlockReason,
+  insightCost,
+  freeInsightCount,
   insightTitle,
   insightText,
   upgradeTargets,
@@ -99,11 +101,14 @@ function insightHtml(state, buyer) {
       </div>`;
   }
   const ready = !reason && (!isUpgrade || (pick.targetId && (insight.upgrade !== "vivid" || pick.vividSuit)));
-  const pay = !reason ? paymentFor(buyer, insight.price, { excludeIds: pick.targetId ? [pick.targetId] : [] }) : null;
+  const free = insightCost(state) === 0;
+  const pay = !reason && !free ? paymentFor(buyer, insight.price, { excludeIds: pick.targetId ? [pick.targetId] : [] }) : null;
   return `
     <article class="lf-item lf-insight">
       <div class="lf-insight-sigil" aria-hidden="true">${isUpgrade ? "✧" : "❂"}</div>
-      <span class="lf-price lf-price-any" title="${insight.price} Psyche value of any suit"><b>${insight.price}</b><i class="lf-pip" aria-hidden="true"></i></span>
+      ${free
+        ? `<span class="lf-price lf-price-free" title="Free: earned by Accepting a beast"><b>Free</b></span>`
+        : `<span class="lf-price lf-price-any" title="${insight.price} Psyche value of any suit"><b>${insight.price}</b><i class="lf-pip" aria-hidden="true"></i></span>`}
       <h4 class="lf-item-name">${esc(insightTitle(insight))}</h4>
       <p class="lf-item-kind">Insight · any suit</p>
       <p class="lf-item-text">${esc(insightText(insight))}</p>
@@ -111,7 +116,9 @@ function insightHtml(state, buyer) {
       <div class="lf-item-foot">
         ${reason
           ? `<p class="lf-why">${esc(reason)}</p>`
-          : pay ? `<p class="lf-pay">Pay ${esc(payLine(pay.cards))}${pay.overpay ? ` <span class="lf-over">(${pay.overpay} lost)</span>` : ""}</p>` : ""}
+          : free
+            ? `<p class="lf-pay">Free · you Accepted a beast${freeInsightCount(state) > 1 ? ` (${freeInsightCount(state)} owed)` : ""}</p>`
+            : pay ? `<p class="lf-pay">Pay ${esc(payLine(pay.cards))}${pay.overpay ? ` <span class="lf-over">(${pay.overpay} lost)</span>` : ""}</p>` : ""}
         ${isUpgrade && !pick.picking && !reason
           ? `<button type="button" class="lf-btn" data-lf-pick="1">Choose a card</button>`
           : `<button type="button" class="lf-btn lf-buy" data-lf-insight="1" ${ready ? "" : "aria-disabled=\"true\""}>Learn it</button>`}

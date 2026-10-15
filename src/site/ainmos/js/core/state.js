@@ -910,8 +910,9 @@ export function deathCapFor() {
   return DEATH_CLOCK_CAP;
 }
 
+/** A Dreamer who dies redraws a full starting hand on The Bed. */
 function respawnPsycheTarget() {
-  return 3;
+  return PSYCHE_STARTING_HAND;
 }
 
 function seatDreamerOnBed(state, player) {
@@ -1039,8 +1040,35 @@ export function checkDreamerPsycheDeath(state, player, opts = {}) {
   return true;
 }
 
+/**
+ * An empty hand with nothing left to resolve is a dead end, not a round to sit
+ * through: the Dreamer dies now and respawns on The Bed with a fresh hand.
+ * Checked once the Dream has resolved and at the start of every phase.
+ */
+export function dieIfHandEmpty(state, { onlyIfStuck = false } = {}) {
+  if (!state || state.status !== "playing" || state.tutorialMode) return false;
+  if (isBlockingGameChoice(state) || (state.resolutionQueue || []).length) return false;
+  let died = false;
+  (state.players || []).forEach((player) => {
+    // Mid-round, a Power Token can still open a phase; only a Dreamer with nothing at all is stuck.
+    if (onlyIfStuck && (player.powerTokens || 0) > 0) return;
+    if (handleDreamerDeath(state, player)) died = true;
+  });
+  return died;
+}
+
+/** Once this round's Dream has resolved: an empty hand dies here, not a round later. */
+export function dieIfHandEmptyAfterDream(state) {
+  if (!state?.dreamDrawn || state.revealLandscapeUsed || state.landscapePick) return false;
+  if (state.phaseIndex !== 0) return false;
+  return dieIfHandEmpty(state);
+}
+
+/** No Psyche when the Dream begins: the Dreamer dies and respawns on The Bed. */
 export function handleDreamerDeath(state, player) {
-  checkDreamerPsycheDeath(state, player);
+  if (!player?.alive || state.status !== "playing" || hasPsycheHealth(player)) return false;
+  applyDreamerDeath(state, player);
+  return true;
 }
 
 export function respawnDreamer(state, playerId, dreamerId) {

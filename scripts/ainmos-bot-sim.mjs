@@ -907,6 +907,8 @@ function act(state) {
       drawDreamCard(state);
       return true;
     }
+    // As in the game: the Dream took the last Psyche, so the Dreamer dies and respawns now.
+    if (stateMod.dieIfHandEmptyAfterDream(state)) return true;
     if (state.landscapePick) return false;
     if (state.revealLandscapeUsed) return false;
     const open = botSelectOpener(state, "skilled");

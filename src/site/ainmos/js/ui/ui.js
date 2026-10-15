@@ -140,8 +140,9 @@ function dreambeastCostMeta(card) {
   const reject = card.reject ?? card.repress;
   const rejectSuit = card.rejectSuit ? suitIconHtml(card.rejectSuit, { size: 10 }) : "";
   const acceptSuit = card.suit ? suitIconHtml(card.suit, { size: 10 }) : "";
-  const acceptGain = card.suit ? ` → 3 ${SUIT_LABELS[card.suit]}` : "";
-  const rejectGain = card.rejectReward ? ` → ${card.rejectReward}` : "";
+  // Ainmos rewards: Accept → Object + free Insight; Repress → draw half the Power.
+  const acceptGain = " → Object + Insight";
+  const rejectGain = ` → draw ${Math.floor((reject || 0) / 2)}`;
   const acceptTitle = encounterPayHint(card, true);
   const rejectTitle = encounterPayHint(card, false);
   return `<span class="meta dreambeast-costs"><span title="${acceptTitle}">P${card.accept} rec ${card.accept + 2}${acceptGain} ${acceptSuit}</span><span title="${rejectTitle}">P${reject} rec ${reject + 2}${rejectGain} ${rejectSuit}</span></span>`;

@@ -1078,3 +1078,13 @@ body.ainmos #screen-setup .dreamer-pick:hover .game-card.dreamer { transform: tr
 @media (orientation: landscape) and (max-height: 520px) {
   .cy-art, .cy-boss .cy-art { height: 3.8rem; }
 }
+
+/* A free Insight (earned by Accepting a beast). */
+.lf-price-free {
+  padding: 0 0.5rem;
+  width: auto;
+  color: #1a1530;
+  background: var(--dc-iridescent);
+  box-shadow: 0 0 14px rgba(182, 230, 214, 0.55);
+}
+.lf-price-free b { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; }

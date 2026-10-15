@@ -150,6 +150,7 @@ import {
 import { renderDreamscapeVault } from "../ui/vault-panel.js";
 import { renderVaultScreen, resumeVaultScreen } from "../ui/vault-screen.js";
 import { renderCycleScreen, cycleScreenWanted } from "../ui/cycle-screen.js";
+import { dieIfHandEmptyAfterDream } from "../core/state.js";
 import { createSpectatorBot } from "../dev/bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "../encounters/dreambeasts.js";
 import { requestEndPhase } from "../flow/phase-skip.js";
@@ -961,6 +962,15 @@ function buildPauseSaveHooks() {
     getSeed: () => (state && !state.tutorialMode ? state.seed || null : null),
     exitToMenu: () => {
       window.location.href = "index.html";
+    },
+    canEndNight: () => !!state && !state.tutorialMode && state.status === "playing",
+    // Give up the run: it ends as a loss and the run summary tells the story so far.
+    endNight: () => {
+      if (!state || state.status !== "playing") return;
+      state.status = "lost";
+      state.gaveUp = true;
+      addLog(state, "You let the dream go. The night ends.");
+      renderAll();
     },
     saveLocal: async () => {
       if (!canSaveGame(state)) throw new Error("Cannot save right now.");
@@ -2730,6 +2740,8 @@ function renderAll() {
   document.body.classList.toggle("seed-dmzemo", !!state.seedFlags?.dmzemo);
   bindUiRenderState(state);
   resolveStaleLandscapePick(state);
+  // The Dream took your last Psyche: die now and respawn on The Bed, rather than sit out a round.
+  if (dieIfHandEmptyAfterDream(state)) flashMoment("No Psyche left. You die and wake on The Bed with 5.");
   checkDefeat(state);
   if (isInteractiveTutorialActive(state)) {
     syncTutorial(state);
