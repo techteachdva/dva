@@ -12,7 +12,7 @@ import {
 import { handRoomForPsycheDraw, onObjectDrawn } from "../effects/objects.js";
 import { recordQuestEvent } from "./quests.js";
 import { beginRemember } from "../effects/remember.js";
-import { enqueueReturnCards, listSubconsciousCards, requestReturnCards } from "./subconscious.js";
+import { enqueueReturnCards, listSubconsciousCards, requestReturnCards, returnableCount } from "./subconscious.js";
 import { spendPowerTokens, grantPowerTokens } from "../cards/power-tokens.js";
 import { isQuintessentialArchetype } from "./archetype-stats.js";
 import { requestChooseTile, revealCapacity, beginFreeRevealPicking } from "../board/landscapes.js";
@@ -48,7 +48,7 @@ function suitDestinations(state, suit, exceptId) {
 }
 
 function refundArchetypeToken(state, player, reason) {
-  grantPowerTokens(state, player, 1, { reason, logQuest: false, animate: false });
+  grantPowerTokens(state, player, 1, { reason, logQuest: false, animate: false, source: "refund" });
 }
 
 function returnProduced(result) {
@@ -188,22 +188,6 @@ registerEffectResolver("explorer-power", (state, choiceId) => {
   return true;
 });
 
-function returnOneEach(state, filter, noun) {
-  const available = listSubconsciousCards(state).filter((card) => (
-    filter === "dreambeast"
-      ? card.type === "dreambeast" || card.type === "boss" || card.type === "psyche-dreambeast" || card.isDreambeastPsyche || card.boss
-      : card.type === filter
-  ));
-  if (!available.length) return false;
-  alivePlayers(state).forEach((dreamer) => {
-    enqueueReturnCards(state, 1, dreamer, {
-      filter,
-      reason: `${dreamer.name}: Return 1 ${noun} from the Subconscious.`,
-    });
-  });
-  return true;
-}
-
 export function continueArchetypeQueues() {}
 
 export function resumeArchetypeFollowup() {
@@ -334,8 +318,11 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
       break;
 
     case "creator":
-      if (!returnOneEach(state, "dreambeast", "Dreambeast")) {
-        refundArchetypeToken(state, player, "Creator Power: no Dreambeast in the Subconscious. Token refunded.");
+      if (!returnableCount(state)) {
+        refundArchetypeToken(state, player, "Creator Power: no Psyche waits in the Subconscious. Token refunded.");
+      } else {
+        requestReturnCards(state, 2, player);
+        logMoment(state, "Creator: Return 2 Psyche of your choice from the Subconscious.");
       }
       break;
 

@@ -1915,14 +1915,6 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
       kind: "meetAccept",
       onPick: () => handlers.meetEncounter("accept"),
     },
-    !state.forcedAccept && {
-      id: "reject",
-      label: encounterPowerLabel(encounter, false),
-      hint: meetBlock || `${encounterPayHint(encounter, false)} ${encounterRejectSummary(encounter)} · ${occupant?.name || "Dreamer"}'s Psyche`,
-      disabled: !canMeet || (isInteractiveTutorialActive(state) && !isTutorialActionAllowed(state, "meetReject", { tileId })),
-      kind: "meetReject",
-      onPick: () => handlers.meetEncounter("reject"),
-    },
     {
       id: "view",
       label: "View",

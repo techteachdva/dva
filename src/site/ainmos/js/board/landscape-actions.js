@@ -20,11 +20,11 @@ import {
 import { requestChooseTile, beginFreeRevealPicking, beginBedTileFlip, revealableTiles } from "./landscapes.js";
 import { isFreeformBoard, tileDeckCount } from "./dreamscape-vault.js";
 import { SUIT_LABELS, totalStat } from "../core/rules.js";
-import { grantPowerTokens } from "../cards/power-tokens.js";
 import { queueMindstreamDrawFx, queueMindstreamDiscardFx, cancelQueuedMindstreamDrawFx } from "./board-fx.js";
 import { adjacentTiles, hexDistance } from "../core/hex.js";
 import {
   listSubconsciousCards,
+  returnableCards,
   requestReturnCards,
   finalizeReturn,
 } from "../dreamers/subconscious.js";
@@ -78,8 +78,8 @@ export const LANDSCAPE_ACTION_DEFS = {
     description: "Bank 2 Glimmer for the next Lost & Found.",
   },
   "take-power": {
-    label: "Take Power",
-    description: "Take 1 Power Token from the pool.",
+    label: "Return 2 Psyche",
+    description: "Return 2 Psyche of your choice from the Subconscious.",
   },
   "swap-dreambeasts": {
     label: "Swap Dreambeasts",
@@ -90,8 +90,8 @@ export const LANDSCAPE_ACTION_DEFS = {
     description: "Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
   },
   "return-2": {
-    label: "Return 2 Cards",
-    description: "Return 2 cards of your choice from the Subconscious.",
+    label: "Return 2 Psyche",
+    description: "Return 2 Psyche of your choice from the Subconscious.",
   },
   "cycle-psyche": {
     label: "Cycle Psyche",
@@ -106,12 +106,12 @@ export const LANDSCAPE_ACTION_DEFS = {
     description: "Take the last discarded Dream and resolve it again.",
   },
   "return-1": {
-    label: "Return 1 Card",
-    description: "Return 1 card of your choice from the Subconscious.",
+    label: "Return 1 Psyche",
+    description: "Return 1 Psyche of your choice from the Subconscious.",
   },
   "return-object": {
-    label: "Return Object",
-    description: "Return 1 Object from the Subconscious.",
+    label: "Return 1 Psyche",
+    description: "Return 1 Psyche of your choice from the Subconscious.",
   },
   "draw-3-psyche": {
     label: "Draw 3 Psyche",
@@ -119,11 +119,11 @@ export const LANDSCAPE_ACTION_DEFS = {
   },
   "dream-onward": {
     label: "Dream Onward",
-    description: "Fixed Board: Reveal 1 Wasteland Landscape of your choice. Freeform Board: flip the top tile of the tile deck, then place it free or put it on the bottom.",
+    description: "Flip the top tile of the Landscape deck, then place it free or put it on the bottom.",
   },
   "peek-then-move-1": {
     label: "Peek, then Move 1",
-    description: "Glimpse one adjacent forgotten Landscape, then move 1 step.",
+    description: "Look at the top tile of the Landscape deck, then move 1 step.",
   },
   "draw-psyche-equal-to-elasticity": {
     label: "Draw your Elasticity",
@@ -277,9 +277,9 @@ function subconsciousOfType(state, type) {
 }
 
 function returnTypedCard(state, type, count = 1) {
-  const pool = type ? subconsciousOfType(state, type) : listSubconsciousCards(state);
+  const pool = returnableCards(state);
   if (!pool.length) {
-    addLog(state, type ? `No ${type} cards in the Subconscious.` : "The Subconscious is empty.");
+    addLog(state, "No Psyche waits in the Subconscious.");
     return { ok: false };
   }
   if (pool.length <= count) {
@@ -959,12 +959,8 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       return got ? { ok: true } : { ok: false, refund: true, reason: "Glimmer is full." };
     }
 
-    case "take-power": {
-      grantPowerTokens(state, player, 1);
-      recordQuestEvent(state, "power_token", { count: 1 });
-      addLog(state, `${landscapeName}: ${player.name} takes 1 Power Token.`);
-      return { ok: true };
-    }
+    // 0.23: Power Tokens only come from Dreambeasts and Archetypes; old Take Power tiles Return 2 Psyche.
+    case "take-power":
 
     case "swap-dreambeasts":
       return beginSwapDreambeasts(state);
@@ -978,13 +974,9 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       return { ok: true, ...returnTypedCard(state, null, 2) };
 
     case "return-1":
-      return { ok: true, ...returnTypedCard(state, null, 1) };
-
     case "return-psyche":
-      return { ok: true, ...returnTypedCard(state, "psyche", 1) };
-
     case "return-object":
-      return { ok: true, ...returnTypedCard(state, "object", 1) };
+      return { ok: true, ...returnTypedCard(state, null, 1) };
 
     case "cycle-psyche":
       return beginCyclePsyche(state, player, tile);

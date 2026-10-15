@@ -15,7 +15,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "They Vanish With Everything",
-      hint: "Repress 2 Objects from hand",
+      hint: "Discard 2 Objects",
       effect: "repressObjects",
       params: { count: 2 },
     },
@@ -47,7 +47,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Glory Turns Hollow",
-      hint: "Each Dreamer Represses 1 Object",
+      hint: "Each Dreamer Discards 1 Object",
       effect: "repressObjectsAll",
       params: { count: 1 },
     },
@@ -73,7 +73,7 @@ export const DREAM_RESOLUTIONS = {
   judgement: {
     good: {
       label: "Face the Tribunal",
-      hint: "Each Dreamer Represses 3 Psyche — Return every Dreambeast from the Subconscious",
+      hint: "Each Dreamer Represses 3 Psyche — Return 3 Psyche from the Subconscious",
       toll: { kind: "repressAll", count: 3 },
       gate: { kind: "tableHand", count: 3, label: "Every Dreamer holds 3 Psyche" },
       effect: "returnAllDreambeasts",
@@ -132,7 +132,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "The Reaper Takes Relics",
-      hint: "Each Dreamer Represses 2 Objects",
+      hint: "Each Dreamer Discards 2 Objects",
       effect: "repressObjectsAll",
       params: { count: 2 },
     },
@@ -326,7 +326,7 @@ export const DREAM_RESOLUTIONS = {
   misplaced: {
     good: {
       label: "Hunt Every Pocket",
-      hint: "Discard 2 Elasticity — Return 1 Object",
+      hint: "Discard 2 Elasticity — Return 1 Psyche",
       toll: { kind: "psyche", count: 2, suit: "elasticity" },
       gate: { kind: "suit", suit: "elasticity", count: 2, label: "Hold 2 Elasticity Psyche" },
       effect: "returnCards",
@@ -334,7 +334,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Relics Sink Away",
-      hint: "Each Dreamer Represses 1 Object",
+      hint: "Each Dreamer Discards 1 Object",
       effect: "repressObjectsAll",
       params: { count: 1 },
     },
@@ -366,7 +366,7 @@ export const DREAM_RESOLUTIONS = {
     },
     bad: {
       label: "Bite Down Hard",
-      hint: "Repress 2 Objects from hand",
+      hint: "Discard 2 Objects",
       effect: "repressObjects",
       params: { count: 2 },
     },

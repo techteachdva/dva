@@ -149,8 +149,8 @@ export function getCurrentObjective(state) {
       title: "Dreamer died — new Dream",
       steps: [
         "A Dreamer lost all Psyche and died in the Dream.",
-        "Their Objects are cleared and their Power Tokens return to the pool. The Mindstream is not touched.",
-        "They return to The Bed with 3 Psyche and no new Power Tokens.",
+        "Their Objects are discarded and their Power Tokens are lost.",
+        "They wake on The Bed with 5 fresh Psyche. The Death Clock ticks.",
       ],
     };
   }
@@ -219,7 +219,7 @@ export function getCurrentObjective(state) {
       title: "Click map tiles to Forget",
       steps: [
         `Click **${state.landscapePick.remaining}** active Landscape hex tile(s) on the map.`,
-        "Each becomes a Wasteland. The Bed cannot be forgotten.",
+        "Each shuffles back into the Landscape deck. Anyone standing there dies and wakes on The Bed; Dreambeasts there are discarded; Archetypes retreat to The Bed. The Bed cannot be forgotten.",
       ],
       tip: "Tiles glow red when clickable.",
     };
@@ -268,7 +268,7 @@ export function getCurrentObjective(state) {
         suit: "elasticity",
         title: "Walk the dream",
         steps: [`Tap a glowing hex to move. **${state.exploreMovesLeft}** step${state.exploreMovesLeft === 1 ? "" : "s"} left.`],
-        tip: "Entering Wasteland discards 1 Psyche. Unused steps bank Glimmer ✧.",
+        tip: "Unused steps bank Glimmer ✧.",
       };
     }
     return { phase: "Explore", suit: "elasticity", title: "Walk done", steps: ["Tap **Next** to Meet."] };
@@ -420,18 +420,23 @@ export function infoHubHtml(options = {}) {
             <h3>R.E.M. — Every Round</h3>
             <ul>
               <li class="suit-lucidity"><strong>Reveal</strong> — the Dream is drawn and endured. Spend 1 Lucidity: its value plus your Lucidity places that many Landscapes from the Vault.</li>
-              <li class="suit-elasticity"><strong>Explore</strong> — spend 1 Elasticity for steps. Entering Wasteland discards 1 Psyche.</li>
+              <li class="suit-elasticity"><strong>Explore</strong> — spend 1 Elasticity for steps.</li>
               <li class="suit-willpower"><strong>Meet</strong> — spend 1 Willpower for actions: fight a Dreambeast, Meet an Archetype, use your Landscape's action, or tap a Persistent Object.</li>
             </ul>
             <p>A Power Token can open any phase as 1 plus your stat. Every unused Reveal, step, or action banks 1 Glimmer ✧, which pays toward the next Lost &amp; Found.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Fights</h3>
-            <p>Play 1–3 Psyche, at least one of the beast's suit. Your Power is their values plus your matching stat, your Dream Form, and up to 3 Power Tokens. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Accept draws an Object and earns a free Insight at the next Lost & Found. Repress banishes it and draws Psyche equal to half its Power, rounded down. Lose and the cards are spent; the beast stays.</p>
+            <p>Play 1–3 Psyche, at least one of the beast's suit. Your Power is their values plus your matching stat, your Dream Form, and up to 3 Power Tokens. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Win and you <strong>Accept</strong> it: it leaves the board and you take a <strong>Power Token</strong> or a <strong>random Object</strong>. Lose and the cards are spent; the beast stays.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Archetypes</h3>
             <p>Meeting one costs 1 action and opens with one of its <strong>Events</strong>. <strong>Bright</strong> (only while one of the Event's Landscapes is placed) costs Psyche and helps the fight. <strong>Dim</strong> is free and hurts it. Then play a spread that makes a <strong>Dream Form</strong> against Power 12. Win: +1 Archetype, +2 Power Tokens, and its power is yours.</p>
+          </div>
+          <div class="info-hub-rule">
+            <h3>Repress &amp; Return</h3>
+            <p><strong>Only Psyche is Repressed</strong>: it leaves play and waits in the <strong>Subconscious</strong>. The night starts with 12 random Psyche already there. <strong>Return</strong> always brings back Psyche, and you choose which. Lost Objects are Discarded. A <strong>Forgotten</strong> Landscape shuffles back into the Landscape deck; anyone on it dies and wakes on The Bed.</p>
+            <p><strong>Power Tokens</strong>: hold up to 6. You start with 2, take 1 for beating a Dreambeast (or a random Object instead), and gain 2 for each Archetype.</p>
           </div>
           <div class="info-hub-rule info-hub-glimmer">
             <h3>Glimmer ✧</h3>
@@ -443,7 +448,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Remember</h3>
-            <p><strong>Remember N:</strong> discard up to N Psyche, then Return that many plus 1 from the Subconscious. Memory Landscapes, Remember Objects, and some Boons Remember.</p>
+            <p><strong>Remember N:</strong> discard up to N Psyche, then Return that many plus 1 from the Subconscious. You choose which Psyche come back. Memory Landscapes, Remember Objects, and the Innocent Remember.</p>
           </div>
           <p class="info-hub-footer">Back in the top-left undoes the last action.</p>
         </section>

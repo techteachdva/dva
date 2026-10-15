@@ -60,8 +60,8 @@ function returnN(state, count, player = null) {
   if (count <= 0) return;
   const result = requestReturnCards(state, count, player);
   if (result?.pending) {
-    addLog(state, `Choose ${result.count} card(s) to Return.`);
-    logMoment(state, `Return ${result.count} card(s) from the Subconscious — open the picker.`);
+    addLog(state, `Choose ${result.count} Psyche to Return.`);
+    logMoment(state, `Return ${result.count} Psyche(s) from the Subconscious — open the picker.`);
   }
 }
 
@@ -702,10 +702,9 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
       cardId: "tooth-saber",
       step: "pick-mode",
       title: "Tooth-Saber",
-      message: `${enc.name}: Accept or Repress?`,
+      message: `${enc.name}: pay its Power in Psyche to Accept it without a fight.`,
       choices: [
-        { id: "accept", label: `Accept · pay ${enc.accept}`, hint: "Draw an Object of its suit and earn a free Insight at the next Lost & Found." },
-        { id: "reject", label: `Repress · pay ${encounterRejectCost(enc)}`, hint: `Banish it and draw ${Math.floor((encounterRejectCost(enc) || 0) / 2)} Psyche.` },
+        { id: "accept", label: `Accept · pay ${enc.accept}`, hint: "Take a Power Token or a random Object." },
       ],
       payload: { landscapeId: tileId, encounterId: encKey },
     });
@@ -814,7 +813,7 @@ export const OBJECT_EFFECTS = {
       cardId: "candle",
       title: "Candle",
       message: "Choose one effect:",
-      log: "Candle: choose Reveal Landscapes or Return 2 Repressed cards.",
+      log: "Candle: choose Reveal Landscapes or Return 2 Psyche.",
       choices: [
         {
           id: "reveal",
@@ -822,7 +821,7 @@ export const OBJECT_EFFECTS = {
           hint: revealCount ? "Click that many hidden hexes." : "No hidden Landscapes left.",
           disabled: revealCount < 1,
         },
-        { id: "return-2", label: "Return 2 Repressed Cards", hint: "Pick from the Subconscious." },
+        { id: "return-2", label: "Return 2 Psyche", hint: "Pick from the Subconscious." },
       ],
     });
   },
@@ -841,7 +840,7 @@ export const OBJECT_EFFECTS = {
           hint: fieldReady ? "Move this Dreamer there now." : "Field of Broken Glass is not revealed yet.",
           disabled: !fieldReady,
         },
-        { id: "return-1", label: "Return 1 Repressed Card", hint: "Pick 1 card from the Subconscious." },
+        { id: "return-1", label: "Return 1 Psyche Card", hint: "Pick 1 card from the Subconscious." },
       ],
     });
   },
@@ -1004,23 +1003,23 @@ export const OBJECT_EFFECTS = {
     const players = alive(state);
     players.forEach((p) => {
       drawPsycheForPlayer(state, p, 2);
-      enqueueReturnCards(state, 2, p, { reason: `${p.name}: Return 2 Repressed card(s).` });
+      enqueueReturnCards(state, 2, p, { reason: `${p.name}: Return 2 Psyche.` });
     });
-    if (players.length) addLog(state, "Tear of Moon: each Dreamer draws 2 Psyche and Returns 2 Repressed.");
+    if (players.length) addLog(state, "Tear of Moon: each Dreamer draws 2 Psyche and Returns 2 Psyche.");
   },
 
   "spark-of-sun": (state) => {
     const players = alive(state);
     players.forEach((p) => {
       drawPsycheForPlayer(state, p, 2);
-      enqueueReturnCards(state, 2, p, { reason: `${p.name}: Return 2 Repressed card(s).` });
+      enqueueReturnCards(state, 2, p, { reason: `${p.name}: Return 2 Psyche.` });
     });
-    if (players.length) addLog(state, "Spark of Sun: each Dreamer draws 2 Psyche and Returns 2 Repressed.");
+    if (players.length) addLog(state, "Spark of Sun: each Dreamer draws 2 Psyche and Returns 2 Psyche.");
   },
 
   coins: (state, player) => {
-    const paid = grantPowerTokens(state, player, 2);
-    logMoment(state, `Coins: ${player.name} gains ${paid} Power Token${paid === 1 ? "" : "s"}.`);
+    requestReturnCards(state, 3, player);
+    logMoment(state, `Coins: ${player.name} Returns 3 Psyche from the Subconscious.`);
   },
 
   egg: (state, player) => {
@@ -1073,7 +1072,7 @@ export const OBJECT_EFFECTS = {
       step: "pick-encounter",
       title: "Tooth-Saber",
       message: "Choose an Encounter:",
-      log: "Tooth-Saber: choose an Encounter, then Accept or Repress.",
+      log: "Tooth-Saber: choose a Dreambeast to Accept without a fight.",
       choices: encounters.map(({ tile, encounter }) => ({
         id: `${tile.id}:${encounterKey(encounter)}`,
         label: `${encounter.name} on ${tile.name}`,
@@ -1128,7 +1127,6 @@ export function persistentObjectCanActivate(card) {
     || BEAST_MOVERS[card.id]
     || ELEMENT_MOVES[card.id]
     || card.id === "mobius-crystal"
-    || card.id === "skeleton-key"
     || card.id === "monkey-paw"
     || (card.remember || 0) > 0,
   );
@@ -1212,11 +1210,7 @@ export function activatePersistentObjectEffect(state, player, card) {
     });
   }
 
-  if (card.id === "skeleton-key") {
-    state.skeletonKeyPending = true;
-    addLog(state, "Skeleton Key armed: after the next Dream, choose a Mindstream to flip.");
-    return true;
-  }
+
 
   if (card.id === "monkey-paw") {
     if (!card.powerSlots) card.powerSlots = 0;
@@ -1233,15 +1227,15 @@ export function activatePersistentObjectEffect(state, player, card) {
 export function finishMonkeyPaw(state, player, card) {
   card.powerSlots = (card.powerSlots || 0) + 1;
   requestReturnCards(state, 3, player);
-  addLog(state, `Monkey Paw: ${card.powerSlots}/3 Power placed. Return 3 cards.`);
-  logMoment(state, `Monkey Paw ${card.powerSlots}/3 — Return 3 cards from the Subconscious.`);
+  addLog(state, `Monkey Paw: ${card.powerSlots}/3 Power placed. Return 3 Psyche.`);
+  logMoment(state, `Monkey Paw ${card.powerSlots}/3 — Return 3 Psyche from the Subconscious.`);
   if (card.powerSlots >= 3) {
     const refund = card.powerSlots;
     card.powerSlots = 0;
-    grantPowerTokens(state, player, refund, { reason: "Monkey Paw returns its Power Tokens.", logQuest: false });
+    grantPowerTokens(state, player, refund, { reason: "Monkey Paw returns its Power Tokens.", logQuest: false, source: "refund" });
     player.persistent = player.persistent.filter((o) => o.instanceId !== card.instanceId);
     repressCard(state, card);
-    addLog(state, "Monkey Paw is full: it is Repressed and its Power Tokens return.");
+    addLog(state, "Monkey Paw is full: it is Discarded and its Power Tokens return.");
   }
 }
 

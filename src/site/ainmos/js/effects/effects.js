@@ -26,7 +26,7 @@ function alivePlayers(state) {
 export function returnCards(state, count, player = null) {
   const result = requestReturnCards(state, count, player);
   if (result?.pending) {
-    addLog(state, `Choose ${result.count} card(s) to Return from the Subconscious.`);
+    addLog(state, `Choose ${result.count} Psyche to Return from the Subconscious.`);
     return [];
   }
   return result;

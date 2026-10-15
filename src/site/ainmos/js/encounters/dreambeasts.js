@@ -86,20 +86,17 @@ export function isLeviathanCard(card) {
 
 export function encounterPowerLabel(encounter, accept = true) {
   const power = encounterPower(encounter, accept);
-  const verb = accept ? "Accept" : "Repress";
-  return `${verb} · Power ${power} · Rec ${power + 2}`;
+  return `Accept · beat Power ${power}`;
 }
 
-/** Ainmos: Accept draws an Object and owes you a free Insight at the next Lost & Found. */
-export function encounterAcceptSummary(encounter) {
-  const suit = SUIT_LABELS[encounter?.suit] || encounter?.suit || "matching";
-  return `Draw a ${suit} Object and earn a free Insight`;
+/** Ainmos 0.23: beat its Power to Accept it, then take a Power Token or a random Object. */
+export function encounterAcceptSummary(_encounter) {
+  return "Beat its Power to Accept it: take a Power Token or a random Object";
 }
 
 /** Ainmos: Repress draws Psyche equal to half the beast's Power, rounded down. */
 export function encounterRejectSummary(encounter) {
-  const n = Math.floor(encounterPower(encounter) / 2);
-  return n > 0 ? `Banish it and draw ${n} Psyche` : "Banish it to the Subconscious";
+  return encounterAcceptSummary(encounter);
 }
 
 export function dreamerMeetBonuses(dreamer, encounter) {

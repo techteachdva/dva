@@ -36,7 +36,19 @@ export function normalizeSubconscious(sub) {
   }
   if (!sub.mindstream) sub.mindstream = { lucidity: [], elasticity: [], willpower: [] };
   if (!sub.dreambeasts) sub.dreambeasts = [];
+  // Ainmos 0.23: the Subconscious holds Psyche and nothing else. Older saves drop the rest.
+  sub.mindstream.lucidity.length = 0;
+  sub.mindstream.elasticity.length = 0;
+  sub.mindstream.willpower.length = 0;
+  sub.objects.length = 0;
+  sub.dreambeasts.length = 0;
+  sub.other.length = 0;
   return sub;
+}
+
+/** Only Psyche (suited or Wild) can be Repressed or Returned. */
+export function isRepressablePsyche(card) {
+  return !!card && card.type === "psyche";
 }
 
 function pileForCard(sub, card) {
@@ -103,9 +115,17 @@ function resolveRepressOrigin(state, card, origin = {}) {
   return { fromDeck: inferRepressDeck(card) };
 }
 
-/** Repress: card goes face-up into the Subconscious. Spent allies go here, not back to Mindstream. */
+/**
+ * Repress: a Psyche card goes face-up into the Subconscious. Ainmos 0.23: only
+ * Psyche is ever Repressed. Anything else handed here is discarded instead: an
+ * Object returns to its Object deck's discard; a Dreambeast or Event leaves play.
+ */
 export function repressCard(state, card, origin = {}) {
   if (!card) return;
+  if (!isRepressablePsyche(card)) {
+    if (card.type === "object") discardToMindstream(state, card);
+    return;
+  }
   const from = resolveRepressOrigin(state, card, origin);
   state.subconscious = normalizeSubconscious(state.subconscious);
   pileForCard(state.subconscious, card).push(card);
@@ -141,28 +161,15 @@ export function isSubconsciousDreambeast(card) {
     || !!card.boss;
 }
 
-function matchesReturnFilter(card, filter) {
-  if (!filter) return true;
-  if (filter === "dreambeast") return isSubconsciousDreambeast(card);
-  if (filter === "object") return card?.type === "object";
-  if (filter === "event") return card?.type === "event";
-  return true;
+function returnReason(_filter, count) {
+  return `Return ${count} Psyche from the Subconscious: choose ${count === 1 ? "one" : "which"}.`;
 }
 
-function returnReason(filter, count) {
-  if (filter === "dreambeast") return `Return ${count} Dreambeast(s) from the Subconscious.`;
-  if (filter === "object") return `Return ${count} Object(s) from the Subconscious.`;
-  if (filter === "event") return `Return ${count} Event(s) from the Subconscious.`;
-  return `Return ${count} card(s) from the Subconscious.`;
-}
-
+/** Return always offers Psyche, and only Psyche. */
 function cardsForReturn(state, filter) {
+  if (filter && filter !== "psyche") return [];
   const blocked = new Set(state.freshlyRepressedInstanceIds || []);
-  const cards = listSubconsciousCards(state).filter((c) => !blocked.has(c.instanceId));
-  if (filter === "dreambeast") return cards.filter(isSubconsciousDreambeast);
-  if (filter === "object") return cards.filter((c) => c.type === "object");
-  if (filter === "event") return cards.filter((c) => c.type === "event");
-  return cards;
+  return listSubconsciousCards(state).filter((c) => isRepressablePsyche(c) && !blocked.has(c.instanceId));
 }
 
 /** How many Subconscious cards a Return could pick right now (fresh Represses wait a beat). */
@@ -681,7 +688,8 @@ function removeFromSource(player, source, instanceId) {
   }
 }
 
-export function enqueueRepressObjects(state, player, count, { reason = "", strict = false, toMindstream = false } = {}) {
+/** Ainmos 0.23: Objects are never Repressed. Losing an Object Discards it. */
+export function enqueueRepressObjects(state, player, count, { reason = "", strict = false } = {}) {
   state.resolutionQueue = state.resolutionQueue || [];
   state.resolutionQueue.push({
     type: "repress",
@@ -689,8 +697,9 @@ export function enqueueRepressObjects(state, player, count, { reason = "", stric
     playerId: player.id,
     count,
     strict: !!strict,
-    toMindstream: !!toMindstream,
-    reason: reason || `${player.name}: Repress ${count} Object(s).`,
+    toDiscard: true,
+    toMindstream: true,
+    reason: String(reason || `${player.name}: Discard ${count} Object(s).`).replace(/Repress(es)?/g, (m) => (m === "Represses" ? "Discards" : "Discard")),
   });
   if (!state.pendingRepress && !state.pendingReturn) {
     advanceResolutionQueue(state);
@@ -882,30 +891,25 @@ export function repressFromMindstreamSetup(state, suit, playerCount) {
   }
 }
 
+/** Ainmos 0.23: the Subconscious is one pile of Psyche, sorted by suit then value. */
 export function subconsciousPilesForUI(state) {
   state.subconscious = normalizeSubconscious(state.subconscious);
-  const sub = state.subconscious;
-  return [
-    { label: "Psyche", cards: sub.psyche, icon: "🃏" },
-    { label: "Dreambeasts", cards: sub.dreambeasts || [], icon: "⚔" },
-    { label: "Mindstream Lucidity", cards: sub.mindstream.lucidity, icon: "◉" },
-    { label: "Mindstream Elasticity", cards: sub.mindstream.elasticity, icon: "⇄" },
-    { label: "Mindstream Willpower", cards: sub.mindstream.willpower, icon: "✊" },
-    { label: "Objects", cards: sub.objects, icon: "✦" },
-    { label: "Other", cards: sub.other, icon: "?" },
-  ].filter((p) => p.cards.length);
+  const order = { lucidity: 0, elasticity: 1, willpower: 2 };
+  const cards = [...state.subconscious.psyche].sort((a, b) => (
+    (order[a.suit] ?? 3) - (order[b.suit] ?? 3) || (a.value || 0) - (b.value || 0)
+  ));
+  return cards.length ? [{ label: "Psyche", cards, icon: "🃏" }] : [];
 }
 
-/** Flat binder order: deck groups left-to-right, then cards within each pile. */
+/** Flat binder order: Psyche by suit, then value. */
 export function subconsciousBinderEntries(state) {
-  const filter = state.pendingReturn?.filter;
   return subconsciousPilesForUI(state).flatMap((pile) =>
     pile.cards.map((card) => ({
       card,
       pileLabel: pile.label,
       pileIcon: pile.icon,
     })),
-  ).filter((entry) => matchesReturnFilter(entry.card, filter));
+  );
 }
 
 /** An accepted beast is an ally worth half its Power, rounded down. */

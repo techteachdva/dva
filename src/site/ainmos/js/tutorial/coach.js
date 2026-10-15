@@ -94,7 +94,7 @@ function dreamStep(state) {
     title: pos.dream === 2 ? "A Dream, and a Dreambeast" : pos.dream === 3 ? "A Dream, then an Archetype" : "Every Dream hurts",
     text: "Read what this Dream does, then press its big glowing button to endure it.",
     why: first
-      ? "Your Psyche deck is the Waking Mind (the Mind counter at the top). Repress moves cards from it into the Subconscious; Return brings them back. If the Waking Mind runs dry, you wake in a fright and lose."
+      ? "Your Psyche deck is the Waking Mind (the Mind counter at the top). Only Psyche is ever Repressed: it moves into the Subconscious, where 12 already wait. Return brings Psyche back, and you choose which. If the Waking Mind runs dry, you wake in a fright and lose."
       : pos.dream === 2
         ? "After this Dream, the Cycle's Dreambeast lands on a Landscape of its suit."
         : "After this Dream you choose which Archetype to call.",
@@ -110,7 +110,7 @@ function archetypeEventStep(ctx = {}) {
       ? "Every Archetype Meet opens with one of its Events. Bright is locked this time: it needs one of the Landscapes shown at the top placed in the dream. Choose Dim, then pick your spread."
       : "Every Archetype Meet opens with one of its Events. Choose a side, then pick your spread.",
     target: ctx.brightLocked ? "#utility-modal .ms-choice-btn--bad" : "",
-    why: "Bright costs Psyche, makes the fight easier, and Returns 2 cards. Dim is free but makes the fight harder. Low on Psyche? Dim is a fine choice.",
+    why: "Bright costs Psyche, makes the fight easier, and Returns 2 Psyche. Dim is free but makes the fight harder. Low on Psyche? Dim is a fine choice.",
   };
 }
 
@@ -126,7 +126,7 @@ function noCardStep(state, phase) {
     text: tokens > 0
       ? `No ${color} ${suit} card in hand. Press Power Token to open ${phase} with 1 plus your ${suit}, or Skip.`
       : `No ${color} ${suit} card in hand and no Power Tokens. Skip this phase; dawn deals you fresh cards.`,
-    why: "A Power Token opens any phase as if it were a card worth 1. You earn Power Tokens by Acquiring Archetypes.",
+    why: "A Power Token opens any phase as if it were a card worth 1. You hold up to 6. You start with 2, take 1 for beating a Dreambeast, and gain 2 for each Archetype you Acquire.",
     target: tokens > 0 ? ".phase-opener-token" : "#btn-skip-phase",
   };
 }
@@ -269,7 +269,7 @@ function tableStep(state, ctx = {}) {
         id: "explore-walk",
         title: "Walk the dream",
         text: `Tap a glowing Landscape next to you to step there. ${plural(left, "step")} left. ${goal}`,
-        why: "Archetypes slip away from you, and Dreambeasts chase you. Stepping onto Wasteland costs 1 Psyche.",
+        why: "Archetypes slip away from you, and Dreambeasts chase you.",
       };
     }
     return {
@@ -319,8 +319,8 @@ function tableStep(state, ctx = {}) {
     return {
       id: "meet-beast",
       title: `Face ${beastHere.name}`,
-      text: `Tap 1 to 3 Psyche in your hand (at least one ${suit}), then press Accept or Repress under your spread.`,
-      why: "Accept gives you an Object and a free Insight. Repress banishes it and draws Psyche. Aim for a few more dice than its Power. A standing Dreambeast Represses 1 from your Waking Mind every dusk.",
+      text: `Tap 1 to 3 Psyche in your hand (at least one ${suit}), then press Accept under your spread.`,
+      why: "Beat its Power and you Accept it: it leaves the board and you take a Power Token or a random Object. Aim for a few more dice than its Power. A standing Dreambeast Represses 1 Psyche from your Waking Mind every dusk.",
       target: (state.selectedHand || []).length ? ".spread-fight-btn" : "",
     };
   }

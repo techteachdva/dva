@@ -2,7 +2,7 @@
  * Ainmos 36.0 — fullscreen Mindstream / Dream draw choices.
  * Events: Good (paid, landscape-gated) vs Bad (free).
  * Objects: Take vs Discard + Draw 3 Psyche.
- * Dreambeasts: Accept or Repress.
+ * Dreambeasts: Accept.
  * Dreams: Bright costs a Repress, a Psyche, or a Forgotten Landscape, and a gate.
  * Dim is free.
  */

@@ -47,12 +47,14 @@ import {
   uid,
   PSYCHE_STARTING_HAND,
   DREAM_DRAW,
+  SUBCONSCIOUS_START,
 } from "./data.js";
 import { discardToMindstream, pullObjectFromMindstream, objectForPlayer, reshuffleMindstreamDiscardIfNeeded, stampBeastMillTile } from "../cards/mindstream-supply.js";
 import { psycheHandCount, hasPsycheHealth } from "../cards/psyche.js";
 import {
   grantPowerTokens,
   spendPowerTokens,
+  STARTING_POWER_TOKENS,
   resolvePowerCardsInHand,
   resolveAllPowerCardsInHands,
 } from "../cards/power-tokens.js";
@@ -182,7 +184,7 @@ export function createInitialState(data, options) {
     name: dreamer.name,
     dreamer,
     landscapeId: "bed",
-    powerTokens: 1,
+    powerTokens: 0,
     hand: dealStartingPsyche(PSYCHE_STARTING_HAND),
     objects: [],
     persistent: [],
@@ -193,9 +195,11 @@ export function createInitialState(data, options) {
     deathCount: 0,
   }));
 
-  ["lucidity", "elasticity", "willpower"].forEach((suit) => {
-    repressFromMindstreamSetup({ mindstreamDecks, subconscious }, suit, players.length);
-  });
+  // Ainmos 0.23: the night opens with Psyche already Repressed. Twelve random
+  // cards from the Waking Mind wait in the Subconscious to be Returned.
+  for (let i = 0; i < SUBCONSCIOUS_START && psycheDeck.length; i += 1) {
+    subconscious.psyche.push(psycheDeck.shift());
+  }
 
   // FANTASY / NIGHTMARE seeds stack AFTER the opening repress so the
   // favored Dreambeasts genuinely sit on top of each Mindstream deck.
@@ -362,8 +366,9 @@ export function createInitialState(data, options) {
   state.phaseIndex = 0;
   addLog(state, `Round ${state.round}: Reveal Phase — each Dreamer begins with ${PSYCHE_STARTING_HAND} Psyche.`);
   players.forEach((player) => {
-    const startingTokens = seedFlags.spark || seedFlags.somnia ? 2 : 1;
+    const startingTokens = STARTING_POWER_TOKENS;
     grantPowerTokens(state, player, startingTokens, {
+      source: "start",
       reason: `${player.name} begins with ${startingTokens} Power Token${startingTokens === 1 ? "" : "s"}.`,
       logQuest: false,
       animate: false,
@@ -976,7 +981,7 @@ function discardPlayerObjects(state, player) {
   player.persistent = [];
 }
 
-export function applyDreamerDeath(state, player) {
+export function applyDreamerDeath(state, player, { cause = "" } = {}) {
   state.pendingDeathChoice = null;
   if (!player?.alive || state.status !== "playing") return;
 
@@ -989,7 +994,7 @@ export function applyDreamerDeath(state, player) {
   discardPlayerObjects(state, player);
   if (player.powerTokens) {
     spendPowerTokens(state, player, player.powerTokens, {
-      reason: `${player.name}'s Power Tokens return to the pool.`,
+      reason: `${player.name}'s Power Tokens are lost.`,
     });
   }
   player.powerTokens = 0;
@@ -1009,7 +1014,7 @@ export function applyDreamerDeath(state, player) {
 
   addLog(
     state,
-    `${player.name} dies with nothing to pay. The Death Clock ticks to ${clock}/${DEATH_CLOCK_CAP}. Objects are lost, Power Tokens return to the pool, and they redraw ${target} Psyche on The Bed.`,
+    `${player.name} ${cause || "dies with nothing to pay"}. The Death Clock ticks to ${clock}/${DEATH_CLOCK_CAP}. Objects and Power Tokens are lost, and they redraw ${target} Psyche on The Bed.`,
   );
 }
 
@@ -1109,7 +1114,7 @@ export function respawnDreamer(state, playerId, dreamerId) {
   player.deathCount = 0;
   player.powerTokens = 0;
   player.hand = [];
-  grantPowerTokens(state, player, 1, { reason: `${dreamer.name} begins with 1 Power Token.`, logQuest: false, animate: false });
+  grantPowerTokens(state, player, STARTING_POWER_TOKENS, { reason: `${dreamer.name} begins with ${STARTING_POWER_TOKENS} Power Tokens.`, logQuest: false, animate: false, source: "start" });
   drawPsycheForPlayer(state, player, PSYCHE_STARTING_HAND);
   if (state.tutorialMode) resolvePowerCardsInHand(state, player);
   player.pendingRespawn = false;
@@ -1181,7 +1186,7 @@ function grantAcquiredArchetype(state, player, archetype) {
   state.acquiredPoints = (state.acquiredPoints || 0) + 1;
   const boon = archetypeBoon(archetype);
   if (!(state.boons || []).some((b) => b.id === boon.id)) state.boons = [...(state.boons || []), boon];
-  const paid = grantPowerTokens(state, player, ARCHETYPE_TOKEN_REWARD, { logQuest: false });
+  const paid = grantPowerTokens(state, player, ARCHETYPE_TOKEN_REWARD, { logQuest: false, source: "archetype" });
   // Integration: an Acquired Archetype brings back what you had lost.
   autoReturnPsyche(state, ARCHETYPE_RETURN, archetype.name);
   const goal = state.scoringGoalPoints || state.goalPoints || 0;
@@ -1485,7 +1490,7 @@ export function revealLandscapeTile(state, tile) {
     playSfx("reveal");
   } else if (tile.wasteland) {
     tile.wasteland = false;
-    addLog(state, `Restored ${tile.name} from Wasteland.`);
+    addLog(state, `Restored ${tile.name}.`);
     markTileRevealed(tile.id);
     queueTileRevealFx(tile.id);
     playSfx("reveal");

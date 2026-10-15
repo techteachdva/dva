@@ -1,3 +1,4 @@
+import { shuffle } from "./data.js";
 import { offerBoonDraft } from "../dreamers/boons.js";
 import { bossExtraPower, advanceBossStack } from "../encounters/boss-twists.js";
 import { isLostFoundOpen, bankGlimmer, GLIMMER_MAX } from "../shop/lost-found.js";
@@ -82,7 +83,7 @@ import { queueCardTrade } from "../cards/card-fx.js";
 import { random } from "./rng.js";
 import { getDreamResolution } from "../cards/dream-resolutions.js";
 import { applyResolutionEffect } from "../effects/resolution-effects.js";
-import { spendPowerTokens, grantPowerTokens, playPsychePowerFromHand } from "../cards/power-tokens.js";
+import { spendPowerTokens, grantPowerTokens, playPsychePowerFromHand, powerTokenRoom, MAX_POWER_TOKENS } from "../cards/power-tokens.js";
 import {
   beginDreamerPower,
   cancelDreamerPower,
@@ -848,7 +849,7 @@ export function getPhaseActions(state, handlers) {
         label: "Play Object",
         kind: "playObject",
         section: "objects",
-        hint: "Free in any phase — Instant Objects stay in hand until played, then Repress.",
+        hint: "Free in any phase — Instant Objects stay in hand until played, then are Discarded.",
         disabled: false,
         onClick: handlers.playObject,
       });
@@ -858,7 +859,7 @@ export function getPhaseActions(state, handlers) {
         label: "Activate Persistent",
         kind: "activateObject",
         section: "objects",
-        hint: "Meet — spend 1 Meet action to activate a Persistent Object (Remember Objects Return cards).",
+        hint: "Meet — spend 1 Meet action to activate a Persistent Object (Remember Objects Return Psyche).",
         disabled: getPhase(state) !== "Meet" || !(state.meetActionBudget > 0) || (state.meetActionsUsed || 0) >= (state.meetActionBudget || 0),
         onClick: handlers.activateObject,
       });
@@ -1089,22 +1090,6 @@ export function getPhaseActions(state, handlers) {
         disabled: !state.forcedAccept && !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("accept"),
       });
-      if (!state.forcedAccept) {
-        actions.push({
-          label: `${encounterPowerLabel(meetEnc, false)} — ${encounterRejectSummary(meetEnc)}`,
-          kind: "meetReject",
-          section: "encounter",
-          hint: meetActionHint(
-            state,
-            MEET_ACTIONS.MEET,
-            null,
-            [encounterPayHint(meetEnc, false), encounterRejectSummary(meetEnc)].filter(Boolean).join(" ") + prepHint,
-          ),
-          primary: preferReject,
-          disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
-          onClick: () => handlers.meetEncounter("reject"),
-        });
-      }
     }
     const landscapeChoices = meetTile ? getLandscapeActionChoices(meetTile) : [];
     landscapeChoices.forEach((choice, index) => {
@@ -1580,25 +1565,7 @@ export function moveDreamer(state, targetLandscapeId) {
     recordQuestEvent(state, "move_player", { count: 1 });
     recordCancellableMove(state, player, fromId, targetLandscapeId);
 
-    const keyed = (player.persistent || []).some((obj) => obj.id === "skeleton-key");
-    if (to.wasteland && keyed) {
-      addLog(state, `${player.name} slips into Wasteland with the Skeleton Key; it costs nothing.`);
-    } else if (to.wasteland) {
-      const payable = (player.hand || []).filter((card) => !isDreambeastPsycheCard(card));
-      if (!payable.length) {
-        addLog(state, `${player.name} steps into Wasteland with no Psyche to pay.`);
-        if (state.checkPsycheDeath) state.checkPsycheDeath(player, { unpaid: true });
-        return;
-      }
-      const discarded = payable[payable.length - 1];
-      player.hand = player.hand.filter((card) => card.instanceId !== discarded.instanceId);
-      state.psycheDiscard.push(discarded);
-      recordCancellableDiscard(state, player, discarded, "wasteland");
-      recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: targetLandscapeId });
-      addLog(state, `${player.name} discards 1 Psyche on Wasteland.`);
-    } else {
-      addLog(state, `${player.name} moves to ${to.name}. (${state.exploreMovesLeft} moves left)`);
-    }
+    addLog(state, `${player.name} moves to ${to.name}. (${state.exploreMovesLeft} moves left)`);
 
     if (!runnerFree && (state.exploreMovesLeft || 0) > 0) {
       passMeetToken(state);
@@ -1726,7 +1693,7 @@ export function refundPowerBonus(state) {
   }
   state.pendingPowerBonusTokens -= 1;
   state.pendingPowerBonus = Math.max(0, (state.pendingPowerBonus || 0) - 1);
-  grantPowerTokens(state, player, 1, { logQuest: false, animate: false });
+  grantPowerTokens(state, player, 1, { logQuest: false, animate: false, source: "refund" });
   addLog(state, `${player.name} returns 1 Power Token from the Psyche spread (now +${state.pendingPowerBonus}).`);
   playSfx("select");
   return true;
@@ -1773,7 +1740,7 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
     options.push({
       id: "silverAccept",
       label: "Accept",
-      hint: "Silver: play the Accept spread. This Dreambeast cannot be Repressed.",
+      hint: "Silver: play the Accept spread.",
       primary: true,
       onPick: () => handlers.meetEncounter("accept"),
     });
@@ -1964,6 +1931,8 @@ export function prepareMindstreamMeet(state, {
 }
 
 export function meetEncounter(state, mode = "accept", { instant = false, onDone, freeMeet = false, fromMindstreamDraw = false } = {}) {
+  // Ainmos 0.23: a Dreambeast is only ever Accepted, by beating its Power.
+  mode = "accept";
   const say = (message) => {
     if (message) logMoment(state, message);
   };
@@ -1974,7 +1943,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
   if (state.forcedAccept) {
     state.selectedLandscapeId = state.forcedAccept.tileId;
     if (mode !== "accept") {
-      say("Silver: this Dreambeast must be Accepted. It cannot be Repressed.");
+      say("Silver: this Dreambeast must be Accepted.");
       return;
     }
   }
@@ -2138,7 +2107,7 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     logMoment(state, `${encounter.name} wins the clash — it stays on ${tile.name}.`);
     if (ctx.fromMindstreamDraw || encounter.drawnFromMindstream) {
       applyFailEffect(state, actor, encounter);
-      logMoment(state, `${encounter.name} Fail resolves — failed Accept/Repress on draw.`);
+      logMoment(state, `${encounter.name} Fail resolves — failed Accept on draw.`);
     }
     offerHunterShove(state, actor, encounter, tile);
     return;
@@ -2167,37 +2136,74 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
 
 /**
  * A Dreambeast is beaten, by dice or by an Object. Everything a win means lives
- * here: the Accept or Repress reward, quest marks, a Boss falling (Cycle cleared,
+ * here: the Accept reward, quest marks, a Boss falling (Cycle cleared,
  * Boon, victory check), a Mini-Boss bounty, and the beast leaving the board.
  * The Winged Turtle's stack is handled before this by advanceBossStack.
  */
-export function resolveBeastDefeat(state, { actor, encounter, landscapeId, isReject }) {
-  if (!actor || !encounter) return;
-  if (!isReject) {
-    addLog(state, `${actor.name} Accepts ${encounter.name}. ${encounter.effect || ""}`);
-    applyAcceptEffect(state, encounter, actor, getEffectHelpers());
+const OBJECT_SUITS = ["lucidity", "elasticity", "willpower"];
 
-    // Ainmos: no ally card. Accepting a beast earns a free Insight at the next Lost & Found.
-    state.freeInsights = (state.freeInsights || 0) + 1;
-    logMoment(state, `${encounter.name} is Accepted. A free Insight waits at the next Lost & Found.`);
-    const suitLabel = SUIT_LABELS[encounter.suit] || encounter.suit || "suited";
-    const reward = drawObjects(state, actor, 1, getEffectHelpers(), encounter.suit);
-    if (reward.length) {
-      logMoment(state, `${actor.name} draws ${reward[0].name} from the ${suitLabel} Object deck.`);
-    } else {
-      logMoment(state, `The ${suitLabel} Object deck is empty.`);
-    }
-  } else {
-    addLog(state, `${actor.name} Represses ${encounter.name}.`);
-    repressCard(state, { ...encounter, type: "dreambeast" });
-    // Ainmos: Repress draws Psyche equal to half the beast's Power, rounded down.
-    const bounty = Math.floor(encounterPower(encounter) / 2);
-    const drawn = bounty > 0 ? drawPsycheForPlayer(state, actor, bounty) : [];
-    if (drawn.length) trackPsycheDraw(state, actor, drawn.length);
-    // Banishing a nightmare frees the memories it held.
-    const freed = bounty > 0 ? autoReturnPsyche(state, bounty, encounter.name) : 0;
-    logMoment(state, `${encounter.name} is Repressed. ${actor.name} draws ${drawn.length} Psyche${freed ? ` and Returns ${freed}` : ""}.`);
+/** A beaten Dreambeast pays a Power Token or a random Object: the Dreamer picks. */
+export function offerBeastReward(state, actor, encounter) {
+  if (!actor) return;
+  const room = powerTokenRoom(actor);
+  const objectsLeft = OBJECT_SUITS.some((suit) => (state.objectDecks?.[suit] || []).length || (state.objectDiscard?.[suit] || []).length);
+  if (!room && !objectsLeft) {
+    logMoment(state, `${encounter?.name || "The Dreambeast"} is Accepted.`);
+    return;
   }
+  if (!room) {
+    grantBeastReward(state, actor, "object", encounter);
+    return;
+  }
+  if (!objectsLeft) {
+    grantBeastReward(state, actor, "token", encounter);
+    return;
+  }
+  offerEffectChoice(state, actor, {
+    source: "beast",
+    cardId: "beast-reward",
+    title: `${encounter?.name || "Dreambeast"} is Accepted`,
+    message: "Take your reward.",
+    choices: [
+      { id: "token", label: "A Power Token", hint: `You hold ${actor.powerTokens || 0} of ${MAX_POWER_TOKENS}.` },
+      { id: "object", label: "A random Object", hint: "Drawn from any Object deck." },
+    ],
+    payload: { name: encounter?.name || "" },
+    log: `${encounter?.name || "The Dreambeast"} is Accepted: a Power Token or a random Object.`,
+  });
+}
+
+function grantBeastReward(state, actor, choiceId, encounter) {
+  const name = encounter?.name || "The Dreambeast";
+  if (choiceId === "object") {
+    const suits = shuffle(OBJECT_SUITS.slice());
+    for (const suit of suits) {
+      const got = drawObjects(state, actor, 1, getEffectHelpers(), suit);
+      if (got.length) {
+        logMoment(state, `${name} is Accepted. ${actor.name} takes ${got[0].name}.`);
+        return;
+      }
+    }
+  }
+  const paid = grantPowerTokens(state, actor, 1, { source: "beast", logQuest: false });
+  logMoment(state, `${name} is Accepted.${paid ? ` ${actor.name} takes a Power Token.` : ""}`);
+}
+
+registerEffectResolver("beast-reward", (state, choiceId) => {
+  const pending = state.pendingEffectChoice;
+  const actor = state.players.find((p) => p.id === pending?.playerId);
+  state.pendingEffectChoice = null;
+  if (!actor) return false;
+  grantBeastReward(state, actor, choiceId === "object" ? "object" : "token", { name: pending?.payload?.name });
+  return true;
+});
+
+export function resolveBeastDefeat(state, { actor, encounter, landscapeId }) {
+  if (!actor || !encounter) return;
+  // Ainmos 0.23: a beaten Dreambeast is Accepted and leaves the board. Its reward
+  // is your pick: a Power Token or a random Object.
+  addLog(state, `${actor.name} Accepts ${encounter.name}.`);
+  offerBeastReward(state, actor, encounter);
 
   if (landscapeId) {
     recordQuestEvent(state, "meet_on_landscape", { landscapeId });
@@ -2214,8 +2220,7 @@ export function resolveBeastDefeat(state, { actor, encounter, landscapeId, isRej
     // Ainmos: a Mini-Boss pays a bounty, like a blind cleared before the Boss.
     if (encounter.miniBoss) {
       state.minisDefeated = (state.minisDefeated || 0) + 1;
-      const paid = grantPowerTokens(state, actor, MINI_BOSS_BOUNTY);
-      logMoment(state, `Mini-Boss ${encounter.name} falls.${paid ? ` +${paid} Power Token.` : ""}`, { boss: true });
+      logMoment(state, `${encounter.name} falls.`, { boss: true });
     }
     removeEncounterFromLandscape(state, landscapeId, encounter);
   }

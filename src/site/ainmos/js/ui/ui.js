@@ -101,7 +101,7 @@ import { prefersTouchUi, getCapabilityProfile } from "../app/device-mode.js";
 import { revealCompactTarget } from "./compact-chrome.js";
 import { getMomentHistory, flashMoment } from "./moment-overlay.js";
 import { isBeastTokenHidden, isDreamerTokenHidden } from "../board/board-fx.js";
-import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "../cards/power-tokens.js";
+import { MAX_POWER_TOKENS } from "../cards/power-tokens.js";
 import { actingDreamerId, dreamerPortraitClickIntent } from "../core/game.js";
 import { cardBackForDeckId, CARD_BACKS } from "../cards/card-backs.js";
 import {
@@ -139,15 +139,9 @@ function cardTypeClass(card) {
 
 function dreambeastCostMeta(card) {
   if (card.accept == null) return "";
-  const reject = card.reject ?? card.repress;
-  const rejectSuit = card.rejectSuit ? suitIconHtml(card.rejectSuit, { size: 10 }) : "";
   const acceptSuit = card.suit ? suitIconHtml(card.suit, { size: 10 }) : "";
-  // Ainmos rewards: Accept → Object + free Insight; Repress → draw half the Power.
-  const acceptGain = " → Object + Insight";
-  const rejectGain = ` → draw ${Math.floor((reject || 0) / 2)}`;
-  const acceptTitle = encounterPayHint(card, true);
-  const rejectTitle = encounterPayHint(card, false);
-  return `<span class="meta dreambeast-costs"><span title="${acceptTitle}">P${card.accept} rec ${card.accept + 2}${acceptGain} ${acceptSuit}</span><span title="${rejectTitle}">P${reject} rec ${reject + 2}${rejectGain} ${rejectSuit}</span></span>`;
+  // Ainmos 0.23: beat its Power to Accept it, then take a Power Token or a random Object.
+  return `<span class="meta dreambeast-costs"><span title="${encounterPayHint(card, true)}">Power ${card.accept} ${acceptSuit} → Token or Object</span></span>`;
 }
 
 function isDreambeastCard(card) {
@@ -249,7 +243,7 @@ function createEventLandscapeIconRow(card, board = null) {
     chip.className = `event-landscape-icon${isRevealed ? " revealed" : ""}`;
     chip.title = isRevealed
       ? `${name} is revealed, so Bright is open.`
-      : `${name} is still a Wasteland, so Bright stays greyed out.`;
+      : `${name} is not placed yet, so Bright stays greyed out.`;
     const img = document.createElement("img");
     img.src = landscapeImageForId(id, tiles);
     img.alt = name;
@@ -258,7 +252,7 @@ function createEventLandscapeIconRow(card, board = null) {
     caption.textContent = name;
     const state = document.createElement("span");
     state.className = "event-landscape-state";
-    state.textContent = isRevealed ? "Revealed" : "Wasteland";
+    state.textContent = isRevealed ? "Placed" : "Not placed";
     chip.append(img, caption, state);
     chips.appendChild(chip);
   });
@@ -1027,7 +1021,6 @@ export function renderPowerTokens(state, { onTokenClick } = {}) {
 
   const player = activePlayer(state);
   const held = player?.powerTokens || 0;
-  const pool = powerTokensInPool(state);
   const isMeet = getPhase(state) === "Meet";
   const pending = state.pendingPowerBonus || 0;
   const refundable = state.pendingPowerBonusTokens || 0;
@@ -1039,8 +1032,8 @@ export function renderPowerTokens(state, { onTokenClick } = {}) {
 
   if (statsEl) {
     const pendingNote = pending ? `<span class="power-token-pending">+${pending} spread bonus</span>` : "";
-    statsEl.innerHTML = `<span class="power-token-held">${held} held</span><span class="power-token-pool">${pool}/${MAX_POWER_TOKEN_POOL} in pool</span>${pendingNote}`;
-    statsEl.title = "Click a token to spend it on a quest, +1 spread, or 1 plus the suited stat for the phase opener";
+    statsEl.innerHTML = `<span class="power-token-held">${held} of ${MAX_POWER_TOKENS}</span>${pendingNote}`;
+    statsEl.title = `You hold up to ${MAX_POWER_TOKENS} Power Tokens. Spend one for +1 to a spread, or to open a phase as 1 plus your stat. Earn them by beating Dreambeasts and Acquiring Archetypes.`;
   }
 
   if (bonusBtn) {
@@ -1322,20 +1315,16 @@ function appendDreambeastModalDetail(detail, card) {
       </span>
     </div>
     ${boss ? `<p class="beast-view-rule"><b>${boss.twist}.</b> ${boss.twistText}</p>` : ""}
-    <p class="beast-view-how">Fight it on its Landscape during Meet. Roll 5s and 6s; beat its Power.</p>
+    <p class="beast-view-how">Fight it on its Landscape during Meet. Roll 5s and 6s; beat its Power to Accept it.</p>
     <div class="beast-view-wins">
-      <div class="beast-view-win is-accept"><b>Accept</b><span>${encounterAcceptSummary(card)}</span></div>
-      <div class="beast-view-win is-repress"><b>Repress</b><span>${encounterRejectSummary(card)}</span></div>
+      <div class="beast-view-win is-accept"><b>Accept</b><span>Win the fight, then take a Power Token or a random Object.</span></div>
     </div>
     <p class="beast-view-threat">Left standing at dusk, it Represses 1 Psyche.</p>`;
   detail.appendChild(view);
 }
 
 function appendDreambeastModalDetailLegacy(detail, card) {
-  const rejectCost = encounterRejectCost(card);
-  const rejectSuit = card.rejectSuit ? ` ${suitIconHtml(card.rejectSuit, { size: 14 })}` : "";
   const acceptSuit = card.suit ? ` ${suitIconHtml(card.suit, { size: 14 })}` : "";
-  const repressVerb = "Repress";
 
   if (card.flavor) {
     const flavor = document.createElement("blockquote");
@@ -1348,31 +1337,24 @@ function appendDreambeastModalDetailLegacy(detail, card) {
   costs.className = "dreambeast-cost-breakdown";
   costs.innerHTML = `
     <div class="dreambeast-cost-row accept">
-      <strong>Accept · Power ${card.accept}${acceptSuit} · Rec ${card.accept + 2}</strong>
+      <strong>Accept · beat Power ${card.accept}${acceptSuit}</strong>
       <span>${encounterPayHint(card, true)}</span>
       <span>${encounterAcceptSummary(card)}</span>
-    </div>
-    <div class="dreambeast-cost-row reject">
-      <strong>${repressVerb} · Power ${rejectCost}${rejectSuit} · Rec ${rejectCost + 2}</strong>
-      <span>${encounterPayHint(card, false)}</span>
-      <span>${encounterRejectSummary(card)}</span>
     </div>
   `;
   detail.appendChild(costs);
 
-  if (card.effect) {
-    const effect = document.createElement("p");
-    effect.className = "modal-effect";
-    effect.innerHTML = `<strong>Effect:</strong> ${card.effect}`;
-    detail.appendChild(effect);
+  if (card.twistText) {
+    const twist = document.createElement("p");
+    twist.className = "modal-effect";
+    twist.innerHTML = `<strong>${card.twist || "Twist"}:</strong> ${card.twistText}`;
+    detail.appendChild(twist);
   }
 
-  if (card.fail) {
-    const fail = document.createElement("p");
-    fail.className = "modal-fail";
-    fail.innerHTML = `<strong>Fail:</strong> ${card.fail}`;
-    detail.appendChild(fail);
-  }
+  const dusk = document.createElement("p");
+  dusk.className = "modal-fail";
+  dusk.innerHTML = "<strong>While it stands:</strong> it chases you each Explore and Represses 1 Psyche from your Waking Mind every dusk.";
+  detail.appendChild(dusk);
 
   if (card.beastKind) {
     const kind = document.createElement("p");
@@ -1554,7 +1536,7 @@ export function showModal(card, options = {}) {
     if (wasted) {
       banner.innerHTML = `
         <strong>Bright is greyed out</strong>
-        <span>${info.needed?.length ? `${formatNameList(info.needed)} ${info.needed.length === 1 ? "is" : "are"} still Wasteland. Reveal ${info.needed.length === 1 ? "it" : "one"} to open Bright.` : "Reveal this Event's Landscape to open Bright."} Dim is still available.</span>
+        <span>${info.needed?.length ? `${formatNameList(info.needed)} ${info.needed.length === 1 ? "is" : "are"} not placed yet. Place ${info.needed.length === 1 ? "it" : "one"} to open Bright.` : "Reveal this Event's Landscape to open Bright."} Dim is still available.</span>
       `;
     } else if (active) {
       banner.innerHTML = `
@@ -2740,16 +2722,16 @@ export function renderBoard(
         ? tile.name
         : showFace
           ? tile.name
-          : "Wasteland";
+          : "Face-down";
     el.setAttribute(
       "aria-label",
       tutorialRevealTarget
-        ? `Wasteland. Click to reveal ${tile.name}`
+        ? `Face-down. Click to reveal ${tile.name}`
         : pickRevealHidden
-          ? "Wasteland. Click to reveal this Landscape."
+          ? "Face-down. Click to reveal this Landscape."
           : showFace
             ? `${tile.name}${tile.suit ? `, ${tile.suit}` : ""}`
-            : "Wasteland, hidden Landscape"
+            : "Face-down Landscape"
     );
     const revealCueHtml = namedWasteland
       ? `<div class="hex-reveal-cue" aria-hidden="true">Reveal</div>`
@@ -3847,7 +3829,7 @@ function tagDeckPressure(row, reading) {
   row.dataset.pressure = reading.tier || "safe";
   row.dataset.loseDeck = "true";
   if (!reading.tier) return;
-  row.dataset.returnHint = "Return cards from the Subconscious before this deck runs out.";
+  row.dataset.returnHint = "Return Psyche from the Subconscious before this deck runs out.";
   row.classList.add("deck-pressure", `deck-pressure-${reading.tier}`);
   const tag = document.createElement("span");
   tag.className = `deck-return-tag tier-${reading.tier}`;
@@ -3855,7 +3837,7 @@ function tagDeckPressure(row, reading) {
   tag.textContent = reading.tier === "severe"
     ? "Return now"
     : reading.tier === "critical"
-      ? "Return cards"
+      ? "Return Psyche"
       : "Running low";
   row.querySelector(".deck-rail-head")?.appendChild(tag);
 }
@@ -5543,7 +5525,7 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
       <header class="subconscious-binder-header">
         <div class="subconscious-binder-header-copy">
           <h2>Return from Subconscious</h2>
-          <p class="card-choice-message">${pending?.reason || `Choose up to ${need} card(s) to Return to discard piles.`}</p>
+          <p class="card-choice-message">${pending?.reason || `Choose up to ${need} Psyche to Return to discard piles.`}</p>
           <p class="card-choice-hint">${prefersTouchUi()
     ? "Tap a binder card to select · Look lifts one card — swipe or use the arrows."
     : "Click a binder card to select · Look lifts one card — Left and Right walk the pile."}</p>
@@ -5952,7 +5934,7 @@ export function showSubconsciousBrowse(state, _onCardClick) {
   ];
   openCardBinder({
     title: "☠ The Subconscious",
-    lead: "Face-up exile — every Repressed card. Look lifts one so you can read it. Return still happens from an effect.",
+    lead: "Every Repressed Psyche waits here, face-up. When an effect Returns Psyche, you choose which.",
     piles,
     tabs,
     initialTab: "all",
@@ -6516,16 +6498,12 @@ export function showLandscapeDetail(state, tileId, { onDreamerClick = null, onBe
 
   const beastEntries = [];
   tileEncounters(tile).forEach((enc) => {
-    const rejectCost = encounterRejectCost(enc);
-    const rejectSuit = enc.rejectSuit ? suitIconHtml(enc.rejectSuit, { size: 12 }) : "";
     const acceptSuit = enc.suit ? suitIconHtml(enc.suit, { size: 12 }) : "";
     beastEntries.push({
       card: { ...enc, type: enc.type || "dreambeast" },
       caption: enc.name,
       detailHtml: `
-        <div class="landscape-detail-beast-cost accept"><strong>Accept · P${enc.accept} · Rec ${enc.accept + 2}</strong> ${acceptSuit}<span>${encounterPayHint(enc, true)}</span></div>
-        <div class="landscape-detail-beast-cost reject"><strong>Repress · P${rejectCost} · Rec ${rejectCost + 2}</strong> ${rejectSuit}<span>${encounterPayHint(enc, false)}</span></div>
-        ${enc.effect ? `<div class="landscape-detail-beast-effect"><strong>Effect:</strong> ${enc.effect}</div>` : ""}
+        <div class="landscape-detail-beast-cost accept"><strong>Accept · beat Power ${enc.accept}</strong> ${acceptSuit}<span>${encounterPayHint(enc, true)} ${encounterAcceptSummary(enc)}.</span></div>
         ${enc.flavor ? `<div class="landscape-detail-beast-flavor">${enc.flavor}</div>` : ""}
       `,
       onClick: onBeastClick ? (event) => onBeastClick(enc, tile.id, event) : null,

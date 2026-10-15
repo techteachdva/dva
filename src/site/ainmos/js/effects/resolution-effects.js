@@ -323,7 +323,7 @@ function applyResolutionStep(state, player, step, helpers = {}) {
         });
       } else {
         const names = named.map((tile) => tile.name).join(" or ") || "those Landscapes";
-        addLog(state, `${names} ${named.length === 1 ? "is" : "are"} still Wasteland. The road stays closed.`);
+        addLog(state, `${names} ${named.length === 1 ? "is" : "are"} not placed yet. The road stays closed.`);
       }
       break;
     }
@@ -370,14 +370,14 @@ function applyResolutionStep(state, player, step, helpers = {}) {
       break;
     case "repressObjects":
       enqueueRepressObjects(state, player, p.count || 1, {
-        reason: `${player.name}: choose ${p.count || 1} Object${(p.count || 1) === 1 ? "" : "s"} to repress.`,
+        reason: `${player.name}: choose ${p.count || 1} Object${(p.count || 1) === 1 ? "" : "s"} to Discard.`,
         strict: true,
       });
       break;
     case "repressObjectsAll":
       alive(state).forEach((pl) => {
         enqueueRepressObjects(state, pl, p.count || 1, {
-          reason: `${pl.name}: Repress ${p.count || 1} Object${(p.count || 1) === 1 ? "" : "s"}.`,
+          reason: `${pl.name}: Discard ${p.count || 1} Object${(p.count || 1) === 1 ? "" : "s"}.`,
           strict: true,
         });
       });

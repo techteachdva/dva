@@ -144,8 +144,14 @@ export function uid(prefix = "id") {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-/** Canonical Psyche deck: 60 suited + 6 Wild = 66. Six 1s, five 2s, four 3s, three 4s, two 5s per suit. */
-export const PSYCHE_DISTRIBUTION = { 1: 6, 2: 5, 3: 4, 4: 3, 5: 2 };
+/**
+ * Ainmos 0.23 Psyche deck: 72 suited + 6 Wild = 78. Seven 1s, six 2s, five 3s,
+ * four 4s, two 5s per suit. Twelve start the night in the Subconscious, so the
+ * Waking Mind opens about where the old 66-card deck did.
+ */
+export const PSYCHE_DISTRIBUTION = { 1: 7, 2: 6, 3: 5, 4: 4, 5: 2 };
+/** Psyche Repressed into the Subconscious before the first Dream. */
+export const SUBCONSCIOUS_START = 12;
 export const PSYCHE_WILD_COUNT = 6;
 export const PSYCHE_POWER_TOKEN_COUNT = 0;
 export const PSYCHE_POWER_GRANT = 1;
@@ -263,7 +269,7 @@ function mindstreamDreambeastCard(beast, suit) {
     fail: beast.fail,
     effect: beast.effect,
     boss: beast.boss,
-    text: beast.effect || beast.flavor,
+    text: beast.flavor,
     instanceId: uid("mind"),
   };
 }
@@ -286,7 +292,7 @@ function powerTokenCard(suit, index) {
     suit,
     mindstreamSuit: suit,
     powerTokens: 1,
-    text: "Take 1 Power Token, or Return one card from the Subconscious for each Dreamer.",
+    text: "Return one Psyche from the Subconscious for each Dreamer.",
     image: `images/cards/mindstream/${suit}/power-token.webp`,
     instanceId: uid("mind"),
   };

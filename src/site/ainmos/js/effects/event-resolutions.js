@@ -112,7 +112,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Snooze Again",
-      hint: "Repress the top Mindstream card",
+      hint: "Discard the top Mindstream card",
       effect: "repressTopMindstream",
       params: { suit: "lucidity", count: 1 },
     },
@@ -130,7 +130,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Heavy Lids",
-      hint: "Repress the top Mindstream card",
+      hint: "Discard the top Mindstream card",
       effect: "repressTopMindstream",
       params: { suit: "lucidity", count: 1 },
     },
@@ -148,7 +148,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Plans Go Wrong",
-      hint: "Repress 1 active Dreambeast. No reward",
+      hint: "Discard 1 active Dreambeast. No reward",
       effect: "repressBoardBeast",
       params: { count: 1 },
     },
@@ -240,7 +240,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "It Notices You",
-      hint: "Repress 1 active Dreambeast. No reward",
+      hint: "Discard 1 active Dreambeast. No reward",
       effect: "repressBoardBeast",
       params: { count: 1 },
     },
@@ -258,7 +258,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Face Emerges",
-      hint: "Repress 1 active Dreambeast. No reward",
+      hint: "Discard 1 active Dreambeast. No reward",
       effect: "repressBoardBeast",
       params: { count: 1 },
     },
@@ -276,7 +276,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Dream Dissolves",
-      hint: "Repress the top Mindstream card",
+      hint: "Discard the top Mindstream card",
       effect: "repressTopMindstream",
       params: { suit: "lucidity", count: 1 },
     },
@@ -420,7 +420,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Drop Everything",
-      hint: "Repress 2 Objects",
+      hint: "Discard 2 Objects",
       effect: "repressObjects",
       params: { count: 2 },
     },
@@ -512,7 +512,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Punchline Cuts",
-      hint: "Repress 2 Objects",
+      hint: "Discard 2 Objects",
       effect: "repressObjects",
       params: { count: 2 },
     },
@@ -774,7 +774,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Smothered",
-      hint: "Repress the top Mindstream card",
+      hint: "Discard the top Mindstream card",
       effect: "repressTopMindstream",
       params: { suit: "elasticity", count: 1 },
     },
@@ -866,7 +866,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Doorway Snaps Shut",
-      hint: "Repress the top Mindstream card",
+      hint: "Discard the top Mindstream card",
       effect: "repressTopMindstream",
       params: { suit: "elasticity", count: 1 },
     },
@@ -956,7 +956,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "It Lurches Alive",
-      hint: "Repress 1 active Dreambeast. No reward",
+      hint: "Discard 1 active Dreambeast. No reward",
       effect: "repressBoardBeast",
       params: { count: 1 },
     },
@@ -1028,7 +1028,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Something Scrapes Out",
-      hint: "Repress 1 active Dreambeast. No reward",
+      hint: "Discard 1 active Dreambeast. No reward",
       effect: "repressBoardBeast",
       params: { count: 1 },
     },
@@ -1136,7 +1136,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Frostbite",
-      hint: "Repress 1 Object",
+      hint: "Discard 1 Object",
       effect: "repressObjects",
       params: { count: 1 },
     },
@@ -1172,7 +1172,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Mirage Becomes Real",
-      hint: "Repress 1 active Dreambeast. No reward",
+      hint: "Discard 1 active Dreambeast. No reward",
       effect: "repressBoardBeast",
       params: { count: 1 },
     },
@@ -1190,7 +1190,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Sand Strips You Bare",
-      hint: "Repress 1 Object",
+      hint: "Discard 1 Object",
       effect: "repressObjects",
       params: { count: 1 },
     },
@@ -1268,7 +1268,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Third Place Stings",
-      hint: "Repress 1 active Dreambeast. No reward",
+      hint: "Discard 1 active Dreambeast. No reward",
       effect: "repressBoardBeast",
       params: { count: 1 },
     },
@@ -1286,7 +1286,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Forced Acceptance",
-      hint: "Repress 1 active Dreambeast. No reward",
+      hint: "Discard 1 active Dreambeast. No reward",
       effect: "repressBoardBeast",
       params: { count: 1 },
     },
@@ -1344,7 +1344,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Drop the Object",
-      hint: "Repress 1 Object",
+      hint: "Discard 1 Object",
       effect: "repressObjects",
       params: { count: 1 },
     },
@@ -1362,7 +1362,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Doom Descends",
-      hint: "Repress 2 Psyche from hand; Repress 1 active Dreambeast. No reward",
+      hint: "Repress 2 Psyche from hand; Discard 1 active Dreambeast. No reward",
       steps: [
         { effect: "repressPsyche", params: { count: 2 } },
         { effect: "repressBoardBeast", params: { count: 1 } },
@@ -1382,7 +1382,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Lose Your Grip",
-      hint: "Repress 2 Objects",
+      hint: "Discard 2 Objects",
       effect: "repressObjects",
       params: { count: 2 },
     },
@@ -1436,7 +1436,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "The Altar Takes",
-      hint: "Repress 1 Object",
+      hint: "Discard 1 Object",
       effect: "repressObjects",
       params: { count: 1 },
     },
@@ -1456,7 +1456,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Boil Over",
-      hint: "Repress 1 active Dreambeast. No reward",
+      hint: "Discard 1 active Dreambeast. No reward",
       effect: "repressBoardBeast",
       params: { count: 1 },
     },
@@ -1474,7 +1474,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Dreams Vanish",
-      hint: "Repress 3 top Mindstream cards",
+      hint: "Discard 3 top Mindstream cards",
       effect: "repressTopMindstream",
       params: { suit: "willpower", count: 3 },
     },
@@ -1492,7 +1492,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Clock Runs Out",
-      hint: "Repress 1 Object",
+      hint: "Discard 1 Object",
       effect: "repressObjects",
       params: { count: 1 },
     },
@@ -1674,7 +1674,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Bridge Sags",
-      hint: "Repress the top Mindstream card",
+      hint: "Discard the top Mindstream card",
       effect: "repressTopMindstream",
       params: { suit: "willpower", count: 1 },
     },
@@ -1782,7 +1782,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Something Hunts Between",
-      hint: "Repress 1 active Dreambeast. No reward",
+      hint: "Discard 1 active Dreambeast. No reward",
       effect: "repressBoardBeast",
       params: { count: 1 },
     },
@@ -1856,7 +1856,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Knock Knock — Horror",
-      hint: "Repress 1 active Dreambeast. No reward",
+      hint: "Discard 1 active Dreambeast. No reward",
       effect: "repressBoardBeast",
       params: { count: 1 },
     },
@@ -1928,7 +1928,7 @@ export const EVENT_RESOLUTIONS = {
     },
     bad: {
       label: "Toll of Dreams",
-      hint: "Repress 2 top Mindstream cards",
+      hint: "Discard 2 top Mindstream cards",
       effect: "repressTopMindstream",
       params: { suit: "willpower", count: 2 },
     },

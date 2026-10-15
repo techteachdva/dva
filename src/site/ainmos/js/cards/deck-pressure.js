@@ -128,12 +128,12 @@ function bannerCopy(rows, tier) {
     ? list[0]
     : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
   if (tier === "severe") {
-    return `The Dreamscape is unstable — ${joined}. About 1% remains. Return cards from the Subconscious or the table loses.`;
+    return `The Dreamscape is unstable — ${joined}. About 1% remains. Return Psyche from the Subconscious or the table loses.`;
   }
   if (tier === "critical") {
-    return `Critical — ${joined}. Return cards from the Subconscious before these decks run out.`;
+    return `Critical — ${joined}. Return Psyche from the Subconscious before these decks run out.`;
   }
-  return `${joined.charAt(0).toUpperCase()}${joined.slice(1)} ${list.length === 1 ? "is" : "are"} running low. Return cards from the Subconscious to refill ${list.length === 1 ? "it" : "them"}.`;
+  return `${joined.charAt(0).toUpperCase()}${joined.slice(1)} ${list.length === 1 ? "is" : "are"} running low. Return Psyche from the Subconscious to refill ${list.length === 1 ? "it" : "them"}.`;
 }
 
 function ensureBanner() {
@@ -229,7 +229,7 @@ export function syncDeckPressure(state) {
     banner.dataset.tier = tier;
     banner.dataset.sources = visible.map((row) => row.id).join(" ");
     banner.dataset.remaining = visible.map((row) => `${row.id}:${row.remaining}/${row.cap}`).join(" ");
-    banner.dataset.returnHint = "Return cards from the Subconscious.";
+    banner.dataset.returnHint = "Return Psyche from the Subconscious.";
   }
 
   body.dataset.deckPressure = tier || "safe";
@@ -269,12 +269,12 @@ function paintDeckRails(readings) {
       old?.remove();
       return;
     }
-    row.dataset.returnHint = "Return cards from the Subconscious before this deck runs out.";
+    row.dataset.returnHint = "Return Psyche from the Subconscious before this deck runs out.";
     row.classList.add("deck-pressure", `deck-pressure-${reading.tier}`);
   const label = reading.tier === "severe"
     ? "Return now"
     : reading.tier === "critical"
-      ? "Return cards"
+      ? "Return Psyche"
       : "Running low";
     if (old) {
       old.className = `deck-return-tag tier-${reading.tier}`;

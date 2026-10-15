@@ -320,7 +320,7 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
     const result = activatePersistentObjectEffect(state, player, card);
     if (result === false) {
       if (options.usePower) {
-        grantPowerTokens(state, player, 1, { reason: `${card.name} did nothing.`, logQuest: false, animate: false });
+        grantPowerTokens(state, player, 1, { reason: `${card.name} did nothing.`, logQuest: false, animate: false, source: "refund" });
       }
       return null;
     }

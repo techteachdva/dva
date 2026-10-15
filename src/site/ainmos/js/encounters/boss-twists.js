@@ -6,7 +6,7 @@
  *   Jackalope      hops 2 hexes at the start of each Meet
  *   Baku           at dusk, eats the next ordinary Dream of the night
  *   Mindless       Dreamer stats add nothing against it
- *   Devourer       at dusk, the table Represses 1 Object in play
+ *   Devourer       at dusk, the table Discards 1 Object in play
  *   Bogey          The Bed's action is shut; ending Meet on The Bed Represses 1
  *   Cerberus       no one enters or leaves The Bed
  *   Double         gains Power equal to the fighter's matching stat
@@ -153,7 +153,7 @@ function devourerHungers(state) {
   offerEffectChoice(state, chooser, {
     cardId: "devourer-hunger",
     title: "The Devourer hungers",
-    message: "Repress 1 Object in play. The table chooses which.",
+    message: "Discard 1 Object in play. The table chooses which.",
     choices: held.map(({ player, obj }) => ({ id: `${player.id}:${obj.instanceId}`, label: `${obj.name} (${player.name})` })),
   });
 }

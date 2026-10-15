@@ -115,6 +115,23 @@ export function makeBoardTile(landscape, q, r) {
   };
 }
 
+const BOARD_ONLY_FIELDS = [
+  "q", "r", "revealed", "wasteland", "forgotten", "finalRecurrenceSide", "encounters", "encounter",
+  "finalArchetypes", "finalArchetype",
+];
+
+/** A Forgotten tile's card goes back into the Landscape deck at a random depth. */
+export function shuffleLandscapeIntoDeck(state, tile) {
+  if (!tile) return null;
+  const card = { ...tile };
+  BOARD_ONLY_FIELDS.forEach((key) => { delete card[key]; });
+  if (!Array.isArray(state.landscapeTileDeck)) state.landscapeTileDeck = [];
+  const at = Math.floor(Math.random() * (state.landscapeTileDeck.length + 1));
+  state.landscapeTileDeck.splice(at, 0, card);
+  refillVault(state);
+  return card;
+}
+
 /** Is this Landscape still waiting in the Vault or the tile deck? */
 export function isUnplacedLandscape(state, landscapeId) {
   if (!isFreeformBoard(state)) return false;
@@ -134,9 +151,8 @@ export function setAsideUnplacedLandscape(state, landscapeId) {
     const index = pool.findIndex((c) => c.id === landscapeId);
     if (index < 0) continue;
     const [card] = pool.splice(index, 1);
-    if (!Array.isArray(state.landscapesSetAside)) state.landscapesSetAside = [];
-    state.landscapesSetAside.push(card);
-    refillVault(state);
+    // Ainmos 0.23: a Forgotten Landscape is never lost, only shuffled back into the deck.
+    shuffleLandscapeIntoDeck(state, card);
     return card;
   }
   return null;

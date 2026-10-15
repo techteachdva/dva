@@ -12,7 +12,7 @@ import { BOSS_LADDER } from "./boss-ladder.js";
  *    the beast's suit. Repress pays the opposing suit.
  * 3) End of the round — Repress 1 card from the Psyche Deck per Dreambeast
  *    still on the board. During the Final Recurrence, count remaining
- *    Archetypes instead. Fail only when Accept or Repress loses.
+ *    Archetypes instead. Fail only when Accept loses.
  */
 import {
   addLog,
@@ -25,12 +25,11 @@ import {
 } from "../core/state.js";
 import { adjacentTiles, hexDistance } from "../core/hex.js";
 import { logMoment } from "../core/narrator.js";
-import { enqueueRepressFromHand } from "../dreamers/subconscious.js";
 
 export const MEET_PHASE_FLOW = Object.freeze({
   start: "Bosses step toward the nearest Dreamer. No cards are taxed from hands.",
-  middle: "Spend 1 Willpower Psyche for shared Meet Actions. Accept and Repress are one Power. Roaming beasts stay until won.",
-  end: "Dusk: Repress 1 Psyche from the Waking Mind per Dreambeast still on the board. A Dreamer who ends Meet on a Wasteland also Represses 1 Psyche from hand. In the Final Recurrence, count remaining Archetypes.",
+  middle: "Spend 1 Willpower Psyche for shared Meet Actions. Accept a Dreambeast by beating its Power. Roaming beasts stay until won.",
+  end: "Dusk: Repress 1 Psyche from the Waking Mind per Dreambeast still on the board. In the Final Recurrence, count remaining Archetypes.",
 });
 
 export function countActiveDreambeasts(state) {
@@ -158,18 +157,6 @@ export function wakingMindCount(state) {
   return (state.psycheDeck?.length || 0) + (state.psycheDiscard?.length || 0);
 }
 
-function repressWastelandStanders(state) {
-  for (const player of state.players || []) {
-    if (!player.alive) continue;
-    const tile = landscapeById(state, player.landscapeId);
-    if (!tile || tile.center || !tile.wasteland) continue;
-    enqueueRepressFromHand(state, player, 1, {
-      reason: `${player.name} ends Meet on ${tile.name}, a Wasteland. Repress 1 Psyche from hand.`,
-      strict: true,
-    });
-  }
-}
-
 function applyRoundResourceTax(state) {
   const count = roundResourceTaxCount(state);
   if (!count) return;
@@ -205,7 +192,6 @@ export function applyMeetEndConsequences(state) {
     applyTutorialMeetEnd(state);
     return;
   }
-  repressWastelandStanders(state);
   applyBossTwistsAtDusk(state, {
     discardDream: discardDreamCard,
     popDream: popDiscardableDream,

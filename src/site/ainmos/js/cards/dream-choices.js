@@ -302,7 +302,7 @@ function presentMisplaced(state, player) {
   }
   if (!wp.length) {
     repressObjects(state, player, objs);
-    addLog(state, `${player.name} Represses ${objs.length} Object(s) (no Willpower Psyche to save them).`);
+    addLog(state, `${player.name} Discards ${objs.length} Object(s) (no Willpower Psyche to save them).`);
     advanceDreamQueue(state);
     return;
   }
@@ -819,7 +819,7 @@ function applySpend(state, player, dreamId, step, picked, pending) {
     const objs = player.objects || [];
     if (!saved) {
       repressObjects(state, player, objs);
-      addLog(state, `${player.name} Represses ${objs.length} Object(s).`);
+      addLog(state, `${player.name} Discards ${objs.length} Object(s).`);
       return;
     }
     if (saved >= objs.length) {
@@ -831,7 +831,7 @@ function applySpend(state, player, dreamId, step, picked, pending) {
       ui: "spend",
       step: "keep-objects",
       title: "Misplaced",
-      message: `${player.name}: choose ${saved} Object(s) to keep. The rest are Repressed.`,
+      message: `${player.name}: choose ${saved} Object(s) to keep. The rest are Discarded.`,
       cards: objs,
       needCount: saved,
     });
@@ -841,7 +841,7 @@ function applySpend(state, player, dreamId, step, picked, pending) {
     const keep = new Set(picked.map((c) => c.instanceId));
     const rest = (player.objects || []).filter((o) => !keep.has(o.instanceId));
     repressObjects(state, player, rest);
-    addLog(state, `${player.name} saves ${picked.length} Object(s) and Represses ${rest.length}.`);
+    addLog(state, `${player.name} saves ${picked.length} Object(s) and Discards ${rest.length}.`);
     return;
   }
   if (dreamId === "circadia" && step === "draw-discard") {

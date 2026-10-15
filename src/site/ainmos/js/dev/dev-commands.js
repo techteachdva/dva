@@ -629,7 +629,7 @@ const COMMANDS = {
       const n = parseInt(args[1], 10) || 1;
       const player = playerAt(state, args[2]);
       if (target === "objects" || target === "object") {
-        enqueueRepressObjects(state, player, n, { reason: `[dev] Repress ${n} Object(s).` });
+        enqueueRepressObjects(state, player, n, { reason: `[dev] Discard ${n} Object(s).` });
         return ok(`Repress objects picker · ${n} for ${player.name}.`);
       }
       if (target === "hand" || target === "psyche") {

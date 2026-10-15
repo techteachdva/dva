@@ -30,7 +30,7 @@
       "suit": "lucidity",
       "type": "event",
       "image": "images/cards/mindstream/lucidity/beyond-comprehension.webp",
-      "text": "Flip Leviathan. Instead, Forget 4 Landscapes. Return 4 cards."
+      "text": "Flip Leviathan. Instead, Forget 4 Landscapes. Return 4 Psyche."
     },
     {
       "id": "just-a-dream",
@@ -440,7 +440,7 @@
       "suit": "elasticity",
       "type": "event",
       "image": "images/cards/mindstream/elasticity/wrong-door.webp",
-      "text": "Return 2 Dreambeasts from Accept Pile and Spawn on adjacent Landscapes. If can't, Discard 4 Psyche."
+      "text": "Return 2 Psyche from Accept Pile and Spawn on adjacent Landscapes. If can't, Discard 4 Psyche."
     },
     {
       "id": "hidden-in-the-walls",
@@ -552,7 +552,7 @@
       "suit": "elasticity",
       "type": "event",
       "image": "images/cards/mindstream/elasticity/bronze.webp",
-      "text": "Return 2 Dreambeasts from Accept Pile. Spawn 1 Dreambeast on any Affected Landscape."
+      "text": "Return 2 Psyche from Accept Pile. Spawn 1 Dreambeast on any Affected Landscape."
     },
     {
       "id": "silver",
@@ -618,7 +618,7 @@
       "suit": "willpower",
       "type": "event",
       "image": "images/cards/mindstream/willpower/from-the-fire.webp",
-      "text": "Return 2 Repressed Encounters. Return +2 Cards."
+      "text": "Return 2 Psyche Encounters. Return +2 Cards."
     },
     {
       "id": "a-sacrifice",

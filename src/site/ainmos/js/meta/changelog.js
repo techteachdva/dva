@@ -6,10 +6,25 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.22";
+export const SOMNIA_VERSION = "0.23";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.23",
+    title: "Repress/Return Psyche",
+    notes: [
+      "One rule for two words: Repress always Represses Psyche, and Return always Returns Psyche. The Subconscious holds Psyche and nothing else, and every Return lets you choose which Psyche come back.",
+      "The night begins with 12 random Psyche already in the Subconscious. The Psyche deck grew to 78 cards so your Waking Mind starts about where it did.",
+      "Dreambeasts are only ever Accepted. Beat a Dreambeast's Power and it leaves the board; take a Power Token or a random Object. The Repress option, Repress rewards, and Fail effects are gone.",
+      "Power Tokens come from exactly three places: the 2 you start with, beating a Dreambeast, and Acquiring an Archetype (+2). You hold at most 6, shown as 'N of 6'. There is no pool.",
+      "Objects are never Repressed. Spent, lost, and completed Objects are Discarded. Dreams that took Objects now make you Discard them.",
+      "Forgetting a Landscape shuffles it back into the Landscape deck to be found again in the Vault. Anyone standing on it dies and wakes on The Bed, Dreambeasts there are discarded, and Archetypes retreat to The Bed.",
+      "No more Wasteland: stepping anywhere is free, and nothing punishes you for where you end Meet.",
+      "Suburbia, Awards, and Inner Sanctum now Return 2 Psyche (they used to grant Power Tokens). Coins Returns 3 Psyche. The Creator Returns 2 Psyche. The Skeleton Key lets you step out to The Bed instead of dying when your Landscape is Forgotten.",
+      "The glossary, the rules, the First Night guide, card text, and every Dreambeast view say the same thing as the engine.",
+    ],
+  },
   {
     version: "0.22",
     title: "Polish Pass",

@@ -3,7 +3,16 @@ import { playSfx } from "../audio/audio.js";
 import { queuePowerTokensFx, queuePowerTokenSpendFx } from "../board/board-fx.js";
 import { PSYCHE_POWER_GRANT } from "../core/data.js";
 
-export const MAX_POWER_TOKEN_POOL = 24;
+/**
+ * Ainmos 0.23: Power Tokens come from exactly three places: the 2 every Dreamer
+ * starts with, beating a Dreambeast (Power Token or Object, your pick), and
+ * Acquiring an Archetype. A token spent and taken back (undoing a spread bonus,
+ * a power that did nothing) is a refund, not a new token. There is no pool: each
+ * Dreamer simply holds up to six.
+ */
+export const MAX_POWER_TOKENS = 6;
+export const STARTING_POWER_TOKENS = 2;
+const TOKEN_SOURCES = new Set(["start", "beast", "archetype", "refund"]);
 
 function log(state, message) {
   if (!state?.log) return;
@@ -15,20 +24,19 @@ export function powerTokensHeld(state) {
   return state.players.reduce((sum, player) => sum + (player.powerTokens || 0), 0);
 }
 
-export function powerTokensInPool(state) {
-  return Math.max(0, MAX_POWER_TOKEN_POOL - powerTokensHeld(state));
+/** Room left in one Dreamer's hand of tokens (max six). */
+export function powerTokenRoom(player) {
+  return Math.max(0, MAX_POWER_TOKENS - (player?.powerTokens || 0));
 }
 
-export function grantPowerTokens(state, player, requested, { reason = "", logQuest = true, animate = true } = {}) {
+export function grantPowerTokens(state, player, requested, { reason = "", logQuest = true, animate = true, source = "other" } = {}) {
   const amount = Math.max(0, Math.floor(requested || 0));
   if (!player || amount <= 0) return 0;
+  if (!TOKEN_SOURCES.has(source)) return 0;
 
-  const available = powerTokensInPool(state);
-  const granted = Math.min(amount, available);
+  const granted = Math.min(amount, powerTokenRoom(player));
   if (granted <= 0) {
-    if (amount > 0) {
-      log(state, `No Power Tokens left in the pool (${MAX_POWER_TOKEN_POOL} max across all Dreamers).`);
-    }
+    log(state, `${player.name} already holds ${MAX_POWER_TOKENS} Power Tokens, the most anyone can hold.`);
     return 0;
   }
 

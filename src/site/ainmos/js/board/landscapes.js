@@ -14,9 +14,9 @@ import {
   allLandscapesRevealed,
   revealNextDeckCard,
   peekFacedownDeckCard,
+  applyDreamerDeath,
 } from "../core/state.js";
 import { shuffle } from "../core/data.js";
-import { repressCard } from "../dreamers/subconscious.js";
 import { narrate, logMoment } from "../core/narrator.js";
 import { recordQuestEvent, activeQuestLandscapeIds } from "../dreamers/quests.js";
 import { isEdgeLandscape } from "../core/hex.js";
@@ -41,6 +41,7 @@ import {
   tileDeckCount,
   takeUnplacedLandscape,
   nearestPlacementSlot,
+  shuffleLandscapeIntoDeck,
 } from "./dreamscape-vault.js";
 
 /** Revealed outer Landscapes — The Bed can never be forgotten. */
@@ -108,7 +109,7 @@ export function beginRevealPicking(state, budget) {
   narrate(
     state,
     `Reveal budget: ${budget} — click map tiles.`,
-    `You spent Lucidity Psyche. Click up to ${budget} hex tiles on the map that show the Wasteland back to flip them to active Landscapes. Unused Reveals bank 1 Glimmer ✧ each for the Lost & Found.`,
+    `You spent Lucidity Psyche. Click up to ${budget} hex tiles on the map that are face-down to flip them to active Landscapes. Unused Reveals bank 1 Glimmer ✧ each for the Lost & Found.`,
     [`${budget} tile(s) to reveal`, "Click the hex map in the center table"],
   );
   return true;
@@ -132,7 +133,7 @@ export function beginFreeRevealPicking(state, budget, followup = null) {
     `Reveal ${budget} Landscape${budget === 1 ? "" : "s"}`,
     isFreeformBoard(state)
       ? `Place ${budget} Landscape${budget === 1 ? "" : "s"} from the Dreamscape Vault, free. Choose a Vault tile, then a glowing hex.`
-      : `Click ${budget} hex tile${budget === 1 ? "" : "s"} on the map that show the Wasteland back.`,
+      : `Click ${budget} hex tile${budget === 1 ? "" : "s"} on the map that are face-down.`,
     [`${budget} tile(s) to reveal`],
   );
   return "pending";
@@ -168,31 +169,40 @@ export function revealOrPlaceLandscapes(state, count, { source = "Reveal" } = {}
   return shown;
 }
 
+/**
+ * Forget a Landscape (Ainmos 0.23). The tile leaves the Dreamscape and its card
+ * shuffles back into the Landscape deck, to be found again from the Vault. Its
+ * hex is empty again. Anything standing there is caught: a Dreamer dies and
+ * wakes on The Bed, a Dreambeast is discarded, and an Archetype retreats to The Bed.
+ */
 export function forgetTile(state, tile) {
-  if (tile.id === "bed" || tile.center) {
+  if (!tile || tile.id === "bed" || tile.center) {
     addLog(state, "The Bed cannot be forgotten.");
     return;
   }
   rehomeArchetypesFrom(state, tile);
-  tile.revealed = false;
-  tile.wasteland = true;
-  tile.forgotten = true;
-  tileEncounters(tile).forEach((enc) => {
-    repressCard(state, enc, { tileId: tile.id });
-  });
+  const beasts = tileEncounters(tile);
   clearEncountersOnLandscape(state, tile.id);
+  if (beasts.length) {
+    addLog(state, `${beasts.map((b) => b.name).join(" and ")} ${beasts.length === 1 ? "is" : "are"} discarded with ${tile.name}.`);
+  }
+  queueTileForgetFx(tile.id);
+  markTileForgotten(tile.id);
+  state.board = (state.board || []).filter((t) => t !== tile && t.id !== tile.id);
+  if (state.selectedLandscapeId === tile.id) state.selectedLandscapeId = "bed";
+  shuffleLandscapeIntoDeck(state, tile);
   state.players
     .filter((p) => p.alive && p.landscapeId === tile.id)
     .forEach((p) => {
-      if (p.hand.length) {
-        const card = p.hand.pop();
-        repressCard(state, card, { playerId: p.id, tileId: tile.id });
-        addLog(state, `${p.name} on ${tile.name} discards 1 Psyche to the Subconscious.`);
+      p.landscapeId = "bed";
+      // The Skeleton Key lets its holder step out to The Bed instead.
+      if ((p.persistent || []).some((obj) => obj.id === "skeleton-key")) {
+        addLog(state, `${p.name} unlocks a door as ${tile.name} is Forgotten and steps out onto The Bed.`);
+        return;
       }
+      applyDreamerDeath(state, p, { cause: `is lost with ${tile.name} as it is Forgotten` });
     });
-  markTileForgotten(tile.id);
-  queueTileForgetFx(tile.id);
-  addLog(state, `Forgot ${tile.name} — now a Wasteland.`);
+  addLog(state, `${tile.name} is Forgotten. It shuffles back into the Landscape deck; find it again in the Vault.`);
   maybeMapRevealForgetThresholds(state);
 }
 
@@ -249,7 +259,7 @@ export function beginForgetPicking(state, count) {
   narrate(
     state,
     `Forget ${count} Landscape(s) — click the map.`,
-    `Choose ${count} revealed Landscape hex tiles (they pulse red). Each becomes a Wasteland: Encounters Repress to the Subconscious; Dreamers standing there lose 1 Psyche.`,
+    `Choose ${count} placed Landscape${count === 1 ? "" : "s"} (they pulse red). Each shuffles back into the Landscape deck. A Dreamer standing there dies and wakes on The Bed, a Dreambeast there is discarded, and an Archetype there retreats to The Bed.`,
     [`${count} tile(s) to forget`, "The Bed cannot be forgotten"],
   );
   return true;
@@ -445,7 +455,7 @@ export function handleLandscapeTilePick(state, tileId) {
     narrate(
       state,
       `Forgot ${tile.name}.`,
-      `${tile.name} flips to Wasteland.${pick.remaining > 0 ? ` Choose ${pick.remaining} more.` : ""}`,
+      `${tile.name} shuffles back into the Landscape deck.${pick.remaining > 0 ? ` Choose ${pick.remaining} more.` : ""}`,
       pick.remaining > 0 ? [`${pick.remaining} forget(s) left`] : [],
     );
 
@@ -530,7 +540,7 @@ function tileToCard(tile) {
 /**
  * Ainmos Dreamscape Reset. When the Vault and tile deck are both empty, the
  * next round begins with the dream dissolving: every Landscape but The Bed
- * shuffles back into the tile deck, ordinary Dreambeasts on them are Repressed,
+ * shuffles back into the tile deck, ordinary Dreambeasts on them are discarded,
  * Bosses drift back to The Bed, and every Dreamer wakes on The Bed.
  */
 export function resetDreamscape(state) {
@@ -544,10 +554,7 @@ export function resetDreamscape(state) {
   outer.forEach((tile) => {
     tileEncounters(tile).forEach((enc) => {
       if (enc.boss) bosses.push(enc);
-      else {
-        repressCard(state, enc, { tileId: tile.id });
-        repressed += 1;
-      }
+      else repressed += 1;
     });
   });
   state.landscapeTileDeck = shuffle([
@@ -569,7 +576,7 @@ export function resetDreamscape(state) {
   state.dreamscapeResets = (state.dreamscapeResets || 0) + 1;
   logMoment(
     state,
-    `The Dreamscape dissolves and re-forms. Every Dreamer wakes on The Bed.${repressed ? ` ${repressed} Dreambeast${repressed === 1 ? " sinks" : "s sink"} into the Subconscious.` : ""}${bosses.length ? " The Boss drifts back to The Bed." : ""}`,
+    `The Dreamscape dissolves and re-forms. Every Dreamer wakes on The Bed.${repressed ? ` ${repressed} Dreambeast${repressed === 1 ? " is" : "s are"} discarded.` : ""}${bosses.length ? " The Boss drifts back to The Bed." : ""}`,
   );
   return true;
 }
@@ -813,7 +820,7 @@ export function forgetNamedLandscapes(state, ids, { preserveBeasts = false } = {
     if (!tile && isUnplacedLandscape(state, id)) {
       const card = setAsideUnplacedLandscape(state, id);
       if (card) {
-        addLog(state, `${card.name} sinks out of the Dreamscape Vault. It is Forgotten.`);
+        addLog(state, `${card.name} is Forgotten: it shuffles back into the Landscape deck.`);
         forgotten.push(card);
       }
       return;

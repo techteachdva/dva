@@ -162,7 +162,7 @@ export function renderCycleScreen(state, handlers = {}) {
           <h4 class="lf-item-name">${esc(boss?.name || "A Dreambeast")}</h4>
           <p class="lf-item-kind">Power ${esc(entry?.stack ? entry.stack.join(", then ") : (entry?.power ?? boss?.mini?.power ?? 12))} · ${esc(SUIT_NAME[boss?.suit] || "")}</p>
           <p class="lf-item-text">${entry ? `<strong>${esc(entry.twist)}.</strong> ${esc(entry.twistText)} ` : ""}Lands on a ${esc(SUIT_NAME[boss?.suit] || "")} Landscape, chases you each Explore, and bleeds 1 Psyche every dusk it stands.</p>
-          <p class="cy-reward">Beat it: an Object and a free Insight, or Psyche</p>
+          <p class="cy-reward">Beat it: a Power Token or a random Object</p>
         </article>
         <article class="lf-item cy-item cy-arch">
           <div class="cy-art cy-art-back" aria-hidden="true"><span>★</span></div>

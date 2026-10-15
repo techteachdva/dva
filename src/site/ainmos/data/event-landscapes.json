@@ -23,7 +23,7 @@
       "black-void",
       "insanity"
     ],
-    "effectTop": "Flip Leviathan. Instead, Forget 4 Landscapes. Return 4 cards."
+    "effectTop": "Flip Leviathan. Instead, Forget 4 Landscapes. Return 4 Psyche."
   },
   "just-a-dream": {
     "landscapes": [
@@ -462,7 +462,7 @@
       "house",
       "endless-hallway"
     ],
-    "effectTop": "Return 2 Dreambeasts from Accept Pile and Spawn on adjacent Landscapes. If can't, Discard 4 Psyche."
+    "effectTop": "Return 2 Psyche from Accept Pile and Spawn on adjacent Landscapes. If can't, Discard 4 Psyche."
   },
   "hidden-in-the-walls": {
     "landscapes": [
@@ -543,7 +543,7 @@
     "landscapes": [
       "lava"
     ],
-    "effectTop": "Return 2 Repressed Encounters. Return +2 Cards."
+    "effectTop": "Return 2 Psyche Encounters. Return +2 Cards."
   },
   "a-sacrifice": {
     "landscapes": [
@@ -664,7 +664,7 @@
       "awards",
       "the-party"
     ],
-    "effectTop": "Return 2 Dreambeasts from Accept Pile. Spawn 1 Dreambeast on any Affected Landscape."
+    "effectTop": "Return 2 Psyche from Accept Pile. Spawn 1 Dreambeast on any Affected Landscape."
   },
   "silver": {
     "landscapes": [

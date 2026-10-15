@@ -63,7 +63,7 @@ export function outerLandscapeStats(state) {
   return { awake, total: outer.length };
 }
 
-/** Shrink a Bright count when most of the map is still Wasteland. A full map pays the printed amount. */
+/** Shrink a Bright count when most of the named Landscapes are not placed yet. A full map pays the printed amount. */
 /** 41.0: Bright pays what it prints. The awake-map shrink is gone. */
 export function scaleEventCount(base, _state) {
   return Number(base) || 0;
@@ -91,13 +91,13 @@ export function eventGateSentence(state, event) {
   }
   if (!open.length) {
     const waste = closed.length === 1
-      ? `${closed[0]} is still a Wasteland`
-      : `${formatNameList(closed)} are still Wasteland`;
+      ? `${closed[0]} is not placed yet`
+      : `${formatNameList(closed)} are not placed yet`;
     const which = closed.length === 1 ? "it" : "one of them";
     return `Bright is greyed out because ${waste}. Reveal ${which} to open Bright.`;
   }
   const openVerb = open.length === 1 ? "is" : "are";
-  const closedVerb = closed.length === 1 ? "is still a Wasteland" : "are still Wasteland";
+  const closedVerb = closed.length === 1 ? "is not placed yet" : "are not placed yet";
   return `Bright is open because ${formatNameList(open)} ${openVerb} revealed. ${formatNameList(closed)} ${closedVerb}.`;
 }
 

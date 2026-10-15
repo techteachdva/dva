@@ -59,7 +59,7 @@ export function getLandscapePickNarration(state) {
   if (pick.mode === "reveal") {
     return {
       title: "Choose Landscapes to Reveal",
-      detail: `Click ${pick.remaining} hex tile(s) on the map showing the Wasteland back. Each click flips a tile to its active Landscape face.`,
+      detail: `Click ${pick.remaining} hex tile(s) on the map that are face-down. Each click flips a tile to its active Landscape face.`,
       consequences: pick.remaining > 0
         ? [`${pick.remaining} reveal(s) remaining`]
         : [],
@@ -68,7 +68,7 @@ export function getLandscapePickNarration(state) {
   if (pick.mode === "forget") {
     return {
       title: "Choose Landscapes to Forget",
-      detail: `Click ${pick.remaining} revealed Landscape tile(s) on the map. Each becomes a Wasteland (face-down). Dreamers on forgotten tiles discard 1 Psyche to the Subconscious.`,
+      detail: `Click ${pick.remaining} revealed Landscape tile(s) on the map. Each shuffles back into the Landscape deck. Anyone standing there dies and wakes on The Bed.`,
       consequences: pick.remaining > 0
         ? [`${pick.remaining} forget(s) remaining`]
         : [],
@@ -100,8 +100,8 @@ export function getNarratorView(state) {
     const rem = state.pendingReturn.remaining - state.pendingReturn.picked.length;
     return {
       title: "Return from Subconscious",
-      detail: `Choose ${rem} card(s) from The Subconscious to Return to their discard piles.`,
-      consequences: ["Returned cards re-enter play through future draws."],
+      detail: `Choose ${rem} Psyche from the Subconscious to Return.`,
+      consequences: ["Returned Psyche shuffles back into play through future draws."],
     };
   }
 

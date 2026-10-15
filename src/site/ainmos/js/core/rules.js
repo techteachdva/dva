@@ -456,13 +456,12 @@ export function selectedHasPaySuit(cards, suit) {
 export function encounterPayHint(encounter, accept = true) {
   const suit = encounterPaySuit(encounter, accept);
   if (!suit) return "";
-  const verb = accept ? "Accept" : "Repress";
   const power = encounterPower(encounter, accept);
-  return `${verb} needs at least 1 ${SUIT_LABELS[suit]} Psyche (1–3 cards; allies extra). Beast Power ${power}, recommended ${power + 2}. You may play less and still roll. Matching ${SUIT_LABELS[suit]} is added to your Power.`;
+  return `Accept needs at least 1 ${SUIT_LABELS[suit]} Psyche (1–3 cards). Beat Power ${power}; aim for ${power + 2} dice. Matching ${SUIT_LABELS[suit]} is added to your Power.`;
 }
 
 /**
- * Dice for one Accept or Repress spread.
+ * Dice for one Accept spread.
  * Pass the Dreamer and cards already chosen. Do not re-read the selected
  * Landscape: spending the Meet action passes the turn and would otherwise
  * score the next Dreamer's empty hand as 1d6.
@@ -625,7 +624,7 @@ export function canTradeBetween(state, landscapeA, landscapeB) {
 /** 41.0 Repress cycle: Lucidity represses Willpower, Willpower represses Elasticity, Elasticity represses Lucidity. */
 export const REPRESS_CYCLE = { willpower: "lucidity", lucidity: "elasticity", elasticity: "willpower" };
 
-/** The suit you pay to Repress a Dreambeast of this suit. */
+/** The suit you pay to Discard a Dreambeast of this suit. */
 export function repressSuitFor(suit) {
   return REPRESS_CYCLE[suit] || null;
 }

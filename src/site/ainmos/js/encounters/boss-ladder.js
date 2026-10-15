@@ -52,7 +52,7 @@ export const BOSS_LADDER = Object.freeze([
     id: "devourer",
     power: 9,
     twist: "Hunger",
-    twistText: "If the Devourer stands at dusk, the table Represses 1 Object in play.",
+    twistText: "If the Devourer stands at dusk, the table Discards 1 Object in play.",
   },
   {
     rung: 4,

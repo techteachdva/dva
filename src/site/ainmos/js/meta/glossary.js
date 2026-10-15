@@ -18,7 +18,7 @@ const TERMS = [
   {
     term: "Dusk",
     group: "round",
-    text: "The end of each round. Each Dreambeast still on the board Represses 1 Psyche from the Waking Mind. Some Bosses act at dusk too: the Baku eats a Dream, the Devourer eats an Object, Leviathan Forgets a Landscape. The −1 badge on a beast and the Mind counter's forecast show what dusk will take.",
+    text: "The end of each round. Each Dreambeast still on the board Represses 1 Psyche from the Waking Mind into the Subconscious. Some Bosses act at dusk too: the Baku eats a Dream, the Devourer makes the table Discard an Object, Leviathan Forgets a Landscape. The −1 badge on a beast and the Mind counter's forecast show what dusk will take.",
   },
   {
     term: "Memory Landscape",
@@ -29,7 +29,7 @@ const TERMS = [
     term: "Remember",
     group: "cards",
     aka: "remember n",
-    text: "Remember N: discard up to N Psyche from your hand, then Return that many cards plus 1 from the Subconscious. Discard none and you still Return 1. Every Psyche you Return is +1 Waking Mind. Memory Landscapes Remember 2. Remember Objects, fixed Brights, and the Innocent and Fool all Remember.",
+    text: "Remember N: discard up to N Psyche from your hand, then Return that many Psyche plus 1 from the Subconscious, your choice. Discard none and you still Return 1. Every Psyche you Return is +1 Waking Mind. Memory Landscapes Remember 2. Remember Objects and the Innocent Remember too.",
   },
   {
     term: "Waking Mind",
@@ -41,7 +41,7 @@ const TERMS = [
     term: "Accept",
     group: "meet",
     aka: "befriend, free insight",
-    text: "One way to win a fight. Play at least one card of the Dreambeast's own suit. Win (ties go to you) and the beast leaves the map, its Accept effect resolves, you draw an Object of its suit, and a free Insight waits for you at the next Lost & Found. Rerolling the shop keeps it free.",
+    text: "The only way to beat a Dreambeast. Play a spread with at least one card of its suit and beat its Power (ties go to you). The beast leaves the board and you take your reward: a Power Token or a random Object.",
   },
   {
     term: "Acquire",
@@ -64,7 +64,7 @@ const TERMS = [
     term: "Ally",
     group: "cards",
     aka: "befriended dreambeast",
-    text: "Ainmos has no allies. Accepting a Dreambeast earns a free Insight at the next Lost & Found instead.",
+    text: "Ainmos has no allies. A beaten Dreambeast leaves the board; you take a Power Token or a random Object.",
   },
   {
     term: "Archetype",
@@ -93,7 +93,7 @@ const TERMS = [
     term: "Boss",
     group: "meet",
     aka: "cerberus double leviathan",
-    text: "Each Cycle's Dreambeast: the Winged Turtle first, climbing to Leviathan. It lands on a Landscape of its suit (The Bed if none), chases you each Explore, bends one rule while it stands, and Represses 1 Psyche every dusk. Beating it is optional but stops the bleeding: Accept for an Object and a free Insight, or Repress for Psyche.",
+    text: "Each Cycle's Dreambeast: the Winged Turtle first, climbing to Leviathan. It lands on a Landscape of its suit (The Bed if none), chases you each Explore, bends one rule while it stands, and Represses 1 Psyche from the Waking Mind every dusk. Beating it is optional but stops the bleeding: Accept it for a Power Token or a random Object.",
   },
   {
     term: "Bright",
@@ -109,12 +109,12 @@ const TERMS = [
   {
     term: "Cerberus",
     group: "meet",
-    text: "A boss. Power 11, spawned on The Bed. On Accept, Repress the top 3 cards of the Psyche Deck. The Magician's quest is to defeat Cerberus and sacrifice one Object.",
+    text: "A Boss. Power 11. While it stands, no one enters or leaves The Bed. Accept it for a Power Token or a random Object.",
   },
   {
     term: "Creator",
     group: "people",
-    text: "A Lucidity Archetype. It appears on Day in the Life or Inner Sanctum, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Return 1 Dreambeast from the Subconscious onto any placed Landscape.",
+    text: "A Lucidity Archetype. It appears on Day in the Life or Inner Sanctum, and its Events come from those two Landscapes. Once Acquired, its power is yours (1 Power Token, any phase): Return 2 Psyche of your choice from the Subconscious.",
   },
   {
     term: "Daydream",
@@ -126,7 +126,7 @@ const TERMS = [
     term: "Death",
     group: "win",
     aka: "respawn",
-    text: "If you start a Dream with no Psyche, or the Dream takes your last Psyche, or you must pay a Psyche cost with none left, you die. The Death Clock ticks. Your Objects are discarded, your Power Tokens return to the pool, and you wake on The Bed with 5 fresh Psyche. The sixth death ends the run.",
+    text: "If you start a Dream with no Psyche, the Dream takes your last Psyche, you must pay a Psyche cost with none left, or a Landscape you stand on is Forgotten, you die. The Death Clock ticks. Your Objects are discarded, your Power Tokens are lost, and you wake on The Bed with 5 fresh Psyche. The sixth death ends the run.",
   },
   {
     term: "Death Clock",
@@ -147,12 +147,12 @@ const TERMS = [
   {
     term: "Discard",
     group: "cards",
-    text: "Put a card into its discard pile. Discarded Psyche can be drawn again when the deck is reshuffled, or drawn directly by some powers. This is not Repress. Repressed cards go to the Subconscious instead.",
+    text: "Put a card into its discard pile. Discarded Psyche can be drawn again when the deck is reshuffled. Objects that are lost, spent, or completed are always Discarded, never Repressed. Only Psyche is Repressed.",
   },
   {
     term: "Double",
     group: "meet",
-    text: "A boss. Power 11, spawned on The Bed. On Accept, Forget Day in the Life and Scary Classroom. The Sage's quest is to defeat Double and sacrifice one Object.",
+    text: "A Boss. Power 11. It gains Power equal to the fighter's matching stat. Accept it for a Power Token or a random Object.",
   },
   {
     term: "Draw Dream",
@@ -162,7 +162,7 @@ const TERMS = [
   {
     term: "Dream",
     group: "cards",
-    text: "One card from the Dream Deck, drawn at the start of each round. A Dream is a condition you survive: it Represses, Forgets, or spawns, and there is no way around it. Dream 2 of each Cycle also brings that Cycle's Mini-Boss to The Bed.",
+    text: "One card from the Dream Deck, drawn at the start of each round. A Dream is a condition you survive: it Represses Psyche, makes you Discard Objects, Forgets Landscapes, or spawns Dreambeasts, and there is no way around it. Dream 2 of each Cycle brings that Cycle's Dreambeast.",
   },
   {
     term: "Dream Deck",
@@ -234,13 +234,13 @@ const TERMS = [
     term: "Dreamscape Reset",
     group: "places",
     aka: "reset vault empty",
-    text: "When the Dreamscape Vault and the tile deck are both empty, the next round begins with only The Bed. Every Landscape shuffles back into the tile deck, Dreambeasts on them are Repressed, Bosses drift to The Bed, and every Dreamer wakes on The Bed.",
+    text: "When the Dreamscape Vault and the Landscape deck are both empty, the next round begins with only The Bed. Every Landscape shuffles back into the Landscape deck, Dreambeasts on them are discarded, Bosses drift to The Bed, and every Dreamer wakes on The Bed.",
   },
   {
     term: "Dreambeast",
     group: "meet",
     aka: "encounter beast",
-    text: "A creature on a Landscape. It has one Power, a suit, and a Fantasy or Nightmare kind. Dreambeasts arrive on the Dream Deck timer (Mini-Bosses, Bosses, and a few Dreams) or when you Return one onto a Landscape. At the start of each Explore every beast chases you one hex. During Meet, fight the one on your hex. A beast left standing at dusk Represses 1 Psyche from the Waking Mind. It stays until you beat it.",
+    text: "A creature on a Landscape. It has one Power, a suit, and a Fantasy or Nightmare kind. Dreambeasts arrive on the Dream Deck timer (each Cycle's Dreambeast, and a few Dreams). At the start of each Explore every beast chases you one hex. During Meet, Accept the one on your hex by beating its Power, then take a Power Token or a random Object. A beast left standing at dusk Represses 1 Psyche from the Waking Mind. It stays until you beat it.",
   },
   {
     term: "Dreamer",
@@ -250,7 +250,7 @@ const TERMS = [
   {
     term: "Dreamscape",
     group: "map",
-    text: "The whole hex map: The Bed plus 24 Landscapes. Forgotten hexes show as Wasteland until you Reveal them.",
+    text: "The whole hex map: The Bed plus the Landscapes you have placed from the Vault. A Forgotten Landscape leaves the map and shuffles back into the Landscape deck; its hex is open again.",
   },
   {
     term: "Elasticity",
@@ -261,7 +261,7 @@ const TERMS = [
   {
     term: "Encounter",
     group: "meet",
-    text: "A Dreambeast sitting on a Landscape, waiting to be Accepted or Repressed. Only the Dreamer on that hex can fight it.",
+    text: "A Dreambeast sitting on a Landscape, waiting to be Accepted. Only the Dreamer on that hex can fight it.",
   },
   {
     term: "Event",
@@ -272,7 +272,7 @@ const TERMS = [
     term: "Explore",
     group: "round",
     aka: "explore phase",
-    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First every Dreambeast chases you one Landscape, and every Archetype slips one Landscape away. Then spend 1 Elasticity, or 1 Power Token (1 plus your Elasticity), for that many steps. Stepping onto Wasteland discards 1 Psyche. Unused steps bank Glimmer.",
+    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First every Dreambeast chases you one Landscape, and every Archetype slips one Landscape away. Then spend 1 Elasticity, or 1 Power Token (1 plus your Elasticity), for that many steps. Unused steps bank Glimmer.",
   },
   {
     term: "Explorer",
@@ -282,7 +282,7 @@ const TERMS = [
   {
     term: "Fail",
     group: "meet",
-    text: "The punishment printed on a Dreambeast for a lost fight. It runs when you lose Accept or Repress against a beast you just drew from the Mindstream. A beast that was only spawned onto the map does not Fail when you lose; the cards you played are still spent, and the beast stays.",
+    text: "Ainmos has no Fail effects. Lose a fight and the cards you played are spent; the Dreambeast stays.",
   },
   {
     term: "Fantasy",
@@ -299,7 +299,7 @@ const TERMS = [
     term: "Forget",
     group: "map",
     aka: "forgotten wasteland",
-    text: "Turn a Landscape into Wasteland. Encounters there are Repressed. Each Dreamer standing there Represses 1 Psyche. The Bed cannot be Forgotten. You can Reveal a Wasteland again later. Forgetting a Landscape still in the Vault sets it aside until the Dreamscape Reset.",
+    text: "A Forgotten Landscape leaves the Dreamscape and shuffles back into the Landscape deck, to be found again in the Vault. Its hex is open again. A Dreamer standing there dies and wakes on The Bed, a Dreambeast there is discarded, and an Archetype there retreats to The Bed. The Bed cannot be Forgotten. Forgetting a Landscape still in the Vault shuffles it back into the deck.",
   },
   {
     term: "Give Turn",
@@ -343,18 +343,18 @@ const TERMS = [
   {
     term: "Instant",
     group: "cards",
-    text: "An Object you play from the Objects row, then Repress. It does not spend a Meet action. If it has nothing to act on yet (Knife with no beast on your Landscape, say), it stays in your hand and tells you why. Must-play Objects resolve the moment they are drawn.",
+    text: "An Object you play from the Objects row, then Discard. It does not spend a Meet action. If it has nothing to act on yet (Knife with no beast on your Landscape, say), it stays in your hand and tells you why. Must-play Objects resolve the moment they are drawn.",
   },
   {
     term: "Landscape",
     group: "map",
     aka: "hex tile",
-    text: "One hex on the Dreamscape. It has a suit. During Meet you may Draw its Mindstream as often as you have actions, and use its one unique action once for the whole table this Meet. Quests can still name a Landscape after it has been Forgotten.",
+    text: "One hex on the Dreamscape. It has a suit and one action, which the table may use once each Meet for 1 Meet action. Quests can still name a Landscape after it has been Forgotten.",
   },
   {
     term: "Leviathan",
     group: "meet",
-    text: "A boss. Power 11, spawned on The Bed. Accept earns a free Insight. Repress sends it to the Subconscious, and it stays there. The Warrior's quest is to defeat Leviathan and sacrifice one Object.",
+    text: "The last Boss. Power 12. Each dusk it stands, the edge Landscape farthest from The Bed is Forgotten. Accept it for a Power Token or a random Object.",
   },
   {
     term: "Lover",
@@ -387,7 +387,7 @@ const TERMS = [
     term: "Must-play",
     group: "cards",
     aka: "the nothing all seeing eye",
-    text: "An Instant Object that resolves as soon as it is drawn, then is Repressed. The Nothing makes someone lose 1 Power Token, or the table Represses Dreamers + 6 from the top of the Psyche Deck.",
+    text: "An Instant Object that resolves as soon as it is drawn, then is Discarded.",
   },
   {
     term: "Nap",
@@ -407,13 +407,13 @@ const TERMS = [
   {
     term: "Object",
     group: "cards",
-    text: "A card from one of three Object decks, one per suit. You get one by Accepting a Dreambeast, by a Mindstream or Dream that says so, or from the Object discard. Instant: play it, then Repress it. Must-play: it resolves when drawn. Persistent: it stays in play, and turning it on costs 1 Meet action. Jewelry and sticks in play add +1 Power in a fight. A body Object doubles the highest Psyche in the spread.",
+    text: "A card from one of three Object decks, one per suit. You get one from the Lost & Found, by beating a Dreambeast (if you choose an Object over a Power Token), or when a Dream or Archetype says so. Instant: play it, then Discard it. Must-play: it resolves when drawn. Persistent: it stays in play, and turning it on costs 1 Meet action. Lost Objects are Discarded, never Repressed.",
   },
   {
     term: "Object set",
     group: "cards",
     aka: "sticks jewelry chess elements body",
-    text: "Four families: Body (5 pieces), Elements (4), Jewelry (3), and Sticks (3). Each piece shows how much of its set you hold. The moment the last piece arrives, even straight from the Lost & Found, you Acquire an Archetype of your choice from the deck and the set is Repressed. The One counts as any 1 piece.",
+    text: "Four families: Body (5 pieces), Elements (4), Jewelry (3), and Sticks (3). Each piece shows how much of its set you hold. The moment the last piece arrives, even straight from the Lost & Found, you Acquire an Archetype of your choice from the deck and the set is Discarded. The One counts as any 1 piece.",
   },
   {
     term: "Orphan",
@@ -445,7 +445,7 @@ const TERMS = [
   {
     term: "Power Token",
     group: "cards",
-    text: "A token, not a Psyche card. You start with 2; each Archetype you Acquire pays 2 more, and Suburbia, Awards, and Inner Sanctum each grant 1. Spend one to open a phase as 1 plus your stat, to add 1 die to a fight (up to 3), to use an Archetype's power or your Dreamer's power, or to look again in the Lost & Found.",
+    text: "A token, not a card. You hold up to 6. You start with 2, beating a Dreambeast lets you take 1 (or a random Object instead), and each Archetype you Acquire pays 2. There is no other way to gain one. Spend one to open a phase as 1 plus your stat, to add 1 die to a fight (up to 3), to use an Archetype's power or your Dreamer's power, or to look again in the Lost & Found.",
   },
   {
     term: "Psyche",
@@ -456,7 +456,7 @@ const TERMS = [
   {
     term: "Psyche Deck",
     group: "cards",
-    text: "The draw pile for Psyche. With its discard, it is the Waking Mind. When the deck is empty, shuffle the discard. If the deck and the discard are both empty, the table loses. At dusk, each Dreambeast still on the board Represses 1 card from the top of this deck.",
+    text: "The draw pile for Psyche: 78 cards, 12 of which start the night in the Subconscious. With its discard, it is the Waking Mind. When the deck is empty, shuffle the discard. If the deck and the discard are both empty, the table loses. At dusk, each Dreambeast still on the board Represses 1 card from the top of this deck.",
   },
   {
     term: "Quest",
@@ -468,7 +468,7 @@ const TERMS = [
     term: "Repress",
     group: "cards",
     aka: "banish subconscious",
-    text: "Two uses of one word. As a fight: pay the next suit around the wheel (Lucidity represses Willpower, Willpower represses Elasticity, Elasticity represses Lucidity). Win, and the beast goes to the Subconscious and you draw Psyche equal to half its Power, rounded down. As a cost: a Repressed card leaves play and sits face-up in the Subconscious. It is not in the discard until someone Returns it.",
+    text: "Only Psyche is ever Repressed. A Repressed Psyche leaves play and waits face-up in the Subconscious until it is Returned. Dreams and Dreambeasts Repress Psyche from your hand or from the top of the Waking Mind; that is how the night wears you down.",
   },
   {
     term: "Rested",
@@ -479,7 +479,7 @@ const TERMS = [
   {
     term: "Return",
     group: "cards",
-    text: "Move a card from the Subconscious back into play. A Returned Psyche goes to the discard and is +1 Waking Mind. A Returned Dreambeast comes back onto the Dreamscape, on any placed Landscape you choose: put it on the quest Landscape that needs it, or next to you to fight. Most Returns happen through Remember.",
+    text: "Move Psyche from the Subconscious back into play. You always choose which Psyche. A Returned Psyche goes to the Psyche discard and is +1 Waking Mind. Most Returns come through Remember, Landscapes, Bright Events, and Acquiring Archetypes.",
   },
   {
     term: "Reveal",
@@ -506,12 +506,12 @@ const TERMS = [
   {
     term: "Spread",
     group: "meet",
-    text: "The Psyche you commit to a dice battle before you roll. Play 1 to 3 Psyche. At least one must match the suit that Accept or Repress is asking for. Wild counts. Allies may be added on top and do not count toward the 3.",
+    text: "The Psyche you commit to a dice battle before you roll. Play 1 to 3 Psyche. At least one must match the suit the fight asks for. Wild counts.",
   },
   {
     term: "Subconscious",
     group: "cards",
-    text: "The face-up piles of Repressed cards: Psyche, Dreambeasts, Mindstream by suit, and Objects. Return sends them to their discards. Remember is how the table wins them back.",
+    text: "Where Repressed Psyche waits, face-up. It holds Psyche and nothing else. The night begins with 12 random Psyche already there. Return brings Psyche back, your choice; Remember is how the table wins it back.",
   },
   {
     term: "Trade",
@@ -532,7 +532,7 @@ const TERMS = [
   {
     term: "Wasteland",
     group: "map",
-    text: "A Forgotten Landscape. It is face-down. Reveal flips it back. Stepping onto it during Explore discards 1 Psyche. Ending Meet while standing on one Represses 1 Psyche from your hand. The Bed is never Wasteland.",
+    text: "Ainmos has no Wasteland. A Forgotten Landscape leaves the map and shuffles back into the Landscape deck instead.",
   },
   {
     term: "Weaver",
@@ -560,122 +560,122 @@ const TERMS = [
   {
     term: "Awards",
     group: "places",
-    text: "A Lucidity Landscape. Once this Meet, the table may take 1 Power Token.",
+    text: "A Lucidity Landscape. Its action, once each Meet for the table (Return 2 Psyche): Return 2 Psyche of your choice from the Subconscious.",
   },
   {
     term: "Black Void",
     group: "places",
-    text: "A Lucidity Landscape. Once this Meet, swap Psyche between two Dreamers.",
+    text: "A Lucidity Landscape. Its action, once each Meet for the table (Remember 2): Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
   },
   {
     term: "Candy Mountain",
     group: "places",
-    text: "An Elasticity Landscape. Once this Meet, draw Psyche equal to your Elasticity.",
+    text: "A Elasticity Landscape. Its action, once each Meet for the table (Move 1 Dreamer): Move 1 Dreamer 2 Landscapes in any direction.",
   },
   {
     term: "City",
     group: "places",
-    text: "A Willpower Landscape, home of the Warrior. Call an Archetype: the nearest one steps 2 Landscapes toward you.",
+    text: "A Willpower Landscape. Its action, once each Meet for the table (Call an Archetype): The nearest Archetype steps 2 Landscapes toward you.",
   },
   {
     term: "Day in the Life",
     group: "places",
-    text: "A Lucidity Landscape. Once this Meet, resolve the last discarded Dream again.",
+    text: "A Lucidity Landscape. Its action, once each Meet for the table (Remember 2): Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
   },
   {
     term: "Desert",
     group: "places",
-    text: "A Lucidity Landscape, home of the Magician. Gather Glimmer: bank 2 Glimmer for the next Lost & Found.",
+    text: "A Lucidity Landscape. Its action, once each Meet for the table (Gather Glimmer): Bank 2 Glimmer for the next Lost & Found.",
   },
   {
     term: "Endless Hallway",
     group: "places",
-    text: "An Elasticity Landscape. Once this Meet, move 1 Dreamer 1 hex.",
+    text: "A Elasticity Landscape. Its action, once each Meet for the table (Move 2 Dreamers): Move 2 Dreamers 1 Landscape in any direction.",
   },
   {
     term: "Endless Ocean",
     group: "places",
-    text: "An Elasticity Landscape. Once this Meet, draw 2 cards from any deck, keep 1, and discard the other.",
+    text: "A Elasticity Landscape. Its action, once each Meet for the table (Move 1 Dreamer): Move 1 Dreamer 2 Landscapes in any direction.",
   },
   {
     term: "Field of Broken Glass",
     group: "places",
-    text: "A Lucidity Landscape. Once this Meet, swap the positions of 2 Landscapes.",
+    text: "A Lucidity Landscape. Its action, once each Meet for the table (Swap Landscapes): Swap the positions of 2 Landscapes on the Dreamscape.",
   },
   {
     term: "Forest",
     group: "places",
-    text: "An Elasticity Landscape, home of the Magician. Call an Archetype: the nearest one steps 2 Landscapes toward you.",
+    text: "A Elasticity Landscape. Its action, once each Meet for the table (Call an Archetype): The nearest Archetype steps 2 Landscapes toward you.",
   },
   {
     term: "House",
     group: "places",
-    text: "A Willpower Landscape. Once this Meet, Return 2 cards from the Subconscious.",
+    text: "A Willpower Landscape. Its action, once each Meet for the table (Cycle Psyche): Discard a Psyche card, then draw Psyche equal to its value.",
   },
   {
     term: "Inner Sanctum",
     group: "places",
-    text: "A Willpower Landscape. Once this Meet, Return 1 Event from the Subconscious.",
+    text: "A Willpower Landscape. Its action, once each Meet for the table (Return 2 Psyche): Return 2 Psyche of your choice from the Subconscious.",
   },
   {
     term: "Insanity",
     group: "places",
-    text: "A Willpower Landscape. Once this Meet, Return 1 card from the Subconscious.",
+    text: "A Willpower Landscape. Its action, once each Meet for the table (Cycle Psyche): Discard a Psyche card, then draw Psyche equal to its value.",
   },
   {
     term: "Lava",
     group: "places",
-    text: "A Willpower Landscape. Once this Meet, move up to 2 Dreambeasts 1 Landscape each: lure a Boss in, or push a beast away.",
+    text: "A Willpower Landscape. Its action, once each Meet for the table (Move 2 Dreambeasts): Move 2 Dreambeasts 1 Landscape in any direction.",
   },
   {
     term: "Road",
     group: "places",
-    text: "An Elasticity Landscape. Once this Meet, move 2 Dreamers 1 hex each.",
+    text: "A Elasticity Landscape. Its action, once each Meet for the table (Move 2 Dreamers): Move 2 Dreamers 1 Landscape in any direction.",
   },
   {
     term: "Scary Classroom",
     group: "places",
-    text: "A Lucidity Landscape, home of the Warrior. Gather Glimmer: bank 2 Glimmer for the next Lost & Found.",
+    text: "A Lucidity Landscape. Its action, once each Meet for the table (Gather Glimmer): Bank 2 Glimmer for the next Lost & Found.",
   },
   {
     term: "Sea of Teeth",
     group: "places",
-    text: "A Willpower Landscape. Once this Meet, swap 2 Dreambeasts between Landscapes.",
+    text: "A Willpower Landscape. Its action, once each Meet for the table (Move 2 Dreambeasts): Move 2 Dreambeasts 1 Landscape in any direction.",
   },
   {
     term: "Silver Mist",
     group: "places",
-    text: "A Lucidity Landscape. Once this Meet, Return 1 Object from the Subconscious.",
+    text: "A Lucidity Landscape. Its action, once each Meet for the table (Remember 2): Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
   },
   {
     term: "Sky",
     group: "places",
-    text: "A Lucidity Landscape, home of the Sage. Call an Archetype: the nearest one steps 2 Landscapes toward you.",
+    text: "A Lucidity Landscape. Its action, once each Meet for the table (Call an Archetype): The nearest Archetype steps 2 Landscapes toward you.",
   },
   {
     term: "Suburbia",
     group: "places",
-    text: "A Willpower Landscape. Once this Meet, look at the top 3 cards of any deck.",
+    text: "A Willpower Landscape. Its action, once each Meet for the table (Return 2 Psyche): Return 2 Psyche of your choice from the Subconscious.",
   },
   {
     term: "The Attic",
     group: "places",
-    text: "A Lucidity Landscape, home of the Innocent. Gather Glimmer: bank 2 Glimmer for the next Lost & Found.",
+    text: "A Lucidity Landscape. Its action, once each Meet for the table (Gather Glimmer): Bank 2 Glimmer for the next Lost & Found.",
   },
   {
     term: "The Basement",
     group: "places",
-    text: "A Willpower Landscape. Once this Meet, move 2 Dreambeasts 1 hex each.",
+    text: "A Willpower Landscape. Its action, once each Meet for the table (Move 2 Dreambeasts): Move 2 Dreambeasts 1 Landscape in any direction.",
   },
   {
     term: "The Party",
     group: "places",
-    text: "An Elasticity Landscape. Once this Meet, swap the Active Archetype with the next one in the deck.",
+    text: "A Elasticity Landscape. Its action, once each Meet for the table (Move 2 Dreamers): Move 2 Dreamers 1 Landscape in any direction.",
   },
   {
     term: "Tranquil Grove",
     group: "places",
-    text: "A Lucidity Landscape. Once this Meet, Return 1 Psyche from the Subconscious.",
+    text: "A Lucidity Landscape. Its action, once each Meet for the table (Remember 2): Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
   },
 ];
 
