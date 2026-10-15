@@ -105,6 +105,7 @@ import { isQuestConditionMet, meetQuestLandscapeIds } from "../dreamers/quests.j
 import {
   getLandscapeActionChoices,
   getUniqueLandscapeActionChoices,
+  landscapeActionUnavailable,
   canDrawMindstreamOnLandscape,
   executeLandscapeActionChoice,
 } from "../board/landscape-actions.js";
@@ -1097,8 +1098,10 @@ export function getPhaseActions(state, handlers) {
         label: choice.label,
         kind: index === 0 ? "landscapeActionA" : "landscapeActionB",
         section: "actions",
-        hint: meetActionHint(state, MEET_ACTIONS.LANDSCAPE, choice.id, choice.description),
-        disabled: !canUseLandscapeAction(state, choice.id),
+        hint: landscapeActionUnavailable(state, meetTile, actorOnLandscape(state, meetTile.id) || activePlayer(state), choice.id)
+          || meetActionHint(state, MEET_ACTIONS.LANDSCAPE, choice.id, choice.description),
+        disabled: !canUseLandscapeAction(state, choice.id)
+          || !!landscapeActionUnavailable(state, meetTile, actorOnLandscape(state, meetTile.id) || activePlayer(state), choice.id),
         onClick: () => handlers.landscapeAction(choice.id),
       });
     });
@@ -1782,8 +1785,8 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
         id: choice.id,
         kind: index === 0 ? "landscapeActionA" : "landscapeActionB",
         label,
-        hint: choice.description,
-        disabled: !canUseLandscapeAction(state, choice.id),
+        hint: landscapeActionUnavailable(state, tile, player, choice.id) || choice.description,
+        disabled: !canUseLandscapeAction(state, choice.id) || !!landscapeActionUnavailable(state, tile, player, choice.id),
         onPick: () => handlers.landscapeAction(choice.id),
       });
     });
@@ -2335,6 +2338,7 @@ export function completeLandscapeAction(state, tile, player, actionId, onResult)
 
   if (result?.refund || (!result?.ok && !result?.pending)) {
     refundMeetAction(state, player, MEET_ACTIONS.LANDSCAPE, actionId);
+    logMoment(state, `${result?.reason || "That action has nothing to do right now."} Your Meet Action is refunded.`);
   }
 
   if (result?.card && onResult) onResult(result.card);

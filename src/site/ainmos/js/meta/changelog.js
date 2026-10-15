@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.24.1";
+export const SOMNIA_VERSION = "0.24.2";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.24.2",
+    title: "Called Home",
+    notes: [
+      "Fixed: Call an Archetype (Sky) did nothing when the Archetype stood around a bend in the Dreamscape. It now walks 2 Landscapes along the real path to you.",
+      "Landscape actions that can't do anything yet are greyed out and say why (no Archetype on the board, no Dreambeast here, an empty Subconscious, and so on).",
+      "If an action does fail, it now tells you why on screen and refunds your Meet Action, instead of failing silently.",
+    ],
+  },
   {
     version: "0.24.1",
     title: "Archetypes Wait",

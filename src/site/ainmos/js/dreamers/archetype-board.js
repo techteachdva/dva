@@ -205,17 +205,33 @@ export function stepArchetypesAway(state) {
   return moved;
 }
 
-/** Move an Archetype one hex toward a Dreamer's Landscape (a lure). */
+/** The next Landscape on the shortest walk from one placed tile to another, or null. */
+export function nextStepToward(state, fromId, toId) {
+  if (fromId === toId) return null;
+  const walkable = (t) => placedLandscape(t) || t?.center || t?.id === "bed";
+  const prev = new Map([[toId, null]]);
+  const queue = [toId];
+  while (queue.length) {
+    const id = queue.shift();
+    if (id === fromId) break;
+    adjacentTiles(state, id).forEach((n) => {
+      if (!walkable(n) || prev.has(n.id)) return;
+      prev.set(n.id, id);
+      queue.push(n.id);
+    });
+  }
+  if (!prev.has(fromId)) return null;
+  return landscapeById(state, prev.get(fromId));
+}
+
+/** Move an Archetype one Landscape along the walk toward a Dreamer (a lure). */
 export function lureArchetype(state, archId, towardTileId) {
   const found = findBoardArchetype(state, archId);
   const target = landscapeById(state, towardTileId);
   if (!found || !target) return false;
   const { tile, arch } = found;
   if (tile.id === target.id) return false;
-  const dest = adjacentTiles(state, tile.id)
-    .filter(placedLandscape)
-    .filter((next) => hexDistance(next, target) < hexDistance(tile, target))
-    .sort((a, b) => hexDistance(a, target) - hexDistance(b, target))[0];
+  const dest = nextStepToward(state, tile.id, target.id);
   if (!dest) return false;
   tile.finalArchetypes = (tile.finalArchetypes || []).filter((a) => a !== arch);
   syncTileArchetype(tile);

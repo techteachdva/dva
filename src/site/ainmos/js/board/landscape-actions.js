@@ -52,7 +52,7 @@ import { offerEffectChoice, registerEffectResolver } from "../effects/effect-cho
 import { beginRemember } from "../effects/remember.js";
 import { recordCancellableMove } from "../dreamers/dreamer-powers.js";
 import { discardDreamCard, isBossDreamCard, spawnBossEncounterOnBed } from "../cards/dream-deck.js";
-import { boardArchetypes, lureArchetype } from "../dreamers/archetype-board.js";
+import { boardArchetypes, lureArchetype, nextStepToward } from "../dreamers/archetype-board.js";
 import { bankGlimmer } from "../shop/lost-found.js";
 
 /**
@@ -859,6 +859,53 @@ export function getUniqueLandscapeActionChoices(tile) {
     });
 }
 
+/**
+ * Why this Landscape action can do nothing right now, or "" when it can.
+ * The ring greys the button out and shows this as its hint.
+ */
+export function landscapeActionUnavailable(state, tile, player, actionId) {
+  if (!tile || !player) return "";
+  const here = landscapeById(state, player.landscapeId) || tile;
+  const beasts = allEncountersOnBoard(state);
+  const handSize = (player.hand || []).length;
+  switch (actionId) {
+    case CALL_DREAMBEAST:
+      return encounterOnLandscape(state, tile.id) ? `A Dreambeast already stands on ${tile.name}.` : "";
+    case "lure-archetype": {
+      const all = boardArchetypes(state);
+      if (!all.length) return "No Archetype stands on the Dreamscape yet. Dream 3 of each Cycle calls one.";
+      return all.some(({ tile: at }) => at.id !== here.id) ? "" : "The Archetype already stands with you.";
+    }
+    case "ride-tide":
+      return boardArchetypes(state).length ? "" : "No Archetype stands on the Dreamscape yet.";
+    case "scorch":
+      return encounterOnLandscape(state, here.id) ? "" : "No Dreambeast stands on your Landscape.";
+    case "lure-beast":
+      return beasts.some(({ tile: at }) => at.id !== here.id) ? "" : "No other Dreambeast stands on the Dreamscape.";
+    case "frenzy":
+    case "move-2-dreambeasts-1":
+      return beasts.length ? "" : "No Dreambeast stands on the Dreamscape.";
+    case "sanctum":
+    case "return-2":
+    case "rest":
+      return returnableCards(state).length ? "" : "No Psyche waits in the Subconscious.";
+    case "pawn-shop":
+      return [...(player.objects || []), ...(player.persistent || [])].length ? "" : "You have no Object to pawn.";
+    case "study":
+      return handSize >= 3 ? "" : "Study costs 3 Psyche from your hand.";
+    case "madness":
+    case "sink-surface":
+    case "cycle-psyche":
+      return handSize ? "" : "Your hand is empty.";
+    case "mirage":
+      return revealCapacity(state) ? "" : "There is nothing left to place.";
+    case "endless-doors":
+      return state.board.some((t) => t.revealed && t.suit === "elasticity" && t.id !== player.landscapeId) ? "" : "No other Elasticity Landscape is placed.";
+    default:
+      return "";
+  }
+}
+
 /** Ainmos: Landscapes no longer draw Mindstream. Events open Archetype Meets instead. */
 export function canDrawMindstreamOnLandscape(_tile) {
   return false;
@@ -968,20 +1015,20 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
 
     case "lure-archetype": {
       const here = state.board.find((t) => t.id === player.landscapeId) || tile;
-      const nearest = boardArchetypes(state)
-        .filter(({ tile: at }) => at.id !== here.id)
+      const standing = boardArchetypes(state).filter(({ tile: at }) => at.id !== here.id);
+      if (!standing.length) {
+        return { ok: false, refund: true, reason: boardArchetypes(state).length ? "The Archetype already stands with you." : "No Archetype stands on the Dreamscape yet. Dream 3 of each Cycle calls one." };
+      }
+      const nearest = standing
+        .map((entry) => ({ ...entry, step: nextStepToward(state, entry.tile.id, here.id) }))
+        .filter((entry) => entry.step)
         .sort((x, y) => hexDistance(x.tile, here) - hexDistance(y.tile, here))[0];
-      if (!nearest) {
-        addLog(state, `${landscapeName}: no Archetype stands elsewhere to call.`);
-        return { ok: false, refund: true };
-      }
-      const first = lureArchetype(state, nearest.arch.id, here.id);
-      if (first) lureArchetype(state, nearest.arch.id, here.id);
-      if (!first) {
-        addLog(state, `${landscapeName}: ${nearest.arch.name} has no open path toward you.`);
-        return { ok: false, refund: true };
-      }
-      addLog(state, `${landscapeName}: ${player.name} calls ${nearest.arch.name} closer.`);
+      if (!nearest) return { ok: false, refund: true, reason: "No placed Landscapes connect the Archetype to you." };
+      const from = nearest.tile.name;
+      lureArchetype(state, nearest.arch.id, here.id);
+      lureArchetype(state, nearest.arch.id, here.id);
+      const now = boardArchetypes(state).find(({ arch: a }) => a.id === nearest.arch.id)?.tile;
+      logMoment(state, `${landscapeName}: ${nearest.arch.name} is called from ${from} to ${now?.name || "you"}.`);
       return { ok: true };
     }
 
