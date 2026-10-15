@@ -1411,3 +1411,126 @@ html[data-form="phone"]:root body.ainmos.play-window #hud .hud-cycle { gap: 0.25
 html[data-form="phone"] .hud-cycle .cycle-step,
 html[data-form="phone"] .hud-cycle .cycle-dream-num { display: none; }
 html[data-form="phone"] .hud-cycle .cycle-pip { width: 11px; height: 11px; }
+
+/* ---- Hand bar, 0.14: the hand takes what it needs; Objects get the rest ----------------------
+   No allies in Ainmos, so that box is gone. Objects and Persistent Objects are full-height strips
+   with readable cards, scrolled by swipe, wheel, or the ‹ › buttons in their headers. */
+
+html:root body.ainmos.play-window #screen-game.active .hand-bar.hand-bar {
+  grid-template-columns: clamp(120px, 11vw, 170px) fit-content(46%) minmax(0, 1.6fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "dreamers hand objects persistent"
+    "power    hand objects persistent";
+  column-gap: 0.6rem;
+}
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .allies-section { display: none; }
+
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .objects-hand-section,
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .persistent-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  height: 100%;
+  max-height: 100%;
+  min-width: 0;
+  padding: 0.3rem 0.45rem 0.35rem;
+}
+
+html:root body.ainmos.play-window #screen-game .hand-bar .keep-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  flex: none;
+}
+.keep-scroll-btns { display: inline-flex; gap: 0.3rem; }
+.keep-scroll-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 1px solid rgba(200, 184, 236, 0.35);
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(200, 184, 236, 0.18), rgba(120, 100, 190, 0.1));
+  color: var(--dc-ink);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.keep-scroll-btn:hover:not(:disabled),
+.keep-scroll-btn:focus-visible { border-color: var(--dc-mint); box-shadow: 0 0 12px rgba(182, 230, 214, 0.35); outline: none; }
+.keep-scroll-btn:disabled { opacity: 0.3; cursor: default; }
+.keep-scroll-btn[hidden] { display: none; }
+@media (pointer: coarse) {
+  .keep-scroll-btn { width: 2.3rem; height: 2.3rem; font-size: 1.35rem; }
+}
+
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar .objects-row {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  gap: 0.45rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar .objects-row > .game-card,
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar .objects-row > button {
+  height: 100%;
+  width: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: 5 / 7;
+  scroll-snap-align: start;
+}
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar .objects-row > .game-card .title {
+  font-size: clamp(0.58rem, 0.85vw, 0.74rem);
+  line-height: 1.15;
+  white-space: normal;
+}
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar .objects-row:empty::before,
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar .objects-row.empty {
+  font-family: var(--dc-whisper);
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* Phones: Dreamer, hand, then Objects over Persistent in one column. */
+html[data-form="phone"]:root body.ainmos.play-window #screen-game.active .hand-bar.hand-bar {
+  grid-template-columns: clamp(80px, 12vw, 110px) fit-content(48%) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1.3fr) minmax(0, 1fr);
+  grid-template-areas:
+    "dreamers hand objects"
+    "dreamers hand persistent";
+  column-gap: 0.35rem;
+}
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .objects-hand-section,
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .persistent-section {
+  flex-direction: row;
+  align-items: stretch;
+  padding: 0.15rem 0.25rem;
+}
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar .keep-header {
+  flex-direction: column;
+  justify-content: center;
+  width: 2.2rem;
+}
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar .keep-header h3 { display: none; }
+html[data-form="phone"] .keep-scroll-btns { flex-direction: column; gap: 0.15rem; }
+html[data-form="phone"] .keep-scroll-btn { width: 1.7rem; height: 1.7rem; font-size: 1rem; }
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .objects-hand-section,
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .persistent-section { align-items: stretch; }
+html:root body.ainmos.play-window #screen-game .hand-bar.hand-bar .objects-row { width: 100%; min-width: 0; }
+
+/* The "opener is waiting" dock floats above the hand bar, never over the cards. */
+html:root body.ainmos.play-window .utility-choice-dock {
+  top: auto;
+  bottom: calc(var(--ain-hand-h) + 0.5rem);
+}

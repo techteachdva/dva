@@ -151,6 +151,7 @@ import { renderDreamscapeVault } from "../ui/vault-panel.js";
 import { renderVaultScreen, resumeVaultScreen } from "../ui/vault-screen.js";
 import { renderCycleScreen, cycleScreenWanted } from "../ui/cycle-screen.js";
 import { dieIfHandEmptyAfterDream } from "../core/state.js";
+import { initKeepsakeScrollers, refreshKeepsakeScrollers } from "../ui/keepsake-scroll.js";
 import { createSpectatorBot } from "../dev/bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "../encounters/dreambeasts.js";
 import { requestEndPhase } from "../flow/phase-skip.js";
@@ -443,6 +444,7 @@ async function init() {
   });
   bindFullscreenPrompt();
   bindImageDragGuard();
+  initKeepsakeScrollers();
   bindRestart();
   bindEndLeaderboard();
   bindPowerBonus();
@@ -2890,6 +2892,7 @@ function renderAll() {
   });
   renderPhaseActions(phaseActions, advanceAction, state);
   maybeAutoDrawDream();
+  requestAnimationFrame(refreshKeepsakeScrollers);
 
   renderBoardArea();
   focusRepressOwner();

@@ -43,7 +43,7 @@
     <div id="night-strip" class="night-strip" role="group" aria-label="The night" hidden></div>
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 0.13</span>
+        <span class="version-label">v 0.14</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Ainmos" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -189,14 +189,22 @@
             <div id="hand-allies" class="hand objects-row allies-row" aria-label="Accepted Dreambeast allies"></div>
           </div>
           <div class="hand-section objects-hand-section">
-            <div class="hand-header">
+            <div class="hand-header keep-header">
               <h3>Objects</h3>
+              <span class="keep-scroll-btns" role="group" aria-label="Scroll Objects">
+                <button type="button" class="keep-scroll-btn" data-scroll-target="player-objects" data-scroll-dir="-1" aria-label="Scroll Objects left">‹</button>
+                <button type="button" class="keep-scroll-btn" data-scroll-target="player-objects" data-scroll-dir="1" aria-label="Scroll Objects right">›</button>
+              </span>
             </div>
             <div id="player-objects" class="hand objects-row"></div>
           </div>
           <div class="hand-section persistent-section">
-            <div class="hand-header">
+            <div class="hand-header keep-header">
               <h3>Persistent</h3>
+              <span class="keep-scroll-btns" role="group" aria-label="Scroll Persistent Objects">
+                <button type="button" class="keep-scroll-btn" data-scroll-target="player-persistent" data-scroll-dir="-1" aria-label="Scroll Persistent Objects left">‹</button>
+                <button type="button" class="keep-scroll-btn" data-scroll-target="player-persistent" data-scroll-dir="1" aria-label="Scroll Persistent Objects right">›</button>
+              </span>
             </div>
             <div id="player-persistent" class="hand objects-row"></div>
           </div>

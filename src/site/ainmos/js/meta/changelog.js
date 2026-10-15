@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.13";
+export const SOMNIA_VERSION = "0.14";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.14",
+    title: "Keepsakes",
+    notes: [
+      "The hand takes only the room its cards need. Objects and Persistent Objects get the rest of the bar, as full-size cards you can read at a glance.",
+      "Swipe, scroll the wheel, or tap the big ‹ › buttons to slide through your Objects.",
+      "The Allies box is gone; Ainmos has no allies.",
+    ],
+  },
   {
     version: "0.13",
     title: "Wake Again",
