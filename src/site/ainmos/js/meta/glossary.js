@@ -93,7 +93,7 @@ const TERMS = [
     term: "Boss",
     group: "meet",
     aka: "cerberus double leviathan",
-    text: "Dream 3 of every Cycle, waiting at the end of its ninth phase. A Boss lands on a random placed Landscape, then stalks one hex toward you at the start of each Meet. Each bends one rule while it stands. Defeat it to clear the Cycle and choose a Boon. The final Boss is the top of the night's ladder.",
+    text: "Dream 3 of every Cycle, waiting at the end of its ninth phase. A Boss lands on a random placed Landscape and, like every Dreambeast, chases you one hex at the start of each Explore. Each bends one rule while it stands. Defeat it to clear the Cycle and choose a Boon. The final Boss is the top of the night's ladder.",
   },
   {
     term: "Bright",
@@ -180,7 +180,7 @@ const TERMS = [
     term: "Mini-Boss",
     group: "win",
     aka: "mini boss",
-    text: "An ordinary Dreambeast that guards a Cycle. It rises on The Bed with Dream 2 of the Cycle, face up on the Night Bar from the start. Its Power is two under that Cycle's Boss (2 in the first Cycle). Beat it for +1 Power Token, before it bleeds you at dusk.",
+    text: "An ordinary Dreambeast that guards a Cycle. It rises on The Bed with Dream 2 of the Cycle, face up on the Night Bar from the start. Its Power is two under that Cycle's Boss (3 in the first Cycle). Beat it for +1 Power Token, before it bleeds you at dusk.",
   },
   {
     term: "Long Night",
@@ -228,7 +228,7 @@ const TERMS = [
     term: "Dreambeast",
     group: "meet",
     aka: "encounter beast",
-    text: "A creature on a Landscape. It has one Power, a suit, and a Fantasy or Nightmare kind. Dreambeasts arrive only on the Dream Deck timer: Mini-Bosses, Bosses, and a few Dreams. During Meet, fight the one on your hex. A beast left standing at dusk Represses 1 Psyche from the Waking Mind. It stays until you beat it.",
+    text: "A creature on a Landscape. It has one Power, a suit, and a Fantasy or Nightmare kind. Dreambeasts arrive on the Dream Deck timer (Mini-Bosses, Bosses, and a few Dreams) or when you Return one onto a Landscape. At the start of each Explore every beast chases you one hex. During Meet, fight the one on your hex. A beast left standing at dusk Represses 1 Psyche from the Waking Mind. It stays until you beat it.",
   },
   {
     term: "Dreamer",
@@ -260,7 +260,7 @@ const TERMS = [
     term: "Explore",
     group: "round",
     aka: "explore phase",
-    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). Spend 1 Elasticity, or 1 Power Token (that counts as 1 plus your Elasticity). You get that many steps: tap a glowing hex to move. Stepping onto Wasteland discards 1 Psyche. Each unused step draws 1 Psyche.",
+    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First, every Dreambeast chases you one hex. Then spend 1 Elasticity, or 1 Power Token (that counts as 1 plus your Elasticity), for that many steps: tap a glowing hex to move. Stepping onto Wasteland discards 1 Psyche. Each unused step draws 1 Psyche.",
   },
   {
     term: "Explorer",
@@ -331,7 +331,7 @@ const TERMS = [
   {
     term: "Instant",
     group: "cards",
-    text: "An Object you play from the Objects row, then Repress. It does not spend a Meet action. Must-play Objects are Instants that resolve the moment they are drawn.",
+    text: "An Object you play from the Objects row, then Repress. It does not spend a Meet action. If it has nothing to act on yet (Knife with no beast on your Landscape, say), it stays in your hand and tells you why. Must-play Objects resolve the moment they are drawn.",
   },
   {
     term: "Landscape",
@@ -401,7 +401,7 @@ const TERMS = [
     term: "Object set",
     group: "cards",
     aka: "sticks jewelry chess elements body",
-    text: "Five families: 3 sticks, 3 jewelry, 3 chess, 4 elements, or 5 body parts. Finish any one set and you may Acquire an Archetype that is still in the deck. The set is then Repressed. If the Archetype deck is empty, the set stays.",
+    text: "Four families: Body (5 pieces), Elements (4), Jewelry (3), and Sticks (3). Each piece shows how much of its set you hold. The moment the last piece arrives, even straight from the Lost & Found, you Acquire an Archetype of your choice from the deck and the set is Repressed. The One counts as any 1 piece.",
   },
   {
     term: "Orphan",
@@ -422,7 +422,7 @@ const TERMS = [
   {
     term: "Persistent",
     group: "cards",
-    text: "The only Object that stays in play. Putting it down is free. Activating it costs 1 Meet action, not a Power Token, and each one taps once per Meet. Remember Objects tap to Remember. Jewelry and sticks add +1 to a fight. A body part doubles the highest Psyche you played. Severed Torso raises the hand limit to 12. Beating Heart draws 1 extra Psyche at the start of each round after the first.",
+    text: "An Object that stays in play. Putting it down is free. Some work on their own (the Body, Jewelry, and Stick pieces, Beating Heart, Skeleton Key, Flower). The rest you activate for 1 Meet action, once each per Meet: Remember, redeal the Vault, place a Landscape, extra fight dice, draw, move, or pull a beast to you.",
   },
   {
     term: "Power",
@@ -467,7 +467,7 @@ const TERMS = [
   {
     term: "Return",
     group: "cards",
-    text: "Move a card from the Subconscious back to the matching discard, so it can be drawn again. A Returned Psyche is +1 Waking Mind. A Returned Dreambeast goes to the bottom of its Mindstream. Most Returns happen through Remember.",
+    text: "Move a card from the Subconscious back into play. A Returned Psyche goes to the discard and is +1 Waking Mind. A Returned Dreambeast comes back onto the Dreamscape, on any placed Landscape you choose: put it on the quest Landscape that needs it, or next to you to fight. Most Returns happen through Remember.",
   },
   {
     term: "Reveal",

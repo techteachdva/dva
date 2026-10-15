@@ -95,7 +95,7 @@ import {
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "../effects/objects.js";
 import { isBossDreamCard, spawnMiniBoss } from "../cards/dream-deck.js";
 import { resumeObjectEffect } from "../effects/object-effects.js";
-import { hasPsycheHealth, allyHandCount, isWildPsyche, isTradablePsyche, TRADE_OFFER_LIMIT, psycheMatchesSuit } from "../cards/psyche.js";
+import { hasPsycheHealth, isWildPsyche, isTradablePsyche, TRADE_OFFER_LIMIT, psycheMatchesSuit } from "../cards/psyche.js";
 import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx } from "../board/board-fx.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "../dreamers/archetypes.js";
 import { getActivatableArchetypePowers } from "../dreamers/archetype-stats.js";
@@ -164,6 +164,8 @@ export function getEffectHelpers() {
   }
   // Keep meetEncounter fresh even after first init.
   effectHelpers.meetEncounter = meetEncounter;
+  effectHelpers.resolveBeastDefeat = resolveBeastDefeat;
+  effectHelpers.advanceBossStack = advanceBossStack;
   return effectHelpers;
 }
 
@@ -1358,7 +1360,12 @@ export function drawDreamCard(state, onShowModal) {
       : ["Resolve the Dream effect before continuing"],
   );
 
-  resolveCardEffect(state, card, head, getEffectHelpers());
+  if ((state.hollowDreams || 0) > 0 && !isBossDreamCard(card)) {
+    state.hollowDreams -= 1;
+    logMoment(state, `The Crystal Bell rings: ${card.name} passes and takes nothing.`);
+  } else {
+    resolveCardEffect(state, card, head, getEffectHelpers());
+  }
   spawnMiniBoss(state, card);
   if (isBossDreamCard(card) && state.tutorialFlags) state.tutorialFlags.bossDrawn = true;
 
@@ -1598,7 +1605,10 @@ export function moveDreamer(state, targetLandscapeId) {
     recordQuestEvent(state, "move_player", { count: 1 });
     recordCancellableMove(state, player, fromId, targetLandscapeId);
 
-    if (to.wasteland) {
+    const keyed = (player.persistent || []).some((obj) => obj.id === "skeleton-key");
+    if (to.wasteland && keyed) {
+      addLog(state, `${player.name} slips into Wasteland with the Skeleton Key; it costs nothing.`);
+    } else if (to.wasteland) {
       const payable = (player.hand || []).filter((card) => !isDreambeastPsycheCard(card));
       if (!payable.length) {
         addLog(state, `${player.name} steps into Wasteland with no Psyche to pay.`);
@@ -2137,6 +2147,7 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
   returnRecurringPsyche(state, actor, discarded);
 
   recordFightStats(state, ctx, dreamerWins);
+  state.nextFightDice = 0;
 
   // Winged Turtle: a win reveals the next turtle instead of ending the fight.
   if (dreamerWins && encounter.boss && advanceBossStack(state, encounter, tile)) {
@@ -2158,6 +2169,35 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     return;
   }
 
+  resolveBeastDefeat(state, { actor, encounter, landscapeId: state.activeEncounterLandscapeId, isReject });
+
+  if (state.pendingHeatingUp) {
+    if (!isReject) {
+      spawnEncounterOnLandscape(state, actor.landscapeId);
+      logMoment(state, "Heating Up — Accept spawns another Encounter.");
+    } else {
+      const limit = handLimitForPlayer(state, actor);
+      let drew = 0;
+      while (actor.hand.length < limit) {
+        const n = drawPsycheForPlayer(state, actor, 1);
+        if (!n.length) break;
+        drew += n.length;
+      }
+      if (drew) trackPsycheDraw(state, actor, drew);
+      logMoment(state, `Heating Up — drew Psyche up to hand limit (${actor.hand.length}/${limit}).`);
+    }
+    state.pendingHeatingUp = false;
+  }
+}
+
+/**
+ * A Dreambeast is beaten, by dice or by an Object. Everything a win means lives
+ * here: the Accept or Repress reward, quest marks, a Boss falling (Cycle cleared,
+ * Boon, victory check), a Mini-Boss bounty, and the beast leaving the board.
+ * The Winged Turtle's stack is handled before this by advanceBossStack.
+ */
+export function resolveBeastDefeat(state, { actor, encounter, landscapeId, isReject }) {
+  if (!actor || !encounter) return;
   if (!isReject) {
     addLog(state, `${actor.name} Accepts ${encounter.name}. ${encounter.effect || ""}`);
     applyAcceptEffect(state, encounter, actor, getEffectHelpers());
@@ -2182,7 +2222,6 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     logMoment(state, `${encounter.name} is Repressed. ${actor.name} draws ${drawn.length} Psyche.`);
   }
 
-  const landscapeId = state.activeEncounterLandscapeId;
   if (landscapeId) {
     recordQuestEvent(state, "meet_on_landscape", { landscapeId });
     recordQuestEvent(state, "meet_beast_suit", { suit: encounter.suit });
@@ -2206,26 +2245,6 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     removeEncounterFromLandscape(state, landscapeId, encounter);
   }
   state.forcedAccept = null;
-
-  if (state.pendingHeatingUp) {
-    if (!isReject) {
-      spawnEncounterOnLandscape(state, actor.landscapeId);
-      logMoment(state, "Heating Up — Accept spawns another Encounter.");
-    } else {
-      const limit = handLimitForPlayer(state, actor);
-      let drew = 0;
-      while (actor.hand.length < limit) {
-        const n = drawPsycheForPlayer(state, actor, 1);
-        if (!n.length) break;
-        drew += n.length;
-      }
-      if (drew) trackPsycheDraw(state, actor, drew);
-      const allies = allyHandCount(actor);
-      const allyNote = allies ? ` · ${allies} allies` : "";
-      logMoment(state, `Heating Up — drew Psyche up to hand limit (${actor.hand.length}/${limit}${allyNote}).`);
-    }
-    state.pendingHeatingUp = false;
-  }
 }
 
 function landscapeActionHelpers(state) {

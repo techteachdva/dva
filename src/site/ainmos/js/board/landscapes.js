@@ -328,6 +328,26 @@ function finishChoosePick(state, pick) {
   }
 }
 
+/**
+ * Returned Dreambeasts wait in a queue; each asks for any placed Landscape in turn.
+ * Bring a beast back onto the quest Landscape that needs it, or next to you to fight.
+ */
+export function placeReturnedBeasts(state) {
+  while (state?.beastsToReturn?.length && !state.landscapePick) {
+    const beast = state.beastsToReturn.shift();
+    const allowed = (state.board || []).filter((t) => t.revealed && !t.wasteland).map((t) => t.id);
+    const result = requestChooseTile(state, {
+      allowedIds: allowed,
+      action: "spawnEncounter",
+      encounter: beast,
+      title: `Return ${beast.name}`,
+      detail: `Choose any placed Landscape for ${beast.name} (Power ${beast.accept ?? "?"}).`,
+    });
+    if (result === "pending") return true;
+  }
+  return false;
+}
+
 export function requestChooseTile(state, {
   allowedIds,
   action,

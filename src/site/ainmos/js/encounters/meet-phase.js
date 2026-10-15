@@ -93,12 +93,18 @@ function nearestDreamerTile(state, fromTile) {
   return nearest;
 }
 
-/** Bosses hunt at the opening of Meet. A boss already sharing a hex stays. */
-function stepBossesTowardDreamers(state) {
-  const bosses = allEncountersOnBoard(state).filter(({ encounter }) => (
-    isBossEncounter(encounter) && encounter.awake !== false && !bossSkipsStep(encounter)
+/**
+ * Ainmos: every Dreambeast chases you at the start of Explore, one hex toward
+ * the nearest Dreamer. A beast already on your hex stays; a sleeping Leviathan
+ * and Bosses whose twist moves them their own way do not step.
+ */
+export function stepBeastsTowardDreamers(state) {
+  if (state.tutorialMode) return 0;
+  let moved = 0;
+  const beasts = allEncountersOnBoard(state).filter(({ encounter }) => (
+    encounter.awake !== false && !(isBossEncounter(encounter) && bossSkipsStep(encounter))
   ));
-  bosses.forEach(({ tile, encounter }) => {
+  beasts.forEach(({ tile, encounter }) => {
     if (!tile || dreamerSharesTile(state, tile.id)) return;
     const target = nearestDreamerTile(state, tile);
     if (!target) return;
@@ -113,13 +119,14 @@ function stepBossesTowardDreamers(state) {
     }
     moveEncounterBetweenLandscapes(state, tile.id, dest.id, encounter);
     addLog(state, `${encounter.name} stalks toward the nearest Dreamer and steps onto ${dest.name}.`);
+    moved += 1;
   });
+  return moved;
 }
 
-/** Step 1 — start of Meet. Bosses hunt. Hands are not taxed. */
+/** Step 1 — start of Meet. Boss twists act; the beasts already chased you at Explore. */
 export function applyMeetStartTax(state) {
   if (state.tutorialMode) return;
-  stepBossesTowardDreamers(state);
   applyBossTwistsAtMeetStart(state);
 }
 
@@ -137,7 +144,8 @@ function roundResourceTaxCount(state) {
   if (state.finalRecurrence) {
     return (state.finalArchetypes || []).filter((arch) => !arch.defeated).length;
   }
-  return roamingDreambeastsInSpawnOrder(state).length + longNightToll(state);
+  const spared = state.duskSparedRound === state.round;
+  return (spared ? 0 : roamingDreambeastsInSpawnOrder(state).length) + longNightToll(state);
 }
 
 /** Cards the dusk mill will take from the Waking Mind when this round ends. */

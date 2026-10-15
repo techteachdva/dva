@@ -55,7 +55,7 @@ import {
   resolvePowerCardsInHand,
   resolveAllPowerCardsInHands,
 } from "../cards/power-tokens.js";
-import { applyMeetStartTax } from "../encounters/meet-phase.js";
+import { applyMeetStartTax, stepBeastsTowardDreamers } from "../encounters/meet-phase.js";
 import { seedRandomness, mintSeedSuffix, specialSeedFlag, buildGameId, normalizeSeedInput } from "./rng.js";
 import { snapshotDeckCaps } from "../cards/deck-pressure.js";
 
@@ -886,6 +886,15 @@ export function beginRoundReveal(state) {
 }
 
 /** Between Cycles: the discard shuffles back into the Waking Mind, then each Dreamer draws 3. */
+/**
+ * Effects that wake with the dawn (Flower) register here, so state.js imports no effects.
+ * The list lives on the hoisted function: modules caught in an import cycle can register early.
+ */
+export function onDawn(fn) {
+  if (!onDawn.hooks) onDawn.hooks = [];
+  if (typeof fn === "function") onDawn.hooks.push(fn);
+}
+
 export function anteDawn(state) {
   if (state.psycheDiscard?.length) {
     state.psycheDeck = shuffle([...(state.psycheDeck || []), ...state.psycheDiscard]);
@@ -896,6 +905,7 @@ export function anteDawn(state) {
     if (player.alive) drawPsycheForPlayer(state, player, 3);
   });
   addLog(state, `Dawn between Cycles: the Waking Mind reshuffles, and each Dreamer draws 3 Psyche.`);
+  (onDawn.hooks || []).forEach((fn) => fn(state));
 }
 
 export const DEATH_CLOCK_CAP = 6;
@@ -1176,7 +1186,7 @@ export function acquireArchetypeFromDeck(state, player, archetypeId) {
   state.acquiredPoints += archetype.points || 0;
   const goal = state.scoringGoalPoints || state.goalPoints || 0;
   if (goal > 0 && (state.acquiredPoints || 0) >= goal) state.archetypeGoalReached = true;
-  addLog(state, `${player.name} acquires ${archetype.name} from the deck (+${archetype.points || 0}). Its power is ready.`);
+  addLog(state, `${player.name} acquires ${archetype.name} from the deck (+${archetype.points || 0} points).`);
   checkVictory(state);
   return copy;
 }
@@ -1244,6 +1254,8 @@ export function advancePhase(state) {
 
   if (getPhase(state) === "Explore") {
     addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");
+    const chased = stepBeastsTowardDreamers(state);
+    if (chased) addLog(state, `${chased} Dreambeast${chased === 1 ? " chases" : "s chase"} you.`);
   } else if (getPhase(state) === "Meet") {
     applyMeetStartTax(state);
     if (state.anchorMeetSpreadPending) {

@@ -1,7 +1,7 @@
 /**
  * Ainmos Boss twists: each ladder Boss bends one rule while it stands.
  *
- *   Winged Turtle  three stacked fights, Power 1, then 2, then 3
+ *   Winged Turtle  three stacked fights, Power 2, then 3, then 4
  *   Shadows        Lucidity Landscape actions go dark
  *   Jackalope      hops 2 hexes at the start of each Meet
  *   Baku           at dusk, eats the next ordinary Dream of the night

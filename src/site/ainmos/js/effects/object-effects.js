@@ -4,7 +4,6 @@ import {
   landscapeById,
   acquireArchetypeFromDeck,
   setEncounterOnLandscape,
-  removeEncounterFromLandscape,
   encounterOnLandscape,
   encounterKey,
   findEncounterOnBoard,
@@ -15,17 +14,23 @@ import {
 } from "../core/state.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { grantPowerTokens } from "../cards/power-tokens.js";
-import { repressCard, requestReturnCards, enqueueReturnCards, dreambeastToHandCard } from "../dreamers/subconscious.js";
-import { handRoomForPsycheDraw, handLimitForPlayer, beginNothingResolution } from "./objects.js";
+import { repressCard, requestReturnCards, enqueueReturnCards } from "../dreamers/subconscious.js";
+import { handRoomForPsycheDraw, beginNothingResolution } from "./objects.js";
 import {
   pullDreambeastFromMindstream,
   pullFromMindstreamByType,
   encounterFromDreambeastCard,
 } from "../cards/mindstream-supply.js";
-import { encounterRejectCost, applyRejectReward, applyAcceptEffect } from "../encounters/dreambeasts.js";
+import { encounterRejectCost } from "../encounters/dreambeasts.js";
 import { psycheCardValue } from "../cards/psyche.js";
 import { requestChooseTile, beginFreeRevealPicking, revealCapacity } from "../board/landscapes.js";
-import { edgeLandscapes } from "../core/hex.js";
+import { edgeLandscapes, hexDistance } from "../core/hex.js";
+import { OBJECT_SETS, setProgress } from "./object-sets.js";
+export { OBJECT_SETS, setProgress };
+import { onDawn } from "../core/state.js";
+import { isFreeformBoard, vaultCards, tileDeckCount, refreshVault } from "../board/dreamscape-vault.js";
+import { activeQuestLandscapeIds } from "../dreamers/quests.js";
+import { psycheHandCount } from "../cards/psyche.js";
 import { SUIT_LABELS } from "../core/rules.js";
 import { logMoment } from "../core/narrator.js";
 import { resumeLandscapeAction } from "../board/landscape-actions.js";
@@ -298,27 +303,12 @@ function finishToothSaber(state, player, helpers, { landscapeId, mode, cardIds, 
     state.psycheDiscard.push(card);
   });
   recordQuestEvent(state, "discard_psyche", { count: selected.length });
+  addLog(state, `Tooth-Saber cuts through ${enc.name}.`);
 
-  if (mode === "accept") {
-    if (player.hand.length >= handLimitForPlayer(state, player)) {
-      addLog(state, `${player.name}'s hand is full (${handLimitForPlayer(state, player)} cards).`);
-      selected.forEach((card) => player.hand.push(card));
-      state.psycheDiscard = state.psycheDiscard.filter((c) => !selected.includes(c));
-      return;
-    }
-    addLog(state, `${player.name} Accepts ${enc.name}. ${enc.effect || ""}`);
-    applyAcceptEffect(state, enc, player, helpers);
-    player.hand.push(dreambeastToHandCard(enc));
-    removeEncounterFromLandscape(state, landscapeId, enc);
-    recordQuestEvent(state, "meet_on_landscape", { landscapeId });
-    return;
-  }
-
-  repressCard(state, { ...enc, type: "dreambeast" });
-  applyRejectReward(state, enc, player, helpers);
-  removeEncounterFromLandscape(state, landscapeId, enc);
-  addLog(state, `${player.name} Represses ${enc.name}.`);
-  recordQuestEvent(state, "meet_on_landscape", { landscapeId });
+  // A win like any other: the Winged Turtle loses one shell; anything else is beaten outright,
+  // with the same rewards, Boss clear, Boon, and Mini-Boss bounty as a won fight.
+  if (enc.boss && helpers.advanceBossStack?.(state, enc, tile)) return;
+  helpers.resolveBeastDefeat?.(state, { actor: player, encounter: enc, landscapeId, isReject: mode !== "accept" });
 }
 
 function continueFlow(state, follow, helpers) {
@@ -520,11 +510,8 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
       addLog(state, "That Archetype is no longer in the deck.");
       return false;
     }
-    if (acquired.power) {
-      addLog(state, `${acquired.name} is ready. Spend 1 Power Token to use: ${acquired.power}`);
-    }
     repressSetCards(state, player, pending.payload?.instanceIds);
-    addLog(state, `${pending.payload?.label || "The set"} is Repressed.`);
+    logMoment(state, `${pending.payload?.label || "The set"} set complete: ${acquired.name} Acquired (+${acquired.points || 0} points). The set is Repressed.`, { boss: true });
     return true;
   }
   const step = pending.step;
@@ -727,8 +714,8 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
       title: "Tooth-Saber",
       message: `${enc.name}: Accept or Repress?`,
       choices: [
-        { id: "accept", label: `Accept (${enc.accept})`, hint: "Joins hand as a Psyche ally." },
-        { id: "reject", label: `Repress (${encounterRejectCost(enc)})`, hint: "Send the Encounter to the Subconscious." },
+        { id: "accept", label: `Accept · pay ${enc.accept}`, hint: "Draw an Object of its suit and earn a free Insight at the next Lost & Found." },
+        { id: "reject", label: `Repress · pay ${encounterRejectCost(enc)}`, hint: `Banish it and draw ${Math.floor((encounterRejectCost(enc) || 0) / 2)} Psyche.` },
       ],
       payload: { landscapeId: tileId, encounterId: encKey },
     });
@@ -754,11 +741,20 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
     return true;
   }
 
-  if (cardId === "water" || cardId === "air" || cardId === "earth" || cardId === "fire") {
-    if (step === "pick-element-dest") {
-      movePlayerToId(state, player, choiceId);
-      return true;
+  if (step === "pick-element-dest") {
+    movePlayerToId(state, player, choiceId);
+    return true;
+  }
+
+  if (step === "pick-summon") {
+    const [fromTileId, encKey] = String(choiceId).split(":");
+    const from = landscapeById(state, fromTileId);
+    const enc = tileEncounters(from).find((e) => encounterKey(e) === encKey);
+    if (enc && from && from.id !== player.landscapeId) {
+      moveEncounterBetweenLandscapes(state, from.id, player.landscapeId, enc);
+      logMoment(state, `${enc.name} is pulled to ${tileName(state, player.landscapeId)}.`);
     }
+    return true;
   }
 
   if (step === "pick-beast-source") {
@@ -804,6 +800,7 @@ const SET_LABELS = {
 };
 
 export function checkObjectTagSet(state, player, tag, { extra = 0 } = {}) {
+  if (!OBJECT_SETS[tag]) return;
   if (!player.persistent) player.persistent = [];
   const inPlay = [...player.persistent, ...(player.objects || [])];
   const tagged = inPlay.filter((o) => o.tags?.some((t) => t.startsWith(tag)));
@@ -860,8 +857,8 @@ export const OBJECT_EFFECTS = {
   },
 
   "rabbits-foot": (state) => {
-    state.pendingPowerBonus = (state.pendingPowerBonus || 0) + 3;
-    addLog(state, "Rabbit's Foot: +3 wild to next Psyche play.");
+    state.nextFightDice = (state.nextFightDice || 0) + 3;
+    logMoment(state, "Rabbit's Foot: your next fight rolls +3 dice.");
   },
 
   "possibility-polyhedral": (state, player) => {
@@ -883,21 +880,13 @@ export const OBJECT_EFFECTS = {
   },
 
   "raven-claw": (state, player) => {
-    askMoveDreamer(state, player, {
-      cardId: "raven-claw",
-      title: "Raven Claw",
-      destIds: ["sky"],
-      log: "Raven Claw: choose a Dreamer to move to Sky.",
-    });
+    offerMove(state, player, "raven-claw", "Raven Claw", openTilesExcept(state, player.landscapeId).map((t) => t.id));
   },
 
   "bag-of-teeth": (state, player) => {
-    askMoveDreamer(state, player, {
-      cardId: "bag-of-teeth",
-      title: "Bag of Teeth",
-      destIds: ["sea-of-teeth", "house"],
-      log: "Bag of Teeth: choose a Dreamer and a destination.",
-    });
+    const lost = discardCheapestPsyche(state, player, { repress: true });
+    const drawn = drawPsycheForPlayer(state, player, 3);
+    logMoment(state, `Bag of Teeth: ${lost ? `${lost.name} is Repressed, ` : ""}${player.name} draws ${drawn.length}.`);
   },
 
   "marble-grid": (state, player) => {
@@ -1039,12 +1028,9 @@ export const OBJECT_EFFECTS = {
     if (players.length) addLog(state, "Spark of Sun: each Dreamer draws 2 Psyche and Returns 2 Repressed.");
   },
 
-  coins: (state) => {
-    alive(state).forEach((p) => {
-      grantPowerTokens(state, p, 1);
-      recordQuestEvent(state, "power_token", { count: 1 });
-    });
-    addLog(state, "Coins: each Dreamer gains 1 Power Token.");
+  coins: (state, player) => {
+    const paid = grantPowerTokens(state, player, 2);
+    logMoment(state, `Coins: ${player.name} gains ${paid} Power Token${paid === 1 ? "" : "s"}.`);
   },
 
   egg: (state, player) => {
@@ -1074,36 +1060,16 @@ export const OBJECT_EFFECTS = {
   },
 
   knife: (state, player) => {
-    offerChoice(state, player, {
-      cardId: "knife",
-      step: "pick-deck",
-      title: "Knife",
-      message: "Look at the top 3 of which deck?",
-      log: "Knife: choose a deck, then reorder the top 3.",
-      choices: [
-        { id: "psyche", label: "Psyche Deck", disabled: !state.psycheDeck.length },
-        { id: "dream", label: "Dream Deck", disabled: !state.dreamDeck.length },
-        { id: "archetype", label: "Archetype Deck", disabled: !state.archetypeDeck.length },
-        { id: "mindstream-lucidity", label: `${SUIT_LABELS.lucidity} Mindstream`, disabled: !state.mindstreamDecks.lucidity?.length },
-        { id: "mindstream-elasticity", label: `${SUIT_LABELS.elasticity} Mindstream`, disabled: !state.mindstreamDecks.elasticity?.length },
-        { id: "mindstream-willpower", label: `${SUIT_LABELS.willpower} Mindstream`, disabled: !state.mindstreamDecks.willpower?.length },
-      ],
-    });
+    const enc = tileEncounters(landscapeById(state, player.landscapeId))[0];
+    if (!enc) return;
+    const before = enc.accept;
+    weakenEncounter(enc, 2);
+    logMoment(state, `Knife: ${enc.name} drops from Power ${before} to ${enc.accept}.`);
   },
 
-  "crystal-bell": (state, player) => {
-    const pile = [...(state.dreamDiscard || [])];
-    if (!pile.length) {
-      addLog(state, "No Dreams in the discard pile.");
-      return;
-    }
-    offerChoice(state, player, {
-      cardId: "crystal-bell",
-      ui: "cards",
-      title: "Crystal Bell",
-      message: "Choose 1 Dream from discard to resolve again:",
-      cards: pile,
-    });
+  "crystal-bell": (state) => {
+    state.hollowDreams = (state.hollowDreams || 0) + 1;
+    logMoment(state, "Crystal Bell: the next Dream will pass and take nothing.");
   },
 
   "tooth-saber": (state, player) => {
@@ -1166,9 +1132,10 @@ const BEAST_MOVERS = {
 };
 
 export function persistentObjectCanActivate(card) {
-  if (!card) return false;
+  if (!card || card.passive) return false;
   return Boolean(
-    BEAST_MOVERS[card.id]
+    (card.activate && ACTIVATIONS[card.activate])
+    || BEAST_MOVERS[card.id]
     || ELEMENT_MOVES[card.id]
     || card.id === "mobius-crystal"
     || card.id === "skeleton-key"
@@ -1178,6 +1145,8 @@ export function persistentObjectCanActivate(card) {
 }
 
 export function activatePersistentObjectEffect(state, player, card) {
+  const activation = card.activate ? ACTIVATIONS[card.activate] : null;
+  if (activation) return activation(state, player, card);
   if ((card.remember || 0) > 0) {
     return beginRemember(state, player, card.remember, { source: card.name }) ? true : false;
   }
@@ -1313,3 +1282,189 @@ export function revealWithAllSeeingEye(state) {
   }
   beginFreeRevealPicking(state, count);
 }
+
+
+/* ---- Ainmos 0.15 Objects: one clear job each ------------------------------------------------- */
+
+/** Placed, walkable Landscapes other than the one named. */
+function openTilesExcept(state, tileId) {
+  return (state.board || []).filter((t) => t.revealed && !t.wasteland && t.id !== tileId);
+}
+
+/** Pay a "discard 1 Psyche" cost without a menu: the plainest, lowest card goes. */
+function discardCheapestPsyche(state, player, { repress = false } = {}) {
+  const pool = (player.hand || []).filter((c) => c.type === "psyche" && !c.isDreambeastPsyche);
+  if (!pool.length) return null;
+  const card = [...pool].sort((x, y) => Number(!!x.upgrade) - Number(!!y.upgrade) || psycheCardValue(x) - psycheCardValue(y))[0];
+  player.hand = player.hand.filter((c) => c.instanceId !== card.instanceId);
+  if (repress) repressCard(state, card);
+  else state.psycheDiscard.push(card);
+  recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
+  return card;
+}
+
+/** Lower a beast's Power for good (never below 1). */
+function weakenEncounter(enc, amount) {
+  ["accept", "reject", "repress"].forEach((key) => {
+    if (enc[key] != null) enc[key] = Math.max(1, Number(enc[key]) - amount);
+  });
+}
+
+/** One destination moves you straight there; several open a pick. */
+function offerMove(state, player, cardId, title, destIds) {
+  const dests = destIds.filter((id) => landscapeReady(state, id) && id !== player.landscapeId);
+  if (dests.length === 1) {
+    movePlayerToId(state, player, dests[0]);
+    return true;
+  }
+  offerChoice(state, player, {
+    cardId,
+    step: "pick-element-dest",
+    title,
+    message: "Move to:",
+    choices: destChoices(state, dests),
+  });
+  return true;
+}
+
+function beastTileIds(state, filter = () => true) {
+  return [...new Set(allEncountersOnBoard(state).filter(({ encounter }) => filter(encounter)).map(({ tile }) => tile.id))];
+}
+
+/** Element moves: discard 1 Psyche, then go somewhere specific. */
+function elementMove(destFn, emptyWhy) {
+  return (state, player, card) => {
+    const dests = destFn(state, player).filter((id) => landscapeReady(state, id) && id !== player.landscapeId);
+    if (!dests.length) {
+      addLog(state, `${card.name}: ${emptyWhy}`);
+      return false;
+    }
+    if (!discardCheapestPsyche(state, player)) {
+      addLog(state, `${card.name} needs 1 Psyche to discard.`);
+      return false;
+    }
+    return offerMove(state, player, card.id, card.name, dests);
+  };
+}
+
+const ACTIVATIONS = {
+  "vault-redeal": (state, player, card) => {
+    if (!isFreeformBoard(state) || (!vaultCards(state).length && !tileDeckCount(state))) {
+      addLog(state, `${card.name}: the Vault has nothing to redeal.`);
+      return false;
+    }
+    const before = state.vaultRefreshesThisRound || 0;
+    refreshVault(state);
+    state.vaultRefreshesThisRound = before; // Free, so the next paid refresh does not cost more.
+    logMoment(state, `${card.name}: the Dreamscape Vault redeals.`);
+    return true;
+  },
+  "place-landscape": (state, player, card) => {
+    if (revealCapacity(state) < 1) {
+      addLog(state, `${card.name}: there is nothing left to place.`);
+      return false;
+    }
+    beginFreeRevealPicking(state, 1);
+    logMoment(state, `${card.name}: place 1 Landscape from the Vault, free.`);
+    return true;
+  },
+  "fight-dice-2": (state, player, card) => {
+    state.nextFightDice = (state.nextFightDice || 0) + 2;
+    logMoment(state, `${card.name}: your next fight rolls +2 dice.`);
+    return true;
+  },
+  "low-hand-draw": (state, player, card) => {
+    if (psycheHandCount(player) > 3) {
+      addLog(state, `${card.name} feeds only a hand of 3 or fewer Psyche.`);
+      return false;
+    }
+    const drawn = drawPsycheForPlayer(state, player, 3);
+    logMoment(state, `${card.name}: ${player.name} draws ${drawn.length}.`);
+    return true;
+  },
+  forge: (state, player, card) => {
+    const lost = discardCheapestPsyche(state, player);
+    if (!lost) {
+      addLog(state, `${card.name} needs 1 Psyche to discard.`);
+      return false;
+    }
+    const drawn = drawPsycheForPlayer(state, player, 2);
+    logMoment(state, `${card.name}: ${lost.name} for ${drawn.length} new Psyche.`);
+    return true;
+  },
+  "steps-2": (state, player, card) => {
+    const here = landscapeById(state, player.landscapeId);
+    const near = openTilesExcept(state, player.landscapeId).filter((t) => here && hexDistance(here, t) <= 2);
+    if (!near.length) {
+      addLog(state, `${card.name}: nowhere within 2 steps.`);
+      return false;
+    }
+    return offerMove(state, player, card.id, card.name, near.map((t) => t.id));
+  },
+  "spare-dusk": (state, player, card) => {
+    if (state.duskSparedRound === state.round) {
+      addLog(state, `${card.name} has already turned for this dusk.`);
+      return false;
+    }
+    state.duskSparedRound = state.round;
+    logMoment(state, `${card.name}: at this dusk, the Dreambeasts left standing take nothing.`);
+    return true;
+  },
+  "summon-beast": (state, player, card) => {
+    const sources = allEncountersOnBoard(state).filter(({ tile }) => tile.id !== player.landscapeId);
+    if (!sources.length) {
+      addLog(state, `${card.name}: no Dreambeast elsewhere to pull.`);
+      return false;
+    }
+    if (!discardCheapestPsyche(state, player)) {
+      addLog(state, `${card.name} needs 1 Psyche to discard.`);
+      return false;
+    }
+    offerChoice(state, player, {
+      cardId: card.id,
+      step: "pick-summon",
+      title: card.name,
+      message: "Bring which Dreambeast to you?",
+      choices: sources.map(({ tile, encounter }) => ({
+        id: `${tile.id}:${encounterKey(encounter)}`,
+        label: `${encounter.name} on ${tile.name}`,
+        hint: `Power ${encounter.accept}`,
+      })),
+    });
+    return true;
+  },
+  "to-beast": elementMove((state) => beastTileIds(state), "no Dreambeast to move to."),
+  "to-bed": elementMove(() => ["bed"], "you are already on The Bed."),
+  "to-quest": elementMove((state) => activeQuestLandscapeIds(state), "no quest Landscape is placed."),
+  "to-boss": elementMove((state) => beastTileIds(state, (e) => e.boss || e.miniBoss), "no Boss or Mini-Boss stands."),
+};
+
+/** Why an Instant cannot be played right now (it stays in hand), or "" when it can. */
+export function instantBlockReason(state, player, card) {
+  const id = card?.refId || card?.id;
+  if (id === "knife" && !tileEncounters(landscapeById(state, player.landscapeId)).length) {
+    return "Knife needs a Dreambeast on your Landscape.";
+  }
+  if (id === "raven-claw" && !openTilesExcept(state, player.landscapeId).length) {
+    return "Raven Claw has nowhere to fly.";
+  }
+  if (id === "bag-of-teeth" && !(player.hand || []).some((c) => c.type === "psyche" && !c.isDreambeastPsyche)) {
+    return "Bag of Teeth needs 1 Psyche to Repress.";
+  }
+  if (id === "tooth-saber" && !allEncountersOnBoard(state).length) {
+    return "Tooth-Saber needs a Dreambeast on the Dreamscape.";
+  }
+  return "";
+}
+
+// Flower: Remember 2 at every dawn, free.
+onDawn((state) => {
+  state.players.forEach((player) => {
+    if (!player.alive) return;
+    (player.persistent || []).filter((obj) => obj.dawnRemember).forEach((obj) => {
+      if (beginRemember(state, player, obj.dawnRemember, { source: obj.name })) {
+        logMoment(state, `Dawn opens the ${obj.name}: Remember ${obj.dawnRemember}.`);
+      }
+    });
+  });
+});

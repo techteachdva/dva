@@ -13,6 +13,7 @@ import {
   OBJECT_EFFECTS,
   rememberObjectHelpers,
   persistentObjectCanActivate,
+  instantBlockReason,
 } from "./object-effects.js";
 
 export { persistentObjectCanActivate };
@@ -111,23 +112,26 @@ export function handRoomForPsycheDraw(state, player) {
   return Math.max(0, handLimitForPlayer(state, player) - (player?.hand?.length || 0));
 }
 
-export function persistentMeetBonus(state, player) {
+/** Jewelry: +1 fight die for each piece whose suit is in the spread. */
+export function persistentMeetBonus(state, player, selectedCards = []) {
   ensureObjectZones(player);
-  let bonus = 0;
-  player.persistent.forEach((obj) => {
-    const tags = obj.tags || [];
-    if (tags.some((t) => t.startsWith("jewelry") || t.startsWith("stick"))) bonus += 1;
+  const suits = new Set();
+  (selectedCards || []).forEach((card) => {
+    ["lucidity", "elasticity", "willpower"].forEach((suit) => {
+      if (psycheMatchesSuit(card, suit)) suits.add(suit);
+    });
   });
-  return bonus;
+  return player.persistent.filter((obj) => obj.spreadSuitDie && suits.has(obj.spreadSuitDie)).length;
 }
 
 export function sumEffectivePsycheValue(state, player, selectedCards) {
   if (!selectedCards.length) return 0;
-  const hasBody = player.persistent?.some((o) => o.tags?.some((t) => t.startsWith("body")));
-  const base = selectedCards.reduce((sum, c) => sum + psycheCardValue(c), 0);
-  if (!hasBody) return base;
-  const maxVal = Math.max(...selectedCards.map((c) => psycheCardValue(c)));
-  return base + maxVal;
+  return selectedCards.reduce((sum, c) => sum + psycheCardValue(c), 0);
+}
+
+/** Passive Persistent Objects work on their own; there is nothing to activate. */
+export function isPassiveObject(card) {
+  return !!card?.passive;
 }
 
 export function extraPsycheDrawAtRoundStart(state, player) {
@@ -145,6 +149,8 @@ export function onObjectDrawn(state, player, card, helpers) {
   }
   player.objects.push(card);
   addLog(state, `${player.name} draws ${card.name}.`);
+  const tag = objectSetTag(card);
+  if (tag) checkObjectTagSet(state, player, tag);
   enforceObjectLimit(state, player);
 }
 
@@ -258,6 +264,11 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
   }
 
   if (inHand?.subtype === "instant") {
+    const blocked = instantBlockReason(state, player, inHand);
+    if (blocked) {
+      addLog(state, blocked);
+      return null;
+    }
     player.objects = player.objects.filter((o) => o.instanceId !== card.instanceId);
     addLog(state, `${player.name} plays ${card.name}.`);
     playSfx("acquire");
@@ -276,6 +287,10 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
   }
 
   if (inPlay) {
+    if (isPassiveObject(inPlay)) {
+      addLog(state, `${card.name} works on its own; there is nothing to activate.`);
+      return null;
+    }
     if (options.usePower) {
       addLog(state, "A Persistent Object costs 1 Meet action, not a Power Token.");
       return null;

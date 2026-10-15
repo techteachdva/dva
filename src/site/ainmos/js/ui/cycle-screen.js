@@ -168,7 +168,7 @@ export function renderCycleScreen(state, handlers = {}) {
           <p class="cy-step">Dream 3 · phases 7–9 · Boss</p>
           <h4 class="lf-item-name">${esc(boss?.name || "The Boss")}</h4>
           <p class="lf-item-kind">Power ${esc(entry?.stack ? entry.stack.join(", then ") : (entry?.power ?? "?"))} · ${esc(SUIT_NAME[boss?.suit] || "")}</p>
-          <p class="lf-item-text">${entry ? `<strong>${esc(entry.twist)}.</strong> ${esc(entry.twistText)}` : ""} Lands on a random Landscape and stalks you.</p>
+          <p class="lf-item-text">${entry ? `<strong>${esc(entry.twist)}.</strong> ${esc(entry.twistText)}` : ""} Lands on a random Landscape and chases you each Explore.</p>
           <p class="cy-reward">Beat it: a Boon, then dawn (draw 3)</p>
         </article>
       </div>

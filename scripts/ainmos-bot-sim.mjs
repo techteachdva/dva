@@ -739,6 +739,10 @@ function resolveObject(state) {
 }
 
 function resolveOnePending(state) {
+  if (state.beastsToReturn?.length && !state.landscapePick) {
+    landscapesMod.placeReturnedBeasts(state);
+    return true;
+  }
   if (state.pendingMindstreamChoice) {
     resolveMindstream(state);
     return true;
@@ -1016,7 +1020,7 @@ function lossReason(state, steps, error) {
 /** Ainmos is solo: each game is one Dreamer, rotating through the roster. */
 const SOLO_DREAMERS = DATA.dreamers.filter((d) => !d.hidden);
 
-function playGame(lengthKey, index) {
+function playGame(lengthKey, index, setup = null) {
   const dreamer = SOLO_DREAMERS[index % SOLO_DREAMERS.length];
   const selectedDreamers = [dreamer];
   const state = createInitialState(DATA, {
@@ -1027,6 +1031,7 @@ function playGame(lengthKey, index) {
   });
   // Ainmos experiment knob: a fixed Object limit (6 or 10).
   if (process.env.AINMOS_OBJECT_LIMIT) state.objectLimit = Number(process.env.AINMOS_OBJECT_LIMIT);
+  if (setup) setup(state);
   let steps = 0;
   let stuck = 0;
   let prev = "";
@@ -1197,56 +1202,63 @@ function argPer() {
   return 1000;
 }
 
-const per = argPer();
-if (process.env.AINMOS_TRACE) globalThis.__AINMOS_LOG_CAP = 5000;
-const started = Date.now();
-const byPlayers = {};
-const samples = {};
-for (const count of ["daydream", "nap", "deep"]) {
-  const rows = [];
-  const otherTails = [];
-  const errorSamples = [];
-  for (let i = 0; i < per; i += 1) {
-    const row = playGame(count, i + 1);
-    rows.push(row);
-    if (!row.won && (row.reason === "other" || row.reason === "step-cap") && otherTails.length < 8) otherTails.push(`[${row.reason} r${row.rounds} ${row.phaseAtEnd} ${row.pendingAtEnd}] ${row.tail}`);
-    if (row.error && errorSamples.length < 5) errorSamples.push(row.error);
-    if ((i + 1) % 25 === 0 || i + 1 === per) {
-      const wins = rows.filter((r) => r.won).length;
-      process.stdout.write(`\r${count} ${i + 1}/${per}  wins ${wins}  ${((Date.now() - started) / 1000).toFixed(0)}s`);
+/** Run as a script: play the sim. Imported (by the Object/Boon audit): only expose the machinery. */
+const IS_MAIN = !!process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+
+export { DATA, helpers, playGame, resolveOnePending, stateMod, gameMod, objectEffects, objectsMod, shopMod, boonMod, vaultMod, landscapesMod, subconscious, dreambeasts, alive, beastsOn, placeFromVault };
+
+if (IS_MAIN) {
+  const per = argPer();
+  if (process.env.AINMOS_TRACE) globalThis.__AINMOS_LOG_CAP = 5000;
+  const started = Date.now();
+  const byPlayers = {};
+  const samples = {};
+  for (const count of ["daydream", "nap", "deep"]) {
+    const rows = [];
+    const otherTails = [];
+    const errorSamples = [];
+    for (let i = 0; i < per; i += 1) {
+      const row = playGame(count, i + 1);
+      rows.push(row);
+      if (!row.won && (row.reason === "other" || row.reason === "step-cap") && otherTails.length < 8) otherTails.push(`[${row.reason} r${row.rounds} ${row.phaseAtEnd} ${row.pendingAtEnd}] ${row.tail}`);
+      if (row.error && errorSamples.length < 5) errorSamples.push(row.error);
+      if ((i + 1) % 25 === 0 || i + 1 === per) {
+        const wins = rows.filter((r) => r.won).length;
+        process.stdout.write(`\r${count} ${i + 1}/${per}  wins ${wins}  ${((Date.now() - started) / 1000).toFixed(0)}s`);
+      }
     }
+    process.stdout.write("\n");
+    byPlayers[count] = summarize(rows);
+    byPlayers[count].byDreamer = Object.fromEntries(SOLO_DREAMERS.map((d) => {
+      const mine = rows.filter((r) => r.dreamer === d.id);
+      return [d.id, mine.length ? +(mine.filter((r) => r.won).length / mine.length).toFixed(2) : null];
+    }));
+    const lost = rows.filter((r) => !r.won);
+    byPlayers[count].lossSplit = {
+      goalOnly: lost.filter((r) => !r.goalMet && r.finalDown).length,
+      bossOnly: lost.filter((r) => r.goalMet && !r.finalDown).length,
+      both: lost.filter((r) => !r.goalMet && !r.finalDown).length,
+    };
+    byPlayers[count].lossReasons = rows.filter((r) => !r.won).reduce((acc, r) => ({ ...acc, [r.reason]: (acc[r.reason] || 0) + 1 }), {});
+    samples[count] = { otherTails, errorSamples };
   }
-  process.stdout.write("\n");
-  byPlayers[count] = summarize(rows);
-  byPlayers[count].byDreamer = Object.fromEntries(SOLO_DREAMERS.map((d) => {
-    const mine = rows.filter((r) => r.dreamer === d.id);
-    return [d.id, mine.length ? +(mine.filter((r) => r.won).length / mine.length).toFixed(2) : null];
-  }));
-  const lost = rows.filter((r) => !r.won);
-  byPlayers[count].lossSplit = {
-    goalOnly: lost.filter((r) => !r.goalMet && r.finalDown).length,
-    bossOnly: lost.filter((r) => r.goalMet && !r.finalDown).length,
-    both: lost.filter((r) => !r.goalMet && !r.finalDown).length,
+
+  const report = {
+    version: "42.0",
+    board: BOARD_MODE,
+    length: "nap",
+    lengthRules: "12 archetype points, 14 regular dreams, bosses at rounds 3/6/9",
+    dice: "real d6, success on 5-6, strict more successes, ties to the beast",
+    gamesPerTable: per,
+    rosters: ROSTERS,
+    bot: "Bot 41 Mind-keeper: focuses the row Archetype closest to true and Acquires the moment both quests are true; opens phases with the best stat; fights with a 1-3 card spread aimed at Power+2 and token dice for gaps of 1-2; places Persistent Remember Objects and taps them; walks to Memory tiles when the Waking Mind runway is 3 rounds or less or a hand has 2+ surplus; Remembers with cards above 6 in hand; Returns Psyche first, highest value; discards cheapest cards; in Final Recurrence fights the Archetypes on The Bed.",
+    elapsedSec: Number(((Date.now() - started) / 1000).toFixed(1)),
+    byPlayers,
+    samples,
   };
-  byPlayers[count].lossReasons = rows.filter((r) => !r.won).reduce((acc, r) => ({ ...acc, [r.reason]: (acc[r.reason] || 0) + 1 }), {});
-  samples[count] = { otherTails, errorSamples };
+
+  const outPath = process.env.AINMOS_SIM_OUT ? resolve(process.env.AINMOS_SIM_OUT) : join(__dirname, "ainmos-bot-report.json");
+  writeFileSync(outPath, JSON.stringify(report, null, 2));
+  console.log(JSON.stringify(byPlayers, null, 2));
+  console.log(`wrote ${outPath}`);
 }
-
-const report = {
-  version: "42.0",
-  board: BOARD_MODE,
-  length: "nap",
-  lengthRules: "12 archetype points, 14 regular dreams, bosses at rounds 3/6/9",
-  dice: "real d6, success on 5-6, strict more successes, ties to the beast",
-  gamesPerTable: per,
-  rosters: ROSTERS,
-  bot: "Bot 41 Mind-keeper: focuses the row Archetype closest to true and Acquires the moment both quests are true; opens phases with the best stat; fights with a 1-3 card spread aimed at Power+2 and token dice for gaps of 1-2; places Persistent Remember Objects and taps them; walks to Memory tiles when the Waking Mind runway is 3 rounds or less or a hand has 2+ surplus; Remembers with cards above 6 in hand; Returns Psyche first, highest value; discards cheapest cards; in Final Recurrence fights the Archetypes on The Bed.",
-  elapsedSec: Number(((Date.now() - started) / 1000).toFixed(1)),
-  byPlayers,
-  samples,
-};
-
-const outPath = process.env.AINMOS_SIM_OUT ? resolve(process.env.AINMOS_SIM_OUT) : join(__dirname, "ainmos-bot-report.json");
-writeFileSync(outPath, JSON.stringify(report, null, 2));
-console.log(JSON.stringify(byPlayers, null, 2));
-console.log(`wrote ${outPath}`);

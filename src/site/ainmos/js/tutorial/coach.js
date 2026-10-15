@@ -85,7 +85,7 @@ const HINTS = [
   {
     id: "boss-ahead",
     title: "The Boss is next",
-    text: "The next Dream is the Winged Turtle: three stacked fights, Power 1, then 2, then 3. Hover a Boss on the Night Bar to read its twist.",
+    text: "The next Dream is the Winged Turtle: three stacked fights, Power 2, then 3, then 4. Hover a Boss on the Night Bar to read its twist.",
     when: (s) => next(s)?.boss && !s.dreamDrawn,
   },
   {
@@ -97,7 +97,7 @@ const HINTS = [
   {
     id: "boss-arrived",
     title: "A Boss has woken",
-    text: "Bosses land on a random Landscape and stalk toward you each Meet. Each bends one rule while it stands. Defeat it to clear the Cycle and choose a Boon.",
+    text: "Bosses land on a random Landscape, and every beast chases you one hex at the start of each Explore. Each bends one rule while it stands. Defeat it to clear the Cycle and choose a Boon.",
     when: (s) => (s.board || []).some((t) => (t.encounters || []).some((e) => e?.boss)),
   },
   {

@@ -150,8 +150,11 @@ import {
 import { renderDreamscapeVault } from "../ui/vault-panel.js";
 import { renderVaultScreen, resumeVaultScreen } from "../ui/vault-screen.js";
 import { renderCycleScreen, cycleScreenWanted } from "../ui/cycle-screen.js";
+import { instantBlockReason } from "../effects/object-effects.js";
 import { dieIfHandEmptyAfterDream } from "../core/state.js";
+import { placeReturnedBeasts } from "../board/landscapes.js";
 import { initKeepsakeScrollers, refreshKeepsakeScrollers } from "../ui/keepsake-scroll.js";
+import { initCardFans } from "../ui/ui.js";
 import { createSpectatorBot } from "../dev/bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "../encounters/dreambeasts.js";
 import { requestEndPhase } from "../flow/phase-skip.js";
@@ -445,6 +448,7 @@ async function init() {
   bindFullscreenPrompt();
   bindImageDragGuard();
   initKeepsakeScrollers();
+  initCardFans();
   bindRestart();
   bindEndLeaderboard();
   bindPowerBonus();
@@ -1691,6 +1695,9 @@ function onObjectCardClick(card, zone) {
   showModal(card, {
     objectZone: zone,
     canSpendPower: (player?.powerTokens || 0) >= 1,
+    // Persistent activation costs 1 Meet action; an Instant with no target says why and stays in hand.
+    canActivateNow: getPhase(state) === "Meet" && (state.meetActionBudget || 0) > (state.meetActionsUsed || 0),
+    blockReason: zone === "hand" && card.subtype === "instant" ? instantBlockReason(state, player, card) : "",
     onUse: () => {
       hideModal();
       playObject(state, card.instanceId || card.id, { usePower: zone === "persistent" });
@@ -2742,6 +2749,7 @@ function renderAll() {
   document.body.classList.toggle("seed-dmzemo", !!state.seedFlags?.dmzemo);
   bindUiRenderState(state);
   resolveStaleLandscapePick(state);
+  placeReturnedBeasts(state);
   // The Dream took your last Psyche: die now and respawn on The Bed, rather than sit out a round.
   if (dieIfHandEmptyAfterDream(state)) flashMoment("No Psyche left. You die and wake on The Bed with 5.");
   checkDefeat(state);

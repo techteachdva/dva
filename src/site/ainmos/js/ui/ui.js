@@ -45,6 +45,7 @@ import {
   encounterPowerLabel,
 } from "../encounters/dreambeasts.js";
 import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate, persistentObjectCanActivate } from "../effects/objects.js";
+import { OBJECT_SETS, setProgress } from "../effects/object-sets.js";
 import { alliesInHand, psycheCardsInHand, allyHandCount, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue, tradablePsycheInHand, TRADE_OFFER_LIMIT } from "../cards/psyche.js";
 import { getQuestStatus, activeQuestLandscapeIds, sacrificeQuestOpen, listSacrificableObjects } from "../dreamers/quests.js";
 import { effectiveDreamerStat } from "../dreamers/archetype-stats.js";
@@ -303,7 +304,8 @@ function bindHoloParallax(el) {
 
 function layoutPsycheFan(container) {
   if (!container) return;
-  const cards = [...container.querySelectorAll(":scope > .game-card")];
+  // Picker rows wrap each card (for its order badge), so the wrapper is what fans.
+  const cards = [...container.querySelectorAll(":scope > .game-card, :scope > .card-choice-wrap")];
   const n = cards.length;
   if (!n) return;
   const spread = container.classList.contains("spread-tray-fan");
@@ -313,7 +315,9 @@ function layoutPsycheFan(container) {
   const maxRot = spread ? Math.min(5, 1.2 + n * 0.35) : Math.min(12, 3 + n * 0.8);
   const pip = spread ? cardW + 24 : 22;
   const maxStep = n <= 1 ? cardW : (avail - cardW) / Math.max(n - 1, 1);
-  const touchPitch = prefersTouchUi() && !spread ? Math.min(cardW, 48) : cardW * 0.58;
+  // A menu fan opens wider when the window has room, so every card's ribbon stays readable.
+  const menuFan = container.classList.contains("ain-fan");
+  const touchPitch = menuFan ? cardW * 0.88 : prefersTouchUi() && !spread ? Math.min(cardW, 48) : cardW * 0.58;
   const step = spread
     ? Math.max(cardW + 24, pip)
     : Math.min(touchPitch, Math.max(pip, maxStep));
@@ -324,6 +328,24 @@ function layoutPsycheFan(container) {
     el.style.setProperty("--fan-overlap", spread ? "0px" : (i === 0 ? "0px" : `${(step - cardW).toFixed(1)}px`));
     el.style.setProperty("--fan-z", String(i + 1));
   });
+}
+
+/** Ainmos: every card menu fans like the hand at the bottom of the screen. */
+export function fanCards(container) {
+  if (!container) return;
+  container.classList.add("ain-fan");
+  schedulePsycheFan(container);
+}
+
+/** Fan any card picker row the moment a menu fills it. */
+export function initCardFans() {
+  const host = document.getElementById("utility-modal-body");
+  if (!host || host._fanObserver || typeof MutationObserver === "undefined") return;
+  const fanAll = () => host.querySelectorAll(".card-choice-row").forEach((row) => {
+    if (row.children.length) fanCards(row);
+  });
+  host._fanObserver = new MutationObserver(() => requestAnimationFrame(fanAll));
+  host._fanObserver.observe(host, { childList: true, subtree: true });
 }
 
 function schedulePsycheFan(container) {
@@ -622,13 +644,20 @@ export function renderActiveDreamerHand(state, onCardClick, {
 /** Selected Psyche sit on the table as a holographic spread. */
 const UPGRADE_GLYPH = { chaotic: "⚄", vivid: "◐", lucid: "◇", recurring: "↻" };
 
+/**
+ * An upgraded card should be recognizable at a glance: its own frame treatment,
+ * a big glyph, and a ribbon that names it. Vivid also wears its second suit.
+ */
 function upgradeBadgeHtml(card) {
   if (!card?.upgrade) return "";
   const glyph = UPGRADE_GLYPH[card.upgrade] || "✦";
-  const second = card.upgrade === "vivid" && card.vividSuit
-    ? `<span class="upgrade-second-suit suit-${card.vividSuit}" aria-hidden="true"></span>`
+  const name = PSYCHE_UPGRADES[card.upgrade]?.name || card.upgrade;
+  const vivid = card.upgrade === "vivid" && card.vividSuit
+    ? `<span class="upgrade-vivid-split suit-${card.vividSuit}" aria-hidden="true"></span>
+       <span class="upgrade-vivid-icon suit-${card.vividSuit}" aria-hidden="true">${suitIconHtml(card.vividSuit, { size: 13 })}</span>`
     : "";
-  return `<span class="psyche-upgrade-badge" aria-label="${upgradeLabel(card)}">${glyph}</span>${second}`;
+  const watermark = card.upgrade === "recurring" ? `<span class="upgrade-watermark" aria-hidden="true">↻</span>` : "";
+  return `${vivid}${watermark}<span class="psyche-upgrade-badge" aria-label="${upgradeLabel(card)}">${glyph}</span><span class="upgrade-ribbon" aria-hidden="true">${name}</span>`;
 }
 
 /** Ainmos: the six Dream Forms, their levels, and the dice each adds. */
@@ -1294,9 +1323,11 @@ function fillModalObjectActions(card, options = {}) {
   hint.className = "modal-object-fate";
   const canActivate = zone === "persistent" && persistentObjectCanActivate(card);
   if (zone === "persistent" && canActivate) {
-    hint.textContent = "Spend 1 Power Token to activate this Persistent Object.";
+    hint.textContent = options.canActivateNow === false
+      ? "Activate it during Meet, for 1 Meet action."
+      : "Activating it spends 1 Meet action.";
   } else if (zone === "persistent") {
-    hint.textContent = "This Object stays in play. Its bonus applies while it is on the table.";
+    hint.textContent = "This Object works on its own while it is in play. There is nothing to activate.";
   } else if (fate === "play") {
     hint.textContent = "Put this Persistent Object into play. It stays on the table until used.";
   } else if (fate === "repress") {
@@ -1310,15 +1341,18 @@ function fillModalObjectActions(card, options = {}) {
   btn.type = "button";
   btn.className = "btn primary";
   btn.textContent = zone === "persistent"
-    ? "Spend 1 Power Token"
+    ? "Activate · 1 Meet action"
     : fate === "play"
       ? "Put into play"
-      : "Use Object (Repress)";
+      : "Use it";
   if (zone === "persistent" && !canActivate) {
     btn.hidden = true;
-  } else if (zone === "persistent" && options.canSpendPower === false) {
+  } else if (zone === "persistent" && options.canActivateNow === false) {
     btn.disabled = true;
-    btn.title = "Need 1 Power Token";
+    btn.title = "Open Meet and keep an action for it.";
+  } else if (zone !== "persistent" && options.blockReason) {
+    btn.disabled = true;
+    hint.textContent = options.blockReason;
   }
   btn.addEventListener("click", () => options.onUse?.());
   actions.appendChild(btn);
@@ -2998,13 +3032,25 @@ export function renderObjects(state, onCardClick) {
   const mountObject = (host, card, zone) => {
     const inPool = poolIds.has(card.instanceId);
     const chosen = pickedIds.has(card.instanceId);
-    host.appendChild(renderCard(card, {
+    const el = renderCard(card, {
       mini: true,
       selected: chosen,
       suggested: inPool && !chosen,
       onClick: () => onCardClick(card, pickingObjects ? "repress" : zone),
       onInspect: () => showModal(card),
-    }));
+    });
+    // A set piece shows how much of its set you hold: completing it Acquires an Archetype.
+    const tag = (card.tags || []).find((t) => OBJECT_SETS[t]);
+    const progress = tag ? setProgress(player, tag) : null;
+    if (progress) {
+      const badge = document.createElement("span");
+      badge.className = `object-set-badge${progress.held >= progress.need ? " is-complete" : ""}`;
+      badge.textContent = `${tag} ${Math.min(progress.held, progress.need)}/${progress.need}`;
+      badge.title = `${tag[0].toUpperCase()}${tag.slice(1)} set: ${progress.held} of ${progress.need}. Complete it to Acquire an Archetype from the deck.`;
+      el.appendChild(badge);
+    }
+    if (card.passive) el.classList.add("object-passive");
+    host.appendChild(el);
     if (pickingObjects && inPool && !chosen && !room) {
       host.lastElementChild.disabled = true;
     }

@@ -6,10 +6,26 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.14";
+export const SOMNIA_VERSION = "0.15";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.15",
+    title: "Every Object",
+    notes: [
+      "Every creature is 1 Power stronger again: the Winged Turtle is 2, then 3, then 4, Leviathan is 12, and Mini-Bosses run 3 to 10.",
+      "Every Object has one clear job. The eight Remember look-alikes now Remember, redeal the Vault, place a Landscape, add fight dice, refill a low hand, or trade a card for two. Body pieces raise a stat, Jewelry adds a die for its suit, Sticks widen a phase. No Object peeks at a deck any more.",
+      "Object sets work: each piece shows how much of its set you hold, and the moment the last piece arrives, even from the Lost & Found, you Acquire an Archetype and the set is Repressed.",
+      "Passive Objects say so and never cost a Meet action. Activating the others costs 1 Meet action, not a Power Token. An Instant with nothing to act on stays in your hand and tells you why.",
+      "Tooth-Saber works: it wins like a real fight, so a Boss it cuts down clears the Cycle and offers a Boon, and Accept never makes an ally.",
+      "Returning a Dreambeast brings it back onto any placed Landscape you choose: put it where a quest needs it.",
+      "Every Dreambeast chases you one hex at the start of Explore.",
+      "Boons are all distinct: Lover draws an Object, Orphan adds 3 dice, Explorer moves anyone anywhere, Fool places 2 Landscapes, Ruler earns a free Insight, Outlaw banishes a beast, Creator returns one onto a Landscape.",
+      "Every follow-up menu now uses the Lost & Found window, and every card menu fans your cards like the hand at the bottom of the screen.",
+      "Upgraded Psyche is unmistakable: Vivid splits into both suits, Lucid wears a turning prism rim, Recurring carries its loop, Chaotic smoulders, and each one names itself on a ribbon.",
+    ],
+  },
   {
     version: "0.14",
     title: "Keepsakes",

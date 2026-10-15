@@ -16,7 +16,7 @@ import {
   suitIconHtml,
 } from "../core/rules.js";
 import { isDreambeastPsycheCard } from "../dreamers/subconscious.js";
-import { renderCard, hideUtilityModal, isUtilityModalMinimized } from "../ui/ui.js";
+import { renderCard, hideUtilityModal, isUtilityModalMinimized, fanCards } from "../ui/ui.js";
 import { cyclePosition } from "../core/cycle.js";
 import {
   isInteractiveTutorialActive,
@@ -301,6 +301,7 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
       el.classList.add(usable ? "opener-usable" : "opener-unusable");
       handEl.appendChild(el);
     });
+    fanCards(handEl);
   }
 
   body.querySelectorAll("[data-token-id]").forEach((btn) => {

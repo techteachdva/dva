@@ -89,10 +89,20 @@ export function dreamerStat(dreamer, stat) {
   return dreamer[stat] ?? 0;
 }
 
-/** Dreamer stat for phase budgets, including team-wide Quintessential Archetype bonuses. */
+/** Persistent Objects that raise a stat (the Body set: Head, Arms, Legs). */
+function objectStatBonus(player, stat) {
+  return (player?.persistent || []).reduce((n, obj) => n + (Number(obj?.statBonus?.[stat]) || 0), 0);
+}
+
+/** Persistent Objects that widen one phase's budget (the Sticks). */
+export function objectBudgetBonus(player, phase) {
+  return (player?.persistent || []).filter((obj) => obj?.budgetBonus === phase).length;
+}
+
+/** Dreamer stat for phase budgets and fights: base, Boons, and Objects. */
 export function totalStat(player, stat, state = null) {
-  if (state) return effectiveDreamerStat(state, player.dreamer, stat);
-  return dreamerStat(player.dreamer, stat);
+  const base = state ? effectiveDreamerStat(state, player.dreamer, stat) : dreamerStat(player.dreamer, stat);
+  return base + objectStatBonus(player, stat);
 }
 
 export function phaseSuitForOpening(phase) {
@@ -402,25 +412,25 @@ export function canSelectCard(state, card, phase, player = null) {
 export function revealBudget(state, player) {
   const played = sumSelectedValue(state, player, "lucidity") + phaseTokenValue(state, player);
   if (played < 1) return 0;
-  return played + totalStat(player, "lucidity", state);
+  return played + totalStat(player, "lucidity", state) + objectBudgetBonus(player, "Reveal");
 }
 
 export function exploreBudget(state, player) {
   const played = sumSelectedValue(state, player, "elasticity") + phaseTokenValue(state, player);
   if (played < 1) return 0;
-  return played + totalStat(player, "elasticity", state);
+  return played + totalStat(player, "elasticity", state) + objectBudgetBonus(player, "Explore");
 }
 
 export function meetActionBudgetFromWillpower(state, player) {
   const played = sumSelectedValue(state, player, "willpower") + phaseTokenValue(state, player);
   if (played < 1) return 0;
-  return played + totalStat(player, "willpower", state);
+  return played + totalStat(player, "willpower", state) + objectBudgetBonus(player, "Meet");
 }
 
 export function meetPlayTotal(state, player) {
   const selected = selectedCards(state, player);
   const base = sumEffectivePsycheValue(state, player, selected);
-  return base + (state.pendingPowerBonus || 0) + persistentMeetBonus(state, player);
+  return base + (state.pendingPowerBonus || 0) + persistentMeetBonus(state, player, selected);
 }
 
 /** Focused Dreamer on the selected Landscape — they may spend Psyche for Meet plays there. */
@@ -462,7 +472,7 @@ export function encounterDiceTotal(state, actor, selected, encounter, { accept =
   const cards = selected || [];
   let total = state.pendingPowerBonus || 0;
   total += sumEffectivePsycheValue(state, actor, cards);
-  total += persistentMeetBonus(state, actor);
+  total += persistentMeetBonus(state, actor, cards);
   if (encounter) total += dreamerMeetBonuses(actor.dreamer, encounter).total || 0;
   const suit = encounterPaySuit(encounter, accept);
   if (suit && selectedHasPaySuit(cards, suit) && !statIgnoredBy(encounter)) {
@@ -471,6 +481,7 @@ export function encounterDiceTotal(state, actor, selected, encounter, { accept =
   total += state.anchorMeetSpreadBonus || 0;
   // Ainmos Dream Forms: the spread's best pattern adds its dice.
   total += bestForm(state, cards)?.dice || 0;
+  total += state.nextFightDice || 0;
   return total;
 }
 
@@ -504,7 +515,7 @@ export function coopMeetPlayTotal(state) {
       if (!owner) return;
       const cards = selected.filter((c) => cardOwner(state, c)?.id === ownerId);
       total += sumEffectivePsycheValue(state, owner, cards);
-      total += persistentMeetBonus(state, owner);
+      total += persistentMeetBonus(state, owner, cards);
     });
 
     const bonus = meetBonusBreakdown(state);
@@ -536,7 +547,7 @@ export function archetypeSpreadDice(state, archetypeId = null) {
     const owner = state.players.find((p) => p.id === ownerId);
     if (!owner) return;
     total += sumEffectivePsycheValue(state, owner, cards);
-    total += persistentMeetBonus(state, owner);
+    total += persistentMeetBonus(state, owner, cards);
   });
   if (actor && arch?.suit && selectedHasPaySuit(selected, arch.suit)) {
     total += totalStat(actor, arch.suit, state);

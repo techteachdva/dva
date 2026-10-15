@@ -231,10 +231,23 @@ export function routeReturnedToDiscard(state, card) {
   }
 }
 
+/** Ainmos: a Dreambeast called back from the Subconscious is never a card in hand. */
+export function isReturnedBeast(card) {
+  return !!card && (card.type === "dreambeast" || card.boss || card.type === "psyche-dreambeast" || card.isDreambeastPsyche);
+}
+
 export function finalizeReturn(state, cards, { log = true } = {}) {
   const returned = [];
   cards.forEach((card) => {
     const removed = removeFromSubconscious(state, card.instanceId) || card;
+    if (isReturnedBeast(removed)) {
+      // It comes back onto the Dreamscape, on a Landscape you choose.
+      const beast = { ...removed, type: "dreambeast" };
+      delete beast.isDreambeastPsyche;
+      state.beastsToReturn = [...(state.beastsToReturn || []), beast];
+      returned.push(removed);
+      return;
+    }
     routeReturnedToDiscard(state, removed);
     if (typeof document !== "undefined") queueReturnFx(removed);
     returned.push(removed);

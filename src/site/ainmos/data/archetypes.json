@@ -5,7 +5,7 @@
     "points": 4,
     "image": "images/archetypes/archetype-sage.webp",
     "suit": "lucidity",
-    "passive": "All Dreamers +1 Lucidity",
+    "passive": "+1 Lucidity",
     "power": null,
     "quests": [
       "Defeat a Lucidity Boss",
@@ -32,7 +32,7 @@
     "image": "images/archetypes/archetype-caregiver.webp",
     "suit": "willpower",
     "passive": null,
-    "power": "The Dreamer with the fewest Psyche draws 3, up to the hand limit",
+    "power": "Draw 3 Psyche, up to your hand limit",
     "quests": [
       "Draw Mindstream on Sea of Teeth or Field of Broken Glass",
       "Meet a Dreambeast on Sea of Teeth or Field of Broken Glass"
@@ -45,7 +45,7 @@
     "image": "images/archetypes/archetype-lover.webp",
     "suit": "elasticity",
     "passive": null,
-    "power": "Return 1 Object from the Subconscious",
+    "power": "Draw 1 Object from the Object deck",
     "quests": [
       "Draw Mindstream on Awards or The Party",
       "Meet a Dreambeast on Awards or The Party"
@@ -58,7 +58,7 @@
     "image": "images/archetypes/archetype-explorer.webp",
     "suit": "elasticity",
     "passive": null,
-    "power": "Move 1 Dreamer or 1 Dreambeast to any Landscape matching its suit",
+    "power": "Move yourself or any Dreambeast to any placed Landscape",
     "quests": [
       "Draw Mindstream on Endless Ocean or Lava",
       "Meet a Dreambeast on Endless Ocean or Lava"
@@ -70,7 +70,7 @@
     "points": 4,
     "image": "images/archetypes/archetype-magician.webp",
     "suit": "elasticity",
-    "passive": "All Dreamers +1 Elasticity",
+    "passive": "+1 Elasticity",
     "power": null,
     "quests": [
       "Defeat an Elasticity Boss",
@@ -84,7 +84,7 @@
     "image": "images/archetypes/archetype-orphan.webp",
     "suit": "willpower",
     "passive": null,
-    "power": "Everyone draws 2 Psyche",
+    "power": "Your next fight rolls +3 dice",
     "quests": [
       "Draw Mindstream on any Willpower Landscape",
       "Meet a Willpower Dreambeast"
@@ -97,7 +97,7 @@
     "image": "images/archetypes/archetype-fool.webp",
     "suit": "elasticity",
     "passive": null,
-    "power": "Remember Dreamers+1: discard up to that many Psyche, Return that many +1",
+    "power": "Place 2 Landscapes from the Dreamscape Vault, free",
     "quests": [
       "Draw Mindstream on Insanity or Black Void",
       "Meet a Dreambeast on Insanity or Black Void"
@@ -110,7 +110,7 @@
     "image": "images/archetypes/archetype-creator.webp",
     "suit": "lucidity",
     "passive": null,
-    "power": "Each Dreamer returns 1 Dreambeast from the Subconscious",
+    "power": "Return 1 Dreambeast from the Subconscious onto any placed Landscape",
     "quests": [
       "Draw Mindstream on Day in the Life or Inner Sanctum",
       "Meet a Dreambeast on Day in the Life or Inner Sanctum"
@@ -123,7 +123,7 @@
     "image": "images/archetypes/archetype-ruler.webp",
     "suit": "willpower",
     "passive": null,
-    "power": "Each Dreamer returns 1 Event from the Subconscious",
+    "power": "Earn a free Insight at the next Lost & Found",
     "quests": [
       "Draw Mindstream on Tranquil Grove or Endless Hallway",
       "Meet a Dreambeast on Tranquil Grove or Endless Hallway"
@@ -135,7 +135,7 @@
     "points": 4,
     "image": "images/archetypes/archetype-warrior.webp",
     "suit": "willpower",
-    "passive": "All Dreamers +1 Willpower",
+    "passive": "+1 Willpower",
     "power": null,
     "quests": [
       "Defeat a Willpower Boss",
@@ -149,7 +149,7 @@
     "image": "images/archetypes/archetype-outlaw.webp",
     "suit": "elasticity",
     "passive": null,
-    "power": "The acting Dreamer draws 1 Object from the discard",
+    "power": "Banish the Dreambeast on your Landscape without a fight (not a Boss); no reward",
     "quests": [
       "Draw Mindstream on any Elasticity Landscape",
       "Meet an Elasticity Dreambeast"

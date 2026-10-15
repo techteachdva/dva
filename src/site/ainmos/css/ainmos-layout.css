@@ -1534,3 +1534,21 @@ html:root body.ainmos.play-window .utility-choice-dock {
   top: auto;
   bottom: calc(var(--ain-hand-h) + 0.5rem);
 }
+
+/* Set progress on Object cards: "body 3/5". Completing a set Acquires an Archetype. */
+.game-card.object { position: relative; }
+.object-set-badge {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font: 700 0.56rem/1.3 var(--font-body);
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  color: #1a1530;
+  background: rgba(232, 224, 255, 0.85);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+.object-set-badge.is-complete { background: linear-gradient(90deg, #ffe2b0, #ffd08a); }

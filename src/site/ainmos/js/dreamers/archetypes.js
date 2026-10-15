@@ -5,6 +5,9 @@ import {
   allEncountersOnBoard,
   drawPsycheForPlayer,
   encounterKey,
+  tileEncounters,
+  landscapeById,
+  removeEncounterFromLandscape,
 } from "../core/state.js";
 import { handRoomForPsycheDraw, onObjectDrawn } from "../effects/objects.js";
 import { recordQuestEvent } from "./quests.js";
@@ -12,7 +15,9 @@ import { beginRemember } from "../effects/remember.js";
 import { enqueueReturnCards, listSubconsciousCards, requestReturnCards } from "./subconscious.js";
 import { spendPowerTokens, grantPowerTokens } from "../cards/power-tokens.js";
 import { isQuintessentialArchetype } from "./archetype-stats.js";
-import { requestChooseTile } from "../board/landscapes.js";
+import { requestChooseTile, revealCapacity, beginFreeRevealPicking } from "../board/landscapes.js";
+import { logMoment } from "../core/narrator.js";
+import { repressCard } from "./subconscious.js";
 import { offerEffectChoice, registerEffectResolver } from "../effects/effect-choices.js";
 import { dreamerPrimarySuit } from "../encounters/dreambeasts.js";
 import { SUIT_LABELS } from "../core/rules.js";
@@ -258,37 +263,61 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
       break;
     }
 
-    case "lover":
-      if (!returnProduced(requestReturnCards(state, 1, player, { filter: "object" })) && !state.pendingReturn) {
-        refundArchetypeToken(state, player, "Lover Power: no Object in the Subconscious. Token refunded.");
-      }
+    case "lover": {
+      const drawn = helpers.drawObjects ? helpers.drawObjects(state, player, 1, helpers) : [];
+      if (!drawn.length) refundArchetypeToken(state, player, "Lover: the Object deck is empty. Token refunded.");
+      else logMoment(state, `Lover: ${player.name} draws ${drawn[0].name}.`);
       break;
+    }
 
     case "orphan":
-      alivePlayers(state).forEach((dreamer) => {
-        const drawn = drawPsycheForPlayer(state, dreamer, 2);
-        recordQuestEvent(state, "draw_psyche", { count: drawn.length });
+      state.nextFightDice = (state.nextFightDice || 0) + 3;
+      logMoment(state, "Orphan: your next fight rolls +3 dice.");
+      break;
+
+    case "explorer": {
+      const beasts = allEncountersOnBoard(state);
+      const elsewhere = (state.board || []).some((t) => t.revealed && !t.wasteland && t.id !== player.landscapeId);
+      if (!elsewhere) {
+        refundArchetypeToken(state, player, "Explorer: there is nowhere else to go yet. Token refunded.");
+        break;
+      }
+      offerEffectChoice(state, player, {
+        cardId: "explorer-boon",
+        title: "Explorer",
+        message: "Move whom?",
+        choices: [
+          { id: "self", label: `${player.name} (you)` },
+          ...beasts.map(({ tile, encounter }) => ({ id: `${tile.id}:${encounterKey(encounter)}`, label: `${encounter.name} on ${tile.name}` })),
+        ],
       });
       break;
-
-    case "explorer":
-      beginExplorerPower(state, player);
-      break;
+    }
 
     case "fool":
-      if (!beginRemember(state, player, alivePlayers(state).length + 1, { source: "Fool" })) {
-        refundArchetypeToken(state, player, "Fool Power: the Subconscious is empty. Token refunded.");
+      if (revealCapacity(state) < 1) {
+        refundArchetypeToken(state, player, "Fool: there is nothing left to place. Token refunded.");
+      } else {
+        beginFreeRevealPicking(state, Math.min(2, revealCapacity(state)));
+        logMoment(state, "Fool: place 2 Landscapes from the Vault, free.");
       }
       break;
 
-    case "outlaw":
-      beginOutlawPower(state, player, helpers);
+    case "outlaw": {
+      const enc = tileEncounters(landscapeById(state, player.landscapeId)).find((e) => !e.boss);
+      if (!enc) {
+        refundArchetypeToken(state, player, "Outlaw: no ordinary Dreambeast on your Landscape. Token refunded.");
+        break;
+      }
+      removeEncounterFromLandscape(state, player.landscapeId, enc);
+      repressCard(state, { ...enc, type: "dreambeast" });
+      logMoment(state, `Outlaw: ${enc.name} is banished without a fight.`);
       break;
+    }
 
     case "ruler":
-      if (!returnOneEach(state, "event", "Event")) {
-        refundArchetypeToken(state, player, "Ruler Power: no Event in the Subconscious. Token refunded.");
-      }
+      state.freeInsights = (state.freeInsights || 0) + 1;
+      logMoment(state, "Ruler: a free Insight waits at the next Lost & Found.");
       break;
 
     case "study":
@@ -319,6 +348,25 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
 export function handleArchetypePowerTilePick() {
   return false;
 }
+
+// Explorer: pick whom to move, then where.
+registerEffectResolver("explorer-boon", (state, choiceId) => {
+  const pending = state.pendingEffectChoice;
+  const player = state.players.find((p) => p.id === pending?.playerId) || alivePlayers(state)[0];
+  state.pendingEffectChoice = null;
+  if (!player) return true;
+  if (choiceId === "self") {
+    const allowed = (state.board || []).filter((t) => t.revealed && !t.wasteland && t.id !== player.landscapeId).map((t) => t.id);
+    requestChooseTile(state, { allowedIds: allowed, action: "movePlayer", playerId: player.id, title: "Explorer", detail: "Choose where to go." });
+    return true;
+  }
+  const [tileId, encKey] = String(choiceId).split(":");
+  const enc = tileEncounters(landscapeById(state, tileId)).find((e) => encounterKey(e) === encKey);
+  if (!enc) return true;
+  const allowed = (state.board || []).filter((t) => t.revealed && !t.wasteland && t.id !== tileId).map((t) => t.id);
+  requestChooseTile(state, { allowedIds: allowed, action: "moveEncounter", fromTileId: tileId, encounter: enc, title: "Explorer", detail: `Choose where ${enc.name} goes.` });
+  return true;
+});
 
 registerEffectResolver("study-boon", (state, choiceId) => {
   state.pendingEffectChoice = null;
