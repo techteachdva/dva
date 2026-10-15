@@ -5,15 +5,27 @@ import { getPhase, checkDreamerPsycheDeath, checkDefeat } from "../core/state.js
 import { LENGTHS } from "../core/data.js";
 import { validateScoreName, splitNameHint } from "./highscores.js";
 import * as localSaveStore from "./local-save-store.js";
+import * as remoteSaveStore from "./remote-save-store.js";
+import { isStandaloneMode } from "../app/standalone.js";
 import { repairMisplacedBossDreams } from "../cards/dream-deck.js";
 import { ensureDeckCaps } from "../cards/deck-pressure.js";
 
 export const SAVE_VERSION = 2;
 const MAX_STATE_CHARS = 48000;
 
-/** Ainmos keeps its saves on this device until it has its own table. */
-function activeStore() {
-  return localSaveStore;
+/** The itch build keeps saves on this device; the website saves to the Ainmos tab of the Google Sheet. */
+function useCloud() {
+  return !isStandaloneMode();
+}
+
+/** A named save kept on this device when the cloud cannot take it. */
+function writeNamedLocalSave(record) {
+  return localSaveStore.writeSave({
+    ...record,
+    id: `local-${Date.now().toString(36)}`,
+    updatedAt: Date.now(),
+    localOnly: true,
+  });
 }
 
 function stripRuntime(state) {
@@ -175,7 +187,7 @@ export async function saveGameCloud(state, launchConfig, { playerName, label } =
   const validated = validateScoreName(parts.first, parts.last);
   if (!validated.ok) throw new Error(validated.message);
   const packed = await packGameSave(state, launchConfig, { label, playerName: validated.name });
-  return activeStore().saveGame({
+  const record = {
     name: validated.name,
     label: packed.label,
     lengthKey: packed.launchConfig.lengthKey,
@@ -188,20 +200,46 @@ export async function saveGameCloud(state, launchConfig, { playerName, label } =
     compressed: packed.compressed,
     stateData: packed.stateData,
     launchConfig: packed.launchConfig,
-  });
+  };
+  if (!useCloud()) {
+    writeNamedLocalSave(record);
+    return { ok: true, local: true };
+  }
+  try {
+    return await remoteSaveStore.saveGame(record);
+  } catch (err) {
+    writeNamedLocalSave(record);
+    return { ok: true, local: true, cloudError: err?.message || "The cloud could not be reached." };
+  }
 }
 
-export async function listCloudSaves(_name) {
-  return { saves: listLocalSaves(), local: true, setupRequired: false };
+/** Cloud saves for this name, plus any saves kept on this device (autosave and cloud fallbacks). */
+export async function listCloudSaves(name) {
+  const local = listLocalSaves().map((save) => ({ ...save, local: true }));
+  if (!useCloud()) return { saves: local, local: true, setupRequired: false };
+  try {
+    const remote = await remoteSaveStore.listSaves(name);
+    if (remote.setupRequired) {
+      return { saves: local, local: true, setupRequired: false, error: "Cloud saves are offline; showing this device's saves." };
+    }
+    return { ...remote, saves: [...remote.saves, ...local] };
+  } catch (err) {
+    return { saves: local, local: true, setupRequired: false, error: err?.message || "Cloud saves could not be reached; showing this device's saves." };
+  }
 }
 
 export async function loadCloudSave(id) {
-  const record = localSaveStore.readSave(id);
+  const localRecord = localSaveStore.readSave(id);
+  const record = localRecord || (useCloud() ? await remoteSaveStore.loadSave(id) : null);
   if (!record) return null;
   return unpackGameSave(record);
 }
 
 export async function deleteCloudSave(id) {
-  deleteLocalSave(id);
+  if (localSaveStore.readSave(id)) {
+    deleteLocalSave(id);
+    return { ok: true };
+  }
+  if (useCloud()) return remoteSaveStore.deleteSave(id);
   return { ok: true };
 }

@@ -9,11 +9,30 @@
  * 5. Deploy → New deployment → Web app (Execute as: Me, Anyone)
  * 6. Copy Web app URL into Vercel env: SOMNIA_HIGHSCORES_SCRIPT_URL
  * 7. Set SOMNIA_HIGHSCORES_API_SECRET in Vercel to match API_SECRET below
+ *
+ * Two games share this deployment. Requests carry game: "somnia" (the default,
+ * so older Somnia builds keep working) or game: "ainmos". Each game has its own
+ * tabs: HighScores + SavedGames for Somnia, AinmosHighScores + AinmosSavedGames
+ * for Ainmos. The tabs are created on first use.
+ *
+ * UPDATING AN EXISTING DEPLOYMENT (keeps the same /exec URL, so Vercel needs no change):
+ *   Deploy → Manage deployments → pencil (Edit) → Version: New version → Deploy.
  */
 
-const SPREADSHEET_ID = normalizeSheetId_("PASTE_YOUR_SHEET_ID_HERE");
+const SPREADSHEET_ID = normalizeSheetId_("1eyFXKS8lMsEugCR5-Z3fNhiPpvAXruq9pZ0N47zs04I");
 const SHEET_NAME = "HighScores";
 const SAVES_SHEET_NAME = "SavedGames";
+const BACKEND_VERSION = 2;
+const GAME_TABS = {
+  somnia: { scores: SHEET_NAME, saves: SAVES_SHEET_NAME },
+  ainmos: { scores: "AinmosHighScores", saves: "AinmosSavedGames" },
+};
+/** Set per request from params.game; Somnia when missing. */
+let CURRENT_GAME = "somnia";
+
+function gameTabs_() {
+  return GAME_TABS[CURRENT_GAME] || GAME_TABS.somnia;
+}
 const API_SECRET = "studentsfirst";
 const MAX_ROWS = 100;
 const MAX_SAVES_PER_NAME = 5;
@@ -42,9 +61,10 @@ function getSpreadsheet_() {
 
 function getSheet_() {
   const ss = getSpreadsheet_();
-  let sheet = ss.getSheetByName(SHEET_NAME);
+  const name = gameTabs_().scores;
+  let sheet = ss.getSheetByName(name);
   if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
+    sheet = ss.insertSheet(name);
     initHeaders_(sheet);
   }
   return sheet;
@@ -70,9 +90,10 @@ function initHeaders_(sheet) {
 
 function getSavesSheet_() {
   const ss = getSpreadsheet_();
-  let sheet = ss.getSheetByName(SAVES_SHEET_NAME);
+  const name = gameTabs_().saves;
+  let sheet = ss.getSheetByName(name);
   if (!sheet) {
-    sheet = ss.insertSheet(SAVES_SHEET_NAME);
+    sheet = ss.insertSheet(name);
     initSaveHeaders_(sheet);
   }
   return sheet;
@@ -101,8 +122,12 @@ function initSaveHeaders_(sheet) {
 }
 
 function initSheet() {
-  initHeaders_(getSheet_());
-  initSaveHeaders_(getSavesSheet_());
+  Object.keys(GAME_TABS).forEach((game) => {
+    CURRENT_GAME = game;
+    initHeaders_(getSheet_());
+    initSaveHeaders_(getSavesSheet_());
+  });
+  CURRENT_GAME = "somnia";
 }
 
 function doGet(e) {
@@ -123,7 +148,15 @@ function handle_(e, isGet) {
       return respond_({ error: "Unauthorized" });
     }
 
+    const game = String(params.game || "somnia").toLowerCase();
+    if (!GAME_TABS[game]) return respond_({ error: "Unknown game" });
+    CURRENT_GAME = game;
+
     const action = String(params.action || (isGet ? "list" : "save"));
+
+    if (action === "ping") {
+      return respond_({ ok: true, version: BACKEND_VERSION, games: Object.keys(GAME_TABS) });
+    }
 
     if (action === "list") {
       return respond_({ scores: listScores_() });
@@ -197,7 +230,10 @@ function rowToScore_(row, rank) {
 function readRows_(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
-  return sheet.getRange(2, 1, lastRow, 9).getValues();
+  // Rows 2..lastRow (lastRow - 1 rows). Blank rows are skipped so they never rank.
+  return sheet.getRange(2, 1, lastRow - 1, 9).getValues().filter(function (row) {
+    return String(row[0] || "").trim() && String(row[2] || "").trim();
+  });
 }
 
 function sortRows_(rows) {
@@ -214,7 +250,7 @@ function sortRows_(rows) {
 function writeRows_(sheet, rows) {
   const lastRow = sheet.getLastRow();
   if (lastRow > 1) {
-    sheet.getRange(2, 1, lastRow, 9).clearContent();
+    sheet.getRange(2, 1, lastRow - 1, 9).clearContent();
     if (lastRow > rows.length + 1) {
       sheet.deleteRows(rows.length + 2, lastRow - rows.length - 1);
     }
@@ -331,7 +367,9 @@ function rowToSave_(row) {
 function readSaveRows_(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
-  return sheet.getRange(2, 1, lastRow, 13).getValues();
+  return sheet.getRange(2, 1, lastRow - 1, 13).getValues().filter(function (row) {
+    return String(row[0] || "").trim();
+  });
 }
 
 function listSaves_(nameFilter) {
@@ -438,7 +476,7 @@ function deleteSave_(id) {
 function writeSaveRows_(sheet, rows) {
   const lastRow = sheet.getLastRow();
   if (lastRow > 1) {
-    sheet.getRange(2, 1, lastRow, 13).clearContent();
+    sheet.getRange(2, 1, lastRow - 1, 13).clearContent();
     if (lastRow > rows.length + 1) {
       sheet.deleteRows(rows.length + 2, lastRow - rows.length - 1);
     }

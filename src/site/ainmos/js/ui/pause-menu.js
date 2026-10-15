@@ -142,7 +142,7 @@ function saveRowHtml(save, { cloud = false } = {}) {
   return `
     <div class="pause-save-row">
       <div class="pause-save-info">
-        <strong>${title}${cloud && save.name ? ` <span class="pause-save-owner">${save.name}</span>` : ""}</strong>
+        <strong>${title}${cloud && save.name ? ` <span class="pause-save-owner">${save.name}</span>` : ""}${save.local ? ` <span class="pause-save-owner">this device</span>` : ""}</strong>
         <span class="pause-save-meta">${bits}</span>
         ${dreamers ? `<span class="pause-save-meta pause-save-dreamers">${dreamers}</span>` : ""}
       </div>
@@ -291,8 +291,10 @@ function bindGameControls(root) {
       return;
     }
     try {
-      await gameSaveHooks?.saveCloud?.(valid);
-      setStatus("Saved to cloud.");
+      const result = await gameSaveHooks?.saveCloud?.(valid);
+      setStatus(result?.local
+        ? `Saved on this device instead. ${result.cloudError || "The cloud could not be reached."}`
+        : "Saved to cloud.", !!result?.local);
     } catch (e) {
       setStatus(e.message || "Could not save to cloud.", true);
     }

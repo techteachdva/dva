@@ -9,6 +9,11 @@
  *   GET  /api/somnia-saves?name=Phil%20K → { saves: [...] }
  *   POST /api/somnia-saves { action: "saveGame"|"load"|"delete", ... }
  *
+ * Ainmos uses the same deployment with game=ainmos (its own sheet tabs):
+ *   /api/ainmos-highscores and /api/ainmos-saves rewrite here with ?game=ainmos.
+ *   Before any Ainmos call the proxy pings the script; an older script that
+ *   does not know Ainmos gets a setupRequired reply, never a write into Somnia's tabs.
+ *
  * Vercel environment variables:
  *   SOMNIA_HIGHSCORES_SCRIPT_URL
  *   SOMNIA_HIGHSCORES_API_SECRET
@@ -85,6 +90,45 @@ async function fetchScriptJson(url, options) {
   }
 }
 
+const GAMES = new Set(["somnia", "ainmos"]);
+
+function gameOf(request, body = null) {
+  const fromUrl = new URL(request.url).searchParams.get("game");
+  const game = String(body?.game || fromUrl || "somnia").toLowerCase();
+  return GAMES.has(game) ? game : "somnia";
+}
+
+let ainmosReady = { ok: false, checkedAt: 0 };
+
+/** True when the deployed Apps Script has the Ainmos tabs (backend version 2+). */
+async function ainmosBackendReady(scriptUrl) {
+  const now = Date.now();
+  if (ainmosReady.ok || now - ainmosReady.checkedAt < 60000) return ainmosReady.ok;
+  try {
+    const url = new URL(scriptUrl);
+    url.searchParams.set("action", "ping");
+    url.searchParams.set("game", "ainmos");
+    url.searchParams.set("secret", getApiSecret());
+    const data = await fetchScriptJson(url.toString(), { method: "GET" });
+    ainmosReady = { ok: Boolean(data.ok && Array.isArray(data.games) && data.games.includes("ainmos")), checkedAt: now };
+  } catch {
+    ainmosReady = { ok: false, checkedAt: now };
+  }
+  return ainmosReady.ok;
+}
+
+function ainmosNotDeployedResponse(kind) {
+  return Response.json(
+    {
+      error:
+        "Ainmos cloud storage is not deployed yet. Paste the updated google-apps-script/somnia-highscores-backend.gs into the Apps Script editor and deploy a New version (same /exec URL).",
+      [kind]: [],
+      setupRequired: true,
+    },
+    { status: 503, headers: corsHeaders() },
+  );
+}
+
 function isSavesRequest(request, body = null) {
   const url = new URL(request.url);
   if (url.pathname.endsWith("/somnia-saves")) return true;
@@ -152,15 +196,17 @@ function normalizeSaveMeta(entry) {
   };
 }
 
-async function handleScoresGet() {
+async function handleScoresGet(game = "somnia") {
   const scriptUrl = getScriptUrl();
   if (!scriptUrl) return notConfiguredScoresResponse();
 
   try {
     assertScriptUrl(scriptUrl);
+    if (game === "ainmos" && !(await ainmosBackendReady(scriptUrl))) return ainmosNotDeployedResponse("scores");
     const url = new URL(scriptUrl);
     url.searchParams.set("action", "list");
     url.searchParams.set("secret", getApiSecret());
+    url.searchParams.set("game", game);
 
     const data = await fetchScriptJson(url.toString(), { method: "GET" });
     if (data.error) {
@@ -184,17 +230,19 @@ async function handleScoresGet() {
   }
 }
 
-async function handleSavesGet(request) {
+async function handleSavesGet(request, game = "somnia") {
   const scriptUrl = getScriptUrl();
   if (!scriptUrl) return notConfiguredSavesResponse();
 
   try {
     assertScriptUrl(scriptUrl);
+    if (game === "ainmos" && !(await ainmosBackendReady(scriptUrl))) return ainmosNotDeployedResponse("saves");
     const { searchParams } = new URL(request.url);
     const name = (searchParams.get("name") || "").trim().slice(0, 24);
     const url = new URL(scriptUrl);
     url.searchParams.set("action", "listSaves");
     url.searchParams.set("secret", getApiSecret());
+    url.searchParams.set("game", game);
     if (name) url.searchParams.set("name", name);
 
     const data = await fetchScriptJson(url.toString(), { method: "GET" });
@@ -219,10 +267,11 @@ async function handleSavesGet(request) {
   }
 }
 
-async function handleScoresPost(body) {
+async function handleScoresPost(body, game = "somnia") {
   const scriptUrl = getScriptUrl();
   if (!scriptUrl) return notConfiguredScoresResponse();
   assertScriptUrl(scriptUrl);
+  if (game === "ainmos" && !(await ainmosBackendReady(scriptUrl))) return ainmosNotDeployedResponse("scores");
 
   const name = typeof body?.name === "string" ? body.name.trim().slice(0, 24) : "";
   const score = Number(body?.score);
@@ -247,6 +296,7 @@ async function handleScoresPost(body) {
     body: JSON.stringify({
       action: "save",
       secret: getApiSecret(),
+      game,
       name,
       score: Math.round(score),
       won,
@@ -276,18 +326,20 @@ async function handleScoresPost(body) {
   );
 }
 
-async function handleSavesPost(body) {
+async function handleSavesPost(body, game = "somnia") {
   const scriptUrl = getScriptUrl();
   if (!scriptUrl) return notConfiguredSavesResponse();
   assertScriptUrl(scriptUrl);
+  if (game === "ainmos" && !(await ainmosBackendReady(scriptUrl))) return ainmosNotDeployedResponse("saves");
 
   let action = String(body?.action || "saveGame");
   if (action === "save") action = "saveGame";
 
   const payload = {
+    ...body,
     action,
     secret: getApiSecret(),
-    ...body,
+    game,
   };
 
   const data = await fetchScriptJson(scriptUrl, {
@@ -318,21 +370,23 @@ async function handleSavesPost(body) {
 }
 
 export async function GET(request) {
+  const game = gameOf(request);
   if (isSavesRequest(request)) {
-    return handleSavesGet(request);
+    return handleSavesGet(request, game);
   }
-  return handleScoresGet();
+  return handleScoresGet(game);
 }
 
 export async function POST(request) {
   try {
     const body = await request.json();
+    const game = gameOf(request, body);
     if (isSavesRequest(request, body)) {
       if (!getScriptUrl()) return notConfiguredSavesResponse();
-      return await handleSavesPost(body);
+      return await handleSavesPost(body, game);
     }
     if (!getScriptUrl()) return notConfiguredScoresResponse();
-    return await handleScoresPost(body);
+    return await handleScoresPost(body, game);
   } catch (e) {
     console.error("Somnia API POST proxy error:", e.message);
     return Response.json({ error: e.message || "Could not complete request." }, { status: 502, headers: corsHeaders() });

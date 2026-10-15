@@ -3,7 +3,7 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.24.2-called-home";
+const CACHE_NAME = "ainmos-0.24.3-cloud-dreams";
 /** Versioned with the release, so a new ship never serves last version's modules. */
 const RUNTIME_CACHE = `${CACHE_NAME}-runtime`;
 
@@ -116,6 +116,8 @@ const PRECACHE = [
   "./js/app/launch-store.js",
   "./js/save/local-save-store.js",
   "./js/save/local-score-store.js",
+  "./js/save/remote-save-store.js",
+  "./js/save/remote-score-store.js",
   "./js/encounters/meet-phase.js",
   "./js/cards/mindstream-choices.js",
   "./js/cards/mindstream-draw-cinematic.js",

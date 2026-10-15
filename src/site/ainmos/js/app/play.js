@@ -785,9 +785,11 @@ function bindEndLeaderboard() {
       scoreSubmitted = true;
       if (status) {
         const boardLabel = isStandaloneMode() ? "local high scores" : "the leaderboard";
-        status.textContent = result.inTop
-          ? `Saved! Rank #${result.rank} on ${boardLabel}.`
-          : "Score saved!";
+        status.textContent = result.cloudError
+          ? `Saved on this device. The global board could not take it right now (${result.cloudError}).`
+          : result.inTop
+            ? `Saved! Rank #${result.rank} on ${boardLabel}.`
+            : "Score saved!";
       }
       renderLeaderboardList(result.scores || []);
     } catch (err) {
@@ -997,7 +999,7 @@ function buildPauseSaveHooks() {
       if (!canSaveGame(state)) throw new Error("Cannot save right now.");
       const valid = name?.ok ? name : validateScoreName(name?.first, name?.last);
       if (!valid.ok) throw new Error(valid.message);
-      await saveGameCloud(state, launchConfig, { playerName: valid.name });
+      return saveGameCloud(state, launchConfig, { playerName: valid.name });
     },
     loadLocal: async () => {
       const loaded = await loadGameLocal("autosave");

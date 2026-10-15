@@ -3,14 +3,15 @@
  */
 
 import * as localStore from "./local-score-store.js";
+import * as remoteStore from "./remote-score-store.js";
 import { isStandaloneMode } from "../app/standalone.js";
 
 const FIRST_RE = /^[\p{L}][\p{L}'-]{0,15}$/u;
 const LAST_RE = /^[\p{L}]$/u;
 
-/** Ainmos keeps its scores on this device until it has its own table. */
-function activeStore() {
-  return localStore;
+/** The itch build keeps scores on this device; the website uses the Ainmos tab of the Google Sheet. */
+function useCloud() {
+  return !isStandaloneMode();
 }
 
 export { isStandaloneMode } from "../app/standalone.js";
@@ -43,9 +44,25 @@ export function splitNameHint(raw) {
 }
 
 export async function fetchHighScores() {
-  return activeStore().fetchHighScores();
+  if (!useCloud()) return localStore.fetchHighScores();
+  try {
+    const remote = await remoteStore.fetchHighScores();
+    if (!remote.setupRequired) return remote;
+    const local = await localStore.fetchHighScores();
+    return { ...local, error: "The global board is offline, so these are this device's scores." };
+  } catch {
+    const local = await localStore.fetchHighScores();
+    return { ...local, error: "The global board could not be reached, so these are this device's scores." };
+  }
 }
 
+/** Cloud first; if the cloud cannot take it, the score is kept on this device and the result says so. */
 export async function submitHighScore(entry) {
-  return activeStore().submitHighScore(entry);
+  if (!useCloud()) return localStore.submitHighScore(entry);
+  try {
+    return await remoteStore.submitHighScore(entry);
+  } catch (err) {
+    const saved = await localStore.submitHighScore(entry);
+    return { ...saved, local: true, cloudError: err?.message || "The global board could not be reached." };
+  }
 }

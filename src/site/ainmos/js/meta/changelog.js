@@ -6,10 +6,20 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.24.2";
+export const SOMNIA_VERSION = "0.24.3";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.24.3",
+    title: "Cloud Dreams",
+    notes: [
+      "Ainmos saves and high scores go to the cloud on the website, in their own Ainmos tabs of the shared Google Sheet (Somnia keeps its own).",
+      "Fixed: Save to cloud threw an error in Ainmos.",
+      "If the cloud can't be reached, your save or score is kept on this device and the game tells you so. Saved Dreams lists cloud and device saves together.",
+      "The itch build keeps everything on your device, as before.",
+    ],
+  },
   {
     version: "0.24.2",
     title: "Called Home",
