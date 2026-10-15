@@ -66,9 +66,22 @@ const HINTS = [
     when: (s) => !!bestForm(s, selectedSpread(s)),
   },
   {
+    id: "glimmer-earn",
+    title: "Nothing is wasted: Glimmer",
+    text: "Every Reveal, step, or Meet action you leave unspent becomes Glimmer ✧ when the phase ends. Watch the Glimmer counter at the top. You spend it in the Lost & Found at the start of the next round.",
+    when: (s) => (s.glimmer || 0) > 0 && !s.lostFound?.open,
+  },
+  {
+    id: "glimmer-preview",
+    title: "Leftovers become Glimmer",
+    text: "The phase chip shows what you have left. End the phase with some unspent and each one turns into 1 Glimmer ✧ for the shop.",
+    when: (s) => (getPhase(s) === "Explore" && s.exploreActivated && (s.exploreMovesLeft || 0) > 0)
+      || (getPhase(s) === "Meet" && (s.meetActionBudget || 0) > (s.meetActionsUsed || 0)),
+  },
+  {
     id: "shop",
     title: "The Lost & Found",
-    text: "Objects cost Psyche value of their own suit; the Insight takes any suit. Psyche is also your health. Glimmer from unused actions pays first.",
+    text: "Your Glimmer ✧ pays first: each one covers 1 of any price, any suit. The rest you pay in Psyche of the item's suit (the Insight takes any suit). 3 Glimmer looks again. Psyche is also your health, so spend it with care.",
     when: (s) => !!s.lostFound?.open,
   },
 ];

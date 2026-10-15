@@ -309,16 +309,14 @@ async function phoneShots() {
   await game(page, async () => {
     const s = window.__ainmos.state();
     const ab = await import("/js/dreamers/archetype-board.js");
-    s.pendingMindstreamChoice = null;
-    s.landscapePick = null;
-    document.getElementById("utility-modal")?.classList.add("hidden");
     if (!ab.boardArchetypes(s).length) ab.spawnArchetype(s, s.archetypeDeck.shift());
     window.__ainmos.render();
   });
-  await wait(2000);
-  await snap(page, "21-phone-build-the-dream");
+  await wait(3000);
+  await snap(page, "21-phone-dream-or-opener");
   await game(page, () => {
     const s = window.__ainmos.state();
+    s.pendingMindstreamChoice = null;
     s.phaseIndex = 2;
     s.dreamDrawn = true;
     s.meetActionBudget = 3;

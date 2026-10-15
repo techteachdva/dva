@@ -433,6 +433,10 @@ export function infoHubHtml(options = {}) {
             <h3>Archetypes</h3>
             <p>Meeting one costs 1 action and opens with one of its <strong>Events</strong>. <strong>Bright</strong> (only while one of the Event's Landscapes is placed) costs Psyche and helps the fight. <strong>Dim</strong> is free and hurts it. Then play a spread that makes a <strong>Dream Form</strong> against Power 12. Win: +1 Archetype, +2 Power Tokens, and its power is yours.</p>
           </div>
+          <div class="info-hub-rule info-hub-glimmer">
+            <h3>Glimmer ✧</h3>
+            <p><strong>Any</strong> Reveal, step, or Meet action you leave unspent becomes <strong>1 Glimmer</strong> when the phase ends (up to 10 banked, shown at the top). In the <strong>Lost &amp; Found</strong> at the start of the next round, Glimmer pays first: 1 value of any price, in any suit. 3 Glimmer looks again. The Attic, Desert, and Scary Classroom bank 2 more.</p>
+          </div>
           <div class="info-hub-rule">
             <h3>Between Rounds</h3>
             <p>The <strong>Lost &amp; Found</strong> sells Objects for Psyche of their suit, and one Insight that levels a Dream Form or upgrades a card. Psyche is your health and your coin.</p>

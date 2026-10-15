@@ -37,7 +37,3 @@ export function cardBackForCard(card) {
   return CARD_BACKS.psyche;
 }
 
-export function mindstreamSuitFromDeckId(deckId) {
-  if (!deckId?.startsWith("mindstream-")) return null;
-  return deckId.replace("mindstream-", "");
-}

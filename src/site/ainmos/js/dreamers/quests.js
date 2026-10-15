@@ -431,13 +431,3 @@ export function sacrificeHeldObject(state, playerId, instanceId) {
   return { ok: true, log: `${who} sacrificed ${card.name}.` };
 }
 
-export function canMarkQuest(state, questIndex) {
-  const arch = state.activeArchetype;
-  if (!arch) return { ok: false, reason: "No active Archetype." };
-  if (arch.questProgress[questIndex]) return { ok: false, reason: "Quest already complete." };
-  const quest = arch.quests[questIndex];
-  if (!isQuestConditionMet(state, arch.id, quest)) {
-    return { ok: false, reason: `Quest not met: ${quest}` };
-  }
-  return { ok: true };
-}

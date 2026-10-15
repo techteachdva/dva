@@ -865,54 +865,6 @@ export function forgetEdgeLandscapes(state, count) {
   return picks.length;
 }
 
-export function spendRevealOnMindstreamTop(state, suit) {
-  const pick = state.landscapePick;
-  if (pick?.mode !== "reveal-deck-tops") return null;
-  if (pick.remaining <= 0) return null;
-  const deckKey = `mindstream-${suit}`;
-  const visionary = (state.players || []).find((p) => p.alive && p.dreamer?.id === "the-visionary");
-  if (visionary && !state.tutorialMode && !state.visionaryPeekUsed) {
-    const peeked = peekFacedownDeckCard(state, deckKey);
-    if (peeked) {
-      state.visionaryPeekUsed = true;
-      pick.remaining -= 1;
-      narrate(
-        state,
-        `The Visionary peeks ${peeked.name}.`,
-        `${peeked.name} stays facedown on the ${suit} Mindstream.${pick.remaining > 0 ? ` ${pick.remaining} Reveal(s) left.` : ""}`,
-      );
-      addLog(state, `The Visionary peeks ${peeked.name} on the ${suit} Mindstream. It stays facedown.`);
-      if (pick.remaining <= 0) {
-        state.landscapePick = null;
-        state.revealLandscapeUsed = true;
-        recordQuestEvent(state, "reveal_landscape", { count: (pick.picked || []).length });
-      }
-      return peeked;
-    }
-  }
-  const card = revealNextDeckCard(state, deckKey);
-  if (!card) {
-    addLog(state, `No facedown ${suit} Mindstream cards left to flip.`);
-    return null;
-  }
-  pick.remaining -= 1;
-  pick.flipped = pick.flipped || [];
-  pick.flipped.push({ suit, name: card.name });
-  narrate(
-    state,
-    `Flipped ${card.name}.`,
-    `${card.name} is now face-up on the ${suit} Mindstream.${pick.remaining > 0 ? ` ${pick.remaining} Reveal(s) left — click another Mindstream back.` : " Lucidity Reveals are spent."}`,
-    pick.remaining > 0 ? [`${pick.remaining} deck flip(s) left`] : ["Reveal action complete"],
-  );
-  addLog(state, `Lucidity Reveal flips ${card.name} on the ${suit} Mindstream.`);
-  if (pick.remaining <= 0) {
-    state.landscapePick = null;
-    state.revealLandscapeUsed = true;
-    recordQuestEvent(state, "reveal_landscape", { count: (pick.picked || []).length });
-  }
-  return card;
-}
-
 function assembleFinalRecurrenceDeck(state) {
   const deck = state.dreamDeck || [];
   const discard = state.dreamDiscard || [];

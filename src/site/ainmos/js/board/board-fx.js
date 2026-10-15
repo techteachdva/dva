@@ -471,6 +471,11 @@ export function queueArchetypePowerFx(archetype) {
   if (archetype) queue.push({ type: "archetype-power", archetype });
 }
 
+/** Unused actions become Glimmer: sparkles and a "+N ✧" at the HUD counter. */
+export function queueGlimmerFx(count) {
+  if (count > 0) queue.push({ type: "glimmer-gain", count });
+}
+
 /** An Archetype appears on a Landscape: a golden ripple that echoes. */
 export function queueArchetypeArriveFx(tileId, name = "") {
   queue.push({ type: "archetype-arrive", tileId, name });
@@ -848,6 +853,21 @@ export function runPendingBoardFx() {
       burstSparkles(c.x, c.y, 12, "#f0c96a");
       floatLabel(c.x, c.y - 22, evt.archetype?.name || "Archetype Power", "fx-gain", delay);
       playSfx("acquire");
+      delay += step * 0.6;
+    } else if (evt.type === "glimmer-gain") {
+      const pill = document.querySelector(".hud-pill-glimmer");
+      const from = centerOf(document.getElementById("phase-stepper")) || boardCenter();
+      const to = centerOf(pill) || from;
+      if (from) burstSparkles(from.x, from.y, 8, "#f5d77a");
+      window.setTimeout(() => {
+        if (to) {
+          burstSparkles(to.x, to.y, 12 + evt.count * 2, "#f5d77a");
+          playPointRipple(to.x, to.y, "fx-arch-ripple fx-soft", 900);
+          floatLabel(to.x, to.y + 26, `+${evt.count} ✧ Glimmer`, "fx-arch-label", 0);
+        }
+        flashEl(pill, "is-pulse", 800);
+      }, 260);
+      playSfx("sparkle");
       delay += step * 0.6;
     } else if (evt.type === "archetype-arrive") {
       const tile = hexTileEl(evt.tileId || "bed");

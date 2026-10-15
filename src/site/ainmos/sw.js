@@ -3,7 +3,7 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.20-one-goal";
+const CACHE_NAME = "ainmos-0.21-first-dreams";
 const RUNTIME_CACHE = "ainmos-runtime-0.15-every-object";
 
 const PRECACHE = [
@@ -93,7 +93,6 @@ const PRECACHE = [
   "./js/dreamers/dreamer-powers.js",
   "./js/effects/effect-choices.js",
   "./js/effects/effects.js",
-  "./js/effects/event-choices.js",
   "./js/board/event-landscapes.js",
   "./js/effects/event-resolutions.js",
   "./js/dreamers/final-recurrence-atmosphere.js",
@@ -113,13 +112,10 @@ const PRECACHE = [
   "./js/app/launch-store.js",
   "./js/save/local-save-store.js",
   "./js/save/local-score-store.js",
-  "./js/encounters/meet-phase-tax.js",
   "./js/encounters/meet-phase.js",
   "./js/cards/mindstream-choices.js",
   "./js/cards/mindstream-draw-cinematic.js",
-  "./js/cards/mindstream-extra.js",
   "./js/cards/mindstream-supply.js",
-  "./js/cards/mindstream.js",
   "./js/ui/moment-overlay.js",
   "./js/core/narrator.js",
   "./js/effects/object-effects.js",

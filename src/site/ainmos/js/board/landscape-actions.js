@@ -45,14 +45,6 @@ import { boardArchetypes, lureArchetype } from "../dreamers/archetype-board.js";
 import { bankGlimmer } from "../shop/lost-found.js";
 
 export const LANDSCAPE_ACTION_DEFS = {
-  "draw-mindstream": {
-    label: "Draw Mindstream",
-    description: "Draw 1 card from this Landscape's matching Mindstream deck. Repeatable each Meet as long as you have actions.",
-  },
-  "spawn-dreambeast": {
-    label: "Spawn Dreambeast",
-    description: "Choose a Mindstream. Cycle from the top until a Dreambeast, place it on a matching-suit Landscape, then discard the rest of that Mindstream and reshuffle.",
-  },
   "swap-psyche": {
     label: "Swap 2 Psyche",
     description: "Swap Psyche cards between two Dreamers.",
@@ -77,10 +69,6 @@ export const LANDSCAPE_ACTION_DEFS = {
     label: "Toward Bed",
     description: "All Dreamers move 1 Landscape toward The Bed.",
   },
-  "swap-archetypes": {
-    label: "Swap Archetypes",
-    description: "Swap the Active Archetype with the next Archetype in the deck.",
-  },
   "lure-archetype": {
     label: "Call an Archetype",
     description: "The nearest Archetype steps 2 Landscapes toward you.",
@@ -97,14 +85,6 @@ export const LANDSCAPE_ACTION_DEFS = {
     label: "Swap Dreambeasts",
     description: "Swap 2 active Dreambeasts between Landscapes.",
   },
-  "draw-2-keep-1": {
-    label: "Draw 2, Keep 1",
-    description: "Draw 2 cards from any deck; keep 1 and discard the other.",
-  },
-  "draw-any-mindstream": {
-    label: "Draw Any Mindstream",
-    description: "Draw 1 card from any Mindstream deck of your choice.",
-  },
   "remember-2": {
     label: "Remember 2",
     description: "Memory tile. Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious. Every Psyche you Return is +1 Waking Mind.",
@@ -112,10 +92,6 @@ export const LANDSCAPE_ACTION_DEFS = {
   "return-2": {
     label: "Return 2 Cards",
     description: "Return 2 cards of your choice from the Subconscious.",
-  },
-  "flip-top-3": {
-    label: "Flip Top 3",
-    description: "Flip the top 3 cards of any deck (view before drawing).",
   },
   "cycle-psyche": {
     label: "Cycle Psyche",
@@ -132,10 +108,6 @@ export const LANDSCAPE_ACTION_DEFS = {
   "return-1": {
     label: "Return 1 Card",
     description: "Return 1 card of your choice from the Subconscious.",
-  },
-  "return-event": {
-    label: "Return Event",
-    description: "Return 1 Event from the Subconscious.",
   },
   "return-object": {
     label: "Return Object",
@@ -317,110 +289,6 @@ function returnTypedCard(state, type, count = 1) {
   const result = requestReturnCards(state, count);
   if (result?.pending) return { pending: true };
   return { ok: true };
-}
-
-function spawnDreambeastFromMindstream(state, suit) {
-  const pulled = pullDreambeastFromMindstream(state, { suit });
-  if (!pulled) {
-    addLog(state, `No Dreambeast found in ${SUIT_LABELS[suit]} Mindstream.`);
-    return null;
-  }
-  const beast = pulled.card;
-
-  const targets = revealedLandscapeTiles(state, { suit });
-  if (!targets.length) {
-    state.mindstreamDiscard[suit].push(beast);
-    stampBeastMillDiscard(state);
-    addLog(state, `No open ${SUIT_LABELS[suit]} Landscape for ${beast.name}.`);
-    return null;
-  }
-
-  const encounter = encounterFromDreambeastCard(beast);
-  if (state.tutorialMode || targets.length === 1) {
-    const tile = targets[Math.floor(Math.random() * targets.length)];
-    setEncounterOnLandscape(state, tile.id, encounter);
-    addLog(state, `${beast.name} spawns on ${tile.name} from the ${SUIT_LABELS[suit]} Mindstream.`);
-    return encounter;
-  }
-  requestChooseTile(state, {
-    allowedIds: targets.map((t) => t.id),
-    action: "spawnEncounter",
-    encounter,
-    title: `${beast.name} emerges`,
-    detail: `Choose a ${SUIT_LABELS[suit]} Landscape for ${beast.name}.`,
-  });
-  return encounter;
-}
-
-function drawTwoKeepOne(state, player, helpers) {
-  const options = [];
-  if (state.psycheDeck.length >= 2) {
-    options.push({ deck: "psyche", cards: state.psycheDeck.slice(0, 2) });
-  }
-  for (const suit of ["lucidity", "elasticity", "willpower"]) {
-    reshuffleMindstreamDiscardIfNeeded(state, suit);
-    if (state.mindstreamDecks[suit].length >= 2) {
-      options.push({ deck: `mindstream-${suit}`, suit, cards: state.mindstreamDecks[suit].slice(0, 2) });
-    }
-  }
-  if (state.dreamDeck.length >= 2) {
-    options.push({ deck: "dream", cards: state.dreamDeck.slice(0, 2) });
-  }
-
-  if (!options.length) {
-    addLog(state, "No deck has 2 cards to draw from.");
-    return null;
-  }
-
-  const pick = options[Math.floor(Math.random() * options.length)];
-  const [a, b] = pick.cards;
-  let keep = a;
-  let discard = b;
-
-  if (pick.deck === "psyche") {
-    state.psycheDeck.shift();
-    state.psycheDeck.shift();
-    player.hand.push(keep);
-    state.psycheDiscard.push(discard);
-    addLog(state, `Drew 2 Psyche on ${landscapeById(state, player.landscapeId)?.name}: kept ${keep.value}, discarded ${discard.value}.`);
-    recordQuestEvent(state, "draw_psyche", { count: 1 });
-    return keep;
-  }
-
-  if (pick.deck.startsWith("mindstream-")) {
-    const suit = pick.suit;
-    const deck = state.mindstreamDecks[suit];
-    deck.shift();
-    deck.shift();
-    addLog(state, `Drew 2 ${SUIT_LABELS[suit]} Mindstream: kept ${keep.name}, discarded ${discard.name}.`);
-    if (keep.type === "dreambeast") {
-      helpers.spawnEncounter(state, player.landscapeId, keep);
-    } else if (helpers.resolveCardEffect) {
-      helpers.resolveCardEffect(state, keep, player, helpers);
-      const pending = state.pendingMindstreamChoice;
-      const alreadyDiscarded = state.mindstreamDiscard[suit]?.some(
-        (c) => c === keep || (c.instanceId && c.instanceId === keep.instanceId),
-      );
-      if (!pending && keep.type !== "object" && keep.type !== "dreambeast" && !alreadyDiscarded) {
-        state.mindstreamDiscard[suit].push(keep);
-      }
-    }
-    state.mindstreamDiscard[suit].push(discard);
-    return keep;
-  }
-
-  state.dreamDeck.shift();
-  state.dreamDeck.shift();
-  addLog(state, `Drew 2 Dreams: resolving ${keep.name}, discarding ${discard.name}.`);
-  discardDreamCard(state, discard);
-  if (isBossDreamCard(keep)) {
-    spawnBossEncounterOnBed(state, keep);
-    if (!state.dreamDiscard) state.dreamDiscard = [];
-    state.dreamDiscard.push(keep);
-  } else if (helpers.resolveCardEffect) {
-    helpers.resolveCardEffect(state, keep, player, helpers);
-  }
-  return keep;
 }
 
 function playerById(state, id) {
@@ -652,35 +520,6 @@ function beginSwapDreambeasts(state) {
     title: "Swap Dreambeasts",
     detail: "Choose 2 Landscapes with Dreambeasts to swap.",
     followup: { landscapeAction: "swap-dreambeasts" },
-  });
-  return { ok: true, pending: true };
-}
-
-function beginDrawTwoKeepOne(state, player, helpers) {
-  rememberLandscapeHelpers(helpers);
-  const options = [];
-  if (state.psycheDeck.length >= 2) options.push({ id: "psyche", label: "Psyche deck" });
-  for (const suit of ["lucidity", "elasticity", "willpower"]) {
-    reshuffleMindstreamDiscardIfNeeded(state, suit);
-    if (state.mindstreamDecks[suit].length >= 2) {
-      options.push({ id: `mindstream-${suit}`, label: `${SUIT_LABELS[suit]} Mindstream` });
-    }
-  }
-  if (state.dreamDeck.length >= 2) options.push({ id: "dream", label: "Dream deck" });
-  if (!options.length) {
-    addLog(state, "No deck has 2 cards to draw from.");
-    return { ok: false };
-  }
-  if (state.tutorialMode) {
-    drawTwoKeepOne(state, player, helpers);
-    return { ok: true };
-  }
-  offerEffectChoice(state, player, {
-    cardId: "landscape-action",
-    title: "Draw 2, Keep 1",
-    message: "Choose a deck.",
-    choices: options,
-    payload: { actionId: "draw-2-keep-1", step: "pick-deck" },
   });
   return { ok: true, pending: true };
 }
@@ -1035,17 +874,6 @@ export function getLandscapeActionChoices(tile) {
   return choices;
 }
 
-/** A drawn Mindstream card opened a choice. Extra Dreams resolve immediately. */
-function handOffDrawnMindstream(state, suit) {
-  const pending = state.pendingMindstreamChoice;
-  if (!pending) return false;
-  cancelQueuedMindstreamDrawFx();
-  if (pending.kind === "dream") return true;
-  pending.needsDrawCinematic = true;
-  pending.suit = suit;
-  return true;
-}
-
 export function executeLandscapeActionChoice(state, tile, player, actionId, helpers = {}) {
   const shut = landscapeActionBlockedByBoss(state, tile, actionId);
   if (shut) {
@@ -1055,52 +883,6 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
   const landscapeName = tile.name;
 
   switch (actionId) {
-    case "draw-mindstream": {
-      const suit = tile.suit;
-      const cards = drawMindstream(state, suit, 1);
-      if (!cards.length) {
-        addLog(state, `No ${SUIT_LABELS[suit]} Mindstream cards left.`);
-        return { ok: false, refund: true };
-      }
-      const card = cards[0];
-      addLog(state, `${landscapeName}: draws ${card.name}.`);
-      recordQuestEvent(state, "mindstream_on_landscape", { landscapeId: tile.id, suit: tile.suit });
-      queueMindstreamDrawFx(tile.id, suit, card);
-      if (helpers.resolveCardEffect) {
-        helpers.resolveCardEffect(state, card, player, helpers);
-      }
-      // Events / power-tokens wait for the Mindstream cinematic. An extra Dream opens now.
-      if (handOffDrawnMindstream(state, suit)) {
-        return { ok: true, card, pendingChoice: true };
-      }
-      if (card.type !== "object" && card.type !== "dreambeast") {
-        state.mindstreamDiscard[suit].push(card);
-        if (card.type === "event") {
-          if (card.eventWasted) {
-            addLog(state, `${card.name} is discarded unused to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
-          } else {
-            addLog(state, `${card.name} is discarded to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
-          }
-          queueMindstreamDiscardFx(tile.id, suit, card, { wasted: !!card.eventWasted });
-        }
-      }
-      return { ok: true, card };
-    }
-
-    case "draw-any-mindstream": {
-      if (helpers.pickMindstreamSuit) {
-        return { ok: true, pending: "pick-mindstream-suit" };
-      }
-      return { ok: false, refund: true };
-    }
-
-    case "spawn-dreambeast": {
-      if (helpers.pickMindstreamSuit) {
-        return { ok: true, pending: "spawn-dreambeast-pick-suit" };
-      }
-      return { ok: false, refund: true };
-    }
-
     case "swap-psyche":
       return beginSwapPsyche(state, player);
 
@@ -1152,22 +934,6 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       return { ok: true };
     }
 
-    case "swap-archetypes": {
-      if (!state.activeArchetype || !state.archetypeDeck.length) {
-        addLog(state, "No Archetypes available to swap.");
-        return { ok: false };
-      }
-      const next = state.archetypeDeck.shift();
-      const prev = state.activeArchetype;
-      prev.questProgress = prev.questProgress || [false, false];
-      state.activeArchetype = next;
-      next.questProgress = [false, false];
-      next.powerTokensOnArchetype = 0;
-      state.archetypeDeck.push(prev);
-      addLog(state, `${landscapeName}: ${prev.name} goes to the bottom of the deck. ${next.name} is the dream to chase.`);
-      return { ok: true };
-    }
-
     case "lure-archetype": {
       const here = state.board.find((t) => t.id === player.landscapeId) || tile;
       const nearest = boardArchetypes(state)
@@ -1203,9 +969,6 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
     case "swap-dreambeasts":
       return beginSwapDreambeasts(state);
 
-    case "draw-2-keep-1":
-      return beginDrawTwoKeepOne(state, player, helpers);
-
     case "remember-2":
       return beginRemember(state, player, 2, { source: landscapeName })
         ? { ok: true }
@@ -1220,18 +983,8 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
     case "return-psyche":
       return { ok: true, ...returnTypedCard(state, "psyche", 1) };
 
-    case "return-event":
-      return { ok: true, ...returnTypedCard(state, "event", 1) };
-
     case "return-object":
       return { ok: true, ...returnTypedCard(state, "object", 1) };
-
-    case "flip-top-3": {
-      if (helpers.pickDeck) {
-        return { ok: true, pending: "flip-top-3-pick-deck" };
-      }
-      return { ok: false, refund: true };
-    }
 
     case "cycle-psyche":
       return beginCyclePsyche(state, player, tile);
@@ -1281,66 +1034,3 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
   }
 }
 
-export function resolveLandscapeMindstreamPick(state, tile, player, suit, actionId, helpers) {
-  if (actionId === "spawn-dreambeast") {
-    spawnDreambeastFromMindstream(state, suit);
-    return { ok: true };
-  }
-  if (actionId === "draw-any-mindstream") {
-    const cards = drawMindstream(state, suit, 1);
-    if (!cards.length) {
-      addLog(state, `No ${SUIT_LABELS[suit]} Mindstream cards left.`);
-      return { ok: false, refund: true };
-    }
-    const card = cards[0];
-    addLog(state, `${tile.name}: draws ${card.name}.`);
-    recordQuestEvent(state, "mindstream_on_landscape", { landscapeId: tile.id, suit: tile.suit });
-    queueMindstreamDrawFx(tile.id, suit, card);
-    if (helpers.resolveCardEffect) {
-      helpers.resolveCardEffect(state, card, player, helpers);
-    }
-    if (handOffDrawnMindstream(state, suit)) {
-      return { ok: true, card, pendingChoice: true };
-    }
-    if (card.type !== "object" && card.type !== "dreambeast") {
-      state.mindstreamDiscard[suit].push(card);
-      if (card.type === "event") {
-        if (card.eventWasted) {
-          addLog(state, `${card.name} is discarded unused to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
-        } else {
-          addLog(state, `${card.name} is discarded to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
-        }
-        queueMindstreamDiscardFx(tile.id, suit, card, { wasted: !!card.eventWasted });
-      }
-    }
-    return { ok: true, card };
-  }
-  return { ok: false };
-}
-
-export function flipTopThreeOfDeck(state, deckKey) {
-  if (deckKey.startsWith("mindstream-")) {
-    const suit = deckKey.replace("mindstream-", "");
-    if (reorderMindstreamTop(state, suit, 3)) {
-      rememberRevealedTops(state, deckKey, state.mindstreamDecks[suit].slice(0, 3));
-      addLog(state, `Flipped top 3 of ${SUIT_LABELS[suit]} Mindstream.`);
-      return true;
-    }
-    return false;
-  }
-
-  const map = { psyche: "psycheDeck", dream: "dreamDeck", archetype: "archetypeDeck" };
-  const key = map[deckKey] || deckKey;
-  const deck = state[key];
-  if (!deck?.length) {
-    addLog(state, "Deck is empty.");
-    return false;
-  }
-  const top = deck.splice(0, Math.min(3, deck.length));
-  top.reverse();
-  deck.unshift(...top);
-  const peekKey = deckKey === "psycheDeck" ? "psyche" : deckKey === "dreamDeck" ? "dream" : deckKey;
-  rememberRevealedTops(state, peekKey, top);
-  addLog(state, `Flipped top ${top.length} of ${deckKey} deck.`);
-  return true;
-}

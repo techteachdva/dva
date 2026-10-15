@@ -113,12 +113,6 @@ export function getAffectedLandscapeIds(state, event) {
   return getAffectedLandscapeTiles(state, event).map((t) => t.id);
 }
 
-/** Events with listed icons only fire when at least one of those tiles is Revealed. */
-export function eventCanResolve(state, event) {
-  if (!eventLandscapeIds(event).length) return true;
-  return hasAffectedLandscapes(state, event);
-}
-
 export function eventDiscardPileLabel(event) {
   return `${suitLabel(event?.suit || event?.mindstreamSuit)} Mindstream discard pile`;
 }

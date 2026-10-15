@@ -45,7 +45,7 @@ import { handLimitForPlayer, resolveNothingChoice } from "../effects/objects.js"
 import { revealableTiles, forgettableTiles, cancelLandscapePick, pendingPlacementCard } from "../board/landscapes.js";
 import { isFreeformBoard, vaultCards, placementSlots } from "../board/dreamscape-vault.js";
 import { getEventResolution } from "../effects/event-resolutions.js";
-import { resolveMindstreamChoice, canPayEventGood, assessDreamGood } from "../cards/mindstream-choices.js";
+import { resolveMindstreamChoice, assessDreamGood } from "../cards/mindstream-choices.js";
 import { getDreamResolution } from "../cards/dream-resolutions.js";
 import { dreamReplayOptions, replayChosenDream } from "../cards/dream-replay.js";
 import { hasAffectedLandscapes } from "../board/event-landscapes.js";
@@ -88,19 +88,10 @@ export function pickMindstreamChoice(state, skill = "skilled") {
   const has = (id) => choices.includes(id);
   const sloppy = skill === "sloppy";
 
-  if (pending.kind === "event") {
-    const resolution = getEventResolution(card?.refId || card?.id);
-    const landscapesOk = hasAffectedLandscapes(state, card) || !(card?.landscapes?.length);
-    if (
-      has("good")
-      && resolution
-      && landscapesOk
-      && canPayEventGood(state, player, resolution)
-      && (!sloppy || Math.random() < 0.7)
-    ) {
-      return "good";
-    }
-    return has("bad") ? "bad" : choices[0] || null;
+  // An Archetype's Event: Bright when it can be paid (a sloppy bot sometimes skips it).
+  if (pending.kind === "archetype-event") {
+    const good = (pending.choices || []).find((c) => c.id === "good" && !c.disabled);
+    return good && (!sloppy || Math.random() < 0.6) ? "good" : "bad";
   }
 
   if (pending.kind === "object") {

@@ -882,16 +882,6 @@ export function repressFromMindstreamSetup(state, suit, playerCount) {
   }
 }
 
-/** Wild Psyche used to mill Mindstream tops; 25.0 mills the Psyche Deck instead. */
-export function repressTopMindstreamFromEachDeck(state) {
-  ["lucidity", "elasticity", "willpower"].forEach((suit) => {
-    const deck = state.mindstreamDecks?.[suit];
-    if (deck?.length) {
-      repressCard(state, deck.shift());
-    }
-  });
-}
-
 export function subconsciousPilesForUI(state) {
   state.subconscious = normalizeSubconscious(state.subconscious);
   const sub = state.subconscious;

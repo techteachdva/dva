@@ -177,6 +177,9 @@ const {
 const { revealableTiles, forgettableTiles, cancelLandscapePick, revealCapacity, pendingPlacementCard } = landscapesMod;
 const vaultMod = await mod("board/dreamscape-vault.js");
 const archBoard = await mod("dreamers/archetype-board.js");
+/** AINMOS_BOT=dumb plays carelessly: random calls, always Dim, first legal spread, aimless walking, no shopping. */
+const DUMB = process.env.AINMOS_BOT === "dumb";
+const pickRandom = (list) => list[Math.floor(Math.random() * list.length)];
 const formsMod = await mod("cards/dream-forms.js");
 const shopMod = await mod("shop/lost-found.js");
 const boonMod = await mod("dreamers/boons.js");
@@ -413,6 +416,7 @@ function tryAcquire(state) {
 /** Point the bot's quest logic at the row Dream closest to true. */
 /** Ainmos shopping: the richest hand buys Form Objects, Insights, and Remember taps, keeping a cushion. */
 function shopTurn(state) {
+  if (DUMB) return;
   const shop = state.lostFound;
   const buyer = [...alive(state)].sort((a, b) => handCount(b) - handCount(a))[0];
   if (!shop?.open || !buyer) return;
@@ -643,6 +647,10 @@ function archetypeTarget(state, player) {
 
 function destination(state, player) {
   const here = landscapeById(state, player.landscapeId);
+  if (DUMB) {
+    const open = state.board.filter((t) => t.revealed && !t.wasteland);
+    return (pickRandom(open) || here)?.id || player.landscapeId;
+  }
   const chase = archetypeTarget(state, player);
   if (chase) return chase;
   const hunt = huntTarget(state, player);
@@ -764,6 +772,7 @@ function resolveObject(state) {
 /** Choose the offered Archetype whose placed home is nearest; otherwise the first. */
 function pickArchetype(state) {
   const options = archBoard.archetypeChoiceOptions(state);
+  if (DUMB) return pickRandom(options);
   const me = alive(state)[0];
   const here = me ? landscapeById(state, me.landscapeId) : null;
   const score = (arch) => {
@@ -781,6 +790,7 @@ function bestArchetypeSpread(state, player, arch) {
   for (const combo of combinations(psycheCards(player), rules.cap)) {
     if (archBoard.formRuleProblem(combo, rules.formNeed)) continue;
     const dice = archetypeFightDice(state, player, combo, arch);
+    if (DUMB) return { combo, dice, value: 0 };
     const value = combo.reduce((s, c) => s + (Number(c.value) || 0), 0);
     if (!best || dice > best.dice || (dice === best.dice && value < best.value)) best = { combo, dice, value };
   }
@@ -827,7 +837,7 @@ function resolveOnePending(state) {
     const good = state.pendingMindstreamChoice.choices.find((c) => c.id === "good" && !c.disabled);
     const me = state.players.find((p) => p.id === state.pendingMindstreamChoice.playerId);
     const keep = me ? psycheCards(me).length : 0;
-    resolveMindstreamChoice(state, good && keep >= 4 ? "good" : "bad", helpers);
+    resolveMindstreamChoice(state, !DUMB && good && keep >= 4 ? "good" : "bad", helpers);
     return true;
   }
   if (state.beastsToReturn?.length && !state.landscapePick) {

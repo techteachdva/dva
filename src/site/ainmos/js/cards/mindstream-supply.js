@@ -279,16 +279,6 @@ export function pullObjectFromMindstreamDiscards(state) {
   return null;
 }
 
-export function pullObjectsFromMindstreamDiscards(state, count = 1) {
-  const out = [];
-  for (let i = 0; i < count; i += 1) {
-    const card = pullObjectFromMindstreamDiscards(state);
-    if (!card) break;
-    out.push(card);
-  }
-  return out;
-}
-
 export function countMindstreamDreambeasts(state) {
   return MINDSTREAM_SUIT_IDS.reduce((sum, suit) => {
     const inDeck = state.mindstreamDecks[suit].filter((c) => c.type === "dreambeast").length;
@@ -297,11 +287,3 @@ export function countMindstreamDreambeasts(state) {
   }, 0);
 }
 
-export function countMindstreamObjects(state) {
-  ensureObjectPiles(state);
-  return MINDSTREAM_SUIT_IDS.reduce((sum, suit) => {
-    const inDeck = (state.objectDecks[suit] || []).length;
-    const inDiscard = (state.objectDiscard[suit] || []).length;
-    return sum + inDeck + inDiscard;
-  }, 0);
-}

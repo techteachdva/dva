@@ -1399,3 +1399,64 @@ body.ainmos .phase-opener-solo-hand.ain-fan .game-card.selected { transform: rot
 @media (prefers-reduced-motion: reduce) {
   .aw-row::after, .wake-slot.is-got, .aw-pip.is-got, .hex-arch-arrive, .wake-pulse { animation: none !important; }
 }
+
+/* ── 0.21 Menu Psyche cards: solid suit faces, a huge number and suit sigil, readable at a glance ── */
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card:not(.wild) {
+  container-type: inline-size;
+  border: none !important;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55), 0 8px 18px rgba(4, 2, 14, 0.55) !important;
+  opacity: 1;
+}
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card.lucidity:not(.wild) { background: linear-gradient(160deg, #5b9bff 0%, #2d5cc9 55%, #172e6e 100%) !important; }
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card.elasticity:not(.wild) { background: linear-gradient(160deg, #ffd25e 0%, #d69a1c 55%, #6e4a08 100%) !important; }
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card.willpower:not(.wild) { background: linear-gradient(160deg, #ff7a6e 0%, #d6363a 55%, #6a1418 100%) !important; }
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card .psyche-pip {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4cqw;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card .psyche-value {
+  font: 800 52cqw/0.9 var(--font-display, serif);
+  color: #fff;
+  -webkit-text-stroke: 1.5px rgba(10, 6, 24, 0.55);
+  text-shadow: 0 3px 0 rgba(10, 6, 24, 0.45), 0 0 18px rgba(255, 255, 255, 0.35);
+}
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card .psyche-suit,
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card .psyche-suit .suit-icon {
+  color: #fff !important;
+  filter: drop-shadow(0 2px 2px rgba(10, 6, 24, 0.6));
+}
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card .psyche-suit svg { width: 26cqw; height: 26cqw; }
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card .psyche-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 5cqw;
+  text-align: center;
+  font: 800 9cqw/1 var(--font-display, serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+  opacity: 1;
+}
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card .psyche-holo { opacity: 0.35; mix-blend-mode: soft-light; }
+/* Cards that can't open this phase step back, but stay readable. */
+body.ainmos .phase-opener-solo-hand .psyche-card.opener-unusable { opacity: 0.5 !important; filter: saturate(0.45) brightness(0.85) !important; }
+body.ainmos .phase-opener-solo-hand .psyche-card.opener-usable { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.75), 0 0 22px rgba(255, 255, 255, 0.25), 0 8px 18px rgba(4, 2, 14, 0.55) !important; }
+/* Wild: a prism face, same big readable number. */
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card.wild {
+  container-type: inline-size;
+  border: none !important;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(20, 12, 40, 0.55), rgba(20, 12, 40, 0.15) 60%),
+    conic-gradient(from 210deg, #ff6b9d, #f5d77a, #5bd6a8, #5b9bff, #c9a0ff, #ff6b9d) !important;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.75), 0 8px 18px rgba(4, 2, 14, 0.55) !important;
+}
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card.wild .psyche-holo { display: none; }
+body.ainmos :is(.phase-opener-solo-hand, .card-choice-row, .spread-tray-fan, .dreamer-inspect-cards) .psyche-card.wild .psyche-suit { font-size: 22cqw; line-height: 1; background: none; -webkit-text-fill-color: #fff; }

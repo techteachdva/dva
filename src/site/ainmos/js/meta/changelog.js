@@ -6,10 +6,23 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.20";
+export const SOMNIA_VERSION = "0.21";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.21",
+    title: "First Dreams",
+    notes: [
+      "The Cycle screen comes first. Your first Dream is drawn only after you Begin Cycle 1.",
+      "Glimmer is taught, not hidden: the phase chip shows that unused actions become Glimmer ✧, leftovers burst into the Glimmer counter when a phase ends, the guided night explains it, and the rules have a Glimmer section.",
+      "Phones: the hand lives in the bottom strip beside Power Tokens and Objects, so nothing covers the Dreamscape.",
+      "Psyche in every menu has a solid suit face with a huge number and sigil; cards that cannot be played stay readable.",
+      "Every Dreamer starts with 2 Power Tokens.",
+      "The old Mindstream machinery is gone from the engine (about 3,000 lines): no Landscape draws, no Event chains, no deck peeking.",
+      "Stress-tested with careful and careless bots across 360 nights: no errors and no stalls.",
+    ],
+  },
   {
     version: "0.20",
     title: "One Goal",

@@ -35,7 +35,6 @@ import { SUIT_LABELS } from "../core/rules.js";
 import { logMoment } from "../core/narrator.js";
 import { resumeLandscapeAction } from "../board/landscape-actions.js";
 import { resumeArchetypeFollowup, continueArchetypeQueues } from "../dreamers/archetypes.js";
-import { continueDeferredEventQueues, startSilverForcedAccept } from "./event-choices.js";
 import { beginRemember } from "./remember.js";
 
 let lastHelpers = null;
@@ -458,22 +457,13 @@ export function resumeObjectEffect(state, helpers = null) {
   if (!follow) return false;
   if (follow.landscapeAction) {
     const ok = resumeLandscapeAction(state, helpers);
-    continueDeferredEventQueues(state);
     continueArchetypeQueues(state);
     return ok;
   }
   if (follow.archetypeFollowup) {
     const ok = resumeArchetypeFollowup(state, helpers);
-    continueDeferredEventQueues(state);
     continueArchetypeQueues(state);
     return ok;
-  }
-  if (follow.cardId === "silver-accept") {
-    state.pendingObjectFollowup = null;
-    const player = playerById(state, follow.playerId);
-    const enc = state.activeEncounter || encounterOnLandscape(state, follow.lastTileId);
-    if (player && enc) startSilverForcedAccept(state, player, follow.lastTileId, enc);
-    return true;
   }
   const h = useHelpers(helpers);
   state.pendingObjectFollowup = null;

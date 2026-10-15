@@ -14,7 +14,7 @@ import {
 } from "../dreamers/subconscious.js";
 import { logMoment } from "../core/narrator.js";
 import { onObjectDrawn } from "./objects.js";
-import { beginMindstreamCardChoice, beginDreamCardChoice } from "../cards/mindstream-choices.js";
+import { beginDreamCardChoice } from "../cards/mindstream-choices.js";
 import { beginEventOrWaste } from "../board/event-landscapes.js";
 import { isBossDreamCard, spawnBossEncounterOnBed } from "../cards/dream-deck.js";
 import { beginArchetypeChoice, isArchetypeDream } from "../dreamers/archetype-board.js";
@@ -165,16 +165,6 @@ export function resolveCardEffect(state, card, player, helpers) {
   const id = (card.refId || card.id || "").toLowerCase();
 
   // Ainmos 36.0 — Mindstream draws open a fullscreen choice before resolving.
-  if (
-    card.type === "event"
-    || card.type === "object"
-    || (card.type === "dreambeast" && card.accept)
-    || card.type === "power-token"
-    || card.type === "draw-dream"
-  ) {
-    if (beginMindstreamCardChoice(state, card, player, helpers)) return;
-  }
-
   if (card.type === "power-token") {
     const n = 1;
     grantPowerTokens(state, player, n, {

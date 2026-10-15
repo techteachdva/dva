@@ -106,8 +106,6 @@ import {
   getUniqueLandscapeActionChoices,
   canDrawMindstreamOnLandscape,
   executeLandscapeActionChoice,
-  resolveLandscapeMindstreamPick,
-  flipTopThreeOfDeck,
 } from "../board/landscape-actions.js";
 import {
   pullDreambeastFromMindstream,
@@ -121,7 +119,6 @@ import {
   handleLandscapeTilePick,
   cancelLandscapePick,
   requestChooseTile,
-  spendRevealOnMindstreamTop,
   placeLandscapeAt,
   selectVaultTile,
   refreshVaultDuringReveal,
@@ -153,7 +150,7 @@ import {
   ARCHETYPE_TOKEN_REWARD,
 } from "../dreamers/archetype-board.js";
 import { beginArchetypeEventChoice } from "../cards/mindstream-choices.js";
-import { queueArchetypeAcquireFx } from "../board/board-fx.js";
+import { queueArchetypeAcquireFx, queueGlimmerFx } from "../board/board-fx.js";
 import { sumEffectivePsycheValue, persistentMeetBonus } from "../effects/objects.js";
 import { repressFromWakingMind, autoReturnPsyche } from "../dreamers/subconscious.js";
 import {
@@ -563,8 +560,9 @@ export function convertExcessActionsToPsyche(state) {
     const noun = excessNoun(phase);
     logMoment(
       state,
-      `${drawn} unused ${noun}${drawn === 1 ? "" : "s"} → ${drawn} Glimmer ✧ for the Lost & Found (${state.glimmer || 0} banked).`,
+      `${drawn} unused ${noun}${drawn === 1 ? "" : "s"} → ${drawn} Glimmer ✧. It pays in the Lost & Found next round (${state.glimmer || 0} banked).`,
     );
+    queueGlimmerFx(drawn);
   }
   return drawn;
 }
@@ -1404,59 +1402,6 @@ export function drawDreamCard(state, onShowModal) {
   playSfx("dream");
   queueDreamDrawFx(card);
   if (onShowModal) onShowModal(card);
-  return card;
-}
-
-/**
- * Round 1 draws its Dream before anyone acts. The table reads Bright and Dim
- * from the card, the same way later Dreams do.
- */
-export function resolveOpeningDream(state, helpers = {}) {
-  if (!state || state.tutorialMode || state.openingOmen || state.dreamDrawn) return null;
-  const head = headPlayer(state);
-  if (!head) return null;
-
-  const card = state.dreamDeck.shift();
-  consumeRevealedTop(state, "dream");
-  if (!card) {
-    checkDefeat(state);
-    return null;
-  }
-
-  state.activeDream = card;
-  state.dreamDrawn = true;
-  if (!state.dreamDiscard) state.dreamDiscard = [];
-  state.dreamDiscard.push(card);
-
-  if (isBossDreamCard(card)) {
-    resolveCardEffect(state, card, head, getEffectHelpers());
-    state.openingOmen = {
-      name: card.name,
-      roll: null,
-      side: "boss",
-      label: "awakens on The Bed",
-      hint: "",
-    };
-    addLog(state, `${head.name} (Head ★) draws the opening Dream: ${card.name}. It awakens on The Bed.`);
-    logMoment(state, `${card.name} awakens before the night begins.`);
-    checkDefeat(state);
-    return card;
-  }
-
-  state.openingOmen = {
-    name: card.name,
-    roll: null,
-    side: "card",
-    label: "the table reads Bright and Dim",
-    hint: "",
-  };
-
-  addLog(state, `${head.name} (Head ★) draws the opening Dream: ${card.name}.`);
-  logMoment(state, `${card.name} is on the table. Bright if its condition is met. Otherwise Dim.`);
-  resolveCardEffect(state, card, head, helpers);
-
-  checkDefeat(state);
-  applySkeletonKeyAfterDream(state);
   return card;
 }
 
@@ -2335,10 +2280,6 @@ export function performLandscapeAction(state, actionId, { onResult } = {}) {
   return result;
 }
 
-export function drawMindstreamOnLandscape(state, options = {}) {
-  return performLandscapeAction(state, "draw-mindstream", options);
-}
-
 export function uniqueLandscapeAction(state, { onChoose, onResult } = {}) {
   const ctx = validateMeetLandscape(state);
   if (!ctx) {
@@ -2378,88 +2319,12 @@ export function completeLandscapeAction(state, tile, player, actionId, onResult)
     landscapeActionHelpers(state),
   );
 
-  if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
-    return { pending: result.pending, tile, player, actionId, onResult };
-  }
-
-  if (result?.pending === "flip-top-3-pick-deck") {
-    return { pending: result.pending, tile, player, actionId, onResult };
-  }
-
   if (result?.refund || (!result?.ok && !result?.pending)) {
     refundMeetAction(state, player, MEET_ACTIONS.LANDSCAPE, actionId);
   }
 
-  noteFreeQuestMeet(state, tile, result);
   if (result?.card && onResult) onResult(result.card);
   return result;
-}
-
-function noteFreeQuestMeet(state, tile, result) {
-  if (result?.card?.type !== "dreambeast") return;
-  if (!meetQuestLandscapeIds(state).includes(tile?.id)) return;
-  state.freeQuestMeet = { landscapeId: tile.id };
-  addLog(state, `${result.card.name} stands on the quest Landscape. Meeting it does not cost another action.`);
-}
-
-export function finishLandscapeMindstreamPick(state, tile, player, actionId, suit, onResult) {
-  const result = resolveLandscapeMindstreamPick(
-    state,
-    tile,
-    player,
-    suit,
-    actionId,
-    landscapeActionHelpers(state),
-  );
-  if (result?.refund) refundMeetAction(state, player, MEET_ACTIONS.LANDSCAPE, actionId);
-  noteFreeQuestMeet(state, tile, result);
-  if (result?.card && onResult) onResult(result.card);
-  return result;
-}
-
-export function finishLandscapeDeckFlip(state, deckKey) {
-  return flipTopThreeOfDeck(state, deckKey);
-}
-
-export function spendLucidityRevealOnDeck(state, suit) {
-  return spendRevealOnMindstreamTop(state, suit);
-}
-
-export function tryDrawMindstreamFromDeck(state, suit, helpers = {}) {
-  if (getPhase(state) !== "Meet") return { ok: false, reason: "meet" };
-  const player = activePlayer(state);
-  if (!player?.alive) return { ok: false, reason: "dreamer" };
-  const tile = landscapeById(state, player.landscapeId);
-  if (!tile?.revealed || tile.wasteland) {
-    return { ok: false, reason: "landscape" };
-  }
-  if (tile.suit === suit && canDrawMindstreamOnLandscape(tile)) {
-    const result = performLandscapeAction(state, "draw-mindstream", helpers);
-    return result || { ok: false, reason: "meet", tile, player };
-  }
-  const anyDraw = getLandscapeActionChoices(tile).some((choice) => choice.id === "draw-any-mindstream");
-  if (anyDraw) {
-    const started = performLandscapeAction(state, "draw-any-mindstream", helpers);
-    if (started?.pending === "pick-mindstream-suit") {
-      return finishLandscapeMindstreamPick(state, tile, player, "draw-any-mindstream", suit, helpers.onResult);
-    }
-    return started || { ok: false, reason: "suit", tile, player };
-  }
-  return { ok: false, reason: "suit", tile, player };
-}
-
-export function drawMindstreamCard(state, suit) {
-  if (getPhase(state) !== "Meet") {
-    addLog(state, "Draw Mindstream during the Meet phase.");
-    return null;
-  }
-  const tile = landscapeById(state, state.selectedLandscapeId);
-  if (!tile?.revealed) {
-    addLog(state, "Select a revealed Landscape.");
-    return null;
-  }
-  const result = performLandscapeAction(state, "draw-mindstream");
-  return result?.card || null;
 }
 
 export function playObject(state, objectId = null, { usePower = false } = {}) {

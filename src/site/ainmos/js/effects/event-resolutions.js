@@ -1939,7 +1939,3 @@ export function getEventResolution(id) {
   return EVENT_RESOLUTIONS[id] || null;
 }
 
-export function eventResolutionCost(id) {
-  const r = getEventResolution(id);
-  return r ? { suit: r.suit, cost: r.cost } : null;
-}

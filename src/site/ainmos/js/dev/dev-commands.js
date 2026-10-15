@@ -18,7 +18,7 @@ import {
   getPhase,
 } from "../core/state.js";
 import { countMindstreamDreambeasts } from "../cards/mindstream-supply.js";
-import { spawnEncounterOnLandscape, drawMindstreamCard, seatMeetPassToken } from "../core/game.js";
+import { spawnEncounterOnLandscape, seatMeetPassToken } from "../core/game.js";
 import { resolveCardEffect, createEffectHelpers } from "../effects/effects.js";
 import { resolveOnAcquire } from "../dreamers/archetypes.js";
 import { narrate } from "../core/narrator.js";
@@ -793,21 +793,6 @@ const COMMANDS = {
     },
   },
 
-  mindstream: {
-    usage: "mindstream <suit> draw",
-    desc: "Draw and resolve a Mindstream card (Meet phase).",
-    run: (state, args) => {
-      const suit = args[0]?.toLowerCase();
-      if (!["lucidity", "elasticity", "willpower"].includes(suit)) {
-        return fail("Suit: lucidity | elasticity | willpower");
-      }
-      state.phaseIndex = 2;
-      state.meetActionBudget = Math.max(state.meetActionBudget, 1);
-      const card = drawMindstreamCard(state, suit);
-      if (!card) return fail(`No ${suit} Mindstream cards.`);
-      return ok(`Resolved Mindstream: ${card.name}`);
-    },
-  },
 
   win: {
     usage: "win",

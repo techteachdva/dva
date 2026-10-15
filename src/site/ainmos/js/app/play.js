@@ -71,7 +71,6 @@ import {
   restorePlayState,
   undoStackSize,
 } from "../flow/action-history.js";
-import { recoverLegacySilver } from "../effects/event-choices.js";
 import { updateFinalRecurrenceAtmosphere } from "../dreamers/final-recurrence-atmosphere.js";
 import { syncDeckPressure } from "../cards/deck-pressure.js";
 import { startVictoryCelebration, startLossNightmare, stopVictoryCelebration } from "../ui/victory-celebration.js";
@@ -96,7 +95,6 @@ import {
   getPhaseAdvanceAction,
   getPhaseOpenerAction,
   drawDreamCard,
-  resolveOpeningDream,
   revealLandscape,
   activateExplore,
   handleBoardTileClick,
@@ -107,13 +105,8 @@ import {
   gainMeetActions,
   meetEncounter,
   landscapeAction,
-  drawMindstreamOnLandscape,
   performLandscapeAction,
   uniqueLandscapeAction,
-  finishLandscapeMindstreamPick,
-  finishLandscapeDeckFlip,
-  spendLucidityRevealOnDeck,
-  tryDrawMindstreamFromDeck,
   tradeAction,
   selectTradePartner,
   toggleTradeOffer,
@@ -181,7 +174,6 @@ import { letGoValue } from "../shop/lost-found.js";
 import { resolveObjectChoice } from "../effects/object-effects.js";
 import { resolveDreamChoice } from "../cards/dream-choices.js";
 import { resolveEffectChoice } from "../effects/effect-choices.js";
-import { continueDeferredEventQueues } from "../effects/event-choices.js";
 import { resolveMindstreamChoice } from "../cards/mindstream-choices.js";
 import { playMindstreamDrawCinematic } from "../cards/mindstream-draw-cinematic.js";
 import { playBeastMillSequence } from "../encounters/beast-mill-cinematic.js";
@@ -258,7 +250,6 @@ import {
   showEndScreen,
   showModal,
   hideModal,
-  showMindstreamPicker,
   showLandscapeActionPicker,
   showLandscapeDetail,
   showDreamerDetailOverlay,
@@ -270,7 +261,6 @@ import {
   showObjectReorderPicker,
   showObjectSpendPicker,
   showDreamerPowerDeckPicker,
-  showDeckFlipPicker,
   showTradeControls,
   showRespawnPicker,
   showDeathChoiceModal,
@@ -287,7 +277,6 @@ import {
   showDiscardPileModal,
   showRevealedTopsModal,
   showCardPeekStage,
-  showRevealDeckTopModal,
   renderHandChoiceBar,
   showDreamReplayPicker,
   renderSubconsciousButton,
@@ -1052,7 +1041,6 @@ function applyLoadedGame(loaded) {
   resetPhaseOpenerChrome();
   state = reattachGameRuntime(loaded.state);
   seedRandomness(state?.seed || null);
-  recoverLegacySilver(state);
   launchConfig = {
     ...loaded.launchConfig,
     launchedAt: Date.now(),
@@ -1077,7 +1065,6 @@ function undoLastTableAction() {
   hideUtilityModal(true);
   restorePlayState(state, prev);
   reattachGameRuntime(state);
-  recoverLegacySilver(state);
   resetHandSnapshots(state);
   resetDeckColumnRender();
   resetBoardMotion(state);
@@ -1167,7 +1154,7 @@ async function startGame(config) {
       boardMode: config.boardMode || "fixed",
       guided: !!config.guided,
     });
-    resolveOpeningDream(state, getEffectHelpers());
+    // Ainmos: the first Dream is drawn only after you Begin Cycle 1 (the Cycle screen comes first).
     // Hide the table until the opening deal plays (removed when it starts/skips).
     if (!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
       document.body.classList.add("opening-cinematic-pending");
@@ -1176,8 +1163,8 @@ async function startGame(config) {
     narrate(
       state,
       "You are dreaming",
-      "Endure the Dream, build the dream, and climb the Bosses.",
-      ["The opening Dream is on the table. Read Bright and Dim."],
+      "Begin the Cycle, endure its Dream, and call the Archetypes you need to wake.",
+      ["Cycle 1 begins when you are ready."],
     );
   }
 
@@ -1558,13 +1545,6 @@ function buildPhaseHandlers() {
       revealLandscape(state);
       renderAll();
     },
-    revealDeckTop: () => {
-      showRevealDeckTopModal((suit) => {
-        hideUtilityModal(true);
-        spendLucidityRevealOnDeck(state, suit);
-        renderAll();
-      });
-    },
     activateExplore: () => { activateExplore(state); renderAll(); },
     gainMeetActions: () => { gainMeetActions(state); renderAll(); },
     meetEncounter: (mode) => {
@@ -1575,58 +1555,23 @@ function buildPhaseHandlers() {
       });
       renderAll();
     },
-    drawMindstream: () => {
-      drawMindstreamOnLandscape(state, {
-        onResult: (card) => showDrawnMindstreamCard(card),
-      });
-      renderAll();
-    },
     landscapeAction: (actionId) => {
-      const result = performLandscapeAction(state, actionId, {
-        onResult: (card) => showDrawnMindstreamCard(card),
+      performLandscapeAction(state, actionId, {
+        onResult: (card) => showModal(card),
       });
-      if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
-        const { tile, player, actionId: pendingActionId } = result;
-        showMindstreamPicker((suit) => {
-          finishLandscapeMindstreamPick(state, tile, player, pendingActionId, suit, (card) => showDrawnMindstreamCard(card));
-          renderAll();
-        });
-        return;
-      }
-      if (result?.pending === "flip-top-3-pick-deck") {
-        showDeckFlipPicker((deckKey) => {
-          finishLandscapeDeckFlip(state, deckKey);
-          renderAll();
-        });
-        return;
-      }
       renderAll();
     },
     uniqueLandscapeAction: () => {
       uniqueLandscapeAction(state, {
         onChoose: (choices, tile, player) => {
           showLandscapeActionPicker(tile, choices, (actionId) => {
-            const result = performLandscapeAction(state, actionId, {
-              onResult: (card) => showDrawnMindstreamCard(card),
+            performLandscapeAction(state, actionId, {
+              onResult: (card) => showModal(card),
             });
-            if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
-              showMindstreamPicker((suit) => {
-                finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showDrawnMindstreamCard(card));
-                renderAll();
-              });
-              return;
-            }
-            if (result?.pending === "flip-top-3-pick-deck") {
-              showDeckFlipPicker((deckKey) => {
-                finishLandscapeDeckFlip(state, deckKey);
-                renderAll();
-              });
-              return;
-            }
             renderAll();
           });
         },
-        onResult: (card) => showDrawnMindstreamCard(card),
+        onResult: (card) => showModal(card),
       });
       renderAll();
     },
@@ -2085,12 +2030,6 @@ let lastNothingChoiceKey = null;
 let lastObjectChoiceKey = null;
 let lastMindstreamChoiceKey = null;
 
-/** Mindstream draws use the fullscreen choice UI — do not open the old card modal first. */
-function showDrawnMindstreamCard(card) {
-  if (!card || state?.pendingMindstreamChoice) return;
-  showModal(card);
-}
-
 function maybeShowMindstreamChoice() {
   const pending = state?.pendingMindstreamChoice;
   if (!pending || pending.ui !== "mindstream-fullscreen") {
@@ -2113,13 +2052,11 @@ function maybeShowMindstreamChoice() {
         meetEncounter,
         prepareMindstreamMeet,
         onChoiceResolved: () => {
-          continueDeferredEventQueues(state);
           lastMindstreamChoiceKey = null;
           renderAll();
         },
       };
       resolveMindstreamChoice(state, choiceId, helpers);
-      continueDeferredEventQueues(state);
       lastMindstreamChoiceKey = null;
       renderAll();
     });
@@ -2183,7 +2120,6 @@ function maybeShowObjectChoice() {
     if (kind === "dream") resolveDreamChoice(state, choiceId, getEffectHelpers());
     else if (kind === "effect") resolveEffectChoice(state, choiceId, getEffectHelpers());
     else resolveObjectChoice(state, choiceId, getEffectHelpers());
-    continueDeferredEventQueues(state);
     continueArchetypeQueues(state);
     lastObjectChoiceKey = null;
     renderAll();
@@ -2776,30 +2712,6 @@ function handleDrawPileClick(deckId) {
     return;
   }
 
-  if (deckId.startsWith("mindstream-")) {
-    const suit = deckId.replace("mindstream-", "");
-    const result = tryDrawMindstreamFromDeck(state, suit, {
-      onResult: (card) => showDrawnMindstreamCard(card),
-    });
-    if (result?.ok) {
-      renderAll();
-      return;
-    }
-    if (result?.reason === "meet") {
-      narrate(state, "Meet first", "Open the Meet phase, then click a Mindstream card back from a matching Landscape.");
-      return;
-    }
-    if (result?.reason === "suit" || result?.reason === "landscape") {
-      const tile = result.tile;
-      narrate(
-        state,
-        "Stand on the matching Landscape",
-        tile
-          ? `${state.players[state.activePlayerIndex]?.name || "That Dreamer"} is on ${tile.name}. Draw ${suit} Mindstream from a matching Landscape, or Forest's Draw Any Mindstream.`
-          : "Select a Dreamer standing on a revealed Landscape, then click that Mindstream's card back.",
-      );
-    }
-  }
 
   const peeked = state.revealedDeckTops?.[deckId] || [];
   if (peeked.length) {
@@ -3155,7 +3067,6 @@ function renderAll() {
   maybeShowDreamReplay();
   maybePlayBeastMill();
   if (!state.pendingRepress && !state.pendingReturn && !state.pendingDreamReplay && !(state.resolutionQueue?.length)) {
-    continueDeferredEventQueues(state);
   }
   maybeShowObjectChoice();
   maybeShowRespawn();

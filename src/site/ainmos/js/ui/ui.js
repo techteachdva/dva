@@ -3703,33 +3703,6 @@ export function showRevealedTopsModal(state, deckId, _onCardClick) {
   });
 }
 
-export function showRevealDeckTopModal(onPickSuit) {
-  const modal = document.getElementById("utility-modal");
-  const body = document.getElementById("utility-modal-body");
-  body.innerHTML = `
-    <h2>Reveal a Mindstream top</h2>
-    <p class="graveyard-total">Spend 1 Lucidity Reveal to flip the next facedown card of one Mindstream. Flipped cards stay face-up on that pile.</p>
-    <div class="reveal-deck-top-grid" id="reveal-deck-top-grid"></div>
-  `;
-  const grid = body.querySelector("#reveal-deck-top-grid");
-  [
-    { suit: "lucidity", label: "Lucidity" },
-    { suit: "elasticity", label: "Elasticity" },
-    { suit: "willpower", label: "Willpower" },
-  ].forEach((entry) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = `reveal-deck-top-choice suit-${entry.suit}`;
-    btn.innerHTML = `
-      <img src="${CARD_BACKS[entry.suit]}" alt="${entry.label} Mindstream back" />
-      <span>${entry.label}</span>
-    `;
-    btn.addEventListener("click", () => onPickSuit(entry.suit));
-    grid.appendChild(btn);
-  });
-  modal.classList.remove("hidden");
-}
-
 function drawPileForDeck(state, deckId) {
   switch (deckId) {
     case "dream": return state.dreamDeck || [];
@@ -4228,7 +4201,7 @@ function phaseBudgetChipLabel(state) {
     if (!state.dreamDrawn) return null;
     if (state.landscapePick?.mode === "choose") return "Choose a hex";
     if (state.landscapePick?.mode === "reveal" && state.landscapePick.remaining > 0) {
-      return `${state.landscapePick.remaining} reveal${state.landscapePick.remaining === 1 ? "" : "s"}`;
+      return `${state.landscapePick.remaining} reveal${state.landscapePick.remaining === 1 ? "" : "s"} · unused → ✧`;
     }
     if (state.landscapePick?.excessOnly && state.landscapePick.remaining > 0) {
       return `${state.landscapePick.remaining} psyche`;
@@ -4241,11 +4214,12 @@ function phaseBudgetChipLabel(state) {
   }
   if (phase === "Explore") {
     if (!state.exploreActivated) return phaseOpeningActive(state) ? "Spend Elasticity" : null;
-    return `${state.exploreMovesLeft} move${state.exploreMovesLeft === 1 ? "" : "s"}`;
+    return `${state.exploreMovesLeft} move${state.exploreMovesLeft === 1 ? "" : "s"} · unused → ✧`;
   }
   if (phase === "Meet") {
     if (!state.meetActionBudget) return phaseOpeningActive(state) ? "Spend Willpower" : null;
-    return `${state.meetActionsUsed}/${state.meetActionBudget} actions`;
+    const left = Math.max(0, state.meetActionBudget - state.meetActionsUsed);
+    return `${state.meetActionsUsed}/${state.meetActionBudget} actions${left ? " · unused → ✧" : ""}`;
   }
   return null;
 }
@@ -5323,50 +5297,6 @@ export function showDreamerPowerDeckPicker(ui, onPick) {
       modal.querySelector(".utility-content")?.classList.remove("dreamer-power-modal-wrap");
       hideUtilityModal(true);
       onPick(btn.dataset.deck);
-    });
-  });
-  modal.classList.remove("hidden");
-}
-
-export function showDeckFlipPicker(onPick) {
-  const modal = document.getElementById("utility-modal");
-  const body = document.getElementById("utility-modal-body");
-  body.innerHTML = `
-    <h2>Flip Top 3</h2>
-    <p>Choose a deck to flip the top 3 cards:</p>
-    <div class="utility-actions mindstream-pick">
-      <button type="button" class="btn" data-deck="psyche">Psyche Deck</button>
-      <button type="button" class="btn" data-deck="dream">Dream Deck</button>
-      <button type="button" class="btn suit-lucidity" data-deck="mindstream-lucidity">${suitIconHtml("lucidity", { size: 14 })} Lucidity Mindstream</button>
-      <button type="button" class="btn suit-elasticity" data-deck="mindstream-elasticity">${suitIconHtml("elasticity", { size: 14 })} Elasticity Mindstream</button>
-      <button type="button" class="btn suit-willpower" data-deck="mindstream-willpower">${suitIconHtml("willpower", { size: 14 })} Willpower Mindstream</button>
-    </div>
-  `;
-  body.querySelectorAll("[data-deck]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      hideUtilityModal(true);
-      onPick(btn.dataset.deck);
-    });
-  });
-  modal.classList.remove("hidden");
-}
-
-export function showMindstreamPicker(onPick) {
-  const modal = document.getElementById("utility-modal");
-  const body = document.getElementById("utility-modal-body");
-  body.innerHTML = `
-    <h2>Draw Mindstream</h2>
-    <p>Choose a suit deck:</p>
-    <div class="utility-actions mindstream-pick">
-      <button type="button" class="btn suit-lucidity" data-suit="lucidity">${suitIconHtml("lucidity", { size: 14 })} Lucidity</button>
-      <button type="button" class="btn suit-elasticity" data-suit="elasticity">${suitIconHtml("elasticity", { size: 14 })} Elasticity</button>
-      <button type="button" class="btn suit-willpower" data-suit="willpower">${suitIconHtml("willpower", { size: 14 })} Willpower</button>
-    </div>
-  `;
-  body.querySelectorAll("[data-suit]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      hideUtilityModal(true);
-      onPick(btn.dataset.suit);
     });
   });
   modal.classList.remove("hidden");
