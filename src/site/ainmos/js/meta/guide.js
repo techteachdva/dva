@@ -415,7 +415,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>The Night</h3>
-            <p>A night is 3, 7, or 15 <strong>Cycles</strong>. Each Cycle is <strong>3 Dreams</strong> of Reveal · Explore · Meet: <strong>9 phases</strong>. Dream 1 is a <strong>Dream</strong> to endure. Dream 2 brings the Cycle's <strong>Dreambeast</strong> to a Landscape of its suit; it chases you and bleeds you every dusk. Dream 3 lets you call <strong>1 of 3 Archetypes</strong>. You draw 1 Psyche as each Dream begins, and 4 at the dawn between Cycles. When the Dream Deck runs dry, the <strong>Long Night</strong> Represses 2, then 4, then 6 more at every dusk.</p>
+            <p>A night is 3, 7, or 15 <strong>Cycles</strong>. Each Cycle is <strong>3 Dreams</strong> of Reveal · Explore · Meet: <strong>9 phases</strong>. Dream 1 is a <strong>Dream</strong> to endure. Dream 2 brings the Cycle's <strong>Dreambeast</strong> to a Landscape of its suit; it chases you and bleeds you every dusk. Dream 3 lets you call <strong>1 of 3 Archetypes</strong>. Every Dream ends at the <strong>Lost &amp; Found</strong>; then the next round begins and you draw 3 Psyche (4 more at the dawn between Cycles). When the Dream Deck runs dry, the <strong>Long Night</strong> Represses 2, then 4, then 6 more at every dusk.</p>
           </div>
           <div class="info-hub-rule info-hub-rem">
             <h3>R.E.M. — Every Round</h3>

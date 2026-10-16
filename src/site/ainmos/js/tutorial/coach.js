@@ -197,7 +197,7 @@ function lostFoundStep() {
   return {
     id: "lost-found",
     title: "The Lost & Found",
-    text: "Between rounds you can buy one thing, or nothing. Press Into the Dream when you're done.",
+    text: "The Lost & Found closes every Dream. Your hand is shown, so you know what a price costs you. Buy one thing, or nothing. Into the Dream draws 3 Psyche for the next round.",
     why: "Objects help all night. The Insight levels up a Dream Form. Glimmer ✧ pays first; you pay the rest in Psyche of the item's suit, and Psyche is your health, so don't overspend.",
     target: "#lost-found .lf-continue",
   };

@@ -880,11 +880,6 @@ export function beginRoundReveal(state) {
   state.hunterShoveUsed = false;
   state.weaverSwapUsed = false;
   resetVaultRoundCounters(state);
-  // Ainmos dawn: the round after a Boss Dream, the Waking Mind reshuffles and you draw DAWN_DRAW.
-  if (state.bossArrivedThisRound && !state.tutorialMode) {
-    state.bossArrivedThisRound = false;
-    anteDawn(state);
-  }
   // Ainmos: the Vault ran dry last round, so the Dreamscape resets now.
   if (isFreeformBoard(state) && vaultExhausted(state)) resetDreamscape(state);
   // Ainmos 0.25: Endless Mode keeps a full Cycle waiting in the Dream Deck.
@@ -900,6 +895,21 @@ export function beginRoundReveal(state) {
     state.dreamDrawn = true;
   }
 
+  // Ainmos 0.26.2: the Lost & Found closes out the Dream just played, with the hand you
+  // ended it on. The new round's draw (and dawn) comes once you leave it.
+  state.roundDrawPending = true;
+  if (!(state.status === "playing" && openLostFound(state))) finishRoundOpening(state);
+}
+
+/** The new round begins: dawn between Cycles, then every Dreamer draws DREAM_DRAW. */
+export function finishRoundOpening(state) {
+  if (!state?.roundDrawPending) return;
+  state.roundDrawPending = false;
+  // Ainmos dawn: the round after a Boss Dream, the Waking Mind reshuffles and you draw DAWN_DRAW.
+  if (state.bossArrivedThisRound && !state.tutorialMode) {
+    state.bossArrivedThisRound = false;
+    anteDawn(state);
+  }
   state.players.forEach((player) => {
     if (!player.alive) return;
     if (!hasPsycheHealth(player)) {
@@ -910,10 +920,7 @@ export function beginRoundReveal(state) {
     const extra = extraPsycheDrawAtRoundStart(state, player);
     if (extra) drawPsycheForPlayer(state, player, extra);
   });
-
-  addLog(state, `Round ${state.round}: Reveal — each Dreamer draws ${DREAM_DRAW} Psyche.`);
-  // Ainmos: between rounds, the Lost & Found opens before the Dream is drawn.
-  if (state.status === "playing") openLostFound(state);
+  addLog(state, `Round ${state.round}: each Dreamer draws ${DREAM_DRAW} Psyche.`);
 }
 
 /** Between Cycles: the discard shuffles back into the Waking Mind, then you draw DAWN_DRAW. */

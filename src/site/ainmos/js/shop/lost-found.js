@@ -15,7 +15,7 @@
  * Each Dreamer may hold OBJECT_LIMIT Objects (in hand and in play together).
  */
 
-import { addLog } from "../core/state.js";
+import { addLog, finishRoundOpening } from "../core/state.js";
 import { random } from "../core/rng.js";
 import { drawObjectCard, ensureObjectPiles } from "../cards/mindstream-supply.js";
 import { shopSetPiece } from "../effects/set-search.js";
@@ -153,6 +153,8 @@ export function closeLostFound(state) {
   if (!shop?.open) return false;
   (shop.objects || []).forEach((card) => card && returnObjectToBottom(state, card));
   state.lostFound = { ...shop, open: false, objects: [], insight: null };
+  // Leaving the Lost & Found starts the next round: dawn, then the round's draw.
+  finishRoundOpening(state);
   return true;
 }
 

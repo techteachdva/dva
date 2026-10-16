@@ -366,7 +366,7 @@ const TERMS = [
     term: "Lost & Found",
     group: "cards",
     aka: "shop insight reroll",
-    text: "Opens between rounds: three Objects (1–5 Psyche value of their suit) and one Insight (3–6 of any suit: a Form level or a Psyche upgrade). Glimmer pays first. Look again for 3 Glimmer or 1 Power Token. At the Object limit you can still buy, then let one go. Draw the Dream when you leave.",
+    text: "Opens at the end of every Dream, with the hand you finished on in view: three Objects (1–5 Psyche value of their suit) and one Insight (3–6 of any suit: a Form level or a Psyche upgrade). Glimmer pays first. Look again for 3 Glimmer or 1 Power Token. At the Object limit you can still buy, then let one go. Leaving starts the next round: you draw 3 Psyche, then the Dream.",
   },
   {
     term: "Boon",
@@ -595,7 +595,7 @@ const TERMS = [
     term: "Psyche",
     group: "cards",
     aka: "hand",
-    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They buy extra phase Actions, fight, and keep you alive. Round 1 starts at 6. From round 2 you draw 1 as each Dream begins, and 4 at the dawn between Cycles. Unused actions no longer draw: they bank Glimmer. The deck is six 1s, five 2s, four 3s, three 4s, and two 5s in each suit, plus 6 Wilds.",
+    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They buy extra phase Actions, fight, and keep you alive. Round 1 starts at 6. From round 2 you draw 3 as each round begins (after the Lost & Found), and 4 more at the dawn between Cycles. Unused actions no longer draw: they bank Glimmer. The deck is six 1s, five 2s, four 3s, three 4s, and two 5s in each suit, plus 6 Wilds.",
   },
   {
     term: "Psyche Deck",

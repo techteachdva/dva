@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.26.1";
+export const SOMNIA_VERSION = "0.26.2";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.26.2",
+    title: "Full Hands",
+    notes: [
+      "Every round now begins with 3 Psyche drawn (0.26 had cut it to 1). It's the steady supply that lets you buy more Actions and still play spreads. Dawn between Cycles still adds 4 more.",
+      "The Lost & Found now closes out every Dream: it opens right after Meet, before the next round's draw, and leaving it starts the new round.",
+      "The Lost & Found shows your hand (each card and the total of each suit), so you can see what a price really costs you.",
+    ],
+  },
   {
     version: "0.26.1",
     title: "One Power",

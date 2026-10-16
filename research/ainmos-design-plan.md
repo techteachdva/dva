@@ -117,3 +117,12 @@ Phil's calls, now locked:
 - **One bot.** The smart bot's policy lives in `js/dev/autoplay.js`; the Node sim and the in-browser spectator both run it, and it now uses Dreamer Powers. The sim prepares data with the game's own `prepareGameData`, so it builds the same Mindstream decks the game does. `scripts/ainmos-seed-hunt.mjs` finds seeds with a strong first Cycle.
 
 Bot sim (smart bot, 600 per length): Daydream 60%, Nap 52%, Deep 5%. Per Dreamer on Daydream: Weaver 89%, Immovable 79%, Rested 64%, Runner 56%, Hunter 52%, Visionary 21%. The spread predates this change (0.26 showed the same shape): with free Actions, Willpower 2 means two free fights every Dream. Still open.
+
+## 0.26.2 Full Hands (2026-10-16)
+
+Phil's calls, now locked:
+
+- **Draw 3 Psyche at the start of every round** (`DREAM_DRAW`). It's the game's essential tap: never lower it to balance difficulty. Dawn still adds 4.
+- **The Lost & Found closes every Dream**, before the next round's draw (`roundDrawPending` → `finishRoundOpening` on close), and shows your hand.
+
+Bot sim (smart bot, 600 per length): Daydream 98%, Nap 94%, Deep 49%; careless bot near 0%. Phil is judging difficulty by playing before any rebalance.

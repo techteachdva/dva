@@ -1,6 +1,6 @@
 import { isBlockingGameChoice } from "../core/state.js";
 /**
- * The Lost & Found window (Ainmos shop between rounds).
+ * The Lost & Found window (Ainmos shop at the end of every Dream).
  *
  * Three Objects on the shelves, one Insight, a reroll, and the way back into
  * the dream. Every blocked button says why and what you could do instead.
@@ -27,6 +27,8 @@ import {
   rerollPayment,
 } from "../shop/lost-found.js";
 import { PSYCHE_UPGRADES } from "../cards/dream-forms.js";
+import { isWildPsyche, psycheCardValue } from "../cards/psyche.js";
+import { DREAM_DRAW } from "../core/data.js";
 
 const SUIT_NAME = { lucidity: "Lucidity", elasticity: "Elasticity", willpower: "Willpower" };
 const SUITS = ["lucidity", "elasticity", "willpower"];
@@ -63,6 +65,25 @@ function priceTag(price, glim, title, extra = "") {
 
 function payLabel(glim, cards) {
   return [glim ? `${glim}✧ Glimmer` : "", cards.length ? payLine(cards) : ""].filter(Boolean).join(" + ") || "nothing";
+}
+
+/** 0.26.2: your hand, right in the shop, so you know what each price really costs you. */
+function handHtml(state, buyer) {
+  const cards = (buyer?.hand || []).filter((c) => c.type === "psyche" || isWildPsyche(c));
+  const bySuit = SUITS.map((suit) => `<span class="lf-hand-sum suit-${suit}">${SUIT_NAME[suit]} ${cards.filter((c) => !isWildPsyche(c) && c.suit === suit).reduce((n, c) => n + psycheCardValue(c), 0)}</span>`).join("");
+  const wild = cards.filter(isWildPsyche).length;
+  const chips = cards
+    .slice()
+    .sort((a, b) => SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit) || psycheCardValue(a) - psycheCardValue(b))
+    .map((c) => {
+      const suit = isWildPsyche(c) ? "wild" : c.suit;
+      return `<span class="lf-hand-card suit-${esc(suit)}" title="${esc(c.name || "")}"><b>${psycheCardValue(c)}</b><i>${isWildPsyche(c) ? "Wild" : esc(SUIT_NAME[c.suit] || "")}</i></span>`;
+    }).join("");
+  return `
+    <div class="lf-hand" aria-label="Your hand">
+      <p class="lf-hand-head"><strong>Your hand · ${cards.length} Psyche</strong> ${bySuit}${wild ? `<span class="lf-hand-sum suit-wild">${wild} Wild</span>` : ""}<span class="lf-hand-next">Leaving draws ${DREAM_DRAW} for the next round.</span></p>
+      <div class="lf-hand-row">${chips || `<span class="lf-hand-empty">No Psyche in hand.</span>`}</div>
+    </div>`;
 }
 
 function buyerHtml(state, buyer) {
@@ -199,10 +220,11 @@ export function renderLostFound(state, handlers = {}) {
       <header class="lf-titlebar">
         <span class="vault-dots" aria-hidden="true"><i></i><i></i><i></i></span>
         <h3 id="lf-title" class="lf-title">Lost &amp; Found</h3>
-        <span class="lf-round">Between rounds ${Math.max(1, (state.round || 2) - 1)} and ${state.round || 2}</span>
+        <span class="lf-round">End of Dream ${Math.max(1, (state.round || 2) - 1)}</span>
       </header>
       <p class="lf-whisper">Things you forgot you had.${glimmerHeld(state) ? ` <span class="lf-glimmer">${glimmerHeld(state)}✧ Glimmer pays first</span>` : ` <span class="lf-glimmer is-empty">Leave paid-for Reveals, steps, or Meet actions unused to bank Glimmer ✧</span>`}</p>
       <div class="lf-buyers" role="group" aria-label="Who reaches in?">${buyerHtml(state, buyer)}</div>
+      ${handHtml(state, buyer)}
       <div class="lf-shelf">
         ${shop.objects.length
           ? shop.objects.map((card, index) => objectHtml(state, buyer, card, index)).join("")

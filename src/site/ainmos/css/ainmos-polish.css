@@ -997,3 +997,18 @@ body.bsod-glitching #app { animation: bsod-shake 0.12s steps(2, end) infinite; f
 .menu-how-to-play { display: block; text-align: center; text-decoration: none; margin-top: 6px; }
 .info-hub-onepager { margin: 0 0 8px; text-align: right; }
 .info-hub-onepager a, .player-primer-more a { color: #f3d9a4; }
+
+/* 0.26.2: your hand inside the Lost & Found, on one compact line. */
+.lf-hand { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 8px; padding: 5px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(214, 200, 255, 0.18); }
+.lf-hand-head { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 0.85rem; }
+.lf-hand-sum { font-size: 0.78rem; opacity: 0.9; }
+.lf-hand-sum.suit-lucidity, .lf-hand-card.suit-lucidity { color: var(--lucidity); }
+.lf-hand-sum.suit-elasticity, .lf-hand-card.suit-elasticity { color: var(--elasticity); }
+.lf-hand-sum.suit-willpower, .lf-hand-card.suit-willpower { color: var(--willpower); }
+.lf-hand-sum.suit-wild, .lf-hand-card.suit-wild { color: #f3d9ff; }
+.lf-hand-next { font-style: italic; font-size: 0.78rem; opacity: 0.75; }
+.lf-hand-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.lf-hand-card { display: inline-flex; align-items: baseline; gap: 4px; padding: 2px 8px; border-radius: 7px; border: 1.5px solid currentColor; background: rgba(0, 0, 0, 0.28); line-height: 1.2; }
+.lf-hand-card b { font-size: 1rem; color: #fff; }
+.lf-hand-card i { font-style: normal; font-size: 0.6rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.lf-hand-empty { font-style: italic; opacity: 0.7; }
