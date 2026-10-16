@@ -1,5 +1,6 @@
 import { random } from "../core/rng.js";
 import { shuffle, uid } from "../core/data.js";
+import { unmimic } from "../effects/set-search.js";
 import { queueReshuffleFx } from "../board/board-fx.js";
 
 export const MINDSTREAM_SUIT_IDS = ["lucidity", "elasticity", "willpower"];
@@ -174,10 +175,16 @@ function drawObjectFromPile(state, suit) {
 
 /**
  * Ainmos: there is one shared Object deck. The three suit piles are only how it
- * is stored; every draw picks among all Objects left, so `suit` is ignored.
+ * is stored; a plain draw picks among all Objects left. A named suit draws from
+ * its own pile while it has cards.
  */
-export function drawObjectCard(state, _suit = null) {
+export function drawObjectCard(state, suit = null) {
   ensureObjectPiles(state);
+  // 0.26: an asked-for suit (a Dreambeast's "Object of its suit") draws from that pile first.
+  if (suit && state.objectDecks[suit]) {
+    const own = drawObjectFromPile(state, suit);
+    if (own) return own;
+  }
   const sizes = MINDSTREAM_SUIT_IDS.map((s) => (state.objectDecks[s] || []).length + (state.objectDiscard[s] || []).length);
   const total = sizes.reduce((a, b) => a + b, 0);
   if (!total) return null;
@@ -219,6 +226,8 @@ export function pullTwoDreambeastsForChoice(state, { suit = null, autoPick = tru
 
 export function discardObject(state, card) {
   ensureObjectPiles(state);
+  // A Mimic turns back into The One (0.26).
+  if (card?.mimicOriginal) card = unmimic(card);
   const suit = card?.suit || card?.mindstreamSuit;
   if (suit && state.objectDiscard[suit]) {
     state.objectDiscard[suit].push(card);

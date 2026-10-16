@@ -3,13 +3,14 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.25-endless-dreams";
+const CACHE_NAME = "ainmos-0.26-waking-hands";
 /** Versioned with the release, so a new ship never serves last version's modules. */
 const RUNTIME_CACHE = `${CACHE_NAME}-runtime`;
 
 const PRECACHE = [
   "./",
   "./index.html",
+  "./how-to-play.html",
   "./play.html",
   "./manifest.webmanifest",
   "./css/game.css",
@@ -68,6 +69,7 @@ const PRECACHE = [
   "./js/ui/archetype-choice.js",
   "./js/dreamers/archetype-board.js",
   "./js/effects/object-sets.js",
+  "./js/effects/set-search.js",
   "./js/core/cycle.js",
   "./js/ui/night-bar.js",
   "./js/cards/dream-forms.js",

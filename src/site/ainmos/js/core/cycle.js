@@ -1,7 +1,7 @@
 /**
  * Ainmos night structure, in the words the player sees.
  *
- *   Night  = 4 / 7 / 10 Cycles (Daydream / Nap / Deep Sleep)
+ *   Night  = 3 / 7 / 15 Cycles (Daydream / Nap / Deep Sleep)
  *   Cycle  = 3 Dreams; the third is the Boss Dream
  *   Dream  = one round: Reveal → Explore → Meet (the three REM phases)
  *   So a Cycle is 9 phases, and its 9th phase is the Meet where the Boss waits.
@@ -24,7 +24,7 @@ export function phaseActionsText(phase, n) {
 
 /** The second job of the Psyche you spend: whatever you leave unused becomes Glimmer. */
 export function unusedGlimmerText(n) {
-  return `If unused: ${n} Glimmer ✧`;
+  return n > 0 ? `If unused: ${n} Glimmer ✧` : "Free Actions · no Glimmer";
 }
 
 export function cyclesForLength(lengthKey) {

@@ -1,7 +1,7 @@
 /**
  * Ainmos Boss twists: each ladder Boss bends one rule while it stands.
  *
- *   Winged Turtle  three stacked fights, Power 2, then 3, then 4
+ *   Winged Turtle  none: a plain Power 3 Dreambeast, the first lesson
  *   Shadows        Lucidity Landscape actions go dark
  *   Jackalope      hops 2 hexes at the start of each Meet
  *   Baku           at dusk, eats the next ordinary Dream of the night
@@ -49,32 +49,6 @@ export function statIgnoredBy(encounter) {
 /** Double: the beast gains the fighter's matching stat. */
 export function bossExtraPower(encounter, fighterStat) {
   return bossId(encounter) === "double" ? Math.max(0, fighterStat || 0) : 0;
-}
-
-/** Turtle stack: the opening Power of a fresh Boss card. */
-export function openingBossPower(entry) {
-  return entry?.stack?.length ? entry.stack[0] : entry?.power;
-}
-
-/**
- * Winged Turtle: a win against a turtle with more beneath it reveals the next
- * one instead of ending the fight. Returns true when the stack goes on.
- */
-export function advanceBossStack(state, encounter, tile) {
-  const entry = ladderEntry(bossId(encounter));
-  const stack = entry?.stack;
-  if (!stack?.length) return false;
-  const index = encounter.stackIndex || 0;
-  if (index >= stack.length - 1) return false;
-  const next = index + 1;
-  encounter.stackIndex = next;
-  const power = stack[next] + (encounter.cycleBonus || 0);
-  encounter.accept = power;
-  encounter.reject = power;
-  encounter.repress = power;
-  logMoment(state, `The turtle falls away. Another stands beneath it, larger: Power ${power}. (${stack.length - next} left)`, { boss: true });
-  addLog(state, `${encounter.name} on ${tile?.name || "the Dreamscape"}: the next turtle is Power ${power}.`);
-  return true;
 }
 
 // ---- Movement and Landscape actions ------------------------------------------

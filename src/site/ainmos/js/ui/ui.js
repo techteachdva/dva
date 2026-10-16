@@ -105,7 +105,7 @@ import { revealCompactTarget } from "./compact-chrome.js";
 import { getMomentHistory, flashMoment } from "./moment-overlay.js";
 import { isBeastTokenHidden, isDreamerTokenHidden } from "../board/board-fx.js";
 import { MAX_POWER_TOKENS } from "../cards/power-tokens.js";
-import { actingDreamerId, dreamerPortraitClickIntent } from "../core/game.js";
+import { actingDreamerId, dreamerPortraitClickIntent, glimmerIfUnused } from "../core/game.js";
 import { cardBackForDeckId, CARD_BACKS } from "../cards/card-backs.js";
 import {
   eventLandscapeIds,
@@ -1040,7 +1040,7 @@ export function renderPowerTokens(state, { onTokenClick } = {}) {
   if (statsEl) {
     const pendingNote = pending ? `<span class="power-token-pending">+${pending} spread bonus</span>` : "";
     statsEl.innerHTML = `<span class="power-token-held">${held} of ${MAX_POWER_TOKENS}</span>${pendingNote}`;
-    statsEl.title = `You hold up to ${MAX_POWER_TOKENS} Power Tokens. Spend one for +1 to a spread, or to open a phase as 1 plus your stat. Earn them by beating Dreambeasts and Acquiring Archetypes.`;
+    statsEl.title = `You hold up to ${MAX_POWER_TOKENS} Power Tokens. Spend one for +1 die in a fight, or for +1 Action in a phase. Earn them by beating Dreambeasts and Acquiring Archetypes.`;
   }
 
   if (bonusBtn) {
@@ -4203,7 +4203,7 @@ function phaseBudgetChipLabel(state) {
     if (!state.dreamDrawn) return null;
     if (state.landscapePick?.mode === "choose") return "Choose a hex";
     if (state.landscapePick?.mode === "reveal" && state.landscapePick.remaining > 0) {
-      return `${phaseActionsText("Reveal", state.landscapePick.remaining)} · unused → ${state.landscapePick.remaining} ✧`;
+      return `${phaseActionsText("Reveal", state.landscapePick.remaining)} · unused → ${glimmerIfUnused(state, state.landscapePick.remaining)} ✧`;
     }
     if (state.landscapePick?.excessOnly && state.landscapePick.remaining > 0) {
       return `${state.landscapePick.remaining} psyche`;
@@ -4216,12 +4216,12 @@ function phaseBudgetChipLabel(state) {
   }
   if (phase === "Explore") {
     if (!state.exploreActivated) return phaseOpeningActive(state) ? "Spend Elasticity" : null;
-    return `${phaseActionsText("Explore", state.exploreMovesLeft)} · unused → ${state.exploreMovesLeft} ✧`;
+    return `${phaseActionsText("Explore", state.exploreMovesLeft)} · unused → ${glimmerIfUnused(state, state.exploreMovesLeft)} ✧`;
   }
   if (phase === "Meet") {
     if (!state.meetActionBudget) return phaseOpeningActive(state) ? "Spend Willpower" : null;
     const left = Math.max(0, state.meetActionBudget - state.meetActionsUsed);
-    return left ? `${phaseActionsText("Meet", left)} · unused → ${left} ✧` : "Meet Actions spent";
+    return left ? `${phaseActionsText("Meet", left)} · unused → ${glimmerIfUnused(state, left)} ✧` : "Meet Actions spent";
   }
   return null;
 }
@@ -4282,8 +4282,9 @@ function renderTurnPlaque(state) {
   const labelEl = plaque.querySelector(".turn-plaque-label");
   if (labelEl) labelEl.textContent = phaseName || "Now";
   nameEl.textContent = phaseActionsText(phaseName, n);
-  if (phaseEl) phaseEl.textContent = unusedGlimmerText(n);
-  plaque.title = `${phaseActionsText(phaseName, n)} left. Any you leave unused become ${n} Glimmer ✧ for the next Lost & Found.`;
+  const glim = glimmerIfUnused(state, n);
+  if (phaseEl) phaseEl.textContent = unusedGlimmerText(glim);
+  plaque.title = `${phaseActionsText(phaseName, n)} left. Free Actions (your stat) are used first; only the ${glim} you paid for become Glimmer ✧ if unused.`;
   if (passBtn) {
     passBtn.classList.toggle("hidden", !canPass);
     passBtn.textContent = "Pass";
@@ -5457,7 +5458,7 @@ export function showDeathChoiceModal(state, onAvoid, onAccept) {
           Spend ${pending.cost} Power Token${pending.cost === 1 ? "" : "s"} — draw 1 Psyche
         </button>
         <button type="button" class="btn" id="death-choice-accept">
-          Accept death (lose objects &amp; Power, respawn with fewer Psyche)
+          Accept death (lose your Objects, keep Power Tokens, redraw a new hand)
         </button>
       </div>
     </div>

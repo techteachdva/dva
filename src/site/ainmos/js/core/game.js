@@ -1,6 +1,6 @@
 import { shuffle } from "./data.js";
 import { offerBoonDraft } from "../dreamers/boons.js";
-import { bossExtraPower, advanceBossStack } from "../encounters/boss-twists.js";
+import { bossExtraPower } from "../encounters/boss-twists.js";
 import { isLostFoundOpen, bankGlimmer, GLIMMER_MAX } from "../shop/lost-found.js";
 import { bestForm } from "../cards/dream-forms.js";
 import { beastWard, beastWardText } from "../encounters/beast-wards.js";
@@ -68,6 +68,7 @@ import {
   encounterPayHint,
   encounterPaySuit,
   PHASE_OPENER_MAX_CARDS,
+  phaseSpendValue,
 } from "./rules.js";
 import {
   encounterPower,
@@ -95,10 +96,11 @@ import {
   recordCancellableDiscard,
   recordCancellableMove,
 } from "../dreamers/dreamer-powers.js";
-import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "../effects/objects.js";
+import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, giveObjectCard, handLimitForPlayer, handRoomForPsycheDraw } from "../effects/objects.js";
+import { missingPieces, takeMissingPiece } from "../effects/set-search.js";
 import { isBossDreamCard, spawnMiniBoss } from "../cards/dream-deck.js";
 import { resumeObjectEffect } from "../effects/object-effects.js";
-import { hasPsycheHealth, isWildPsyche, isTradablePsyche, TRADE_OFFER_LIMIT, psycheMatchesSuit } from "../cards/psyche.js";
+import { hasPsycheHealth, isWildPsyche, isTradablePsyche, TRADE_OFFER_LIMIT, psycheMatchesSuit, psycheCardValue } from "../cards/psyche.js";
 import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueDreamerPowerFx, queueArchetypePowerFx } from "../board/board-fx.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "../dreamers/archetypes.js";
 import { getActivatableArchetypePowers } from "../dreamers/archetype-stats.js";
@@ -179,7 +181,6 @@ export function getEffectHelpers() {
   // Keep meetEncounter fresh even after first init.
   effectHelpers.meetEncounter = meetEncounter;
   effectHelpers.resolveBeastDefeat = resolveBeastDefeat;
-  effectHelpers.advanceBossStack = advanceBossStack;
   return effectHelpers;
 }
 
@@ -552,10 +553,11 @@ export function spendExcessPsycheDraw(state, { quiet = false } = {}) {
 export function convertExcessActionsToPsyche(state) {
   if (state.tutorialMode) return 0;
   const phase = getPhase(state);
-  const start = excessBudgetLeft(state);
+  // 0.26: only Actions bought with Psyche or a Power Token become Glimmer. Free base Actions just fade.
+  const start = Math.min(excessBudgetLeft(state), boughtActionsThisPhase(state));
   if (start < 1) return 0;
   let drawn = 0;
-  let guard = start + 2;
+  let guard = start;
   while (guard-- > 0 && excessBudgetLeft(state) > 0) {
     if (!spendExcessPsycheDraw(state, { quiet: true })) break;
     drawn += 1;
@@ -607,6 +609,101 @@ function passTurnAction(state) {
     primary: true,
     hint: `Skip your turn. The next Dreamer clockwise may spend the remaining shared ${noun}. Or open another Dreamer's radial and choose Give Turn.`,
     onClick: () => passMeetToken(state),
+  };
+}
+
+/** Actions bought this phase with Psyche or a Power Token (free base Actions never count). */
+function phaseKey(state) {
+  return `${state.round || 0}:${state.phaseIndex || 0}`;
+}
+
+function noteBoughtActions(state, n) {
+  const key = phaseKey(state);
+  const same = state.phaseBought?.key === key;
+  state.phaseBought = {
+    key,
+    value: (same ? state.phaseBought.value || 0 : 0) + Math.max(0, n || 0),
+    toppedUp: same ? !!state.phaseBought.toppedUp : false,
+  };
+}
+
+export function boughtActionsThisPhase(state) {
+  return state.phaseBought?.key === phaseKey(state) ? state.phaseBought.value || 0 : 0;
+}
+
+/** How much Glimmer the Actions left would bank: free ones go first, so only the bought rest counts. */
+export function glimmerIfUnused(state, left) {
+  return Math.max(0, Math.min(left || 0, boughtActionsThisPhase(state)));
+}
+
+/** Opened on free Actions alone: you may still spend 1 Psyche of the phase's suit, once, for +its value. */
+export function phaseTopUpOpen(state) {
+  if (state.tutorialMode || phaseOpeningActive(state)) return false;
+  if (state.phaseBought?.key !== phaseKey(state)) return false;
+  if (state.phaseBought.value || state.phaseBought.toppedUp) return false;
+  const phase = getPhase(state);
+  if (phase === "Reveal") return !!(state.revealLandscapeUsed || (state.landscapePick?.mode === "reveal" && !state.landscapePick.freeReveal));
+  if (phase === "Explore") return !!state.exploreActivated;
+  return (state.meetActionBudget || 0) > 0;
+}
+
+/** The phase's suited Psyche in hand that could top it up. */
+export function phaseTopUpCards(state) {
+  if (!phaseTopUpOpen(state)) return [];
+  const player = state.players.find((p) => p.alive);
+  const suit = phaseSuitForOpening(getPhase(state));
+  return (player?.hand || []).filter((c) => c.type === "psyche" && !isDreambeastPsycheCard(c) && cardCountsAsSuit(c, suit, state));
+}
+
+export function phaseTopUpValue(state) {
+  if (!phaseTopUpOpen(state)) return 0;
+  const phase = getPhase(state);
+  const player = state.players.find((p) => p.alive);
+  const suit = phaseSuitForOpening(phase);
+  const cards = player ? selectedCards(state, player) : [];
+  if (cards.length !== 1 || !cardCountsAsSuit(cards[0], suit, state)) return 0;
+  return psycheCardValue(cards[0]);
+}
+
+export function topUpPhaseActions(state) {
+  const value = phaseTopUpValue(state);
+  if (value < 1) return false;
+  const player = state.players.find((p) => p.alive);
+  const phase = getPhase(state);
+  const discarded = discardSelected(state, player);
+  trackPsycheDiscard(state, player, discarded);
+  if (phase === "Reveal") {
+    const pick = state.landscapePick;
+    if (pick?.mode === "reveal" && !pick.freeReveal) pick.remaining += value;
+    else {
+      state.revealLandscapeUsed = false;
+      beginRevealPicking(state, value);
+    }
+  } else if (phase === "Explore") {
+    state.exploreMovesLeft = (state.exploreMovesLeft || 0) + value;
+  } else {
+    state.meetActionBudget = (state.meetActionBudget || 0) + value;
+  }
+  noteBoughtActions(state, value);
+  state.phaseBought.toppedUp = true;
+  recordPhaseOpener(state, player);
+  seatMeetPassToken(state, player.id);
+  logMoment(state, `${player.name} spends ${discarded[0]?.name || "Psyche"}: +${value} ${phase} Action${value === 1 ? "" : "s"}.`);
+  playPhaseSpendFlash(phaseSuitForOpening(phase));
+  return true;
+}
+
+function topUpAction(state, handlers) {
+  const value = phaseTopUpValue(state);
+  if (value < 1 || !handlers?.topUpPhase) return null;
+  const phase = getPhase(state);
+  return {
+    label: `Spend for +${value} ${phase} Action${value === 1 ? "" : "s"}`,
+    kind: "topUpPhase",
+    section: "main",
+    primary: phase !== "Meet",
+    hint: `You opened on your free Actions. Spend this ${SUIT_LABELS[phaseSuitForOpening(phase)]} Psyche for ${value} more. Bought Actions you leave unused become Glimmer ✧.`,
+    onClick: handlers.topUpPhase,
   };
 }
 
@@ -1141,6 +1238,9 @@ export function getPhaseActions(state, handlers) {
   }
 
   // Ainmos: leftovers bank Glimmer when the phase ends, so there is nothing to tap.
+  const topUp = topUpAction(state, handlers);
+  if (topUp) actions.unshift(topUp);
+
   const excess = state.tutorialMode ? excessPsycheAction(state) : null;
   if (excess) actions.push(excess);
 
@@ -1436,22 +1536,25 @@ export function revealLandscape(state) {
   if (state.landscapePick?.mode === "reveal") return;
 
   const lucidityCards = selectedBySuit(state, player, "lucidity");
-  const tokenValue = phaseTokenValue(state, player);
-  if (lucidityCards.length > PHASE_OPENER_MAX_CARDS || (lucidityCards.length < 1 && tokenValue < 1)) {
-    narrate(state, "Select Lucidity or 1 Power Token", `Play 1 blue Psyche from ${player.name}, or spend 1 Power Token as 1 + Lucidity ${totalStat(player, "lucidity", state)}.`);
+  if (lucidityCards.length > PHASE_OPENER_MAX_CARDS) {
+    narrate(state, "Select 1 Lucidity", `Play at most 1 blue Psyche from ${player.name}, or spend 1 Power Token for +1.`);
     return;
   }
 
+  const bought = phaseSpendValue(state, player, "lucidity");
   const lucidityDiscarded = discardSelected(state, player);
   trackPsycheDiscard(state, player, lucidityDiscarded);
   if (consumePhasePowerToken(state, player)) {
-    addLog(state, `${player.name} spends 1 Power Token as 1 + Lucidity ${totalStat(player, "lucidity", state)}.`);
+    addLog(state, `${player.name} spends 1 Power Token for +1 Reveal Action.`);
   }
 
   beginRevealPicking(state, budget);
-  recordPhaseOpener(state, player);
+  noteBoughtActions(state, bought);
+  if (bought) recordPhaseOpener(state, player);
   seatMeetPassToken(state, player.id);
-  addLog(state, `${player.name} spends Lucidity — the team may reveal up to ${budget} Landscapes.`);
+  addLog(state, bought
+    ? `${player.name} spends Lucidity: ${budget - bought} free + ${bought} = ${budget} Reveal Actions.`
+    : `${player.name} takes ${budget} free Reveal Action${budget === 1 ? "" : "s"} from Lucidity.`);
   recordQuestEvent(state, "reveal_landscape", { count: 0 });
   playPhaseSpendFlash("lucidity");
 }
@@ -1488,19 +1591,21 @@ export function activateExplore(state) {
   const elaCards = player ? selectedBySuit(state, player, "elasticity") : [];
 
   const tokenValue = player ? phaseTokenValue(state, player) : 0;
-  if (!freeRound && (elaCards.length > PHASE_OPENER_MAX_CARDS || (elaCards.length < 1 && tokenValue < 1))) {
-    addLog(state, `Play 1 ${SUIT_LABELS.elasticity} Psyche card, or spend 1 Power Token as 1 + Elasticity ${totalStat(player, "elasticity", state)}.`);
+  if (!freeRound && (elaCards.length > PHASE_OPENER_MAX_CARDS || budget < 1)) {
+    addLog(state, `Play 1 ${SUIT_LABELS.elasticity} Psyche card, or spend 1 Power Token for +1 step.`);
     return;
   }
+  const bought = player ? phaseSpendValue(state, player, "elasticity") : 0;
 
   if (elaCards.length) {
     const discarded = discardSelected(state, player);
     trackPsycheDiscard(state, player, discarded);
   }
   if (player && consumePhasePowerToken(state, player)) {
-    addLog(state, `${player.name} spends 1 Power Token as 1 + Elasticity ${totalStat(player, "elasticity", state)}.`);
+    addLog(state, `${player.name} spends 1 Power Token for +1 step.`);
   }
   if (player && (elaCards.length || tokenValue)) recordPhaseOpener(state, player);
+  noteBoughtActions(state, bought);
   state.exploreMovesLeft = budget;
   state.exploreActivated = true;
   if (state.sugarRushSteps) {
@@ -1636,23 +1741,26 @@ export function gainMeetActions(state) {
   const budget = meetActionBudgetFromWillpower(state, player);
   const wilCards = selectedBySuit(state, player, "willpower");
 
-  const tokenValue = phaseTokenValue(state, player);
-  if (wilCards.length > PHASE_OPENER_MAX_CARDS || (wilCards.length < 1 && tokenValue < 1)) {
-    addLog(state, `Play 1 ${SUIT_LABELS.willpower} Psyche card from ${player.name}, or spend 1 Power Token as 1 + Willpower ${totalStat(player, "willpower", state)}.`);
+  if (wilCards.length > PHASE_OPENER_MAX_CARDS || budget < 1) {
+    addLog(state, `Play 1 ${SUIT_LABELS.willpower} Psyche card from ${player.name}, or spend 1 Power Token for +1 Meet Action.`);
     return;
   }
 
+  const bought = phaseSpendValue(state, player, "willpower");
   const wilDiscarded = discardSelected(state, player);
   trackPsycheDiscard(state, player, wilDiscarded);
   if (consumePhasePowerToken(state, player)) {
-    addLog(state, `${player.name} spends 1 Power Token as 1 + Willpower ${totalStat(player, "willpower", state)}.`);
+    addLog(state, `${player.name} spends 1 Power Token for +1 Meet Action.`);
   }
   state.meetActionBudget = budget;
   state.meetActionsUsed = 0;
   clearAllUsedMeetActions(state);
-  recordPhaseOpener(state, player);
+  noteBoughtActions(state, bought);
+  if (bought) recordPhaseOpener(state, player);
   seatMeetPassToken(state, player.id);
-  addLog(state, `${player.name} spends Willpower — the team gains ${budget} shared Meet Actions.`);
+  addLog(state, bought
+    ? `${player.name} spends Willpower: ${budget - bought} free + ${bought} = ${budget} Meet Actions.`
+    : `${player.name} takes ${budget} free Meet Action${budget === 1 ? "" : "s"} from Willpower.`);
   playPhaseSpendFlash("willpower");
 }
 
@@ -2103,11 +2211,6 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
   recordFightStats(state, ctx, dreamerWins);
   state.nextFightDice = 0;
 
-  // Winged Turtle: a win reveals the next turtle instead of ending the fight.
-  if (dreamerWins && encounter.boss && advanceBossStack(state, encounter, tile)) {
-    return;
-  }
-
   if (!dreamerWins) {
     if (state.tutorialMode) state.tutorialFlags.firstBattleLost = true;
     addLog(
@@ -2148,7 +2251,6 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
  * A Dreambeast is beaten, by dice or by an Object. Everything a win means lives
  * here: the Accept reward, quest marks, a Boss falling (Cycle cleared,
  * Boon, victory check), a Mini-Boss bounty, and the beast leaving the board.
- * The Winged Turtle's stack is handled before this by advanceBossStack.
  */
 const OBJECT_SUITS = ["lucidity", "elasticity", "willpower"];
 
@@ -2166,11 +2268,13 @@ export function offerBeastReward(state, actor, encounter) {
   const suit = objectSuitFor(encounter);
   const suits = suit ? [suit] : OBJECT_SUITS;
   const objectsLeft = suits.some((s) => (state.objectDecks?.[s] || []).length || (state.objectDiscard?.[s] || []).length);
+  // 0.26: a started Set can be searched instead of a blind draw.
+  const setPieces = missingPieces(state, actor, { onlyDeck: true });
   if (!room && !objectsLeft) {
     logMoment(state, `${encounter?.name || "The Dreambeast"} is Accepted.`);
     return;
   }
-  if (!room) {
+  if (!room && !setPieces.length) {
     grantBeastReward(state, actor, "object", encounter);
     return;
   }
@@ -2184,16 +2288,28 @@ export function offerBeastReward(state, actor, encounter) {
     title: `${encounter?.name || "Dreambeast"} is Accepted`,
     message: "Take your reward.",
     choices: [
-      { id: "token", label: `${Math.min(BEAST_TOKEN_REWARD, room)} Power Token${Math.min(BEAST_TOKEN_REWARD, room) === 1 ? "" : "s"}`, hint: `You hold ${actor.powerTokens || 0} of ${MAX_POWER_TOKENS}.` },
+      ...(room ? [{ id: "token", label: `${Math.min(BEAST_TOKEN_REWARD, room)} Power Token${Math.min(BEAST_TOKEN_REWARD, room) === 1 ? "" : "s"}`, hint: `You hold ${actor.powerTokens || 0} of ${MAX_POWER_TOKENS}.` }] : []),
       { id: "object", label: suit ? `A ${SUIT_LABELS[suit]} Object` : "A random Object", hint: suit ? `Drawn from the ${SUIT_LABELS[suit]} Object deck.` : "Drawn from any Object deck." },
+      ...(setPieces.length ? [{ id: "set", label: "Search for a Set piece", hint: `Take a missing piece of a Set you have started (${[...new Set(setPieces.map((p) => SET_NAMES[p.tag] || p.tag))].join(", ")}).` }] : []),
     ],
     payload: { name: encounter?.name || "", suit },
     log: `${encounter?.name || "The Dreambeast"} is Accepted: ${BEAST_TOKEN_REWARD} Power Tokens or ${suit ? `a ${SUIT_LABELS[suit]}` : "a random"} Object.`,
   });
 }
 
+const SET_NAMES = { body: "Body", element: "Elements", jewelry: "Jewelry", stick: "Sticks" };
+
 function grantBeastReward(state, actor, choiceId, encounter) {
   const name = encounter?.name || "The Dreambeast";
+  if (choiceId === "set") {
+    const piece = takeMissingPiece(state, actor);
+    if (piece) {
+      const card = giveObjectCard(state, actor, piece, getEffectHelpers());
+      logMoment(state, `${name} is Accepted. ${actor.name} searches out ${card.name}.`);
+      return;
+    }
+    choiceId = "object";
+  }
   if (choiceId === "object") {
     const own = objectSuitFor(encounter);
     const suits = own ? [own, ...shuffle(OBJECT_SUITS.filter((s) => s !== own))] : shuffle(OBJECT_SUITS.slice());
@@ -2214,7 +2330,7 @@ registerEffectResolver("beast-reward", (state, choiceId) => {
   const actor = state.players.find((p) => p.id === pending?.playerId);
   state.pendingEffectChoice = null;
   if (!actor) return false;
-  grantBeastReward(state, actor, choiceId === "object" ? "object" : "token", { name: pending?.payload?.name, suit: pending?.payload?.suit });
+  grantBeastReward(state, actor, ["object", "set"].includes(choiceId) ? choiceId : "token", { name: pending?.payload?.name, suit: pending?.payload?.suit });
   return true;
 });
 
@@ -3146,10 +3262,10 @@ export function endPhase(state) {
     state,
     `${phase} Phase begins`,
     phase === "Reveal"
-      ? "Endure the Dream, then spend Lucidity to place Landscapes."
+      ? "Endure the Dream. Your Lucidity is free Reveals; a Lucidity card adds more."
       : phase === "Explore"
-        ? "Spend Elasticity for steps. Head for the beasts."
-        : "Spend Willpower for actions. Fight as often as you have them. Every beast left standing bleeds you at dusk.",
+        ? "Your Elasticity is free steps; an Elasticity card adds more. Head for the beasts."
+        : "Your Willpower is free Meet Actions; a Willpower card adds more. Every beast left standing bleeds you at dusk.",
     [],
     { moment: `${phase} Phase begins.` },
   );
@@ -3188,17 +3304,17 @@ export function getPhaseHint(state) {
   const phase = getPhase(state);
   if (phase === "Reveal") {
     if (!state.dreamDrawn) return "The Dream is coming.";
-    if (!state.revealLandscapeUsed) return "Spend Lucidity to place Landscapes.";
+    if (!state.revealLandscapeUsed) return "Take your free Reveals (Lucidity), or add a Lucidity card for more.";
     return "When your Landscapes are placed, tap Next.";
   }
   if (phase === "Explore") {
     const legal = getLegalExploreTargets(state).length;
-    if (!state.exploreActivated) return "Spend Elasticity for steps.";
+    if (!state.exploreActivated) return "Take your free steps (Elasticity), or add an Elasticity card for more.";
     return `${state.exploreMovesLeft} step${state.exploreMovesLeft === 1 ? "" : "s"} left · ${legal} hexes in reach. Tap a glowing hex to move.`;
   }
   if (phase === "Meet") {
     if (state.meetActionBudget === 0) {
-      return "Spend Willpower for Meet actions. Beasts still standing bleed you at dusk.";
+      return "Take your free Meet Actions (Willpower), or add a Willpower card for more. Beasts still standing bleed you at dusk.";
     }
     const pool = coopMeetPlayTotal(state);
     const count = allSelectedCards(state).length;

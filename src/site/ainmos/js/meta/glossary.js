@@ -213,7 +213,7 @@ const TERMS = [
     term: "Boss",
     group: "meet",
     aka: "cerberus double leviathan",
-    text: "Each Cycle's Dreambeast: the Winged Turtle first, climbing to Leviathan. It arrives at its Power plus the Cycle, lands on a Landscape of its suit (The Bed if none), chases you each Explore, bends one rule while it stands, and Represses 1 Psyche from the Waking Mind every dusk. Beating it is optional but stops the bleeding: Accept it for 2 Power Tokens or an Object of its suit.",
+    text: "Each Cycle's Dreambeast: the Winged Turtle first (a plain Power 3 beast), climbing to Leviathan. It arrives at its Power plus the Cycle, lands on a Landscape of its suit (The Bed if none), chases you each Explore, bends one rule while it stands (all but the Turtle), and Represses 1 Psyche from the Waking Mind every dusk. Beating it is optional but stops the bleeding: Accept it for 2 Power Tokens, an Object of its suit, or a missing piece of a Set you have started.",
   },
   {
     term: "Bright",
@@ -240,13 +240,13 @@ const TERMS = [
     term: "Daydream",
     group: "win",
     aka: "length difficulty",
-    text: "The short night: Acquire 3 Archetypes within 4 Cycles.",
+    text: "The short night: Acquire 3 Archetypes within 3 Cycles.",
   },
   {
     term: "Death",
     group: "win",
     aka: "respawn",
-    text: "If you start a Dream with no Psyche, the Dream takes your last Psyche, you must pay a Psyche cost with none left, or a Landscape you stand on is Forgotten, you die. The Death Clock ticks. Your Objects are discarded, your Power Tokens are lost, and you wake on The Bed with 6 fresh Psyche. The sixth death ends the run.",
+    text: "If you start a Dream with no Psyche, the Dream takes your last Psyche, you must pay a Psyche cost with none left, or a Landscape you stand on is Forgotten, you die. The Death Clock ticks. Your Objects are discarded (you keep your Power Tokens), and you wake on The Bed with 6 fresh Psyche. A notice always tells you what was lost. The sixth death ends the run.",
   },
   {
     term: "Death Clock",
@@ -256,7 +256,7 @@ const TERMS = [
   {
     term: "Deep Sleep",
     group: "win",
-    text: "The long night: Acquire all 12 Archetypes within 13 Cycles.",
+    text: "The long night: Acquire all 12 Archetypes within 15 Cycles.",
   },
   {
     term: "Dim",
@@ -294,7 +294,7 @@ const TERMS = [
     term: "Cycle",
     group: "win",
     aka: "sleep cycle, ante, night bar, nine phases",
-    text: "Three Dreams, nine phases. Dream 1: a Dream card to survive. Dream 2: the Cycle's Dreambeast lands. Dream 3: choose 1 of 3 Archetypes to appear. Then dawn: the Waking Mind reshuffles and you draw 3. A night is 4, 7, or 13 Cycles.",
+    text: "Three Dreams, nine phases. Dream 1: a Dream card to survive. Dream 2: the Cycle's Dreambeast lands. Dream 3: choose 1 of 3 Archetypes to appear. Then dawn: the Waking Mind reshuffles and you draw 4. A night is 3, 7, or 15 Cycles.",
   },
   {
     term: "Mini-Boss",
@@ -354,7 +354,7 @@ const TERMS = [
     term: "Glimmer",
     group: "cards",
     aka: "glimmer discount leftover unused actions",
-    text: "✧ What an unused Reveal, step, or Meet action leaves behind when the phase ends (up to 10 banked). In the Lost & Found each Glimmer pays 1 value of any price, any suit, before your Psyche. 3 Glimmer looks again.",
+    text: "✧ What an unused Reveal, step, or Meet action you paid for leaves behind when the phase ends (up to 10 banked). In the Lost & Found each Glimmer pays 1 value of any price, any suit, before your Psyche. 3 Glimmer looks again.",
   },
   {
     term: "Let go",
@@ -416,7 +416,7 @@ const TERMS = [
     term: "Explore",
     group: "round",
     aka: "explore phase",
-    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First every Dreambeast chases you one Landscape. Archetypes hold still, so this is your chance to reach one. Then spend 1 Elasticity, or 1 Power Token (1 plus your Elasticity), for that many steps. Unused steps bank Glimmer.",
+    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First every Dreambeast chases you one Landscape. Archetypes hold still, so this is your chance to reach one. Your Elasticity is your free steps; spend 1 Elasticity card for +its value, or 1 Power Token for +1. Only steps you paid for bank Glimmer if unused.",
   },
   {
     term: "Explorer",
@@ -520,7 +520,7 @@ const TERMS = [
     term: "Meet",
     group: "round",
     aka: "meet phase",
-    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle). Spend 1 Willpower, or 1 Power Token (1 plus your Willpower), for that many Meet Actions. Each one can fight the Dreambeast on your Landscape, Meet the Archetype there (its Event, then the fight), use one of your Landscape's two actions, or tap a Persistent Object. Unused Meet Actions become Glimmer. As Meet ends, every Archetype slips 1 Landscape away.",
+    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle). Your Willpower is your free Meet Actions; spend 1 Willpower card for +its value, or 1 Power Token for +1. Each one can fight the Dreambeast on your Landscape, Meet the Archetype there (its Event, then the fight), use one of your Landscape's two actions, or tap a Persistent Object. Only Meet Actions you paid for become Glimmer if unused. As Meet ends, every Archetype slips 1 Landscape away.",
   },
   {
     term: "Mindstream",
@@ -589,13 +589,13 @@ const TERMS = [
   {
     term: "Power Token",
     group: "cards",
-    text: "A token, not a card. You hold up to 6. You start with 2, beating a Dreambeast pays 2 (or an Object of its suit instead), and each Archetype you Acquire pays 1. There is no other way to gain one. Spend one to open a phase as 1 plus your stat, to add 1 die to a fight (up to 3), to use an Archetype's power or your Dreamer's power, or to look again in the Lost & Found.",
+    text: "A token, not a card. You hold up to 6. You start with 2, beating a Dreambeast pays 2 (or an Object of its suit instead), and each Archetype you Acquire pays 1. There is no other way to gain one. Spend one for +1 Action in a phase, to add 1 die to a fight (up to 3), to use an Archetype's power or your Dreamer's power, or to look again in the Lost & Found.",
   },
   {
     term: "Psyche",
     group: "cards",
     aka: "hand",
-    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They open phases, fight, and keep you alive. Round 1 starts at 6. From round 2 you draw 2 as each Dream begins, and 5 at the dawn between Cycles. Unused actions no longer draw: they bank Glimmer. The deck is six 1s, five 2s, four 3s, three 4s, and two 5s in each suit, plus 6 Wilds.",
+    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They buy extra phase Actions, fight, and keep you alive. Round 1 starts at 6. From round 2 you draw 1 as each Dream begins, and 4 at the dawn between Cycles. Unused actions no longer draw: they bank Glimmer. The deck is six 1s, five 2s, four 3s, three 4s, and two 5s in each suit, plus 6 Wilds.",
   },
   {
     term: "Psyche Deck",
@@ -629,7 +629,7 @@ const TERMS = [
     term: "Reveal",
     group: "round",
     aka: "reveal phase",
-    text: "The first phase of each Dream (phases 1, 4, and 7 of a Cycle). The Dream is drawn and endured. Then spend 1 Lucidity, or 1 Power Token (that counts as 1 plus your Lucidity). Each Reveal places one Landscape from the Dreamscape Vault on a glowing slot beside the dream. Each unused Reveal banks 1 Glimmer.",
+    text: "The first phase of each Dream (phases 1, 4, and 7 of a Cycle). The Dream is drawn and endured. Your Lucidity is your free Reveal Actions; spend 1 Lucidity card for +its value, or 1 Power Token for +1. Each Reveal places one Landscape from the Dreamscape Vault on a glowing slot beside the dream. Each unused Reveal you paid for banks 1 Glimmer.",
   },
   {
     term: "Ruler",
@@ -715,23 +715,23 @@ function escapeHtml(value) {
 export function playerPrimerHtml() {
   return `
     <div class="player-primer">
-      <p class="player-primer-lead">One Dreamer, one night. Build the dream, beat a ladder of Bosses, and wake by felling the <strong>final Boss</strong> with your Archetype goal met.</p>
+      <p class="player-primer-lead">One Dreamer, one night. Build the dream, walk it, and <strong>Acquire Archetypes</strong>: 3 on a Daydream, 6 on a Nap, all 12 in Deep Sleep. Collect them and you wake.</p>
       <div class="player-primer-grid">
         <section>
           <h3>The night</h3>
-          <p>A night is 4, 7, or 10 <strong>Cycles</strong>, like a night of sleep. Each Cycle is <strong>3 Dreams</strong>, and each Dream is one Reveal, Explore, Meet: <strong>9 phases</strong>. Dream 2 brings a <strong>Mini-Boss</strong> to The Bed; Dream 3 ends on the <strong>Boss</strong>. Each Cycle's Boss is stronger than the last.</p>
+          <p>A night is 3, 7, or 15 <strong>Cycles</strong>. Each Cycle is <strong>3 Dreams</strong>, and each Dream is one Reveal, Explore, Meet: <strong>9 phases</strong>. Dream 1 is a Dream to endure; Dream 2 brings the Cycle's <strong>Dreambeast</strong>; Dream 3 lets you call <strong>1 of 3 Archetypes</strong>.</p>
           <p>Every <strong>Dream</strong> hurts. Endure it, then play the round.</p>
         </section>
         <section>
           <h3>Each round</h3>
-          <p><strong>Reveal</strong>, <strong>Explore</strong>, <strong>Meet</strong>. Spend 1 card of that suit: its value plus your stat is your budget. Place Landscapes, walk, then fight.</p>
+          <p><strong>Reveal</strong>, <strong>Explore</strong>, <strong>Meet</strong>. Your stat is your free Actions; 1 card of that suit adds its value. Place Landscapes, walk, then fight.</p>
           <p><strong>Fight</strong> with 1–3 Psyche: roll that many d6, 5s and 6s succeed, ties go to you. Patterns make <strong>Dream Forms</strong> for extra dice.</p>
         </section>
         <section>
           <h3>Grow and survive</h3>
-          <p>Beat a Boss for a <strong>Boon</strong>. Shop the <strong>Lost &amp; Found</strong> between rounds. Each beast left at dusk bleeds your Waking Mind.</p>
+          <p>Beat a Dreambeast for Power Tokens or an Object. Shop the <strong>Lost &amp; Found</strong> between Dreams. Each beast left at dusk bleeds your Waking Mind. Die and you wake on The Bed without your Objects.</p>
           <p>When the Dream Deck runs dry, the <strong>Long Night</strong> bleeds you harder every dusk until you wake or forget.</p>
-          <p class="player-primer-more">Psyche is your health and your coin. In game, <strong>?</strong> explains every rule.</p>
+          <p class="player-primer-more">Psyche is your health and your coin. <a href="how-to-play.html">How to Play</a> puts it all on one page; in game, <strong>?</strong> explains every rule.</p>
         </section>
       </div>
     </div>

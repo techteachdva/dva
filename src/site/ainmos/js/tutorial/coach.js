@@ -123,11 +123,9 @@ function noCardStep(state, phase) {
   return {
     id: `open-nocard-${phase}`,
     title: `${phase}: no ${(OPENER_SUIT[phase] || ["", "card"])[1]} card`,
-    text: tokens > 0
-      ? `No ${color} ${suit} card in hand. Press Power Token to open ${phase} with 1 plus your ${suit}, or Skip.`
-      : `No ${color} ${suit} card in hand and no Power Tokens. Skip this phase; dawn deals you fresh cards.`,
-    why: "A Power Token opens any phase as if it were a card worth 1. You hold up to 6. You start with 2, take 1 for beating a Dreambeast, and gain 2 for each Archetype you Acquire.",
-    target: tokens > 0 ? ".phase-opener-token" : "#btn-skip-phase",
+    text: `No ${color} ${suit} card in hand. Press Take free to use your ${suit} as free Actions${tokens > 0 ? ", or add a Power Token for +1" : ""}. If your ${suit} is 0, Skip.`,
+    why: "Your stats are free Actions every phase. A Power Token adds +1 Action. You hold up to 6: you start with 2, take 2 for beating a Dreambeast, and gain 1 for each Archetype you Acquire.",
+    target: "#btn-spread-opener",
   };
 }
 
@@ -139,8 +137,8 @@ function openerStep(state, ctx = {}) {
     return {
       id: "open-reveal",
       title: "Phase 1 · Reveal",
-      text: "Pick a blue Lucidity card, then press Open Reveal.",
-      why: "The Psyche you spend does two jobs. Its value plus your Lucidity is your Reveal Actions (each places a Landscape), and any you leave unused become Glimmer ✧ for the Lost & Found. The top of the screen always shows both.",
+      text: "Your Lucidity is free Reveal Actions. Press Take free, or pick a blue Lucidity card first to add its value.",
+      why: "Your Lucidity is your free Reveal Actions every Dream (each places a Landscape). Want more? A Lucidity card adds its value, and any bought Actions you leave unused become Glimmer ✧ for the Lost & Found.",
       target: "#btn-spread-opener",
     };
   }
@@ -159,8 +157,8 @@ function openerStep(state, ctx = {}) {
     return {
       id: "open-explore",
       title: "Phase 2 · Explore",
-      text: `Pick a gold Elasticity card, then press Open Explore. ${plan}`,
-      why: "Its value plus your Elasticity is your Explore Actions: 1 step each. Any you don't take become Glimmer ✧.",
+      text: `Your Elasticity is free steps. Press Take free, or pick a gold Elasticity card first to add its value. ${plan}`,
+      why: "Your Elasticity is your free steps. An Elasticity card adds its value; bought steps you don't take become Glimmer ✧.",
       target: "#btn-spread-opener",
     };
   }
@@ -171,16 +169,16 @@ function openerStep(state, ctx = {}) {
     return {
       id: "open-meet-target",
       title: "Phase 3 · Meet",
-      text: `Something waits on ${hereTile.name}. Pick a red Willpower card, then press Open Meet.`,
-      why: "Its value plus your Willpower is your Meet Actions. A fight, an Archetype Meet, and each of a Landscape's two actions cost 1. Leftovers become Glimmer ✧.",
+      text: `Something waits on ${hereTile.name}. Your Willpower is free Meet Actions: press Take free, or pick a red Willpower card first to add its value.`,
+      why: "Your Willpower is your free Meet Actions; a Willpower card adds its value. A fight, an Archetype Meet, and each of a Landscape's two actions cost 1. Bought leftovers become Glimmer ✧.",
       target: "#btn-spread-opener",
     };
   }
   return {
     id: pos.cycle === 1 && pos.dream === 1 ? "open-meet-empty-first" : "open-meet-empty",
     title: "Phase 3 · Meet",
-    text: "No Dreambeast or Archetype here, but your Landscape still has two actions: Call a Dreambeast to fight for 2 Power Tokens or an Object, or its own action. Open Meet to use them, or Skip to keep the card.",
-    why: "Every Meet Action you open but don't use becomes 1 Glimmer ✧ for the Lost & Found. Skipping keeps your card but banks nothing.",
+    text: "No Dreambeast or Archetype here, but your Landscape still has two actions: Call a Dreambeast to fight for 2 Power Tokens or an Object, or its own action. Take your free Meet Actions to use them, or Skip.",
+    why: "Free Actions cost nothing. Only Meet Actions you pay a card for become Glimmer ✧ if you leave them unused.",
     target: "#btn-spread-opener",
   };
 }
@@ -333,7 +331,7 @@ function tableStep(state, ctx = {}) {
       : "Press End Round (top right).",
     why: beasts.length
       ? `At dusk each standing Dreambeast Represses 1 from your Waking Mind. Then the next Dream begins.`
-      : "Dusk comes, then dawn: you draw 5 Psyche and the next Dream begins. Unspent actions become Glimmer ✧.",
+      : "Dusk comes, then dawn: you draw 4 Psyche and the next Dream begins. Unspent bought actions become Glimmer ✧.",
     target: "#btn-next-phase",
   };
 }

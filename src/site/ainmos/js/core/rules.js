@@ -162,8 +162,27 @@ export function findPhaseContributor(state) {
   });
 
   if (owners.length === 1) return owners[0];
-  if (!ids.size) return phaseTokenPlayer(state);
+  // Ainmos 0.26: with nothing selected you still open the phase with your free base Actions.
+  if (!ids.size) return phaseTokenPlayer(state) || state.players.find((p) => p.alive) || null;
   return null;
+}
+
+/**
+ * Ainmos 0.26: your stat is each phase's free base Actions (Lucidity → Reveal,
+ * Elasticity → Explore, Willpower → Meet), plus Objects that add to that phase.
+ * Spending 1 Psyche of the phase's suit adds its value on top; a Power Token adds 1.
+ */
+export function phaseBaseActions(state, player, phase = PHASES[state.phaseIndex]) {
+  const suit = phaseSuitForOpening(phase);
+  if (!player || !suit) return 0;
+  let n = Math.max(0, totalStat(player, suit, state)) + objectBudgetBonus(player, phase);
+  if (phase === "Explore") n += state.sugarRushSteps || 0;
+  return n;
+}
+
+/** The value a phase spend adds: the selected suited Psyche, or 1 for a Power Token. */
+export function phaseSpendValue(state, player, suit) {
+  return sumSelectedValue(state, player, suit) + phaseTokenValue(state, player);
 }
 
 /** Alive Dreamer with the highest stat bonus for the current phase opening. */
@@ -411,22 +430,20 @@ export function canSelectCard(state, card, phase, player = null) {
   return selected.length < 3;
 }
 
+/** Phase budgets: free base Actions (your stat) + whatever Psyche or Power Token you spend. */
 export function revealBudget(state, player) {
-  const played = sumSelectedValue(state, player, "lucidity") + phaseTokenValue(state, player);
-  if (played < 1) return 0;
-  return played + totalStat(player, "lucidity", state) + objectBudgetBonus(player, "Reveal");
+  if (!player) return 0;
+  return phaseSpendValue(state, player, "lucidity") + phaseBaseActions(state, player, "Reveal");
 }
 
 export function exploreBudget(state, player) {
-  const played = sumSelectedValue(state, player, "elasticity") + phaseTokenValue(state, player);
-  if (played < 1) return 0;
-  return played + totalStat(player, "elasticity", state) + objectBudgetBonus(player, "Explore") + (state.sugarRushSteps || 0);
+  if (!player) return 0;
+  return phaseSpendValue(state, player, "elasticity") + phaseBaseActions(state, player, "Explore");
 }
 
 export function meetActionBudgetFromWillpower(state, player) {
-  const played = sumSelectedValue(state, player, "willpower") + phaseTokenValue(state, player);
-  if (played < 1) return 0;
-  return played + totalStat(player, "willpower", state) + objectBudgetBonus(player, "Meet");
+  if (!player) return 0;
+  return phaseSpendValue(state, player, "willpower") + phaseBaseActions(state, player, "Meet");
 }
 
 export function meetPlayTotal(state, player) {

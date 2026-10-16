@@ -10,7 +10,8 @@ import {
   canUsePhasePowerToken,
   findPhaseContributor,
   projectedPhaseBudget,
-  totalStat,
+  phaseBaseActions,
+  phaseSpendValue,
   SUIT_LABELS,
   cardCountsAsSuit,
   isWildPsyche,
@@ -51,19 +52,28 @@ function openerTitle(phase) {
   return "Open the phase";
 }
 
-function openerLead(phase, suitLabel) {
-  const glimmer = "Any you leave unused become Glimmer ✧ for the next Lost & Found.";
-  if (phase === "Reveal") return `Spend 1 ${suitLabel}. Its value plus your Lucidity is your Reveal Actions: each places a Landscape from the Vault. ${glimmer}`;
-  if (phase === "Explore") return `Spend 1 ${suitLabel}. Its value plus your Elasticity is your Explore Actions: each is 1 step. ${glimmer}`;
-  return `Spend 1 ${suitLabel}. Its value plus your Willpower is your Meet Actions: fight a Dreambeast, Meet an Archetype, or use a Landscape's actions. ${glimmer}`;
+/** Ainmos 0.26: your stat is free base Actions; a card adds its value on top. */
+function openerLead(phase, suitLabel, base) {
+  const what = phase === "Reveal"
+    ? "each places a Landscape from the Vault"
+    : phase === "Explore"
+      ? "each is 1 step"
+      : "fight a Dreambeast, Meet an Archetype, or use a Landscape's actions";
+  const free = base > 0
+    ? `Your ${suitLabel} gives ${base} free ${phase} Action${base === 1 ? "" : "s"}: ${what}.`
+    : `Your ${suitLabel} is 0: no free ${phase} Actions.`;
+  return `${free} Add 1 ${suitLabel} card for +its value, or a Power Token for +1.`;
 }
 
-/** What one point of the phase budget buys, for the live preview. */
-function budgetUnit(phase, n) {
-  return `${phase} Action${n === 1 ? "" : "s"} · ${unusedGlimmerText(n)}`;
+/** What the phase budget buys, for the live preview. */
+function budgetUnit(phase, n, bought) {
+  const free = n - bought;
+  const parts = bought ? `${free} free + ${bought} bought · ${unusedGlimmerText(bought)}` : "all free";
+  return `${phase} Action${n === 1 ? "" : "s"} · ${parts}`;
 }
 
-function confirmLabel(phase) {
+function confirmLabel(phase, bought, n) {
+  if (!bought) return `Take ${n} free`;
   if (phase === "Reveal") return "Open Reveal";
   if (phase === "Explore") return "Open Explore";
   return "Open Meet";
@@ -226,6 +236,7 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   const kind = confirmKind(phase);
   const canConfirm = !!contributor && projectedPhaseBudget(state, contributor) >= 1;
   const projected = contributor ? projectedPhaseBudget(state, contributor) : 0;
+  const bought = contributor ? phaseSpendValue(state, contributor, suit) : 0;
 
   content.classList.remove(
     "rules-reference-modal",
@@ -245,13 +256,13 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   const alive = (state.players || []).filter((p) => p.alive);
   // Ainmos is solo: the opener is always the one living Dreamer.
   const player = alive[0];
-  const bonus = player ? totalStat(player, suit, state) : 0;
+  const bonus = player ? phaseBaseActions(state, player, phase) : 0;
   const tokenOn = !!player && state.phaseTokenAsPsyche === player.id;
   const tokenOk = !!player && (canUsePhasePowerToken(state, player) || tokenOn);
   const tint = phase === "Reveal" ? "reveal" : phase === "Explore" ? "explore" : "meet";
   const hasOpenerCard = !!player && (player.hand || []).some((c) => isOpenerCard(c, state));
   const idleNote = hasOpenerCard
-    ? `pick a ${suitLabel} card`
+    ? `pick a ${suitLabel} card for more Actions`
     : (tokenOk ? `no ${suitLabel}: use a Power Token or Skip` : `no ${suitLabel} in hand: Skip`);
 
   body.innerHTML = `
@@ -262,25 +273,25 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
           return pos.longNight ? `The Long Night · ${phase}` : `Cycle ${pos.cycle} · Dream ${pos.dream} of 3 · ${phase} · phase ${pos.step} of 9`;
         })()}</p>
         <h2>${openerTitle(phase)}</h2>
-        <p class="fullscreen-browser-lead">${openerLead(phase, suitLabel)}</p>
+        <p class="fullscreen-browser-lead">${openerLead(phase, suitLabel, bonus)}</p>
       </header>
       <div class="phase-opener-solo-stage fullscreen-browser-body">
         <div class="phase-opener-preview${canConfirm ? " is-ready" : ""}" aria-live="polite">
           <span class="phase-opener-preview-num${canConfirm ? "" : " is-empty"}">${canConfirm ? projected : ""}</span>
-          <span class="phase-opener-preview-unit">${canConfirm ? budgetUnit(phase, projected) : idleNote}</span>
-          <span class="phase-opener-preview-stat">${suitIconHtml(suit, { size: 12 })} ${suitLabel} +${bonus}</span>
+          <span class="phase-opener-preview-unit">${canConfirm ? budgetUnit(phase, projected, bought) : idleNote}</span>
+          <span class="phase-opener-preview-stat">${suitIconHtml(suit, { size: 12 })} ${bonus} free from ${suitLabel}</span>
         </div>
         <div class="phase-opener-hand-row phase-opener-solo-hand" data-hand-for="${player?.id || ""}"></div>
       </div>
       <footer class="phase-opener-footer">
         <div class="phase-opener-actions">
           <button type="button" id="btn-view-board" class="btn btn-phase-opener-skip">View board</button>
-          <button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip" title="Skip: keep your cards. No Actions, and no Glimmer.">Skip</button>
-          <button type="button" class="btn btn-phase-opener-skip phase-opener-token${tokenOn ? " on" : ""}" data-token-id="${player?.id || ""}" ${tokenOk ? "" : "disabled"} title="Spend 1 Power Token as 1 + ${suitLabel} ${bonus}">
+          <button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip" title="Skip: keep your cards and give up this phase's Actions, free ones too.">Skip</button>
+          <button type="button" class="btn btn-phase-opener-skip phase-opener-token${tokenOn ? " on" : ""}" data-token-id="${player?.id || ""}" ${tokenOk ? "" : "disabled"} title="Spend 1 Power Token for +1 ${phase} Action">
             Power Token · ${player?.powerTokens || 0}
           </button>
           <button type="button" id="btn-spread-opener" class="btn primary btn-phase-opener-confirm tint-${tint}" data-tutorial-action="${kind}" ${canConfirm ? "" : "disabled"}>
-            ${confirmLabel(phase)}
+            ${confirmLabel(phase, bought, projected)}
           </button>
         </div>
       </footer>

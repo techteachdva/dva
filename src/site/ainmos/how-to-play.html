@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0a14">
+  <title>Ainmos — How to Play</title>
+  <meta name="description" content="Ainmos on one page: Cycles, Dreams and phases, free Actions from your stats, the dice battle, Archetypes, Psyche, Objects, and death.">
+  <link rel="stylesheet" href="css/fonts-local.css">
+  <style>
+    :root {
+      --bg: #0b0a14;
+      --ink: #efeaf7;
+      --muted: #b9b0cc;
+      --faint: #8d84a3;
+      --glass: rgba(255, 255, 255, 0.055);
+      --glass-strong: rgba(255, 255, 255, 0.09);
+      --rim: rgba(214, 200, 255, 0.22);
+      --luc: #4a9eff;
+      --ela: #f0c830;
+      --wil: #e84848;
+      --gold: #f3d9a4;
+      --pearl: linear-gradient(120deg, #c9f3ff 0%, #f7d6ff 35%, #fff2c9 65%, #c9ffe6 100%);
+      --display: "Cinzel", Georgia, serif;
+      --glaze: "Kalnia Glaze", "Cinzel", Georgia, serif;
+      --whisper: Georgia, "Times New Roman", serif;
+      --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--body);
+      font-size: 15px;
+      line-height: 1.38;
+      background:
+        radial-gradient(1200px 600px at 12% -10%, rgba(120, 90, 200, 0.28), transparent 60%),
+        radial-gradient(900px 500px at 95% 10%, rgba(80, 160, 220, 0.18), transparent 60%),
+        radial-gradient(900px 600px at 50% 110%, rgba(220, 120, 170, 0.16), transparent 60%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .page { max-width: 1520px; margin: 0 auto; padding: 18px 22px 22px; }
+    strong { color: #fff; }
+    .luc { color: var(--luc); }
+    .ela { color: var(--ela); }
+    .wil { color: var(--wil); }
+    .glim { color: #f6e7ff; text-shadow: 0 0 8px rgba(240, 200, 255, 0.8); }
+
+    /* Header */
+    .top {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 22px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .wordmark {
+      font-family: var(--glaze);
+      font-size: 54px;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      background: var(--pearl);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 0 14px rgba(220, 200, 255, 0.35));
+    }
+    .title h1 {
+      margin: 0;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 30px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .title p { margin: 2px 0 0; font-family: var(--whisper); font-style: italic; color: var(--muted); font-size: 17px; }
+    .goal {
+      border: 1px solid var(--rim);
+      border-radius: 16px;
+      padding: 10px 16px;
+      background: var(--glass);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 24px rgba(200, 180, 255, 0.12);
+    }
+    .goal h2 { margin: 0 0 4px; font-family: var(--display); font-size: 15px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+    .goal table { border-collapse: collapse; font-size: 13.5px; }
+    .goal td { padding: 1px 10px 1px 0; color: var(--muted); }
+    .goal td:first-child { color: #fff; font-weight: 600; }
+
+    /* Panels */
+    .panel {
+      position: relative;
+      border-radius: 18px;
+      padding: 14px 16px 14px;
+      background: var(--glass);
+      border: 1px solid var(--rim);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+    .panel h2 {
+      margin: 0 0 8px;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .panel h2 .n {
+      display: inline-grid;
+      place-items: center;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      font-size: 13px;
+      color: #1a1426;
+      background: var(--pearl);
+      flex: none;
+    }
+    .whisper { font-family: var(--whisper); font-style: italic; color: var(--muted); }
+
+    /* 1. Night → Cycle → Dream */
+    .night-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .nest {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      justify-content: center;
+      font-size: 13.5px;
+    }
+    .nest div {
+      border: 1px solid var(--rim);
+      border-radius: 12px;
+      padding: 7px 10px;
+      background: var(--glass-strong);
+    }
+    .nest b { font-family: var(--display); letter-spacing: 0.06em; display: block; font-size: 14px; }
+    .nest div:nth-child(2) { margin-left: 10px; }
+    .nest div:nth-child(3) { margin-left: 20px; }
+    .cycle {
+      display: grid;
+      grid-template-columns: 1fr 26px 1fr 26px 1fr 26px 150px;
+      align-items: stretch;
+    }
+    .arrow {
+      display: grid;
+      place-items: center;
+      color: var(--faint);
+      font-size: 22px;
+    }
+    .dream {
+      display: grid;
+      grid-template-columns: 74px 1fr;
+      gap: 10px;
+      padding: 9px;
+      border-radius: 14px;
+      border: 1px solid var(--rim);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+    }
+    .dream img {
+      width: 74px; height: 100px;
+      object-fit: cover;
+      border-radius: 9px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3);
+    }
+    .dream .tag { font-family: var(--display); font-weight: 700; letter-spacing: 0.06em; font-size: 14.5px; }
+    .dream .k { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); }
+    .dream p { margin: 3px 0 6px; font-size: 13.5px; color: var(--muted); }
+    .chips { display: flex; gap: 5px; flex-wrap: wrap; }
+    .chip {
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 2px 7px 2px 5px;
+      border-radius: 999px;
+      border: 1px solid currentColor;
+      white-space: nowrap;
+    }
+    .chip i { font-style: normal; opacity: 0.75; margin-right: 3px; }
+    .dawn {
+      border-radius: 14px;
+      padding: 9px 10px;
+      border: 1px dashed rgba(243, 217, 164, 0.5);
+      background: rgba(243, 217, 164, 0.06);
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .dawn b { font-family: var(--display); color: var(--gold); letter-spacing: 0.08em; font-size: 14px; }
+    .loop { display: block; margin-top: 4px; font-size: 12.5px; color: var(--gold); }
+
+    /* Layout of the rest */
+    .grid-2 { display: grid; grid-template-columns: 1.05fr 1fr; gap: 14px; margin-top: 14px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 14px; }
+
+    /* 2. Phases */
+    .rule-banner {
+      margin: 0 0 10px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, rgba(74, 158, 255, 0.18), rgba(240, 200, 48, 0.16), rgba(232, 72, 72, 0.18));
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 15.5px;
+    }
+    .rule-banner b { font-family: var(--display); letter-spacing: 0.04em; }
+    .phases { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .phase {
+      border-radius: 14px;
+      padding: 10px 11px;
+      border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--c) 16%, transparent), rgba(255, 255, 255, 0.02));
+    }
+    .phase.r { --c: var(--luc); }
+    .phase.e { --c: var(--ela); }
+    .phase.m { --c: var(--wil); }
+    .phase .ph { display: flex; align-items: center; gap: 8px; }
+    .phase .ph svg { width: 26px; height: 26px; flex: none; color: var(--c); }
+    .phase .ph b { font-family: var(--display); font-size: 17px; letter-spacing: 0.08em; }
+    .phase .ph small { margin-left: auto; color: var(--faint); font-size: 11.5px; }
+    .phase .free { margin: 6px 0 4px; font-weight: 700; color: var(--c); font-size: 14px; }
+    .phase ul { margin: 0; padding-left: 17px; font-size: 13.5px; color: var(--muted); }
+    .phase li { margin: 1px 0; }
+    .more {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      font-size: 13.5px;
+    }
+    .more > div {
+      border-radius: 12px;
+      padding: 8px 11px;
+      background: var(--glass-strong);
+      border: 1px solid var(--rim);
+      color: var(--muted);
+    }
+    .more h3 { margin: 0 0 3px; font-family: var(--display); font-size: 13.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #fff; }
+    .example { display: grid; grid-template-columns: 50px 1fr; gap: 9px; align-items: center; }
+    .example img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid var(--rim); }
+    .stats { display: inline-flex; gap: 6px; font-weight: 700; }
+
+    /* 3. Fight */
+    .flow { display: grid; grid-template-columns: 1fr 18px 1fr 18px 1fr 18px 1fr; align-items: stretch; }
+    .flow .arrow { font-size: 18px; }
+    .step {
+      border-radius: 12px;
+      padding: 8px 9px;
+      background: var(--glass-strong);
+      border: 1px solid var(--rim);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .step b { display: block; color: #fff; font-family: var(--display); letter-spacing: 0.05em; font-size: 13.5px; margin-bottom: 2px; }
+    .dice { display: flex; gap: 4px; margin-top: 5px; }
+    .die {
+      width: 20px; height: 20px; border-radius: 5px;
+      background: #f5f0ff; color: #1a1426;
+      font-weight: 800; font-size: 12px;
+      display: grid; place-items: center;
+    }
+    .die.hit { background: var(--gold); box-shadow: 0 0 8px rgba(243, 217, 164, 0.8); }
+    .forms {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+    .form {
+      text-align: center;
+      border-radius: 10px;
+      padding: 6px 4px;
+      border: 1px solid var(--rim);
+      background: rgba(255, 255, 255, 0.035);
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .form b { display: block; font-family: var(--display); color: #fff; font-size: 12.5px; letter-spacing: 0.05em; }
+    .fight-notes { margin: 9px 0 0; padding-left: 17px; font-size: 13.5px; color: var(--muted); }
+    .fight-notes li { margin: 2px 0; }
+
+    /* 4. Four boxes */
+    .box ul { margin: 0; padding-left: 17px; font-size: 13.5px; color: var(--muted); }
+    .box li { margin: 3px 0; }
+    .box .head { display: flex; gap: 10px; align-items: center; margin-bottom: 6px; }
+    .box .head img { width: 44px; height: 58px; object-fit: cover; border-radius: 7px; border: 1px solid var(--rim); }
+    .box .head p { margin: 0; font-size: 13px; }
+
+    /* Footer: one round in order */
+    .round {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 8px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--rim);
+      background: var(--glass);
+      font-size: 13.5px;
+    }
+    .round .lbl { font-family: var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-right: 4px; }
+    .round span.s { padding: 3px 10px; border-radius: 999px; background: var(--glass-strong); border: 1px solid var(--rim); }
+    .round span.s.r { border-color: var(--luc); }
+    .round span.s.e { border-color: var(--ela); }
+    .round span.s.m { border-color: var(--wil); }
+    .round .to { color: var(--faint); }
+    .round .tip { margin-left: auto; color: var(--muted); font-family: var(--whisper); font-style: italic; }
+    .back {
+      color: var(--muted);
+      text-decoration: none;
+      border: 1px solid var(--rim);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .back:hover { color: #fff; border-color: #fff; }
+
+    /* Tablets and phones: stack everything. */
+    @media (max-width: 1180px) {
+      .top { grid-template-columns: 1fr; text-align: center; }
+      .goal { justify-self: center; }
+      .night-row { grid-template-columns: 1fr; }
+      .nest { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+      .nest div:nth-child(n) { margin-left: 0; }
+      .cycle { grid-template-columns: 1fr; gap: 6px; }
+      .cycle .arrow { transform: rotate(90deg); height: 18px; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 720px) {
+      .page { padding: 12px 16px 18px; }
+      .wordmark { font-size: 40px; }
+      .title h1 { font-size: 22px; }
+      .phases, .more { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr; gap: 4px; }
+      .flow .arrow { transform: rotate(90deg); height: 14px; }
+      .forms { grid-template-columns: repeat(3, 1fr); }
+      .grid-4 { grid-template-columns: 1fr; }
+      .round .tip { margin-left: 0; }
+    }
+    @media print {
+      @page { size: landscape; margin: 6mm; }
+      html, body { background: #0b0a14 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page { zoom: 0.66; max-width: none; }
+      .back { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="top">
+      <div class="wordmark" aria-label="Ainmos">Ainmos</div>
+      <div class="title">
+        <h1>How to Play</h1>
+        <p>One Dreamer, one night. Build the dream, walk it, meet what waits, and wake up.</p>
+      </div>
+      <div class="goal">
+        <h2>Wake up: Acquire Archetypes</h2>
+        <table>
+          <tr><td>Daydream</td><td>3 Archetypes</td><td>3 Cycles</td></tr>
+          <tr><td>Nap</td><td>6 Archetypes</td><td>7 Cycles</td></tr>
+          <tr><td>Deep Sleep</td><td>all 12</td><td>15 Cycles</td></tr>
+        </table>
+      </div>
+    </header>
+
+    <!-- 1. The shape of a night -->
+    <section class="panel" aria-labelledby="s1">
+      <h2 id="s1"><span class="n">1</span>The shape of a night</h2>
+      <div class="night-row">
+        <div class="nest" aria-label="A night holds Cycles, a Cycle holds 3 Dreams, a Dream holds 3 phases">
+          <div><b>Night</b>3 · 7 · 15 Cycles</div>
+          <div><b>Cycle</b>3 Dreams = 9 phases</div>
+          <div><b>Dream</b>Reveal · Explore · Meet</div>
+        </div>
+        <div class="cycle">
+          <article class="dream">
+            <img src="images/dreams/quiet.webp" alt="A Dream card: Quiet">
+            <div>
+              <span class="k">Dream 1 · phases 1–3</span>
+              <div class="tag">A Dream</div>
+              <p>A Dream card is drawn. Every Dream hurts: <strong>endure</strong> its effect, then play your phases.</p>
+              <div class="chips"><span class="chip luc"><i>1</i>Reveal</span><span class="chip ela"><i>2</i>Explore</span><span class="chip wil"><i>3</i>Meet</span></div>
+            </div>
+          </article>
+          <div class="arrow" aria-hidden="true">→</div>
+          <article class="dream">
+            <img src="images/dreambeasts/winged-turtle.webp" alt="The Winged Turtle, the first Dreambeast">
+            <div>
+              <span class="k">Dream 2 · phases 4–6</span>
+              <div class="tag">A Dreambeast lands</div>
+              <p>The Cycle's <strong>Dreambeast</strong> lands on a Landscape of its suit. It <strong>chases</strong> you and bleeds you every dusk until beaten.</p>
+              <div class="chips"><span class="chip luc"><i>4</i>Reveal</span><span class="chip ela"><i>5</i>Explore</span><span class="chip wil"><i>6</i>Meet</span></div>
+            </div>
+          </article>
+          <div class="arrow" aria-hidden="true">→</div>
+          <article class="dream">
+            <img src="images/archetypes/archetype-orphan.webp" alt="An Archetype card">
+            <div>
+              <span class="k">Dream 3 · phases 7–9</span>
+              <div class="tag">An Archetype stirs</div>
+              <p>Choose <strong>1 of 3 Archetypes</strong>. It appears on its home Landscape. Reach it and Meet it to <strong>Acquire</strong> it.</p>
+              <div class="chips"><span class="chip luc"><i>7</i>Reveal</span><span class="chip ela"><i>8</i>Explore</span><span class="chip wil"><i>9</i>Meet</span></div>
+            </div>
+          </article>
+          <div class="arrow" aria-hidden="true">→</div>
+          <div class="dawn">
+            <b>Dawn</b>
+            Draw 4 Psyche. A stronger Cycle begins.
+            <span class="loop">↻ back to Dream 1</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid-2">
+      <!-- 2. Phases and free Actions -->
+      <section class="panel" aria-labelledby="s2">
+        <h2 id="s2"><span class="n">2</span>Every phase: your stat is free Actions</h2>
+        <p class="rule-banner"><b>Your Dreamer's three stats are your free Actions</b> in their phase, every Dream. <span class="luc">Lucidity</span> → Reveal, <span class="ela">Elasticity</span> → Explore, <span class="wil">Willpower</span> → Meet.</p>
+        <div class="phases">
+          <div class="phase r">
+            <div class="ph">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+              <b>Reveal</b><small>phases 1 · 4 · 7</small>
+            </div>
+            <div class="free">Free Actions = Lucidity</div>
+            <ul>
+              <li>Each Action places <strong>1 Landscape</strong> from the Vault beside the dream.</li>
+              <li>★ marks the home of an Archetype you may call.</li>
+            </ul>
+          </div>
+          <div class="phase e">
+            <div class="ph">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 7l-5 5 5 5M17 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <b>Explore</b><small>phases 2 · 5 · 8</small>
+            </div>
+            <div class="free">Free Actions = Elasticity</div>
+            <ul>
+              <li>First, every Dreambeast <strong>chases</strong> you 1 step.</li>
+              <li>Each Action is <strong>1 step</strong> to a next-door Landscape.</li>
+            </ul>
+          </div>
+          <div class="phase m">
+            <div class="ph">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3 1-5 1-7.5z" fill="currentColor"/></svg>
+              <b>Meet</b><small>phases 3 · 6 · 9</small>
+            </div>
+            <div class="free">Free Actions = Willpower</div>
+            <ul>
+              <li>Each Action: <strong>fight</strong> a Dreambeast, <strong>Meet</strong> an Archetype, use a <strong>Landscape action</strong>, or tap an Object.</li>
+              <li>As Meet ends, Archetypes slip 1 Landscape away.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="more">
+          <div>
+            <h3>Want more Actions?</h3>
+            Spend <strong>1 Psyche</strong> of the phase's suit: <strong>+ its value</strong>. Or 1 <strong>Power Token</strong>: +1. Free Actions are used first. Paid-for Actions you leave unused become <span class="glim">Glimmer ✧</span>, which pays in the Lost &amp; Found.
+          </div>
+          <div class="example">
+            <img src="images/dreamers/dreamer-the-rested.webp" alt="The Rested">
+            <div>
+              <h3>Example: The Rested</h3>
+              <span class="stats"><span class="luc">Lucidity 2</span> · <span class="ela">Elasticity 1</span> · <span class="wil">Willpower 0</span></span><br>
+              Places <strong>2</strong> Landscapes and walks <strong>1</strong> step for free. To fight, spend a Willpower card: a <strong>3</strong> gives 3 Meet Actions.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. The dice battle -->
+      <section class="panel" aria-labelledby="s3">
+        <h2 id="s3"><span class="n">3</span>Fight: the dice battle</h2>
+        <div class="flow">
+          <div class="step"><b>1 · Play a Spread</b>1 to 3 Psyche cards, <strong>any suit</strong>. It costs 1 Meet Action.</div>
+          <div class="arrow" aria-hidden="true">→</div>
+          <div class="step"><b>2 · Count your Power</b>Card values + your stat if a card matches the beast's suit + Dream Form dice + up to 3 Power Tokens.</div>
+          <div class="arrow" aria-hidden="true">→</div>
+          <div class="step"><b>3 · Roll</b>You both roll your Power in d6. Each <strong>5 or 6</strong> is a hit. More hits wins; <strong>ties go to you</strong>.
+            <div class="dice" aria-hidden="true"><span class="die hit">6</span><span class="die">2</span><span class="die hit">5</span><span class="die">3</span><span class="die">1</span></div>
+          </div>
+          <div class="arrow" aria-hidden="true">→</div>
+          <div class="step"><b>4 · Result</b><strong>Win:</strong> Accept it: take 2 Power Tokens, an Object of its suit, or a missing Set piece. <strong>Lose:</strong> the cards are spent; it stays.</div>
+        </div>
+        <div class="forms" aria-label="Dream Forms">
+          <div class="form"><b>Echo</b>2 of one value</div>
+          <div class="form"><b>Ladder</b>3 in a row</div>
+          <div class="form"><b>Chord</b>3 of one suit</div>
+          <div class="form"><b>Trinity</b>1 of each suit</div>
+          <div class="form"><b>Trifecta</b>3 of a kind</div>
+          <div class="form"><b>Unity</b>three 1s</div>
+        </div>
+        <ul class="fight-notes">
+          <li><strong>Dream Forms</strong> add dice when your Spread makes the pattern. Level them up in the Lost &amp; Found.</li>
+          <li>A Dreambeast's Power is its printed Power <strong>+ the Cycle</strong>. Each one <strong>wards one Form</strong> (that Form loses 1–5 dice against it).</li>
+          <li>Aim for <strong>the beast's Power + 2</strong>: you win about 3 times in 4.</li>
+        </ul>
+        <div class="more" style="grid-template-columns: 1fr">
+          <div class="example">
+            <img src="images/dreambeasts/winged-turtle.webp" alt="Winged Turtle">
+            <div>
+              <h3>Example: Cycle 1, the Winged Turtle</h3>
+              A Willpower beast, Power 3 + Cycle 1 = <strong>4</strong>. You play a Willpower <strong>2</strong> and a Lucidity <strong>2</strong> (an <strong>Echo</strong>) with Willpower 1: 2 + 2 + 1 + 1 for the Echo = <strong>6 dice against its 4</strong>.
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="grid-4">
+      <section class="panel box" aria-labelledby="s4">
+        <h2 id="s4"><span class="n">4</span>Archetypes</h2>
+        <div class="head"><img src="images/archetypes/archetype-explorer.webp" alt=""><p class="whisper">The only goal. Collect enough and you wake.</p></div>
+        <ul>
+          <li>Meeting one costs <strong>1 Meet Action</strong> on its Landscape.</li>
+          <li>It opens with an <strong>Event</strong>: <strong>Bright</strong> costs Psyche and helps; <strong>Dim</strong> is free and hurts.</li>
+          <li>Then a Spread that makes a <strong>Dream Form</strong> against <strong>Power 12</strong>.</li>
+          <li>Win: <strong>Acquire</strong> it: +1 Archetype, +1 Power Token, and its power is yours.</li>
+        </ul>
+      </section>
+      <section class="panel box" aria-labelledby="s5">
+        <h2 id="s5"><span class="n">5</span>Psyche is life</h2>
+        <div class="head"><img src="images/backs/psyche.webp" alt=""><p class="whisper">Your hand is your health, your coin, and your dice.</p></div>
+        <ul>
+          <li>Start with 6. Draw <strong>1</strong> as each Dream begins and <strong>4</strong> at dawn.</li>
+          <li>At <strong>dusk</strong>, each Dreambeast still standing <strong>Represses</strong> 1 Psyche from the Waking Mind (your draw deck) to the Subconscious.</li>
+          <li><strong>Return</strong> brings Psyche back. If the Waking Mind empties, you never wake.</li>
+        </ul>
+      </section>
+      <section class="panel box" aria-labelledby="s6">
+        <h2 id="s6"><span class="n">6</span>Objects &amp; Sets</h2>
+        <div class="head"><img src="images/objects/the-one.webp" alt="" onerror="this.style.display='none'"><p class="whisper">The Lost &amp; Found opens after every Dream.</p></div>
+        <ul>
+          <li>3 Objects and 1 Insight (a Form level or upgrade). Pay with Psyche value; <span class="glim">Glimmer ✧</span> pays first.</li>
+          <li>Finish a <strong>Set</strong> (Body 5 · Elements 4 · Jewelry 3 · Sticks 3) to Acquire an Archetype.</li>
+          <li>Started a Set? The shop shows a missing piece, a beaten beast can pay one, and <strong>The One</strong> Mimics one.</li>
+        </ul>
+      </section>
+      <section class="panel box" aria-labelledby="s7">
+        <h2 id="s7"><span class="n">7</span>Death &amp; Power Tokens</h2>
+        <div class="head"><img src="images/landscapes/bed.webp" alt="" style="width:58px;height:58px;border-radius:50%"><p class="whisper">You die… and wake back up on The Bed.</p></div>
+        <ul>
+          <li>No Psyche left? You <strong>die</strong>: lose your <strong>Objects</strong>, redraw a hand of 6. Keep tokens, Forms and Archetypes. The <strong>6th death</strong> ends the night.</li>
+          <li><strong>Power Tokens</strong>: start with 2, hold up to 6. Each one buys +1 Action, +1 fight die (max 3), a Dreamer or Archetype power, or a new look in the shop.</li>
+        </ul>
+      </section>
+    </div>
+
+    <footer class="round" aria-label="One round in order">
+      <span class="lbl">One Dream, in order</span>
+      <span class="s">Dream card</span><span class="to">→</span>
+      <span class="s r">Reveal</span><span class="to">→</span>
+      <span class="s e">Explore (beasts chase)</span><span class="to">→</span>
+      <span class="s m">Meet</span><span class="to">→</span>
+      <span class="s">Dusk (beasts bleed, Archetypes slip)</span><span class="to">→</span>
+      <span class="s">Lost &amp; Found</span><span class="to">↻</span>
+      <span class="tip">Out of Cycles? The Long Night bleeds harder each dusk. In game, <strong>?</strong> explains every rule.</span>
+      <a class="back" href="index.html">← Back to Ainmos</a>
+    </footer>
+  </main>
+</body>
+</html>

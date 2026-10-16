@@ -85,7 +85,7 @@ function objectHtml(state, buyer, card, index) {
       <div class="lf-item-art" style="background-image:url('${esc(card.image)}')"></div>
       ${priceTag(price, glim, `${price} ${SUIT_NAME[card.suit]} Psyche value`)}
       <h4 class="lf-item-name">${esc(card.name)}</h4>
-      <p class="lf-item-kind">${kindLabel(card)} · ${SUIT_NAME[card.suit] || ""}</p>
+      <p class="lf-item-kind">${card.setSearch ? "Your Set's missing piece · " : ""}${kindLabel(card)} ·${SUIT_NAME[card.suit] || ""}</p>
       <p class="lf-item-text">${esc(card.text)}</p>
       <div class="lf-item-foot">
         ${reason
@@ -201,7 +201,7 @@ export function renderLostFound(state, handlers = {}) {
         <h3 id="lf-title" class="lf-title">Lost &amp; Found</h3>
         <span class="lf-round">Between rounds ${Math.max(1, (state.round || 2) - 1)} and ${state.round || 2}</span>
       </header>
-      <p class="lf-whisper">Things you forgot you had.${glimmerHeld(state) ? ` <span class="lf-glimmer">${glimmerHeld(state)}✧ Glimmer pays first</span>` : ` <span class="lf-glimmer is-empty">Leave Reveals, steps, or Meet actions unused to bank Glimmer ✧</span>`}</p>
+      <p class="lf-whisper">Things you forgot you had.${glimmerHeld(state) ? ` <span class="lf-glimmer">${glimmerHeld(state)}✧ Glimmer pays first</span>` : ` <span class="lf-glimmer is-empty">Leave paid-for Reveals, steps, or Meet actions unused to bank Glimmer ✧</span>`}</p>
       <div class="lf-buyers" role="group" aria-label="Who reaches in?">${buyerHtml(state, buyer)}</div>
       <div class="lf-shelf">
         ${shop.objects.length

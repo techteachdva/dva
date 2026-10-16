@@ -6,10 +6,25 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.25";
+export const SOMNIA_VERSION = "0.26";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.26",
+    title: "Waking Hands",
+    notes: [
+      "Your stats are your free Actions. Every phase opens with Actions equal to your matching stat: Lucidity places that many Landscapes in Reveal, Elasticity walks that many steps in Explore, Willpower gives that many Meet Actions. You never have to spend a card just to play a phase.",
+      "Want more? Spend 1 Psyche of the phase's suit for +its value, or 1 Power Token for +1. Do it on the opener, or later in the phase if you opened free (once per phase; the Vault and the spread tray offer it). Free Actions are used first, and only Actions you paid for become Glimmer if unused.",
+      "To match, each Dream now draws 1 Psyche (was 2) and the dawn between Cycles draws 4 (was 5).",
+      "The Winged Turtle is a plain Power 3 Dreambeast (plus the Cycle, like every beast). No more stack of three turtles.",
+      "Dying is never silent: a notice says \"You die... and wake back up on The Bed\", names the Objects you lost, and confirms your new hand. You now keep your Power Tokens when you die; only your Objects are lost.",
+      "Sets are easier to finish. Once you hold a piece of a Set, the Lost & Found's first shelf is always a missing piece (when one is left in the deck), and a beaten Dreambeast can pay \"a missing Set piece\" instead of a random Object.",
+      "The One now Mimics a missing piece of any Set: it becomes a copy of that piece, ability and all, and turns back into The One when it is Discarded. A Set counts different pieces, so a copy and the real piece never double up.",
+      "An Accepted Dreambeast's \"Object of its suit\" now really comes from that suit's Object deck.",
+      "New: How to Play on one page, from the main menu or the in-game guide. The menu primer and the guide now match the current rules.",
+    ],
+  },
   {
     version: "0.25",
     title: "Endless Dreams",

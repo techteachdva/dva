@@ -155,11 +155,11 @@ export const SUBCONSCIOUS_START = 12;
 export const PSYCHE_WILD_COUNT = 6;
 export const PSYCHE_POWER_TOKEN_COUNT = 0;
 export const PSYCHE_POWER_GRANT = 1;
-/** Ainmos 0.25: six to start (and to wake on The Bed with), since each round draws only 2. */
+/** Ainmos 0.25: six to start (and to wake on The Bed with). */
 export const PSYCHE_STARTING_HAND = 6;
 /** Ainmos: Psyche Draw as every Dream begins. */
-/** Ainmos 0.25: every round opens with 2 Psyche drawn. */
-export const DREAM_DRAW = 2;
+/** Ainmos 0.26: every round opens with 1 Psyche drawn (was 2): stats now give free phase Actions, so Psyche lasts longer. */
+export const DREAM_DRAW = 1;
 export const PSYCHE_HAND_LIMIT = 10;
 export const PSYCHE_DECK_SIZE =
   (Object.values(PSYCHE_DISTRIBUTION).reduce((sum, n) => sum + n, 0) * 3)

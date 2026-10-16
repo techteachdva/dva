@@ -26,6 +26,7 @@ import { psycheCardValue } from "../cards/psyche.js";
 import { requestChooseTile, beginFreeRevealPicking, revealCapacity } from "../board/landscapes.js";
 import { edgeLandscapes, hexDistance } from "../core/hex.js";
 import { OBJECT_SETS, setProgress } from "./object-sets.js";
+import { missingPieces, mimicCard, pieceSetTag } from "./set-search.js";
 export { OBJECT_SETS, setProgress };
 import { onDawn } from "../core/state.js";
 import { isFreeformBoard, vaultCards, tileDeckCount, refreshVault } from "../board/dreamscape-vault.js";
@@ -304,9 +305,7 @@ function finishToothSaber(state, player, helpers, { landscapeId, mode, cardIds, 
   recordQuestEvent(state, "discard_psyche", { count: selected.length });
   addLog(state, `Tooth-Saber cuts through ${enc.name}.`);
 
-  // A win like any other: the Winged Turtle loses one shell; anything else is beaten outright,
-  // with the same rewards, Boss clear, Boon, and Mini-Boss bounty as a won fight.
-  if (enc.boss && helpers.advanceBossStack?.(state, enc, tile)) return;
+  // A win like any other: the beast is beaten outright, with the same rewards as a won fight.
   helpers.resolveBeastDefeat?.(state, { actor: player, encounter: enc, landscapeId, isReject: mode !== "accept" });
 }
 
@@ -604,9 +603,7 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
     return true;
   }
   if (cardId === "the-one") {
-    if (choiceId === "chess") checkObjectTagSet(state, player, "chess", { extra: 1 });
-    else checkObjectTagSet(state, player, choiceId, { extra: 1 });
-    addLog(state, `The One counts toward the ${choiceId} set.`);
+    resolveTheOneMimic(state, player, choiceId, payload);
     return true;
   }
 
@@ -780,6 +777,28 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
   return true;
 }
 
+/** The One Mimics a Set piece: pull The One back out of the discard and seat its copy. */
+function resolveTheOneMimic(state, player, pieceId, payload = {}) {
+  const target = (payload.pieces || []).find((c) => c.id === pieceId);
+  if (!target) return;
+  let theOne = null;
+  ["willpower", "lucidity", "elasticity"].some((suit) => {
+    const pile = state.objectDiscard?.[suit] || [];
+    const index = pile.map((c) => c.id).lastIndexOf("the-one");
+    if (index < 0) return false;
+    theOne = pile.splice(index, 1)[0];
+    return true;
+  });
+  const copy = mimicCard(theOne || { id: "the-one", name: "The One", type: "object", suit: "willpower", mindstreamSuit: "willpower", price: 3, subtype: "instant" }, target);
+  if (!player.persistent) player.persistent = [];
+  if (!player.objects) player.objects = [];
+  if (copy.subtype === "persistent") player.persistent.push(copy);
+  else player.objects.push(copy);
+  logMoment(state, `The One Mimics ${target.name}.`);
+  const tag = pieceSetTag(copy);
+  if (tag) checkObjectTagSet(state, player, tag);
+}
+
 const SET_LABELS = {
   chess: "Chess",
   stick: "Sticks",
@@ -794,7 +813,8 @@ export function checkObjectTagSet(state, player, tag, { extra = 0 } = {}) {
   const inPlay = [...player.persistent, ...(player.objects || [])];
   const tagged = inPlay.filter((o) => o.tags?.some((t) => t.startsWith(tag)));
   const wild = (player.setWildcards || []).filter((t) => t === tag).length;
-  if (tagged.length + extra + wild < setRequiredForTag(tag)) return;
+  const distinct = new Set(tagged.map((o) => o.id)).size;
+  if (distinct + extra + wild < setRequiredForTag(tag)) return;
   const label = SET_LABELS[tag] || tag;
   if (wild) {
     const idx = player.setWildcards.indexOf(tag);
@@ -1092,17 +1112,22 @@ export const OBJECT_EFFECTS = {
   },
 
   "the-one": (state, player) => {
+    const pieces = missingPieces(state, player, { anySet: true });
+    if (!pieces.length) {
+      addLog(state, "The One finds no missing Set piece to Mimic.");
+      return;
+    }
     offerChoice(state, player, {
       cardId: "the-one",
       title: "The One",
-      message: "Count as 1 Object toward which set?",
-      choices: [
-        { id: "chess", label: "Chess", hint: "Need 3 chess Objects." },
-        { id: "stick", label: "Stick", hint: "Need 3 stick Objects." },
-        { id: "body", label: "Body", hint: "Need 5 body Objects." },
-        { id: "element", label: "Element", hint: "Need 4 element Objects." },
-        { id: "jewelry", label: "Jewelry", hint: "Need 3 jewelry Objects." },
-      ],
+      message: "Mimic a missing piece of a Set. The One becomes a copy of it, ability and all, and turns back into The One when it is Discarded.",
+      log: "The One: choose a Set piece to Mimic.",
+      choices: pieces.map(({ card, tag }) => ({
+        id: card.id,
+        label: `${card.name} (${SET_LABELS[tag] || tag})`,
+        hint: card.text || card.effect || "",
+      })),
+      payload: { pieces: pieces.map(({ card }) => card) },
     });
   },
 };

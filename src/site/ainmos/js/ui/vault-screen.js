@@ -11,6 +11,8 @@
 import { isBlockingGameChoice } from "../core/state.js";
 import { isFreeformBoard, vaultCards, tileDeckCount, vaultRefreshCost } from "../board/dreamscape-vault.js";
 import { LANDSCAPE_ACTION_DEFS } from "../board/landscape-actions.js";
+import { glimmerIfUnused, phaseTopUpCards } from "../core/game.js";
+import { unusedGlimmerText } from "../core/cycle.js";
 /** Landscapes that are homes of the Archetypes the next Archetype Dream will offer. */
 function upcomingHomes(state) {
   const map = new Map();
@@ -122,7 +124,9 @@ export function renderVaultScreen(state, handlers = {}) {
   const remaining = pick.remaining || 0;
   const free = !!pick.freeReveal;
   const questIds = upcomingHomes(state);
-  const key = [cards.map((c) => c.id).join(","), deck, cost, remaining, free, [...questIds.keys()].join(",")].join("|");
+  // 0.26: opened on free Reveals? You may still spend one Lucidity, once, for +its value.
+  const topUps = [...new Map(phaseTopUpCards(state).map((c) => [c.value, c])).values()].sort((a, b) => a.value - b.value);
+  const key = [cards.map((c) => c.id).join(","), deck, cost, remaining, free, [...questIds.keys()].join(","), topUps.map((c) => c.value).join(",")].join("|");
   host.hidden = false;
   host.classList.remove("is-leaving");
   if (key === lastKey) return;
@@ -148,12 +152,13 @@ export function renderVaultScreen(state, handlers = {}) {
       <p class="lf-whisper">What does the dream become next?</p>
       <div class="vs-budget" aria-live="polite">${free
         ? `<b>${remaining}</b> ${noun}${remaining !== 1 ? "s" : ""} left`
-        : `<b>${remaining}</b> Reveal Action${remaining === 1 ? "" : "s"} left · If unused: ${remaining} Glimmer ✧`}</div>
+        : `<b>${remaining}</b> Reveal Action${remaining === 1 ? "" : "s"} left · ${unusedGlimmerText(glimmerIfUnused(state, remaining))}`}</div>
+      ${topUps.length ? `<div class="vs-topup"><span>Want more? Spend 1 Lucidity:</span>${topUps.map((c) => `<button type="button" class="lf-btn vs-topup-btn" data-vs-topup="${esc(c.instanceId)}" title="Spend ${esc(c.name || "this Lucidity")} for +${c.value} Reveal Actions. Bought Reveals left unused become Glimmer ✧.">+${c.value}</button>`).join("")}</div>` : ""}
       <div class="lf-shelf vs-shelf">${cards.map((card, index) => cardHtml(card, index, questIds)).join("")}</div>
       <footer class="lf-foot">
         <button type="button" class="lf-btn" data-vs-peek="1">View the dream</button>
         <button type="button" class="lf-btn lf-reroll" data-vs-refresh="1" ${refreshBlocked ? "aria-disabled=\"true\"" : ""} title="${esc(refreshBlocked || `Redeal the Vault. Each refresh this round costs 1 more.`)}">Refresh · ${cost}✧</button>
-        <button type="button" class="lf-btn lf-continue" data-vs-done="1" title="Stop placing. Each Lucidity left becomes 1 Glimmer ✧ for the Lost &amp; Found.">Done placing →</button>
+        <button type="button" class="lf-btn lf-continue" data-vs-done="1" title="Stop placing. Each Reveal you paid for and left unused becomes 1 Glimmer ✧ for the Lost &amp; Found.">Done placing →</button>
       </footer>
     </section>`;
 
@@ -174,4 +179,7 @@ export function renderVaultScreen(state, handlers = {}) {
     handlers.onPeek?.();
   });
   host.querySelector("[data-vs-done]")?.addEventListener("click", () => handlers.onDone?.());
+  host.querySelectorAll("[data-vs-topup]").forEach((btn) => btn.addEventListener("click", () => {
+    handlers.onTopUp?.(btn.dataset.vsTopup);
+  }));
 }

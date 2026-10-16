@@ -149,7 +149,7 @@ export function getCurrentObjective(state) {
       title: "Dreamer died — new Dream",
       steps: [
         "A Dreamer lost all Psyche and died in the Dream.",
-        "Their Objects are discarded and their Power Tokens are lost.",
+        "Their Objects are discarded. Power Tokens are kept.",
         "They wake on The Bed with 6 fresh Psyche. The Death Clock ticks.",
       ],
     };
@@ -245,9 +245,9 @@ export function getCurrentObjective(state) {
       return {
         phase: "Reveal",
         suit: "lucidity",
-        title: "Spend Lucidity",
-        steps: ["Spend 1 Lucidity, or 1 Power Token. Its value plus your Lucidity places that many Landscapes."],
-        tip: "Unused Reveals bank Glimmer ✧ for the Lost & Found.",
+        title: "Open Reveal",
+        steps: ["Your Lucidity is your free Reveal Actions: each places a Landscape. Add 1 Lucidity card for +its value, or a Power Token for +1."],
+        tip: "Only Reveals you paid for bank Glimmer ✧ if unused.",
       };
     }
     return { phase: "Reveal", suit: "lucidity", title: "Reveal done", steps: ["Tap **Next** when you are ready to walk."] };
@@ -258,8 +258,8 @@ export function getCurrentObjective(state) {
       return {
         phase: "Explore",
         suit: "elasticity",
-        title: "Spend Elasticity",
-        steps: ["Spend 1 Elasticity, or 1 Power Token, for steps. Head for the beasts before dusk."],
+        title: "Open Explore",
+        steps: ["Your Elasticity is your free steps. Add 1 Elasticity card for +its value, or a Power Token for +1. Head for the beasts before dusk."],
       };
     }
     if (state.exploreMovesLeft > 0) {
@@ -268,7 +268,7 @@ export function getCurrentObjective(state) {
         suit: "elasticity",
         title: "Walk the dream",
         steps: [`Tap a glowing hex to move. **${state.exploreMovesLeft}** step${state.exploreMovesLeft === 1 ? "" : "s"} left.`],
-        tip: "Unused steps bank Glimmer ✧.",
+        tip: "Only steps you paid for bank Glimmer ✧ if unused.",
       };
     }
     return { phase: "Explore", suit: "elasticity", title: "Walk done", steps: ["Tap **Next** to Meet."] };
@@ -279,8 +279,8 @@ export function getCurrentObjective(state) {
       return {
         phase: "Meet",
         suit: "willpower",
-        title: "Spend Willpower",
-        steps: ["Spend 1 Willpower, or 1 Power Token, for Meet actions."],
+        title: "Open Meet",
+        steps: ["Your Willpower is your free Meet Actions. Add 1 Willpower card for +its value, or a Power Token for +1."],
         tip: "Every beast left standing bleeds 1 Psyche from the Waking Mind at dusk.",
       };
     }
@@ -300,7 +300,7 @@ export function getCurrentObjective(state) {
       suit: "willpower",
       title: state.activeEncounter ? "Fight" : "Spend your actions",
       steps: lines,
-      tip: "Fight the Dreambeast here, Meet the Archetype here, use one of your Landscape's two actions, or tap a Persistent Object. Unused Meet Actions become Glimmer ✧.",
+      tip: "Fight the Dreambeast here, Meet the Archetype here, use one of your Landscape's two actions, or tap a Persistent Object. Only Meet Actions you paid for become Glimmer ✧ if unused.",
     };
   }
 
@@ -407,6 +407,7 @@ export function infoHubHtml(options = {}) {
           ${feedHtml}
         </section>
         <section class="info-hub-rules" aria-label="Rules highlights">
+          <p class="info-hub-onepager"><a href="how-to-play.html" target="_blank" rel="noopener">How to Play on one page ↗</a></p>
           <div class="info-hub-rule">
             <h3>Win &amp; Lose</h3>
             <p><strong>Win:</strong> Acquire <strong>3</strong> Archetypes on a Daydream, <strong>6</strong> on a Nap, <strong>all 12</strong> in Deep Sleep.</p>
@@ -414,20 +415,20 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>The Night</h3>
-            <p>A night is 4, 7, or 13 <strong>Cycles</strong>. Each Cycle is <strong>3 Dreams</strong> of Reveal · Explore · Meet: <strong>9 phases</strong>. Dream 1 is a <strong>Dream</strong> to endure. Dream 2 brings the Cycle's <strong>Dreambeast</strong> to a Landscape of its suit; it chases you and bleeds you every dusk. Dream 3 lets you call <strong>1 of 3 Archetypes</strong>. Then dawn: you draw 3. When the Dream Deck runs dry, the <strong>Long Night</strong> Represses 2, then 4, then 6 more at every dusk.</p>
+            <p>A night is 3, 7, or 15 <strong>Cycles</strong>. Each Cycle is <strong>3 Dreams</strong> of Reveal · Explore · Meet: <strong>9 phases</strong>. Dream 1 is a <strong>Dream</strong> to endure. Dream 2 brings the Cycle's <strong>Dreambeast</strong> to a Landscape of its suit; it chases you and bleeds you every dusk. Dream 3 lets you call <strong>1 of 3 Archetypes</strong>. You draw 1 Psyche as each Dream begins, and 4 at the dawn between Cycles. When the Dream Deck runs dry, the <strong>Long Night</strong> Represses 2, then 4, then 6 more at every dusk.</p>
           </div>
           <div class="info-hub-rule info-hub-rem">
             <h3>R.E.M. — Every Round</h3>
             <ul>
-              <li class="suit-lucidity"><strong>Reveal</strong> — the Dream is drawn and endured. Spend 1 Lucidity: its value plus your Lucidity places that many Landscapes from the Vault.</li>
-              <li class="suit-elasticity"><strong>Explore</strong> — spend 1 Elasticity for steps.</li>
-              <li class="suit-willpower"><strong>Meet</strong> — spend 1 Willpower for Meet Actions: fight a Dreambeast, Meet an Archetype, use one of your Landscape's two actions (Call a Dreambeast of its suit, or its own action), or tap a Persistent Object.</li>
+              <li class="suit-lucidity"><strong>Reveal</strong> — the Dream is drawn and endured. Your <strong>Lucidity</strong> is your free Reveal Actions: each places a Landscape from the Vault.</li>
+              <li class="suit-elasticity"><strong>Explore</strong> — your <strong>Elasticity</strong> is your free steps.</li>
+              <li class="suit-willpower"><strong>Meet</strong> — your <strong>Willpower</strong> is your free Meet Actions: fight a Dreambeast, Meet an Archetype, use one of your Landscape's two actions (Call a Dreambeast of its suit, or its own action), or tap a Persistent Object.</li>
             </ul>
-            <p>A Power Token can open any phase as 1 plus your stat. Every unused Reveal, step, or action banks 1 Glimmer ✧, which pays toward the next Lost &amp; Found.</p>
+            <p><strong>Your stats are your free Actions every phase.</strong> Want more? Spend 1 Psyche of the phase's suit for +its value, or 1 Power Token for +1. Free Actions are used first; only the ones you paid for bank Glimmer ✧ if unused, which pays toward the next Lost &amp; Found.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Fights</h3>
-            <p>Play 1–3 Psyche of any suit. Each Dreambeast arrives at its Power plus the Cycle, and wards one Dream Form (−1 to −5 dice off that Form). Your Power is their values plus your matching stat (if a card of its suit is in the spread), your Dream Form, and up to 3 Power Tokens. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Win and you <strong>Accept</strong> it: it leaves the board and you take a <strong>Power Token</strong> or a <strong>random Object</strong>. Lose and the cards are spent; the beast stays.</p>
+            <p>Play 1–3 Psyche of any suit. Each Dreambeast arrives at its Power plus the Cycle, and wards one Dream Form (−1 to −5 dice off that Form). Your Power is their values plus your matching stat (if a card of its suit is in the spread), your Dream Form, and up to 3 Power Tokens. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Win and you <strong>Accept</strong> it: it leaves the board and you take <strong>2 Power Tokens</strong>, an <strong>Object of its suit</strong>, or (once you have started a Set) <strong>a missing Set piece</strong>. Lose and the cards are spent; the beast stays.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Archetypes</h3>
@@ -436,6 +437,8 @@ export function infoHubHtml(options = {}) {
           <div class="info-hub-rule">
             <h3>Repress &amp; Return</h3>
             <p><strong>Only Psyche is Repressed</strong>: it leaves play and waits in the <strong>Subconscious</strong>. The night starts with 12 random Psyche already there. <strong>Return</strong> always brings back Psyche, and you choose which. Lost Objects are Discarded. A <strong>Forgotten</strong> Landscape shuffles back into the Landscape deck; anyone on it dies and wakes on The Bed.</p>
+            <p><strong>Dying</strong> (no Psyche left, or a Forgotten Landscape under you): you wake on The Bed with a new hand of 6, lose your <strong>Objects</strong>, and keep your Power Tokens, Forms, and Archetypes. The sixth death ends the night.</p>
+            <p><strong>Sets</strong>: collect every piece (Body 5, Elements 4, Jewelry 3, Sticks 3) to Acquire an Archetype. Once you hold a piece, the Lost &amp; Found always shows a missing one, a beaten Dreambeast can pay one, and <strong>The One</strong> Mimics one.</p>
             <p><strong>Power Tokens</strong>: hold up to 6. You start with 2, take 2 for beating a Dreambeast (or an Object of its suit instead), and gain 1 for each Archetype.</p>
           </div>
           <div class="info-hub-rule info-hub-glimmer">

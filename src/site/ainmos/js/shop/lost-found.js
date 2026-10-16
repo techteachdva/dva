@@ -18,6 +18,7 @@
 import { addLog } from "../core/state.js";
 import { random } from "../core/rng.js";
 import { drawObjectCard, ensureObjectPiles } from "../cards/mindstream-supply.js";
+import { shopSetPiece } from "../effects/set-search.js";
 import { psycheMatchesSuit, isWildPsyche } from "../cards/psyche.js";
 import {
   DREAM_FORMS,
@@ -76,9 +77,26 @@ function drawSharedObject(state) {
   return drawObjectCard(state);
 }
 
+/**
+ * Deal the three shelves. 0.26: when you have started a Set, the first shelf is
+ * a missing piece of it whenever one is still in the Object deck.
+ */
+function dealShelves(state, player) {
+  const objects = [];
+  const piece = shopSetPiece(state, player);
+  if (piece) objects.push({ ...piece, setSearch: true });
+  while (objects.length < LOST_FOUND_SLOTS) {
+    const card = drawSharedObject(state);
+    if (!card) break;
+    objects.push(card);
+  }
+  return objects;
+}
+
 function returnObjectToBottom(state, card) {
   if (!card) return;
   ensureObjectPiles(state);
+  delete card.setSearch;
   const suit = card.suit || card.mindstreamSuit;
   if (state.objectDecks[suit]) state.objectDecks[suit].push(card);
 }
@@ -117,11 +135,7 @@ export function isLostFoundOpen(state) {
 export function openLostFound(state) {
   if (!state || state.tutorialMode) return false;
   if (state.lostFound?.open) return true;
-  const objects = [];
-  for (let i = 0; i < LOST_FOUND_SLOTS; i += 1) {
-    const card = drawSharedObject(state);
-    if (card) objects.push(card);
-  }
+  const objects = dealShelves(state, state.players.find((p) => p.alive));
   state.lostFound = {
     open: true,
     round: state.round,
@@ -235,6 +249,7 @@ export function buyLostFoundObject(state, index, giveObject) {
   spendGlimmer(state, glim);
   spendPayment(state, player, pay.cards);
   shop.objects.splice(index, 1);
+  delete card.setSearch;
   card.foundRound = state.round;
   const paid = [glim ? `${glim}✧` : "", ...pay.cards.map((c) => c.name)].filter(Boolean).join(" + ");
   addLog(state, `${player.name} finds ${card.name} in the Lost & Found for ${paid}.`);
@@ -337,11 +352,7 @@ export function rerollLostFound(state, spendTokens) {
   if (how === "glimmer") spendGlimmer(state, REROLL_GLIMMER_COST);
   else spendTokens?.(state, player, REROLL_TOKEN_COST);
   (shop.objects || []).forEach((card) => returnObjectToBottom(state, card));
-  shop.objects = [];
-  for (let i = 0; i < LOST_FOUND_SLOTS; i += 1) {
-    const card = drawSharedObject(state);
-    if (card) shop.objects.push(card);
-  }
+  shop.objects = dealShelves(state, player);
   shop.insight = rollInsight();
   shop.rerolls = (shop.rerolls || 0) + 1;
   state.runStats = state.runStats || {};

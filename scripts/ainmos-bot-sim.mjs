@@ -1000,6 +1000,42 @@ function someoneToFight(state) {
   }) || null;
 }
 
+/** 0.26: how many Actions this phase is worth to the bot. */
+function wantedActions(state, me, phase) {
+  if (phase === "Reveal") return Math.min(revealCapacity(state), 3);
+  if (phase === "Explore") {
+    const here = landscapeById(state, me.landscapeId);
+    const goal = landscapeById(state, destination(state, me));
+    return here && goal ? hexDistance(here, goal) : 0;
+  }
+  const tile = landscapeById(state, me.landscapeId);
+  const busy = beastsOn(tile).length || archBoard.boardArchetypes(state).some((e) => e.tile.id === tile?.id);
+  return busy ? 2 : 1;
+}
+
+/**
+ * 0.26: your stat is free base Actions. The bot spends 1 suited Psyche on top only when the
+ * free Actions fall short of what it wants and its hand can afford it; otherwise it opens free.
+ * Returns false when there is nothing to open with (stat 0 and no spend): the phase is skipped.
+ */
+function openPhase(state, phase) {
+  const me = alive(state)[0];
+  if (!me) return false;
+  const base = rulesMod.phaseBaseActions(state, me, phase);
+  const want = wantedActions(state, me, phase);
+  const hand = psycheCards(me).length;
+  const spend = DUMB
+    ? Math.random() < 0.5
+    : (base < want && hand >= 5) || (base < 1 && want > 0 && hand >= 3);
+  if (spend) {
+    const open = botSelectOpener(state, "skilled");
+    if (open && (open.via !== "token" || base < 1)) return true;
+  }
+  state.selectedHand = [];
+  state.phaseTokenAsPsyche = null;
+  return base >= 1;
+}
+
 function act(state) {
   // Ainmos: the bot leaves the Lost & Found without shopping (shopping policy comes later).
   if (state.lostFound?.open) {
@@ -1019,16 +1055,14 @@ function act(state) {
     if (stateMod.dieIfHandEmptyAfterDream(state)) return true;
     if (state.landscapePick) return false;
     if (state.revealLandscapeUsed) return false;
-    const open = botSelectOpener(state, "skilled");
-    if (!open) return false;
+    if (!openPhase(state, "Reveal")) return false;
     revealLandscape(state);
     return true;
   }
   if (phase === "Explore") {
     if (!state.exploreActivated) {
       if (!phaseOpeningActive(state)) return false;
-      const open = botSelectOpener(state, "skilled");
-      if (!open) return false;
+      if (!openPhase(state, "Explore")) return false;
       activateExplore(state);
       return true;
     }
@@ -1049,8 +1083,7 @@ function act(state) {
   if (phase === "Meet") {
     if (!(state.meetActionBudget > 0)) {
       if (!phaseOpeningActive(state)) return false;
-      const open = botSelectOpener(state, "skilled");
-      if (!open) return false;
+      if (!openPhase(state, "Meet")) return false;
       gainMeetActions(state);
       return true;
     }
@@ -1322,10 +1355,11 @@ function summarize(rows) {
     avgFightsLost: +mean(rows.map((r) => r.fightsLost || 0)).toFixed(2),
     avgBoons: +mean(rows.map((r) => r.boons || 0)).toFixed(2),
     tokens: {
-      inBySource: rows.reduce((acc, r) => {
-        for (const [k, v] of Object.entries(r.economy?.tokensIn || {})) acc[k] = +(((acc[k] || 0) + v / rows.length)).toFixed(2);
+      // Sum first, round once: rounding each step drifted (2 tokens read as 3 over 300 games).
+      inBySource: Object.fromEntries(Object.entries(rows.reduce((acc, r) => {
+        for (const [k, v] of Object.entries(r.economy?.tokensIn || {})) acc[k] = (acc[k] || 0) + v;
         return acc;
-      }, {}),
+      }, {})).map(([k, v]) => [k, +(v / rows.length).toFixed(2)])),
       spent: +mean(rows.map((r) => r.economy?.tokensSpent || 0)).toFixed(2),
       lostToCap: +mean(rows.map((r) => r.economy?.tokensCapped || 0)).toFixed(2),
     },

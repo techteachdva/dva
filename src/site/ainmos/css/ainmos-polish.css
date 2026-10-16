@@ -975,3 +975,25 @@ body.bsod-glitching #app { animation: bsod-shake 0.12s steps(2, end) infinite; f
   body.bsod-glitching #app { animation: none; }
   .bsod-glitch i { animation: none; }
 }
+
+/* 0.26: the Vault's "spend 1 Lucidity for more" row, after opening on free Reveals. */
+.vs-topup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: -4px 0 10px;
+  font-style: italic;
+  opacity: 0.92;
+}
+.vs-topup .vs-topup-btn {
+  min-width: 52px;
+  padding: 6px 14px;
+  font-style: normal;
+}
+
+/* 0.26: links to the one-page How to Play. */
+.menu-how-to-play { display: block; text-align: center; text-decoration: none; margin-top: 6px; }
+.info-hub-onepager { margin: 0 0 8px; text-align: right; }
+.info-hub-onepager a, .player-primer-more a { color: #f3d9a4; }

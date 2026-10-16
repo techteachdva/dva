@@ -58,7 +58,7 @@ export function cycleScreenWanted(state) {
 function bossPower(entry, cycle = 0, plan = null, sep = "·") {
   if (plan?.mega) return String(megaLeviathan(plan.mega)?.power ?? "?");
   if (!entry) return "?";
-  return entry.stack ? entry.stack.map((n) => n + cycle).join(sep) : String(entry.power + cycle);
+  return String(entry.power + cycle);
 }
 
 /** Nine phases as three Dreams of Reveal · Explore · Meet. */

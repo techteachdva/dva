@@ -182,7 +182,7 @@ function applyFirstVisitMenu() {
     advanced.setAttribute("aria-disabled", basicDone ? "false" : "true");
   }
   if (hint) {
-    hint.innerHTML = "Pick one Dreamer and <strong>Begin Dreaming</strong>. New here? <strong>First Night</strong> is a real Daydream with a guide that walks you through your first two Cycles, step by step.";
+    hint.innerHTML = "Pick one Dreamer and <strong>Begin Dreaming</strong>. New here? <strong>First Night</strong> is a real Daydream with a guide that walks you through your first two Cycles, step by step, and <strong>How to Play</strong> puts every rule on one page.";
   }
   if (firstVisit && tutorial) {
     tutorial.title = "A real Daydream with a step-by-step guide through your first two Cycles";

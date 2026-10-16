@@ -106,7 +106,7 @@ export const ADVANCED_TUTORIAL_SCRIPT = [
     id: "adv-instant",
     round: 1,
     title: "Instant Object",
-    why: "Coins is an Instant. It is free, then it is Repressed. Each Dreamer gains 1 Power Token. A token adds a die before the roll, uses a Dreamer or Archetype power, or opens a phase when nobody holds the suit. Acquire never costs a token.",
+    why: "Coins is an Instant. It is free, then it is Repressed. Each Dreamer gains 1 Power Token. A token adds a die before the roll, uses a Dreamer or Archetype power, or adds +1 Action to a phase. Acquire never costs a token.",
     targets: ["#board-viewport", "#player-objects"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Weaver." },
@@ -161,7 +161,7 @@ export const ADVANCED_TUTORIAL_SCRIPT = [
     id: "adv-death",
     round: 1,
     title: "The Death Clock",
-    why: "The Hunter is holding no Psyche. The dark hex beside them is Wasteland, and stepping in asks for 1 Psyche. With nothing to pay, they die. The Death Clock ticks. They return to The Bed and draw 3 Psyche. Power Tokens and Objects are lost. Six deaths, shared by the table, end the night.",
+    why: "The Hunter is holding no Psyche. The dark hex beside them is Wasteland, and stepping in asks for 1 Psyche. With nothing to pay, they die. The Death Clock ticks. They return to The Bed and draw 6 Psyche. Their Objects are lost; Power Tokens are kept. Six deaths, shared by the table, end the night.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Hunter." },

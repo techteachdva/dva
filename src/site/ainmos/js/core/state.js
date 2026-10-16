@@ -66,6 +66,8 @@ import { snapshotDeckCaps } from "../cards/deck-pressure.js";
 import { stampBeastForCycle } from "../encounters/beast-wards.js";
 import { cyclePosition } from "./cycle.js";
 import { ensureEndlessDeck } from "../encounters/endless.js";
+import { offerEffectChoice, registerEffectResolver } from "../effects/effect-choices.js";
+import { logMoment } from "./narrator.js";
 
 function pinFirstById(list, id) {
   const index = list.findIndex((item) => item.id === id);
@@ -924,8 +926,8 @@ export function onDawn(fn) {
   if (typeof fn === "function") onDawn.hooks.push(fn);
 }
 
-/** Psyche each Dreamer draws at the dawn between Cycles. */
-export const DAWN_DRAW = 5;
+/** Ainmos 0.26: 4 at dawn (was 5), paired with the free phase Actions. */
+export const DAWN_DRAW = 4;
 
 export function anteDawn(state) {
   if (state.psycheDiscard?.length) {
@@ -995,7 +997,36 @@ function discardPlayerObjects(state, player) {
   objects.forEach((obj) => discardToMindstream(state, obj));
   player.objects = [];
   player.persistent = [];
+  return objects;
 }
+
+/**
+ * Ainmos 0.26: dying is never silent. A one-button notice says what was lost
+ * (Objects and the hand) and what was kept (Power Tokens, Forms, Archetypes).
+ */
+function announceDeath(state, player, lost, target) {
+  const names = lost.map((o) => o.name).filter(Boolean);
+  const objectLine = names.length
+    ? `Lost your Objects (${names.join(", ")}).`
+    : "You had no Objects to lose.";
+  const tokens = player.powerTokens || 0;
+  const message = `${objectLine} Redrew a new hand of ${target} Psyche. You keep your ${tokens} Power Token${tokens === 1 ? "" : "s"}, your Forms, and your Archetypes. Deaths: ${state.deathClock}/${DEATH_CLOCK_CAP}.`;
+  logMoment(state, `You die... and wake back up on The Bed. ${objectLine} Redrew a new hand.`);
+  if (state.pendingEffectChoice || state.tutorialMode) return;
+  offerEffectChoice(state, player, {
+    cardId: "dreamer-death-notice",
+    source: "death",
+    title: "You die... and wake back up on The Bed",
+    message,
+    log: "You die... and wake back up on The Bed.",
+    choices: [{ id: "ok", label: "Wake up" }],
+  });
+}
+
+registerEffectResolver("dreamer-death-notice", (state) => {
+  state.pendingEffectChoice = null;
+  return true;
+});
 
 export function applyDreamerDeath(state, player, { cause = "" } = {}) {
   state.pendingDeathChoice = null;
@@ -1007,13 +1038,8 @@ export function applyDreamerDeath(state, player, { cause = "" } = {}) {
   const clock = state.deathClock;
 
   queueDreamerDeathFx(player.id, player.name, player.landscapeId);
-  discardPlayerObjects(state, player);
-  if (player.powerTokens) {
-    spendPowerTokens(state, player, player.powerTokens, {
-      reason: `${player.name}'s Power Tokens are lost.`,
-    });
-  }
-  player.powerTokens = 0;
+  // Ainmos 0.26: death costs your Objects and your hand. Power Tokens stay.
+  const lostObjects = discardPlayerObjects(state, player);
   clearPlayerHandOnDeath(state, player);
   seatDreamerOnBed(state, player);
 
@@ -1030,8 +1056,9 @@ export function applyDreamerDeath(state, player, { cause = "" } = {}) {
 
   addLog(
     state,
-    `${player.name} ${cause || "dies with nothing to pay"}. The Death Clock ticks to ${clock}/${DEATH_CLOCK_CAP}. Objects and Power Tokens are lost, and they redraw ${target} Psyche on The Bed.`,
+    `${player.name} ${cause || "dies with nothing to pay"}. The Death Clock ticks to ${clock}/${DEATH_CLOCK_CAP}. Objects are lost (Power Tokens are kept), and they redraw ${target} Psyche on The Bed.`,
   );
+  announceDeath(state, player, lostObjects, target);
 }
 
 export function offerDreamerDeathChoice(state, player) {
@@ -1305,7 +1332,7 @@ export function advancePhase(state) {
   state.pendingPowerBonusTokens = 0;
 
   if (getPhase(state) === "Explore") {
-    addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");
+    addLog(state, "Explore Phase: your Elasticity is your free steps. A card of Elasticity adds its value.");
     const chased = stepBeastsTowardDreamers(state);
     if (chased) addLog(state, `${chased} Dreambeast${chased === 1 ? " chases" : "s chase"} you.`);
   } else if (getPhase(state) === "Meet") {
@@ -1318,7 +1345,7 @@ export function advancePhase(state) {
       t.revealed && tileHasEncounters(t) && state.players.some((p) => p.alive && p.landscapeId === t.id),
     );
     if (meetHere) state.selectedLandscapeId = meetHere.id;
-    addLog(state, "Meet Phase — spend Willpower for Meet actions. Fight a Dreambeast on your Landscape, or Meet an Archetype there.");
+    addLog(state, "Meet Phase: your Willpower is your free Meet Actions. Fight a Dreambeast on your Landscape, or Meet an Archetype there.");
   }
 }
 

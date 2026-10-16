@@ -334,6 +334,15 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
   return null;
 }
 
+/** Give the Dreamer one particular Object card (a searched-out Set piece). */
+export function giveObjectCard(state, player, raw, helpers) {
+  const card = objectForPlayer(raw);
+  onObjectDrawn(state, player, card, helpers);
+  queueObjectDrawFx(player.id, card, card.suit);
+  recordQuestEvent(state, "draw_object", { count: 1 });
+  return card;
+}
+
 export function drawObjects(state, player, count, helpers, suit = null) {
   const drawn = [];
   for (let i = 0; i < count; i += 1) {

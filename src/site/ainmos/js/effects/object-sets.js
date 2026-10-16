@@ -6,11 +6,12 @@
 /** The collectible sets and how many pieces each needs. Dream Form Objects are not a set. */
 export const OBJECT_SETS = Object.freeze({ body: 5, element: 4, jewelry: 3, stick: 3, chess: 3 });
 
-/** How many pieces of a set this Dreamer holds (in hand or in play), counting The One. */
+/** How many different pieces of a set this Dreamer holds (in hand or in play). */
 export function setProgress(player, tag) {
   if (!OBJECT_SETS[tag]) return null;
-  const held = [...(player?.persistent || []), ...(player?.objects || [])]
-    .filter((o) => o.tags?.some((t) => t.startsWith(tag))).length;
+  // Distinct pieces: a Mimic and the piece it copies count once (0.26).
+  const held = new Set([...(player?.persistent || []), ...(player?.objects || [])]
+    .filter((o) => o.tags?.some((t) => t.startsWith(tag))).map((o) => o.id)).size;
   const wild = (player?.setWildcards || []).filter((t) => t === tag).length;
   return { held: held + wild, need: OBJECT_SETS[tag] };
 }

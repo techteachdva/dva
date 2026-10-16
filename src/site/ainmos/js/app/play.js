@@ -104,6 +104,7 @@ import {
   handleVaultRefresh,
   handleBuryFlippedTile,
   gainMeetActions,
+  topUpPhaseActions,
   meetEncounter,
   landscapeAction,
   performLandscapeAction,
@@ -1659,6 +1660,10 @@ function buildPhaseHandlers() {
     sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
     nextPhase: () => { requestEndPhase(state, () => renderAll()); },
     skipPhase: () => { requestEndPhase(state, () => renderAll()); },
+    topUpPhase: () => {
+      if (topUpPhaseActions(state)) playSfx("select");
+      renderAll();
+    },
   };
 }
 
@@ -2617,6 +2622,12 @@ function renderBoardArea() {
       renderAll();
     },
     onPeek: () => renderAll(),
+    onTopUp: (instanceId) => {
+      state.selectedHand = [instanceId];
+      if (topUpPhaseActions(state)) playSfx("select");
+      else state.selectedHand = [];
+      renderAll();
+    },
     onDone: () => {
       const advance = getPhaseAdvanceAction(state, buildPhaseHandlers());
       if (advance && !advance.disabled) advance.onClick();
@@ -3028,9 +3039,9 @@ function renderAll() {
             opener.onClick?.();
           },
         };
-      })(), getPhase(state) === "Meet" && (state.meetActionBudget || 0) > 0
-        ? getPhaseActions(state, handlers).filter((a) => ["fightArchetype", "meetAccept", "meetReject"].includes(a.kind))
-        : []);
+      })(), getPhaseActions(state, handlers).filter((a) => a.kind === "topUpPhase"
+        || (getPhase(state) === "Meet" && (state.meetActionBudget || 0) > 0
+          && ["fightArchetype", "meetAccept", "meetReject"].includes(a.kind))));
     }
   }
   renderHandChoiceBar(state, () => {

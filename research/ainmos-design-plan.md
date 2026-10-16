@@ -95,3 +95,15 @@ Phil's calls, now locked:
 - Forms cap at +24. The final Cycle brightens instead of warning.
 
 Bot sim (smart bot, 40 per length): Daydream 57%, Nap 55%, Deep 0%; careless bot 0% everywhere. Token flow per night: tokens earned ≈ tokens spent, almost none lost to the cap. Psyche Repressed 45–65 vs Returned 13–33 per night; the Waking Mind is the clock.
+
+## 0.26 Waking Hands (2026-10-16)
+
+Phil's calls, now locked:
+
+- **Stats are free base Actions.** Each phase opens with Actions equal to the matching stat (Lucidity → Reveal, Elasticity → Explore, Willpower → Meet), plus Objects that add to that phase. One spend on top, once per phase: 1 suited Psyche adds its value, 1 Power Token adds 1. It can come with the opener or later in the phase if you opened free (`phaseBaseActions`/`phaseSpendValue` in `js/core/rules.js`, `topUpPhaseActions` in `js/core/game.js`). Free Actions are used first; only bought Actions bank Glimmer (`state.phaseBought`, `glimmerIfUnused`).
+- **Winged Turtle** is a plain Power 3 beast (plus the Cycle). The turtle stack is gone.
+- **Death** discards Objects and the hand, keeps Power Tokens, and always shows the "You die... and wake back up on The Bed" notice naming what was lost.
+- **Set search** (`js/effects/set-search.js`): once you hold a piece, the Lost & Found's first shelf is a missing piece, a beaten beast can pay one, and The One Mimics one (a copy that turns back into The One on Discard). Sets count distinct pieces.
+- Psyche retuned for the free Actions: draw 1 per Dream (was 2), 4 at dawn (was 5).
+
+Bot sim (smart bot 400 per length): Daydream 57%, Nap 57%, Deep 4% (0.25 measured 60% / 52% / 0%). Without the draw retune the free Actions alone made it 87% / 79% / 40%. Careless bot (200): 2% / 0% / 0%. Deaths per night fell (1.6 / 2.9 / 4.4, was 2.9 / 3.7 / 5.1). 0 errors, 0 step caps. The sim's bot opens free unless its free Actions fall short of what it wants and it holds 5+ Psyche. The bot still never shops or takes Objects, so Set search is covered by scenario checks, not the sim.
