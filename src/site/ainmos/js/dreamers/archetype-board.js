@@ -2,16 +2,16 @@
  * Ainmos: Archetypes on the Dreamscape.
  *
  * The one goal of a night is to Acquire Archetypes (3, 6, or 12, by length).
- * The third Dream of every Cycle offers 1 of 3 Archetypes. The chosen one
- * appears on one of its two home Landscapes (if neither is placed, on The Bed)
- * and stays until Acquired. As each Meet ends it steps 1 hex away from you.
+ * The third Dream of every Cycle offers 1 of 3 Archetypes. Only one with a
+ * revealed home Landscape can be called; it appears there and stays until
+ * Acquired (see archetype-call.js for the search when none can be called). As each Meet ends it steps 1 hex away from you.
  *
  * Meeting an Archetype costs 1 Meet action and opens with one of its Events,
  * drawn from the Events tied to its home Landscapes. Bright (only while one of
  * the Event's Landscapes is placed) costs Psyche and helps the fight; Dim is
  * free and makes it harder. Then the fight: a spread of Psyche that makes at
  * least 1 Dream Form, rolled against Power 12. Win, and the Archetype is
- * Acquired: +1 toward waking, +2 Power Tokens, and its power is yours.
+ * Acquired: +1 toward waking, +1 Power Token, and its power is yours.
  *
  * Archetypes stand on tile.finalArchetypes, the board's Archetype slot.
  */
@@ -22,9 +22,10 @@ import { random } from "../core/rng.js";
 import { hexDistance, adjacentTiles } from "../core/hex.js";
 import { matchingForms } from "../cards/dream-forms.js";
 import { queueArchetypeArriveFx, queueArchetypeFleeFx } from "../board/board-fx.js";
+import { searchForArchetypeHome } from "./archetype-call.js";
 
 export const ARCHETYPE_POWER = 12;
-export const ARCHETYPE_TOKEN_REWARD = 2;
+export const ARCHETYPE_TOKEN_REWARD = 1;
 export const ARCHETYPE_CHOICES = 3;
 export const ARCHETYPE_SPREAD_CAP = 3;
 /** Psyche an Acquired Archetype Returns from the Subconscious. */
@@ -97,7 +98,7 @@ function hostArchetype(state, tile, arch) {
   return placed;
 }
 
-/** Place an Archetype on one of its home Landscapes, or on The Bed if neither is placed. */
+/** Place an Archetype on one of its revealed home Landscapes (The Bed only as a last resort). */
 export function spawnArchetype(state, arch) {
   if (!arch) return null;
   const homes = archetypeHomeTiles(state, arch);
@@ -137,6 +138,8 @@ export function chooseArchetype(state, archId) {
   const deck = state.archetypeDeck || [];
   const index = deck.findIndex((a) => a.id === archId && pending.options.includes(a.id));
   if (index < 0) return false;
+  // Ainmos 0.25: an Archetype is called only onto one of its own revealed homes.
+  if (!archetypeHomeTiles(state, deck[index]).length) return false;
   const [chosen] = deck.splice(index, 1);
   const passed = pending.options.filter((id) => id !== archId);
   passed.forEach((id) => {
@@ -155,9 +158,19 @@ function markArchetypeDream(state, arch) {
   if (dream) dream.chosen = { id: arch.id, name: arch.name, image: arch.image, suit: arch.suit };
 }
 
-/** If a choice is skipped (an effect ate the Dream), the top Archetype appears on its own. */
+/**
+ * If a choice is skipped (an effect ate the Dream), the first Archetype in the
+ * deck with a revealed home appears on its own. If none has one, the deck is
+ * searched for the top Archetype's home first (paid from the Waking Mind).
+ */
 export function spawnTopArchetype(state) {
-  const chosen = (state.archetypeDeck || []).shift();
+  const deck = state.archetypeDeck || [];
+  let index = deck.findIndex((arch) => archetypeHomeTiles(state, arch).length);
+  if (index < 0 && deck.length) {
+    const found = searchForArchetypeHome(state, null, { payFromDeck: true });
+    index = found ? deck.findIndex((arch) => arch.id === found.arch.id) : 0;
+  }
+  const chosen = index >= 0 ? deck.splice(index, 1)[0] : null;
   if (chosen) {
     markArchetypeDream(state, chosen);
     spawnArchetype(state, chosen);

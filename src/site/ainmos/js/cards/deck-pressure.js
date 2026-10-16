@@ -10,6 +10,7 @@ import {
 import { MINDSTREAM_SUIT_IDS, countMindstreamCirculation } from "./mindstream-supply.js";
 import { repressCard } from "../dreamers/subconscious.js";
 import { discardDreamCard, popDiscardableDream } from "./dream-deck.js";
+import { cyclePosition } from "../core/cycle.js";
 
 const SOURCE_IDS = ["dream", "psyche", ...MINDSTREAM_SUIT_IDS];
 const TIER_RANK = { soft: 1, critical: 2, severe: 3 };
@@ -199,6 +200,7 @@ export function syncDeckPressure(state) {
       "deck-pressure-critical",
       "deck-pressure-severe",
       "dreamscape-unstable",
+      "final-cycle",
     );
     applyHudDreamUrgency(null);
     return;
@@ -206,12 +208,23 @@ export function syncDeckPressure(state) {
 
   const readings = readDeckPressure(state);
   trackSoftWarnings(state, readings);
-  const visible = readings.filter((row) => row.tier);
+  // Ainmos 0.25: the Dream Deck running low is not a danger. It means morning
+  // is near, so it gets the final-Cycle glow instead of a warning.
+  const visible = readings.filter((row) => row.tier && row.id !== "dream");
   const tier = highestTier(visible);
-  const message = bannerCopy(visible, tier);
+  const finalCycle = finalCycleCopy(state);
+  const message = tier ? bannerCopy(visible, tier) : finalCycle;
   const sig = `${tier || "none"}:${visible.map((row) => `${row.id}:${row.tier}:${row.remaining}`).join(",")}`;
 
-  if (!tier) {
+  if (!tier && finalCycle) {
+    if (banner.dataset.sig !== `final:${finalCycle}`) {
+      banner.className = "deck-pressure-banner tier-final";
+      banner.dataset.sig = `final:${finalCycle}`;
+    }
+    banner.textContent = finalCycle;
+    banner.dataset.tier = "final";
+    banner.dataset.sources = "dream";
+  } else if (!tier) {
     banner.className = "deck-pressure-banner hidden";
     banner.textContent = "";
     banner.dataset.sig = "";
@@ -238,7 +251,8 @@ export function syncDeckPressure(state) {
   body.classList.toggle("deck-pressure-critical", tier === "critical");
   body.classList.toggle("deck-pressure-severe", tier === "severe");
   body.classList.toggle("dreamscape-unstable", tier === "severe");
-  applyHudDreamUrgency(readings.find((row) => row.id === "dream"));
+  body.classList.toggle("final-cycle", !!finalCycle);
+  applyHudDreamUrgency(null);
   paintDeckRails(readings);
 }
 
@@ -255,8 +269,10 @@ function paintDeckRails(readings) {
   const byId = new Map((readings || []).map((row) => [row.id, row]));
   document.querySelectorAll(".deck-rail-row").forEach((row) => {
     const source = RAIL_SOURCE[row.dataset.deckId];
-    const reading = source ? byId.get(source) : null;
-    if (!reading) return;
+    const found = source ? byId.get(source) : null;
+    if (!found) return;
+    // The Dream Deck never needs Psyche Returned: it runs down toward morning.
+    const reading = found.id === "dream" ? { ...found, tier: null } : found;
     row.dataset.remaining = String(reading.remaining);
     row.dataset.cap = String(reading.cap);
     row.dataset.pct = reading.pct.toFixed(1);
@@ -288,6 +304,17 @@ function paintDeckRails(readings) {
     tag.textContent = label;
     row.querySelector(".deck-rail-head")?.appendChild(tag);
   });
+}
+
+/** The last Cycle of the night: a hopeful line, or "" when it is not the last Cycle. */
+export function finalCycleCopy(state) {
+  if (!state?.nightPlan?.length || state.endless || state.longNight || state.tutorialMode) return "";
+  const pos = cyclePosition(state);
+  if (!pos.finalCycle) return "";
+  const goal = state.scoringGoalPoints || state.goalPoints || 0;
+  const need = Math.max(0, goal - (state.acquiredPoints || 0));
+  if (!need) return "The last Cycle. Morning is close.";
+  return `The last Cycle. Morning is close: Acquire ${need} more Archetype${need === 1 ? "" : "s"} to wake.`;
 }
 
 export function pressureStatusLines(state) {

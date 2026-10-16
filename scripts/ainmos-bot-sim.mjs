@@ -177,6 +177,11 @@ const {
 const { revealableTiles, forgettableTiles, cancelLandscapePick, revealCapacity, pendingPlacementCard } = landscapesMod;
 const vaultMod = await mod("board/dreamscape-vault.js");
 const archBoard = await mod("dreamers/archetype-board.js");
+const archCall = await mod("dreamers/archetype-call.js");
+const endlessMod = await mod("encounters/endless.js");
+const cycleMod = await mod("core/cycle.js");
+/** AINMOS_ENDLESS=1: after a win, keep playing in Endless Mode and report how far the bot gets. */
+const ENDLESS = !!process.env.AINMOS_ENDLESS;
 /** AINMOS_BOT=dumb plays carelessly: random calls, always Dim, first legal spread, aimless walking, no shopping. */
 const DUMB = process.env.AINMOS_BOT === "dumb";
 const pickRandom = (list) => list[Math.floor(Math.random() * list.length)];
@@ -771,7 +776,8 @@ function resolveObject(state) {
 
 /** Choose the offered Archetype whose placed home is nearest; otherwise the first. */
 function pickArchetype(state) {
-  const options = archBoard.archetypeChoiceOptions(state);
+  const options = archBoard.archetypeChoiceOptions(state).filter((arch) => archBoard.archetypeHomeTiles(state, arch).length);
+  if (!options.length) return null;
   if (DUMB) return pickRandom(options);
   const me = alive(state)[0];
   const here = me ? landscapeById(state, me.landscapeId) : null;
@@ -830,7 +836,7 @@ function resolveOnePending(state) {
   if (state.pendingArchetypeChoice) {
     const pick = pickArchetype(state);
     if (pick) archBoard.chooseArchetype(state, pick.id);
-    else state.pendingArchetypeChoice = null;
+    else if (!archCall.searchForArchetypeHome(state, alive(state)[0])) state.pendingArchetypeChoice = null;
     return true;
   }
   if (state.pendingMindstreamChoice?.kind === "archetype-event") {
@@ -1140,7 +1146,9 @@ function playGame(lengthKey, index, setup = null) {
   let psycheReturned = 0;
   let psycheRepressed = 0;
   let firstAcquireRound = null;
+  let wokeRound = null;
   try {
+    for (;;) {
     while (state.status === "playing" && steps < STEP_CAP) {
       steps += 1;
       const nowSub = subPsyche(state);
@@ -1189,11 +1197,20 @@ function playGame(lengthKey, index, setup = null) {
         prev = "";
       }
     }
+    if (ENDLESS && state.status === "won" && !state.endless) {
+      wokeRound = state.round;
+      endlessMod.startEndless(state, { beastCatalog: Object.fromEntries(DATA.dreambeasts.map((b) => [b.id, b])) });
+      stuck = 0;
+      prev = "";
+      continue;
+    }
+    break;
+    }
   } catch (err) {
     error = err?.message || String(err);
     state.status = "lost";
   }
-  const won = state.status === "won";
+  const won = state.status === "won" || !!state.endless;
   // AINMOS_TRACE=1 prints the whole log of game 1 at each length.
   if (process.env.AINMOS_TRACE && index === 1) {
     console.log(`
@@ -1233,6 +1250,17 @@ function playGame(lengthKey, index, setup = null) {
     handsAtEnd: alive(state).reduce((n, p) => n + (p.hand || []).length, 0),
     firstAcquireRound,
     archFights: state.botArch?.fights || 0,
+    economy: state.economy || { tokensIn: {}, tokensSpent: 0, tokensCapped: 0 },
+    endless: state.endless
+      ? {
+        wokeRound,
+        cycles: cycleMod.cyclePosition(state).cycle - state.endless.startedCycle,
+        felled: (state.endless.tiersFelled || []).length,
+        planned: state.endless.tierPlanned || 0,
+        triumph: !!state.endlessTriumph,
+        archetypes: state.acquiredPoints || 0,
+      }
+      : null,
   };
 }
 
@@ -1293,6 +1321,27 @@ function summarize(rows) {
     avgFightsWon: +mean(rows.map((r) => r.fightsWon || 0)).toFixed(2),
     avgFightsLost: +mean(rows.map((r) => r.fightsLost || 0)).toFixed(2),
     avgBoons: +mean(rows.map((r) => r.boons || 0)).toFixed(2),
+    tokens: {
+      inBySource: rows.reduce((acc, r) => {
+        for (const [k, v] of Object.entries(r.economy?.tokensIn || {})) acc[k] = +(((acc[k] || 0) + v / rows.length)).toFixed(2);
+        return acc;
+      }, {}),
+      spent: +mean(rows.map((r) => r.economy?.tokensSpent || 0)).toFixed(2),
+      lostToCap: +mean(rows.map((r) => r.economy?.tokensCapped || 0)).toFixed(2),
+    },
+    endless: (() => {
+      const e = rows.map((r) => r.endless).filter(Boolean);
+      if (!e.length) return null;
+      return {
+        runs: e.length,
+        avgExtraCycles: +mean(e.map((x) => x.cycles)).toFixed(2),
+        avgLeviathansFelled: +mean(e.map((x) => x.felled)).toFixed(2),
+        maxLeviathanFelled: Math.max(...e.map((x) => x.felled)),
+        reachedMegas: e.filter((x) => x.planned > 0).length,
+        triumphs: e.filter((x) => x.triumph).length,
+        avgArchetypes: +mean(e.map((x) => x.archetypes)).toFixed(2),
+      };
+    })(),
     rememberBySource: rows.reduce((acc, r) => {
       for (const [k, v] of Object.entries(r.remember || {})) acc[k] = +(((acc[k] || 0) + v / rows.length)).toFixed(2);
       return acc;

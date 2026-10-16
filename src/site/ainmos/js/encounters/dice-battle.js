@@ -44,7 +44,7 @@ function reducedMotion() {
 }
 
 function clampDice(n) {
-  return Math.max(1, Math.min(36, Math.floor(Number(n) || 1)));
+  return Math.max(1, Math.min(120, Math.floor(Number(n) || 1)));
 }
 
 export function rollD6(count) {

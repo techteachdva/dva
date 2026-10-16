@@ -1,5 +1,7 @@
 import { statIgnoredBy } from "../encounters/boss-twists.js";
 import { bestForm } from "../cards/dream-forms.js";
+import { beastWard, beastWardText } from "../encounters/beast-wards.js";
+import { noteTokenFlow } from "../cards/power-tokens.js";
 /** SOMNIA 18.5.1 rules helpers */
 
 import {
@@ -242,7 +244,7 @@ export function psycheCursorBreakdown(state) {
   if (phase === "Meet" && state.meetActionBudget > 0) {
     const { encounter, actor } = currentMeetEncounter(state);
     const selected = actor ? selectedCards(state, actor) : cards;
-    ["accept", "reject"].forEach((mode) => {
+    ["accept"].forEach((mode) => {
       const accept = mode === "accept";
       const suit = encounterPaySuit(encounter, accept);
       if (!suit || !selectedHasPaySuit(selected, suit) || !actor) return;
@@ -453,11 +455,14 @@ export function selectedHasPaySuit(cards, suit) {
   return (cards || []).some((c) => psycheMatchesSuit(c, suit));
 }
 
+/** Ainmos 0.25: any suit fights a Dreambeast. A card of its suit adds your matching stat; its ward blunts one Form. */
 export function encounterPayHint(encounter, accept = true) {
+  if (!encounter) return "";
   const suit = encounterPaySuit(encounter, accept);
-  if (!suit) return "";
   const power = encounterPower(encounter, accept);
-  return `Accept needs at least 1 ${SUIT_LABELS[suit]} Psyche (1–3 cards). Beat Power ${power}; aim for ${power + 2} dice. Matching ${SUIT_LABELS[suit]} is added to your Power.`;
+  const ward = beastWardText(encounter);
+  const stat = suit ? ` Play a ${SUIT_LABELS[suit]} card to add your ${SUIT_LABELS[suit]} stat.` : "";
+  return `Play 1–3 Psyche of any suit. Beat Power ${power}; aim for ${power + 2} dice.${stat}${ward ? ` ${ward}.` : ""}`;
 }
 
 /**
@@ -478,8 +483,8 @@ export function encounterDiceTotal(state, actor, selected, encounter, { accept =
     total += totalStat(actor, suit, state);
   }
   total += state.anchorMeetSpreadBonus || 0;
-  // Ainmos Dream Forms: the spread's best pattern adds its dice.
-  total += bestForm(state, cards)?.dice || 0;
+  // Ainmos Dream Forms: the spread's best pattern adds its dice, less the beast's ward.
+  total += bestForm(state, cards, { ward: beastWard(encounter) })?.dice || 0;
   total += state.nextFightDice || 0;
   return total;
 }
@@ -612,7 +617,10 @@ export function consumePhasePowerToken(state, player) {
     return 0;
   }
   const spent = player.powerTokens > 0 ? 1 : 0;
-  if (spent) player.powerTokens -= 1;
+  if (spent) {
+    player.powerTokens -= 1;
+    noteTokenFlow(state, "spent", "", 1);
+  }
   state.phaseTokenAsPsyche = null;
   return spent;
 }
@@ -633,18 +641,12 @@ export function opposingSuit(suit) {
   return repressSuitFor(suit);
 }
 
-export function validateEncounterPlayShape(encounter, cards, { accept = true } = {}) {
+/** Ainmos 0.25: any 1–3 Psyche fight a Dreambeast; no suit is required. */
+export function validateEncounterPlayShape(_encounter, cards) {
   if (!(cards || []).length) {
     return {
       ok: false,
-      message: "Play 1 to 3 Psyche. Include at least 1 of the required suit.",
-    };
-  }
-  const paySuit = encounterPaySuit(encounter, accept);
-  if (paySuit && !selectedHasPaySuit(cards, paySuit)) {
-    return {
-      ok: false,
-      message: encounterPayHint(encounter, accept),
+      message: "Play 1 to 3 Psyche of any suit.",
     };
   }
   return { ok: true };

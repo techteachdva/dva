@@ -1,5 +1,5 @@
 import { teamAcquiredArchetypes } from "./archetype-stats.js";
-import { DREAM_FORMS, formLevel, levelUpForm } from "../cards/dream-forms.js";
+import { DREAM_FORMS, formLevel, levelUpForm, formMaxed, MAX_FORM_LEVEL } from "../cards/dream-forms.js";
 import {
   addLog,
   allEncountersOnBoard,
@@ -312,7 +312,10 @@ export function useArchetypePower(state, archetype, player, helpers = {}) {
         message: "Raise 1 Dream Form a level.",
         choices: DREAM_FORMS.map((form) => ({
           id: form.id,
-          label: `${form.name} (level ${formLevel(state, form.id)} → ${formLevel(state, form.id) + 1})`,
+          disabled: formMaxed(state, form.id),
+          label: formMaxed(state, form.id)
+            ? `${form.name} (level ${MAX_FORM_LEVEL}, the most)`
+            : `${form.name} (level ${formLevel(state, form.id)} → ${formLevel(state, form.id) + 1})`,
         })),
       });
       break;

@@ -18,122 +18,122 @@ const TERMS = [
   {
     term: "City",
     group: "places",
-    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Rally (Your next fight rolls +2 dice), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Rally (Your next fight rolls +2 dice), or Call a Willpower Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Forest",
     group: "places",
-    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Hide in the Trees (At the next Explore, Dreambeasts do not chase you), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Hide in the Trees (At the next Explore, Dreambeasts do not chase you), or Call an Elasticity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "House",
     group: "places",
-    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Lock the Doors (At this dusk, Dreambeasts Repress nothing), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Lock the Doors (At this dusk, Dreambeasts Repress nothing), or Call a Willpower Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Road",
     group: "places",
-    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Move Your Dreamer 2 Spaces (Move your Dreamer to a Landscape 2 steps away), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Open Road (Travel to a Landscape 2 steps away), or Call an Elasticity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Sky",
     group: "places",
-    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Call an Archetype (The nearest Archetype steps 2 Landscapes toward you), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Call an Archetype (The nearest Archetype steps 2 Landscapes toward you), or Call a Lucidity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Suburbia",
     group: "places",
-    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Pawn Shop (Discard 1 of your Objects, then draw Psyche up to your hand limit), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Pawn Shop (Discard 1 of your Objects, then draw Psyche up to your hand limit), or Call a Willpower Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Lava",
     group: "places",
-    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Scorch (The Dreambeast on your Landscape loses 2 Power for good (never below 1)), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Scorch (The Dreambeast on your Landscape loses 2 Power for good (never below 1)), or Call a Willpower Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Black Void",
     group: "places",
-    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Sink and Surface (Repress 1 to 3 Psyche from your hand, then Return that many of your choice from the Subconscious), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Sink and Surface (Repress 1 to 3 Psyche from your hand, then Return that many of your choice from the Subconscious), or Call a Lucidity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Field of Broken Glass",
     group: "places",
-    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Shatter and Swap (Swap the places of 2 Landscapes on the Dreamscape. Everything on them moves too), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Shatter and Swap (Swap the places of 2 Landscapes on the Dreamscape. Everything on them moves too), or Call a Lucidity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "The Attic",
     group: "places",
-    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Collector's Fair (A stall of up to 3 Objects that belong to sets. Buy one with Psyche of its suit), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Collector's Fair (A stall of up to 3 Objects that belong to sets. Buy one with Psyche of its suit), or Call a Lucidity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "The Basement",
     group: "places",
-    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Lure a Dreambeast (The nearest Dreambeast moves onto your Landscape), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Lure a Dreambeast (The nearest Dreambeast moves onto your Landscape), or Call a Willpower Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Desert",
     group: "places",
-    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Mirage (Place 2 Landscapes from the Dreamscape Vault for free), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Mirage (Place 2 Landscapes from the Dreamscape Vault for free), or Call a Lucidity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Endless Hallway",
     group: "places",
-    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Endless Doors (Move your Dreamer to any placed Elasticity Landscape), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Endless Doors (Move your Dreamer to any placed Elasticity Landscape), or Call an Elasticity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "The Party",
     group: "places",
-    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Dance with Dreambeasts (Move up to 2 Dreambeasts 1 Landscape each), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Dance with Dreambeasts (Move up to 2 Dreambeasts 1 Landscape each), or Call an Elasticity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Awards",
     group: "places",
-    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Grand Prize (Bank 6 Glimmer for the next Lost & Found), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Grand Prize (Bank 6 Glimmer for the next Lost & Found), or Call a Lucidity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Sea of Teeth",
     group: "places",
-    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Feeding Frenzy (Every Dreambeast steps 1 Landscape toward you), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Feeding Frenzy (Every Dreambeast steps 1 Landscape toward you), or Call a Willpower Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Endless Ocean",
     group: "places",
-    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Ride the Tide (Move your Dreamer to any Landscape next to an Archetype), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Ride the Tide (Move your Dreamer to any Landscape next to an Archetype), or Call an Elasticity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Candy Mountain",
     group: "places",
-    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Sugar Rush (Your next Explore gets +2 steps), or Call an Elasticity Dreambeast to fight for a Power Token or a random Object.",
+    text: "An Elasticity Landscape. Its two Meet actions, each once per Meet: Sugar Rush (Your next Explore gets +2 steps), or Call an Elasticity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Scary Classroom",
     group: "places",
-    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Study (Discard 3 Psyche to raise one Dream Form 1 level for the rest of the night), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Study (Discard 3 Psyche to raise one Dream Form 1 level for the rest of the night), or Call a Lucidity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Tranquil Grove",
     group: "places",
-    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Remember 2 (Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious, your choice), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Remember 2 (Discard up to 2 Psyche from your hand, then Return that many +1 from the Subconscious, your choice), or Call a Lucidity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Day in the Life",
     group: "places",
-    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Daily Routine (Name a suit. Draw the next Psyche of that suit from the Psyche deck), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Daily Routine (Name a suit. Draw the next Psyche of that suit from the Psyche deck), or Call a Lucidity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Insanity",
     group: "places",
-    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Madness (Discard your whole hand, then draw that many Psyche), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Madness (Discard your whole hand, then draw that many Psyche), or Call a Willpower Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Inner Sanctum",
     group: "places",
-    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Inner Sanctum (Return 1 Psyche of your choice from the Subconscious straight to your hand), or Call a Willpower Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Willpower Landscape. Its two Meet actions, each once per Meet: Inner Sanctum (Return 1 Psyche of your choice from the Subconscious straight to your hand), or Call a Willpower Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Silver Mist",
     group: "places",
-    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Clear the Mist (Redeal the Dreamscape Vault for free), or Call a Lucidity Dreambeast to fight for a Power Token or a random Object.",
+    text: "A Lucidity Landscape. Its two Meet actions, each once per Meet: Clear the Mist (Redeal the Dreamscape Vault for free), or Call a Lucidity Dreambeast to fight for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Dusk",
@@ -161,13 +161,13 @@ const TERMS = [
     term: "Accept",
     group: "meet",
     aka: "befriend, free insight",
-    text: "The only way to beat a Dreambeast. Play a spread with at least one card of its suit and beat its Power (ties go to you). The beast leaves the board and you take your reward: a Power Token or a random Object.",
+    text: "The only way to beat a Dreambeast. Play 1 to 3 Psyche of any suit and beat its Power (ties go to you). A card of its suit adds your matching stat, and its Ward takes dice off one Dream Form. The beast leaves the board and you take your reward: 2 Power Tokens, or an Object of its suit.",
   },
   {
     term: "Acquire",
     group: "win",
     aka: "commit",
-    text: "Beat an Archetype's fight and it is yours: it counts 1 toward waking, pays 2 Power Tokens, and its power (or passive) joins your Archetype Powers. Completing an Object set also Acquires one, straight from the deck.",
+    text: "Beat an Archetype's fight and it is yours: it counts 1 toward waking, pays 1 Power Token, and its power (or passive) joins your Archetype Powers. Completing an Object set also Acquires one, straight from the deck.",
   },
   {
     term: "Active Archetype",
@@ -184,12 +184,12 @@ const TERMS = [
     term: "Ally",
     group: "cards",
     aka: "befriended dreambeast",
-    text: "Ainmos has no allies. A beaten Dreambeast leaves the board; you take a Power Token or a random Object.",
+    text: "Ainmos has no allies. A beaten Dreambeast leaves the board; you take 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Archetype",
     group: "win",
-    text: "The goal. Twelve of them; a night asks for 3, 6, or all 12. The third Dream of each Cycle offers 1 of 3: the one you call appears on one of its two home Landscapes (The Bed if neither is placed) and slips 1 Landscape away from you as each Meet ends. Meet it on its Landscape: its Event first (Bright or Dim), then a spread that makes a Dream Form against Power 12. Win, and it is Acquired: +1 toward waking, +2 Power Tokens, and its power.",
+    text: "The goal. Twelve of them; a night asks for 3, 6, or all 12. The third Dream of each Cycle offers 1 of 3. You can only call one whose home Landscape (it has two) is revealed; it appears there and slips 1 Landscape away from you as each Meet ends. If none of the three has a home revealed, Repress 1 Psyche from your hand to search the Landscape deck for the first missing home, which is placed on a random hex. Meet it on its Landscape: its Event first (Bright or Dim), then a spread that makes a Dream Form against Power 12. Win, and it is Acquired: +1 toward waking, +1 Power Token, and its power.",
   },
   {
     term: "Back",
@@ -213,7 +213,7 @@ const TERMS = [
     term: "Boss",
     group: "meet",
     aka: "cerberus double leviathan",
-    text: "Each Cycle's Dreambeast: the Winged Turtle first, climbing to Leviathan. It lands on a Landscape of its suit (The Bed if none), chases you each Explore, bends one rule while it stands, and Represses 1 Psyche from the Waking Mind every dusk. Beating it is optional but stops the bleeding: Accept it for a Power Token or a random Object.",
+    text: "Each Cycle's Dreambeast: the Winged Turtle first, climbing to Leviathan. It arrives at its Power plus the Cycle, lands on a Landscape of its suit (The Bed if none), chases you each Explore, bends one rule while it stands, and Represses 1 Psyche from the Waking Mind every dusk. Beating it is optional but stops the bleeding: Accept it for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Bright",
@@ -229,7 +229,7 @@ const TERMS = [
   {
     term: "Cerberus",
     group: "meet",
-    text: "A Boss. Power 11. While it stands, no one enters or leaves The Bed. Accept it for a Power Token or a random Object.",
+    text: "A Boss. Power 11. While it stands, no one enters or leaves The Bed. Accept it for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Creator",
@@ -246,7 +246,7 @@ const TERMS = [
     term: "Death",
     group: "win",
     aka: "respawn",
-    text: "If you start a Dream with no Psyche, the Dream takes your last Psyche, you must pay a Psyche cost with none left, or a Landscape you stand on is Forgotten, you die. The Death Clock ticks. Your Objects are discarded, your Power Tokens are lost, and you wake on The Bed with 5 fresh Psyche. The sixth death ends the run.",
+    text: "If you start a Dream with no Psyche, the Dream takes your last Psyche, you must pay a Psyche cost with none left, or a Landscape you stand on is Forgotten, you die. The Death Clock ticks. Your Objects are discarded, your Power Tokens are lost, and you wake on The Bed with 6 fresh Psyche. The sixth death ends the run.",
   },
   {
     term: "Death Clock",
@@ -272,7 +272,7 @@ const TERMS = [
   {
     term: "Double",
     group: "meet",
-    text: "A Boss. Power 11. It gains Power equal to the fighter's matching stat. Accept it for a Power Token or a random Object.",
+    text: "A Boss. Power 11. It gains Power equal to the fighter's matching stat. Accept it for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Draw Dream",
@@ -318,7 +318,31 @@ const TERMS = [
     term: "Dream Form",
     group: "meet",
     aka: "echo ladder chord trinity trifecta unity",
-    text: "A spread pattern that adds dice. Echo: two of one value. Ladder: three in a row. Chord: three of one suit. Trinity: one of each suit. Trifecta: three of a kind. Unity: three 1s. A spread counts as its best Form. Every Form starts at +1 die and gains +1 per level.",
+    text: "A spread pattern that adds dice. Echo: two of one value. Ladder: three in a row. Chord: three of one suit. Trinity: one of each suit. Trifecta: three of a kind. Unity: three 1s. A spread counts as its best Form. Every Form starts at +1 die and gains +1 per level, up to +24. A Dreambeast's Ward takes dice off one Form.",
+  },
+  {
+    term: "Ward",
+    group: "meet",
+    aka: "block form bonus",
+    text: "Every Dreambeast wards one Dream Form. If your spread counts as that Form, it loses 1 to 5 of that Form's dice (stronger beasts ward harder). The spread then counts as whichever Form it makes that is worth the most after the Ward. The beast's card and the spread tray show the Ward.",
+  },
+  {
+    term: "Endless Mode",
+    group: "win",
+    aka: "keep dreaming continue",
+    text: "After you wake, Keep Dreaming carries on from the same board. Archetypes and Dreambeasts keep coming, Cycle after Cycle. Once every Archetype is Acquired, each Cycle ends with a new Leviathan instead: Leviathan+ (13), Leviathan_x (14), LeviaTHAN (16), L3V1@+H@N (20), and L3V1@+H@N D3$TR0Y3R 0F DR3@M$ (99). It ends when you lose, or when the last one falls. Your wake still counts toward the score.",
+  },
+  {
+    term: "Endless Leviathans",
+    group: "meet",
+    aka: "leviathan+ leviathan_x l3v1athan destroyer of dreams",
+    text: "The five Leviathans of Endless Mode, each more broken than the last. Their Power is printed and does not grow with the Cycle, each wards a Form by 5 (the last wards every Form), and while any stands the tide Forgets the edge Landscape farthest from The Bed each dusk. Felling them scores 10, 15, 25, 40, and 99.",
+  },
+  {
+    term: "Final Cycle",
+    group: "round",
+    aka: "last cycle morning",
+    text: "The last Cycle of the night. Morning is close: the dream brightens and sways a little while you chase the last Archetypes you need.",
   },
   {
     term: "Psyche Upgrade",
@@ -360,7 +384,7 @@ const TERMS = [
     term: "Dreambeast",
     group: "meet",
     aka: "encounter beast",
-    text: "A creature on a Landscape. It has one Power, a suit, and a Fantasy or Nightmare kind. Dreambeasts arrive on the Dream Deck timer (each Cycle's Dreambeast, and a few Dreams). At the start of each Explore every beast chases you one hex. During Meet, Accept the one on your hex by beating its Power, then take a Power Token or a random Object. A beast left standing at dusk Represses 1 Psyche from the Waking Mind. It stays until you beat it.",
+    text: "A creature on a Landscape. It has one Power, a suit, a Ward, and a Fantasy or Nightmare kind. Every Dreambeast arrives at its printed Power plus the Cycle it arrives in (Cycle 1 +1, Cycle 2 +2, and so on). At the start of each Explore every beast chases you one hex. During Meet, Accept the one on your hex with 1 to 3 Psyche of any suit by beating its Power, then take 2 Power Tokens or an Object of its suit. A beast left standing at dusk Represses 1 Psyche from the Waking Mind. It stays until you beat it.",
   },
   {
     term: "Dreamer",
@@ -474,7 +498,7 @@ const TERMS = [
   {
     term: "Leviathan",
     group: "meet",
-    text: "The last Boss. Power 12. Each dusk it stands, the edge Landscape farthest from The Bed is Forgotten. Accept it for a Power Token or a random Object.",
+    text: "The last Boss. Power 12. Each dusk it stands, the edge Landscape farthest from The Bed is Forgotten. Accept it for 2 Power Tokens or an Object of its suit.",
   },
   {
     term: "Lover",
@@ -560,18 +584,18 @@ const TERMS = [
     term: "Power",
     group: "meet",
     aka: "beast power dreamer power dice",
-    text: "How many dice a side rolls. A Dreambeast has one Power. Yours is the Psyche you play, plus your matching stat, affinity, suit match, your Dream Form, and up to 3 Power Tokens. Recommended Power is the beast's Power + 2. You may play less. Ties go to you.",
+    text: "How many dice a side rolls. A Dreambeast has one Power. Yours is the Psyche you play, plus your matching stat (when a card of the beast's suit is in the spread), affinity, suit match, your Dream Form less the beast's Ward, and up to 3 Power Tokens. Recommended Power is the beast's Power + 2. You may play less. Ties go to you.",
   },
   {
     term: "Power Token",
     group: "cards",
-    text: "A token, not a card. You hold up to 6. You start with 2, beating a Dreambeast lets you take 1 (or a random Object instead), and each Archetype you Acquire pays 2. There is no other way to gain one. Spend one to open a phase as 1 plus your stat, to add 1 die to a fight (up to 3), to use an Archetype's power or your Dreamer's power, or to look again in the Lost & Found.",
+    text: "A token, not a card. You hold up to 6. You start with 2, beating a Dreambeast pays 2 (or an Object of its suit instead), and each Archetype you Acquire pays 1. There is no other way to gain one. Spend one to open a phase as 1 plus your stat, to add 1 die to a fight (up to 3), to use an Archetype's power or your Dreamer's power, or to look again in the Lost & Found.",
   },
   {
     term: "Psyche",
     group: "cards",
     aka: "hand",
-    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They open phases, fight, and keep you alive. Round 1 starts at 5. From round 2, each living Dreamer draws 4 as each Dream begins. Unused actions no longer draw: they bank Glimmer. The deck is six 1s, five 2s, four 3s, three 4s, and two 5s in each suit, plus 6 Wilds.",
+    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They open phases, fight, and keep you alive. Round 1 starts at 6. From round 2 you draw 2 as each Dream begins, and 5 at the dawn between Cycles. Unused actions no longer draw: they bank Glimmer. The deck is six 1s, five 2s, four 3s, three 4s, and two 5s in each suit, plus 6 Wilds.",
   },
   {
     term: "Psyche Deck",

@@ -34,13 +34,19 @@ export const PSYCHE_UPGRADES = Object.freeze({
 });
 
 export const FORM_LEVEL_PRICE = 3;
+/** Ainmos 0.25: a Form tops out at +24 dice. */
+export const MAX_FORM_LEVEL = 24;
 
 export function formById(id) {
   return DREAM_FORMS.find((f) => f.id === id) || null;
 }
 
 export function formLevel(state, id) {
-  return Math.max(1, state?.formLevels?.[id] || 1);
+  return Math.min(MAX_FORM_LEVEL, Math.max(1, state?.formLevels?.[id] || 1));
+}
+
+export function formMaxed(state, id) {
+  return formLevel(state, id) >= MAX_FORM_LEVEL;
 }
 
 /** Dice a Form adds: +1 at level 1, +1 per level after. */
@@ -51,7 +57,7 @@ export function formDice(state, id) {
 export function levelUpForm(state, id, by = 1) {
   if (!formById(id)) return 0;
   if (!state.formLevels) state.formLevels = {};
-  state.formLevels[id] = formLevel(state, id) + by;
+  state.formLevels[id] = Math.min(MAX_FORM_LEVEL, formLevel(state, id) + by);
   return state.formLevels[id];
 }
 
@@ -106,12 +112,20 @@ export function matchingForms(cards) {
   return found;
 }
 
-/** The Form this spread counts as, and the dice it adds. Null when none. */
-export function bestForm(state, cards) {
+/**
+ * The Form this spread counts as, and the dice it adds. Null when none.
+ * A Dreambeast's ward ({ formId, amount }) takes dice off that one Form, so the
+ * spread may count as a different Form that the beast does not block.
+ */
+export function bestForm(state, cards, { ward = null } = {}) {
   const found = matchingForms(cards);
   if (!found.length) return null;
   const ranked = found
-    .map((id) => ({ id, dice: formDice(state, id), level: formLevel(state, id) }))
+    .map((id) => {
+      const full = formDice(state, id);
+      const blocked = ward && (ward.formId === id || ward.formId === "all") ? Math.min(full, ward.amount || 0) : 0;
+      return { id, dice: full - blocked, fullDice: full, blocked, level: formLevel(state, id) };
+    })
     .sort((a, b) => b.dice - a.dice || FORM_PRIORITY.indexOf(a.id) - FORM_PRIORITY.indexOf(b.id));
   const top = ranked[0];
   return { ...top, name: formById(top.id).name };

@@ -76,7 +76,7 @@ import { updateFinalRecurrenceAtmosphere } from "../dreamers/final-recurrence-at
 import { syncDeckPressure } from "../cards/deck-pressure.js";
 import { startVictoryCelebration, startLossNightmare, stopVictoryCelebration } from "../ui/victory-celebration.js";
 import { archetypeMeetLocked } from "../dreamers/final-recurrence-rules.js";
-import { LENGTHS, loadGameData } from "../core/data.js";
+import { LENGTHS, loadGameData, PSYCHE_STARTING_HAND } from "../core/data.js";
 import {
   createInitialState,
   addLog,
@@ -157,6 +157,9 @@ import { renderArchetypeChoice } from "../ui/archetype-choice.js";
 import { renderArchetypeWindow, renderWakeGoal } from "../ui/archetype-window.js";
 import { initFloatWindow, restoreFloatWindow } from "../ui/float-window.js";
 import { chooseArchetype } from "../dreamers/archetype-board.js";
+import { searchForArchetypeHome } from "../dreamers/archetype-call.js";
+import { startEndless, isEndless, endlessStatusText } from "../encounters/endless.js";
+import { showBsod, isBsodOpen } from "../ui/bsod.js";
 import { createSpectatorBot } from "../dev/bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "../encounters/dreambeasts.js";
 import { requestEndPhase } from "../flow/phase-skip.js";
@@ -380,6 +383,7 @@ let prevHandIds = new Set();
 let pendingScoreResult = null;
 let scoreSubmitted = false;
 let victoryShown = false;
+let bsodShown = false;
 let lossShown = false;
 
 /** Game ID + seed for the end screen; the tutorial's fixed layout has neither. */
@@ -830,6 +834,7 @@ function bindRestart() {
   document.getElementById("btn-restart").addEventListener("click", () => {
     returnToMainMenu();
   });
+  document.getElementById("btn-endless")?.addEventListener("click", continueEndless);
 
   document.getElementById("btn-replay-tutorial")?.addEventListener("click", () => {
     launchReplayTutorial(state?.tutorialTrack === "advanced" ? "advanced" : "basic");
@@ -1089,6 +1094,20 @@ function scheduleAutoSave() {
   }, 1500);
 }
 
+/** After waking: keep dreaming in Endless Mode, from the same board and hand. */
+function continueEndless() {
+  if (!state || state.status !== "won" || state.endless || state.tutorialMode || state.tutorialVictory) return;
+  stopVictoryCelebration();
+  const beastCatalog = Object.fromEntries((gameData?.dreambeasts || []).map((beast) => [beast.id, beast]));
+  if (!startEndless(state, { beastCatalog })) return;
+  pendingScoreResult = null;
+  victoryShown = false;
+  document.body.classList.add("endless-mode");
+  showScreen("screen-game");
+  playSfx("boss-stinger");
+  renderAll();
+}
+
 function clearAutosave() {
   clearTimeout(autoSaveTimer);
   deleteLocalSave("autosave");
@@ -1098,6 +1117,7 @@ async function startGame(config) {
   launchConfig = config;
   pendingScoreResult = null;
   victoryShown = false;
+  bsodShown = false;
   lossShown = false;
   stopVictoryCelebration();
   clearActionHistory();
@@ -2536,6 +2556,10 @@ function renderBoardArea() {
       if (chooseArchetype(state, archId)) playSfx("acquire");
       renderAll();
     },
+    onSearch: () => {
+      if (searchForArchetypeHome(state, actionTurnHolder(state) || state.players.find((p) => p.alive))) playSfx("reveal");
+      renderAll();
+    },
   });
   renderBoonDraft(state, {
     onChoose: (boonId) => {
@@ -2727,12 +2751,21 @@ function renderAll() {
   resolveStaleLandscapePick(state);
   placeReturnedBeasts(state);
   // The Dream took your last Psyche: die now and respawn on The Bed, rather than sit out a round.
-  if (dieIfHandEmptyAfterDream(state)) flashMoment("No Psyche left. You die and wake on The Bed with 5.");
+  if (dieIfHandEmptyAfterDream(state)) flashMoment(`No Psyche left. You die and wake on The Bed with ${PSYCHE_STARTING_HAND}.`);
   checkDefeat(state);
   if (isInteractiveTutorialActive(state)) {
     syncTutorial(state);
   }
 
+  if (state.status === "won" && state.endlessTriumph && !bsodShown) {
+    bsodShown = true;
+    syncTurnHalo(null);
+    clearAutosave();
+    playSfx("dice-lose");
+    showBsod({ onDone: () => renderAll() });
+    return;
+  }
+  if (isBsodOpen()) return;
   if (state.status === "won") {
     syncTurnHalo(null);
     syncDeckPressure(state);
@@ -2748,13 +2781,15 @@ function renderAll() {
           ? LENGTHS[state.lengthKey].label
           : `${state.goalPoints} pts`);
       const seconds = Math.max(0, Math.round((Date.now() - (state.gameStartedAt || Date.now())) / 1000));
-      pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel, won: true, summary: buildRunSummary(state) };
+      pendingScoreResult = { breakdown, seconds, difficulty: state.endless ? `${lengthLabel} · Endless` : lengthLabel, won: true, summary: buildRunSummary(state) };
     }
-    const msg = state.tutorialVictory
+    const msg = state.endlessTriumph
+      ? "You dreamed a dream within a dream. Nothing is left to dream. You finally wake, for real this time."
+      : state.tutorialVictory
       ? `You collected ${state.acquiredPoints} Archetype point${state.acquiredPoints === 1 ? "" : "s"} and woke on The Bed — the same escape as a real Daydream.`
       : (state.finalRecurrence
         ? "All Remaining Archetypes defeated in the Final Recurrence!"
-        : `The last Boss falls with ${state.acquiredPoints} Archetype points in hand. The dream lets you go.`);
+        : `${state.acquiredPoints} Archetype${state.acquiredPoints === 1 ? "" : "s"} Acquired. The dream lets you go. Wake now, or Keep Dreaming.`);
     showEndScreen(
       true,
       msg,
@@ -2762,6 +2797,8 @@ function renderAll() {
       endScreenDream(),
     );
     document.getElementById("btn-start-daydream")?.classList.toggle("hidden", !state.tutorialVictory);
+    document.getElementById("btn-endless")?.classList.toggle("hidden", !!(state.tutorialVictory || state.endless || state.tutorialMode));
+    if (state.endlessTriumph) document.getElementById("end-title").textContent = "You Wake Up. For Real.";
     document.getElementById("end-leaderboard")?.classList.toggle("hidden", !!state.tutorialVictory);
     const advancedEnd = document.getElementById("btn-advanced-tutorial");
     const replayBasic = document.getElementById("btn-replay-basic");
@@ -2805,14 +2842,18 @@ function renderAll() {
           ? LENGTHS[state.lengthKey].label
           : `${state.scoringGoalPoints || state.goalPoints || 0} pts`;
         const seconds = Math.max(0, Math.round((Date.now() - (state.gameStartedAt || Date.now())) / 1000));
-        pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel, won: false, summary: buildRunSummary(state) };
+        pendingScoreResult = { breakdown, seconds, difficulty: state.endless ? `${lengthLabel} · Endless` : lengthLabel, won: !!state.endless, summary: buildRunSummary(state) };
       }
       showEndScreen(
         false,
-        state.log[0] || "You never wake up.",
+        isEndless(state)
+          ? `You woke once, and chose to keep dreaming. ${state.log[0] || "The dream keeps you."}`
+          : (state.log[0] || "You never wake up."),
         state.tutorialMode ? null : pendingScoreResult,
         endScreenDream(),
       );
+      document.getElementById("btn-endless")?.classList.add("hidden");
+      if (isEndless(state)) document.getElementById("end-title").textContent = "Lost in the Endless Dream";
       if (!lossShown) {
         lossShown = true;
         startLossNightmare();

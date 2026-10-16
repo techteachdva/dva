@@ -20,6 +20,16 @@ function log(state, message) {
   state.log = state.log.slice(0, globalThis.__AINMOS_LOG_CAP || 40);
 }
 
+/** Taps and sinks for the night: tokens gained by source, spent, and lost to the cap. */
+export function noteTokenFlow(state, kind, key, n) {
+  if (!state || !n) return;
+  if (!state.economy) state.economy = { tokensIn: {}, tokensSpent: 0, tokensCapped: 0 };
+  const eco = state.economy;
+  if (kind === "in") eco.tokensIn[key] = (eco.tokensIn[key] || 0) + n;
+  else if (kind === "spent") eco.tokensSpent += n;
+  else if (kind === "capped") eco.tokensCapped += n;
+}
+
 export function powerTokensHeld(state) {
   return state.players.reduce((sum, player) => sum + (player.powerTokens || 0), 0);
 }
@@ -35,6 +45,11 @@ export function grantPowerTokens(state, player, requested, { reason = "", logQue
   if (!TOKEN_SOURCES.has(source)) return 0;
 
   const granted = Math.min(amount, powerTokenRoom(player));
+  if (source === "refund") noteTokenFlow(state, "spent", "", -granted);
+  else {
+    noteTokenFlow(state, "in", source, granted);
+    noteTokenFlow(state, "capped", source, amount - granted);
+  }
   if (granted <= 0) {
     log(state, `${player.name} already holds ${MAX_POWER_TOKENS} Power Tokens, the most anyone can hold.`);
     return 0;
@@ -57,6 +72,7 @@ export function spendPowerTokens(state, player, requested, { reason = "", animat
   if (spent <= 0) return 0;
 
   player.powerTokens = held - spent;
+  noteTokenFlow(state, "spent", "", spent);
   if (reason) log(state, reason);
   if (animate) queuePowerTokenSpendFx(player.id, spent);
   return spent;
@@ -77,6 +93,7 @@ export function spendPowerTokensCollectively(state, requested, { reason = "" } =
     let playerSpent = 0;
     while (left > 0 && (player.powerTokens || 0) > 0) {
       player.powerTokens -= 1;
+      noteTokenFlow(state, "spent", "", 1);
       left -= 1;
       spent += 1;
       playerSpent += 1;

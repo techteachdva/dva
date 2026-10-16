@@ -4,6 +4,7 @@
  */
 
 import { uid, PHASES } from "../core/data.js";
+import { startEndless, megaLeviathanCard, noteLeviathanFelled } from "../encounters/endless.js";
 import {
   activePlayer,
   headPlayer,
@@ -461,6 +462,45 @@ const COMMANDS = {
       state.meetActionsUsed = 0;
       narrate(state, `[dev] Spawned ${enc.name}`, `On ${tile.name}. Meet phase ready with 3 actions.`);
       return ok(`Spawned ${enc.name} on ${tile.name}. Meet budget set to 3.`);
+    },
+  },
+
+  leviathan: {
+    usage: "leviathan <1-5> [landscape-id]",
+    desc: "Spawn an Endless Leviathan (1 Leviathan+ … 5 Destroyer of Dreams) and open Meet.",
+    run: (state, args) => {
+      const tier = Math.max(1, Math.min(5, parseInt(args[0], 10) || 1));
+      const card = megaLeviathanCard(tier, 1);
+      const player = activePlayer(state);
+      const landId = args[1] || player.landscapeId || "bed";
+      if (!landscapeById(state, landId)) return fail(`Landscape not found: ${landId}`);
+      if (!state.endless) startEndless(state, { beastCatalog: {} });
+      setEncounterOnLandscape(state, landId, { ...card, type: "dreambeast" });
+      state.phaseIndex = 2;
+      state.meetActionBudget = Math.max(state.meetActionBudget, 3);
+      state.meetActionsUsed = 0;
+      return ok(`${card.name} (Power ${card.accept}) is on ${landId}. Meet budget set to 3.`);
+    },
+  },
+
+  endless: {
+    usage: "endless",
+    desc: "Win now and continue into Endless Mode (as the end-screen button does).",
+    run: (state, _args, ctx) => {
+      if (state.endless) return fail("Already in Endless Mode.");
+      const catalog = Object.fromEntries((ctx.gameData?.dreambeasts || []).map((b) => [b.id, b]));
+      startEndless(state, { beastCatalog: catalog });
+      return ok(`Endless Mode: ${state.dreamDeck.length} Dreams waiting.`);
+    },
+  },
+
+  bsod: {
+    usage: "bsod",
+    desc: "Fell L3V1@+H@N D3$TR0Y3R 0F DR3@M$ (shows the crash ending).",
+    run: (state) => {
+      if (!state.endless) startEndless(state, { beastCatalog: {} });
+      noteLeviathanFelled(state, { megaTier: 5, name: "L3V1@+H@N D3$TR0Y3R 0F DR3@M$" });
+      return ok("The dream crashes.");
     },
   },
 

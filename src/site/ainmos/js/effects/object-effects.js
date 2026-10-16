@@ -704,7 +704,7 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
       title: "Tooth-Saber",
       message: `${enc.name}: pay its Power in Psyche to Accept it without a fight.`,
       choices: [
-        { id: "accept", label: `Accept · pay ${enc.accept}`, hint: "Take a Power Token or a random Object." },
+        { id: "accept", label: `Accept · pay ${enc.accept}`, hint: "Take 2 Power Tokens or an Object of its suit." },
       ],
       payload: { landscapeId: tileId, encounterId: encKey },
     });

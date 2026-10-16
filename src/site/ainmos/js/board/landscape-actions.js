@@ -20,7 +20,7 @@ import {
 import { requestChooseTile, beginFreeRevealPicking, beginBedTileFlip, revealableTiles, revealCapacity } from "./landscapes.js";
 import { isFreeformBoard, tileDeckCount, refreshVault } from "./dreamscape-vault.js";
 import { cyclePosition } from "../core/cycle.js";
-import { DREAM_FORMS, formLevel, levelUpForm } from "../cards/dream-forms.js";
+import { DREAM_FORMS, formLevel, levelUpForm, formMaxed, MAX_FORM_LEVEL } from "../cards/dream-forms.js";
 import { paymentFor } from "../shop/lost-found.js";
 import { onObjectDrawn, handLimitForPlayer } from "../effects/objects.js";
 import { logMoment } from "../core/narrator.js";
@@ -66,7 +66,7 @@ export const CALL_DREAMBEAST = "call-dreambeast";
 export const LANDSCAPE_ACTION_DEFS = {
   [CALL_DREAMBEAST]: {
     label: "Call a Dreambeast",
-    description: "A Dreambeast of this Landscape's suit appears here (Power 3 + the Cycle). Beat it for a Power Token or a random Object. Left standing at dusk, it Represses 1 Psyche.",
+    description: "A Dreambeast of this Landscape's suit appears here. Its Power grows with the Cycle. Beat it with any suit for 2 Power Tokens or an Object of its suit. Left standing at dusk, it Represses 1 Psyche.",
   },
   // Lucidity: see and remember.
   "lure-archetype": { label: "Call an Archetype", description: "The nearest Archetype steps 2 Landscapes toward you." },
@@ -86,7 +86,7 @@ export const LANDSCAPE_ACTION_DEFS = {
   "mirage": { label: "Mirage", description: "Place 2 Landscapes from the Dreamscape Vault for free." },
   // Elasticity: move.
   "hide": { label: "Hide in the Trees", description: "At the next Explore, Dreambeasts do not chase you." },
-  "move-1-dreamer-2": { label: "Move Your Dreamer 2 Spaces", description: "Move your Dreamer to a Landscape 2 steps away." },
+  "move-1-dreamer-2": { label: "Open Road", description: "Travel to a Landscape 2 steps away." },
   "endless-doors": { label: "Endless Doors", description: "Move your Dreamer to any placed Elasticity Landscape." },
   "move-2-dreambeasts-1": { label: "Dance with Dreambeasts", description: "Move up to 2 Dreambeasts 1 Landscape each." },
   "ride-tide": { label: "Ride the Tide", description: "Move your Dreamer to any Landscape next to an Archetype." },
@@ -1163,7 +1163,9 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
         cardId: "landscape-action",
         title: "Study",
         message: "Choose a Dream Form to raise 1 level. Then Discard 3 Psyche.",
-        choices: DREAM_FORMS.map((form) => ({ id: form.id, label: `${form.name} (level ${formLevel(state, form.id)} to ${formLevel(state, form.id) + 1})` })),
+        choices: DREAM_FORMS.map((form) => (formMaxed(state, form.id)
+          ? { id: form.id, label: `${form.name} (level ${MAX_FORM_LEVEL}, the most)`, disabled: true }
+          : { id: form.id, label: `${form.name} (level ${formLevel(state, form.id)} to ${formLevel(state, form.id) + 1})` })),
         payload: { actionId: "study" },
       });
       return { ok: true, pending: true };
@@ -1327,7 +1329,10 @@ function putObjectBack(state, card) {
   if (deck) deck.push(card);
 }
 
-/** Call a Dreambeast of this Landscape's suit. Its Power is 3 + the Cycle, never above its printed Power. */
+/**
+ * Call a Dreambeast of this Landscape's suit. It starts at 2 + the Cycle (never
+ * above its printed Power), then grows by the Cycle like every Dreambeast.
+ */
 function callDreambeast(state, tile) {
   if (!tile?.suit) return { ok: false, refund: true, reason: "The Bed calls no Dreambeast." };
   if (encounterOnLandscape(state, tile.id)) {
@@ -1338,7 +1343,7 @@ function callDreambeast(state, tile) {
   const beast = encounterFromDreambeastCard(pulled.card);
   const printed = Number(beast.accept) || 5;
   beast.basePower = printed;
-  beast.accept = Math.min(printed, 3 + (cyclePosition(state).cycle || 1));
+  beast.accept = Math.min(printed, 2 + (cyclePosition(state).cycle || 1));
   beast.called = true;
   addEncounterOnLandscape(state, tile.id, beast);
   logMoment(state, `${beast.name} answers the call on ${tile.name}: Power ${beast.accept}.`);

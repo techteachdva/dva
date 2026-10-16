@@ -68,11 +68,12 @@ export function advanceBossStack(state, encounter, tile) {
   if (index >= stack.length - 1) return false;
   const next = index + 1;
   encounter.stackIndex = next;
-  encounter.accept = stack[next];
-  encounter.reject = stack[next];
-  encounter.repress = stack[next];
-  logMoment(state, `The turtle falls away. Another stands beneath it, larger: Power ${stack[next]}. (${stack.length - next} left)`, { boss: true });
-  addLog(state, `${encounter.name} on ${tile?.name || "the Dreamscape"}: the next turtle is Power ${stack[next]}.`);
+  const power = stack[next] + (encounter.cycleBonus || 0);
+  encounter.accept = power;
+  encounter.reject = power;
+  encounter.repress = power;
+  logMoment(state, `The turtle falls away. Another stands beneath it, larger: Power ${power}. (${stack.length - next} left)`, { boss: true });
+  addLog(state, `${encounter.name} on ${tile?.name || "the Dreamscape"}: the next turtle is Power ${power}.`);
   return true;
 }
 
@@ -181,14 +182,18 @@ function bogeyUnderTheBed(state) {
   });
 }
 
+function leviathanStands(state) {
+  return allEncountersOnBoard(state).some(({ encounter }) => encounter?.boss && (bossId(encounter) === "leviathan" || encounter.megaTier));
+}
+
 function leviathanRises(state, forgetTileFn) {
-  if (!bossStands(state, "leviathan")) return;
+  if (!leviathanStands(state)) return;
   const bed = landscapeById(state, "bed");
   const edges = (state.board || []).filter((t) => !t.center && t.id !== "bed" && t.revealed && !t.wasteland);
   if (!edges.length || !bed) return;
   const far = [...edges].sort((a, b) => hexDistance(b, bed) - hexDistance(a, bed))[0];
   forgetTileFn?.(state, far);
-  logMoment(state, `Leviathan's tide rises. ${far.name} is Forgotten.`, { boss: true });
+  logMoment(state, `The tide rises. ${far.name} is Forgotten.`, { boss: true });
 }
 
 /**

@@ -6,6 +6,7 @@
  * Tap an Archetype to fly the camera to it.
  */
 
+import { endlessStatusText } from "../encounters/endless.js";
 import { boardArchetypes, fightRules, ARCHETYPE_POWER } from "../dreamers/archetype-board.js";
 import { landscapeById, getPhase } from "../core/state.js";
 import { hexDistance } from "../core/hex.js";
@@ -113,17 +114,21 @@ export function renderWakeGoal(state) {
   if (!host || !state) return;
   const goal = state.scoringGoalPoints || state.goalPoints || 0;
   const acquired = (state.players || []).flatMap((p) => p.acquiredArchetypes || []);
-  const key = `${goal}|${acquired.map((a) => a.id).join(",")}|${state.longNight ? 1 : 0}`;
+  const endless = !!state.endless;
+  const line = endless ? endlessStatusText(state) : "";
+  const key = `${goal}|${acquired.map((a) => a.id).join(",")}|${state.longNight ? 1 : 0}|${line}`;
   if (host.dataset.key === key) return;
   host.dataset.key = key;
-  const slots = Array.from({ length: goal }, (_, i) => {
+  // Endless Mode: every Archetype of the deck is a slot to fill.
+  const total = endless ? Math.max(goal, acquired.length, (state.boonCatalog || []).length || 12) : goal;
+  const slots = Array.from({ length: total }, (_, i) => {
     const got = acquired[i];
     return got
       ? `<span class="wake-slot is-got" title="${esc(got.name)}" style="background-image:url('${esc(got.image)}')"></span>`
       : `<span class="wake-slot" aria-hidden="true">★</span>`;
   }).join("");
   host.innerHTML = `
-    <p class="wake-count"><b>${acquired.length}</b><span>of ${goal} Archetypes</span></p>
+    <p class="wake-count"><b>${acquired.length}</b><span>of ${total} Archetypes${endless ? " · Endless" : ""}</span></p>
     <div class="wake-slots">${slots}</div>
-    <p class="wake-line">${state.longNight ? "The Long Night: every dusk takes more. Finish it." : "Acquire them all and you wake."}</p>`;
+    <p class="wake-line">${endless ? esc(line) : state.longNight ? "The Long Night: every dusk takes more. Finish it." : "Acquire them all and you wake."}</p>`;
 }

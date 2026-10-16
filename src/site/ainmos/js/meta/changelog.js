@@ -6,10 +6,26 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.24.3";
+export const SOMNIA_VERSION = "0.25";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.25",
+    title: "Endless Dreams",
+    notes: [
+      "Endless Mode: after you wake, Keep Dreaming carries on from the same board. Archetypes and Dreambeasts keep coming. Once every Archetype is yours, each Cycle ends with a new Leviathan: Leviathan+ (13), Leviathan_x (14), LeviaTHAN (16), L3V1@+H@N (20), and L3V1@+H@N D3$TR0Y3R 0F DR3@M$ (99). Each one's card is more glitched than the last. Fell the last one, if you can.",
+      "Dreambeasts take any suit. A card of the beast's suit still adds your matching stat. Instead, every Dreambeast wards one Dream Form: a spread that counts as that Form loses 1 to 5 of its dice, by the beast's strength.",
+      "Dreambeasts grow with the night: each arrives at its Power plus the Cycle it arrives in (Cycle 1 +1, Cycle 2 +2, and so on). Archetypes stay at Power 12 and still need a Form.",
+      "Rewards: an Accepted Dreambeast pays 2 Power Tokens or an Object of its suit. An Archetype pays 1 Power Token.",
+      "Psyche: each round draws 2 (was 4), the dawn between Cycles draws 5 (was 3), and you start (and wake on The Bed) with 6. Each Dreambeast still standing at dusk Represses 1 from the Waking Mind.",
+      "You can only call an Archetype whose home Landscape is revealed. If none of the three on offer has one, Repress 1 Psyche to search the Landscape deck for the first missing home, which is placed on a random hex.",
+      "Dream Forms can be raised as far as +24.",
+      "The last Cycle no longer warns of doom. Morning is close: the dream brightens, glows softly, and sways a little.",
+      "The end screen fits on one screen on desktop and tablet (it scrolls on phones), so Return to Menu is always in reach.",
+      "The Road's action is now Open Road.",
+    ],
+  },
   {
     version: "0.24.3",
     title: "Cloud Dreams",

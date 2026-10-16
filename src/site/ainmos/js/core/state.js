@@ -63,6 +63,9 @@ import { stepArchetypesAway, archetypeBoon, ARCHETYPE_TOKEN_REWARD, ARCHETYPE_RE
 import { autoReturnPsyche } from "../dreamers/subconscious.js";
 import { seedRandomness, mintSeedSuffix, specialSeedFlag, buildGameId, normalizeSeedInput } from "./rng.js";
 import { snapshotDeckCaps } from "../cards/deck-pressure.js";
+import { stampBeastForCycle } from "../encounters/beast-wards.js";
+import { cyclePosition } from "./cycle.js";
+import { ensureEndlessDeck } from "../encounters/endless.js";
 
 function pinFirstById(list, id) {
   const index = list.findIndex((item) => item.id === id);
@@ -713,6 +716,10 @@ export function encounterOnLandscape(state, landscapeId) {
   return encounters[0];
 }
 
+function isFightableBeast(card) {
+  return !!card && (card.type === "dreambeast" || card.type === "boss-dream" || card.boss || card.miniBoss);
+}
+
 export function addEncounterOnLandscape(state, landscapeId, encounter) {
   const tile = landscapeById(state, landscapeId);
   if (!tile || !encounter) return null;
@@ -721,6 +728,10 @@ export function addEncounterOnLandscape(state, landscapeId, encounter) {
   if (card.spawnOrder == null) {
     state.encounterSpawnSeq = (state.encounterSpawnSeq || 0) + 1;
     card.spawnOrder = state.encounterSpawnSeq;
+  }
+  // Ainmos 0.25: a fresh Dreambeast arrives warding one Form, at its Power + the Cycle.
+  if (!state._movingEncounter && !state.tutorialMode && isFightableBeast(card)) {
+    stampBeastForCycle(card, cyclePosition(state).cycle);
   }
   tileEncounters(tile).push(card);
   if (!state._movingEncounter) recordNightSpawn(state, card);
@@ -867,13 +878,15 @@ export function beginRoundReveal(state) {
   state.hunterShoveUsed = false;
   state.weaverSwapUsed = false;
   resetVaultRoundCounters(state);
-  // Ainmos dawn: the round after a Boss Dream, the Waking Mind reshuffles and everyone draws 3.
+  // Ainmos dawn: the round after a Boss Dream, the Waking Mind reshuffles and you draw DAWN_DRAW.
   if (state.bossArrivedThisRound && !state.tutorialMode) {
     state.bossArrivedThisRound = false;
     anteDawn(state);
   }
   // Ainmos: the Vault ran dry last round, so the Dreamscape resets now.
   if (isFreeformBoard(state) && vaultExhausted(state)) resetDreamscape(state);
+  // Ainmos 0.25: Endless Mode keeps a full Cycle waiting in the Dream Deck.
+  ensureEndlessDeck(state);
   // Ainmos: no Dream left to draw. The night does not end; the Long Night begins,
   // and the Waking Mind is the clock until you wake or forget yourself.
   if (!state.tutorialMode && !(state.dreamDeck || []).length) {
@@ -901,7 +914,7 @@ export function beginRoundReveal(state) {
   if (state.status === "playing") openLostFound(state);
 }
 
-/** Between Cycles: the discard shuffles back into the Waking Mind, then each Dreamer draws 3. */
+/** Between Cycles: the discard shuffles back into the Waking Mind, then you draw DAWN_DRAW. */
 /**
  * Effects that wake with the dawn (Flower) register here, so state.js imports no effects.
  * The list lives on the hoisted function: modules caught in an import cycle can register early.
@@ -911,6 +924,9 @@ export function onDawn(fn) {
   if (typeof fn === "function") onDawn.hooks.push(fn);
 }
 
+/** Psyche each Dreamer draws at the dawn between Cycles. */
+export const DAWN_DRAW = 5;
+
 export function anteDawn(state) {
   if (state.psycheDiscard?.length) {
     state.psycheDeck = shuffle([...(state.psycheDeck || []), ...state.psycheDiscard]);
@@ -918,9 +934,9 @@ export function anteDawn(state) {
   }
   state.ante = (state.ante || 1) + 1;
   state.players.forEach((player) => {
-    if (player.alive) drawPsycheForPlayer(state, player, 3);
+    if (player.alive) drawPsycheForPlayer(state, player, DAWN_DRAW);
   });
-  addLog(state, `Dawn between Cycles: the Waking Mind reshuffles, and each Dreamer draws 3 Psyche.`);
+  addLog(state, `Dawn between Cycles: the Waking Mind reshuffles, and you draw ${DAWN_DRAW} Psyche.`);
   autoReturnPsyche(state, DAWN_RETURN, "Dawn");
   (onDawn.hooks || []).forEach((fn) => fn(state));
 }
@@ -1180,7 +1196,7 @@ export function markFinalArchetypeDefeated(state, archetypeId) {
 
 /**
  * Ainmos: Acquiring an Archetype is the whole goal. Each one counts 1 toward
- * waking, pays 2 Power Tokens, and hands over its power (or passive) as a Boon.
+ * waking, pays 1 Power Token, and hands over its power (or passive) as a Boon.
  */
 function grantAcquiredArchetype(state, player, archetype) {
   state.acquiredPoints = (state.acquiredPoints || 0) + 1;
@@ -1351,6 +1367,8 @@ export function finalBossDefeated(state) {
 /** Ainmos: one goal. Acquire the night's count of Archetypes and you wake. */
 export function checkVictory(state) {
   if (state.status !== "playing") return;
+  // Endless Mode ends only when the last Leviathan falls (see endless.js).
+  if (state.endless) return;
   const goal = state.scoringGoalPoints || state.goalPoints || 0;
   if (goal > 0 && (state.acquiredPoints || 0) >= goal) {
     state.archetypeGoalReached = true;

@@ -34,10 +34,12 @@ export function cyclesForLength(lengthKey) {
 /** Where the night stands: Cycle, Dream within it, phase within that Dream, and phase within the Cycle. */
 export function cyclePosition(state) {
   const plan = state?.nightPlan || [];
-  const cycles = cyclesForLength(state?.lengthKey);
+  const base = cyclesForLength(state?.lengthKey);
+  // Endless Mode keeps adding Cycles; the night's length is however far the plan reaches.
+  const cycles = state?.endless ? Math.max(base, Math.ceil(plan.length / DREAMS_PER_CYCLE)) : base;
   const phase = Math.min(PHASES_PER_DREAM, Math.max(1, (state?.phaseIndex || 0) + 1));
   if (!plan.length) {
-    return { cycle: 1, cycles, dream: 1, phase, step: phase, longNight: false, planIndex: 0 };
+    return { cycle: 1, cycles, dream: 1, phase, step: phase, longNight: false, planIndex: 0, endless: !!state?.endless };
   }
   const drawn = plan.length - (state.dreamDeck?.length || 0);
   // This round's Dream is the last one drawn; before it is drawn, the next one in the deck.
@@ -52,6 +54,8 @@ export function cyclePosition(state) {
     step: (dream - 1) * PHASES_PER_DREAM + phase,
     longNight: !!state.longNight,
     planIndex,
+    endless: !!state.endless,
+    finalCycle: !state.endless && !state.longNight && cycle >= cycles,
   };
 }
 
@@ -60,5 +64,6 @@ export function cyclePositionText(state) {
   const pos = cyclePosition(state);
   if (pos.longNight) return "The Long Night: every Cycle is spent. Each dusk takes more.";
   const boss = pos.dream === DREAMS_PER_CYCLE ? " (Archetype)" : pos.dream === 2 ? " (Dreambeast)" : "";
+  if (pos.endless) return `Endless · Cycle ${pos.cycle} · Dream ${pos.dream} of ${DREAMS_PER_CYCLE} · ${PHASE_NAMES[pos.phase - 1]}`;
   return `Cycle ${pos.cycle} of ${pos.cycles} · Dream ${pos.dream} of ${DREAMS_PER_CYCLE}${boss} · ${PHASE_NAMES[pos.phase - 1]} · phase ${pos.step} of ${PHASES_PER_CYCLE}`;
 }

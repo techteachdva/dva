@@ -1,6 +1,7 @@
 import { alliesInHand } from "../cards/psyche.js";
 import { goalPointsForTable } from "./data.js";
 import { ladderEntry } from "../encounters/boss-ladder.js";
+import { endlessPoints } from "../encounters/endless.js";
 
 
 function difficultyPoints(state) {
@@ -22,7 +23,8 @@ export function bossClimbPoints(state) {
  *   Archetype points acquired x2 (not capped at the goal)
  * + every defeated Boss's climb (11 minus its rung)
  * + the best spread's Power
- * + 20 for waking
+ * + 20 for waking (kept if you went on into Endless Mode)
+ * + each Endless Leviathan felled (10, 15, 25, 40, 99)
  * + 1 per Object, Power Token, and ally still held.
  * Psyche left in hand no longer scores: spend it.
  */
@@ -36,7 +38,8 @@ export function calculateFinalScore(state) {
     allies += alliesInHand(p).length;
   });
 
-  const won = state.status === "won";
+  // Waking counts once you have woken, even if Endless Mode later takes you.
+  const won = state.status === "won" || !!state.endless;
   const difficulty = difficultyPoints(state);
   const acquired = state.acquiredPoints || 0;
   const goalReached = acquired >= difficulty;
@@ -44,7 +47,8 @@ export function calculateFinalScore(state) {
   const bossPoints = bossClimbPoints(state);
   const bestSpread = state.runStats?.bestSpread?.power || 0;
   const escapeBonus = won ? 20 : 0;
-  const total = archetypePoints + bossPoints + bestSpread + escapeBonus + objects + tokens + allies;
+  const leviathans = endlessPoints(state);
+  const total = archetypePoints + bossPoints + bestSpread + escapeBonus + leviathans + objects + tokens + allies;
 
   return {
     archetypePoints,
@@ -59,6 +63,8 @@ export function calculateFinalScore(state) {
     allies,
     dreams: 0,
     escapeBonus,
+    leviathans,
+    endless: !!state.endless,
     total,
   };
 }

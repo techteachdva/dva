@@ -25,6 +25,7 @@ import {
   PSYCHE_UPGRADES,
   applyPsycheUpgrade,
   formById,
+  formMaxed,
   levelUpForm,
 } from "../cards/dream-forms.js";
 
@@ -82,9 +83,10 @@ function returnObjectToBottom(state, card) {
   if (state.objectDecks[suit]) state.objectDecks[suit].push(card);
 }
 
-function rollInsight() {
-  if (random() < 0.5) {
-    const form = DREAM_FORMS[Math.floor(random() * DREAM_FORMS.length)];
+function rollInsight(state = null) {
+  const open = DREAM_FORMS.filter((form) => !formMaxed(state, form.id));
+  if (open.length && random() < 0.5) {
+    const form = open[Math.floor(random() * open.length)];
     return { kind: "form", formId: form.id, price: FORM_LEVEL_PRICE };
   }
   const ids = Object.keys(PSYCHE_UPGRADES);
@@ -124,7 +126,7 @@ export function openLostFound(state) {
     open: true,
     round: state.round,
     objects,
-    insight: rollInsight(),
+    insight: rollInsight(state),
     rerolls: 0,
     buyerId: state.players.find((p) => p.alive)?.id || null,
   };

@@ -45,7 +45,9 @@ import {
   encounterPower,
   recommendedEncounterPower,
   encounterPowerLabel,
+  encounterPowerBreakdown,
 } from "../encounters/dreambeasts.js";
+import { beastWard, beastWardText } from "../encounters/beast-wards.js";
 import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate, persistentObjectCanActivate } from "../effects/objects.js";
 import { OBJECT_SETS, setProgress } from "../effects/object-sets.js";
 import { alliesInHand, psycheCardsInHand, allyHandCount, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue, tradablePsycheInHand, TRADE_OFFER_LIMIT } from "../cards/psyche.js";
@@ -141,8 +143,9 @@ function cardTypeClass(card) {
 function dreambeastCostMeta(card) {
   if (card.accept == null) return "";
   const acceptSuit = card.suit ? suitIconHtml(card.suit, { size: 10 }) : "";
-  // Ainmos 0.23: beat its Power to Accept it, then take a Power Token or a random Object.
-  return `<span class="meta dreambeast-costs"><span title="${encounterPayHint(card, true)}">Power ${card.accept} ${acceptSuit} → Token or Object</span></span>`;
+  // Ainmos 0.25: beat its Power (any suit) for 2 Power Tokens or an Object of its suit; its ward blunts one Form.
+  const ward = beastWardText(card);
+  return `<span class="meta dreambeast-costs"><span title="${encounterPayHint(card, true)}">Power ${card.accept} ${acceptSuit} → 2 Tokens or Object</span>${ward ? ` <span class="beast-ward" title="A spread that counts as this Form loses that many dice.">${ward}</span>` : ""}</span>`;
 }
 
 function isDreambeastCard(card) {
@@ -707,12 +710,15 @@ export function renderSpreadTray(state, onCardClick, openerAction = null, fightA
   const caption = document.createElement("p");
   caption.className = "spread-tray-label";
   caption.textContent = cards.length === 1 ? "Spread — 1 Psyche" : `Spread — ${cards.length} Psyche`;
-  const form = bestForm(state, cards);
+  const meetBeast = getPhase(state) === "Meet" ? currentMeetEncounter(state)?.encounter : null;
+  const form = bestForm(state, cards, { ward: meetBeast ? beastWard(meetBeast) : null });
   if (form) {
     const chip = document.createElement("span");
-    chip.className = `spread-form-chip form-${form.id}`;
-    chip.textContent = `${form.name} +${form.dice}`;
-    chip.title = `${form.name}, level ${form.level}: +${form.dice} dice`;
+    chip.className = `spread-form-chip form-${form.id}${form.blocked ? " is-warded" : ""}`;
+    chip.textContent = form.blocked ? `${form.name} +${form.dice} (warded −${form.blocked})` : `${form.name} +${form.dice}`;
+    chip.title = form.blocked
+      ? `${form.name}, level ${form.level}: +${form.fullDice} dice, but ${meetBeast.name} wards it: −${form.blocked}.`
+      : `${form.name}, level ${form.level}: +${form.dice} dice`;
     caption.appendChild(chip);
   }
   tray.appendChild(caption);
@@ -1302,8 +1308,10 @@ function appendDreambeastModalDetail(detail, card) {
   const power = encounterPower(card, true);
   const suit = card.suit ? SUIT_LABELS[card.suit] : "";
   const boss = ladderEntry(card.refId || card.id);
-  const rank = boss ? "Boss" : card.miniBoss ? "Mini-Boss" : "Dreambeast";
-  const powerText = boss?.stack ? boss.stack.join(" → ") : String(power);
+  const rank = card.megaTier ? `Leviathan ${card.megaTier} of 5` : boss ? "Boss" : card.miniBoss ? "Mini-Boss" : "Dreambeast";
+  const grown = card.cycleBonus || 0;
+  const powerText = boss?.stack && !card.megaTier ? boss.stack.map((n) => n + grown).join(" → ") : String(power);
+  const ward = beastWardText(card);
   const view = document.createElement("div");
   view.className = `beast-view-body suit-${card.suit || "none"}`;
   view.innerHTML = `
@@ -1315,10 +1323,11 @@ function appendDreambeastModalDetail(detail, card) {
         ${card.beastKind ? `<span class="beast-view-tag">${beastKindLabel(card.beastKind)}</span>` : ""}
       </span>
     </div>
-    ${boss ? `<p class="beast-view-rule"><b>${boss.twist}.</b> ${boss.twistText}</p>` : ""}
-    <p class="beast-view-how">Fight it on its Landscape during Meet. Roll 5s and 6s; beat its Power to Accept it.</p>
+    ${boss ? `<p class="beast-view-rule"><b>${boss.twist}.</b> ${boss.twistText}</p>` : card.megaTier && card.twistText ? `<p class="beast-view-rule"><b>${card.twist}.</b> ${card.twistText}</p>` : ""}
+    ${ward ? `<p class="beast-view-rule"><span class="beast-ward">${ward}</span> A spread that counts as that Form loses that many of its dice.</p>` : ""}
+    <p class="beast-view-how">Fight it on its Landscape during Meet with 1–3 Psyche of any suit. Roll 5s and 6s; beat its Power to Accept it.${grown ? ` It grew +${grown} with the Cycle.` : ""}</p>
     <div class="beast-view-wins">
-      <div class="beast-view-win is-accept"><b>Accept</b><span>Win the fight, then take a Power Token or a random Object.</span></div>
+      <div class="beast-view-win is-accept"><b>Accept</b><span>Win the fight with any suit, then take 2 Power Tokens or an Object of its suit.</span></div>
     </div>
     <p class="beast-view-threat">Left standing at dusk, it Represses 1 Psyche.</p>`;
   detail.appendChild(view);
@@ -1338,7 +1347,7 @@ function appendDreambeastModalDetailLegacy(detail, card) {
   costs.className = "dreambeast-cost-breakdown";
   costs.innerHTML = `
     <div class="dreambeast-cost-row accept">
-      <strong>Accept · beat Power ${card.accept}${acceptSuit}</strong>
+      <strong>Accept · beat ${encounterPowerBreakdown(card)}${acceptSuit}</strong>
       <span>${encounterPayHint(card, true)}</span>
       <span>${encounterAcceptSummary(card)}</span>
     </div>
@@ -4858,6 +4867,8 @@ export function showScreen(id) {
  * tutorial, which has no seed worth sharing.
  */
 export function showEndScreen(won, message, scoreResult = null, dream = null) {
+  // Nothing from the table may sit over the end screen (a phase opener, a card, a choice).
+  if (!document.getElementById("utility-modal")?.classList.contains("hidden")) hideUtilityModal(true);
   showScreen("screen-end");
   document.getElementById("end-title").textContent = won ? "You Wake Up!" : "You Never Wake Up";
   document.getElementById("end-message").textContent = message;
@@ -6507,7 +6518,7 @@ export function showLandscapeDetail(state, tileId, { onDreamerClick = null, onBe
       card: { ...enc, type: enc.type || "dreambeast" },
       caption: enc.name,
       detailHtml: `
-        <div class="landscape-detail-beast-cost accept"><strong>Accept · beat Power ${enc.accept}</strong> ${acceptSuit}<span>${encounterPayHint(enc, true)} ${encounterAcceptSummary(enc)}.</span></div>
+        <div class="landscape-detail-beast-cost accept"><strong>Accept · beat ${encounterPowerBreakdown(enc)}</strong> ${acceptSuit}<span>${encounterPayHint(enc, true)} ${encounterAcceptSummary(enc)}.</span></div>
         ${enc.flavor ? `<div class="landscape-detail-beast-flavor">${enc.flavor}</div>` : ""}
       `,
       onClick: onBeastClick ? (event) => onBeastClick(enc, tile.id, event) : null,

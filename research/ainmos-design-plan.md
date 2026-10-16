@@ -81,3 +81,17 @@ Phil's calls after playing 0.9, now locked:
 - **The Long Night.** An empty Dream Deck no longer loses. Each dusk Represses 2 × (Long Night rounds) extra from the Waking Mind.
 
 Bot sim (crude solo bot, 40 per length, two runs): Daydream 42–45%, Nap 22–37%, Deep Sleep 12–20%; 0 errors, 0 step caps. Most bot losses are an unmet Archetype goal (the bot hunts beasts over quests).
+
+## 0.25 Endless Dreams (2026-10-16)
+
+Phil's calls, now locked:
+
+- **Any suit fights a Dreambeast.** A card of the beast's suit only adds the matching stat. Each Dreambeast instead **wards one Dream Form**: that Form loses 1 to 5 dice (by printed Power: 4 → 1, 11+ → 5). The spread then counts as its best Form after the Ward.
+- **Dreambeasts grow with the Cycle**: printed Power + the Cycle number they arrive in. Archetypes stay Power 12 and need a Form.
+- **Taps:** start 2 Power Tokens; an Accepted beast pays 2 tokens or an Object of its suit; an Archetype pays 1. Cap 6. **Sinks:** phase openers, +1 die per token in fights (max 3), Archetype and Dreamer powers, Look Again.
+- **Psyche:** draw 2 each round, 5 at the dawn between Cycles, hand and respawn 6. Each Dreambeast still standing at dusk Represses 1 from the Waking Mind; Archetypes never mill.
+- **Calling an Archetype needs a revealed home.** If none of the three offered has one, Repress 1 Psyche from hand to search the Landscape deck for the first missing home and place it on a random hex.
+- **Endless Mode** after waking: the ladder continues, then Mindstream beasts; once every Archetype is Acquired each Cycle closes with a Leviathan: Leviathan+ 13, Leviathan_x 14, LeviaTHAN 16, L3V1@+H@N 20, L3V1@+H@N D3$TR0Y3R 0F DR3@M$ 99 (fixed Power, Ward 5, the last wards every Form). Felling the last plays the blue-screen ending.
+- Forms cap at +24. The final Cycle brightens instead of warning.
+
+Bot sim (smart bot, 40 per length): Daydream 57%, Nap 55%, Deep 0%; careless bot 0% everywhere. Token flow per night: tokens earned ≈ tokens spent, almost none lost to the cap. Psyche Repressed 45–65 vs Returned 13–33 per night; the Waking Mind is the clock.

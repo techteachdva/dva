@@ -3,6 +3,8 @@ import { offerBoonDraft } from "../dreamers/boons.js";
 import { bossExtraPower, advanceBossStack } from "../encounters/boss-twists.js";
 import { isLostFoundOpen, bankGlimmer, GLIMMER_MAX } from "../shop/lost-found.js";
 import { bestForm } from "../cards/dream-forms.js";
+import { beastWard, beastWardText } from "../encounters/beast-wards.js";
+import { noteLeviathanFelled } from "../encounters/endless.js";
 import { isLadderBoss, anteForBoss } from "../encounters/boss-ladder.js";
 import {
   getPhase,
@@ -2000,8 +2002,8 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
   if (!selected.length) {
     const foreign = allSelectedCards(state);
     say(foreign.length
-      ? `${verb} uses ${actor.name}'s Psyche. Select at least 1 ${suitName} from ${actor.name}'s hand.`
-      : `${verb} ${encounter.name}: select 1–3 Psyche from ${actor.name}'s hand, including at least 1 ${suitName}.`);
+      ? `${verb} uses ${actor.name}'s Psyche. Select 1–3 Psyche from ${actor.name}'s hand.`
+      : `${verb} ${encounter.name}: select 1–3 Psyche of any suit from ${actor.name}'s hand. A ${suitName} card adds your ${suitName} stat.`);
     return;
   }
 
@@ -2018,7 +2020,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     encounterDiceTotal(state, actor, selected, encounter, { accept: !isReject }),
   );
   const bonus = dreamerMeetBonuses(actor.dreamer, encounter);
-  const form = bestForm(state, selected);
+  const form = bestForm(state, selected, { ward: beastWard(encounter) });
   if (!state.forcedAccept && !treatAsFree && !spendMeetAction(state, MEET_ACTIONS.MEET)) return;
   if (state.pendingMindstreamMeet?.landscapeId === tile.id) state.pendingMindstreamMeet = null;
   const ctx = {
@@ -2039,7 +2041,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     : "";
   addLog(
     state,
-    `${actor.name} Power ${played}d6 vs ${encounter.name} Power ${beastPower}d6.${form ? ` ${form.name} +${form.dice}.` : ""}${bonus.total ? ` Affinity +${bonus.total}.` : ""}${recNote}`,
+    `${actor.name} Power ${played}d6 vs ${encounter.name} Power ${beastPower}d6.${form ? ` ${form.name} +${form.dice}${form.blocked ? ` (warded −${form.blocked})` : ""}.` : ""}${bonus.total ? ` Affinity +${bonus.total}.` : ""}${recNote}`,
   );
 
   const finish = (dreamerWins) => {
@@ -2150,11 +2152,20 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
  */
 const OBJECT_SUITS = ["lucidity", "elasticity", "willpower"];
 
-/** A beaten Dreambeast pays a Power Token or a random Object: the Dreamer picks. */
+/** Ainmos 0.25: an Accepted Dreambeast pays 2 Power Tokens. */
+export const BEAST_TOKEN_REWARD = 2;
+
+function objectSuitFor(encounter) {
+  return OBJECT_SUITS.includes(encounter?.suit) ? encounter.suit : null;
+}
+
+/** A beaten Dreambeast pays 2 Power Tokens or 1 Object of its suit: the Dreamer picks. */
 export function offerBeastReward(state, actor, encounter) {
   if (!actor) return;
   const room = powerTokenRoom(actor);
-  const objectsLeft = OBJECT_SUITS.some((suit) => (state.objectDecks?.[suit] || []).length || (state.objectDiscard?.[suit] || []).length);
+  const suit = objectSuitFor(encounter);
+  const suits = suit ? [suit] : OBJECT_SUITS;
+  const objectsLeft = suits.some((s) => (state.objectDecks?.[s] || []).length || (state.objectDiscard?.[s] || []).length);
   if (!room && !objectsLeft) {
     logMoment(state, `${encounter?.name || "The Dreambeast"} is Accepted.`);
     return;
@@ -2173,18 +2184,19 @@ export function offerBeastReward(state, actor, encounter) {
     title: `${encounter?.name || "Dreambeast"} is Accepted`,
     message: "Take your reward.",
     choices: [
-      { id: "token", label: "A Power Token", hint: `You hold ${actor.powerTokens || 0} of ${MAX_POWER_TOKENS}.` },
-      { id: "object", label: "A random Object", hint: "Drawn from any Object deck." },
+      { id: "token", label: `${Math.min(BEAST_TOKEN_REWARD, room)} Power Token${Math.min(BEAST_TOKEN_REWARD, room) === 1 ? "" : "s"}`, hint: `You hold ${actor.powerTokens || 0} of ${MAX_POWER_TOKENS}.` },
+      { id: "object", label: suit ? `A ${SUIT_LABELS[suit]} Object` : "A random Object", hint: suit ? `Drawn from the ${SUIT_LABELS[suit]} Object deck.` : "Drawn from any Object deck." },
     ],
-    payload: { name: encounter?.name || "" },
-    log: `${encounter?.name || "The Dreambeast"} is Accepted: a Power Token or a random Object.`,
+    payload: { name: encounter?.name || "", suit },
+    log: `${encounter?.name || "The Dreambeast"} is Accepted: ${BEAST_TOKEN_REWARD} Power Tokens or ${suit ? `a ${SUIT_LABELS[suit]}` : "a random"} Object.`,
   });
 }
 
 function grantBeastReward(state, actor, choiceId, encounter) {
   const name = encounter?.name || "The Dreambeast";
   if (choiceId === "object") {
-    const suits = shuffle(OBJECT_SUITS.slice());
+    const own = objectSuitFor(encounter);
+    const suits = own ? [own, ...shuffle(OBJECT_SUITS.filter((s) => s !== own))] : shuffle(OBJECT_SUITS.slice());
     for (const suit of suits) {
       const got = drawObjects(state, actor, 1, getEffectHelpers(), suit);
       if (got.length) {
@@ -2193,8 +2205,8 @@ function grantBeastReward(state, actor, choiceId, encounter) {
       }
     }
   }
-  const paid = grantPowerTokens(state, actor, 1, { source: "beast", logQuest: false });
-  logMoment(state, `${name} is Accepted.${paid ? ` ${actor.name} takes a Power Token.` : ""}`);
+  const paid = grantPowerTokens(state, actor, BEAST_TOKEN_REWARD, { source: "beast", logQuest: false });
+  logMoment(state, `${name} is Accepted.${paid ? ` ${actor.name} takes ${paid} Power Token${paid === 1 ? "" : "s"}.` : ""}`);
 }
 
 registerEffectResolver("beast-reward", (state, choiceId) => {
@@ -2202,18 +2214,18 @@ registerEffectResolver("beast-reward", (state, choiceId) => {
   const actor = state.players.find((p) => p.id === pending?.playerId);
   state.pendingEffectChoice = null;
   if (!actor) return false;
-  grantBeastReward(state, actor, choiceId === "object" ? "object" : "token", { name: pending?.payload?.name });
+  grantBeastReward(state, actor, choiceId === "object" ? "object" : "token", { name: pending?.payload?.name, suit: pending?.payload?.suit });
   return true;
 });
 
 export function resolveBeastDefeat(state, { actor, encounter, landscapeId }) {
   if (!actor || !encounter) return;
   // Ainmos 0.23: a beaten Dreambeast is Accepted and leaves the board. Its reward
-  // is your pick: a Power Token or a random Object.
+  // is your pick: 2 Power Tokens or an Object of its suit (0.25).
   addLog(state, `${actor.name} Accepts ${encounter.name}.`);
   offerBeastReward(state, actor, encounter);
   if (!encounter.boss && !encounter.miniBoss && Array.isArray(state.nightmarePool)) {
-    const { called, basePower, ...card } = encounter;
+    const { called, basePower, cycleBonus, ward, ...card } = encounter;
     state.nightmarePool.push({ ...card, accept: basePower || card.accept });
   }
 
@@ -2226,8 +2238,9 @@ export function resolveBeastDefeat(state, { actor, encounter, landscapeId }) {
       recordQuestEvent(state, "meet_boss", { bossId, suit: encounter.suit });
       if (!(state.bossesDefeated || []).includes(bossId)) {
         state.bossesDefeated = [...(state.bossesDefeated || []), bossId];
-        logMoment(state, `${encounter.name} falls. It stalks the Dreamscape no more.`, { boss: true });
+        if (!encounter.megaTier) logMoment(state, `${encounter.name} falls. It stalks the Dreamscape no more.`, { boss: true });
       }
+      if (encounter.megaTier) noteLeviathanFelled(state, encounter);
     }
     // Ainmos: a Mini-Boss pays a bounty, like a blind cleared before the Boss.
     if (encounter.miniBoss) {
@@ -3252,7 +3265,7 @@ function archetypeMeetActions(state, handlers) {
         kind: "fightArchetype",
         section: "encounter",
         primary: true,
-        hint: problem || `${fight.label}: ${fight.hint}. Win to Acquire ${arch.name} (+${ARCHETYPE_TOKEN_REWARD} Power Tokens).`,
+        hint: problem || `${fight.label}: ${fight.hint}. Win to Acquire ${arch.name} (+${ARCHETYPE_TOKEN_REWARD} Power Token${ARCHETYPE_TOKEN_REWARD === 1 ? "" : "s"}).`,
         disabled: !!problem,
         onClick: () => handlers.fightArchetype?.(arch.id),
       };
@@ -3339,7 +3352,7 @@ export function fightArchetype(state, archId, onDone = null) {
       const acquired = acquireFinalArchetype(state, actor, arch);
       if (acquired) resolveOnAcquire(state, acquired, actor);
       queueArchetypeAcquireFx(fight.tileId, arch.name);
-      logMoment(state, `${arch.name} is Acquired! +${ARCHETYPE_TOKEN_REWARD} Power Tokens, and its power is yours.`, { boss: true });
+      logMoment(state, `${arch.name} is Acquired! +${ARCHETYPE_TOKEN_REWARD} Power Token${ARCHETYPE_TOKEN_REWARD === 1 ? "" : "s"}, and its power is yours.`, { boss: true });
       checkVictory(state);
     } else if (rules.keepOnLoss) {
       state.selectedHand = [];

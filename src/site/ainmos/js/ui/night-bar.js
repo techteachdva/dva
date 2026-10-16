@@ -10,6 +10,7 @@
  * When the deck runs dry, the counter turns into the Long Night's toll.
  */
 
+import { megaLeviathan, endlessStatusText } from "../encounters/endless.js";
 import { longNightToll } from "../core/state.js";
 import { cyclePosition, cyclePositionText, PHASE_SUITS, PHASE_NAMES, DREAMS_PER_CYCLE } from "../core/cycle.js";
 import { suitIconHtml } from "../core/rules.js";
@@ -85,11 +86,11 @@ function renderCycleTracker(state) {
       const when = step < pos.step ? "past" : step === pos.step ? "now" : "ahead";
       return `<span class="cycle-pip is-${when}" title="Dream ${d} · ${PHASE_NAMES[i]}">${suitIconHtml(suit, { className: "cycle-pip-icon", size: 10 })}</span>`;
     }).join("");
-    const tag = d === 2 ? "Dreambeast" : d === DREAMS_PER_CYCLE ? "Archetype" : "Dream";
+    const tag = d === 2 ? "Dreambeast" : d === DREAMS_PER_CYCLE ? (pos.endless && !(state.archetypeDeck || []).length ? "Leviathan" : "Archetype") : "Dream";
     dreams.push(`<span class="cycle-dream${d === pos.dream ? " is-now" : ""}" title="Dream ${d} of 3${tag ? ` · ${tag}` : ""}"><span class="cycle-dream-num">${d}</span>${pips}</span>`);
   }
   host.innerHTML = `
-    <span class="cycle-label">Cycle <b>${pos.cycle}</b> of ${pos.cycles}</span>
+    <span class="cycle-label">${pos.endless ? `Endless · Cycle <b>${pos.cycle}</b>` : `Cycle <b>${pos.cycle}</b> of ${pos.cycles}`}</span>
     <span class="cycle-dreams">${dreams.join("")}</span>
     <span class="cycle-step">${pos.step}/9</span>`;
 }
@@ -131,11 +132,12 @@ export function renderNightBar(state) {
           : drawn
             ? "passed"
             : "ahead";
-      const power = entry?.stack ? entry.stack.join(", then ") : entry?.power;
-      const label = `Cycle ${p.ante}, Dream 2 · Dreambeast: ${p.name}${entry ? `, Power ${power}. ${entry.twist}: ${entry.twistText}` : ""}${status === "defeated" ? " Defeated." : status === "standing" ? " Standing on the Dreamscape." : ""}${spawnLabel(spawns)}`;
-      return `<span class="night-card night-boss is-${status} suit-${p.suit || "none"}${isNext ? " is-next" : ""}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+      const mega = p.mega ? megaLeviathan(p.mega) : null;
+      const power = mega ? mega.power : entry?.stack ? entry.stack.join(", then ") : entry?.power;
+      const label = `Cycle ${p.ante}, Dream ${mega ? 3 : 2} · ${mega ? "Leviathan" : "Dreambeast"}: ${p.name}${mega ? `, Power ${power}. ${mega.flavor}` : entry ? `, Power ${power} + the Cycle. ${entry.twist}: ${entry.twistText}` : ""}${status === "defeated" ? " Defeated." : status === "standing" ? " Standing on the Dreamscape." : ""}${spawnLabel(spawns)}`;
+      return `<span class="night-card night-boss is-${status} suit-${p.suit || "none"}${isNext ? " is-next" : ""}${mega ? ` is-mega mega-${mega.tier}` : ""}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
         <span class="night-face" style="--night-art:url('${escapeHtml(absolute(p.image))}')"></span>
-        <span class="night-boss-rung">${entry?.rung ?? ""}</span>
+        <span class="night-boss-rung">${mega ? `∞${mega.tier}` : (entry?.rung ?? "")}</span>
         <span class="night-tick" aria-hidden="true"></span>
         ${spawnPips(spawns)}
       </span>`;
@@ -157,7 +159,9 @@ export function renderNightBar(state) {
 
   const ante = currentAnte(state);
   const groups = [];
-  for (let i = 0; i < cells.length; i += 3) {
+  // Endless Mode: the plan keeps growing, so the strip shows the last Cycle and what lies ahead.
+  const firstShown = state.endless ? Math.max(0, (ante - 2) * 3) : 0;
+  for (let i = firstShown; i < cells.length; i += 3) {
     const n = Math.floor(i / 3) + 1;
     const when = n < ante ? "past" : n === ante ? "now" : "ahead";
     groups.push(`<span class="night-ante is-${when}" data-ante="${n}">
@@ -171,16 +175,20 @@ export function renderNightBar(state) {
   renderCycleTracker(state);
 
   const toll = longNightToll(state);
-  const key = `${groups.join("")}|${nextIndex}|${left}|${toll}`;
+  const key = `${groups.join("")}|${nextIndex}|${left}|${toll}|${state.endless ? endlessStatusText(state) : ""}`;
   if (key === lastKey) return;
   lastKey = key;
   host.classList.toggle("is-long-night", !!state.longNight);
   host.setAttribute("aria-label", state.longNight
     ? `The Long Night: dusk Represses ${toll} more from the Waking Mind`
-    : `The night: Cycle ${ante} of ${antes}, ${left} of ${plan.length} Dreams left`);
+    : state.endless
+      ? `Endless Mode: Cycle ${ante}. ${endlessStatusText(state)}`
+      : `The night: Cycle ${ante} of ${antes}, ${left} of ${plan.length} Dreams left`);
   const counter = state.longNight
     ? `<span class="night-left night-long" title="The Long Night: the Dream Deck is empty. Each dusk Represses this many more from the Waking Mind, and it grows."><b>−${toll}</b><small>Long Night</small></span>`
-    : `<span class="night-left" title="Dreams left in the night"><b>${left}</b><small>left</small></span>`;
+    : state.endless
+      ? `<span class="night-left night-endless" title="${escapeHtml(endlessStatusText(state))}"><b>∞</b><small>Endless</small></span>`
+      : `<span class="night-left" title="Dreams left in the night"><b>${left}</b><small>left</small></span>`;
   host.innerHTML = `
     <div class="night-track">${groups.join("")}</div>
     ${counter}`;

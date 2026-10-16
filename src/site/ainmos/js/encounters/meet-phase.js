@@ -8,8 +8,8 @@ import { BOSS_LADDER } from "./boss-ladder.js";
  * 1) Start of Meet — each Boss steps 1 hex toward the nearest Dreamer, unless
  *    a Dreamer already shares its hex. There is no hand tax.
  * 2) Middle of Meet — one Dreamer may spend 1 Willpower Psyche to unlock
- *    shared Meet Actions. Accept and Repress are the same Power. Accept pays
- *    the beast's suit. Repress pays the opposing suit.
+ *    shared Meet Actions. Accept a Dreambeast with 1–3 Psyche of any suit by
+ *    beating its Power (its Ward blunts one Dream Form).
  * 3) End of the round — Repress 1 card from the Psyche Deck per Dreambeast
  *    still on the board. During the Final Recurrence, count remaining
  *    Archetypes instead. Fail only when Accept loses.

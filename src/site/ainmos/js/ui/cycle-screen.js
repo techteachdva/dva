@@ -9,6 +9,8 @@
 
 import { getPhase } from "../core/state.js";
 import { ladderEntry } from "../encounters/boss-ladder.js";
+import { megaLeviathan } from "../encounters/endless.js";
+import { beastWardText } from "../encounters/beast-wards.js";
 import { cyclesForLength, PHASE_NAMES, PHASE_SUITS, DREAMS_PER_CYCLE } from "../core/cycle.js";
 import { suitIconHtml } from "../core/rules.js";
 
@@ -52,9 +54,11 @@ export function cycleScreenWanted(state) {
   return cycleAboutToBegin(state) > 0;
 }
 
-function bossPower(entry) {
+/** A Cycle's Dreambeast Power as it will arrive: printed + the Cycle (Leviathans of Endless Mode are fixed). */
+function bossPower(entry, cycle = 0, plan = null, sep = "·") {
+  if (plan?.mega) return String(megaLeviathan(plan.mega)?.power ?? "?");
   if (!entry) return "?";
-  return entry.stack ? entry.stack.join("·") : String(entry.power);
+  return entry.stack ? entry.stack.map((n) => n + cycle).join(sep) : String(entry.power + cycle);
 }
 
 /** Nine phases as three Dreams of Reveal · Explore · Meet. */
@@ -82,11 +86,11 @@ function ladderHtml(state, cycle) {
   const bosses = (state.nightPlan || []).filter((p) => p.boss);
   return bosses.map((p, i) => {
     const entry = ladderEntry(p.bossId);
-    const n = i + 1;
+    const n = p.ante || i + 1;
     const when = defeated.has(p.bossId) ? "beaten" : n < cycle ? "past" : n === cycle ? "now" : "ahead";
-    return `<span class="cy-rung is-${when}" title="Cycle ${n}: ${esc(p.name)}, Power ${esc(bossPower(entry))}${when === "beaten" ? " (beaten)" : ""}">
+    return `<span class="cy-rung is-${when}" title="Cycle ${n}: ${esc(p.name)}, Power ${esc(bossPower(entry, n, p))}${when === "beaten" ? " (beaten)" : ""}">
       <span class="cy-rung-face" style="background-image:url('${esc(absolute(p.image))}')"></span>
-      <span class="cy-rung-power">${esc(bossPower(entry))}</span>
+      <span class="cy-rung-power">${esc(bossPower(entry, n, p))}</span>
       <span class="cy-rung-n">${n}</span>
     </span>`;
   }).join("");
@@ -129,10 +133,13 @@ export function renderCycleScreen(state, handlers = {}) {
   lastKey = key;
 
   const plan = state.nightPlan || [];
-  const [dream, boss] = plan.slice((cycle - 1) * 3, cycle * 3);
+  const [dream, boss, closer] = plan.slice((cycle - 1) * 3, cycle * 3);
   const entry = boss?.bossId ? ladderEntry(boss.bossId) : null;
+  const endless = !!state.endless;
   const cycles = cyclesForLength(state.lengthKey);
-  const finalCycle = cycle === cycles;
+  const finalCycle = !endless && cycle === cycles;
+  const mega = closer?.mega ? megaLeviathan(closer.mega) : null;
+  const ward = boss?.bossId ? beastWardText({ id: boss.bossId, accept: entry?.power ?? 9 }) : "";
   const openingDrawn = cycle === 1 && !!dream?.name && !!state.dreamDrawn;
   const goal = state.scoringGoalPoints || state.goalPoints || 0;
   const have = state.acquiredPoints || 0;
@@ -143,10 +150,12 @@ export function renderCycleScreen(state, handlers = {}) {
     <section class="lf-window cy-window" role="dialog" aria-modal="true" aria-labelledby="cy-title">
       <header class="lf-titlebar">
         <span class="vault-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-        <h3 id="cy-title" class="lf-title">Cycle ${cycle} <small>of ${cycles}</small></h3>
-        <span class="lf-round">${finalCycle ? "The last Cycle" : `${cycles - cycle} more after this`}</span>
+        <h3 id="cy-title" class="lf-title">Cycle ${cycle} <small>${endless ? "· Endless" : `of ${cycles}`}</small></h3>
+        <span class="lf-round">${endless ? "Endless Mode" : finalCycle ? "The last Cycle" : `${cycles - cycle} more after this`}</span>
       </header>
-      <p class="lf-whisper">${have} of ${goal} Archetypes Acquired. ${finalCycle ? "The last Cycle: its Archetype is your last call." : "Three Dreams, nine phases, and an Archetype at the end."}</p>
+      <p class="lf-whisper">${endless
+        ? (mega ? `${have} Archetypes Acquired. Every Archetype is yours. This Cycle ends with ${esc(mega.name)}.` : `${have} Archetypes Acquired. The dream goes on.`)
+        : `${have} of ${goal} Archetypes Acquired. ${finalCycle ? "The last Cycle. Morning is close: its Archetype is your last call." : "Three Dreams, nine phases, and an Archetype at the end."}`}</p>
       <div class="cy-map" aria-label="This Cycle: three Dreams of Reveal, Explore, Meet">${phaseMapHtml()}</div>
       <div class="lf-shelf cy-shelf">
         <article class="lf-item cy-item cy-dream-card">
@@ -160,18 +169,27 @@ export function renderCycleScreen(state, handlers = {}) {
           <div class="cy-art" style="background-image:url('${esc(absolute(boss?.image))}')"></div>
           <p class="cy-step">Dream 2 · phases 4–6 · Dreambeast</p>
           <h4 class="lf-item-name">${esc(boss?.name || "A Dreambeast")}</h4>
-          <p class="lf-item-kind">Power ${esc(entry?.stack ? entry.stack.join(", then ") : (entry?.power ?? boss?.mini?.power ?? 12))} · ${esc(SUIT_NAME[boss?.suit] || "")}</p>
+          <p class="lf-item-kind">Power ${esc(entry ? bossPower(entry, cycle, boss, ", then ") : (boss?.mini?.power ?? "grows with the Cycle"))} · ${esc(SUIT_NAME[boss?.suit] || "")}${ward ? ` · <span class="beast-ward">${esc(ward)}</span>` : ""}</p>
           <p class="lf-item-text">${entry ? `<strong>${esc(entry.twist)}.</strong> ${esc(entry.twistText)} ` : ""}Lands on a ${esc(SUIT_NAME[boss?.suit] || "")} Landscape, chases you each Explore, and bleeds 1 Psyche every dusk it stands.</p>
-          <p class="cy-reward">Beat it: a Power Token or a random Object</p>
+          <p class="cy-reward">Beat it with any suit: 2 Power Tokens or an Object of its suit</p>
         </article>
+        ${mega ? `
+        <article class="lf-item cy-item cy-boss cy-mega mega-${mega.tier}">
+          <div class="cy-art" style="background-image:url('${esc(absolute(mega.image))}')"></div>
+          <p class="cy-step">Dream 3 · phases 7–9 · Leviathan ${mega.tier} of 5</p>
+          <h4 class="lf-item-name">${esc(mega.name)}</h4>
+          <p class="lf-item-kind">Power ${mega.power} · <span class="beast-ward">${esc(beastWardText({ ward: mega.ward }))}</span></p>
+          <p class="lf-item-text"><em>${esc(mega.flavor)}</em> While it stands, the tide Forgets the edge Landscape farthest from The Bed each dusk.</p>
+          <p class="cy-reward">${mega.tier === 5 ? "Fell it, and the dream ends" : "Fell it before the next one rises"}</p>
+        </article>` : `
         <article class="lf-item cy-item cy-arch">
           <div class="cy-art cy-art-back" aria-hidden="true"><span>★</span></div>
           <p class="cy-step">Dream 3 · phases 7–9 · Archetype</p>
           <h4 class="lf-item-name">Choose 1 of 3</h4>
           <p class="lf-item-kind">${offered.length ? esc(offered.map((x) => x.name).join(" · ")) : "No Archetypes left"}</p>
-          <p class="lf-item-text">It appears on one of its two Landscapes and slips 1 away as each Meet ends. Meet it, face its Event, and beat Power 12 with a Form.</p>
-          <p class="cy-reward">Acquire it: +1 of ${goal}, +2 Power Tokens, its power</p>
-        </article>
+          <p class="lf-item-text">Call one whose home Landscape is revealed. It appears there and slips 1 away as each Meet ends. Meet it, face its Event, and beat Power 12 with a Form.</p>
+          <p class="cy-reward">Acquire it: +1${endless ? "" : ` of ${goal}`}, +1 Power Token, its power</p>
+        </article>`}
       </div>
       <div class="cy-ladder" aria-label="The Boss of every Cycle and its Power">
         <span class="cy-ladder-title">The Dreambeasts grow stronger</span>

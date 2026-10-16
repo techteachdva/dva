@@ -89,9 +89,18 @@ export function encounterPowerLabel(encounter, accept = true) {
   return `Accept · beat Power ${power}`;
 }
 
-/** Ainmos 0.23: beat its Power to Accept it, then take a Power Token or a random Object. */
-export function encounterAcceptSummary(_encounter) {
-  return "Beat its Power to Accept it: take a Power Token or a random Object";
+/** Ainmos 0.25: beat its Power to Accept it, then take 2 Power Tokens or an Object of its suit. */
+export function encounterAcceptSummary(encounter) {
+  const suit = SUIT_LABELS[encounter?.suit];
+  return `Beat its Power to Accept it: take 2 Power Tokens or ${suit ? `a ${suit}` : "a random"} Object`;
+}
+
+/** "Power 9 (6 + Cycle 3)" when a Dreambeast has grown with the night. */
+export function encounterPowerBreakdown(encounter) {
+  if (!encounter) return "";
+  const power = encounterPower(encounter);
+  const bonus = encounter.cycleBonus || 0;
+  return bonus ? `Power ${power} (${power - bonus} + Cycle ${bonus})` : `Power ${power}`;
 }
 
 /** Ainmos: Repress draws Psyche equal to half the beast's Power, rounded down. */

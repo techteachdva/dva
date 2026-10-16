@@ -179,7 +179,7 @@ function openerStep(state, ctx = {}) {
   return {
     id: pos.cycle === 1 && pos.dream === 1 ? "open-meet-empty-first" : "open-meet-empty",
     title: "Phase 3 · Meet",
-    text: "No Dreambeast or Archetype here, but your Landscape still has two actions: Call a Dreambeast to fight for a Power Token or Object, or its own action. Open Meet to use them, or Skip to keep the card.",
+    text: "No Dreambeast or Archetype here, but your Landscape still has two actions: Call a Dreambeast to fight for 2 Power Tokens or an Object, or its own action. Open Meet to use them, or Skip to keep the card.",
     why: "Every Meet Action you open but don't use becomes 1 Glimmer ✧ for the Lost & Found. Skipping keeps your card but banks nothing.",
     target: "#btn-spread-opener",
   };
@@ -310,7 +310,7 @@ function tableStep(state, ctx = {}) {
       id: "meet-arch",
       title: `Meet ${archHere.arch.name}`,
       text: `Tap ${here.name} on the board, then choose Meet ${archHere.arch.name} in the ring of buttons around it.`,
-      why: "Meeting costs 1 action. Win the fight and the Archetype is Acquired: +1 toward waking, +2 Power Tokens, and its power is yours.",
+      why: "Meeting costs 1 action. Win the fight and the Archetype is Acquired: +1 toward waking, +1 Power Token, and its power is yours.",
       target: ".radial-menu-item[data-tutorial-action=\"faceArchetype\"]",
     };
   }
@@ -319,8 +319,8 @@ function tableStep(state, ctx = {}) {
     return {
       id: "meet-beast",
       title: `Face ${beastHere.name}`,
-      text: `Tap 1 to 3 Psyche in your hand (at least one ${suit}), then press Accept under your spread.`,
-      why: "Beat its Power and you Accept it: it leaves the board and you take a Power Token or a random Object. Aim for a few more dice than its Power. A standing Dreambeast Represses 1 Psyche from your Waking Mind every dusk.",
+      text: `Tap 1 to 3 Psyche in your hand (any suit; a ${suit} card adds your ${suit} stat), then press Accept under your spread.`,
+      why: "Any suit can fight it. Beat its Power and you Accept it: it leaves the board and you take 2 Power Tokens or an Object of its suit. Its Ward blunts one Dream Form. Aim for a few more dice than its Power. A standing Dreambeast Represses 1 Psyche from your Waking Mind every dusk.",
       target: (state.selectedHand || []).length ? ".spread-fight-btn" : "",
     };
   }
@@ -333,7 +333,7 @@ function tableStep(state, ctx = {}) {
       : "Press End Round (top right).",
     why: beasts.length
       ? `At dusk each standing Dreambeast Represses 1 from your Waking Mind. Then the next Dream begins.`
-      : "Dusk comes, then dawn: you draw 3 Psyche and the next Dream begins. Unspent actions become Glimmer ✧.",
+      : "Dusk comes, then dawn: you draw 5 Psyche and the next Dream begins. Unspent actions become Glimmer ✧.",
     target: "#btn-next-phase",
   };
 }

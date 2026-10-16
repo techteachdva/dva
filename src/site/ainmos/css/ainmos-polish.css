@@ -675,3 +675,303 @@ body.ainmos .vs-item .vs-call { display: block; margin-top: 0.2rem; font-size: 0
 /* The turn plaque carries its Glimmer line. */
 body.ainmos .turn-plaque .turn-plaque-phase { font-size: 0.68rem; font-weight: 700; opacity: 0.85; white-space: nowrap; }
 body.ainmos .turn-plaque { max-width: min(46vw, 20rem); }
+
+/* ======================================================================
+   0.25 Endless Dreams
+   ====================================================================== */
+
+/* ---- Win / loss screen: one wide sheet, no scroll on desktop or tablet ---- */
+html:root body.ainmos.play-window #screen-end.active {
+  align-items: safe center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(0.4rem, 1.6vh, 1.1rem) clamp(0.5rem, 2vw, 1.5rem);
+}
+html:root body.ainmos #screen-end .end-panel {
+  width: min(84rem, 100%);
+  max-width: none;
+  margin: auto;
+  padding: clamp(0.7rem, 1.8vh, 1.3rem) clamp(0.9rem, 2vw, 1.8rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(17rem, 1fr);
+  grid-template-areas:
+    "title   title"
+    "message message"
+    "gameid  gameid"
+    "summary board"
+    "summary actions";
+  grid-template-rows: auto auto auto 1fr auto;
+  column-gap: clamp(1rem, 2.4vw, 2rem);
+  row-gap: 0.35rem;
+  text-align: left;
+}
+html:root body.ainmos #screen-end #end-title { grid-area: title; margin: 0; text-align: center; font-size: clamp(1.4rem, 3.4vh, 2.1rem); }
+html:root body.ainmos #screen-end #end-message { grid-area: message; margin: 0; text-align: center; font-size: clamp(0.82rem, 1.7vh, 0.98rem); }
+html:root body.ainmos #screen-end #end-game-id-row { grid-area: gameid; justify-content: center; margin: 0; }
+html:root body.ainmos #screen-end #end-game-id-row .end-game-id-hint { margin: 0; }
+html:root body.ainmos #screen-end #end-score-breakdown { grid-area: summary; margin: 0.25rem 0 0; min-width: 0; }
+html:root body.ainmos #screen-end #end-leaderboard { grid-area: board; margin: 0.25rem 0 0; min-width: 0; }
+html:root body.ainmos #screen-end #end-leaderboard h3 { margin: 0 0 0.2rem; }
+html:root body.ainmos #screen-end .end-leaderboard-hint { margin: 0; font-size: 0.8rem; }
+html:root body.ainmos #screen-end .end-name-row { margin: 0.4rem 0; }
+html:root body.ainmos #screen-end .end-score-list { max-height: clamp(5rem, 22vh, 12rem); margin-top: 0.3rem; }
+html:root body.ainmos #screen-end .end-actions { grid-area: actions; margin: 0.4rem 0 0; align-self: end; justify-content: flex-end; }
+/* No leaderboard (tutorial): the summary and the buttons share the width. */
+html:root body.ainmos #screen-end .end-panel:has(#end-leaderboard.hidden) {
+  grid-template-areas:
+    "title   title"
+    "message message"
+    "gameid  gameid"
+    "summary actions";
+}
+html:root body.ainmos #screen-end .run-summary { gap: 0.5rem; }
+html:root body.ainmos #screen-end .rs-ladder { padding: 0.35rem; gap: 0.4rem; }
+html:root body.ainmos #screen-end .rs-boss { width: clamp(2.1rem, 4.6vh, 3rem); height: clamp(2.7rem, 5.8vh, 3.8rem); }
+html:root body.ainmos #screen-end .rs-columns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.8rem; }
+html:root body.ainmos #screen-end .rs-col h4 { margin: 0.3rem 0 0.15rem; }
+html:root body.ainmos #screen-end .rs-grid { gap: 0.3rem; }
+html:root body.ainmos #screen-end .rs-stat { padding: 0.25rem 0.5rem; }
+html:root body.ainmos #screen-end .rs-total { margin: 0; font-size: clamp(1rem, 2.4vh, 1.3rem); }
+html:root body.ainmos #screen-end .rs-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+  gap: 0.1rem 1rem;
+  padding-left: 1rem;
+  font-size: 0.82rem;
+}
+/* Short screens (landscape tablets, small laptops): tighten further. */
+@media (max-height: 760px) and (min-width: 701px) {
+  html:root body.ainmos #screen-end .rs-best-cards .rs-card { width: 2.1rem; height: 2.7rem; }
+  html:root body.ainmos #screen-end .end-game-id-hint { display: none; }
+  html:root body.ainmos #screen-end .rs-headline { font-size: 0.92rem; }
+}
+html:root body.ainmos #screen-end #end-game-id-row { justify-self: center; }
+/* Landscape phones: the buttons sit up top beside the title; the rest scrolls if it must. */
+@media (max-height: 520px) and (min-width: 701px) {
+  html:root body.ainmos #screen-end .end-panel {
+    grid-template-areas:
+      "title   actions"
+      "message actions"
+      "summary board"
+      "gameid  board";
+    grid-template-rows: auto auto auto auto;
+    row-gap: 0.25rem;
+  }
+  html:root body.ainmos #screen-end .end-panel:has(#end-leaderboard.hidden) {
+    grid-template-areas: "title actions" "message actions" "summary summary" "gameid gameid";
+  }
+  html:root body.ainmos #screen-end #end-title { text-align: left; font-size: 1.25rem; }
+  html:root body.ainmos #screen-end #end-message { text-align: left; font-size: 0.78rem; }
+  html:root body.ainmos #screen-end .end-actions { align-self: start; margin: 0; gap: 0.3rem; }
+  html:root body.ainmos #screen-end .end-actions .btn { padding: 0.3rem 0.7rem; min-height: 0; font-size: 0.78rem; }
+  html:root body.ainmos #screen-end .end-game-id-hint { display: none; }
+  html:root body.ainmos #screen-end .rs-ladder { display: none; }
+}
+/* Phones and narrow tablets: one column; the screen scrolls if it must. */
+@media (max-width: 700px) {
+  html:root body.ainmos #screen-end .end-panel {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "title" "message" "gameid" "actions" "summary" "board";
+    grid-template-rows: none;
+  }
+  html:root body.ainmos #screen-end .end-panel:has(#end-leaderboard.hidden) {
+    grid-template-areas: "title" "message" "gameid" "actions" "summary";
+  }
+  html:root body.ainmos #screen-end .end-actions { justify-content: center; }
+  html:root body.ainmos #screen-end .rs-columns { grid-template-columns: minmax(0, 1fr); }
+}
+html:root body.ainmos #screen-end .endless-btn {
+  background: linear-gradient(120deg, #3a1450, #7a1d3a 55%, #1b2d6b);
+  border-color: rgba(255, 120, 170, 0.7);
+  color: #ffe9f3;
+  box-shadow: 0 0 18px rgba(255, 70, 140, 0.35);
+}
+html:root body.ainmos #screen-end .endless-btn:hover { box-shadow: 0 0 26px rgba(255, 90, 160, 0.55); }
+
+/* ---- The last Cycle: the dream brightens toward morning ---- */
+.deck-pressure-banner.tier-final {
+  color: #fff7e0;
+  background: linear-gradient(90deg, rgba(120, 86, 40, 0.88), rgba(214, 170, 96, 0.82), rgba(120, 86, 40, 0.88));
+  border-bottom: 1px solid rgba(255, 236, 180, 0.7);
+  text-shadow: 0 0 12px rgba(255, 240, 200, 0.8);
+  box-shadow: 0 0 28px rgba(255, 226, 160, 0.35);
+  animation: final-cycle-banner 5.5s ease-in-out infinite;
+}
+@keyframes final-cycle-banner {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.12); }
+}
+body.final-cycle #screen-game .table-surface {
+  animation:
+    dream-breathe 10s ease-in-out infinite,
+    final-cycle-sway 7s ease-in-out infinite;
+}
+body.final-cycle #screen-game .table-surface::after {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  z-index: 25;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(255, 244, 214, 0.2), transparent 58%),
+    radial-gradient(ellipse at 50% 100%, rgba(255, 214, 150, 0.14), transparent 60%);
+  mix-blend-mode: screen;
+  animation: final-cycle-dawn 6s ease-in-out infinite;
+}
+body.final-cycle #hex-board {
+  filter: brightness(1.12) saturate(1.08) drop-shadow(0 0 14px rgba(255, 236, 190, 0.32));
+}
+body.final-cycle #screen-game .card,
+body.final-cycle #hud {
+  filter: brightness(1.06) drop-shadow(0 0 6px rgba(255, 238, 200, 0.28));
+}
+@keyframes final-cycle-sway {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  25% { transform: translate3d(3px, -2px, 0) rotate(0.08deg); }
+  55% { transform: translate3d(-3px, 2px, 0) rotate(-0.07deg); }
+  80% { transform: translate3d(2px, 3px, 0) rotate(0.05deg); }
+}
+@keyframes final-cycle-dawn {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.final-cycle #screen-game .table-surface,
+  body.final-cycle #screen-game .table-surface::after,
+  .deck-pressure-banner.tier-final { animation: none; }
+}
+
+/* ---- Archetype Dream: who can be called ---- */
+body.ainmos .ac-card.is-blocked { opacity: 0.62; filter: saturate(0.55); }
+body.ainmos .ac-card.is-blocked .lf-continue { cursor: not-allowed; font-size: 0.78rem; white-space: normal; }
+body.ainmos .ac-search {
+  margin: 0 0 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(255, 200, 120, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 210, 140, 0.4);
+  text-align: center;
+}
+body.ainmos .ac-search p { margin: 0 0 0.45rem; font-size: 0.86rem; }
+
+/* ---- Wards and grown Power on Dreambeasts ---- */
+body.ainmos .beast-ward {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #ffe2e8;
+  background: rgba(150, 30, 60, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(255, 140, 170, 0.45);
+  white-space: nowrap;
+}
+body.ainmos .spread-form-chip.is-warded { background: rgba(150, 30, 60, 0.6); color: #ffe2e8; }
+
+/* ---- Endless Mode ---- */
+body.endless-mode .night-left.night-endless b { color: #ff8db5; text-shadow: 0 0 10px rgba(255, 90, 150, 0.7); }
+.night-card.is-mega .night-face { filter: saturate(1.3) contrast(1.15); }
+.night-card.is-mega .night-boss-rung { background: #2a0414; color: #ffb3cc; }
+.night-card.mega-4 .night-face,
+.night-card.mega-5 .night-face { animation: mega-flicker 2.2s steps(2, end) infinite; }
+@keyframes mega-flicker {
+  0%, 92%, 100% { transform: none; filter: saturate(1.3) contrast(1.15); }
+  94% { transform: translateX(2px); filter: hue-rotate(80deg) saturate(2); }
+  96% { transform: translateX(-2px); filter: invert(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .night-card.mega-4 .night-face,
+  .night-card.mega-5 .night-face { animation: none; }
+}
+
+/* ---- The crash: glitch, then a blue screen of death ---- */
+body.bsod-glitching #app { animation: bsod-shake 0.12s steps(2, end) infinite; filter: contrast(1.4) saturate(1.8); }
+@keyframes bsod-shake {
+  0% { transform: translate(0, 0) skewX(0deg); filter: hue-rotate(0deg) contrast(1.4); }
+  25% { transform: translate(-6px, 2px) skewX(2deg); filter: hue-rotate(90deg) invert(0.15); }
+  50% { transform: translate(5px, -3px) skewX(-3deg); filter: hue-rotate(200deg) contrast(2); }
+  75% { transform: translate(-2px, 4px) skewX(1deg); filter: invert(0.85); }
+  100% { transform: translate(3px, 0) skewX(0deg); filter: hue-rotate(320deg); }
+}
+.bsod {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  pointer-events: auto;
+  font-family: "Lucida Console", Consolas, "Courier New", monospace;
+}
+.bsod-glitch { position: absolute; inset: 0; pointer-events: none; }
+.bsod-glitch i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 9vh;
+  background: linear-gradient(90deg, rgba(255, 0, 80, 0.55), rgba(0, 255, 230, 0.45), rgba(20, 40, 255, 0.6));
+  mix-blend-mode: difference;
+  animation: bsod-band 0.36s steps(3, end) infinite;
+}
+.bsod-glitch i:nth-child(1) { top: 8%; animation-delay: -0.05s; }
+.bsod-glitch i:nth-child(2) { top: 27%; height: 4vh; animation-delay: -0.12s; }
+.bsod-glitch i:nth-child(3) { top: 48%; height: 14vh; animation-delay: -0.2s; }
+.bsod-glitch i:nth-child(4) { top: 70%; height: 3vh; animation-delay: -0.08s; }
+.bsod-glitch i:nth-child(5) { top: 86%; height: 7vh; animation-delay: -0.27s; }
+@keyframes bsod-band {
+  0% { transform: translateX(-30%) scaleY(1); opacity: 0.9; }
+  33% { transform: translateX(22%) scaleY(0.4); opacity: 0.4; }
+  66% { transform: translateX(-8%) scaleY(1.6); opacity: 1; }
+  100% { transform: translateX(35%) scaleY(0.7); opacity: 0.6; }
+}
+.bsod-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: clamp(1.2rem, 6vh, 4rem) clamp(1rem, 7vw, 6rem);
+  background: #0a28a8;
+  color: #fff;
+  opacity: 0;
+}
+.bsod.is-blue .bsod-glitch { display: none; }
+.bsod.is-blue .bsod-screen { opacity: 1; animation: bsod-on 0.18s steps(2, end); }
+.bsod.is-leaving { opacity: 0; transition: opacity 0.4s ease; }
+@keyframes bsod-on {
+  0% { opacity: 0; filter: brightness(3); }
+  60% { opacity: 1; filter: brightness(1.6); }
+  100% { opacity: 1; filter: none; }
+}
+.bsod-face { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; font-size: clamp(3.5rem, 12vh, 8rem); line-height: 1; }
+.bsod-head { margin: 0; max-width: 60rem; font-family: "Segoe UI", system-ui, sans-serif; font-size: clamp(1rem, 2.6vh, 1.5rem); line-height: 1.35; }
+.bsod-code { margin: 0; font-size: clamp(0.72rem, 1.6vh, 0.9rem); opacity: 0.85; line-height: 1.5; }
+.bsod-term {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: inherit;
+  font-size: clamp(0.66rem, 1.5vh, 0.86rem);
+  line-height: 1.4;
+  color: #e8f0ff;
+  text-shadow: 0 0 6px rgba(160, 200, 255, 0.55);
+}
+.bsod-foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-family: "Segoe UI", system-ui, sans-serif; }
+.bsod-progress { font-size: clamp(0.9rem, 2vh, 1.15rem); }
+.bsod-wake {
+  padding: 0.6rem 1.6rem;
+  border: 2px solid #fff;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+.bsod-wake:hover,
+.bsod-wake:focus-visible { background: #fff; color: #0a28a8; outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  body.bsod-glitching #app { animation: none; }
+  .bsod-glitch i { animation: none; }
+}

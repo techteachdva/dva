@@ -7,6 +7,7 @@
 import { ladderForLength, ladderEntry, antesForLength } from "../encounters/boss-ladder.js";
 import { formById, formLevel } from "../cards/dream-forms.js";
 import { takenBoons } from "../dreamers/boons.js";
+import { ENDLESS_LEVIATHANS } from "../encounters/endless.js";
 
 const SUIT_NAME = { lucidity: "Lucidity", elasticity: "Elasticity", willpower: "Willpower" };
 
@@ -22,7 +23,9 @@ export function buildRunSummary(state) {
   const drawn = Math.max(0, plan.length - (state.dreamDeck?.length || 0));
   const antes = antesForLength(state.lengthKey);
   const cleared = (state.bossesDefeated || []).length;
-  const ante = Math.min(antes, Math.max(1, Math.ceil(drawn / 3) || 1, cleared + (state.status === "won" ? 0 : 1)));
+  const endless = !!state.endless;
+  const reached = Math.max(1, Math.ceil(drawn / 3) || 1);
+  const ante = endless ? reached : Math.min(antes, Math.max(reached, cleared + (state.status === "won" ? 0 : 1)));
   const defeated = new Set(state.bossesDefeated || []);
   const standing = new Set();
   (state.board || []).forEach((tile) => (tile.encounters || []).forEach((enc) => {
@@ -43,8 +46,23 @@ export function buildRunSummary(state) {
   const formsPlayed = stats.formsPlayed || {};
   const favorite = Object.entries(formsPlayed).sort((a, b) => b[1] - a[1])[0];
 
+  const leviathans = endless
+    ? ENDLESS_LEVIATHANS.map((lev) => ({
+      id: lev.id,
+      rung: `+${lev.tier}`,
+      name: lev.name,
+      image: lev.image,
+      status: (state.endless.tiersFelled || []).includes(lev.tier)
+        ? "defeated"
+        : standing.has(lev.id) ? "standing" : (state.endless.tierPlanned || 0) >= lev.tier ? "passed" : "unseen",
+    }))
+    : [];
+
   return {
     won: state.status === "won",
+    endless,
+    triumph: !!state.endlessTriumph,
+    leviathans,
     gaveUp: !!state.gaveUp,
     ante,
     antes,
@@ -75,12 +93,16 @@ function cardChip(card) {
 }
 
 export function runSummaryHtml(summary, breakdown) {
-  const headline = summary.won
+  const headline = summary.triumph
+    ? `Dreamed through Cycle ${summary.ante}, past the last Leviathan`
+    : summary.endless
+    ? `Woke after Cycle ${summary.antes}, then dreamed on to Cycle ${summary.ante}`
+    : summary.won
     ? `Woke after Cycle ${summary.ante} of ${summary.antes}`
     : summary.gaveUp
       ? `Let go in Cycle ${summary.ante} of ${summary.antes}`
       : `Lost in Cycle ${summary.ante} of ${summary.antes}`;
-  const ladder = summary.ladder.map((boss) => `
+  const ladder = [...summary.ladder, ...(summary.leviathans || [])].map((boss) => `
     <li class="rs-boss is-${boss.status}" title="${esc(boss.name)}: ${esc(boss.status)}">
       <span class="rs-boss-face" style="background-image:url('${esc(boss.image)}')"></span>
       <span class="rs-boss-rung">${boss.rung}</span>
@@ -116,6 +138,7 @@ export function runSummaryHtml(summary, breakdown) {
         <li>Bosses climbed <strong>${b.bossPoints ?? 0}</strong></li>
         <li>Best spread <strong>${b.bestSpread ?? 0}</strong></li>
         <li>Wake <strong>${b.escapeBonus ?? 0}</strong></li>
+        ${b.endless ? `<li>Endless Leviathans <strong>${b.leviathans ?? 0}</strong></li>` : ""}
         <li>Objects, tokens, allies <strong>${(b.objects || 0) + (b.tokens || 0) + (b.allies || 0)}</strong></li>
       </ul>
     </section>`;

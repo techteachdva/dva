@@ -150,7 +150,7 @@ export function getCurrentObjective(state) {
       steps: [
         "A Dreamer lost all Psyche and died in the Dream.",
         "Their Objects are discarded and their Power Tokens are lost.",
-        "They wake on The Bed with 5 fresh Psyche. The Death Clock ticks.",
+        "They wake on The Bed with 6 fresh Psyche. The Death Clock ticks.",
       ],
     };
   }
@@ -427,16 +427,16 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Fights</h3>
-            <p>Play 1–3 Psyche, at least one of the beast's suit. Your Power is their values plus your matching stat, your Dream Form, and up to 3 Power Tokens. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Win and you <strong>Accept</strong> it: it leaves the board and you take a <strong>Power Token</strong> or a <strong>random Object</strong>. Lose and the cards are spent; the beast stays.</p>
+            <p>Play 1–3 Psyche of any suit. Each Dreambeast arrives at its Power plus the Cycle, and wards one Dream Form (−1 to −5 dice off that Form). Your Power is their values plus your matching stat (if a card of its suit is in the spread), your Dream Form, and up to 3 Power Tokens. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Win and you <strong>Accept</strong> it: it leaves the board and you take a <strong>Power Token</strong> or a <strong>random Object</strong>. Lose and the cards are spent; the beast stays.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Archetypes</h3>
-            <p>Meeting one costs 1 action and opens with one of its <strong>Events</strong>. <strong>Bright</strong> (only while one of the Event's Landscapes is placed) costs Psyche and helps the fight. <strong>Dim</strong> is free and hurts it. Then play a spread that makes a <strong>Dream Form</strong> against Power 12. Win: +1 Archetype, +2 Power Tokens, and its power is yours.</p>
+            <p>Meeting one costs 1 action and opens with one of its <strong>Events</strong>. <strong>Bright</strong> (only while one of the Event's Landscapes is placed) costs Psyche and helps the fight. <strong>Dim</strong> is free and hurts it. Then play a spread that makes a <strong>Dream Form</strong> against Power 12. Win: +1 Archetype, +1 Power Token, and its power is yours. You can only call an Archetype whose home Landscape is revealed.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Repress &amp; Return</h3>
             <p><strong>Only Psyche is Repressed</strong>: it leaves play and waits in the <strong>Subconscious</strong>. The night starts with 12 random Psyche already there. <strong>Return</strong> always brings back Psyche, and you choose which. Lost Objects are Discarded. A <strong>Forgotten</strong> Landscape shuffles back into the Landscape deck; anyone on it dies and wakes on The Bed.</p>
-            <p><strong>Power Tokens</strong>: hold up to 6. You start with 2, take 1 for beating a Dreambeast (or a random Object instead), and gain 2 for each Archetype.</p>
+            <p><strong>Power Tokens</strong>: hold up to 6. You start with 2, take 2 for beating a Dreambeast (or an Object of its suit instead), and gain 1 for each Archetype.</p>
           </div>
           <div class="info-hub-rule info-hub-glimmer">
             <h3>Glimmer ✧</h3>
