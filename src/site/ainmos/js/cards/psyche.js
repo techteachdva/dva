@@ -77,6 +77,6 @@ export function handHealthCount(player) {
 export function psycheCardValue(card) {
   if (!card) return 0;
   if (isDreambeastPsycheCard(card)) return card.psycheValue || card.value || 3;
-  if (isWildPsyche(card)) return 5;
+  if (isWildPsyche(card)) return card.value || 5;
   return card.value || 0;
 }

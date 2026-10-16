@@ -34,7 +34,7 @@ export function ensureDeckCaps(state) {
   const current = state.deckCaps || {};
   state.deckCaps = {
     dream: current.dream || Math.max(fallbackDream, state.dreamDeck?.length || 0),
-    psyche: current.psyche || PSYCHE_DECK_SIZE,
+    psyche: current.psyche || state.psycheDeckSize || PSYCHE_DECK_SIZE,
     lucidity: current.lucidity || MINDSTREAM_DECK_SIZE,
     elasticity: current.elasticity || MINDSTREAM_DECK_SIZE,
     willpower: current.willpower || MINDSTREAM_DECK_SIZE,
@@ -46,7 +46,7 @@ export function snapshotDeckCaps(state) {
   if (!state) return null;
   state.deckCaps = {
     dream: state.dreamDeck?.length || 0,
-    psyche: PSYCHE_DECK_SIZE,
+    psyche: state.psycheDeckSize || PSYCHE_DECK_SIZE,
     lucidity: MINDSTREAM_DECK_SIZE,
     elasticity: MINDSTREAM_DECK_SIZE,
     willpower: MINDSTREAM_DECK_SIZE,

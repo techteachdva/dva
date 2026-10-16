@@ -1,4 +1,4 @@
-import { shuffle } from "./data.js";
+import { shuffle, uid } from "./data.js";
 import { offerBoonDraft } from "../dreamers/boons.js";
 import { bossExtraPower } from "../encounters/boss-twists.js";
 import { isLostFoundOpen, bankGlimmer, GLIMMER_MAX } from "../shop/lost-found.js";
@@ -1471,12 +1471,16 @@ export function drawDreamCard(state, onShowModal) {
       : ["Resolve the Dream effect before continuing"],
   );
 
-  if ((state.hollowDreams || 0) > 0 && !isBossDreamCard(card) && card.type !== "archetype-dream") {
+  if (state.seedFlags?.rowan && card.type === "dream") {
+    // ROWAN seed: no Dream cards; a Dreambeast rises instead (below).
+    logMoment(state, `Rowan: ${card.name} never comes. Something else does.`);
+  } else if ((state.hollowDreams || 0) > 0 && !isBossDreamCard(card) && card.type !== "archetype-dream") {
     state.hollowDreams -= 1;
     logMoment(state, `The Crystal Bell rings: ${card.name} passes and takes nothing.`);
   } else {
     resolveCardEffect(state, card, head, getEffectHelpers());
   }
+  if (state.seedFlags?.rowan) rowanSpawn(state);
   spawnMiniBoss(state, card);
   if (isBossDreamCard(card) && state.tutorialFlags) state.tutorialFlags.bossDrawn = true;
 
@@ -1486,6 +1490,21 @@ export function drawDreamCard(state, onShowModal) {
   queueDreamDrawFx(card);
   if (onShowModal) onShowModal(card);
   return card;
+}
+
+/** ROWAN seed: a Dreambeast rises on a random Landscape at the start of every round. */
+function rowanSpawn(state) {
+  const pool = state.nightmarePool || [];
+  if (!pool.length) return;
+  const me = state.players.find((p) => p.alive);
+  const open = (state.board || []).filter((t) => t.revealed && !t.wasteland);
+  const away = open.filter((t) => t.id !== me?.landscapeId);
+  const spots = away.length ? away : open;
+  if (!spots.length) return;
+  const tile = spots[Math.floor(random() * spots.length)];
+  const [beast] = pool.splice(Math.floor(random() * pool.length), 1);
+  const placed = setEncounterOnLandscape(state, tile.id, { ...beast, type: "dreambeast", instanceId: beast.instanceId || uid("enc") });
+  logMoment(state, `Rowan: ${placed?.name || beast.name} rises on ${tile.name} (Power ${placed?.accept ?? beast.accept}).`, { boss: true });
 }
 
 export function revealLandscape(state) {

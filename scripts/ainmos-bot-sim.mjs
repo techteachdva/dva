@@ -495,13 +495,25 @@ const IS_MAIN = !!process.argv[1] && import.meta.url === pathToFileURL(resolve(p
 
 export { DATA, helpers, playGame, resolveOnePending, stateMod, gameMod, objectEffects, objectsMod, shopMod, boonMod, vaultMod, landscapesMod, subconscious, dreambeasts, alive, beastsOn, placeFromVault };
 
+/**
+ * AINMOS_PSYCHE="1:5,2:4,3:3,4:2,5:1/w6" plays every length with that Psyche deck
+ * (per suit value:copies, then /wN Wilds). AINMOS_LENGTHS="nap,deep" runs only those.
+ */
+function parsePsyche(text) {
+  const [dist, wild] = String(text).split("/");
+  const distribution = Object.fromEntries(dist.split(",").map((pair) => pair.split(":").map(Number)));
+  return { distribution, wildCount: wild ? Number(wild.replace(/^w/i, "")) : 6 };
+}
+if (process.env.AINMOS_PSYCHE) globalThis.__ainmosPsycheOverride = { all: parsePsyche(process.env.AINMOS_PSYCHE) };
+
 if (IS_MAIN) {
   const per = argPer();
   if (process.env.AINMOS_TRACE) globalThis.__AINMOS_LOG_CAP = 5000;
   const started = Date.now();
   const byPlayers = {};
   const samples = {};
-  for (const count of ["daydream", "nap", "deep"]) {
+  const lengths = (process.env.AINMOS_LENGTHS || "daydream,nap,deep").split(",").map((x) => x.trim()).filter(Boolean);
+  for (const count of lengths) {
     const rows = [];
     const otherTails = [];
     const errorSamples = [];

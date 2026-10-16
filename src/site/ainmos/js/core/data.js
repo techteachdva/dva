@@ -168,6 +168,36 @@ export const PSYCHE_STARTING_HAND = 6;
  */
 export const DREAM_DRAW = 3;
 export const PSYCHE_HAND_LIMIT = 10;
+/**
+ * Ainmos 0.27: the Psyche deck is the difficulty dial. Each night length plays
+ * with its own composition (per suit: value → copies, plus Wilds); everything
+ * else stays the same. Targets (smart bot): Daydream 70–80%, Nap 50–60%,
+ * Deep Sleep 25–33% (research/ainmos-design-plan.md, "Difficulty targets").
+ */
+export const PSYCHE_DECK_BY_LENGTH = {
+  // 56 cards: 74% (smart bot, 500 games).
+  daydream: { distribution: { 1: 9, 2: 6, 3: 2, 4: 1, 5: 0 }, wildCount: 2 },
+  // 58 cards: 54%.
+  nap: { distribution: { 1: 10, 2: 6, 3: 2, 4: 1, 5: 0 }, wildCount: 1 },
+  // 58 cards: 31%. Fifteen Cycles and twelve Archetypes are the hard part, so its deck is kinder.
+  deep: { distribution: { 1: 7, 2: 5, 3: 3, 4: 2, 5: 1 }, wildCount: 4 },
+};
+
+/** The Psyche deck config for a night length (the sim can override it to test compositions). */
+export function psycheConfigFor(base = {}, lengthKey = "daydream") {
+  const override = globalThis.__ainmosPsycheOverride;
+  const pick = override?.[lengthKey] || override?.all || PSYCHE_DECK_BY_LENGTH[lengthKey] || {};
+  return { ...base, ...pick };
+}
+
+/** Cards in a Psyche deck built from this config. */
+export function psycheDeckSizeFor(config = {}) {
+  const per = Object.values(config.distribution || PSYCHE_DISTRIBUTION).reduce((sum, n) => sum + n, 0);
+  return per * (config.suits || ["lucidity", "elasticity", "willpower"]).length
+    + (config.wildCount ?? PSYCHE_WILD_COUNT)
+    + (config.powerTokenCount ?? PSYCHE_POWER_TOKEN_COUNT);
+}
+
 export const PSYCHE_DECK_SIZE =
   (Object.values(PSYCHE_DISTRIBUTION).reduce((sum, n) => sum + n, 0) * 3)
   + PSYCHE_WILD_COUNT

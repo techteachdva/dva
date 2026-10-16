@@ -43,6 +43,13 @@ export const SPECIAL_SEEDS = {
   FANTASY: "fantasy",
   NIGHTMARE: "nightmare",
   REM: "rem",
+  // Ainmos 0.27 scenario codes.
+  OOPS: "oops",
+  JILLY: "jilly",
+  ROWAN: "rowan",
+  LEMON: "lemon",
+  BUBBLEGUM: "bubblegum",
+  SOMNIAINMOS: "somniainmos",
 };
 
 export const SPECIAL_SEED_DESCRIPTIONS = {
@@ -52,6 +59,12 @@ export const SPECIAL_SEED_DESCRIPTIONS = {
   fantasy: "Fantasy stacked — Fantasy Dreambeasts rise to the top of the Mindstream decks.",
   nightmare: "Nightmare stacked — Nightmare Dreambeasts rise to the top of the Mindstream decks.",
   rem: "REM cycle — each round, the team gets 1 free Reveal, 1 free Explore, and 1 free Meet action before spending Psyche.",
+  oops: "Oops — every suited Psyche card is a 1. Wilds stay as they are.",
+  jilly: "Jilly — every Psyche card is a 4, Wilds included.",
+  rowan: "Rowan — no Dream cards. A Dreambeast rises at the start of every round instead.",
+  lemon: "Lemon — every Archetype is already yours. Straight to the Endless Leviathans.",
+  bubblegum: "Bubblegum — every Psyche card carries a random upgrade.",
+  somniainmos: "Somniainmos — every Dreamer's stats are +1, so no stat is 0.",
 };
 
 const SEED_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";

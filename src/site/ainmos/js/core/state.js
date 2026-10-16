@@ -1,5 +1,5 @@
 import { openLostFound } from "../shop/lost-found.js";
-import { rollChaoticValue } from "../cards/dream-forms.js";
+import { rollChaoticValue, PSYCHE_UPGRADES, applyPsycheUpgrade } from "../cards/dream-forms.js";
 import { resetDreamscape } from "../board/landscapes.js";
 import { finalBossForLength } from "../encounters/boss-ladder.js";
 import { createQuestTracker, recordQuestEvent, isQuestConditionMet } from "../dreamers/quests.js";
@@ -38,6 +38,8 @@ import {
   PHASES,
   shuffle,
   buildPsycheDeck,
+  psycheConfigFor,
+  psycheDeckSizeFor,
   buildDreamDeck,
   insertBossDreams,
   buildMindstreamDecks,
@@ -61,11 +63,11 @@ import {
 import { applyMeetStartTax, stepBeastsTowardDreamers } from "../encounters/meet-phase.js";
 import { stepArchetypesAway, archetypeBoon, ARCHETYPE_TOKEN_REWARD, ARCHETYPE_RETURN } from "../dreamers/archetype-board.js";
 import { autoReturnPsyche } from "../dreamers/subconscious.js";
-import { seedRandomness, mintSeedSuffix, specialSeedFlag, buildGameId, normalizeSeedInput } from "./rng.js";
+import { seedRandomness, mintSeedSuffix, specialSeedFlag, buildGameId, normalizeSeedInput, random } from "./rng.js";
 import { snapshotDeckCaps } from "../cards/deck-pressure.js";
 import { stampBeastForCycle } from "../encounters/beast-wards.js";
 import { cyclePosition } from "./cycle.js";
-import { ensureEndlessDeck } from "../encounters/endless.js";
+import { ensureEndlessDeck, startEndless } from "../encounters/endless.js";
 import { offerEffectChoice, registerEffectResolver } from "../effects/effect-choices.js";
 import { logMoment } from "./narrator.js";
 
@@ -103,6 +105,38 @@ function stackBeastKindToTop(mindstreamDecks, kind) {
   });
 }
 
+/**
+ * Ainmos 0.27 scenario seeds that reshape the Psyche deck:
+ * OOPS every suited card is a 1; JILLY every card (Wilds too) is a 4;
+ * BUBBLEGUM every card carries a random upgrade (Wilds can't take one).
+ */
+function applyPsycheSeedCodes(deck, seedFlags) {
+  if (seedFlags.oops) {
+    deck.forEach((card) => {
+      if (card.wild) return;
+      card.value = 1;
+      card.name = `${card.suit.charAt(0).toUpperCase()}${card.suit.slice(1)} 1`;
+    });
+  }
+  if (seedFlags.jilly) {
+    deck.forEach((card) => {
+      card.value = 4;
+      if (card.wild) card.text = "Counts as 4 of any suit.";
+      else card.name = `${card.suit.charAt(0).toUpperCase()}${card.suit.slice(1)} 4`;
+    });
+  }
+  if (seedFlags.bubblegum) {
+    const upgrades = Object.keys(PSYCHE_UPGRADES);
+    const suits = ["lucidity", "elasticity", "willpower"];
+    deck.forEach((card) => {
+      if (card.wild) return;
+      const upgrade = upgrades[Math.floor(random() * upgrades.length)];
+      const others = suits.filter((s) => s !== card.suit);
+      applyPsycheUpgrade(card, upgrade, { vividSuit: others[Math.floor(random() * others.length)] });
+    });
+  }
+}
+
 export function createInitialState(data, options) {
   const length = LENGTHS[options.lengthKey];
   const landscapes = data.landscapes.filter((l) => !l.hidden);
@@ -116,6 +150,12 @@ export function createInitialState(data, options) {
     fantasy: seedFlag === "fantasy",
     nightmare: seedFlag === "nightmare",
     rem: seedFlag === "rem",
+    oops: seedFlag === "oops",
+    jilly: seedFlag === "jilly",
+    rowan: seedFlag === "rowan",
+    lemon: seedFlag === "lemon",
+    bubblegum: seedFlag === "bubblegum",
+    somniainmos: seedFlag === "somniainmos",
   };
 
   const usedDreamerIds = new Set(options.selectedDreamers.map((d) => d.id));
@@ -135,7 +175,9 @@ export function createInitialState(data, options) {
     ? null
     : board.find((t) => !t.center && t.revealed && !t.wasteland);
 
-  const psycheDeck = buildPsycheDeck(data.psyche);
+  const psycheConfig = psycheConfigFor(data.psyche, options.lengthKey);
+  const psycheDeck = buildPsycheDeck(psycheConfig);
+  applyPsycheSeedCodes(psycheDeck, seedFlags);
   const dreamDeck = insertBossDreams(buildDreamDeck(data.dreams, length.dreams), data.dreambeasts, options.lengthKey);
   const nightmarePool = (dreamDeck.nightmarePool || []).map((beast) => ({ ...beast, instanceId: uid("beast") }));
   delete dreamDeck.nightmarePool;
@@ -272,6 +314,7 @@ export function createInitialState(data, options) {
     activeDream: null,
     acquiredPoints: 0,
     deathClock: 0,
+    psycheDeckSize: psycheDeckSizeFor(psycheConfig),
     goalBedSprintUsed: false,
     selectedHand: [],
     selectedLandscapeId: "bed",
@@ -381,7 +424,25 @@ export function createInitialState(data, options) {
   });
   if (state.tutorialMode) resolveAllPowerCardsInHands(state);
   state.checkPsycheDeath = (player, opts) => checkDreamerPsycheDeath(state, player, opts);
+  if (seedFlags.lemon && !state.tutorialMode) beginLemonNight(state, data);
   return state;
+}
+
+/**
+ * LEMON seed: every Archetype is already yours (points, tokens, and powers), and
+ * the night goes straight into Endless Mode, where each Cycle ends with the next
+ * enhanced Leviathan, up to L3V1@+H@N D3$TR0Y3R 0F DR3@M$.
+ */
+function beginLemonNight(state, data) {
+  const player = state.players.find((p) => p.alive);
+  if (!player) return;
+  [...(state.archetypeDeck || [])].forEach((arch) => acquireArchetypeFromDeck(state, player, arch.id));
+  state.status = "playing";
+  state.dreamDeck = [];
+  state.nightPlan = [];
+  startEndless(state, { beastCatalog: Object.fromEntries((data.dreambeasts || []).map((b) => [b.id, b])) });
+  if (state.deckCaps) state.deckCaps.dream = state.dreamDeck.length;
+  addLog(state, "Lemon: every Archetype is yours. The Leviathans are coming.");
 }
 
 export function getPhase(state) {

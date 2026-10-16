@@ -23,7 +23,9 @@ export function archetypeStatBonus(state, stat) {
 export function effectiveDreamerStat(state, dreamer, stat) {
   const base = dreamer?.[stat] ?? 0;
   const bonus = state ? archetypeStatBonus(state, stat) : 0;
-  return base + bonus;
+  // SOMNIAINMOS seed: every stat +1.
+  const seeded = state?.seedFlags?.somniainmos ? 1 : 0;
+  return base + bonus + seeded;
 }
 
 export function isQuintessentialArchetype(archetype) {

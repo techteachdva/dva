@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.26.2";
+export const SOMNIA_VERSION = "0.27";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.27",
+    title: "Dreaming Odds",
+    notes: [
+      "Each difficulty now has its own Psyche deck, made mostly of 1s and 2s, with high cards and Wilds much rarer. Daydream: per suit nine 1s, six 2s, two 3s, one 4, plus 2 Wilds. Nap: ten 1s, six 2s, two 3s, one 4, plus 1 Wild. Deep Sleep: seven 1s, five 2s, three 3s, two 4s, one 5, plus 4 Wilds (fifteen Cycles and twelve Archetypes are the hard part).",
+      "Difficulty targets for a skilled player: Daydream wins about 3 nights in 4, Nap about half, Deep Sleep about 1 in 3. Wake from Deep Sleep with all 12 Archetypes and Endless Mode's Leviathans are waiting.",
+      "New secret seed codes. Type one in the Seed box: OOPS (every suited Psyche card is a 1), JILLY (every card is a 4, Wilds too), ROWAN (no Dream cards; a Dreambeast rises every round), LEMON (all 12 Archetypes already yours; straight to the Endless Leviathans), BUBBLEGUM (every card carries a random upgrade), SOMNIAINMOS (every Dreamer's stats +1).",
+    ],
+  },
   {
     version: "0.26.2",
     title: "Full Hands",

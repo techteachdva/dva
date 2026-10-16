@@ -126,3 +126,32 @@ Phil's calls, now locked:
 - **The Lost & Found closes every Dream**, before the next round's draw (`roundDrawPending` → `finishRoundOpening` on close), and shows your hand.
 
 Bot sim (smart bot, 600 per length): Daydream 98%, Nap 94%, Deep 49%; careless bot near 0%. Phil is judging difficulty by playing before any rebalance.
+
+## Difficulty targets (locked with Phil, 2026-10-16)
+
+Measured with the smart bot (`node scripts/ainmos-bot-sim.mjs --per 500`), which stands in for a proficient player:
+
+| Difficulty | Target win rate | Asks of you |
+| --- | --- | --- |
+| Daydream (Easy) | 70–80% | 3 Archetypes in 3 Cycles |
+| Nap (Medium) | 50–60% | 6 Archetypes in 7 Cycles |
+| Deep Sleep (Hard) | 25–33% | all 12 Archetypes in 15 Cycles |
+
+Difficulty creeps up steeply: each step asks you to do and survive more (twice the Archetypes, about twice the Cycles, stronger Dreambeasts up the ladder), and waking from Deep Sleep with all 12 opens Endless Mode's enhanced Leviathans. The goal is that casual players can get proficient and still reach Endless.
+
+**The dial is the Psyche deck** (`PSYCHE_DECK_BY_LENGTH` in `js/core/data.js`): each length has its own composition, so the odds move without touching any other system. Test a composition with `AINMOS_PSYCHE="1:9,2:6,3:2,4:1/w2" AINMOS_LENGTHS=daydream node scripts/ainmos-bot-sim.mjs --per 500`. What the 0.27 tuning found: more 1s and 2s (more weak draws) makes the game harder; a smaller deck alone does not. Deep Sleep's length already makes it hard, so its deck is the kindest of the three.
+
+## Scenario seed codes (0.27)
+
+Type one in the menu's Seed box (case doesn't matter). The seed preview names it.
+
+| Code | Effect |
+| --- | --- |
+| OOPS | Every suited Psyche card is a 1; Wilds unchanged |
+| JILLY | Every Psyche card is a 4, Wilds included |
+| ROWAN | Ordinary Dream cards do nothing; a Dreambeast rises on a random Landscape at the start of every round (the Cycle's Dreambeast and Archetype Dreams still come) |
+| LEMON | All 12 Archetypes are already yours; the night is Endless Mode from the start, each Cycle closing with the next enhanced Leviathan |
+| BUBBLEGUM | Every suited Psyche card carries a random upgrade (Chaotic, Vivid, Lucid, Recurring); Wilds can't take one |
+| SOMNIAINMOS | Every Dreamer's stats are +1 (no stat is 0) |
+
+Older codes still work: SOMNIA, DMZEMO, SPARK, FANTASY, NIGHTMARE, REM. Code: `SPECIAL_SEEDS` in `js/core/rng.js`, effects in `createInitialState` (`applyPsycheSeedCodes`, `beginLemonNight`), `drawDreamCard` (`rowanSpawn`) and `effectiveDreamerStat`.

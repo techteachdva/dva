@@ -595,7 +595,7 @@ const TERMS = [
     term: "Psyche",
     group: "cards",
     aka: "hand",
-    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They buy extra phase Actions, fight, and keep you alive. Round 1 starts at 6. From round 2 you draw 3 as each round begins (after the Lost & Found), and 4 more at the dawn between Cycles. Unused actions no longer draw: they bank Glimmer. The deck is six 1s, five 2s, four 3s, three 4s, and two 5s in each suit, plus 6 Wilds.",
+    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They buy extra phase Actions, fight, and keep you alive. Round 1 starts at 6. From round 2 you draw 3 as each round begins (after the Lost & Found), and 4 more at the dawn between Cycles. Unused actions no longer draw: they bank Glimmer. Each difficulty has its own deck, mostly 1s and 2s. Per suit: Daydream nine 1s, six 2s, two 3s, one 4, plus 2 Wilds (56 cards); Nap ten 1s, six 2s, two 3s, one 4, plus 1 Wild (58); Deep Sleep seven 1s, five 2s, three 3s, two 4s, one 5, plus 4 Wilds (58).",
   },
   {
     term: "Psyche Deck",
