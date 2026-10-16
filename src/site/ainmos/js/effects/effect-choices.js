@@ -2,10 +2,15 @@
 
 import { logMoment } from "../core/narrator.js";
 
-const resolvers = {};
+// A function, not a const: other modules register resolvers while their imports are still
+// loading (state.js ↔ narrator.js ↔ this file), before a module-level const would exist.
+function resolvers() {
+  if (!registerEffectResolver.table) registerEffectResolver.table = {};
+  return registerEffectResolver.table;
+}
 
 export function registerEffectResolver(cardId, fn) {
-  resolvers[cardId] = fn;
+  resolvers()[cardId] = fn;
 }
 
 export function offerEffectChoice(state, player, spec) {
@@ -31,7 +36,7 @@ export function offerEffectChoice(state, player, spec) {
 export function resolveEffectChoice(state, choiceId, helpers = null) {
   const pending = state.pendingEffectChoice;
   if (!pending) return false;
-  const fn = resolvers[pending.cardId];
+  const fn = resolvers()[pending.cardId];
   if (!fn) {
     state.pendingEffectChoice = null;
     return false;

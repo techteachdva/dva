@@ -3,7 +3,7 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.26-waking-hands";
+const CACHE_NAME = "ainmos-0.26.1-one-power";
 /** Versioned with the release, so a new ship never serves last version's modules. */
 const RUNTIME_CACHE = `${CACHE_NAME}-runtime`;
 
@@ -53,6 +53,7 @@ const PRECACHE = [
   "./js/board/dreamscape-vault.js",
   "./js/encounters/bosses.js",
   "./js/dev/bot-ai.js",
+  "./js/dev/autoplay.js",
   "./js/dev/bot-policy.js",
   "./js/cards/card-backs.js",
   "./js/cards/card-fx.js",

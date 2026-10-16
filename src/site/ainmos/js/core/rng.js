@@ -119,5 +119,13 @@ export function currentSeed() {
 
 /** Drop-in Math.random replacement for gameplay shuffles and picks. */
 export function random() {
+  // Debug: set globalThis.__ainmosRngTrace = [] to log which code draws from the seeded stream.
+  if (globalThis.__ainmosRngTrace) {
+    const frames = (new Error().stack || "").split("\n").slice(2, 5).map((caller) => {
+      const m = caller.match(/at (\S+).*\/js\/([^:)]+):(\d+)/);
+      return m ? `${m[1]} ${m[2]}:${m[3]}` : caller.trim();
+    });
+    globalThis.__ainmosRngTrace.push(frames.join(" < "));
+  }
   return activeRng ? activeRng() : Math.random();
 }

@@ -92,6 +92,7 @@ import {
   cancelDreamerPower,
   hasPendingDreamerPower,
   handleDreamerPowerTilePick,
+  dreamerPowerBlockReason,
   canActivateDreamerPower,
   recordCancellableDiscard,
   recordCancellableMove,
@@ -491,7 +492,10 @@ export function spendExcessPsycheDraw(state, { quiet = false } = {}) {
   const tutorialLesson = !!(state.tutorialMode && state.tutorialFlags?.excessPsycheLesson);
   if (state.tutorialMode && !tutorialLesson) return false;
   const phase = getPhase(state);
-  if (excessBudgetLeft(state) < 1) return false;
+  const left = excessBudgetLeft(state);
+  if (left < 1) return false;
+  // 0.26: free Actions are used first, so a leftover only banks Glimmer once the rest were paid for.
+  const paidLeftover = left <= boughtActionsThisPhase(state);
   const holder = actionTurnHolder(state) || activePlayer(state);
   if (!holder) return false;
   if (!quiet && meetPassBlocks(state, activePlayer(state))) {
@@ -517,11 +521,13 @@ export function spendExcessPsycheDraw(state, { quiet = false } = {}) {
   }
 
   const noun = excessNoun(phase);
-  const banked = tutorialLesson ? 0 : bankGlimmer(state, 1);
+  const banked = tutorialLesson || !paidLeftover ? 0 : bankGlimmer(state, 1);
   if (!tutorialLesson && !quiet) {
     addLog(state, banked
       ? `1 unused ${noun} becomes 1 Glimmer.`
-      : `1 unused ${noun} fades: Glimmer is full (${GLIMMER_MAX}).`);
+      : paidLeftover
+        ? `1 unused ${noun} fades: Glimmer is full (${GLIMMER_MAX}).`
+        : `1 free ${noun} goes unused.`);
   }
   const before = (state.psycheDeck?.length || 0) + (state.psycheDiscard?.length || 0);
   const drawn = tutorialLesson ? drawPsycheForPlayer(state, holder, 1) : [];
@@ -554,14 +560,14 @@ export function convertExcessActionsToPsyche(state) {
   if (state.tutorialMode) return 0;
   const phase = getPhase(state);
   // 0.26: only Actions bought with Psyche or a Power Token become Glimmer. Free base Actions just fade.
-  const start = Math.min(excessBudgetLeft(state), boughtActionsThisPhase(state));
+  const start = excessBudgetLeft(state);
   if (start < 1) return 0;
-  let drawn = 0;
+  const glimmerBefore = state.glimmer || 0;
   let guard = start;
   while (guard-- > 0 && excessBudgetLeft(state) > 0) {
     if (!spendExcessPsycheDraw(state, { quiet: true })) break;
-    drawn += 1;
   }
+  const drawn = Math.max(0, (state.glimmer || 0) - glimmerBefore);
   if (drawn) {
     const noun = excessNoun(phase);
     logMoment(
@@ -928,7 +934,7 @@ export function getPhaseActions(state, handlers) {
     label: "Dreamer Power",
     kind: "dreamerPower",
     section: "progress",
-    hint: `${player.dreamer.power} Costs 1 Power Token.`,
+    hint: `${player.dreamer.power} Costs 1 Power Token.${dreamerPowerBlockReason(state, player) ? ` ${dreamerPowerBlockReason(state, player)}` : ""}`,
     disabled: player.powerTokens < 1 || hasPendingDreamerPower(state) || !canActivateDreamerPower(state, player),
     onClick: handlers.useDreamerPower,
   });
@@ -1221,20 +1227,6 @@ export function getPhaseActions(state, handlers) {
     actions.push(...archetypePowerActions());
     const meetPass = passTurnAction(state);
     if (meetPass) actions.push(meetPass);
-    if (
-      (!state.tutorialMode || state.tutorialTrack === "advanced")
-      && player.dreamer?.id === "the-weaver"
-      && !state.weaverSwapUsed
-      && (state.meetActionBudget || 0) > 0
-    ) {
-      actions.push({
-        label: "Weaver Swap",
-        kind: "weaverSwap",
-        section: "actions",
-        hint: "Once this Meet, free: swap 1 selected Psyche with an adjacent Dreamer.",
-        onClick: () => startWeaverSwap(state),
-      });
-    }
   }
 
   // Ainmos: leftovers bank Glimmer when the phase ends, so there is nothing to tap.
@@ -1644,11 +1636,8 @@ export function moveDreamer(state, targetLandscapeId) {
   const to = landscapeById(state, targetLandscapeId);
 
   if (getPhase(state) === "Explore") {
-    const runnerFree = !state.tutorialMode
-      && player?.dreamer?.id === "the-runner"
-      && !state.runnerFreeMoveUsed;
     if (!player) return;
-    if (!state.exploreActivated || (state.exploreMovesLeft < 1 && !runnerFree)) {
+    if (!state.exploreActivated || state.exploreMovesLeft < 1) {
       addLog(state, "Activate Explore with Elasticity Psyche first.");
       return;
     }
@@ -1670,19 +1659,14 @@ export function moveDreamer(state, targetLandscapeId) {
 
     player.landscapeId = targetLandscapeId;
     state.selectedLandscapeId = targetLandscapeId;
-    if (runnerFree) {
-      state.runnerFreeMoveUsed = true;
-      addLog(state, `${player.name} spends the first move on them for free.`);
-    } else {
-      state.exploreMovesLeft -= 1;
-    }
+    state.exploreMovesLeft -= 1;
     onExploreMove(state);
     recordQuestEvent(state, "move_player", { count: 1 });
     recordCancellableMove(state, player, fromId, targetLandscapeId);
 
     addLog(state, `${player.name} moves to ${to.name}. (${state.exploreMovesLeft} moves left)`);
 
-    if (!runnerFree && (state.exploreMovesLeft || 0) > 0) {
+    if ((state.exploreMovesLeft || 0) > 0) {
       passMeetToken(state);
     } else if ((state.exploreMovesLeft || 0) < 1) {
       clearActionTurn(state);
@@ -2222,7 +2206,6 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
       applyFailEffect(state, actor, encounter);
       logMoment(state, `${encounter.name} Fail resolves — failed Accept on draw.`);
     }
-    offerHunterShove(state, actor, encounter, tile);
     return;
   }
 
@@ -2576,29 +2559,6 @@ registerEffectResolver("weaver-swap", (state, choiceId) => {
   return true;
 });
 
-registerEffectResolver("hunter-shove", (state, choiceId) => {
-  const pending = state.pendingEffectChoice;
-  const payload = pending?.payload || {};
-  state.pendingEffectChoice = null;
-  if (choiceId !== "shove") {
-    addLog(state, "The Hunter leaves the Dreambeast where it stands.");
-    return true;
-  }
-  const tile = landscapeById(state, payload.tileId);
-  const encounter = encounterOnLandscape(state, payload.tileId);
-  if (!tile || !encounter) return false;
-  const adj = adjacentTiles(state, tile.id).filter((hex) => hex.revealed && !hex.wasteland);
-  if (!adj.length) return false;
-  requestChooseTile(state, {
-    allowedIds: adj.map((hex) => hex.id),
-    action: "moveEncounter",
-    fromTileId: tile.id,
-    encounter,
-    title: "Hunter — shove the beast",
-    detail: "Move that Dreambeast 1 hex. This is free.",
-  });
-  return true;
-});
 
 function psycheCardsForSwap(player) {
   return (player?.hand || []).filter(isSwappablePsyche);
@@ -2638,27 +2598,6 @@ export function startWeaverSwap(state) {
   return true;
 }
 
-function offerHunterShove(state, actor, encounter, tile) {
-  if (state.tutorialMode || state.hunterShoveUsed) return;
-  if (actor?.dreamer?.id !== "the-hunter") return;
-  if (state.pendingEffectChoice) return;
-  const adj = adjacentTiles(state, tile.id).filter((hex) => hex.revealed && !hex.wasteland);
-  state.hunterShoveUsed = true;
-  if (!adj.length) {
-    addLog(state, `${actor.name}'s hunt has nowhere to shove ${encounter.name}.`);
-    return;
-  }
-  offerEffectChoice(state, actor, {
-    cardId: "hunter-shove",
-    title: "The Hunter",
-    message: `Move ${encounter.name} 1 hex for free, or leave it.`,
-    choices: [
-      { id: "shove", label: "Shove 1 hex" },
-      { id: "leave", label: "Leave it" },
-    ],
-    payload: { tileId: tile.id, encounterKey: encounter.instanceId || encounter.id },
-  });
-}
 
 function canStartTrade(state) {
   return legalTradePartners(state).length > 0 && getPhase(state) === "Meet" && (state.meetActionBudget || 0) >= 1;
@@ -2913,7 +2852,7 @@ export function useDreamerPower(state) {
     return null;
   }
   if (!canActivateDreamerPower(state, player)) {
-    addLog(state, `${player.dreamer.name} Power cannot be used right now.`);
+    addLog(state, dreamerPowerBlockReason(state, player) || `${player.dreamer.name} Power cannot be used right now.`);
     return null;
   }
   if (!spendPowerTokens(state, player, 1, { animate: false })) {

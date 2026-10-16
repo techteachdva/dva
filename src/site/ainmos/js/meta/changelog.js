@@ -6,10 +6,26 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.26";
+export const SOMNIA_VERSION = "0.26.1";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.26.1",
+    title: "One Power",
+    notes: [
+      "Every Dreamer is now just their three stats and one Power. Each Power costs 1 Power Token and works in the phase of that Dreamer's best stat. No more passives, and no hidden fight bonuses: your stat adds to a fight only when a card of the beast's suit is in your spread.",
+      "The Visionary (Reveal) · Second Sight: place 2 Landscapes from the Vault, free.",
+      "The Rested (Reveal) · Lucid Rest: this Reveal, each Landscape you place draws you 1 Psyche (up to 3).",
+      "The Runner (Explore) · Dash: +3 steps this Explore.",
+      "The Hunter (Explore) · Lure: every Dreambeast moves up to 2 Landscapes toward you, or away from you.",
+      "The Immovable (Meet) · Hold the Line: every fight this Meet rolls 2 more dice.",
+      "The Weaver (Meet) · Reweave: discard up to 3 Psyche, then draw that many plus 1.",
+      "Seeds now replay the whole night: dice rolls and Landscape shuffles follow the seed too, so the same seed and the same plays give the same dream.",
+      "Fixed: free Actions you left unused could still turn into Glimmer through the leftover-Action button. Only Actions you paid for become Glimmer.",
+      "Fixed: a Dreambeast's landing message showed its printed Power instead of its Power plus the Cycle.",
+    ],
+  },
   {
     version: "0.26",
     title: "Waking Hands",

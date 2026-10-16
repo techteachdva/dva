@@ -9,6 +9,7 @@
  * Pure state helpers only: no DOM. The pick flow lives in landscapes.js.
  */
 
+import { random } from "../core/rng.js";
 import { hexDistance, hexNeighbors, hexKey } from "../core/hex.js";
 import { shuffle } from "../core/data.js";
 
@@ -126,7 +127,7 @@ export function shuffleLandscapeIntoDeck(state, tile) {
   const card = { ...tile };
   BOARD_ONLY_FIELDS.forEach((key) => { delete card[key]; });
   if (!Array.isArray(state.landscapeTileDeck)) state.landscapeTileDeck = [];
-  const at = Math.floor(Math.random() * (state.landscapeTileDeck.length + 1));
+  const at = Math.floor(random() * (state.landscapeTileDeck.length + 1));
   state.landscapeTileDeck.splice(at, 0, card);
   refillVault(state);
   return card;

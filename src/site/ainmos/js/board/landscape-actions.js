@@ -1,3 +1,4 @@
+import { random } from "../core/rng.js";
 import { landscapeActionBlockedByBoss } from "../encounters/boss-twists.js";
 import {
   addLog,
@@ -185,7 +186,7 @@ function moveDreamerSteps(state, player, steps) {
   const destIds = destinationsAtSteps(state, player.landscapeId, steps);
   if (!destIds.length) return false;
   if (state.tutorialMode) {
-    const dest = landscapeById(state, destIds[Math.floor(Math.random() * destIds.length)]);
+    const dest = landscapeById(state, destIds[Math.floor(random() * destIds.length)]);
     if (!dest) return false;
     player.landscapeId = dest.id;
     addLog(state, `${player.name} moves ${steps} Landscape(s) to ${dest.name}.`);
@@ -207,7 +208,7 @@ function moveEncounterOneStep(state, tile, encounter = null) {
   const adj = adjacentTiles(state, tile.id).filter((t) => t.revealed && !t.wasteland);
   if (!adj.length) return false;
   if (state.tutorialMode) {
-    const dest = adj[Math.floor(Math.random() * adj.length)];
+    const dest = adj[Math.floor(random() * adj.length)];
     moveEncounterBetweenLandscapes(state, tile.id, dest.id, enc);
     addLog(state, `${enc.name} moves to ${dest.name}.`);
     return true;
@@ -305,7 +306,7 @@ function beginMoveTwoDreamers(state, player) {
       const current = landscapeById(state, p.landscapeId);
       const adj = adjacentTiles(state, current.id).filter((t) => t.revealed);
       if (!adj.length) return;
-      const dest = adj[Math.floor(Math.random() * adj.length)];
+      const dest = adj[Math.floor(random() * adj.length)];
       const fromId = p.landscapeId;
       p.landscapeId = dest.id;
       recordCancellableMove(state, p, fromId, dest.id);

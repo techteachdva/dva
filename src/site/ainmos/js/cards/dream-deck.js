@@ -102,8 +102,8 @@ export function spawnBossEncounterOnBed(state, card) {
   };
   const tile = bossLandingTile(state, card);
   if (!tile) return false;
-  setEncounterOnLandscape(state, tile.id, encounter);
-  logMoment(state, `Dreambeast: ${card.name} (Power ${card.accept}) lands on ${tile.name}!${card.twistText ? ` ${card.twist}: ${card.twistText}` : ""}`, { boss: true });
+  const placed = setEncounterOnLandscape(state, tile.id, encounter) || encounter;
+  logMoment(state, `Dreambeast: ${card.name} (Power ${placed.accept}) lands on ${tile.name}!${card.twistText ? ` ${card.twist}: ${card.twistText}` : ""}`, { boss: true });
   markDreamFeedNudge();
   queueBossStingerFx(card.id, tile.id);
   return true;

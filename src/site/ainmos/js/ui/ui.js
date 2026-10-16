@@ -36,7 +36,6 @@ import {
 import { countBoardDreambeasts, timelineTollPreview } from "../flow/phase-skip.js";
 import { wakingMindCount, duskMillCount } from "../encounters/meet-phase.js";
 import {
-  DREAMER_KIND_AFFINITY,
   beastKindLabel,
   dreamerPrimarySuit,
   encounterAcceptSummary,
@@ -6056,10 +6055,7 @@ function buildDreamerDetailHtml(dreamer, options = {}) {
     statusLine = `<p class="dreamer-detail-status">${partySelected ? "Selected for this game" : "Not selected"}</p>`;
   }
 
-  const affinity = DREAMER_KIND_AFFINITY[dreamer.id];
-  const affinityLine = affinity
-    ? `<p class="dreamer-detail-affinity">Meet bonus: +1 Psyche vs ${beastKindLabel(affinity)} Dreambeasts · +1 when ${SUIT_LABELS[dreamerPrimarySuit(dreamer)]} matches the Dreambeast's suit</p>`
-    : "";
+  const affinityLine = "";
 
   // In play, keep it brief: name, stats, Power. Flavor and fine print stay on the menu screens.
   const brief = !!player;

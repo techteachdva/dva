@@ -40,16 +40,6 @@ const SUIT_LABELS = {
   willpower: "Willpower",
 };
 
-/** Dreamer id → beast kind they gain +1 Psyche against during Meet. */
-export const DREAMER_KIND_AFFINITY = {
-  "the-rested": "fantasy",
-  "the-visionary": "fantasy",
-  "the-weaver": "fantasy",
-  "the-runner": "nightmare",
-  "the-hunter": "nightmare",
-  "the-immovable": "nightmare",
-};
-
 const SUIT_PRIORITY = { lucidity: 0, elasticity: 1, willpower: 2 };
 
 export function dreamerPrimarySuit(dreamer) {
@@ -108,24 +98,9 @@ export function encounterRejectSummary(encounter) {
   return encounterAcceptSummary(encounter);
 }
 
-export function dreamerMeetBonuses(dreamer, encounter) {
-  const parts = [];
-  let total = 0;
-
-  const affinity = DREAMER_KIND_AFFINITY[dreamer?.id];
-  const kind = encounter?.beastKind;
-  if (affinity && kind && affinity === kind) {
-    total += 1;
-    parts.push(`+1 ${kind === "fantasy" ? "Fantasy" : "Nightmare"} affinity`);
-  }
-
-  const primary = dreamerPrimarySuit(dreamer);
-  if (encounter?.suit && primary === encounter.suit) {
-    total += 1;
-    parts.push(`+1 ${SUIT_LABELS[encounter.suit] || encounter.suit} suit`);
-  }
-
-  return { total, parts };
+/** Ainmos 0.26.1: Dreamers have no hidden fight bonuses. Stats add only when a spread card matches the beast's suit. */
+export function dreamerMeetBonuses() {
+  return { total: 0, parts: [] };
 }
 
 export function beastKindLabel(kind) {

@@ -1,198 +1,85 @@
-/** Dreamer Power flows (1 Power Token each). */
+/**
+ * Ainmos 0.26.1: Dreamer Powers.
+ *
+ * A Dreamer is its three stats plus one Power. No passives. Each Power costs
+ * 1 Power Token and works in the phase of the Dreamer's best stat:
+ *
+ *   Reveal (Lucidity)
+ *     The Visionary  Second Sight  place 2 Landscapes from the Vault, free
+ *     The Rested     Lucid Rest    this Reveal, each Landscape you place draws you 1 Psyche (up to 3)
+ *   Explore (Elasticity)
+ *     The Runner     Dash          +3 steps this Explore
+ *     The Hunter     Lure          every Dreambeast moves up to 2 Landscapes toward you, or away from you
+ *   Meet (Willpower)
+ *     The Immovable  Hold the Line every fight this Meet rolls 2 more dice
+ *     The Weaver     Reweave       discard up to 3 Psyche, then draw that many plus 1
+ */
 
 import {
   addLog,
-  revealLandscapeTile,
   landscapeById,
-  rememberRevealedTops,
-  consumeRevealedTop,
   moveEncounterBetweenLandscapes,
   encounterOnLandscape,
-  encounterKey,
   allEncountersOnBoard,
-  tileEncounters,
   drawPsycheForPlayer,
   getPhase,
+  lucidRestKey,
 } from "../core/state.js";
-import { SUIT_LABELS } from "../core/rules.js";
-import { recordQuestEvent } from "./quests.js";
 import { adjacentTiles, hexDistance } from "../core/hex.js";
-import { revealableTiles, revealCapacity, revealOrPlaceLandscapes } from "../board/landscapes.js";
-import { isFreeformBoard } from "../board/dreamscape-vault.js";
-import {
-  reshuffleMindstreamDiscardIfNeeded,
-  discardToMindstream,
-} from "../cards/mindstream-supply.js";
+import { revealCapacity, revealOrPlaceLandscapes } from "../board/landscapes.js";
 import { isDreambeastPsycheCard } from "./subconscious.js";
-import { handRoomForPsycheDraw } from "../effects/objects.js";
-import { random } from "../core/rng.js";
+
+/** Each Dreamer's Power works in this phase. */
+export const DREAMER_POWER_PHASE = Object.freeze({
+  "the-visionary": "Reveal",
+  "the-rested": "Reveal",
+  "the-runner": "Explore",
+  "the-hunter": "Explore",
+  "the-immovable": "Meet",
+  "the-weaver": "Meet",
+});
+
+/** Lucid Rest draws at most this many. */
+const LUCID_REST_DRAWS = 3;
+const SECOND_SIGHT_PLACES = 2;
+const DASH_STEPS = 3;
+const LURE_STEPS = 2;
+const HOLD_THE_LINE_DICE = 2;
+const REWEAVE_MAX = 3;
 
 function alivePlayers(state) {
   return state.players.filter((p) => p.alive);
 }
 
+function powerActor(state) {
+  const pending = state.pendingDreamerPower;
+  return state.players.find((p) => p.id === pending?.actorId) || alivePlayers(state)[0] || null;
+}
+
 function cyclablePsycheCards(player) {
-  return (player.hand || []).filter(
+  return (player?.hand || []).filter(
     (c) => (c.type === "psyche" || c.type === "psyche-power") && !isDreambeastPsycheCard(c),
   );
 }
 
-export function stepTowardBed(state, player) {
-  const bed = landscapeById(state, "bed");
-  const current = landscapeById(state, player.landscapeId);
-  if (!bed || !current || current.id === "bed") return false;
-
-  const adj = adjacentTiles(state, current.id).filter((t) => t.revealed);
-  if (!adj.length) return false;
-
-  adj.sort((a, b) => hexDistance(a, bed) - hexDistance(b, bed));
-  const dest = adj.find((t) => hexDistance(t, bed) < hexDistance(current, bed));
-  if (!dest) return false;
-
-  player.landscapeId = dest.id;
-  addLog(state, `${player.name} moves toward The Bed (${dest.name}).`);
-  recordQuestEvent(state, "move_player", { count: 1 });
-  return true;
-}
-
-export function stepAwayFromBed(state, player) {
-  const bed = landscapeById(state, "bed");
-  const current = landscapeById(state, player.landscapeId);
-  if (!bed || !current) return false;
-
-  const adj = adjacentTiles(state, current.id).filter((t) => t.revealed);
-  if (!adj.length) return false;
-
-  adj.sort((a, b) => hexDistance(b, bed) - hexDistance(a, bed));
-  const dest = adj.find((t) => hexDistance(t, bed) > hexDistance(current, bed)) || adj[0];
-  if (!dest) return false;
-
-  player.landscapeId = dest.id;
-  addLog(state, `${player.name} moves away from The Bed (${dest.name}).`);
-  recordQuestEvent(state, "move_player", { count: 1 });
-  return true;
-}
-
-function moveAllDreamers(state, mover, steps = 1) {
-  alivePlayers(state).forEach((player) => {
-    for (let i = 0; i < steps; i += 1) {
-      if (!mover(state, player)) break;
-    }
-  });
-}
-
-function moveEncounterOneStep(state, tile, encounter = null, { toward = null, awayFrom = null } = {}) {
+function moveEncounterOneStep(state, tile, encounter, { toward = null, awayFrom = null } = {}) {
   const enc = encounter || encounterOnLandscape(state, tile?.id);
-  if (!tile || !enc) return false;
+  if (!tile || !enc) return null;
   const adj = adjacentTiles(state, tile.id).filter((t) => t.revealed && !t.wasteland);
-  if (!adj.length) return false;
-
-  let dest;
+  if (!adj.length) return null;
+  let dest = null;
   if (toward) {
-    adj.sort((a, b) => hexDistance(a, toward) - hexDistance(b, toward));
-    dest = adj.find((t) => hexDistance(t, toward) < hexDistance(tile, toward));
+    dest = adj
+      .filter((t) => hexDistance(t, toward) < hexDistance(tile, toward))
+      .sort((a, b) => hexDistance(a, toward) - hexDistance(b, toward))[0];
   } else if (awayFrom) {
-    adj.sort((a, b) => hexDistance(b, awayFrom) - hexDistance(a, awayFrom));
-    dest = adj.find((t) => hexDistance(t, awayFrom) > hexDistance(tile, awayFrom)) || adj[0];
-  } else {
-    dest = adj[Math.floor(random() * adj.length)];
+    dest = adj
+      .filter((t) => hexDistance(t, awayFrom) > hexDistance(tile, awayFrom))
+      .sort((a, b) => hexDistance(b, awayFrom) - hexDistance(a, awayFrom))[0];
   }
-  if (!dest) return false;
-
+  if (!dest) return null;
   moveEncounterBetweenLandscapes(state, tile.id, dest.id, enc);
-  addLog(state, `${enc.name} moves to ${dest.name}.`);
-  return dest.id;
-}
-
-function nearestDreamerTile(state, fromTile) {
-  let nearest = null;
-  let nearestDist = Infinity;
-  alivePlayers(state).forEach((player) => {
-    const tile = landscapeById(state, player.landscapeId);
-    if (!tile) return;
-    const dist = hexDistance(fromTile, tile);
-    if (dist < nearestDist) {
-      nearestDist = dist;
-      nearest = tile;
-    }
-  });
-  return nearest;
-}
-
-function moveEncounterTowardNearestDreamer(state, tile, encounter = null) {
-  const target = nearestDreamerTile(state, tile);
-  if (!target) return false;
-  return moveEncounterOneStep(state, tile, encounter, { toward: target });
-}
-
-function moveEncounterAwayFromBed(state, tile, encounter = null) {
-  const bed = landscapeById(state, "bed");
-  if (!bed) return false;
-  return moveEncounterOneStep(state, tile, encounter, { awayFrom: bed });
-}
-
-function drawPsycheFromDiscardForAll(state) {
-  let drew = 0;
-  alivePlayers(state).forEach((player) => {
-    if (!state.psycheDiscard.length) return;
-    const card = state.psycheDiscard.pop();
-    if (isDreambeastPsycheCard(card)) {
-      state.psycheDiscard.push(card);
-      return;
-    }
-    if (handRoomForPsycheDraw(state, player) <= 0) {
-      state.psycheDiscard.push(card);
-      addLog(state, `${player.name} is at the Psyche hand limit.`);
-      return;
-    }
-    player.hand.push(card);
-    drew += 1;
-    addLog(state, `${player.name} draws ${card.name || "Psyche"} from the discard pile.`);
-  });
-  if (!drew) addLog(state, "Psyche discard pile is empty.");
-  return drew > 0;
-}
-
-function sendTopToBottom(state, deckKey) {
-  if (deckKey.startsWith("mindstream-")) {
-    const suit = deckKey.replace("mindstream-", "");
-    reshuffleMindstreamDiscardIfNeeded(state, suit);
-    const deck = state.mindstreamDecks[suit];
-    if (!deck?.length) return null;
-    const top = deck.shift();
-    deck.push(top);
-    consumeRevealedTop(state, deckKey);
-    return top;
-  }
-  const map = { psyche: "psycheDeck", dream: "dreamDeck", archetype: "archetypeDeck" };
-  const key = map[deckKey];
-  if (!state[key]?.length) return null;
-  const top = state[key].shift();
-  state[key].push(top);
-  consumeRevealedTop(state, deckKey);
-  return top;
-}
-
-function peekTopDeckCard(state, deckKey) {
-  if (deckKey.startsWith("mindstream-")) {
-    const suit = deckKey.replace("mindstream-", "");
-    reshuffleMindstreamDiscardIfNeeded(state, suit);
-    return state.mindstreamDecks[suit]?.[0] || null;
-  }
-  const map = { psyche: "psycheDeck", dream: "dreamDeck", archetype: "archetypeDeck" };
-  const key = map[deckKey] || deckKey;
-  return state[key]?.[0] || null;
-}
-
-function formatDeckLabel(deckKey) {
-  if (deckKey.startsWith("mindstream-")) {
-    const suit = deckKey.replace("mindstream-", "");
-    return `${SUIT_LABELS[suit] || suit} Mindstream`;
-  }
-  if (deckKey === "psyche") return "Psyche";
-  if (deckKey === "dream") return "Dream";
-  if (deckKey === "archetype") return "Archetype";
-  return deckKey;
+  return dest;
 }
 
 function clearDreamerPower(state) {
@@ -208,359 +95,143 @@ export function hasPendingDreamerPower(state) {
 }
 
 export function getDreamerPowerUI(state) {
-  const pending = state.pendingDreamerPower;
-  if (!pending?.ui) return null;
-  return pending.ui;
+  return state.pendingDreamerPower?.ui || null;
 }
 
 function setChoiceUI(state, title, message, choices) {
   state.pendingDreamerPower.ui = { type: "choice", title, message, choices };
-}
-
-function restedPowerStart(state) {
-  setChoiceUI(state, "The Rested — Dreamer Power", "All Dreamers choose one:", [
-    {
-      id: "discard-draw",
-      label: "Draw from Psyche Discard",
-      hint: "Each Dreamer draws the top Psyche card from the discard pile.",
-    },
-    {
-      id: "refresh-hand",
-      label: "Refresh Hands",
-      hint: "Each Dreamer puts 1 Psyche on the bottom of the Psyche deck and draws 1.",
-    },
-  ]);
-}
-
-function visionaryPowerStart(state) {
-  setChoiceUI(state, "The Visionary — Dreamer Power", "All Dreamers choose one:", [
-    {
-      id: "reveal-landscapes",
-      label: "Reveal Landscapes",
-      hint: "Reveal 1 Landscape per Dreamer, plus 1 more.",
-    },
-    {
-      id: "peek-decks",
-      label: "Peek at Deck Tops",
-      hint: "Each Dreamer peeks at 1 deck top and may send it to the bottom.",
-    },
-  ]);
-}
-
-function runnerPowerStart(state) {
-  setChoiceUI(state, "The Runner — Dreamer Power", "Move every Dreamer 2 spaces:", [
-    {
-      id: "toward-bed",
-      label: "Toward The Bed / Final Recurrence",
-      hint: "Step closer to The Bed.",
-    },
-    {
-      id: "away-bed",
-      label: "Away from The Bed",
-      hint: "Step farther from The Bed.",
-    },
-  ]);
-}
-
-function hunterPowerStart(state) {
-  const beasts = allEncountersOnBoard(state);
-  if (!beasts.length) {
-    addLog(state, "No active Dreambeasts to move.");
-    clearDreamerPower(state);
-    return { done: true };
-  }
-  setChoiceUI(state, "The Hunter — Dreamer Power", "Move each active Dreambeast 1 space:", [
-    {
-      id: "toward-dreamers",
-      label: "Toward the nearest Dreamer",
-      hint: "Each Dreambeast steps closer to the nearest Dreamer.",
-    },
-    {
-      id: "away-bed",
-      label: "Away from The Bed",
-      hint: "Each Dreambeast steps farther from The Bed.",
-    },
-  ]);
   return { ui: state.pendingDreamerPower.ui };
 }
 
-function immovablePowerExecute(state) {
-  if (getPhase(state) === "Meet") {
-    state.anchorMeetSpreadBonus = (state.anchorMeetSpreadBonus || 0) + 1;
-    addLog(state, "Hold the Line: this Meet, every spread may add +1 Psyche.");
-  } else {
-    state.anchorMeetSpreadPending = (state.anchorMeetSpreadPending || 0) + 1;
-    addLog(state, "Hold the Line: the next Meet, every spread may add +1 Psyche.");
+/** Why this Dreamer's Power can't be used right now, or "" when it can. */
+export function dreamerPowerBlockReason(state, player) {
+  const id = player?.dreamer?.id;
+  const phase = DREAMER_POWER_PHASE[id];
+  if (!phase) return "This Dreamer has no Power.";
+  if (getPhase(state) !== phase) return `${player.dreamer.name}'s Power works in ${phase}.`;
+  switch (id) {
+    case "the-visionary":
+      return revealCapacity(state) ? "" : "Nothing is left in the Vault to place.";
+    case "the-rested":
+      return state.lucidRest?.key === lucidRestKey(state) ? "Lucid Rest is already working this Reveal." : "";
+    case "the-runner":
+      return state.exploreActivated ? "" : "Open Explore first (take your free steps), then Dash.";
+    case "the-hunter":
+      return allEncountersOnBoard(state).length ? "" : "No Dreambeast stands on the Dreamscape.";
+    case "the-immovable":
+      return "";
+    case "the-weaver":
+      return cyclablePsycheCards(player).length ? "" : "No Psyche in hand to reweave.";
+    default:
+      return "";
   }
-  clearDreamerPower(state);
-  return { done: true };
-}
-
-function offerWeaverCycle(state) {
-  const pending = state.pendingDreamerPower;
-  const queue = pending.cycleQueue || [];
-  let index = pending.cycleIndex ?? 0;
-  while (index < queue.length) {
-    const player = state.players.find((p) => p.id === queue[index]);
-    index += 1;
-    if (!player || !cyclablePsycheCards(player).length) {
-      if (player) addLog(state, `${player.name} keeps their hand.`);
-      continue;
-    }
-    pending.cycleIndex = index;
-    pending.cyclePlayerId = player.id;
-    pending.step = "weaver-offer";
-    setChoiceUI(state, `The Weaver — ${player.name}`, "Discard 1 Psyche to draw 1, or skip.", [
-      { id: "weaver-cycle", label: "Discard 1, draw 1", hint: "Choose one Psyche to discard, then draw 1." },
-      { id: "weaver-skip", label: "Skip", hint: "Keep this hand." },
-    ]);
-    return { ui: pending.ui };
-  }
-  addLog(state, "The Weaver's cycle is finished.");
-  clearDreamerPower(state);
-  return { done: true };
-}
-
-function advanceCycleStep(state, label) {
-  const pending = state.pendingDreamerPower;
-  const queue = pending.cycleQueue || [];
-  let index = pending.cycleIndex ?? 0;
-
-  while (index < queue.length) {
-    const player = state.players.find((p) => p.id === queue[index]);
-    index += 1;
-    if (!player) continue;
-    const cards = cyclablePsycheCards(player);
-    if (!cards.length) {
-      addLog(state, `${player.name} has no Psyche to cycle.`);
-      continue;
-    }
-    pending.cycleIndex = index;
-    pending.cyclePlayerId = player.id;
-    pending.step = "cycle-hand";
-    pending.ui = {
-      type: "hand",
-      title: `${label} — ${player.name}`,
-      message: "Choose 1 Psyche to discard and draw a replacement:",
-      cards,
-    };
-    return { ui: pending.ui };
-  }
-
-  addLog(state, `${label} complete.`);
-  clearDreamerPower(state);
-  return { done: true };
-}
-
-function weaverPowerStart(state) {
-  state.pendingDreamerPower.cycleQueue = alivePlayers(state).map((p) => p.id);
-  state.pendingDreamerPower.cycleIndex = 0;
-  return offerWeaverCycle(state);
-}
-
-function restedRefreshStart(state) {
-  state.pendingDreamerPower.cycleQueue = alivePlayers(state).map((p) => p.id);
-  state.pendingDreamerPower.cycleIndex = 0;
-  state.pendingDreamerPower.cycleMode = "bottom";
-  return advanceCycleStep(state, "The Rested");
-}
-
-function cycleHandCard(state, player, card, { toBottom = false } = {}) {
-  const idx = player.hand.findIndex((c) => c.instanceId === card.instanceId);
-  if (idx < 0) return false;
-
-  player.hand.splice(idx, 1);
-  if (toBottom) {
-    state.psycheDeck.push(card);
-    addLog(state, `${player.name} puts ${card.name || "Psyche"} on the bottom of the Psyche deck.`);
-  } else {
-    state.psycheDiscard.push(card);
-    addLog(state, `${player.name} discards ${card.name || "Psyche"}.`);
-  }
-
-  const drawn = drawPsycheForPlayer(state, player, 1);
-  if (!drawn.length) addLog(state, `${player.name} could not draw a replacement Psyche.`);
-  if (state.checkPsycheDeath) state.checkPsycheDeath(player);
-  return true;
-}
-
-function advanceVisionaryPeek(state) {
-  const pending = state.pendingDreamerPower;
-  const queue = pending.peekQueue || [];
-  const index = pending.peekIndex ?? 0;
-  if (index >= queue.length) {
-    clearDreamerPower(state);
-    return { done: true };
-  }
-  const player = state.players.find((p) => p.id === queue[index]);
-  pending.step = "peek-deck";
-  pending.peekPlayerId = player?.id;
-  pending.ui = {
-    type: "deck",
-    title: `The Visionary — ${player?.name || "Dreamer"}`,
-    message: "Peek at the top card of a deck:",
-  };
-  return { ui: pending.ui };
-}
-
-function showVisionaryPeekChoice(state, deckKey, card, dreamerName) {
-  rememberRevealedTops(state, deckKey, card);
-  state.pendingDreamerPower.ui = {
-    type: "peek",
-    title: `The Visionary — ${dreamerName}`,
-    message: `Top of ${formatDeckLabel(deckKey)}. Leave it, or send it to the bottom.`,
-    cards: [card],
-    choices: [
-      { id: "peek-keep", label: "Leave on top", hint: "Keep this card on top of the deck." },
-      { id: "peek-bottom", label: "Send to bottom", hint: "Move this card to the bottom of the deck." },
-    ],
-  };
-  state.pendingDreamerPower.step = "peek-resolve";
-  state.pendingDreamerPower.peekDeckKey = deckKey;
-  return { ui: state.pendingDreamerPower.ui };
 }
 
 export function canActivateDreamerPower(state, player) {
-  if (!player?.dreamer) return false;
-  switch (player.dreamer.id) {
-    case "the-hunter":
-      return allEncountersOnBoard(state).length > 0;
-    case "the-weaver":
-      return alivePlayers(state).some((p) => cyclablePsycheCards(p).length > 0);
-    default:
-      return true;
-  }
+  return !dreamerPowerBlockReason(state, player);
 }
+
+// ---- The Rested: Lucid Rest is armed here; state.js draws as Landscapes are placed. ----
+
+// ---- Begin ------------------------------------------------------------------------
 
 export function beginDreamerPower(state) {
   const pending = state.pendingDreamerPower;
   if (!pending) return null;
+  const player = powerActor(state);
 
   switch (pending.dreamerId) {
+    case "the-visionary": {
+      clearDreamerPower(state);
+      const placed = revealOrPlaceLandscapes(state, SECOND_SIGHT_PLACES, { source: "Second Sight" });
+      addLog(state, placed
+        ? `Second Sight: place ${placed} Landscape${placed === 1 ? "" : "s"} from the Vault, free.`
+        : "Second Sight finds nothing left to place.");
+      return { done: true };
+    }
     case "the-rested":
-      drawPsycheFromDiscardForAll(state);
+      state.lucidRest = { key: lucidRestKey(state), left: LUCID_REST_DRAWS, playerId: player?.id };
+      addLog(state, `Lucid Rest: this Reveal, each Landscape you place draws you 1 Psyche (up to ${LUCID_REST_DRAWS}).`);
       clearDreamerPower(state);
       return { done: true };
-    case "the-visionary": {
-      const available = revealCapacity(state);
-      const count = Math.min(alivePlayers(state).length + 1, available);
-      if (!count) {
-        addLog(state, "No Landscapes available to reveal.");
-        clearDreamerPower(state);
-        return { done: true };
-      }
-      if (isFreeformBoard(state)) {
-        // Freeform: the Visionary places from the Dreamscape Vault, free.
-        clearDreamerPower(state);
-        revealOrPlaceLandscapes(state, count, { source: "Visionary Power" });
-        return { done: true };
-      }
-      pending.step = "reveal-landscape";
-      pending.revealRemaining = count;
-      addLog(state, `Visionary Power: reveal ${count} Landscape(s) — click hidden tiles on the map.`);
-      return { needsBoard: true };
-    }
     case "the-runner":
-      runnerPowerStart(state);
-      return { ui: state.pendingDreamerPower.ui };
+      state.exploreMovesLeft = (state.exploreMovesLeft || 0) + DASH_STEPS;
+      addLog(state, `Dash: +${DASH_STEPS} steps this Explore (${state.exploreMovesLeft} left).`);
+      clearDreamerPower(state);
+      return { done: true };
     case "the-hunter":
-      return hunterPowerStart(state);
+      return setChoiceUI(state, "The Hunter · Lure", `Every Dreambeast moves up to ${LURE_STEPS} Landscapes:`, [
+        { id: "lure-toward", label: "Toward you", hint: "Bring them to you for Meet." },
+        { id: "lure-away", label: "Away from you", hint: "Push them back." },
+      ]);
     case "the-immovable":
-      return immovablePowerExecute(state);
+      state.anchorMeetSpreadBonus = (state.anchorMeetSpreadBonus || 0) + HOLD_THE_LINE_DICE;
+      addLog(state, `Hold the Line: every fight this Meet rolls ${HOLD_THE_LINE_DICE} more dice.`);
+      clearDreamerPower(state);
+      return { done: true };
     case "the-weaver":
-      return weaverPowerStart(state);
+      pending.discarded = 0;
+      return offerReweave(state);
     default:
       clearDreamerPower(state);
       return { done: true };
   }
 }
 
+// ---- The Weaver: Reweave ------------------------------------------------------------
+
+function offerReweave(state) {
+  const pending = state.pendingDreamerPower;
+  const player = powerActor(state);
+  const cards = cyclablePsycheCards(player);
+  if (pending.discarded >= REWEAVE_MAX || !cards.length) return finishReweave(state);
+  pending.step = "reweave-pick";
+  pending.ui = {
+    type: "hand",
+    title: `The Weaver · Reweave (${pending.discarded}/${REWEAVE_MAX})`,
+    message: `Discard a Psyche. When you stop, draw that many plus 1.`,
+    cards,
+  };
+  return { ui: pending.ui };
+}
+
+function finishReweave(state) {
+  const pending = state.pendingDreamerPower;
+  const player = powerActor(state);
+  const n = (pending?.discarded || 0) + 1;
+  const drawn = player ? drawPsycheForPlayer(state, player, n) : [];
+  addLog(state, `Reweave: ${player?.name || "The Weaver"} discards ${pending?.discarded || 0} and draws ${drawn.length}.`);
+  clearDreamerPower(state);
+  return { done: true };
+}
+
+// ---- Resolve ------------------------------------------------------------------------
+
 export function resolveDreamerPowerChoice(state, choiceId) {
   const pending = state.pendingDreamerPower;
   if (!pending) return { done: true };
-
   delete pending.ui;
 
-  if (pending.dreamerId === "the-weaver" && pending.step === "weaver-offer") {
-    if (choiceId === "weaver-cycle") {
-      const player = state.players.find((p) => p.id === pending.cyclePlayerId);
-      const cards = cyclablePsycheCards(player);
-      pending.step = "cycle-hand";
-      pending.ui = {
-        type: "hand",
-        title: `The Weaver — ${player?.name || "Dreamer"}`,
-        message: "Choose 1 Psyche to discard. You will draw 1.",
-        cards,
-      };
-      return { ui: pending.ui };
-    }
-    return offerWeaverCycle(state);
-  }
-
-  if (pending.dreamerId === "the-rested") {
-    if (choiceId === "discard-draw") drawPsycheFromDiscardForAll(state);
-    else if (choiceId === "refresh-hand") return restedRefreshStart(state);
-    clearDreamerPower(state);
-    return { done: true };
-  }
-
-  if (pending.dreamerId === "the-visionary") {
-    if (choiceId === "reveal-landscapes") {
-      const available = revealCapacity(state);
-      const count = Math.min(alivePlayers(state).length + 1, available);
-      if (!count) {
-        addLog(state, "No Landscapes available to reveal.");
-        clearDreamerPower(state);
-        return { done: true };
-      }
-      if (isFreeformBoard(state)) {
-        // Freeform: the Visionary places from the Dreamscape Vault, free.
-        clearDreamerPower(state);
-        revealOrPlaceLandscapes(state, count, { source: "Visionary Power" });
-        return { done: true };
-      }
-      pending.step = "reveal-landscape";
-      pending.revealRemaining = count;
-      addLog(state, `Visionary Power: reveal ${count} Landscape(s) — click hidden tiles on the map.`);
-      return { needsBoard: true };
-    }
-    if (choiceId === "peek-decks") {
-      pending.peekQueue = alivePlayers(state).map((p) => p.id);
-      pending.peekIndex = 0;
-      return advanceVisionaryPeek(state);
-    }
-    if (pending.step === "peek-resolve") {
-      const player = state.players.find((p) => p.id === pending.peekPlayerId);
-      if (choiceId === "peek-bottom") {
-        sendTopToBottom(state, pending.peekDeckKey);
-        addLog(state, `${player?.name || "Dreamer"} sends the peeked card to the bottom.`);
-      } else {
-        addLog(state, `${player?.name || "Dreamer"} leaves the peeked card on top.`);
-      }
-      pending.peekIndex = (pending.peekIndex ?? 0) + 1;
-      return advanceVisionaryPeek(state);
-    }
-  }
-
-  if (pending.dreamerId === "the-runner") {
-    const mover = choiceId === "toward-bed" ? stepTowardBed : stepAwayFromBed;
-    moveAllDreamers(state, mover, 2);
-    addLog(state, choiceId === "toward-bed"
-      ? "Runner Power: all Dreamers step toward The Bed."
-      : "Runner Power: all Dreamers step away from The Bed.");
-    clearDreamerPower(state);
-    return { done: true };
+  if (pending.dreamerId === "the-weaver") {
+    if (choiceId === "reweave-more") return offerReweave(state);
+    return finishReweave(state);
   }
 
   if (pending.dreamerId === "the-hunter") {
-    const beasts = allEncountersOnBoard(state);
-    const mover = choiceId === "toward-dreamers"
-      ? moveEncounterTowardNearestDreamer
-      : moveEncounterAwayFromBed;
-    beasts.forEach(({ tile, encounter }) => mover(state, tile, encounter));
-    addLog(state, choiceId === "toward-dreamers"
-      ? "Hunter Power: each Dreambeast moves toward the nearest Dreamer."
-      : "Hunter Power: each Dreambeast moves away from The Bed.");
+    const player = powerActor(state);
+    const here = landscapeById(state, player?.landscapeId);
+    let moved = 0;
+    allEncountersOnBoard(state).forEach(({ tile, encounter }) => {
+      let at = tile;
+      for (let i = 0; i < LURE_STEPS && at && here; i += 1) {
+        const next = moveEncounterOneStep(state, at, encounter, choiceId === "lure-toward" ? { toward: here } : { awayFrom: here });
+        if (!next) break;
+        at = next;
+        moved += 1;
+      }
+      if (at && at.id !== tile.id) addLog(state, `Lure: ${encounter.name} moves to ${at.name}.`);
+    });
+    if (!moved) addLog(state, "Lure: no Dreambeast can move that way.");
     if (state.tutorialFlags) state.tutorialFlags.hunterPowerUsed = true;
     clearDreamerPower(state);
     return { done: true };
@@ -572,59 +243,29 @@ export function resolveDreamerPowerChoice(state, choiceId) {
 
 export function resolveDreamerPowerHandPick(state, cardKey) {
   const pending = state.pendingDreamerPower;
-  if (!pending || pending.step !== "cycle-hand") return { done: true };
-
-  const player = state.players.find((p) => p.id === pending.cyclePlayerId);
-  const card = cyclablePsycheCards(player).find(
-    (c) => c.instanceId === cardKey || c.id === cardKey,
-  );
-  if (!player || !card) {
-    addLog(state, "Invalid card choice.");
-    clearDreamerPower(state);
-    return { done: true };
-  }
-
-  cycleHandCard(state, player, card, { toBottom: pending.cycleMode === "bottom" });
-  pending.cycleIndex = pending.cycleIndex ?? 0;
-  if (pending.dreamerId === "the-weaver") return offerWeaverCycle(state);
-  return advanceCycleStep(state, "The Rested");
+  if (!pending || pending.step !== "reweave-pick") return { done: true };
+  const player = powerActor(state);
+  const card = cyclablePsycheCards(player).find((c) => c.instanceId === cardKey || c.id === cardKey);
+  if (!card) return offerReweave(state);
+  player.hand = player.hand.filter((c) => c.instanceId !== card.instanceId);
+  state.psycheDiscard.push(card);
+  pending.discarded = (pending.discarded || 0) + 1;
+  addLog(state, `Reweave: ${player.name} discards ${card.name || "Psyche"}.`);
+  if (pending.discarded >= REWEAVE_MAX || !cyclablePsycheCards(player).length) return finishReweave(state);
+  return setChoiceUI(state, "The Weaver · Reweave", `${pending.discarded} discarded. Discard another, or draw ${pending.discarded + 1} now?`, [
+    { id: "reweave-more", label: "Discard another", hint: `Up to ${REWEAVE_MAX}.` },
+    { id: "reweave-draw", label: `Draw ${pending.discarded + 1}`, hint: "Finish the Reweave." },
+  ]);
 }
 
-export function resolveDreamerPowerDeckPick(state, deckKey) {
-  const pending = state.pendingDreamerPower;
-  if (!pending) return { done: true };
-
-  if (pending.dreamerId === "the-visionary" && pending.step === "peek-deck") {
-    const player = state.players.find((p) => p.id === pending.peekPlayerId);
-    const card = peekTopDeckCard(state, deckKey);
-    if (!card) {
-      addLog(state, `${formatDeckLabel(deckKey)} is empty.`);
-      pending.peekIndex = (pending.peekIndex ?? 0) + 1;
-      return advanceVisionaryPeek(state);
-    }
-    pending.peekDeckKey = deckKey;
-    return showVisionaryPeekChoice(state, deckKey, card, player?.name || "Dreamer");
-  }
-
+/** No Dreamer Power picks a deck or a tile any more; kept so callers stay simple. */
+export function resolveDreamerPowerDeckPick(state) {
   clearDreamerPower(state);
   return { done: true };
 }
 
-export function handleDreamerPowerTilePick(state, tileId) {
-  const pending = state.pendingDreamerPower;
-  if (!pending || pending.step !== "reveal-landscape") return false;
-
-  const tile = landscapeById(state, tileId);
-  if (!tile || tile.center) return false;
-  if (tile.revealed && !tile.wasteland) return false;
-  if ((pending.revealRemaining ?? 0) <= 0) return false;
-
-  revealLandscapeTile(state, tile);
-  pending.revealRemaining -= 1;
-  addLog(state, `Visionary Power reveals ${tile.name}.`);
-
-  if (pending.revealRemaining <= 0 || !revealableTiles(state).length) clearDreamerPower(state);
-  return true;
+export function handleDreamerPowerTilePick() {
+  return false;
 }
 
 export function recordCancellableDiscard(state, player, card, source = "discard") {

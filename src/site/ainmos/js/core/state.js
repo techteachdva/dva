@@ -1313,7 +1313,6 @@ export function advancePhase(state) {
     // at the start of Explore.
     const fled = stepArchetypesAway(state);
     if (fled) addLog(state, `${fled} Archetype${fled === 1 ? " slips" : "s slip"} away from you as Meet ends.`);
-    rewardRestedDreamers(state);
     passHeadDreamer(state);
     if (state.finalRecurrence && state.finalRecurrenceRoundsLeft != null) {
       state.finalRecurrenceRoundsLeft = Math.max(0, state.finalRecurrenceRoundsLeft - 1);
@@ -1349,16 +1348,6 @@ export function advancePhase(state) {
   }
 }
 
-function rewardRestedDreamers(state) {
-  if (state.tutorialMode) return;
-  const opened = new Set(state.phaseOpenersThisRound || []);
-  state.players.forEach((player) => {
-    if (!player.alive || player.dreamer?.id !== "the-rested") return;
-    if (opened.has(player.id)) return;
-    const drawn = drawPsycheForPlayer(state, player, 1);
-    if (drawn.length) addLog(state, `${player.name} opened no phase this round — draws 1 Psyche.`);
-  });
-}
 
 function passHeadDreamer(state) {
   const players = state.players || [];
@@ -1527,6 +1516,23 @@ export { forgetLandscapes, forgetNamedLandscapes } from "../board/landscapes.js"
 /** Map thresholds removed — all-Forgotten still starts Final Recurrence elsewhere. */
 export function maybeMapRevealForgetThresholds(_state) {}
 
+/** The Rested's Lucid Rest lasts for the Reveal it was used in. */
+export function lucidRestKey(state) {
+  return `${state.round || 0}:${state.phaseIndex || 0}`;
+}
+
+/** Lucid Rest: each Landscape placed this Reveal draws 1 Psyche, while draws are left. */
+function onLandscapePlacedForPowers(state) {
+  const rest = state.lucidRest;
+  if (!rest || rest.key !== lucidRestKey(state) || rest.left < 1) return;
+  const player = state.players.find((p) => p.id === rest.playerId && p.alive);
+  if (!player) return;
+  const drawn = drawPsycheForPlayer(state, player, 1);
+  if (!drawn.length) return;
+  rest.left -= 1;
+  addLog(state, `Lucid Rest: ${player.name} draws 1 Psyche (${rest.left} left this Reveal).`);
+}
+
 export function revealLandscapeTile(state, tile) {
   if (!tile.revealed) {
     tile.revealed = true;
@@ -1542,5 +1548,6 @@ export function revealLandscapeTile(state, tile) {
     queueTileRevealFx(tile.id);
     playSfx("reveal");
   }
+  onLandscapePlacedForPowers(state);
   maybeMapRevealForgetThresholds(state);
 }

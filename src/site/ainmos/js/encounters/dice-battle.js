@@ -3,14 +3,19 @@
  * Each side rolls Nd6; 5–6 is a success. Most successes wins. Ainmos: ties go to the Dreamer.
  * Dice spin freely, then brake onto a face. 5s and 6s light up.
  */
+import { random } from "../core/rng.js";
 import { playSfx } from "../audio/audio.js";
 import { playHaptic } from "../ui/fx.js";
 
 const SUCCESS_MIN = 5;
 const MAX_SHOWN = 22;
-const SPIN_MS = 780;
-const SETTLE_MS = 460;
-const RESULT_HOLD_MS = 4200;
+const BASE_SPIN_MS = 780;
+const BASE_SETTLE_MS = 460;
+const BASE_RESULT_HOLD_MS = 4200;
+/** Slow motion for recordings: globalThis.__ainmosDiceTempo = 2 plays every roll at half speed. */
+function tempo() {
+  return Math.max(0.25, Number(globalThis.__ainmosDiceTempo) || 1);
+}
 const CAM_X = -24;
 const CAM_Y = 32;
 
@@ -50,7 +55,8 @@ function clampDice(n) {
 export function rollD6(count) {
   const n = clampDice(count);
   const faces = [];
-  for (let i = 0; i < n; i += 1) faces.push(1 + Math.floor(Math.random() * 6));
+  // Seeded with the game (0.26.1): a seed replays the same rolls.
+  for (let i = 0; i < n; i += 1) faces.push(1 + Math.floor(random() * 6));
   return faces;
 }
 
@@ -59,9 +65,8 @@ export function countSuccesses(faces) {
 }
 
 function staggerMs(total) {
-  if (total >= 30) return 10;
-  if (total >= 16) return 14;
-  return 18;
+  const base = total >= 30 ? 10 : total >= 16 ? 14 : 18;
+  return base * tempo();
 }
 
 function pose(x, y, z = 0) {
@@ -163,7 +168,7 @@ function rollOneDie(el, face, delay, quiet, onLand, spinScale = 1) {
   const spin = el.animate(
     [{ transform: from }, { transform: mid }],
     {
-      duration: Math.round(SPIN_MS * spinScale),
+      duration: Math.round(BASE_SPIN_MS * tempo() * spinScale),
       delay,
       easing: "linear",
       fill: "forwards",
@@ -178,7 +183,7 @@ function rollOneDie(el, face, delay, quiet, onLand, spinScale = 1) {
     const settle = el.animate(
       [{ transform: mid }, { transform: end }],
       {
-        duration: Math.round(SETTLE_MS * (spinScale > 1 ? 1.35 : 1)),
+        duration: Math.round(BASE_SETTLE_MS * tempo() * (spinScale > 1 ? 1.35 : 1)),
         easing: "cubic-bezier(0.12, 1.35, 0.2, 1)",
         fill: "forwards",
       },
@@ -344,7 +349,7 @@ export function playDiceBattle(opts) {
     return {
       delay,
       spinScale,
-      end: delay + Math.round(SPIN_MS * spinScale + SETTLE_MS * settleScale),
+      end: delay + Math.round((BASE_SPIN_MS * spinScale + BASE_SETTLE_MS * settleScale) * tempo()),
     };
   };
 
@@ -399,6 +404,8 @@ export function playDiceBattle(opts) {
   const presentWinner = () => {
     if (!activeBattle) return;
     recount();
+    // For recordings and tests: the settled result of the last battle shown.
+    globalThis.__ainmosLastDiceResult = result();
     document.body.classList.remove("dice-rolling");
     stage.classList.remove("winner-dreamer", "winner-beast");
     stage.classList.add(dreamerWins ? "winner-dreamer" : "winner-beast");
@@ -417,7 +424,7 @@ export function playDiceBattle(opts) {
     };
     stage.addEventListener("click", dismiss);
     if (!hold) {
-      activeBattle.timer = window.setTimeout(dismiss, quiet ? 800 : RESULT_HOLD_MS);
+      activeBattle.timer = window.setTimeout(dismiss, quiet ? 800 : BASE_RESULT_HOLD_MS * tempo());
     }
   };
 

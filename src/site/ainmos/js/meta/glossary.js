@@ -178,7 +178,7 @@ const TERMS = [
     term: "Affinity",
     group: "meet",
     aka: "fantasy nightmare",
-    text: "A Dreamer and a Dreambeast are each Fantasy or Nightmare. Rested, Visionary, and Weaver are Fantasy. Runner, Hunter, and Immovable are Nightmare. A matching kind adds 1 to your Power. Matching the beast's suit adds 1 more.",
+    text: "Gone in 0.26.1. Dreamers have no hidden fight bonuses: your stat adds to a fight only when a card of the beast's suit is in your spread.",
   },
   {
     term: "Ally",
@@ -389,7 +389,7 @@ const TERMS = [
   {
     term: "Dreamer",
     group: "people",
-    text: "You. Choose one at the start of the run. Each has Lucidity, Elasticity, and Willpower that add up to 3, a free passive once a round, and a power that costs 1 Power Token.",
+    text: "You. Choose one at the start of the run. Each has Lucidity, Elasticity, and Willpower that add up to 3 (your free Actions in Reveal, Explore, and Meet) and one Power that costs 1 Power Token and works in the phase of its best stat. No passives.",
   },
   {
     term: "Dreamscape",
@@ -471,13 +471,13 @@ const TERMS = [
     term: "Hunter",
     group: "people",
     aka: "the hunter",
-    text: "Elasticity 2, Willpower 1, Lucidity 0. Nightmare. Passive: after their first fight, if the beast stays, they may shove it 1 hex. Power (1 token): move each Dreambeast 1 hex toward the nearest Dreamer, or 1 hex away from The Bed. If no beasts are out, the token is not spent.",
+    text: "Elasticity 2, Willpower 1, Lucidity 0. Power (1 Power Token, in Explore) Lure: every Dreambeast moves up to 2 Landscapes toward you, or away from you.",
   },
   {
     term: "Immovable",
     group: "people",
     aka: "the immovable",
-    text: "Willpower 2, Lucidity 1, Elasticity 0. Nightmare. Power: Hold the Line. There is no free ignore-the-tax passive. The round-end deck tax does not care where you stand.",
+    text: "Willpower 2, Lucidity 1, Elasticity 0. Power (1 Power Token, in Meet) Hold the Line: every fight this Meet rolls 2 more dice.",
   },
   {
     term: "Innocent",
@@ -584,7 +584,7 @@ const TERMS = [
     term: "Power",
     group: "meet",
     aka: "beast power dreamer power dice",
-    text: "How many dice a side rolls. A Dreambeast has one Power. Yours is the Psyche you play, plus your matching stat (when a card of the beast's suit is in the spread), affinity, suit match, your Dream Form less the beast's Ward, and up to 3 Power Tokens. Recommended Power is the beast's Power + 2. You may play less. Ties go to you.",
+    text: "How many dice a side rolls. A Dreambeast has one Power. Yours is the Psyche you play, plus your matching stat (when a card of the beast's suit is in the spread), your Dream Form less the beast's Ward, and up to 3 Power Tokens. Recommended Power is the beast's Power + 2. You may play less. Ties go to you.",
   },
   {
     term: "Power Token",
@@ -618,7 +618,7 @@ const TERMS = [
     term: "Rested",
     group: "people",
     aka: "the rested",
-    text: "Lucidity 2, Elasticity 1, Willpower 0. Fantasy. Passive: if they opened no phase this round, they draw 1 Psyche at round end. Power (1 token): Draw 1 from the Psyche discard.",
+    text: "Lucidity 2, Elasticity 1, Willpower 0. Power (1 Power Token, in Reveal) Lucid Rest: this Reveal, each Landscape you place draws you 1 Psyche (up to 3).",
   },
   {
     term: "Return",
@@ -640,7 +640,7 @@ const TERMS = [
     term: "Runner",
     group: "people",
     aka: "the runner",
-    text: "Elasticity 2, Lucidity 1, Willpower 0. Nightmare. Passive: their first Explore step costs no team move. Power (1 token): every Dreamer moves 2 hexes toward The Bed, or 2 hexes away from it.",
+    text: "Elasticity 2, Lucidity 1, Willpower 0. Power (1 Power Token, in Explore) Dash: +3 steps this Explore.",
   },
   {
     term: "Sage",
@@ -666,7 +666,7 @@ const TERMS = [
     term: "Visionary",
     group: "people",
     aka: "the visionary",
-    text: "Lucidity 2, Willpower 1, Elasticity 0. Fantasy. Power (1 token): Reveal a number of Landscapes equal to the number of Dreamers + 1.",
+    text: "Lucidity 2, Willpower 1, Elasticity 0. Power (1 Power Token, in Reveal) Second Sight: place 2 Landscapes from the Vault, free.",
   },
   {
     term: "Warrior",
@@ -682,7 +682,7 @@ const TERMS = [
     term: "Weaver",
     group: "people",
     aka: "the weaver",
-    text: "Willpower 2, Elasticity 1, Lucidity 0. Fantasy. Passive: once per Meet, swap 1 Psyche with an adjacent Dreamer. That swap is free. Power (1 token): each Dreamer may discard 1 Psyche to draw 1.",
+    text: "Willpower 2, Elasticity 1, Lucidity 0. Power (1 Power Token, in Meet) Reweave: discard up to 3 Psyche, then draw that many plus 1.",
   },
   {
     term: "Wild Psyche",

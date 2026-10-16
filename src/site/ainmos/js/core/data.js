@@ -32,6 +32,11 @@ export async function loadGameData() {
     })
   );
 
+  return prepareGameData(data);
+}
+
+/** Raw JSON → game data. The bot sim calls this too, so it builds the very same decks. */
+export function prepareGameData(data) {
   data.mindstream = enrichMindstreamEvents(data.mindstream, data["event-landscapes"] || {});
   data.dreams = (data.dreams || []).map((dream) => ({
     ...dream,

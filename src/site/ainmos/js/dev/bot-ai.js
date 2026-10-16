@@ -1,3 +1,4 @@
+import { stepAutoplay } from "./autoplay.js";
 import { chooseBoon } from "../dreamers/boons.js";
 import { closeLostFound } from "../shop/lost-found.js";
 import { isBlockingGameChoice } from "../core/state.js";
@@ -520,275 +521,42 @@ export function createSpectatorBot({
     }, Math.max(120, stepMs));
   }
 
+  const memo = {};
+
+  /** What the Ainmos bot just did, in a few words for the thought banner. */
+  function describe(state, did, before) {
+    const phase = getPhase(state);
+    if (did === "acquire" || (state.acquiredPoints || 0) > before.points) return "Acquire the Archetype";
+    if (did === "shop") return "Shop the Lost & Found, then leave";
+    if (did === "boon") return "Take a Boon";
+    if (did === "endPhase") return `Done with ${before.phase}`;
+    if (isDiceBattleOpen()) return "Roll the dice";
+    if (state.landscapePick) return "Place a Landscape from the Vault";
+    if (phase === "Explore" && state.exploreActivated) return "Walk the dream";
+    return state.botSpectatorThought || `${phase}: ${did}`;
+  }
+
+  /**
+   * Ainmos 0.26: the spectator plays the smart bot's policy (js/dev/autoplay.js),
+   * the same one the bot sim measures, with real animated dice. It waits while a
+   * dice battle is on screen instead of skipping it.
+   */
   function stepOnce() {
     const state = getState();
     if (!state || state.status !== "playing") {
-      think(state?.status === "won" ? "AI: game won." : "AI: game over.");
+      think(state?.status === "won" ? "AI: you wake up." : "AI: game over.");
       stop();
       return false;
     }
+    if (isDiceBattleOpen() || state.diceBattle) return true;
     if (++steps > maxSteps) {
       think("AI: step cap reached.");
       stop();
       return false;
     }
-
-    if (state.pendingBoonDraft) {
-      think(`Take the Boon ${state.pendingBoonDraft.options[0].name}`);
-      chooseBoon(state, state.pendingBoonDraft.options[0].id);
-      renderAll?.();
-      return true;
-    }
-    if (state.lostFound?.open && !isBlockingGameChoice(state)) {
-      think("Leave the Lost & Found");
-      closeLostFound(state);
-      renderAll?.();
-      return true;
-    }
-
-    if (isDiceBattleOpen() || state.diceBattle) {
-      think("Waiting for dice battle…");
-      cancelDiceBattle();
-      state.diceBattle = null;
-      renderAll?.();
-      return true;
-    }
-
-    const helpers = {
-      ...(api.getEffectHelpers?.() || {}),
-      bot: true,
-      syncDice: true,
-      instant: true,
-      handleBoardTileClick: api.handleBoardTileClick,
-      meetEncounter: (s, mode, opts = {}) => api.meetEncounter?.(s, mode, { ...opts, instant: true }),
-      prepareMindstreamMeet: (s, opts = {}) => prepareMindstreamMeet(s, {
-        ...opts,
-        instant: true,
-        meetEncounterFn: (st, mode, o) => api.meetEncounter?.(st, mode, { ...o, instant: true }),
-      }),
-    };
-
-    if (resolveSpectatorPendings(state, skill, helpers)) {
-      think(state.botSpectatorThought || "Resolved pending choice");
-      renderAll?.();
-      return true;
-    }
-
-    const phase = getPhase(state);
-
-    if (phase === "Reveal" && !state.dreamDrawn) {
-      think("Draw & resolve Dream");
-      api.drawDreamCard?.(state);
-      renderAll?.();
-      return true;
-    }
-
-    if (phaseOpeningActive(state)) {
-      const pick = botSelectOpener(state, skill);
-      if (pick) {
-        think(botThoughtOpener(pick));
-        if (phase === "Reveal") api.revealLandscape?.(state);
-        else if (phase === "Explore") api.activateExplore?.(state);
-        else if (phase === "Meet") api.gainMeetActions?.(state);
-        renderAll?.();
-        return true;
-      }
-    }
-
-    if (state.landscapePick?.mode === "reveal" && isFreeformBoard(state) && !state.landscapePick.excessOnly) {
-      // Freeform: take a quest tile from the Vault if one is up, and set it beside a Dreamer.
-      const quests = new Set(activeQuestLandscapeIds(state));
-      if (!pendingPlacementCard(state)) {
-        const cards = vaultCards(state);
-        const index = Math.max(0, cards.findIndex((c) => quests.has(c.id)));
-        if (cards.length) api.handleVaultTileSelect?.(state, index);
-      }
-      const card = pendingPlacementCard(state);
-      const slots = placementSlots(state);
-      const homes = state.players.filter((p) => p.alive)
-        .map((p) => state.board.find((t) => t.id === p.landscapeId))
-        .filter(Boolean);
-      const near = (s) => Math.min(99, ...homes.map((t) => (Math.abs(t.q - s.q) + Math.abs(t.r - s.r) + Math.abs(t.q + t.r - s.q - s.r)) / 2));
-      const slot = [...slots].sort((a, b) => near(a) - near(b))[0];
-      if (card && slot && api.handleBoardSlotClick?.(state, slot.q, slot.r)) {
-        think(`Place ${card.name}`);
-      } else if (state.landscapePick?.flipCard) {
-        think("Put the flipped tile back");
-        api.handleBuryFlippedTile?.(state);
-      } else if (api.spendExcessPsycheDraw?.(state)) {
-        think("Draw Psyche with a leftover Reveal");
-      } else {
-        cancelLandscapePick(state);
-      }
-      renderAll?.();
-      return true;
-    }
-
-    if (state.landscapePick?.mode === "reveal" || state.landscapePick?.mode === "reveal-deck-tops") {
-      const tiles = revealableTiles(state);
-      const quests = new Set(activeQuestLandscapeIds(state));
-      const tile = tiles.find((t) => quests.has(t.id))
-        || tiles.find((t) => ["awards", "candy-mountain", "lava"].includes(t.id))
-        || tiles[0];
-      if (tile) {
-        think(`Reveal ${tile.name}`);
-        api.handleBoardTileClick?.(state, tile.id);
-      } else if (api.spendExcessPsycheDraw?.(state)) {
-        think("Draw Psyche with a leftover Reveal");
-      } else {
-        think("No tiles left — cancel reveal pick");
-        cancelLandscapePick(state);
-      }
-      renderAll?.();
-      return true;
-    }
-
-    if (phase === "Explore" && state.exploreActivated && (state.exploreMovesLeft || 0) > 0) {
-      const holder = state.meetPassHolderId
-        ? state.players.find((p) => p.id === state.meetPassHolderId)
-        : activePlayer(state);
-      if (holder) {
-        state.activePlayerIndex = Math.max(0, state.players.indexOf(holder));
-        const dest = spectatorDest(state, holder);
-        if (dest !== holder.landscapeId) {
-          const step = spectatorStepToward(state, holder, dest);
-          if (step && step !== holder.landscapeId) {
-            think(`${holder.name} moves toward ${landscapeById(state, dest)?.name || dest}`);
-            api.moveDreamer?.(state, step);
-            renderAll?.();
-            return true;
-          }
-        }
-        if (api.spendExcessPsycheDraw?.(state)) {
-          think(`${holder.name} draws Psyche with an unused move`);
-          renderAll?.();
-          return true;
-        }
-        if (api.passMeetToken && state.meetPassHolderId) {
-          think(`${holder.name} passes Explore turn`);
-          api.passMeetToken(state);
-          renderAll?.();
-          return true;
-        }
-      }
-    }
-
-    if (!state.finalRecurrence) {
-      const best = bestRowArchetype(state);
-      if (best && state.activeArchetype?.id !== best.id) focusRowArchetype(state, best.id);
-    }
-
-    if (phase === "Meet" && (state.meetActionBudget || 0) > 0
-      && state.meetActionsUsed < state.meetActionBudget) {
-      const holder = state.meetPassHolderId
-        ? state.players.find((p) => p.id === state.meetPassHolderId)
-        : activePlayer(state);
-      if (holder) state.activePlayerIndex = Math.max(0, state.players.indexOf(holder));
-
-      // Meet beasts on the holder's tile first
-      if (holder) {
-        const tile = landscapeById(state, holder.landscapeId);
-        const enc = tile?.encounters?.[0] || tile?.encounter;
-        if (enc && api.meetEncounter) {
-          const acceptCard = cheapestPay(holder, enc, true);
-          const rejectCard = cheapestPay(holder, enc, false);
-          const mode = (acceptCard && psycheHandCount(holder) >= 3) ? "accept"
-            : rejectCard ? "reject"
-              : acceptCard ? "accept" : null;
-          const card = mode === "accept" ? acceptCard : rejectCard;
-          if (mode && card) {
-            state.selectedLandscapeId = tile.id;
-            state.activeEncounter = enc;
-            state.activeEncounterLandscapeId = tile.id;
-            state.selectedHand = [card.instanceId];
-            think(`${holder.name} ${mode}s ${enc.name}`);
-            api.meetEncounter(state, mode, { instant: true });
-            renderAll?.();
-            return true;
-          }
-        }
-
-        // 41.0: Acquire whichever row Dream is already true.
-        const ready = readyArchetype(state);
-        if (ready && api.handleQuestComplete) {
-          focusRowArchetype(state, ready.id);
-          const before = state.acquiredPoints;
-          api.handleQuestComplete(state, 0);
-          if (state.acquiredPoints !== before) {
-            think(`The table Acquires ${ready.name}`);
-            renderAll?.();
-            return true;
-          }
-        }
-
-        // 41.0 Mind-keeper: Remember with a ready Object or an open Memory tile.
-        if (wantsRemember(state, holder)) {
-          const obj = rememberObjectReady(state, holder);
-          if (obj && api.playObject) {
-            const before = state.meetActionsUsed;
-            api.playObject(state, obj.instanceId);
-            if (state.meetActionsUsed > before || state.pendingEffectChoice || state.pendingReturn) {
-              think(`${holder.name} taps ${obj.name} to Remember`);
-              renderAll?.();
-              return true;
-            }
-          }
-          if (memoryTileOpen(state, tile) && api.performLandscapeAction) {
-            state.selectedLandscapeId = tile.id;
-            const before = state.meetActionsUsed;
-            api.performLandscapeAction(state, "remember-2");
-            if (state.meetActionsUsed > before || state.pendingEffectChoice || state.pendingReturn) {
-              think(`${holder.name} Remembers on ${tile.name}`);
-              renderAll?.();
-              return true;
-            }
-          }
-        }
-
-        // Landscape actions
-        if (tile?.revealed && !tile.wasteland) {
-          const choices = getLandscapeActionChoices(tile);
-          const want = ["take-power", "dream-onward", "draw-1-psyche", "draw-mindstream", "spawn-dreambeast"]
-            .find((id) => choices.some((c) => c.id === id));
-          if (want && api.performLandscapeAction) {
-            state.selectedLandscapeId = tile.id;
-            const before = state.meetActionsUsed;
-            api.performLandscapeAction(state, want);
-            if (state.meetActionsUsed > before) {
-              think(`${holder.name} uses ${want} on ${tile.name}`);
-              renderAll?.();
-              return true;
-            }
-          }
-        }
-      }
-
-      if (api.handleQuestComplete && state.activeArchetype) {
-        const before = state.acquiredPoints;
-        api.handleQuestComplete(state, 0);
-        if (state.acquiredPoints !== before || state.activeArchetype?.questProgress?.some(Boolean)) {
-          think("Commit quest progress");
-          renderAll?.();
-          return true;
-        }
-      }
-
-      if (api.spendExcessPsycheDraw?.(state)) {
-        think(`${holder?.name || "Dreamer"} draws Psyche with an unused Meet action`);
-        renderAll?.();
-        return true;
-      }
-
-      if (api.passMeetToken && state.meetPassHolderId) {
-        think(`${holder?.name || "Dreamer"} passes Meet turn`);
-        api.passMeetToken(state);
-        renderAll?.();
-        return true;
-      }
-    }
-
-    think(`Advance from ${phase}`);
-    api.endPhase?.(state);
+    const before = { points: state.acquiredPoints || 0, phase: getPhase(state) };
+    const did = stepAutoplay(state, memo);
+    think(describe(state, did, before));
     renderAll?.();
     return true;
   }

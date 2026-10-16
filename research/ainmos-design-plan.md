@@ -107,3 +107,13 @@ Phil's calls, now locked:
 - Psyche retuned for the free Actions: draw 1 per Dream (was 2), 4 at dawn (was 5).
 
 Bot sim (smart bot 400 per length): Daydream 57%, Nap 57%, Deep 4% (0.25 measured 60% / 52% / 0%). Without the draw retune the free Actions alone made it 87% / 79% / 40%. Careless bot (200): 2% / 0% / 0%. Deaths per night fell (1.6 / 2.9 / 4.4, was 2.9 / 3.7 / 5.1). 0 errors, 0 step caps. The sim's bot opens free unless its free Actions fall short of what it wants and it holds 5+ Psyche. The bot still never shops or takes Objects, so Set search is covered by scenario checks, not the sim.
+
+## 0.26.1 One Power (2026-10-16)
+
+Phil's calls, now locked:
+
+- **A Dreamer is three stats and one Power.** No passives, no hidden fight bonuses (Fantasy/Nightmare affinity and the suit-match +1 are gone). Each Power costs 1 Power Token and works only in the phase of the Dreamer's best stat (`DREAMER_POWER_PHASE` in `js/dreamers/dreamer-powers.js`): Visionary Second Sight (+2 free placements), Rested Lucid Rest (each Landscape placed this Reveal draws 1, up to 3), Runner Dash (+3 steps), Hunter Lure (every beast moves up to 2 toward or away from you), Immovable Hold the Line (+2 dice every fight this Meet), Weaver Reweave (discard up to 3, draw that many +1).
+- **Seeds replay exactly.** Dice, Vault reinsertions and Landscape-action picks use the seeded RNG (`js/core/rng.js`, which also has a `globalThis.__ainmosRngTrace` debug hook).
+- **One bot.** The smart bot's policy lives in `js/dev/autoplay.js`; the Node sim and the in-browser spectator both run it, and it now uses Dreamer Powers. The sim prepares data with the game's own `prepareGameData`, so it builds the same Mindstream decks the game does. `scripts/ainmos-seed-hunt.mjs` finds seeds with a strong first Cycle.
+
+Bot sim (smart bot, 600 per length): Daydream 60%, Nap 52%, Deep 5%. Per Dreamer on Daydream: Weaver 89%, Immovable 79%, Rested 64%, Runner 56%, Hunter 52%, Visionary 21%. The spread predates this change (0.26 showed the same shape): with free Actions, Willpower 2 means two free fights every Dream. Still open.
