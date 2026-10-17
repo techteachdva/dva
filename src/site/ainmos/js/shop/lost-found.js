@@ -337,9 +337,8 @@ export function buyLostFoundInsight(state, { targetId = null, vividSuit = null }
 
 /** How a look-again would be paid right now: "glimmer", "token", or "" when it cannot. */
 export function rerollPayment(state, player = lostFoundBuyer(state)) {
-  if (glimmerHeld(state) >= REROLL_GLIMMER_COST) return "glimmer";
-  if ((player?.powerTokens || 0) >= REROLL_TOKEN_COST) return "token";
-  return "";
+  // 0.27.1: Power Tokens only activate powers, so looking again costs Glimmer.
+  return glimmerHeld(state) >= REROLL_GLIMMER_COST ? "glimmer" : "";
 }
 
 /** Spend 3 Glimmer (first) or 1 Power Token to redeal the shelves and the Insight. */
@@ -349,7 +348,7 @@ export function rerollLostFound(state, spendTokens) {
   if (!shop?.open || !player) return { ok: false, reason: "The Lost & Found is closed." };
   const how = rerollPayment(state, player);
   if (!how) {
-    return { ok: false, reason: `Looking again takes ${REROLL_GLIMMER_COST}✧ Glimmer or ${REROLL_TOKEN_COST} Power Token.` };
+    return { ok: false, reason: `Looking again takes ${REROLL_GLIMMER_COST}✧ Glimmer.` };
   }
   if (how === "glimmer") spendGlimmer(state, REROLL_GLIMMER_COST);
   else spendTokens?.(state, player, REROLL_TOKEN_COST);

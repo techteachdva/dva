@@ -318,13 +318,13 @@ const TERMS = [
     term: "Dream Form",
     group: "meet",
     aka: "echo ladder chord trinity trifecta unity",
-    text: "A spread pattern that adds dice. Echo: two of one value. Ladder: three in a row. Chord: three of one suit. Trinity: one of each suit. Trifecta: three of a kind. Unity: three 1s. A spread counts as its best Form. Every Form starts at +1 die and gains +1 per level, up to +24. A Dreambeast's Ward takes dice off one Form.",
+    text: "A spread pattern that adds dice. Echo: two of one value. Ladder: three in a row. Chord: three of one suit. Trinity: one of each suit. Trifecta: three of a kind. Unity: three 1s. Forms stack: a spread scores every Form it makes (1-2-3 in three suits is a Ladder and a Trinity, so both add). Every Form starts at +1 die and gains +1 per level, up to +24. A Dreambeast's Ward takes dice off one Form.",
   },
   {
     term: "Ward",
     group: "meet",
     aka: "block form bonus",
-    text: "Every Dreambeast wards one Dream Form. If your spread counts as that Form, it loses 1 to 5 of that Form's dice (stronger beasts ward harder). The spread then counts as whichever Form it makes that is worth the most after the Ward. The beast's card and the spread tray show the Ward.",
+    text: "Every Dreambeast wards one Dream Form. If your spread makes that Form, that Form loses 1 to 5 of its dice (stronger beasts ward harder). Every other Form in the spread still adds in full. The beast's card and the spread tray show the Ward.",
   },
   {
     term: "Endless Mode",
@@ -366,7 +366,7 @@ const TERMS = [
     term: "Lost & Found",
     group: "cards",
     aka: "shop insight reroll",
-    text: "Opens at the end of every Dream, with the hand you finished on in view: three Objects (1–5 Psyche value of their suit) and one Insight (3–6 of any suit: a Form level or a Psyche upgrade). Glimmer pays first. Look again for 3 Glimmer or 1 Power Token. At the Object limit you can still buy, then let one go. Leaving starts the next round: you draw 3 Psyche, then the Dream.",
+    text: "Opens at the end of every Dream, with the hand you finished on in view: three Objects (1–5 Psyche value of their suit) and one Insight (3–6 of any suit: a Form level or a Psyche upgrade). Glimmer pays first. Look again for 3 Glimmer. At the Object limit you can still buy, then let one go. Leaving starts the next round: you draw 3 Psyche, then the Dream.",
   },
   {
     term: "Boon",
@@ -416,7 +416,7 @@ const TERMS = [
     term: "Explore",
     group: "round",
     aka: "explore phase",
-    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First every Dreambeast chases you one Landscape. Archetypes hold still, so this is your chance to reach one. Your Elasticity is your free steps; spend 1 Elasticity card for +its value, or 1 Power Token for +1. Only steps you paid for bank Glimmer if unused.",
+    text: "The second phase of each Dream (phases 2, 5, and 8 of a Cycle). First every Dreambeast chases you one Landscape. Archetypes hold still, so this is your chance to reach one. Your Elasticity is your free steps; spend 1 Elasticity card for +its value. Only steps you paid for bank Glimmer if unused.",
   },
   {
     term: "Explorer",
@@ -520,7 +520,7 @@ const TERMS = [
     term: "Meet",
     group: "round",
     aka: "meet phase",
-    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle). Your Willpower is your free Meet Actions; spend 1 Willpower card for +its value, or 1 Power Token for +1. Each one can fight the Dreambeast on your Landscape, Meet the Archetype there (its Event, then the fight), use one of your Landscape's two actions, or tap a Persistent Object. Only Meet Actions you paid for become Glimmer if unused. As Meet ends, every Archetype slips 1 Landscape away.",
+    text: "The third phase of each Dream (phases 3, 6, and 9 of a Cycle). Your Willpower is your free Meet Actions; spend 1 Willpower card for +its value. Each one can fight the Dreambeast on your Landscape, Meet the Archetype there (its Event, then the fight), use one of your Landscape's two actions, or tap a Persistent Object. Only Meet Actions you paid for become Glimmer if unused. As Meet ends, every Archetype slips 1 Landscape away.",
   },
   {
     term: "Mindstream",
@@ -584,18 +584,18 @@ const TERMS = [
     term: "Power",
     group: "meet",
     aka: "beast power dreamer power dice",
-    text: "How many dice a side rolls. A Dreambeast has one Power. Yours is the Psyche you play, plus your matching stat (when a card of the beast's suit is in the spread), your Dream Form less the beast's Ward, and up to 3 Power Tokens. Recommended Power is the beast's Power + 2. You may play less. Ties go to you.",
+    text: "How many dice a side rolls. A Dreambeast has one Power. Yours is the Psyche you play, plus your matching stat (when a card of the beast's suit is in the spread), and your Dream Forms (less the beast's Ward). Recommended Power is the beast's Power + 2. You may play less. Ties go to you.",
   },
   {
     term: "Power Token",
     group: "cards",
-    text: "A token, not a card. You hold up to 6. You start with 2, beating a Dreambeast pays 2 (or an Object of its suit instead), and each Archetype you Acquire pays 1. There is no other way to gain one. Spend one for +1 Action in a phase, to add 1 die to a fight (up to 3), to use an Archetype's power or your Dreamer's power, or to look again in the Lost & Found.",
+    text: "A token, not a card. You hold up to 6. You start with 2, beating a Dreambeast pays 2 (or an Object of its suit instead), and each Archetype you Acquire pays 1. A Power Token does one thing: it activates a power, your Dreamer\'s Power or an Acquired Archetype\'s.",
   },
   {
     term: "Psyche",
     group: "cards",
     aka: "hand",
-    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They buy extra phase Actions, fight, and keep you alive. Round 1 starts at 6. From round 2 you draw 3 as each round begins (after the Lost & Found), and 4 more at the dawn between Cycles. Unused actions no longer draw: they bank Glimmer. Each difficulty has its own deck, mostly 1s and 2s. Per suit: Daydream nine 1s, six 2s, two 3s, one 4, plus 2 Wilds (56 cards); Nap ten 1s, six 2s, two 3s, one 4, plus 1 Wild (58); Deep Sleep seven 1s, five 2s, three 3s, two 4s, one 5, plus 4 Wilds (58).",
+    text: "The cards in a Dreamer's hand. They are Lucidity, Elasticity, Willpower, or Wild. They buy extra phase Actions, fight, and keep you alive. Round 1 starts at 6. From round 2 you draw 3 as each round begins (after the Lost & Found), and 4 more at the dawn between Cycles. Unused actions no longer draw: they bank Glimmer. Each difficulty has its own deck, mostly 1s and 2s. Per suit: Daydream eleven 1s, six 2s, two 3s, one 4, plus 2 Wilds (62 cards); Nap twelve 1s, six 2s, two 3s, one 4, plus 1 Wild (64); Deep Sleep nine 1s, six 2s, three 3s, two 4s, one 5, plus 3 Wilds (66).",
   },
   {
     term: "Psyche Deck",
@@ -629,7 +629,7 @@ const TERMS = [
     term: "Reveal",
     group: "round",
     aka: "reveal phase",
-    text: "The first phase of each Dream (phases 1, 4, and 7 of a Cycle). The Dream is drawn and endured. Your Lucidity is your free Reveal Actions; spend 1 Lucidity card for +its value, or 1 Power Token for +1. Each Reveal places one Landscape from the Dreamscape Vault on a glowing slot beside the dream. Each unused Reveal you paid for banks 1 Glimmer.",
+    text: "The first phase of each Dream (phases 1, 4, and 7 of a Cycle). The Dream is drawn and endured. Your Lucidity is your free Reveal Actions; spend 1 Lucidity card for +its value. Each Reveal places one Landscape from the Dreamscape Vault on a glowing slot beside the dream. Each unused Reveal you paid for banks 1 Glimmer.",
   },
   {
     term: "Ruler",

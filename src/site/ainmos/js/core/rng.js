@@ -50,6 +50,7 @@ export const SPECIAL_SEEDS = {
   LEMON: "lemon",
   BUBBLEGUM: "bubblegum",
   SOMNIAINMOS: "somniainmos",
+  LEVIATHAN: "leviathan",
 };
 
 export const SPECIAL_SEED_DESCRIPTIONS = {
@@ -65,6 +66,7 @@ export const SPECIAL_SEED_DESCRIPTIONS = {
   lemon: "Lemon — every Archetype is already yours. Straight to the Endless Leviathans.",
   bubblegum: "Bubblegum — every Psyche card carries a random upgrade.",
   somniainmos: "Somniainmos — every Dreamer's stats are +1, so no stat is 0.",
+  leviathan: "Leviathan — skip to the very end: the impossible fight and the crash.",
 };
 
 const SEED_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";

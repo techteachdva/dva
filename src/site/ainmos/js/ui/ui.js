@@ -715,9 +715,8 @@ export function renderSpreadTray(state, onCardClick, openerAction = null, fightA
     const chip = document.createElement("span");
     chip.className = `spread-form-chip form-${form.id}${form.blocked ? " is-warded" : ""}`;
     chip.textContent = form.blocked ? `${form.name} +${form.dice} (warded −${form.blocked})` : `${form.name} +${form.dice}`;
-    chip.title = form.blocked
-      ? `${form.name}, level ${form.level}: +${form.fullDice} dice, but ${meetBeast.name} wards it: −${form.blocked}.`
-      : `${form.name}, level ${form.level}: +${form.dice} dice`;
+    // Forms stack (0.27.1): the title lists each Form's dice.
+    chip.title = form.forms.map((f) => `${f.name} level ${f.level}: +${f.dice}${f.blocked ? ` (${meetBeast?.name || "the beast"} wards −${f.blocked})` : ""}`).join(" · ");
     caption.appendChild(chip);
   }
   tray.appendChild(caption);
@@ -1039,10 +1038,13 @@ export function renderPowerTokens(state, { onTokenClick } = {}) {
   if (statsEl) {
     const pendingNote = pending ? `<span class="power-token-pending">+${pending} spread bonus</span>` : "";
     statsEl.innerHTML = `<span class="power-token-held">${held} of ${MAX_POWER_TOKENS}</span>${pendingNote}`;
-    statsEl.title = `You hold up to ${MAX_POWER_TOKENS} Power Tokens. Spend one for +1 die in a fight, or for +1 Action in a phase. Earn them by beating Dreambeasts and Acquiring Archetypes.`;
+    statsEl.title = `You hold up to ${MAX_POWER_TOKENS} Power Tokens. Each one activates your Dreamer's Power or an Acquired Archetype's power. Earn them by beating Dreambeasts and Acquiring Archetypes.`;
   }
 
-  if (bonusBtn) {
+  // 0.27.1: Power Tokens only activate powers; the old +1 Spread buttons stay hidden.
+  if (bonusBtn) bonusBtn.classList.add("hidden");
+  if (undoBtn) undoBtn.classList.add("hidden");
+  if (false) {
     const canStack = isMeet && held >= 1;
     bonusBtn.disabled = !canStack;
     bonusBtn.classList.toggle("hidden", !isMeet);
@@ -1050,7 +1052,7 @@ export function renderPowerTokens(state, { onTokenClick } = {}) {
     bonusBtn.textContent = pending > 0 ? `+1 Spread (now +${pending})` : "+1 to Spread";
   }
 
-  if (undoBtn) {
+  if (false) {
     const canUndo = isMeet && refundable > 0;
     undoBtn.disabled = !canUndo;
     undoBtn.classList.toggle("hidden", !isMeet);

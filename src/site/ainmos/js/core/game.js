@@ -1051,7 +1051,6 @@ export function getPhaseActions(state, handlers) {
       disabled: !state.dreamDrawn || state.revealLandscapeUsed || !!state.landscapePick || (budget < 1 && !remFreeReveal),
       onClick: handlers.revealLandscape,
     });
-    if (state.dreamDrawn && !state.revealLandscapeUsed) actions.push(phaseTokenAction("Lucidity"));
     actions.push(...objectFreeActions());
     actions.push(dreamerPowerAction());
     if (state.activeArchetype?.quests?.length) actions.push(...questActions());
@@ -1082,7 +1081,6 @@ export function getPhaseActions(state, handlers) {
         disabled: budget < 1 && !remFreeExplore,
         onClick: handlers.activateExplore,
       });
-      actions.push(phaseTokenAction("Elasticity"));
     } else {
       actions.push({
         label: `${state.exploreMovesLeft} move(s) — click highlighted hexes`,
@@ -1127,7 +1125,6 @@ export function getPhaseActions(state, handlers) {
         disabled: budget < 1 && !remFreeMeet,
         onClick: handlers.gainMeetActions,
       });
-      actions.push(phaseTokenAction("Willpower"));
     } else {
       actions.push({
         label: `Actions ${state.meetActionsUsed}/${state.meetActionBudget}${poolHint}`,
@@ -1135,24 +1132,6 @@ export function getPhaseActions(state, handlers) {
         disabled: true,
         onClick: () => {},
       });
-      actions.push({
-        label: state.pendingPowerBonus
-          ? `+1d6 Spread (now +${state.pendingPowerBonus})`
-          : "+1d6 to Spread",
-        kind: "powerBonus",
-        section: "main",
-        hint: "Free action — spend up to 3 Power Tokens. Each adds +1d6 to this spread. Does not cost a Meet action.",
-        disabled: player.powerTokens < 1 || (state.pendingPowerBonusTokens || 0) >= 3,
-        onClick: handlers.powerBonus,
-      });
-      if ((state.pendingPowerBonusTokens || 0) > 0) {
-        actions.push({
-          label: `-1 Spread (now +${state.pendingPowerBonus})`,
-          section: "main",
-          hint: "Return 1 Power Token and remove +1 from the current Psyche spread.",
-          onClick: handlers.refundPowerBonus,
-        });
-      }
     }
     archetypeMeetActions(state, handlers).forEach((action) => actions.push(action));
     if (state.finalRecurrence) {
@@ -1548,7 +1527,7 @@ export function revealLandscape(state) {
 
   const lucidityCards = selectedBySuit(state, player, "lucidity");
   if (lucidityCards.length > PHASE_OPENER_MAX_CARDS) {
-    narrate(state, "Select 1 Lucidity", `Play at most 1 blue Psyche from ${player.name}, or spend 1 Power Token for +1.`);
+    narrate(state, "Select 1 Lucidity", `Play at most 1 blue Psyche from ${player.name}.`);
     return;
   }
 
@@ -1603,7 +1582,7 @@ export function activateExplore(state) {
 
   const tokenValue = player ? phaseTokenValue(state, player) : 0;
   if (!freeRound && (elaCards.length > PHASE_OPENER_MAX_CARDS || budget < 1)) {
-    addLog(state, `Play 1 ${SUIT_LABELS.elasticity} Psyche card, or spend 1 Power Token for +1 step.`);
+    addLog(state, `Play 1 ${SUIT_LABELS.elasticity} Psyche card, or take your free steps.`);
     return;
   }
   const bought = player ? phaseSpendValue(state, player, "elasticity") : 0;
@@ -1745,7 +1724,7 @@ export function gainMeetActions(state) {
   const wilCards = selectedBySuit(state, player, "willpower");
 
   if (wilCards.length > PHASE_OPENER_MAX_CARDS || budget < 1) {
-    addLog(state, `Play 1 ${SUIT_LABELS.willpower} Psyche card from ${player.name}, or spend 1 Power Token for +1 Meet Action.`);
+    addLog(state, `Play 1 ${SUIT_LABELS.willpower} Psyche card from ${player.name}.`);
     return;
   }
 
@@ -1784,26 +1763,10 @@ export function togglePhasePowerToken(state) {
   addLog(state, `${player.name} will spend 1 Power Token as 1 + ${SUIT_LABELS[suit] || "Psyche"} ${bonus}.`);
 }
 
+/** Ainmos 0.27.1: Power Tokens no longer add fight dice; they only activate powers. */
 export function powerBonus(state) {
-  const player = activePlayer(state);
-  if (getPhase(state) !== "Meet") {
-    addLog(state, "Spend Power Tokens for +1 spread during Meet, when Psyche is played.");
-    return false;
-  }
-  if (player.powerTokens < 1) {
-    addLog(state, "Need 1 Power Token.");
-    return false;
-  }
-  if ((state.pendingPowerBonusTokens || 0) >= 3) {
-    addLog(state, "A spread can take at most 3 Power Tokens.");
-    return false;
-  }
-  if (!spendPowerTokens(state, player, 1)) return false;
-  state.pendingPowerBonus = (state.pendingPowerBonus || 0) + 1;
-  state.pendingPowerBonusTokens = (state.pendingPowerBonusTokens || 0) + 1;
-  addLog(state, `${player.name} spends 1 Power Token: +1d6 to the spread (now +${state.pendingPowerBonus}, max 3).`);
-  playSfx("select");
-  return true;
+  addLog(state, "Power Tokens only activate Dreamer and Archetype powers.");
+  return false;
 }
 
 export function refundPowerBonus(state) {
@@ -1914,63 +1877,27 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
   return options;
 }
 
+/** The Power Token menu: what a token can do right now. Only powers. */
 export function getPowerTokenRadialOptions(state) {
   const player = activePlayer(state);
   if (!player) return [];
-  const phase = getPhase(state);
-  const suit = phaseSuitForOpening(phase);
-  const suitLabel = SUIT_LABELS[suit] || "Psyche";
-  const pending = state.pendingPowerBonus || 0;
-  const refundable = state.pendingPowerBonusTokens || 0;
-  const arch = state.activeArchetype;
   const held = player.powerTokens || 0;
-  const bothTrue = !!arch?.quests?.every((quest) => isQuestConditionMet(state, arch.id, quest));
-  const already = !!arch?.questProgress?.every(Boolean);
-  const commitHint = !arch
-    ? "No active Archetype."
-    : already
-      ? "This Archetype is already committed."
-      : held < 1
-        ? "Need 1 Power Token."
-        : bothTrue
-          ? "Both quests are true. Spend 1 Power Token to commit. Does not cost a Meet action."
-          : "Both quests must already be true.";
-  const options = [
-    {
-      id: "quest0",
-      kind: "completeQuest0",
-      label: "Commit",
-      hint: commitHint,
-      disabled: !arch || already || !bothTrue || held < 1,
-    },
-    {
-      id: "spreadPlus",
-      kind: "powerBonus",
-      label: pending > 0 ? `+1d6 Spread (now +${pending})` : "+1d6 Spread",
-      hint: phase === "Meet"
-        ? "Spend 1 Power Token for +1d6 on this spread (max 3 tokens)."
-        : "Spread bonuses are spent during Meet, when Psyche is played.",
-      disabled: phase !== "Meet" || held < 1 || refundable >= 3,
-    },
-  ];
-  if (refundable > 0) {
+  const reason = dreamerPowerBlockReason(state, player);
+  const options = [{
+    id: "dreamerPower",
+    kind: "dreamerPower",
+    label: `${player.dreamer?.name || "Dreamer"} Power`,
+    hint: `${player.dreamer?.power || ""} Costs 1 Power Token.${reason ? ` ${reason}` : ""}`,
+    disabled: held < 1 || !!reason || hasPendingDreamerPower(state),
+  }];
+  getActivatableArchetypePowers(state).forEach((arch) => {
     options.push({
-      id: "spreadMinus",
-      kind: "refundPowerBonus",
-      label: `-1 Spread (now +${pending})`,
-      hint: "Return 1 Power Token and remove +1 from the current Psyche spread.",
-      disabled: false,
+      id: `arch:${arch.id}`,
+      kind: "archetypePower",
+      label: `${arch.name} Power`,
+      hint: `${arch.power} Costs 1 Power Token.`,
+      disabled: held < 1,
     });
-  }
-  const phaseOn = state.phaseTokenAsPsyche === player.id;
-  options.push({
-    id: "phasePsyche",
-    kind: "phasePowerToken",
-    label: phaseOn ? `Cancel ${suitLabel}` : `1 + ${suitLabel}`,
-    hint: phaseOn
-      ? "Stop using a Power Token to open this phase."
-      : "Spend 1 Power Token as 1 plus this Dreamer's suited stat (instead of a Psyche card).",
-    disabled: !phaseOn && !canUsePhasePowerToken(state, player),
   });
   return options;
 }
@@ -2160,6 +2087,8 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     resolveDiceMeet(state, ctx, dreamerWins);
     onDone?.();
   };
+  // The Destroyer of Dreams shows Power 99 but rolls its rollPower (30).
+  const rolledBeast = encounter.rollPower || beastPower;
 
   const guidedFirst = state.guided && !state.guidedFirstFightDone;
   if (guidedFirst) state.guidedFirstFightDone = true;
@@ -2172,7 +2101,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
       dreamerName: actor.name,
       beastName: encounter.name,
       dreamerDice: played,
-      beastDice: beastPower,
+      beastDice: rolledBeast,
       instant: true,
       onComplete: ({ dreamerWins }) => finish(dreamerWins),
     });
@@ -2192,7 +2121,8 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     dreamerName: actor.name,
     beastName: encounter.name,
     dreamerDice: played,
-    beastDice: beastPower,
+    beastDice: rolledBeast,
+    shownBeastDice: beastPower,
     forceWinner: scriptedWinner,
     instant: false,
     onComplete: ({ dreamerWins }) => finish(dreamerWins),
@@ -3054,9 +2984,9 @@ function recordFightStats(state, ctx, won) {
   const stats = (state.runStats = state.runStats || {});
   if (won) stats.fightsWon = (stats.fightsWon || 0) + 1;
   else stats.fightsLost = (stats.fightsLost || 0) + 1;
-  if (ctx.form?.id) {
+  if (ctx.form?.forms?.length) {
     stats.formsPlayed = stats.formsPlayed || {};
-    stats.formsPlayed[ctx.form.id] = (stats.formsPlayed[ctx.form.id] || 0) + 1;
+    ctx.form.forms.forEach((f) => { stats.formsPlayed[f.id] = (stats.formsPlayed[f.id] || 0) + 1; });
   }
   const power = Number(ctx.played) || 0;
   if (!stats.bestSpread || power > stats.bestSpread.power) {

@@ -221,6 +221,7 @@ export function playDiceBattle(opts) {
     beastDice,
     forceWinner = null,
     minBeastLead = 0,
+    shownBeastDice = null,
     instant = false,
     hold = false,
     onComplete,
@@ -318,7 +319,7 @@ export function playDiceBattle(opts) {
       </div>
       <div class="dice-battle-pool beast-pool">
         <p class="dice-battle-label">${escapeHtml(beastName)}</p>
-        <p class="dice-battle-count"><span data-score="beast">0</span> successes <span class="dice-battle-pool-size">${bCount}d6 Power</span></p>
+        <p class="dice-battle-count"><span data-score="beast">0</span> successes <span class="dice-battle-pool-size">${shownBeastDice || bCount}d6 Power</span></p>
         <div class="dice-battle-tray" data-tray="beast">
           ${Array.from({ length: shownB }, (_, i) => dieHtml("beast", i)).join("")}
         </div>

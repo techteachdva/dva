@@ -62,6 +62,8 @@ export const ENDLESS_LEVIATHANS = Object.freeze([
     id: "l3v1athan-destroyer",
     name: "L3V1@+H@N D3$TR0Y3R 0F DR3@M$",
     power: 99,
+    // 0.27.1: it shows 99d6 but rolls 30d6, so the fight is hard, not hopeless.
+    rollPower: 30,
     image: "art/endless/l3v1athan-destroyer.webp",
     ward: { formId: "all", amount: 5 },
     flavor: "W@K3 UP. W@K3 UP. W@K3 UP.",
@@ -95,6 +97,7 @@ export function megaLeviathanCard(tier, ante) {
     type: "boss-dream",
     boss: true,
     megaTier: def.tier,
+    rollPower: def.rollPower,
     fixedPower: true,
     ward: { ...def.ward },
     ante,

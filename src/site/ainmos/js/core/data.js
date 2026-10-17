@@ -175,12 +175,12 @@ export const PSYCHE_HAND_LIMIT = 10;
  * Deep Sleep 25–33% (research/ainmos-design-plan.md, "Difficulty targets").
  */
 export const PSYCHE_DECK_BY_LENGTH = {
-  // 56 cards: 74% (smart bot, 500 games).
-  daydream: { distribution: { 1: 9, 2: 6, 3: 2, 4: 1, 5: 0 }, wildCount: 2 },
-  // 58 cards: 54%.
-  nap: { distribution: { 1: 10, 2: 6, 3: 2, 4: 1, 5: 0 }, wildCount: 1 },
-  // 58 cards: 31%. Fifteen Cycles and twelve Archetypes are the hard part, so its deck is kinder.
-  deep: { distribution: { 1: 7, 2: 5, 3: 3, 4: 2, 5: 1 }, wildCount: 4 },
+  // 62 cards: 73% (smart bot, 500 games; 0.27.1 with stacking Forms and power-only tokens).
+  daydream: { distribution: { 1: 11, 2: 6, 3: 2, 4: 1, 5: 0 }, wildCount: 2 },
+  // 64 cards: 57%.
+  nap: { distribution: { 1: 12, 2: 6, 3: 2, 4: 1, 5: 0 }, wildCount: 1 },
+  // 66 cards: 32%. Fifteen Cycles and twelve Archetypes are the hard part, so its deck is kinder.
+  deep: { distribution: { 1: 9, 2: 6, 3: 3, 4: 2, 5: 1 }, wildCount: 3 },
 };
 
 /** The Psyche deck config for a night length (the sim can override it to test compositions). */

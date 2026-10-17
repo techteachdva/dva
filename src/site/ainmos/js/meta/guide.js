@@ -246,7 +246,7 @@ export function getCurrentObjective(state) {
         phase: "Reveal",
         suit: "lucidity",
         title: "Open Reveal",
-        steps: ["Your Lucidity is your free Reveal Actions: each places a Landscape. Add 1 Lucidity card for +its value, or a Power Token for +1."],
+        steps: ["Your Lucidity is your free Reveal Actions: each places a Landscape. Add 1 Lucidity card for +its value."],
         tip: "Only Reveals you paid for bank Glimmer ✧ if unused.",
       };
     }
@@ -259,7 +259,7 @@ export function getCurrentObjective(state) {
         phase: "Explore",
         suit: "elasticity",
         title: "Open Explore",
-        steps: ["Your Elasticity is your free steps. Add 1 Elasticity card for +its value, or a Power Token for +1. Head for the beasts before dusk."],
+        steps: ["Your Elasticity is your free steps. Add 1 Elasticity card for +its value. Head for the beasts before dusk."],
       };
     }
     if (state.exploreMovesLeft > 0) {
@@ -280,7 +280,7 @@ export function getCurrentObjective(state) {
         phase: "Meet",
         suit: "willpower",
         title: "Open Meet",
-        steps: ["Your Willpower is your free Meet Actions. Add 1 Willpower card for +its value, or a Power Token for +1."],
+        steps: ["Your Willpower is your free Meet Actions. Add 1 Willpower card for +its value."],
         tip: "Every beast left standing bleeds 1 Psyche from the Waking Mind at dusk.",
       };
     }
@@ -424,11 +424,11 @@ export function infoHubHtml(options = {}) {
               <li class="suit-elasticity"><strong>Explore</strong> — your <strong>Elasticity</strong> is your free steps.</li>
               <li class="suit-willpower"><strong>Meet</strong> — your <strong>Willpower</strong> is your free Meet Actions: fight a Dreambeast, Meet an Archetype, use one of your Landscape's two actions (Call a Dreambeast of its suit, or its own action), or tap a Persistent Object.</li>
             </ul>
-            <p><strong>Your stats are your free Actions every phase.</strong> Want more? Spend 1 Psyche of the phase's suit for +its value, or 1 Power Token for +1. Free Actions are used first; only the ones you paid for bank Glimmer ✧ if unused, which pays toward the next Lost &amp; Found.</p>
+            <p><strong>Your stats are your free Actions every phase.</strong> Want more? Spend 1 Psyche of the phase's suit for +its value. Free Actions are used first; only the ones you paid for bank Glimmer ✧ if unused, which pays toward the next Lost &amp; Found.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Fights</h3>
-            <p>Play 1–3 Psyche of any suit. Each Dreambeast arrives at its Power plus the Cycle, and wards one Dream Form (−1 to −5 dice off that Form). Your Power is their values plus your matching stat (if a card of its suit is in the spread), your Dream Form, and up to 3 Power Tokens. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Win and you <strong>Accept</strong> it: it leaves the board and you take <strong>2 Power Tokens</strong>, an <strong>Object of its suit</strong>, or (once you have started a Set) <strong>a missing Set piece</strong>. Lose and the cards are spent; the beast stays.</p>
+            <p>Play 1–3 Psyche of any suit. Each Dreambeast arrives at its Power plus the Cycle, and wards one Dream Form (−1 to −5 dice off that Form). Your Power is their values plus your matching stat (if a card of its suit is in the spread), your Dream Form. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Win and you <strong>Accept</strong> it: it leaves the board and you take <strong>2 Power Tokens</strong>, an <strong>Object of its suit</strong>, or (once you have started a Set) <strong>a missing Set piece</strong>. Lose and the cards are spent; the beast stays.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Archetypes</h3>

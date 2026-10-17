@@ -3,7 +3,7 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.27-dreaming-odds";
+const CACHE_NAME = "ainmos-0.27.1-nan";
 /** Versioned with the release, so a new ship never serves last version's modules. */
 const RUNTIME_CACHE = `${CACHE_NAME}-runtime`;
 
@@ -125,6 +125,7 @@ const PRECACHE = [
   "./js/encounters/beast-wards.js",
   "./js/dreamers/archetype-call.js",
   "./js/ui/bsod.js",
+  "./js/ui/leviathan-finale.js",
   "./js/encounters/meet-phase.js",
   "./js/cards/mindstream-choices.js",
   "./js/cards/mindstream-draw-cinematic.js",

@@ -123,8 +123,8 @@ function noCardStep(state, phase) {
   return {
     id: `open-nocard-${phase}`,
     title: `${phase}: no ${(OPENER_SUIT[phase] || ["", "card"])[1]} card`,
-    text: `No ${color} ${suit} card in hand. Press Take free to use your ${suit} as free Actions${tokens > 0 ? ", or add a Power Token for +1" : ""}. If your ${suit} is 0, Skip.`,
-    why: "Your stats are free Actions every phase. A Power Token adds +1 Action. You hold up to 6: you start with 2, take 2 for beating a Dreambeast, and gain 1 for each Archetype you Acquire.",
+    text: `No ${color} ${suit} card in hand. Press Take free to use your ${suit} as free Actions. If your ${suit} is 0, Skip.`,
+    why: "Your stats are free Actions every phase. Power Tokens only activate powers: your Dreamer's, and each Archetype's you Acquire.",
     target: "#btn-spread-opener",
   };
 }
@@ -288,7 +288,7 @@ function tableStep(state, ctx = {}) {
     const power = odds ? Number(odds[2]) : 12;
     const kind = !state.guidedFirstArchetypeDone ? " The dream is kind to your first Archetype fight." : "";
     const short = dice && dice < power
-      ? ` You roll ${dice} dice against its ${power}. More dice wins more often: +1 to Spread (bottom left) adds a Power Token's dice.`
+      ? ` You roll ${dice} dice against its ${power}. More dice wins more often: stack Dream Forms in one spread for more.`
       : "";
     return {
       id: form ? "fight-ready" : "fight-pick",

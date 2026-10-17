@@ -6,10 +6,22 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.27";
+export const SOMNIA_VERSION = "0.27.1";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.27.1",
+    title: "NaN",
+    notes: [
+      "Dream Forms stack. A spread scores every Form it makes: 1-2-3 in three suits is a Ladder and a Trinity, and both add their dice. A Dreambeast's ward only trims its own Form.",
+      "Power Tokens do one thing now: activate powers, your Dreamer's or an Acquired Archetype's. They no longer add fight dice, open a phase, or pay for a new look in the Lost & Found (that's Glimmer only).",
+      "L3V1@+H@N D3$TR0Y3R 0F DR3@M$ still shows Power 99, but it rolls 30 dice. It's beatable, barely.",
+      "Fell it and the dream breaks: an impossible dice fight, the dice burst out of the window and pour across the screen, the dream tears, and the blue screen follows. Its crash report saves your high score as NaN.",
+      "New seed: LEVIATHAN skips straight to that ending.",
+      "The difficulty decks were re-tuned for stacking Forms: Daydream eleven 1s, six 2s, two 3s, one 4, plus 2 Wilds per suit; Nap twelve 1s, six 2s, two 3s, one 4, plus 1 Wild; Deep Sleep nine 1s, six 2s, three 3s, two 4s, one 5, plus 3 Wilds.",
+    ],
+  },
   {
     version: "0.27",
     title: "Dreaming Odds",

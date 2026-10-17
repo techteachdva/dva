@@ -156,6 +156,7 @@ export function createInitialState(data, options) {
     lemon: seedFlag === "lemon",
     bubblegum: seedFlag === "bubblegum",
     somniainmos: seedFlag === "somniainmos",
+    leviathan: seedFlag === "leviathan",
   };
 
   const usedDreamerIds = new Set(options.selectedDreamers.map((d) => d.id));

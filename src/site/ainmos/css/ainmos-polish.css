@@ -1012,3 +1012,49 @@ body.bsod-glitching #app { animation: bsod-shake 0.12s steps(2, end) infinite; f
 .lf-hand-card b { font-size: 1rem; color: #fff; }
 .lf-hand-card i { font-style: normal; font-size: 0.6rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .lf-hand-empty { font-style: italic; opacity: 0.7; }
+
+/* 0.27.1: the Destroyer of Dreams finale — an impossible fight, then the dice break out. */
+.lf2 { position: fixed; inset: 0; z-index: 9000; pointer-events: none; }
+.lf2-veil { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, rgba(40, 10, 60, 0.75), rgba(0, 0, 0, 0.92)); animation: lf2-fade 600ms ease-out both; }
+.lf2-window { position: absolute; left: 50%; top: 50%; width: min(1100px, 92vw); transform: translate(-50%, -50%); display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: start; padding: 22px 26px; border-radius: 18px; background: linear-gradient(180deg, rgba(48, 30, 20, 0.92), rgba(24, 14, 10, 0.94)); border: 1.5px solid rgba(243, 217, 164, 0.45); box-shadow: 0 0 60px rgba(255, 60, 60, 0.25), inset 0 0 40px rgba(0, 0, 0, 0.5); color: #f6efe3; font-family: var(--font-display, Georgia, serif); }
+.lf2-name { margin: 0 0 4px; text-align: center; letter-spacing: 0.1em; text-transform: uppercase; font-size: 1.05rem; }
+.lf2-right .lf2-name { color: #ff7b7b; text-shadow: 2px 0 rgba(0, 255, 255, 0.6), -2px 0 rgba(255, 0, 80, 0.6); }
+.lf2-count { margin: 0 0 10px; text-align: center; font-size: 0.85rem; opacity: 0.85; }
+.lf2-count b { font-size: 1.4rem; color: #f3d9a4; }
+.lf2-tray { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; min-height: 140px; }
+.lf2-mid { align-self: center; text-align: center; }
+.lf2-vs { margin: 0; font-style: italic; opacity: 0.7; }
+.lf2-score { margin: 6px 0 0; font-size: 1.5rem; color: #fff; min-width: 7ch; }
+.lf2-die { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 6px; font-size: 26px; line-height: 1; background: #f5f0ff; color: #1a1426; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); animation: lf2-jitter 160ms steps(2) infinite; }
+.lf2-die.lf2-right { background: #1d1726; color: #fff; border: 1px solid rgba(255, 120, 120, 0.6); }
+.lf2-die.is-free { position: fixed; z-index: 9100; animation: none; }
+.lf2-window.is-shaking { animation: lf2-shake 90ms linear infinite; }
+.lf2-window.is-bursting { animation: lf2-burst 900ms ease-out forwards; }
+.lf2-window.is-gone { opacity: 0; transition: opacity 400ms; }
+.lf2-spill { position: fixed; inset: 0; z-index: 9100; overflow: visible; }
+.lf2-tears { position: fixed; inset: 0; z-index: 9200; display: none; }
+body.lf2-tearing .lf2-tears { display: block; }
+.lf2-tears i { position: absolute; left: -5%; width: 110%; height: 7vh; background: rgba(20, 120, 255, 0.18); mix-blend-mode: screen; animation: lf2-tear 260ms steps(3) infinite; }
+.lf2-tears i:nth-child(1) { top: 8%; } .lf2-tears i:nth-child(2) { top: 23%; animation-duration: 190ms; } .lf2-tears i:nth-child(3) { top: 41%; background: rgba(255, 0, 90, 0.2); }
+.lf2-tears i:nth-child(4) { top: 57%; animation-duration: 310ms; } .lf2-tears i:nth-child(5) { top: 72%; background: rgba(0, 255, 200, 0.16); } .lf2-tears i:nth-child(6) { top: 88%; }
+body.lf2-glitch #app, body.lf2-glitch .table-wrap, body.lf2-glitch main { animation: lf2-rgb 180ms steps(2) infinite; }
+body.lf2-tearing #app, body.lf2-tearing main { animation: lf2-rgb 90ms steps(2) infinite, lf2-skew 140ms steps(3) infinite; filter: saturate(2.2) hue-rotate(40deg) contrast(1.4); }
+@keyframes lf2-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lf2-jitter { 0% { transform: translate(0, 0) rotate(-6deg); } 100% { transform: translate(1px, -2px) rotate(7deg); } }
+@keyframes lf2-shake { 0% { transform: translate(-50%, -50%); } 25% { transform: translate(calc(-50% + 6px), calc(-50% - 4px)) rotate(0.6deg); } 50% { transform: translate(calc(-50% - 7px), calc(-50% + 3px)); } 75% { transform: translate(calc(-50% + 3px), calc(-50% + 6px)) rotate(-0.8deg); } 100% { transform: translate(-50%, -50%); } }
+@keyframes lf2-burst { 0% { transform: translate(-50%, -50%) scale(1); filter: none; } 30% { transform: translate(-50%, -50%) scale(1.08) skewX(-6deg); filter: hue-rotate(90deg) contrast(2); } 100% { transform: translate(-50%, -48%) scale(0.96) skewX(4deg); filter: hue-rotate(200deg) contrast(1.6) blur(1px); opacity: 0.55; } }
+@keyframes lf2-rgb { 0% { filter: drop-shadow(3px 0 rgba(255, 0, 60, 0.8)) drop-shadow(-3px 0 rgba(0, 255, 255, 0.8)); } 100% { filter: drop-shadow(-4px 1px rgba(255, 0, 60, 0.8)) drop-shadow(4px -1px rgba(0, 255, 255, 0.8)); } }
+@keyframes lf2-skew { 0% { transform: translateX(0) skewX(0); } 50% { transform: translateX(-12px) skewX(3deg); } 100% { transform: translateX(9px) skewX(-2deg); } }
+@keyframes lf2-tear { 0% { transform: translateX(-30px); } 50% { transform: translateX(40px); } 100% { transform: translateX(-10px); } }
+
+/* 0.27.1: the crash report's NaN high score. */
+.bsod-score { margin: 14px 0 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-family: Consolas, "Lucida Console", monospace; }
+.bsod-score[hidden] { display: none; }
+.bsod-score-head { width: 100%; margin: 0; letter-spacing: 0.06em; }
+.bsod-score label { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+.bsod-score input { width: 12ch; padding: 4px 6px; background: transparent; color: #fff; border: 1px solid rgba(255, 255, 255, 0.7); font: inherit; text-transform: uppercase; }
+.bsod-score input[name="last"] { width: 3ch; }
+.bsod-save { padding: 5px 14px; background: #fff; color: #0a5bd6; border: 0; font: inherit; font-weight: 700; cursor: pointer; }
+.bsod-save:disabled { opacity: 0.55; cursor: default; }
+.bsod-score-status { width: 100%; margin: 0; min-height: 1.2em; }
+#bsod .bsod-score input { background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.85) !important; border-radius: 0 !important; color: #fff !important; box-shadow: none !important; height: auto; min-height: 0; }

@@ -16,6 +16,22 @@ function useCloud() {
 
 export { isStandaloneMode } from "../app/standalone.js";
 
+/**
+ * Ainmos 0.27.1: beating L3V1@+H@N D3$TR0Y3R 0F DR3@M$ scores "NaN". The boards
+ * only take numbers, so it is saved as NAN_SCORE (ranks above everything) with
+ * breakdown.nan, and every list shows it as NaN.
+ */
+export const NAN_SCORE = 999999999;
+
+export function isNanScore(entry) {
+  return !!entry && (Number(entry.score) >= NAN_SCORE || !!entry.breakdown?.nan);
+}
+
+/** "123 pts", or "NaN" for a run that beat Endless Mode. */
+export function scoreLabel(entry) {
+  return isNanScore(entry) ? "NaN" : `${entry?.score ?? 0} pts`;
+}
+
 export function validateScoreName(firstRaw, lastRaw) {
   const first = String(firstRaw ?? "").trim();
   const last = String(lastRaw ?? "").trim();

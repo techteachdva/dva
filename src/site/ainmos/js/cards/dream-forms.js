@@ -23,7 +23,7 @@ export const DREAM_FORMS = Object.freeze([
   { id: "unity", name: "Unity", pattern: "Three 1s", objectId: "egg" },
 ]);
 
-/** When two Forms tie on dice, the rarer one names the spread. */
+/** Order Forms are listed in when they tie on dice: rarer first. */
 const FORM_PRIORITY = ["unity", "trifecta", "trinity", "chord", "ladder", "echo"];
 
 export const PSYCHE_UPGRADES = Object.freeze({
@@ -113,22 +113,33 @@ export function matchingForms(cards) {
 }
 
 /**
- * The Form this spread counts as, and the dice it adds. Null when none.
- * A Dreambeast's ward ({ formId, amount }) takes dice off that one Form, so the
- * spread may count as a different Form that the beast does not block.
+ * Ainmos 0.27.1: Dream Forms stack. A spread scores EVERY Form it makes, so
+ * 1-2-3 in three different suits is a Ladder and a Trinity and adds both.
+ * A Dreambeast's ward ({ formId, amount }) takes dice off its one Form only.
+ * Returns the combined result (null when no Form): dice and blocked are totals,
+ * name joins the Forms ("Trinity + Ladder"), forms lists each one, and id/level
+ * are the strongest Form's.
  */
 export function bestForm(state, cards, { ward = null } = {}) {
   const found = matchingForms(cards);
   if (!found.length) return null;
-  const ranked = found
+  const forms = found
     .map((id) => {
       const full = formDice(state, id);
       const blocked = ward && (ward.formId === id || ward.formId === "all") ? Math.min(full, ward.amount || 0) : 0;
-      return { id, dice: full - blocked, fullDice: full, blocked, level: formLevel(state, id) };
+      return { id, name: formById(id).name, dice: full - blocked, fullDice: full, blocked, level: formLevel(state, id) };
     })
     .sort((a, b) => b.dice - a.dice || FORM_PRIORITY.indexOf(a.id) - FORM_PRIORITY.indexOf(b.id));
-  const top = ranked[0];
-  return { ...top, name: formById(top.id).name };
+  const top = forms[0];
+  return {
+    id: top.id,
+    level: top.level,
+    name: forms.map((f) => f.name).join(" + "),
+    dice: forms.reduce((n, f) => n + f.dice, 0),
+    fullDice: forms.reduce((n, f) => n + f.fullDice, 0),
+    blocked: forms.reduce((n, f) => n + f.blocked, 0),
+    forms,
+  };
 }
 
 /**

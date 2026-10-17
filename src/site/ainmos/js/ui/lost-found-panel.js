@@ -211,7 +211,7 @@ export function renderLostFound(state, handlers = {}) {
   const rerollHow = rerollPayment(state, buyer);
   const rerollBlocked = rerollHow
     ? ""
-    : `Looking again takes ${REROLL_GLIMMER_COST}✧ Glimmer or ${REROLL_TOKEN_COST} Power Token.`;
+    : `Looking again takes ${REROLL_GLIMMER_COST}✧ Glimmer.`;
   const rerollLabel = rerollHow === "token" ? `Look again · ${REROLL_TOKEN_COST}⚡` : `Look again · ${REROLL_GLIMMER_COST}✧`;
 
   host.innerHTML = `

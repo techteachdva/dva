@@ -127,27 +127,17 @@ export function statForPhaseBudget(phase, _state) {
   return phaseSuitForOpening(phase);
 }
 
-export function phaseTokenPlayer(state) {
-  if (!state.phaseTokenAsPsyche) return null;
-  return state.players.find((p) => p.alive && p.id === state.phaseTokenAsPsyche) || null;
+/** Ainmos 0.27.1: Power Tokens only activate powers; they never open a phase. */
+export function phaseTokenPlayer() {
+  return null;
 }
 
-export function phaseTokenValue(state, player) {
-  if (!player || state.phaseTokenAsPsyche !== player.id) return 0;
-  const phase = PHASES[state.phaseIndex];
-  const suit = phaseSuitForOpening(phase);
-  const cards = suit ? selectedBySuit(state, player, suit) : selectedCards(state, player);
-  if (cards.length >= PHASE_OPENER_MAX_CARDS) return 0;
-  return 1;
+export function phaseTokenValue() {
+  return 0;
 }
 
-export function canUsePhasePowerToken(state, player) {
-  if (!player?.alive || (player.powerTokens || 0) < 1) return false;
-  if (!phaseOpeningActive(state)) return false;
-  const phase = PHASES[state.phaseIndex];
-  const suit = phaseSuitForOpening(phase);
-  const cards = suit ? selectedBySuit(state, player, suit) : selectedCards(state, player);
-  return cards.length < PHASE_OPENER_MAX_CARDS;
+export function canUsePhasePowerToken() {
+  return false;
 }
 
 /** Dreamer whose selected Psyche (or 1 Power Token) will open the current phase. */

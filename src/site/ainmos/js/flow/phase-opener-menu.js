@@ -62,7 +62,7 @@ function openerLead(phase, suitLabel, base) {
   const free = base > 0
     ? `Your ${suitLabel} gives ${base} free ${phase} Action${base === 1 ? "" : "s"}: ${what}.`
     : `Your ${suitLabel} is 0: no free ${phase} Actions.`;
-  return `${free} Add 1 ${suitLabel} card for +its value, or a Power Token for +1.`;
+  return `${free} Add 1 ${suitLabel} card for +its value.`;
 }
 
 /** What the phase budget buys, for the live preview. */
@@ -263,7 +263,7 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   const hasOpenerCard = !!player && (player.hand || []).some((c) => isOpenerCard(c, state));
   const idleNote = hasOpenerCard
     ? `pick a ${suitLabel} card for more Actions`
-    : (tokenOk ? `no ${suitLabel}: use a Power Token or Skip` : `no ${suitLabel} in hand: Skip`);
+    : `no ${suitLabel} in hand`;
 
   body.innerHTML = `
     <div id="phase-opener-menu" class="phase-opener-menu phase-opener-solo" data-phase="${phase}" data-suit="${suit || ""}" data-count="1">
@@ -287,9 +287,6 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
         <div class="phase-opener-actions">
           <button type="button" id="btn-view-board" class="btn btn-phase-opener-skip">View board</button>
           <button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip" title="Skip: keep your cards and give up this phase's Actions, free ones too.">Skip</button>
-          <button type="button" class="btn btn-phase-opener-skip phase-opener-token${tokenOn ? " on" : ""}" data-token-id="${player?.id || ""}" ${tokenOk ? "" : "disabled"} title="Spend 1 Power Token for +1 ${phase} Action">
-            Power Token · ${player?.powerTokens || 0}
-          </button>
           <button type="button" id="btn-spread-opener" class="btn primary btn-phase-opener-confirm tint-${tint}" data-tutorial-action="${kind}" ${canConfirm ? "" : "disabled"}>
             ${confirmLabel(phase, bought, projected)}
           </button>

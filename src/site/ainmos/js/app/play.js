@@ -50,7 +50,7 @@ import { runPendingBoardFx, syncBoardMotion, resetBoardMotion, cancelQueuedEncou
 import { playOpeningCinematic } from "../flow/opening-cinematic.js";
 import { calculateFinalScore } from "../core/scoring.js";
 import { seedRandomness } from "../core/rng.js";
-import { fetchHighScores, submitHighScore, validateScoreName, isStandaloneMode } from "../save/highscores.js";
+import { fetchHighScores, submitHighScore, validateScoreName, isStandaloneMode, NAN_SCORE, scoreLabel } from "../save/highscores.js";
 import {
   canSaveGame,
   buildSaveLabel,
@@ -161,6 +161,7 @@ import { chooseArchetype } from "../dreamers/archetype-board.js";
 import { searchForArchetypeHome } from "../dreamers/archetype-call.js";
 import { startEndless, isEndless, endlessStatusText } from "../encounters/endless.js";
 import { showBsod, isBsodOpen } from "../ui/bsod.js";
+import { playLeviathanFinale, isLeviathanFinaleRunning } from "../ui/leviathan-finale.js";
 import { createSpectatorBot } from "../dev/bot-ai.js";
 import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "../encounters/dreambeasts.js";
 import { requestEndPhase } from "../flow/phase-skip.js";
@@ -614,7 +615,7 @@ function bindFullscreenPrompt() {
     prompt.classList.add("hidden");
     startGameRadio();
     keepScreenAwake();
-    const wantsCinematic = state && !launchConfig?.resumeSaveId && !state.tutorialMode;
+    const wantsCinematic = state && !launchConfig?.resumeSaveId && !state.tutorialMode && !state.seedFlags?.leviathan;
     // Never leave the table hidden: if fullscreen hangs, give up on the opening after a moment.
     window.setTimeout(() => {
       if (document.body.classList.contains("opening-cinematic-pending")) {
@@ -669,6 +670,7 @@ function bindFullscreenPrompt() {
       document.body.classList.remove("opening-cinematic-pending");
     }
     prompt.remove();
+    if (state?.seedFlags?.leviathan) renderAll();
   };
 
   prompt.addEventListener("pointerdown", (event) => {
@@ -706,9 +708,12 @@ function applyPowerTokenUse(id) {
     renderAll();
     return;
   }
-  if (id === "spreadPlus") {
-    powerBonus(state);
-    renderAll();
+  if (id === "dreamerPower") {
+    buildPhaseHandlers().useDreamerPower();
+    return;
+  }
+  if (String(id).startsWith("arch:")) {
+    buildPhaseHandlers().useArchetypePower(String(id).slice(5));
     return;
   }
   if (id === "spreadMinus") {
@@ -781,7 +786,7 @@ function bindEndLeaderboard() {
       if (status) status.textContent = "Saving score…";
       const result = await submitHighScore({
         name: valid.name,
-        score: pendingScoreResult.breakdown.total,
+        score: pendingScoreResult.nan ? NAN_SCORE : pendingScoreResult.breakdown.total,
         won: pendingScoreResult.won !== false,
         seconds: pendingScoreResult.seconds,
         difficulty: pendingScoreResult.difficulty,
@@ -803,6 +808,31 @@ function bindEndLeaderboard() {
   });
 }
 
+/** The blue screen's crash report: save this Endless triumph as a NaN high score. */
+async function saveNanScore({ first, last }) {
+  const valid = validateScoreName(first, last);
+  if (!valid.ok) return { ok: false, message: valid.message };
+  const breakdown = calculateFinalScore(state);
+  const lengthLabel = state.lengthKey && LENGTHS[state.lengthKey] ? LENGTHS[state.lengthKey].label : "Endless";
+  const seconds = Math.max(0, Math.round((Date.now() - (state.gameStartedAt || Date.now())) / 1000));
+  const result = await submitHighScore({
+    name: valid.name,
+    score: NAN_SCORE,
+    won: true,
+    seconds,
+    difficulty: `${lengthLabel} · Endless`,
+    breakdown: { ...breakdown, nan: true },
+  });
+  scoreSubmitted = true;
+  const where = isStandaloneMode() ? "this device's high scores" : "the leaderboard";
+  return {
+    ok: true,
+    message: result.cloudError
+      ? `NaN saved on this device. The global board could not take it right now.`
+      : `NaN written to ${where}${result.rank ? ` · RANK #${result.rank}` : ""}.`,
+  };
+}
+
 function renderLeaderboardList(scores) {
   const list = document.getElementById("end-score-list");
   if (!list) return;
@@ -811,7 +841,7 @@ function renderLeaderboardList(scores) {
     return;
   }
   list.innerHTML = scores.slice(0, 20).map((entry) =>
-    `<li><strong>${entry.rank}.</strong> ${entry.name} — ${entry.score} pts</li>`).join("");
+    `<li><strong>${entry.rank}.</strong> ${entry.name} — ${scoreLabel(entry)}</li>`).join("");
 }
 
 async function loadLeaderboardPreview() {
@@ -2768,15 +2798,31 @@ function renderAll() {
     syncTutorial(state);
   }
 
+  // LEVIATHAN seed: straight to the ending, as if the Destroyer of Dreams just fell.
+  if (state.seedFlags?.leviathan && fullscreenReady && state.status === "playing" && !bsodShown) {
+    state.status = "won";
+    state.endlessTriumph = true;
+    state.leviathanSeedRun = true;
+  }
   if (state.status === "won" && state.endlessTriumph && !bsodShown) {
     bsodShown = true;
     syncTurnHalo(null);
     clearAutosave();
-    playSfx("dice-lose");
-    showBsod({ onDone: () => renderAll() });
+    playSfx("dice-roll");
+    // 0.27.1: the impossible fight, the dice spill out of the window, then the blue screen.
+    playLeviathanFinale({
+      dreamer: state.players.find((p) => p.alive)?.name || "You",
+      onDone: () => {
+        playSfx("dice-lose");
+        showBsod({
+          onDone: () => renderAll(),
+          onSaveScore: state.leviathanSeedRun ? null : (name) => saveNanScore(name),
+        });
+      },
+    });
     return;
   }
-  if (isBsodOpen()) return;
+  if (isBsodOpen() || isLeviathanFinaleRunning()) return;
   if (state.status === "won") {
     syncTurnHalo(null);
     syncDeckPressure(state);
@@ -2793,6 +2839,12 @@ function renderAll() {
           : `${state.goalPoints} pts`);
       const seconds = Math.max(0, Math.round((Date.now() - (state.gameStartedAt || Date.now())) / 1000));
       pendingScoreResult = { breakdown, seconds, difficulty: state.endless ? `${lengthLabel} · Endless` : lengthLabel, won: true, summary: buildRunSummary(state) };
+      // Beating Endless Mode scores NaN (saved as NAN_SCORE, shown as NaN).
+      if (state.endlessTriumph) {
+        pendingScoreResult.nan = true;
+        pendingScoreResult.breakdown = { ...breakdown, total: "NaN", nan: true };
+      }
+      if (state.leviathanSeedRun) scoreSubmitted = true;
     }
     const msg = state.endlessTriumph
       ? "You dreamed a dream within a dream. Nothing is left to dream. You finally wake, for real this time."

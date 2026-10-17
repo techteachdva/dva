@@ -21,8 +21,12 @@ export function isBsodOpen() {
   return !!active;
 }
 
-/** Run the crash. `onDone` fires when the player chooses to wake. */
-export function showBsod({ onDone } = {}) {
+/**
+ * Run the crash. `onDone` fires when the player chooses to wake.
+ * `onSaveScore({ first, last })` (optional) saves the NaN high score and returns a
+ * status line; without it (seed runs) the report says scores are off.
+ */
+export function showBsod({ onDone, onSaveScore = null } = {}) {
   if (typeof document === "undefined" || active) return;
   const body = document.body;
   body.classList.add("bsod-glitching");
@@ -38,6 +42,13 @@ export function showBsod({ onDone } = {}) {
       <p class="bsod-head">Your dream ran into a problem and needs to restart. We're just collecting some dreams, and then we'll restart for you.</p>
       <p class="bsod-code">STOP CODE: DREAMER_WITHIN_A_DREAM (0x0000AINMOS)<br>What failed: L3V1@+H@N_D3$TR0Y3R_0F_DR3@M$.sys</p>
       <pre class="bsod-term" aria-live="off"></pre>
+      <form class="bsod-score" hidden autocomplete="off">
+        <p class="bsod-score-head">CRASH REPORT · FINAL SCORE = <b>NaN</b></p>
+        <label>FIRST NAME <input type="text" name="first" maxlength="16" spellcheck="false"></label>
+        <label>LAST INITIAL <input type="text" name="last" maxlength="1" spellcheck="false"></label>
+        <button type="submit" class="bsod-save">Save NaN</button>
+        <p class="bsod-score-status" aria-live="polite"></p>
+      </form>
       <div class="bsod-foot">
         <span class="bsod-progress">0% complete</span>
         <button type="button" class="bsod-wake" hidden>Wake up</button>
@@ -47,6 +58,28 @@ export function showBsod({ onDone } = {}) {
   const term = host.querySelector(".bsod-term");
   const progress = host.querySelector(".bsod-progress");
   const wake = host.querySelector(".bsod-wake");
+  const scoreForm = host.querySelector(".bsod-score");
+  const scoreStatus = host.querySelector(".bsod-score-status");
+  scoreForm.addEventListener("pointerdown", (event) => event.stopPropagation());
+  scoreForm.addEventListener("keydown", (event) => event.stopPropagation());
+  scoreForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!onSaveScore || scoreForm.dataset.saved) return;
+    const data = new FormData(scoreForm);
+    scoreStatus.textContent = "WRITING DUMP…";
+    try {
+      const message = await onSaveScore({ first: String(data.get("first") || ""), last: String(data.get("last") || "") });
+      if (message?.ok === false) {
+        scoreStatus.textContent = message.message || "Could not save.";
+        return;
+      }
+      scoreForm.dataset.saved = "1";
+      scoreForm.querySelector(".bsod-save").disabled = true;
+      scoreStatus.textContent = message?.message || "Saved: NaN.";
+    } catch (err) {
+      scoreStatus.textContent = err?.message || "Could not save.";
+    }
+  });
 
   const full = Array.from({ length: BSOD_LINES }, (_, i) => `C:\\DREAM\\${String(i + 1).padStart(3, "0")}> ${BSOD_LINE}`).join("\n");
   let shown = 0;
@@ -61,8 +94,13 @@ export function showBsod({ onDone } = {}) {
     term.textContent = full;
     term.scrollTop = term.scrollHeight;
     progress.textContent = "100% complete";
+    scoreForm.hidden = false;
+    if (!onSaveScore) {
+      scoreForm.querySelectorAll("input, button").forEach((el) => { el.disabled = true; });
+      scoreStatus.textContent = "Seed run: no high score is recorded.";
+    }
     wake.hidden = false;
-    wake.focus({ preventScroll: true });
+    (onSaveScore ? scoreForm.querySelector("input") : wake).focus({ preventScroll: true });
   };
 
   const type = () => {
@@ -96,7 +134,7 @@ export function showBsod({ onDone } = {}) {
 
   host.addEventListener("pointerdown", hurry);
   const onKey = (event) => {
-    if (event.key === "Enter" && state.done) {
+    if (event.key === "Enter" && state.done && !scoreForm.contains(event.target)) {
       wake.click();
       return;
     }

@@ -153,5 +153,16 @@ Type one in the menu's Seed box (case doesn't matter). The seed preview names it
 | LEMON | All 12 Archetypes are already yours; the night is Endless Mode from the start, each Cycle closing with the next enhanced Leviathan |
 | BUBBLEGUM | Every suited Psyche card carries a random upgrade (Chaotic, Vivid, Lucid, Recurring); Wilds can't take one |
 | SOMNIAINMOS | Every Dreamer's stats are +1 (no stat is 0) |
+| LEVIATHAN | Skips to the very end: the impossible dice fight, the crash, the blue screen (no score) |
 
 Older codes still work: SOMNIA, DMZEMO, SPARK, FANTASY, NIGHTMARE, REM. Code: `SPECIAL_SEEDS` in `js/core/rng.js`, effects in `createInitialState` (`applyPsycheSeedCodes`, `beginLemonNight`), `drawDreamCard` (`rowanSpawn`) and `effectiveDreamerStat`.
+
+## 0.27.1 Stacking Forms, power-only tokens, the true ending (2026-10-16)
+
+Phil's calls, now locked:
+
+- **Dream Forms stack.** A spread scores every Form it makes (`bestForm` in `js/cards/dream-forms.js` returns the sum, with `forms` listing each). 1-2-3 in three suits = Ladder + Trinity; three 1s of one suit = Unity + Trifecta + Chord + Echo. A ward trims only its own Form.
+- **Power Tokens only activate powers** (Dreamer and Archetype). No more +1 fight dice, no token-opened phases, no token reroll in the Lost & Found (Glimmer only).
+- **The Destroyer of Dreams** shows Power 99 / "99d6" but rolls 30d6 (`rollPower`). Felling it plays `js/ui/leviathan-finale.js` (an impossible fight, then the dice burst across the screen and the dream tears), then the blue screen, whose crash report saves the high score as **NaN** (`NAN_SCORE` = 999999999 with `breakdown.nan`, always shown as "NaN"; no backend change needed).
+- **LEVIATHAN seed** plays that ending straight away (no score recorded).
+- Decks re-tuned for the above: Daydream 11/6/2/1/0 + 2 Wilds (73%), Nap 12/6/2/1/0 + 1 Wild (57%), Deep 9/6/3/2/1 + 3 Wilds (32%).
