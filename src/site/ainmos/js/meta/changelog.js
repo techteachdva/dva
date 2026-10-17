@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.27.2";
+export const SOMNIA_VERSION = "0.27.3";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.27.3",
+    title: "Dream Tolls",
+    notes: [
+      "A Dream that says Meet is your only option now skips Reveal and Explore and opens Meet. Trapped leaves only Reveal. Chase leaves only Explore. If Meet is skipped, dusk still mills the Waking Mind.",
+      "Each Dream does one thing. Most are a small hindrance: Repress from the Waking Mind or your hand, block some or all Dream Forms, discard Psyche above a stat, discard Psyche totaling the Dreambeasts on the board, discard 2 Psyche then draw 1, discard an Object, a Dreambeast appears, or forget a Landscape.",
+      "Three Dreams are a small relief: Well Being and Recovery draw 3 Psyche. Transformation discards 1 Psyche, then draws an Object.",
+    ],
+  },
   {
     version: "0.27.2",
     title: "Clear Events",

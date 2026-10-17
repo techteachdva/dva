@@ -6,9 +6,13 @@ import {
   addLog,
   allEncountersOnBoard,
   drawPsycheForPlayer,
+  fastForwardToPhase,
   removeEncounterFromLandscape,
   revealLandscapeTile,
 } from "../core/state.js";
+import { totalStat } from "../core/rules.js";
+import { psycheCardValue } from "../cards/psyche.js";
+import { formById } from "../cards/dream-forms.js";
 import { scaleEventCount } from "../board/event-landscapes.js";
 import { recordQuestEvent } from "../dreamers/quests.js";
 import { grantPowerTokens } from "../cards/power-tokens.js";
@@ -19,6 +23,7 @@ import {
   enqueueRepressFromHand,
   enqueueDiscardFromHand,
   enqueueRepressObjects,
+  isDreambeastPsycheCard,
 } from "../dreamers/subconscious.js";
 import { discardToMindstream } from "../cards/mindstream-supply.js";
 import { discardDreamCard } from "../cards/dream-deck.js";
@@ -27,6 +32,46 @@ import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
+}
+
+const STAT_LABELS = {
+  lucidity: "Lucidity",
+  elasticity: "Elasticity",
+  willpower: "Willpower",
+};
+
+function spendablePsyche(player) {
+  return (player?.hand || []).filter((card) =>
+    card
+    && card.type !== "psyche-power"
+    && card.type !== "object"
+    && !isDreambeastPsycheCard(card)
+  );
+}
+
+function heldObjects(player) {
+  return [...(player?.objects || []), ...(player?.persistent || [])];
+}
+
+function chainAfterDiscards(state, after) {
+  const prev = state.onResolutionIdle;
+  state.onResolutionIdle = (s) => {
+    after(s);
+    if (typeof prev === "function") prev(s);
+  };
+}
+
+function lockOnlyPhase(state, phase) {
+  const name = phase === "Reveal" || phase === "Explore" || phase === "Meet" ? phase : "Meet";
+  state.onlyPhaseThisRound = name;
+  if (name === "Meet") state.meetOnlyRound = true;
+  const skipped = fastForwardToPhase(state, name);
+  if (!skipped.length) {
+    addLog(state, `${name} is your only phase this round.`);
+    return;
+  }
+  const verb = skipped.length === 1 ? "passes" : "pass";
+  addLog(state, `${skipped.join(" and ")} ${verb} without you. ${name} is your only phase this round.`);
 }
 
 function discardHighest(state, player) {
@@ -355,33 +400,64 @@ function applyResolutionStep(state, player, step, helpers = {}) {
     case "discardSuitPsyche":
       discardSuit(state, player, p.suit || "lucidity", p.count || 1);
       break;
-    case "repressPsyche":
-      enqueueRepressFromHand(state, player, p.count || 1, {
-        reason: `${player.name}: Repress ${p.count || 1} Psyche.`,
+    case "repressPsyche": {
+      const have = spendablePsyche(player).length;
+      if (!have) {
+        addLog(state, `${player.name} has no Psyche to Repress.`);
+        break;
+      }
+      const n = Math.min(p.count || 1, have);
+      enqueueRepressFromHand(state, player, n, {
+        reason: `${player.name}: Repress ${n} Psyche.`,
         strict: true,
       });
       break;
-    case "repressPsycheAll":
-      alive(state).forEach((pl) => {
-        enqueueRepressFromHand(state, pl, p.count || 1, {
-          reason: `${pl.name}: Repress ${p.count || 1} Psyche.`,
-        });
-      });
-      break;
-    case "repressObjects":
-      enqueueRepressObjects(state, player, p.count || 1, {
-        reason: `${player.name}: choose ${p.count || 1} Object${(p.count || 1) === 1 ? "" : "s"} to Discard.`,
-        strict: true,
-      });
-      break;
-    case "repressObjectsAll":
-      alive(state).forEach((pl) => {
-        enqueueRepressObjects(state, pl, p.count || 1, {
-          reason: `${pl.name}: Discard ${p.count || 1} Object${(p.count || 1) === 1 ? "" : "s"}.`,
+    }
+    case "repressPsycheAll": {
+      const holders = alive(state).filter((pl) => spendablePsyche(pl).length);
+      if (!holders.length) {
+        addLog(state, "No Psyche in hand to Repress.");
+        break;
+      }
+      holders.forEach((pl, index) => {
+        const n = Math.min(p.count || 1, spendablePsyche(pl).length);
+        enqueueRepressFromHand(state, pl, n, {
+          reason: `${pl.name}: Repress ${n} Psyche.`,
           strict: true,
+          hold: index < holders.length - 1,
         });
       });
       break;
+    }
+    case "repressObjects": {
+      const have = heldObjects(player).length;
+      if (!have) {
+        addLog(state, `${player.name} has no Object to discard.`);
+        break;
+      }
+      const n = Math.min(p.count || 1, have);
+      enqueueRepressObjects(state, player, n, {
+        reason: `${player.name}: choose ${n} Object${n === 1 ? "" : "s"} to Discard.`,
+        strict: true,
+      });
+      break;
+    }
+    case "repressObjectsAll": {
+      const holders = alive(state).filter((pl) => heldObjects(pl).length);
+      if (!holders.length) {
+        addLog(state, "No Objects to discard.");
+        break;
+      }
+      holders.forEach((pl, index) => {
+        const n = Math.min(p.count || 1, heldObjects(pl).length);
+        enqueueRepressObjects(state, pl, n, {
+          reason: `${pl.name}: Discard ${n} Object${n === 1 ? "" : "s"}.`,
+          strict: true,
+          hold: index < holders.length - 1,
+        });
+      });
+      break;
+    }
     case "repressBoardBeast": {
       const list = allEncountersOnBoard(state);
       const n = Math.min(p.count || 1, list.length);
@@ -431,9 +507,124 @@ function applyResolutionStep(state, player, step, helpers = {}) {
       break;
     }
     case "meetOnlyThisRound":
-      state.meetOnlyRound = true;
-      addLog(state, "Dreamers may only Meet this round.");
+      lockOnlyPhase(state, "Meet");
       break;
+    case "onlyPhase":
+      lockOnlyPhase(state, p.phase || "Meet");
+      break;
+    case "blockForms": {
+      const forms = p.forms;
+      if (!forms || forms === "all") {
+        state.blockedForms = "all";
+        addLog(state, "Dream Forms add no dice this round.");
+        break;
+      }
+      const ids = (Array.isArray(forms) ? forms : [forms]).filter((id) => formById(id));
+      state.blockedForms = ids;
+      const names = ids.map((id) => formById(id).name);
+      addLog(state, names.length
+        ? `${names.join(" and ")} add no dice this round.`
+        : "Dream Forms add no dice this round.");
+      break;
+    }
+    case "discardPsycheDrawPsyche": {
+      const discardN = p.discard || 2;
+      const drawN = p.draw || 1;
+      const paying = alive(state).filter((pl) => spendablePsyche(pl).length);
+      if (!paying.length) {
+        addLog(state, "No Psyche in hand to discard.");
+        break;
+      }
+      chainAfterDiscards(state, (s) => {
+        paying.forEach((pl) => {
+          const fresh = s.players.find((entry) => entry.id === pl.id) || pl;
+          const drawn = drawPsycheForPlayer(s, fresh, drawN);
+          if (drawn.length) addLog(s, `${fresh.name} draws ${drawn.length} Psyche.`);
+        });
+      });
+      paying.forEach((pl, index) => {
+        const n = Math.min(discardN, spendablePsyche(pl).length);
+        enqueueDiscardFromHand(state, pl, n, {
+          reason: `${pl.name}: discard ${n} Psyche, then draw ${drawN}.`,
+          strict: true,
+          cardFilter: { payablePsyche: true },
+          hold: index < paying.length - 1,
+        });
+      });
+      break;
+    }
+    case "discardPsycheDrawObject": {
+      const discardN = p.discard || 1;
+      const drawN = p.draw || 1;
+      const paying = alive(state).filter((pl) => spendablePsyche(pl).length);
+      if (!paying.length) {
+        addLog(state, "No Psyche in hand. No Object is drawn.");
+        break;
+      }
+      chainAfterDiscards(state, (s) => {
+        paying.forEach((pl) => {
+          const fresh = s.players.find((entry) => entry.id === pl.id) || pl;
+          if (helpers?.drawObjects) {
+            const objs = helpers.drawObjects(s, fresh, drawN, helpers);
+            if (objs?.length) addLog(s, `${fresh.name} draws ${objs.length} Object${objs.length === 1 ? "" : "s"}.`);
+            else addLog(s, `${fresh.name} finds no Object to draw.`);
+          }
+        });
+      });
+      paying.forEach((pl, index) => {
+        const n = Math.min(discardN, spendablePsyche(pl).length);
+        enqueueDiscardFromHand(state, pl, n, {
+          reason: `${pl.name}: discard ${n} Psyche, then draw ${drawN} Object${drawN === 1 ? "" : "s"}.`,
+          strict: true,
+          cardFilter: { payablePsyche: true },
+          hold: index < paying.length - 1,
+        });
+      });
+      break;
+    }
+    case "discardPsycheForBeasts": {
+      const beasts = allEncountersOnBoard(state).filter(({ encounter }) => (
+        encounter.type === "dreambeast" || encounter.boss || encounter.type === "boss-dream"
+      )).length;
+      if (beasts <= 0) {
+        addLog(state, "No Dreambeasts are standing. The spread costs nothing.");
+        break;
+      }
+      const payer = spendablePsyche(player).length
+        ? player
+        : alive(state).find((pl) => spendablePsyche(pl).length);
+      if (!payer) {
+        addLog(state, "No Psyche in hand to spend against the Dreambeasts.");
+        break;
+      }
+      enqueueDiscardFromHand(state, payer, 0, {
+        needValue: beasts,
+        strict: true,
+        cardFilter: { payablePsyche: true },
+        reason: `${payer.name}: discard Psyche totaling ${beasts}, one for each Dreambeast on the board.`,
+      });
+      break;
+    }
+    case "discardPsycheAboveStat": {
+      const stat = p.stat || "lucidity";
+      const label = STAT_LABELS[stat] || stat;
+      alive(state).forEach((pl) => {
+        const cap = totalStat(pl, stat, state);
+        const high = spendablePsyche(pl).filter((card) => psycheCardValue(card) > cap);
+        if (!high.length) {
+          addLog(state, `${pl.name} holds no Psyche above ${label} ${cap}.`);
+          return;
+        }
+        const ids = new Set(high.map((card) => card.instanceId));
+        pl.hand = (pl.hand || []).filter((card) => !ids.has(card.instanceId));
+        if (!state.psycheDiscard) state.psycheDiscard = [];
+        high.forEach((card) => state.psycheDiscard.push(card));
+        recordQuestEvent(state, "discard_psyche", { count: high.length, landscapeId: pl.landscapeId });
+        addLog(state, `${pl.name} discards ${high.map((card) => card.name).join(", ")} — valued above ${label} ${cap}.`);
+        if (state.checkPsycheDeath) state.checkPsycheDeath(pl);
+      });
+      break;
+    }
     case "freeExplore":
       state.freeExploreNextRound = true;
       addLog(state, "The next Explore is free. Dreamers may move to any revealed Landscape.");

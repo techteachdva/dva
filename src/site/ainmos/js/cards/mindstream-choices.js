@@ -421,7 +421,7 @@ export function resolveMindstreamChoice(state, choiceId, helpers = {}) {
     }
     if (sideId === "good") payDreamToll(state, player, resolution.good.toll, h);
     applyResolutionEffect(state, player, side, h, sideId);
-    logMoment(state, `${card.name}: ${side.label}.`);
+    logMoment(state, `${card.name}: ${side.hint || side.label}.`);
     return true;
   }
 

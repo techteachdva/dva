@@ -11,6 +11,11 @@ function resolutionCopy(resolution, fallback = "") {
   return lines.length ? lines.join(" ") : fallback;
 }
 
+/** A Dream does one thing. The card says that thing, not an old Bright/Dim pair. */
+function dreamPlayedText(resolution, fallback = "") {
+  return resolution?.bad?.hint || fallback;
+}
+
 export async function loadGameData() {
   const files = [
     "dreamers",
@@ -41,7 +46,7 @@ export function prepareGameData(data) {
   data.mindstream = enrichMindstreamEvents(data.mindstream, data["event-landscapes"] || {});
   data.dreams = (data.dreams || []).map((dream) => ({
     ...dream,
-    text: resolutionCopy(getDreamResolution(dream.id), dream.text || dream.effect || ""),
+    text: dreamPlayedText(getDreamResolution(dream.id), dream.text || dream.effect || ""),
   }));
   return data;
 }
@@ -69,15 +74,11 @@ export const LENGTHS = {
   deep: { label: "Deep Sleep", points: 12, soloPoints: 12, antes: 15, dreams: 15 },
 };
 
-/** ~33% boon / 66% hazard in weighted session draws. */
+/** A few relief Dreams among a deck of small hindrances. Sessions still lean hazard. */
 export const DREAM_BOON_IDS = new Set([
-  "quiet",
-  "recovery",
   "well-being",
-  "heroism",
+  "recovery",
   "transformation",
-  "travel",
-  "wanderlust",
 ]);
 
 export const MINDSTREAM_EVENT_BOON_IDS = new Set([

@@ -1,118 +1,110 @@
 /**
- * Ainmos 40.2 — Dream Bright / Dim pairs.
- * Dim is the free fallback: Repress cards, or Forget Landscapes (often the
- * pair an Archetype quest is asking for). Bright always costs Psyche, usually
- * of one suit, and pays a reward that is worth the tax.
+ * Ainmos Dreams. Each card does one thing when it is drawn.
+ * Most are a small hindrance. A few (Well Being, Recovery, Transformation) are a small relief.
+ * A phase lock skips the other phases and opens the one phase that remains.
  */
 
 export const DREAM_RESOLUTIONS = {
-  betrayal: {
-    good: {
-      label: "Catch the Thief",
-      hint: "Discard 3 Psyche if you hold an Object — your Objects stay",
-      toll: { kind: "psyche", count: 3 },
-      gate: { kind: "object", label: "You hold an Object" },
-    },
+  abandonment: {
     bad: {
-      label: "They Vanish With Everything",
-      hint: "Discard 2 Objects",
-      effect: "repressObjects",
-      params: { count: 2 },
+      label: "Alone on Empty Ground",
+      hint: "Meet is your only option this round",
+      effect: "onlyPhase",
+      params: { phase: "Meet" },
+    },
+  },
+
+  trapped: {
+    bad: {
+      label: "No Way Out",
+      hint: "Reveal is your only phase this round",
+      effect: "onlyPhase",
+      params: { phase: "Reveal" },
     },
   },
 
   chase: {
-    good: {
-      label: "Outrun the Pack",
-      hint: "Forget 1 Landscape if you hold Elasticity — you escape",
-      toll: { kind: "forget", count: 1 },
-      gate: { kind: "suit", suit: "elasticity", count: 1, label: "Hold an Elasticity Psyche" },
-    },
     bad: {
-      label: "Cornered",
-      hint: "A Dreambeast appears on your Landscape",
-      effect: "spawnEncountersOnDreamers",
-      params: {},
+      label: "Nowhere to Run",
+      hint: "Explore is your only phase this round",
+      effect: "onlyPhase",
+      params: { phase: "Explore" },
     },
   },
 
-  heroism: {
-    good: {
-      label: "Stand Over the Fallen",
-      hint: "Discard 2 Willpower — draw 2 Psyche",
-      toll: { kind: "psyche", count: 2, suit: "willpower" },
-      gate: { kind: "suit", suit: "willpower", count: 2, label: "Hold 2 Willpower Psyche" },
-      effect: "drawPsycheAll",
-      params: { count: 2 },
-    },
+  powerlessness: {
     bad: {
-      label: "Glory Turns Hollow",
-      hint: "Discard 1 Object",
-      effect: "repressObjectsAll",
-      params: { count: 1 },
+      label: "Forms Go Dark",
+      hint: "Dream Forms add no dice this round",
+      effect: "blockForms",
+      params: { forms: "all" },
+    },
+  },
+
+  absurdity: {
+    bad: {
+      label: "The Pattern Breaks",
+      hint: "Echo and Ladder add no dice this round",
+      effect: "blockForms",
+      params: { forms: ["echo", "ladder"] },
+    },
+  },
+
+  somnambulance: {
+    bad: {
+      label: "Half the Pattern",
+      hint: "Trinity and Chord add no dice this round",
+      effect: "blockForms",
+      params: { forms: ["trinity", "chord"] },
+    },
+  },
+
+  "pineal-purge": {
+    bad: {
+      label: "The Third Eye Spills",
+      hint: "Trifecta and Unity add no dice this round",
+      effect: "blockForms",
+      params: { forms: ["trifecta", "unity"] },
     },
   },
 
   injury: {
-    good: {
-      label: "Bind the Wound",
-      hint: "Discard 3 Lucidity — draw 1 Object",
-      toll: { kind: "psyche", count: 3, suit: "lucidity" },
-      gate: { kind: "suit", suit: "lucidity", count: 3, label: "Hold 3 Lucidity Psyche" },
-      effect: "drawObject",
-      params: { count: 1 },
-    },
     bad: {
       label: "Bleed Out",
-      hint: "Repress 2 Psyche",
+      hint: "Repress 2 Psyche from your hand",
       effect: "repressPsycheAll",
       params: { count: 2 },
     },
   },
 
-  judgement: {
-    good: {
-      label: "Face the Tribunal",
-      hint: "Repress 3 Psyche — Return 3 Psyche from the Subconscious",
-      toll: { kind: "repressAll", count: 3 },
-      gate: { kind: "tableHand", count: 3, label: "You hold 3 Psyche" },
-      effect: "returnAllDreambeasts",
-      params: {},
-    },
+  bargaining: {
     bad: {
-      label: "The Verdict Hunts",
-      hint: "A Dreambeast appears on your Landscape",
-      effect: "spawnEncountersOnDreamers",
-      params: {},
+      label: "The Deal Takes",
+      hint: "Repress 2 Psyche from your hand",
+      effect: "repressPsycheAll",
+      params: { count: 2 },
     },
   },
 
-  loss: {
-    good: {
-      label: "Hold What Remains",
-      hint: "Remember: discard 4 Willpower — Return 5",
-      toll: { kind: "psyche", count: 4, suit: "willpower" },
-      gate: { kind: "suit", suit: "willpower", count: 4, label: "Hold 4 Willpower Psyche" },
-      effect: "returnCards",
-      params: { count: 5 },
-    },
+  beta: {
     bad: {
-      label: "The Caregiver's Map Tears",
-      hint: "Forget Sea of Teeth and Field of Broken Glass",
-      effect: "forgetNamed",
-      params: { ids: ["sea-of-teeth", "field-of-broken-glass"] },
+      label: "Restless Hands",
+      hint: "Repress 1 Psyche from your hand",
+      effect: "repressPsycheAll",
+      params: { count: 1 },
+    },
+  },
+
+  temptation: {
+    bad: {
+      label: "Let It Go",
+      hint: "Repress 1 Psyche from your hand",
+      effect: "repressPsycheAll",
+      params: { count: 1 },
     },
   },
 
   misunderstanding: {
-    good: {
-      label: "Speak Plainly",
-      hint: "Discard 2 Lucidity — Reveal 1 Landscape",
-      toll: { kind: "psyche", count: 2, suit: "lucidity" },
-      gate: { kind: "suit", suit: "lucidity", count: 2, label: "Hold 2 Lucidity Psyche" },
-      effect: "revealLandscapes",
-      params: { count: 1 },
-    },
     bad: {
       label: "Words Twist Back",
       hint: "Repress the top 3 of the Waking Mind",
@@ -121,217 +113,88 @@ export const DREAM_RESOLUTIONS = {
     },
   },
 
-  mortality: {
-    good: {
-      label: "Bargain With Death",
-      hint: "Discard 3 Willpower — draw 1 Psyche",
-      toll: { kind: "psyche", count: 3, suit: "willpower" },
-      gate: { kind: "suit", suit: "willpower", count: 3, label: "Hold 3 Willpower Psyche" },
-      effect: "drawPsycheAll",
-      params: { count: 1 },
-    },
+  quiet: {
     bad: {
-      label: "The Reaper Takes Relics",
-      hint: "Discard 2 Objects",
-      effect: "repressObjectsAll",
-      params: { count: 2 },
-    },
-  },
-
-  abandonment: {
-    good: {
-      label: "Call Them Back",
-      hint: "Discard 2 Psyche if you hold Willpower — gain a free Meet Action",
-      toll: { kind: "psyche", count: 2 },
-      gate: { kind: "suit", suit: "willpower", count: 1, label: "Hold a Willpower Psyche" },
-      effect: "freeMeetAction",
+      label: "Silence Eats Motion",
+      hint: "Repress the top card of the Waking Mind",
+      effect: "repressTopPsycheDeck",
       params: { count: 1 },
-    },
-    bad: {
-      label: "Alone on Empty Ground",
-      hint: "Meet is your only action this round",
-      effect: "meetOnlyThisRound",
-      params: {},
     },
   },
 
   abduction: {
-    good: {
-      label: "Break the Grip",
-      hint: "Discard 2 Elasticity — gain 1 free Meet action",
-      toll: { kind: "psyche", count: 2, suit: "elasticity" },
-      gate: { kind: "suit", suit: "elasticity", count: 2, label: "Hold 2 Elasticity Psyche" },
-      effect: "freeMeetAction",
-      params: { count: 1 },
-    },
     bad: {
-      label: "Dragged Into the House",
-      hint: "Forget The Attic and The Basement",
-      effect: "forgetNamed",
-      params: { ids: ["the-attic", "the-basement"] },
-    },
-  },
-
-  absurdity: {
-    good: {
-      label: "Laugh Until It Breaks",
-      hint: "Discard 3 Elasticity — draw 2 Psyche",
-      toll: { kind: "psyche", count: 3, suit: "elasticity" },
-      gate: { kind: "suit", suit: "elasticity", count: 3, label: "Hold 3 Elasticity Psyche" },
-      effect: "drawPsyche",
-      params: { count: 2 },
-    },
-    bad: {
-      label: "The Fool's Ground Fails",
-      hint: "Forget Insanity and Black Void",
-      effect: "forgetNamed",
-      params: { ids: ["insanity", "black-void"] },
-    },
-  },
-
-  bargaining: {
-    good: {
-      label: "Pay the Price",
-      hint: "Discard 3 Psyche if you hold a Power Token — gain 1 PT",
-      toll: { kind: "psyche", count: 3 },
-      gate: { kind: "token", label: "You hold a Power Token" },
-      effect: "grantPT",
-      params: { count: 1 },
-    },
-    bad: {
-      label: "Deal Falls Through",
-      hint: "Repress 2 Psyche from hand",
-      effect: "repressPsyche",
-      params: { count: 2 },
-    },
-  },
-
-  recovery: {
-    good: {
-      label: "Sun Through the Mist",
-      hint: "Remember: discard 2 Lucidity — Return 3",
-      toll: { kind: "psyche", count: 2, suit: "lucidity" },
-      gate: { kind: "suit", suit: "lucidity", count: 2, label: "Hold 2 Lucidity Psyche" },
-      effect: "returnCards",
-      params: { count: 3 },
-    },
-    bad: {
-      label: "Healing Fails",
-      hint: "Repress 3 cards from the Psyche deck",
-      effect: "repressTopPsycheDeck",
-      params: { count: 3 },
-    },
-  },
-
-  responsibility: {
-    good: {
-      label: "Carry the Weight",
-      hint: "Discard 3 Willpower — gain 1 Power Token",
-      toll: { kind: "psyche", count: 3, suit: "willpower" },
-      gate: { kind: "suit", suit: "willpower", count: 3, label: "Hold 3 Willpower Psyche" },
-      effect: "grantPT",
-      params: { count: 1 },
-    },
-    bad: {
-      label: "The Lover's Night Ends",
-      hint: "Forget Awards and The Party",
-      effect: "forgetNamed",
-      params: { ids: ["awards", "the-party"] },
-    },
-  },
-
-  travel: {
-    good: {
-      label: "Chart the Open Road",
-      hint: "Forget 1 Landscape if at least 2 Landscapes are awake — gain 1 PT",
-      toll: { kind: "forget", count: 1 },
-      gate: { kind: "revealed", count: 2, label: "At least 2 Landscapes are awake" },
-      effect: "grantPT",
-      params: { count: 1 },
-    },
-    bad: {
-      label: "Roads Seal Shut",
-      hint: "Forget 1 Landscape",
-      effect: "forgetLandscapes",
-      params: { count: 1 },
-    },
-  },
-
-  wanderlust: {
-    good: {
-      label: "Walk Until Dawn",
-      hint: "Forget 1 Landscape if you hold Elasticity — draw 2 Psyche",
-      toll: { kind: "forget", count: 1 },
-      gate: { kind: "suit", suit: "elasticity", count: 1, label: "Hold an Elasticity Psyche" },
-      effect: "drawPsycheAll",
-      params: { count: 2 },
-    },
-    bad: {
-      label: "Feet Refuse to Move",
-      hint: "Repress 1 Psyche from hand",
-      effect: "repressPsyche",
-      params: { count: 1 },
-    },
-  },
-
-  transformation: {
-    good: {
-      label: "Choose Your Shape",
-      hint: "Discard 2 Willpower — draw 1 Object",
-      toll: { kind: "psyche", count: 2, suit: "willpower" },
-      gate: { kind: "suit", suit: "willpower", count: 2, label: "Hold 2 Willpower Psyche" },
-      effect: "drawObject",
-      params: { count: 1 },
-    },
-    bad: {
-      label: "The Shape You Refused",
+      label: "Dragged Under",
       hint: "Repress the top 2 of the Waking Mind",
       effect: "repressTopPsycheDeck",
       params: { count: 2 },
     },
   },
 
-  trapped: {
-    good: {
-      label: "Force the Latch",
-      hint: "Repress 2 Psyche if you hold Willpower — you break free",
-      toll: { kind: "repress", count: 2 },
-      gate: { kind: "suit", suit: "willpower", count: 1, label: "Hold a Willpower Psyche" },
-    },
+  delta: {
     bad: {
-      label: "Walls Close In",
-      hint: "Repress 2 from the Waking Mind",
+      label: "The Tide Takes",
+      hint: "Repress the top 2 of the Waking Mind",
       effect: "repressTopPsycheDeck",
       params: { count: 2 },
     },
   },
 
-  lost: {
-    good: {
-      label: "Find the Bed Again",
-      hint: "Discard 3 Lucidity — Reveal 2 Landscapes",
-      toll: { kind: "psyche", count: 3, suit: "lucidity" },
-      gate: { kind: "suit", suit: "lucidity", count: 3, label: "Hold 3 Lucidity Psyche" },
-      effect: "revealLandscapes",
-      params: { count: 2 },
-    },
+  circadia: {
     bad: {
-      label: "The Explorer's Horizon Closes",
-      hint: "Forget Endless Ocean and Lava",
-      effect: "forgetNamed",
-      params: { ids: ["endless-ocean", "lava"] },
+      label: "The Clock Eats the Deck",
+      hint: "Repress the top 4 of the Waking Mind",
+      effect: "repressTopPsycheDeck",
+      params: { count: 4 },
+    },
+  },
+
+  mortality: {
+    bad: {
+      label: "The Reaper's Toll",
+      hint: "Discard 2 Psyche, then draw 1",
+      effect: "discardPsycheDrawPsyche",
+      params: { discard: 2, draw: 1 },
+    },
+  },
+
+  homeostasis: {
+    bad: {
+      label: "Equilibrium Shatters",
+      hint: "Discard 2 Psyche, then draw 1",
+      effect: "discardPsycheDrawPsyche",
+      params: { discard: 2, draw: 1 },
+    },
+  },
+
+  wanderlust: {
+    bad: {
+      label: "Feet Refuse",
+      hint: "Discard 2 Psyche, then draw 1",
+      effect: "discardPsycheDrawPsyche",
+      params: { discard: 2, draw: 1 },
+    },
+  },
+
+  betrayal: {
+    bad: {
+      label: "Pay the Pack",
+      hint: "Discard Psyche totaling the Dreambeasts on the board",
+      effect: "discardPsycheForBeasts",
+      params: {},
+    },
+  },
+
+  heroism: {
+    bad: {
+      label: "Glory Turns Hollow",
+      hint: "Discard 1 Object",
+      effect: "repressObjectsAll",
+      params: { count: 1 },
     },
   },
 
   misplaced: {
-    good: {
-      label: "Hunt Every Pocket",
-      hint: "Discard 2 Elasticity — Return 1 Psyche",
-      toll: { kind: "psyche", count: 2, suit: "elasticity" },
-      gate: { kind: "suit", suit: "elasticity", count: 2, label: "Hold 2 Elasticity Psyche" },
-      effect: "returnCards",
-      params: { count: 1, filter: "object" },
-    },
     bad: {
       label: "Relics Sink Away",
       hint: "Discard 1 Object",
@@ -340,193 +203,84 @@ export const DREAM_RESOLUTIONS = {
     },
   },
 
-  rivalry: {
-    good: {
-      label: "Settle It Yourself",
-      hint: "Discard 2 Psyche if an Encounter is on the Dreamscape — gain a free Meet Action",
-      toll: { kind: "psyche", count: 2 },
-      gate: { kind: "encounter", label: "An Encounter is on the Dreamscape" },
-      effect: "freeMeetAction",
-      params: { count: 1 },
-    },
+  judgement: {
     bad: {
-      label: "Rivals Flood The Bed",
+      label: "The Verdict Hunts",
       hint: "A Dreambeast appears on your Landscape",
       effect: "spawnEncounter",
       params: {},
     },
   },
 
-  temptation: {
-    good: {
-      label: "Refuse the Bait",
-      hint: "Repress 2 Psyche if you hold an Object — you resist",
-      toll: { kind: "repress", count: 2 },
-      gate: { kind: "object", label: "You hold an Object" },
-    },
+  rivalry: {
     bad: {
-      label: "Bite Down Hard",
-      hint: "Discard 2 Objects",
-      effect: "repressObjects",
-      params: { count: 2 },
+      label: "Rivals Flood the Bed",
+      hint: "A Dreambeast appears on your Landscape",
+      effect: "spawnEncounter",
+      params: {},
     },
   },
 
+  loss: {
+    bad: {
+      label: "Too Clear to Keep",
+      hint: "Discard Psyche valued above your Lucidity",
+      effect: "discardPsycheAboveStat",
+      params: { stat: "lucidity" },
+    },
+  },
 
-  powerlessness: {
-    good: {
-      label: "Claim One Inch of Ground",
-      hint: "Discard 4 Willpower — gain 1 free Meet action",
-      toll: { kind: "psyche", count: 4, suit: "willpower" },
-      gate: { kind: "suit", suit: "willpower", count: 4, label: "Hold 4 Willpower Psyche" },
-      effect: "freeMeetAction",
+  lost: {
+    bad: {
+      label: "Too Quick to Keep",
+      hint: "Discard Psyche valued above your Elasticity",
+      effect: "discardPsycheAboveStat",
+      params: { stat: "elasticity" },
+    },
+  },
+
+  responsibility: {
+    bad: {
+      label: "Too Strong to Keep",
+      hint: "Discard Psyche valued above your Willpower",
+      effect: "discardPsycheAboveStat",
+      params: { stat: "willpower" },
+    },
+  },
+
+  travel: {
+    bad: {
+      label: "Roads Seal Shut",
+      hint: "Forget 1 Landscape",
+      effect: "forgetLandscapes",
       params: { count: 1 },
     },
+  },
+
+  transformation: {
     bad: {
-      label: "The Ruler's Roads Vanish",
-      hint: "Forget Tranquil Grove and Endless Hallway",
-      effect: "forgetNamed",
-      params: { ids: ["tranquil-grove", "endless-hallway"] },
+      label: "A New Shape",
+      hint: "Discard 1 Psyche, then draw 1 Object",
+      effect: "discardPsycheDrawObject",
+      params: { discard: 1, draw: 1 },
+    },
+  },
+
+  recovery: {
+    bad: {
+      label: "Sun Through the Mist",
+      hint: "Draw 3 Psyche",
+      effect: "drawPsycheAll",
+      params: { count: 3 },
     },
   },
 
   "well-being": {
-    good: {
+    bad: {
       label: "Breathe Deep",
-      hint: "Discard 2 Lucidity — draw 2 Psyche",
-      toll: { kind: "psyche", count: 2, suit: "lucidity" },
-      gate: { kind: "suit", suit: "lucidity", count: 2, label: "Hold 2 Lucidity Psyche" },
+      hint: "Draw 3 Psyche",
       effect: "drawPsycheAll",
-      params: { count: 2 },
-    },
-    bad: {
-      label: "Comfort Numbs the Table",
-      hint: "Repress 1 Psyche",
-      effect: "repressPsycheAll",
-      params: { count: 1 },
-    },
-  },
-
-  quiet: {
-    good: {
-      label: "Keep the Silence",
-      hint: "Discard 1 Lucidity — gain 1 Power Token",
-      toll: { kind: "psyche", count: 1, suit: "lucidity" },
-      gate: { kind: "suit", suit: "lucidity", count: 1, label: "Hold 1 Lucidity Psyche" },
-      effect: "grantPT",
-      params: { count: 1 },
-    },
-    bad: {
-      label: "Silence Eats Motion",
-      hint: "Repress the top 3 of the Waking Mind",
-      effect: "repressTopPsycheDeck",
       params: { count: 3 },
-    },
-  },
-
-  circadia: {
-    good: {
-      label: "Reset the Clock",
-      hint: "Remember: discard 3 Lucidity — Return 4",
-      toll: { kind: "psyche", count: 3, suit: "lucidity" },
-      gate: { kind: "suit", suit: "lucidity", count: 3, label: "Hold 3 Lucidity Psyche" },
-      effect: "returnCards",
-      params: { count: 4 },
-    },
-    bad: {
-      label: "The Clock Eats the Deck",
-      hint: "Repress 4 cards from the Psyche deck",
-      effect: "repressTopPsycheDeck",
-      params: { count: 4 },
-    },
-  },
-
-  somnambulance: {
-    good: {
-      label: "Walk With Intent",
-      hint: "Discard 2 Elasticity — the next Explore is free",
-      toll: { kind: "psyche", count: 2, suit: "elasticity" },
-      gate: { kind: "suit", suit: "elasticity", count: 2, label: "Hold 2 Elasticity Psyche" },
-      effect: "freeExplore",
-      params: {},
-    },
-    bad: {
-      label: "Sleepwalk Off the Path",
-      hint: "Forget Candy Mountain and Scary Classroom",
-      effect: "forgetNamed",
-      params: { ids: ["candy-mountain", "scary-classroom"] },
-    },
-  },
-
-  homeostasis: {
-    good: {
-      label: "Balance the Scales",
-      hint: "Discard 2 Psyche if you hold Lucidity and Elasticity — draw 2 Psyche",
-      toll: { kind: "psyche", count: 2 },
-      gate: {
-        kind: "suits",
-        suits: ["lucidity", "elasticity"],
-        label: "Hold a Lucidity Psyche and an Elasticity Psyche",
-      },
-      effect: "drawPsycheAll",
-      params: { count: 2 },
-    },
-    bad: {
-      label: "Equilibrium Shatters",
-      hint: "Repress 1 Psyche",
-      effect: "repressPsycheAll",
-      params: { count: 1 },
-    },
-  },
-
-  "pineal-purge": {
-    good: {
-      label: "Burn the Residue",
-      hint: "Remember: discard 4 Lucidity — Return 5",
-      toll: { kind: "psyche", count: 4, suit: "lucidity" },
-      gate: { kind: "suit", suit: "lucidity", count: 4, label: "Hold 4 Lucidity Psyche" },
-      effect: "returnCards",
-      params: { count: 5 },
-    },
-    bad: {
-      label: "The Third Eye Spills",
-      hint: "Repress the top 3 of the Waking Mind",
-      effect: "repressTopPsycheDeck",
-      params: { count: 3 },
-    },
-  },
-
-  delta: {
-    good: {
-      label: "Ride the Slow Wave",
-      hint: "Discard 2 Elasticity — draw 1 Psyche",
-      toll: { kind: "psyche", count: 2, suit: "elasticity" },
-      gate: { kind: "suit", suit: "elasticity", count: 2, label: "Hold 2 Elasticity Psyche" },
-      effect: "drawPsycheAll",
-      params: { count: 1 },
-    },
-    bad: {
-      label: "The Tide Takes the Desert",
-      hint: "Forget Desert and Silver Mist",
-      effect: "forgetNamed",
-      params: { ids: ["desert", "silver-mist"] },
-    },
-  },
-
-  beta: {
-    good: {
-      label: "Stay Awake Inside It",
-      hint: "Discard 3 Willpower — gain 1 Power Token",
-      toll: { kind: "psyche", count: 3, suit: "willpower" },
-      gate: { kind: "suit", suit: "willpower", count: 3, label: "Hold 3 Willpower Psyche" },
-      effect: "grantPT",
-      params: { count: 1 },
-    },
-    bad: {
-      label: "Arousal Without Rest",
-      hint: "Repress 2 Psyche",
-      effect: "repressPsycheAll",
-      params: { count: 2 },
     },
   },
 };

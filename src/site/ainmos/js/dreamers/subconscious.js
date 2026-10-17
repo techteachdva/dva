@@ -564,7 +564,7 @@ function beginRepressStep(state, step) {
   }
   if (step.collective && step.source === "hand") {
     const available = collectiveHandPool(state, step.cardFilter);
-    const needed = step.count;
+    const needed = (step.needValue || 0) > 0 ? step.needValue : (step.count || 0);
 
     if (needed <= 0 || available.length === 0) {
       state.pendingRepress = {
@@ -577,6 +577,7 @@ function beginRepressStep(state, step) {
         toDiscard: !!step.toDiscard,
         toMindstream: !!step.toMindstream,
         cardFilter: step.cardFilter || null,
+        needValue: step.needValue || 0,
         confirmEmpty: true,
       };
       return;
@@ -605,6 +606,7 @@ function beginRepressStep(state, step) {
       toDiscard: !!step.toDiscard,
       toMindstream: !!step.toMindstream,
       cardFilter: step.cardFilter || null,
+      needValue: step.needValue || 0,
       confirmEmpty: false,
     };
     if (step.reason) {
@@ -624,7 +626,7 @@ function beginRepressStep(state, step) {
   }
 
   const available = applyCardFilter(sourceCards(player, step.source), step.cardFilter);
-  const needed = step.count;
+  const needed = (step.needValue || 0) > 0 ? step.needValue : (step.count || 0);
 
   if (needed <= 0 || available.length === 0) {
     state.pendingRepress = {
@@ -636,12 +638,13 @@ function beginRepressStep(state, step) {
       toDiscard: !!step.toDiscard,
       toMindstream: !!step.toMindstream,
       cardFilter: step.cardFilter || null,
+      needValue: step.needValue || 0,
       confirmEmpty: true,
     };
     return;
   }
 
-  if (state.tutorialMode && needed === 1 && available.length >= 1) {
+  if (state.tutorialMode && !(step.needValue > 0) && needed === 1 && available.length >= 1) {
     const card = available.find((c) => c.type === "psyche" && !isDreambeastPsycheCard(c)) || available[0];
     removeFromSource(player, step.source, card.instanceId);
     const kind = commitHandLoss(state, player, card, !!step.toDiscard, !!step.toMindstream);
@@ -684,6 +687,7 @@ function beginRepressStep(state, step) {
     toDiscard: !!step.toDiscard,
     toMindstream: !!step.toMindstream,
     cardFilter: step.cardFilter || null,
+    needValue: step.needValue || 0,
     confirmEmpty: false,
     strict: !!step.strict,
     payFor: step.payFor || "",
@@ -703,7 +707,7 @@ function removeFromSource(player, source, instanceId) {
 }
 
 /** Ainmos 0.23: Objects are never Repressed. Losing an Object Discards it. */
-export function enqueueRepressObjects(state, player, count, { reason = "", strict = false } = {}) {
+export function enqueueRepressObjects(state, player, count, { reason = "", strict = false, hold = false } = {}) {
   state.resolutionQueue = state.resolutionQueue || [];
   state.resolutionQueue.push({
     type: "repress",
@@ -715,12 +719,12 @@ export function enqueueRepressObjects(state, player, count, { reason = "", stric
     toMindstream: true,
     reason: String(reason || `${player.name}: Discard ${count} Object(s).`).replace(/Repress(es)?/g, (m) => (m === "Represses" ? "Discards" : "Discard")),
   });
-  if (!state.pendingRepress && !state.pendingReturn) {
+  if (!hold && !state.pendingRepress && !state.pendingReturn) {
     advanceResolutionQueue(state);
   }
 }
 
-export function enqueueDiscardFromHand(state, player, count, { reason = "", strict = false, cardFilter = null, payFor = "" } = {}) {
+export function enqueueDiscardFromHand(state, player, count, { reason = "", strict = false, cardFilter = null, payFor = "", needValue = 0, hold = false } = {}) {
   state.resolutionQueue = state.resolutionQueue || [];
   state.resolutionQueue.push({
     type: "repress",
@@ -731,14 +735,15 @@ export function enqueueDiscardFromHand(state, player, count, { reason = "", stri
     strict: !!strict,
     cardFilter: cardFilter || null,
     payFor: payFor || "",
+    needValue: needValue || 0,
     reason: reason || `${player.name}: Discard ${count} Psyche card(s).`,
   });
-  if (!state.pendingRepress && !state.pendingReturn) {
+  if (!hold && !state.pendingRepress && !state.pendingReturn) {
     advanceResolutionQueue(state);
   }
 }
 
-export function enqueueRepressFromHand(state, player, count, { reason = "", strict = false } = {}) {
+export function enqueueRepressFromHand(state, player, count, { reason = "", strict = false, hold = false } = {}) {
   state.resolutionQueue = state.resolutionQueue || [];
   state.resolutionQueue.push({
     type: "repress",
@@ -748,7 +753,7 @@ export function enqueueRepressFromHand(state, player, count, { reason = "", stri
     strict: !!strict,
     reason: reason || `${player.name}: Repress ${count} Psyche card(s).`,
   });
-  if (!state.pendingRepress && !state.pendingReturn) {
+  if (!hold && !state.pendingRepress && !state.pendingReturn) {
     advanceResolutionQueue(state);
   }
 }
@@ -790,6 +795,29 @@ function unpaidRepressCards(state, pending) {
   return repressPickerCards(state).filter((card) => !pickedIds.has(card.instanceId));
 }
 
+export function repressPickValue(card) {
+  if (!card) return 0;
+  if (card.wild || String(card.id || "").startsWith("wild-")) return 5;
+  return Number(card.value) || 0;
+}
+
+export function repressPaid(pending) {
+  if (!pending) return 0;
+  if ((pending.needValue || 0) > 0) {
+    return (pending.picked || []).reduce((sum, card) => sum + repressPickValue(card), 0);
+  }
+  return pending.picked?.length || 0;
+}
+
+export function repressGoal(pending) {
+  if (!pending) return 0;
+  return (pending.needValue || 0) > 0 ? pending.needValue : (pending.remaining || 0);
+}
+
+export function repressStillShort(pending) {
+  return repressPaid(pending) < repressGoal(pending);
+}
+
 /** Stage or unstage a card. Nothing leaves the hand until the cost is confirmed. */
 export function toggleRepressPick(state, instanceId) {
   const pending = state.pendingRepress;
@@ -802,7 +830,7 @@ export function toggleRepressPick(state, instanceId) {
     pending.picked.splice(idx, 1);
     return true;
   }
-  if (pending.picked.length >= pending.remaining) return false;
+  if (!repressStillShort(pending)) return false;
   pending.picked.push(card);
   return true;
 }
@@ -844,7 +872,7 @@ export function pickRepressCard(state, instanceId) {
   if (!pending.picked.some((card) => card.instanceId === instanceId)) {
     if (!toggleRepressPick(state, instanceId)) return false;
   }
-  if (pending.picked.length >= pending.remaining || unpaidRepressCards(state, pending).length < 1) {
+  if (!repressStillShort(pending) || unpaidRepressCards(state, pending).length < 1) {
     return confirmRepressStep(state);
   }
   return true;
@@ -857,7 +885,7 @@ export function confirmRepressStep(state) {
   const player = pending.collective ? null : playerById(state, pending.playerId);
   const subject = pending.collective ? "Team" : player?.name;
   const verb = pending.toMindstream || pending.toDiscard ? "Discard" : "Repress";
-  const stillOwed = pending.picked.length < pending.remaining;
+  const stillOwed = repressStillShort(pending);
   const canStillPay = !pending.confirmEmpty && unpaidRepressCards(state, pending).length > 0;
   if (stillOwed && canStillPay) {
     return false;
@@ -871,16 +899,17 @@ export function confirmRepressStep(state) {
       ? ""
       : (pending.toDiscard ? "" : " → Subconscious");
     if (subject) {
-      const short = pending.picked.length < pending.remaining
-        ? ` (${pending.picked.length}/${pending.remaining}, all available)`
+      const short = repressStillShort(pending)
+        ? ` (${repressPaid(pending)}/${repressGoal(pending)}${pending.needValue ? " value" : ""}, all available)`
         : "";
       logRepress(state, `${subject} ${done} ${names}${where}${short}.`);
     }
   } else if (pending.confirmEmpty && subject) {
-    if (pending.remaining <= 0) {
+    const owed = repressGoal(pending);
+    if (owed <= 0) {
       logRepress(state, `${subject}: nothing to ${verb.toLowerCase()} — continuing.`);
     } else {
-      logRepress(state, `${subject}: no ${pending.source === "objects" ? "Objects" : "Psyche"} to ${verb.toLowerCase()} (${pending.picked.length}/${pending.remaining} chosen).`);
+      logRepress(state, `${subject}: no ${pending.source === "objects" ? "Objects" : "Psyche"} to ${verb.toLowerCase()} (${repressPaid(pending)}/${owed}${pending.needValue ? " value" : ""}).`);
     }
   } else if (subject && stillOwed) {
     logRepress(state, `${subject} ${verb === "Discard" ? "Discarded" : "Repressed"} ${pending.picked.length}/${pending.remaining} (all available).`);

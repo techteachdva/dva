@@ -64,6 +64,9 @@ import {
   toggleReturnPick,
   completeReturnSelection,
   repressPickerCards,
+  repressPaid,
+  repressGoal,
+  repressStillShort,
 } from "../dreamers/subconscious.js";
 import { dreamReplayOptions } from "../cards/dream-replay.js";
 import {
@@ -3036,17 +3039,22 @@ function repressChoiceCopy(state, pending) {
   const verb = discard ? "Discard" : "Repress";
   const sourceLabel = pending.source === "objects" ? "Objects" : "Psyche";
   const pool = pending.confirmEmpty ? [] : repressPickerCards(state);
-  const picked = pending.picked.length;
-  const needed = pending.remaining;
-  const unpicked = Math.max(0, pool.length - picked);
-  const owesMore = !pending.confirmEmpty && picked < needed && unpicked > 0;
+  const picked = repressPaid(pending);
+  const needed = repressGoal(pending);
+  const valueMode = (pending.needValue || 0) > 0;
+  const unpicked = Math.max(0, pool.length - pending.picked.length);
+  const owesMore = !pending.confirmEmpty && repressStillShort(pending) && unpicked > 0;
   let instruction;
   if (pending.confirmEmpty && needed <= 0) {
     instruction = `No cards to ${verb.toLowerCase()} for this effect.`;
   } else if (pending.confirmEmpty || pool.length === 0) {
     instruction = `No ${sourceLabel} available to ${verb.toLowerCase()} (${needed} required).`;
   } else if (picked >= needed) {
-    instruction = `${picked} ${sourceLabel} chosen. Confirm to pay this cost.`;
+    instruction = valueMode
+      ? `Psyche totaling ${picked}. Confirm to pay ${needed}.`
+      : `${picked} ${sourceLabel} chosen. Confirm to pay this cost.`;
+  } else if (valueMode) {
+    instruction = `Choose Psyche totaling ${needed}. You have ${picked} so far.`;
   } else if (pending.collective) {
     instruction = `Choose ${needed - picked} more Psyche from any hand (${picked}/${needed}). Switch Dreamers to see each hand.`;
   } else if (pending.source === "objects") {
@@ -3072,7 +3080,7 @@ function repressChoiceCopy(state, pending) {
     ? `${verb} an Object`
     : (discard ? "Discard Psyche" : "Repress to Subconscious");
   const confirmLabel = owesMore
-    ? `Choose ${needed - picked} more`
+    ? (valueMode ? `Need ${needed - picked} more` : `Choose ${needed - picked} more`)
     : (pending.confirmEmpty || pool.length === 0 ? "Continue" : `${verb} these`);
   return { title, instruction, confirmLabel, owesMore };
 }
@@ -3184,7 +3192,7 @@ export function renderHand(state, onCardClick, newCardIds = null) {
   if (pending?.source === "hand") {
     const poolIds = new Set(pending.confirmEmpty ? [] : repressPickerCards(state).map((card) => card.instanceId));
     const pickedIds = new Set((pending.picked || []).map((card) => card.instanceId));
-    const room = pending.picked.length < pending.remaining;
+    const room = repressStillShort(pending);
     renderActiveDreamerHand(state, onCardClick, {
       newCardIds,
       ignoreSpread: true,
@@ -5859,11 +5867,12 @@ export function showRepressPicker(state, onPick, onConfirm) {
   const playerName = collective ? "All Dreamers" : (player?.name || "Dreamer");
   const sourceLabel = pending.source === "objects" ? "Objects" : "Psyche cards";
   const pool = repressPickerCards(state);
-  const picked = pending.picked.length;
-  const needed = pending.remaining;
+  const picked = repressPaid(pending);
+  const needed = repressGoal(pending);
+  const valueMode = (pending.needValue || 0) > 0;
   const isEmpty = pending.confirmEmpty;
-  const unpicked = Math.max(0, pool.length - picked);
-  const owesMore = !isEmpty && picked < needed && unpicked > 0;
+  const unpicked = Math.max(0, pool.length - pending.picked.length);
+  const owesMore = !isEmpty && repressStillShort(pending) && unpicked > 0;
 
   const discard = !!pending.toDiscard || !!pending.toMindstream;
   const verb = discard ? "Discard" : "Repress";
@@ -5876,14 +5885,18 @@ export function showRepressPicker(state, onPick, onConfirm) {
   } else if (isEmpty || pool.length === 0) {
     instruction = `No ${sourceLabel} available to ${verb} (${needed} required).`;
   } else if (picked >= needed) {
-    instruction = `${picked} ${sourceLabel} pending. Confirm to pay this cost.`;
+    instruction = valueMode
+      ? `Psyche totaling ${picked}. Confirm to pay ${needed}.`
+      : `${picked} ${sourceLabel} pending. Confirm to pay this cost.`;
+  } else if (valueMode) {
+    instruction = `Choose Psyche totaling ${needed}. You have ${picked} so far.`;
   } else {
     instruction = collective
       ? `Choose ${needed - picked} more Psyche from any hand (${picked}/${needed} pending).`
       : `Choose ${needed - picked} more ${sourceLabel} to ${verb} (${picked}/${needed} pending).`;
   }
   const confirmLabel = owesMore
-    ? `Choose ${needed - picked} more`
+    ? (valueMode ? `Need ${needed - picked} more` : `Choose ${needed - picked} more`)
     : (isEmpty || pool.length === 0 ? "Continue" : `${verb} these`);
 
   body.innerHTML = `
@@ -5894,7 +5907,7 @@ export function showRepressPicker(state, onPick, onConfirm) {
       <p class="resolution-instruction">${instruction}</p>
       <p class="card-choice-hint">${cardChoiceHint()}</p>
       <div id="repress-pool" class="subconscious-piles card-choice-piles"></div>
-      <p class="card-choice-status">${picked}/${needed} pending</p>
+      <p class="card-choice-status">${picked}/${needed}${valueMode ? " value" : ""} pending</p>
       <div class="utility-actions card-choice-actions">
         <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">Minimize — view board</button>
         <button type="button" class="btn primary" id="repress-confirm"${owesMore ? " disabled" : ""}>${confirmLabel}</button>
@@ -5913,7 +5926,7 @@ export function showRepressPicker(state, onPick, onConfirm) {
       cards: pool,
       selected: order >= 0,
       orderIndex: order >= 0 ? order : null,
-      disabled: order < 0 && picked >= needed,
+      disabled: order < 0 && !repressStillShort(pending),
       onSelect: () => onPick(card.instanceId),
     });
   };

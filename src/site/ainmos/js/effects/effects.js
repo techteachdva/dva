@@ -50,6 +50,8 @@ export function repressFromHand(state, player, count, { reason = "" } = {}) {
 export function clearDreamRoundFlags(state) {
   state.abductionCarried = [];
   state.meetOnlyRound = false;
+  state.onlyPhaseThisRound = null;
+  state.blockedForms = null;
   state.bargainingDream = false;
   state.temptationDream = false;
   state.wanderlustTarget = 0;

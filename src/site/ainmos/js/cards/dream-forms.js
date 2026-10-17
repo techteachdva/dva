@@ -121,7 +121,12 @@ export function matchingForms(cards) {
  * are the strongest Form's.
  */
 export function bestForm(state, cards, { ward = null } = {}) {
-  const found = matchingForms(cards);
+  const blocked = state?.blockedForms;
+  let found = matchingForms(cards);
+  if (blocked === "all") return null;
+  if (Array.isArray(blocked) && blocked.length) {
+    found = found.filter((id) => !blocked.includes(id));
+  }
   if (!found.length) return null;
   const forms = found
     .map((id) => {

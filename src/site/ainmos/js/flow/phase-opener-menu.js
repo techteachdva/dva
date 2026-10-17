@@ -65,6 +65,21 @@ function openerLead(phase, suitLabel, base) {
   return `${free} Add 1 ${suitLabel} card for +its value.`;
 }
 
+function phaseLockNote(state, phase) {
+  const notes = [];
+  if (state?.onlyPhaseThisRound === phase) {
+    if (phase === "Meet") notes.push("This Dream skipped Reveal and Explore. Meet is your only phase.");
+    else if (phase === "Explore") notes.push("This Dream skipped Reveal. Explore is your only phase.");
+    else if (phase === "Reveal") notes.push("This Dream ends after Reveal. Explore and Meet will not happen.");
+  }
+  if (phase === "Meet" && state?.blockedForms === "all") {
+    notes.push("Dream Forms add no dice this round.");
+  } else if (phase === "Meet" && Array.isArray(state?.blockedForms) && state.blockedForms.length) {
+    notes.push("Some Dream Forms add no dice this round.");
+  }
+  return notes.length ? ` ${notes.join(" ")}` : "";
+}
+
 /** What the phase budget buys, for the live preview. */
 function budgetUnit(phase, n, bought) {
   const free = n - bought;
@@ -273,7 +288,7 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
           return pos.longNight ? `The Long Night · ${phase}` : `Cycle ${pos.cycle} · Dream ${pos.dream} of 3 · ${phase} · phase ${pos.step} of 9`;
         })()}</p>
         <h2>${openerTitle(phase)}</h2>
-        <p class="fullscreen-browser-lead">${openerLead(phase, suitLabel, bonus)}</p>
+        <p class="fullscreen-browser-lead">${openerLead(phase, suitLabel, bonus)}${phaseLockNote(state, phase)}</p>
       </header>
       <div class="phase-opener-solo-stage fullscreen-browser-body">
         <div class="phase-opener-preview${canConfirm ? " is-ready" : ""}" aria-live="polite">

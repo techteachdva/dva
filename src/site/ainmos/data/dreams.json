@@ -4,14 +4,14 @@
     "name": "Betrayal",
     "type": "dream",
     "image": "images/dreams/betrayal.webp",
-    "text": "Discard 2 Objects"
+    "text": "Discard Psyche totaling the Dreambeasts on the board"
   },
   {
     "id": "chase",
     "name": "Chase",
     "type": "dream",
     "image": "images/dreams/chase.webp",
-    "text": "A Dreambeast appears on your Landscape"
+    "text": "Explore is your only phase this round"
   },
   {
     "id": "heroism",
@@ -25,7 +25,7 @@
     "name": "Injury",
     "type": "dream",
     "image": "images/dreams/injury.webp",
-    "text": "Repress 2 Psyche",
+    "text": "Repress 2 Psyche from your hand",
     "copies": 2
   },
   {
@@ -40,7 +40,7 @@
     "name": "Loss",
     "type": "dream",
     "image": "images/dreams/loss.webp",
-    "text": "Forget Sea of Teeth and Field of Broken Glass"
+    "text": "Discard Psyche valued above your Lucidity"
   },
   {
     "id": "misunderstanding",
@@ -54,7 +54,7 @@
     "name": "Mortality",
     "type": "dream",
     "image": "images/dreams/mortality.webp",
-    "text": "Discard 2 Objects",
+    "text": "Discard 2 Psyche, then draw 1",
     "copies": 2
   },
   {
@@ -62,42 +62,42 @@
     "name": "Abandonment",
     "type": "dream",
     "image": "images/dreams/abandonment.webp",
-    "text": "Meet is your only action this round"
+    "text": "Meet is your only option this round"
   },
   {
     "id": "abduction",
     "name": "Abduction",
     "type": "dream",
     "image": "images/dreams/abduction.webp",
-    "text": "Forget The Attic and The Basement"
+    "text": "Repress the top 2 of the Waking Mind"
   },
   {
     "id": "absurdity",
     "name": "Absurdity",
     "type": "dream",
     "image": "images/dreams/absurdity.webp",
-    "text": "Forget Insanity and Black Void"
+    "text": "Echo and Ladder add no dice this round"
   },
   {
     "id": "bargaining",
     "name": "Bargaining",
     "type": "dream",
     "image": "images/dreams/bargaining.webp",
-    "text": "Repress 2 Psyche from hand"
+    "text": "Repress 2 Psyche from your hand"
   },
   {
     "id": "recovery",
     "name": "Recovery",
     "type": "dream",
     "image": "images/dreams/recovery.webp",
-    "text": "Repress 3 cards from the Psyche deck"
+    "text": "Draw 3 Psyche"
   },
   {
     "id": "responsibility",
     "name": "Responsibility",
     "type": "dream",
     "image": "images/dreams/responsibility.webp",
-    "text": "Forget Awards and The Party"
+    "text": "Discard Psyche valued above your Willpower"
   },
   {
     "id": "travel",
@@ -111,28 +111,28 @@
     "name": "Wanderlust",
     "type": "dream",
     "image": "images/dreams/wanderlust.webp",
-    "text": "Repress 1 Psyche from hand"
+    "text": "Discard 2 Psyche, then draw 1"
   },
   {
     "id": "transformation",
     "name": "Transformation",
     "type": "dream",
     "image": "images/dreams/transformation.webp",
-    "text": "Repress the top 2 of the Waking Mind"
+    "text": "Discard 1 Psyche, then draw 1 Object"
   },
   {
     "id": "trapped",
     "name": "Trapped",
     "type": "dream",
     "image": "images/dreams/trapped.webp",
-    "text": "Repress 2 from the Waking Mind"
+    "text": "Reveal is your only phase this round"
   },
   {
     "id": "lost",
     "name": "Lost",
     "type": "dream",
     "image": "images/dreams/lost.webp",
-    "text": "Forget Endless Ocean and Lava"
+    "text": "Discard Psyche valued above your Elasticity"
   },
   {
     "id": "misplaced",
@@ -153,14 +153,14 @@
     "name": "Temptation",
     "type": "dream",
     "image": "images/dreams/temptation.webp",
-    "text": "Discard 2 Objects"
+    "text": "Repress 1 Psyche from your hand"
   },
   {
     "id": "powerlessness",
     "name": "Powerlessness",
     "type": "dream",
     "image": "images/dreams/powerlessness.webp",
-    "text": "Forget Tranquil Grove and Endless Hallway",
+    "text": "Dream Forms add no dice this round",
     "copies": 2
   },
   {
@@ -168,14 +168,14 @@
     "name": "Well Being",
     "type": "dream",
     "image": "images/dreams/well-being.webp",
-    "text": "Repress 1 Psyche"
+    "text": "Draw 3 Psyche"
   },
   {
     "id": "quiet",
     "name": "Quiet",
     "type": "dream",
     "image": "images/dreams/quiet.webp",
-    "text": "Repress the top 3 of the Waking Mind",
+    "text": "Repress the top card of the Waking Mind",
     "copies": 1
   },
   {
@@ -183,41 +183,41 @@
     "name": "Delta",
     "type": "dream",
     "image": "images/dreams/delta.webp",
-    "text": "Forget Desert and Silver Mist"
+    "text": "Repress the top 2 of the Waking Mind"
   },
   {
     "id": "beta",
     "name": "Beta",
     "type": "dream",
     "image": "images/dreams/beta.webp",
-    "text": "Repress 2 Psyche"
+    "text": "Repress 1 Psyche from your hand"
   },
   {
     "id": "circadia",
     "name": "Circadia",
     "type": "dream",
     "image": "images/dreams/circadia.webp",
-    "text": "Repress 4 cards from the Psyche deck"
+    "text": "Repress the top 4 of the Waking Mind"
   },
   {
     "id": "somnambulance",
     "name": "Somnambulance",
     "type": "dream",
     "image": "images/dreams/somnambulance.webp",
-    "text": "Forget Candy Mountain and Scary Classroom"
+    "text": "Trinity and Chord add no dice this round"
   },
   {
     "id": "homeostasis",
     "name": "Homeostasis",
     "type": "dream",
     "image": "images/dreams/homeostasis.webp",
-    "text": "Repress 1 Psyche"
+    "text": "Discard 2 Psyche, then draw 1"
   },
   {
     "id": "pineal-purge",
     "name": "Pineal Purge",
     "type": "dream",
     "image": "images/dreams/pineal-purge.webp",
-    "text": "Repress the top 3 of the Waking Mind"
+    "text": "Trifecta and Unity add no dice this round"
   }
 ]

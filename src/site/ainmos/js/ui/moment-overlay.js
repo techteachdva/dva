@@ -181,8 +181,8 @@ export function flashPhaseEntryMoments(state, phase) {
     if (state.skipLandscapeActionsNextMeet) {
       lines.push("Landscape Meet actions skipped this round.");
     }
-    if (state.meetOnlyRound) {
-      lines.push("Abduction — only Meet actions for carried Encounters this round.");
+    if (state.onlyPhaseThisRound === "Meet" || state.meetOnlyRound) {
+      lines.push("Meet is your only phase this round.");
     }
   }
   lines.forEach((line) => showMomentOverlay(line));

@@ -376,6 +376,8 @@ export function createInitialState(data, options) {
     skeletonKeyPending: false,
     abductionCarried: [],
     meetOnlyRound: false,
+    onlyPhaseThisRound: null,
+    blockedForms: null,
     bargainingDream: false,
     temptationDream: false,
     wanderlustTarget: 0,
@@ -912,6 +914,8 @@ export function resetPhaseFlags(state) {
   state.questRoundFlags = { discardedOnBed: false };
   state.abductionCarried = [];
   state.meetOnlyRound = false;
+  state.onlyPhaseThisRound = null;
+  state.blockedForms = null;
   state.bargainingDream = false;
   state.temptationDream = false;
   state.wanderlustTarget = 0;
@@ -1414,6 +1418,33 @@ export function advancePhase(state) {
     if (meetHere) state.selectedLandscapeId = meetHere.id;
     addLog(state, "Meet Phase: your Willpower is your free Meet Actions. Fight a Dreambeast on your Landscape, or Meet an Archetype there.");
   }
+}
+
+/**
+ * Spend the phases before `targetPhase` without opening them.
+ * Returns the names that were skipped. The target phase stays unopened.
+ */
+export function fastForwardToPhase(state, targetPhase) {
+  const order = ["Reveal", "Explore", "Meet"];
+  const target = order.indexOf(targetPhase);
+  if (target < 0 || (state.phaseIndex || 0) >= target) return [];
+  const skipped = [];
+  let guard = 3;
+  while (guard > 0 && state.status === "playing" && (state.phaseIndex || 0) < target) {
+    guard -= 1;
+    const leaving = getPhase(state);
+    skipped.push(leaving);
+    if (leaving === "Reveal") {
+      state.revealLandscapeUsed = true;
+      state.landscapePick = null;
+    }
+    if (leaving === "Explore") {
+      state.exploreActivated = true;
+      state.exploreMovesLeft = 0;
+    }
+    advancePhase(state);
+  }
+  return skipped;
 }
 
 

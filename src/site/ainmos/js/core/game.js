@@ -3112,6 +3112,33 @@ export function handleBoardTileClick(state, tileId) {
   return false;
 }
 
+/** After the Dream's one allowed phase, the rest of the round passes. Dusk still mills. */
+function skipPhasesAfterLock(state) {
+  const order = ["Reveal", "Explore", "Meet"];
+  let guard = 3;
+  while (guard > 0 && state.status === "playing") {
+    guard -= 1;
+    const only = state.onlyPhaseThisRound;
+    if (!only) return;
+    const phase = getPhase(state);
+    if (order.indexOf(phase) <= order.indexOf(only)) return;
+    logMoment(state, `${phase} is skipped. ${only} was your only phase this round.`);
+    if (phase === "Explore") {
+      state.exploreActivated = true;
+      state.exploreMovesLeft = 0;
+      onExplorePhaseEnd(state);
+      advancePhase(state);
+      continue;
+    }
+    if (phase === "Meet") {
+      onMeetPhaseEnd(state);
+      advancePhase(state);
+      return;
+    }
+    advancePhase(state);
+  }
+}
+
 export function endPhase(state) {
   if (isDiceBattleOpen() || state.diceBattle) {
     addLog(state, "Finish the dice battle before ending the phase.");
@@ -3144,6 +3171,7 @@ export function endPhase(state) {
     onExplorePhaseEnd(state);
     advancePhase(state);
   }
+  skipPhasesAfterLock(state);
   checkDefeat(state);
   dieIfHandEmpty(state, { onlyIfStuck: true });
   const phase = getPhase(state);
