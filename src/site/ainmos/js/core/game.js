@@ -69,6 +69,7 @@ import {
   encounterPaySuit,
   PHASE_OPENER_MAX_CARDS,
   phaseSpendValue,
+  meetSpreadCap,
 } from "./rules.js";
 import {
   encounterPower,
@@ -2893,8 +2894,11 @@ export function toggleHandCard(state, card, owner = null) {
   }
 
   const coopMeet = phase === "Meet" && state.meetActionBudget > 0;
-  const maxCards = coopMeet ? 3 : PHASE_OPENER_MAX_CARDS;
-  if (!isDreambeastPsycheCard(card) && coopMeet && spreadPsycheCount(state) >= 3) return;
+  const maxCards = coopMeet ? meetSpreadCap(state) : PHASE_OPENER_MAX_CARDS;
+  if (!isDreambeastPsycheCard(card) && coopMeet && spreadPsycheCount(state) >= maxCards) {
+    if (state.archetypeFight) logMoment(state, `This fight allows at most ${maxCards} Psyche.`);
+    return;
+  }
   if (!coopMeet && state.selectedHand.length >= maxCards) return;
 
   if (phase === "Meet" && state.meetActionBudget > 0) {
@@ -3210,7 +3214,7 @@ export function getPhaseHint(state) {
     const actionsTail = actionsLeft > 0
       ? ` · ${actionsLeft} action${actionsLeft === 1 ? "" : "s"} left`
       : " · tap Next when you are done";
-    return `Spread ${count}/3 (Power ${pool})${actionsTail}.`;
+    return `Spread ${count}/${meetSpreadCap(state)} (Power ${pool})${actionsTail}.`;
   }
 }
 

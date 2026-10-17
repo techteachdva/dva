@@ -21,6 +21,7 @@ export async function loadGameData() {
     "psyche",
     "mindstream",
     "event-landscapes",
+    "archetype-events",
     "objects",
   ];
   const data = {};

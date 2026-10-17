@@ -18,6 +18,11 @@ import { playSfx } from "../audio/audio.js";
 import { queueCardDiscard, queueHandDelta } from "../cards/card-fx.js";
 import { archetypeSpreadOpen, undefeatedFinalArchetypes } from "../dreamers/final-recurrence-rules.js";
 
+/** Psyche a Meet spread may hold: 3, or what an Archetype Event set for this fight (2 to 4). */
+export function meetSpreadCap(state) {
+  return state?.archetypeFight?.mods?.cap || 3;
+}
+
 export { isWildPsyche, psycheCardValue };
 
 /** Wild Psyche counts as the active phase suit when played for phase actions. */
@@ -394,7 +399,7 @@ export function canSelectCard(state, card, phase, player = null) {
     const tableSpread = archetypeSpreadOpen(state);
     const actor = meetPsycheActor(state);
     if (!tableSpread && (!actor || active.id !== actor.id)) return false;
-    if (!isDreambeastPsycheCard(card) && spreadPsycheCount(state) >= 3) return false;
+    if (!isDreambeastPsycheCard(card) && spreadPsycheCount(state) >= meetSpreadCap(state)) return false;
     return true;
   }
 
@@ -408,7 +413,7 @@ export function canSelectCard(state, card, phase, player = null) {
   }
   if (phase === "Meet") {
     if (state.meetActionBudget > 0 && state.meetActionsUsed < state.meetActionBudget) {
-      if (!isDreambeastPsycheCard(card) && spreadPsycheCount(state) >= 3) return false;
+      if (!isDreambeastPsycheCard(card) && spreadPsycheCount(state) >= meetSpreadCap(state)) return false;
       return true;
     }
     if (state.meetActionBudget === 0) {

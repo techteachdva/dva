@@ -219,7 +219,7 @@ const TERMS = [
     term: "Bright",
     group: "cards",
     aka: "good path toll gate",
-    text: "The good side of an Archetype's Event. Only while one of the Event's Landscapes is placed, and it costs Psyche of the Event's suit. It helps the coming fight: more dice, a weaker Archetype, no Form needed, a wider spread, a doubled stat, or a spread that comes back if you lose.",
+    text: "The good side of an Archetype's Event, open only while the Event's Landscape is placed. It costs Psyche you choose from your hand: some of a suit (2 Willpower), one of a suit worth enough (a Lucidity worth 3+), or one of an exact value (any 2). Each point of cost buys one small thing: +1 die, −1 Power, Return 1 (you pick), Draw 2 Psyche, Reveal 1 Landscape, Draw 1 Object, or +1 card in the spread. No Form needed, or a lost spread coming back to hand, is worth 2.",
   },
   {
     term: "Caregiver",
@@ -410,7 +410,7 @@ const TERMS = [
   {
     term: "Event",
     group: "cards",
-    text: "Every Meet with an Archetype opens with one of its Events, drawn from those tied to its two home Landscapes. Bright is open while one of the Event's Landscapes is placed: pay its Psyche cost for a strong edge in the fight. Dim is free and makes the fight harder.",
+    text: "Every Meet with an Archetype opens with one of its 4 Events: 2 from each of its home Landscapes. Bright is open while the Event's Landscape is placed: pay its Psyche cost for one small thing per point paid. Dim is free and puts one drawback on the fight.",
   },
   {
     term: "Explore",

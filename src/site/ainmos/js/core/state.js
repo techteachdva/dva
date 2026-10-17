@@ -70,6 +70,7 @@ import { cyclePosition } from "./cycle.js";
 import { ensureEndlessDeck, startEndless } from "../encounters/endless.js";
 import { offerEffectChoice, registerEffectResolver } from "../effects/effect-choices.js";
 import { logMoment } from "./narrator.js";
+import { buildArchetypeEventCatalog } from "../dreamers/archetype-events.js";
 
 function pinFirstById(list, id) {
   const index = list.findIndex((item) => item.id === id);
@@ -263,10 +264,8 @@ export function createInitialState(data, options) {
   // Ainmos: no Archetype row or quests. Archetypes come out one per Cycle, onto the board.
   const archetypeRow = [];
   const activeArchetype = null;
-  // Every Event, with its Landscapes. Each Archetype draws from the Events tied to its homes.
-  const eventCatalog = Object.values(data.mindstream || {}).flat()
-    .filter((card) => card?.type === "event")
-    .map(({ id, name, suit, image, landscapes }) => ({ id, name, suit, image, type: "event", landscapes: landscapes || [] }));
+  // Every Archetype Event (2 per home Landscape). Each Archetype draws from the 4 tied to its homes.
+  const eventCatalog = buildArchetypeEventCatalog(data);
 
   const state = {
     phaseIndex: 0,

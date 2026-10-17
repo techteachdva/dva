@@ -16,8 +16,13 @@ export function eventLandscapeIds(event) {
   return [];
 }
 
+const SMALL_WORDS = new Set(["of", "the", "in"]);
+
+/** "sea-of-teeth" → "Sea of Teeth" (a Landscape's name before it is on the board). */
 function titleCaseId(id) {
-  return String(id || "").replace(/-/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
+  return String(id || "").split("-")
+    .map((word, i) => (i > 0 && SMALL_WORDS.has(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)))
+    .join(" ");
 }
 
 function suitLabel(suit) {

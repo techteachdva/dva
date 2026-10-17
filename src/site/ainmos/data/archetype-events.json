@@ -1,0 +1,1089 @@
+[
+  {
+    "id": "fantastic-imagination",
+    "name": "Fantastic Imagination",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/fantastic-imagination.webp",
+    "landscape": "sky",
+    "flavor": "Castles drift through the clouds, built as fast as you can picture them.",
+    "bright": {
+      "label": "Imagine",
+      "cost": {
+        "suit": "lucidity",
+        "count": 2
+      },
+      "effects": {
+        "reveal": 1,
+        "dice": 1
+      }
+    },
+    "dim": {
+      "label": "Lost in Thought",
+      "effect": "noStat"
+    }
+  },
+  {
+    "id": "roof-dive",
+    "name": "Roof Dive",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/roof-dive.webp",
+    "landscape": "sky",
+    "flavor": "You leap from a rooftop, and the open sky catches you.",
+    "bright": {
+      "label": "Dive",
+      "cost": {
+        "suit": "elasticity",
+        "min": 3
+      },
+      "effects": {
+        "dice": 2,
+        "draw": 2
+      }
+    },
+    "dim": {
+      "label": "Fall",
+      "effect": "fog"
+    }
+  },
+  {
+    "id": "mist-swirls",
+    "name": "Mist Swirls",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/mist-swirls.webp",
+    "landscape": "silver-mist",
+    "flavor": "Masks and cards tumble through a silver fog.",
+    "bright": {
+      "label": "Read the Mist",
+      "cost": {
+        "suit": "lucidity",
+        "count": 1
+      },
+      "effects": {
+        "draw": 2
+      }
+    },
+    "dim": {
+      "label": "Masked",
+      "effect": "strict"
+    }
+  },
+  {
+    "id": "fog",
+    "name": "Fog",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/fog.webp",
+    "landscape": "silver-mist",
+    "flavor": "A thick fog rolls in, and the shore disappears.",
+    "bright": {
+      "label": "Push Through",
+      "cost": {
+        "suit": "willpower",
+        "count": 2
+      },
+      "effects": {
+        "dice": 2
+      }
+    },
+    "dim": {
+      "label": "Lost in the Fog",
+      "effect": "narrow"
+    }
+  },
+  {
+    "id": "peppermint-peak",
+    "name": "Peppermint Peak",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/peppermint-peak.webp",
+    "landscape": "candy-mountain",
+    "flavor": "A striped mountain of peppermint rises above the candy.",
+    "bright": {
+      "label": "Climb",
+      "cost": {
+        "suit": "willpower",
+        "min": 3
+      },
+      "effects": {
+        "dice": 1,
+        "weaken": 1,
+        "reveal": 1
+      }
+    },
+    "dim": {
+      "label": "Sugar Crash",
+      "effect": "noStat"
+    }
+  },
+  {
+    "id": "cotton-candy",
+    "name": "Cotton Candy",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/cotton-candy.webp",
+    "landscape": "candy-mountain",
+    "flavor": "Pink clouds of spun sugar drift over the sweet peaks.",
+    "bright": {
+      "label": "Taste the Clouds",
+      "cost": {
+        "suit": "elasticity",
+        "count": 2
+      },
+      "effects": {
+        "draw": 2,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Sticky",
+      "effect": "fog"
+    }
+  },
+  {
+    "id": "broken-toys",
+    "name": "Broken Toys",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/broken-toys.webp",
+    "landscape": "the-attic",
+    "flavor": "Old toys lie broken in the dust, each one a memory.",
+    "bright": {
+      "label": "Mend Them",
+      "cost": {
+        "value": 2
+      },
+      "effects": {
+        "return": 2
+      }
+    },
+    "dim": {
+      "label": "Heartbreak",
+      "effect": "stronger"
+    }
+  },
+  {
+    "id": "get-up",
+    "name": "Get Up",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/get-up.webp",
+    "landscape": "the-attic",
+    "flavor": "A staircase climbs to an attic door spilling light.",
+    "bright": {
+      "label": "Climb Up",
+      "cost": {
+        "suit": "elasticity",
+        "count": 1
+      },
+      "effects": {
+        "reveal": 1
+      }
+    },
+    "dim": {
+      "label": "Creaking Steps",
+      "effect": "costly"
+    }
+  },
+  {
+    "id": "golden-tooth",
+    "name": "Golden Tooth",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/golden-tooth.webp",
+    "landscape": "sea-of-teeth",
+    "flavor": "A golden tooth rests on a velvet pillow, waiting for the Tooth Fairy.",
+    "bright": {
+      "label": "Trade It",
+      "cost": {
+        "suit": "willpower",
+        "count": 2
+      },
+      "effects": {
+        "object": 1,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Bitten",
+      "effect": "stronger"
+    }
+  },
+  {
+    "id": "jaw-shark",
+    "name": "Jaw Shark",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/jaw-shark.webp",
+    "landscape": "sea-of-teeth",
+    "flavor": "Jaws rise from the dark water, wide enough to swallow the moon.",
+    "bright": {
+      "label": "Stare It Down",
+      "cost": {
+        "suit": "willpower",
+        "min": 4
+      },
+      "effects": {
+        "dice": 2,
+        "weaken": 2
+      }
+    },
+    "dim": {
+      "label": "Swallowed Whole",
+      "effect": "narrow"
+    }
+  },
+  {
+    "id": "a-thousand-daggers",
+    "name": "A Thousand Daggers",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/a-thousand-daggers.webp",
+    "landscape": "field-of-broken-glass",
+    "flavor": "Shards of light rain down like a thousand daggers.",
+    "bright": {
+      "label": "Shield Yourself",
+      "cost": {
+        "suit": "willpower",
+        "count": 2
+      },
+      "effects": {
+        "keep": true
+      }
+    },
+    "dim": {
+      "label": "Cut",
+      "effect": "fog"
+    }
+  },
+  {
+    "id": "shimmering-slivers",
+    "name": "Shimmering Slivers",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/shimmering-slivers.webp",
+    "landscape": "field-of-broken-glass",
+    "flavor": "Slivers of light fall, and a key, a mask, and a gem fall with them.",
+    "bright": {
+      "label": "Catch One",
+      "cost": {
+        "suit": "elasticity",
+        "min": 2
+      },
+      "effects": {
+        "object": 1,
+        "dice": 1
+      }
+    },
+    "dim": {
+      "label": "Slip",
+      "effect": "costly"
+    }
+  },
+  {
+    "id": "the-council-of-the-years",
+    "name": "The Council of the Years",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/the-council-of-the-years.webp",
+    "landscape": "awards",
+    "flavor": "Ancient judges gather around a glowing crystal to weigh your worth.",
+    "bright": {
+      "label": "Make Your Case",
+      "cost": {
+        "suit": "lucidity",
+        "min": 3
+      },
+      "effects": {
+        "weaken": 1,
+        "dice": 1,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Judged",
+      "effect": "strict"
+    }
+  },
+  {
+    "id": "is-that-music",
+    "name": "Is That Music?",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/is-that-music.webp",
+    "landscape": "awards",
+    "flavor": "Trumpets sound as the golden trophies are carried in.",
+    "bright": {
+      "label": "Take a Bow",
+      "cost": {
+        "value": 3
+      },
+      "effects": {
+        "draw": 2,
+        "dice": 1,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Stage Fright",
+      "effect": "noStat"
+    }
+  },
+  {
+    "id": "flashing-lights",
+    "name": "Flashing Lights",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/flashing-lights.webp",
+    "landscape": "the-party",
+    "flavor": "Lights flash and gold rains down as the crowd dances around you.",
+    "bright": {
+      "label": "Dance",
+      "cost": {
+        "suit": "elasticity",
+        "count": 2
+      },
+      "effects": {
+        "wide": 1,
+        "dice": 1
+      }
+    },
+    "dim": {
+      "label": "Dazzled",
+      "effect": "fog"
+    }
+  },
+  {
+    "id": "rhythm-of-the-night",
+    "name": "Rhythm of the Night",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/rhythm-of-the-night.webp",
+    "landscape": "the-party",
+    "flavor": "Masked dancers sway to a beat you can feel in your chest.",
+    "bright": {
+      "label": "Find the Beat",
+      "cost": {
+        "suit": "willpower",
+        "count": 1
+      },
+      "effects": {
+        "draw": 2
+      }
+    },
+    "dim": {
+      "label": "Off-Beat",
+      "effect": "narrow"
+    }
+  },
+  {
+    "id": "big-wave",
+    "name": "Big Wave",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/big-wave.webp",
+    "landscape": "endless-ocean",
+    "flavor": "A wave as tall as a mountain rises over the shore.",
+    "bright": {
+      "label": "Ride It",
+      "cost": {
+        "suit": "willpower",
+        "min": 3
+      },
+      "effects": {
+        "dice": 2,
+        "reveal": 1
+      }
+    },
+    "dim": {
+      "label": "Wipeout",
+      "effect": "stronger"
+    }
+  },
+  {
+    "id": "whirlpool",
+    "name": "Whirlpool",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/whirlpool.webp",
+    "landscape": "endless-ocean",
+    "flavor": "The sea spins into a whirlpool and pulls you toward its center.",
+    "bright": {
+      "label": "Swim Free",
+      "cost": {
+        "suit": "elasticity",
+        "count": 1
+      },
+      "effects": {
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Pulled Under",
+      "effect": "costly"
+    }
+  },
+  {
+    "id": "from-the-fire",
+    "name": "From the Fire",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/from-the-fire.webp",
+    "landscape": "lava",
+    "flavor": "A phoenix bursts from the flames above two embracing figures.",
+    "bright": {
+      "label": "Rise Again",
+      "cost": {
+        "suit": "willpower",
+        "min": 3
+      },
+      "effects": {
+        "keep": true,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Burned",
+      "effect": "fog"
+    }
+  },
+  {
+    "id": "heating-up",
+    "name": "Heating Up",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/heating-up.webp",
+    "landscape": "lava",
+    "flavor": "Fire climbs around you as a dark dragon circles closer.",
+    "bright": {
+      "label": "Stoke the Fire",
+      "cost": {
+        "value": 4
+      },
+      "effects": {
+        "dice": 3,
+        "draw": 2
+      }
+    },
+    "dim": {
+      "label": "Scorched",
+      "effect": "stronger"
+    }
+  },
+  {
+    "id": "a-mirage",
+    "name": "A Mirage?",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/a-mirage.webp",
+    "landscape": "desert",
+    "flavor": "A golden beast shimmers over the dunes, then fades.",
+    "bright": {
+      "label": "See Through It",
+      "cost": {
+        "suit": "lucidity",
+        "min": 2
+      },
+      "effects": {
+        "weaken": 2
+      }
+    },
+    "dim": {
+      "label": "Fooled",
+      "effect": "strict"
+    }
+  },
+  {
+    "id": "desert-oasis",
+    "name": "Desert Oasis",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/desert-oasis.webp",
+    "landscape": "desert",
+    "flavor": "Cards and coins drift over a hidden oasis in the sand.",
+    "bright": {
+      "label": "Drink Deep",
+      "cost": {
+        "suit": "elasticity",
+        "count": 2
+      },
+      "effects": {
+        "draw": 2,
+        "object": 1
+      }
+    },
+    "dim": {
+      "label": "Parched",
+      "effect": "narrow"
+    }
+  },
+  {
+    "id": "somethings-over-there",
+    "name": "Something's Over There",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/somethings-over-there.webp",
+    "landscape": "forest",
+    "flavor": "Something waits in the mist between the trees.",
+    "bright": {
+      "label": "Go Look",
+      "cost": {
+        "suit": "lucidity",
+        "min": 3
+      },
+      "effects": {
+        "reveal": 1,
+        "object": 1,
+        "dice": 1
+      }
+    },
+    "dim": {
+      "label": "Spooked",
+      "effect": "fog"
+    }
+  },
+  {
+    "id": "blooming",
+    "name": "Blooming",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/blooming.webp",
+    "landscape": "forest",
+    "flavor": "Giant flowers open on the forest floor, glowing from inside.",
+    "bright": {
+      "label": "Gather Petals",
+      "cost": {
+        "value": 2
+      },
+      "effects": {
+        "draw": 2,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Overgrown",
+      "effect": "noStat"
+    }
+  },
+  {
+    "id": "the-right-door",
+    "name": "The Right Door",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/the-right-door.webp",
+    "landscape": "house",
+    "flavor": "One door in the dark hall glows warm and gold.",
+    "bright": {
+      "label": "Open It",
+      "cost": {
+        "suit": "willpower",
+        "count": 2
+      },
+      "effects": {
+        "noForm": true
+      }
+    },
+    "dim": {
+      "label": "Locked",
+      "effect": "strict"
+    }
+  },
+  {
+    "id": "who-is-there",
+    "name": "Who's There?",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/who-is-there.webp",
+    "landscape": "house",
+    "flavor": "You open the front door: light on one side, a shadow on the other.",
+    "bright": {
+      "label": "Let the Light In",
+      "cost": {
+        "suit": "willpower",
+        "min": 2
+      },
+      "effects": {
+        "dice": 1,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Let the Shadow In",
+      "effect": "stronger"
+    }
+  },
+  {
+    "id": "i-know-this-place",
+    "name": "I Know This Place!",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/i-know-this-place.webp",
+    "landscape": "suburbia",
+    "flavor": "A street you have walked a thousand times, but never at night.",
+    "bright": {
+      "label": "Find Your Way",
+      "cost": {
+        "suit": "lucidity",
+        "count": 1
+      },
+      "effects": {
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Not Quite Home",
+      "effect": "costly"
+    }
+  },
+  {
+    "id": "this-will-have-to-do",
+    "name": "This Will Have to Do",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/this-will-have-to-do.webp",
+    "landscape": "suburbia",
+    "flavor": "A cracked bottle, a bent spoon, a broken compass: whatever the neighbors left behind.",
+    "bright": {
+      "label": "Make Do",
+      "cost": {
+        "value": 2
+      },
+      "effects": {
+        "object": 1,
+        "dice": 1
+      }
+    },
+    "dim": {
+      "label": "Falls Apart",
+      "effect": "fog"
+    }
+  },
+  {
+    "id": "beyond-comprehension",
+    "name": "Beyond Comprehension",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/beyond-comprehension.webp",
+    "landscape": "insanity",
+    "flavor": "A vast eye opens across the sky and looks at you.",
+    "bright": {
+      "label": "Look Back",
+      "cost": {
+        "suit": "lucidity",
+        "min": 4
+      },
+      "effects": {
+        "weaken": 2,
+        "reveal": 1,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Overwhelmed",
+      "effect": "noStat"
+    }
+  },
+  {
+    "id": "metamorphosis",
+    "name": "Metamorphosis",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/metamorphosis.webp",
+    "landscape": "insanity",
+    "flavor": "Your head splits into crystal and wings.",
+    "bright": {
+      "label": "Transform",
+      "cost": {
+        "suit": "lucidity",
+        "count": 2
+      },
+      "effects": {
+        "wide": 1,
+        "draw": 2
+      }
+    },
+    "dim": {
+      "label": "Mid-Change",
+      "effect": "narrow"
+    }
+  },
+  {
+    "id": "no-why",
+    "name": "No Why",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/no-why.webp",
+    "landscape": "black-void",
+    "flavor": "Question marks spiral into the dark. Nothing here has a reason.",
+    "bright": {
+      "label": "Stop Asking",
+      "cost": {
+        "value": 1
+      },
+      "effects": {
+        "draw": 2
+      }
+    },
+    "dim": {
+      "label": "But Why?",
+      "effect": "strict"
+    }
+  },
+  {
+    "id": "no-thing",
+    "name": "No Thing",
+    "suit": "willpower",
+    "image": "images/cards/mindstream/willpower/no-thing.webp",
+    "landscape": "black-void",
+    "flavor": "A black hole swallows cards, light, and everything else.",
+    "bright": {
+      "label": "Pull It Back",
+      "cost": {
+        "suit": "elasticity",
+        "count": 2
+      },
+      "effects": {
+        "return": 2
+      }
+    },
+    "dim": {
+      "label": "Swallowed",
+      "effect": "costly"
+    }
+  },
+  {
+    "id": "morning-routine",
+    "name": "Morning Routine",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/morning-routine.webp",
+    "landscape": "day-in-the-life",
+    "flavor": "Sunlight, a sink, a toothbrush: the day starts like any other.",
+    "bright": {
+      "label": "Get Ready",
+      "cost": {
+        "suit": "lucidity",
+        "count": 1
+      },
+      "effects": {
+        "draw": 2
+      }
+    },
+    "dim": {
+      "label": "Running Late",
+      "effect": "fog"
+    }
+  },
+  {
+    "id": "evening-plans",
+    "name": "Evening Plans",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/evening-plans.webp",
+    "landscape": "day-in-the-life",
+    "flavor": "Cards and glowing windows lay out the whole evening ahead.",
+    "bright": {
+      "label": "Make Plans",
+      "cost": {
+        "suit": "lucidity",
+        "min": 3
+      },
+      "effects": {
+        "reveal": 1,
+        "draw": 2,
+        "dice": 1
+      }
+    },
+    "dim": {
+      "label": "Plans Fall Through",
+      "effect": "narrow"
+    }
+  },
+  {
+    "id": "sacred-geometry",
+    "name": "Sacred Geometry",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/sacred-geometry.webp",
+    "landscape": "inner-sanctum",
+    "flavor": "Golden patterns ring a bed at the center of everything.",
+    "bright": {
+      "label": "Trace the Pattern",
+      "cost": {
+        "value": 3
+      },
+      "effects": {
+        "noForm": true,
+        "dice": 1
+      }
+    },
+    "dim": {
+      "label": "Out of Alignment",
+      "effect": "strict"
+    }
+  },
+  {
+    "id": "harmonic-resonance",
+    "name": "Harmonic Resonance",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/harmonic-resonance.webp",
+    "landscape": "inner-sanctum",
+    "flavor": "Golden threads hum between you and the stars.",
+    "bright": {
+      "label": "Hum Along",
+      "cost": {
+        "suit": "lucidity",
+        "count": 2
+      },
+      "effects": {
+        "dice": 1,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Discord",
+      "effect": "noStat"
+    }
+  },
+  {
+    "id": "centering",
+    "name": "Centering",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/centering.webp",
+    "landscape": "tranquil-grove",
+    "flavor": "You sit still at the center of a turning world.",
+    "bright": {
+      "label": "Breathe",
+      "cost": {
+        "suit": "willpower",
+        "min": 2
+      },
+      "effects": {
+        "return": 2
+      }
+    },
+    "dim": {
+      "label": "Restless",
+      "effect": "fog"
+    }
+  },
+  {
+    "id": "serenity",
+    "name": "Serenity",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/serenity.webp",
+    "landscape": "tranquil-grove",
+    "flavor": "A golden sunset rests on a still lake.",
+    "bright": {
+      "label": "Be Still",
+      "cost": {
+        "suit": "willpower",
+        "count": 1
+      },
+      "effects": {
+        "weaken": 1
+      }
+    },
+    "dim": {
+      "label": "Ripples",
+      "effect": "costly"
+    }
+  },
+  {
+    "id": "wrong-door",
+    "name": "Wrong Door",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/wrong-door.webp",
+    "landscape": "endless-hallway",
+    "flavor": "A hall of doors, each one opening onto a different world.",
+    "bright": {
+      "label": "Pick the Right One",
+      "cost": {
+        "suit": "elasticity",
+        "min": 2
+      },
+      "effects": {
+        "reveal": 1,
+        "dice": 1
+      }
+    },
+    "dim": {
+      "label": "Wrong Door",
+      "effect": "stronger"
+    }
+  },
+  {
+    "id": "voice-in-the-distance",
+    "name": "Voice in the Distance",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/voice-in-the-distance.webp",
+    "landscape": "endless-hallway",
+    "flavor": "A voice calls from the light at the end of the hall.",
+    "bright": {
+      "label": "Follow It",
+      "cost": {
+        "suit": "willpower",
+        "min": 3
+      },
+      "effects": {
+        "dice": 2,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Echoes",
+      "effect": "narrow"
+    }
+  },
+  {
+    "id": "pop-quiz",
+    "name": "Pop Quiz",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/pop-quiz.webp",
+    "landscape": "scary-classroom",
+    "flavor": "Papers fly from the clock as the test begins.",
+    "bright": {
+      "label": "Know the Answer",
+      "cost": {
+        "suit": "lucidity",
+        "min": 2
+      },
+      "effects": {
+        "dice": 2
+      }
+    },
+    "dim": {
+      "label": "Blank Mind",
+      "effect": "noStat"
+    }
+  },
+  {
+    "id": "everyones-laughing",
+    "name": "Everyone's Laughing",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/everyones-laughing.webp",
+    "landscape": "scary-classroom",
+    "flavor": "The whole class turns to stare, and the laughing starts.",
+    "bright": {
+      "label": "Laugh It Off",
+      "cost": {
+        "suit": "willpower",
+        "count": 2
+      },
+      "effects": {
+        "return": 1,
+        "draw": 2
+      }
+    },
+    "dim": {
+      "label": "Humiliated",
+      "effect": "fog"
+    }
+  },
+  {
+    "id": "running-somewhere",
+    "name": "Running Somewhere?",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/running-somewhere.webp",
+    "landscape": "city",
+    "flavor": "You sprint down a glowing street, late for something you can't remember.",
+    "bright": {
+      "label": "Run Faster",
+      "cost": {
+        "suit": "elasticity",
+        "count": 1
+      },
+      "effects": {
+        "dice": 1
+      }
+    },
+    "dim": {
+      "label": "Out of Breath",
+      "effect": "narrow"
+    }
+  },
+  {
+    "id": "transported",
+    "name": "Transported",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/transported.webp",
+    "landscape": "city",
+    "flavor": "You leap from window to window across a city of lit rooms.",
+    "bright": {
+      "label": "Leap Across",
+      "cost": {
+        "suit": "elasticity",
+        "min": 3
+      },
+      "effects": {
+        "reveal": 1,
+        "object": 1,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Missed the Ledge",
+      "effect": "stronger"
+    }
+  },
+  {
+    "id": "a-way-out-forms",
+    "name": "A Way Out Forms",
+    "suit": "lucidity",
+    "image": "images/cards/mindstream/lucidity/a-way-out-forms.webp",
+    "landscape": "road",
+    "flavor": "Lightning splits the canyon, and a road opens through it.",
+    "bright": {
+      "label": "Take It",
+      "cost": {
+        "suit": "elasticity",
+        "count": 2
+      },
+      "effects": {
+        "wide": 1,
+        "reveal": 1
+      }
+    },
+    "dim": {
+      "label": "Dead End",
+      "effect": "strict"
+    }
+  },
+  {
+    "id": "into-the-next",
+    "name": "Into the Next",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/into-the-next.webp",
+    "landscape": "road",
+    "flavor": "A door swings open onto the road ahead.",
+    "bright": {
+      "label": "Step Through",
+      "cost": {
+        "value": 2
+      },
+      "effects": {
+        "reveal": 1,
+        "dice": 1
+      }
+    },
+    "dim": {
+      "label": "Hesitate",
+      "effect": "costly"
+    }
+  },
+  {
+    "id": "deeper-darker",
+    "name": "Deeper Darker",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/deeper-darker.webp",
+    "landscape": "the-basement",
+    "flavor": "The stairs keep going down long after they should end.",
+    "bright": {
+      "label": "Keep Going",
+      "cost": {
+        "suit": "elasticity",
+        "min": 4
+      },
+      "effects": {
+        "dice": 2,
+        "object": 1,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "Lights Out",
+      "effect": "fog"
+    }
+  },
+  {
+    "id": "giant-animated-pile",
+    "name": "Giant Animated Pile",
+    "suit": "elasticity",
+    "image": "images/cards/mindstream/elasticity/giant-animated-pile.webp",
+    "landscape": "the-basement",
+    "flavor": "A heap of junk opens a dozen eyes and starts to move.",
+    "bright": {
+      "label": "Pick Through It",
+      "cost": {
+        "suit": "elasticity",
+        "count": 2
+      },
+      "effects": {
+        "object": 1,
+        "return": 1
+      }
+    },
+    "dim": {
+      "label": "It Grabs You",
+      "effect": "stronger"
+    }
+  }
+]

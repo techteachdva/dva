@@ -5,7 +5,7 @@
  */
 
 import { wakingMindCount, duskMillCount } from "../encounters/meet-phase.js";
-import { returnableCards, returnableCount, isDreambeastPsycheCard } from "../dreamers/subconscious.js";
+import { returnableCards, returnableCount, isDreambeastPsycheCard, cardMatchesFilter } from "../dreamers/subconscious.js";
 import { rememberPriority, rememberFuel, REMEMBER_CHOICE_ID } from "../effects/remember.js";
 import { isQuestConditionMet, rowArchetypes } from "../dreamers/quests.js";
 
@@ -68,8 +68,7 @@ export function pickHandLoss(player, pending) {
   const picked = new Set((pending?.picked || []).map((c) => c.instanceId));
   const filter = pending?.cardFilter || null;
   const pool = (player?.hand || []).filter((c) => !picked.has(c.instanceId))
-    .filter((c) => !filter?.payablePsyche || (c.type !== "psyche-power" && c.type !== "object"))
-    .filter((c) => !filter?.suit || c.suit === filter.suit || c.wild || String(c.id || "").startsWith("wild-"));
+    .filter((c) => cardMatchesFilter(c, filter));
   const ranked = [...pool].sort((a, b) => lossCost(a) - lossCost(b));
   return ranked[0] || null;
 }

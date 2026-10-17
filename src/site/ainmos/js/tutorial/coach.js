@@ -110,7 +110,7 @@ function archetypeEventStep(ctx = {}) {
       ? "Every Archetype Meet opens with one of its Events. Bright is locked this time: it needs one of the Landscapes shown at the top placed in the dream. Choose Dim, then pick your spread."
       : "Every Archetype Meet opens with one of its Events. Choose a side, then pick your spread.",
     target: ctx.brightLocked ? "#utility-modal .ms-choice-btn--bad" : "",
-    why: "Bright costs Psyche, makes the fight easier, and Returns 2 Psyche. Dim is free but makes the fight harder. Low on Psyche? Dim is a fine choice.",
+    why: "Bright costs Psyche you choose, and each point you pay buys one small thing: a die, a Return, a draw. Dim is free but puts one drawback on the fight. Low on Psyche? Dim is a fine choice.",
   };
 }
 

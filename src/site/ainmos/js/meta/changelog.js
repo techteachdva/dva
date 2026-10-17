@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.27.1";
+export const SOMNIA_VERSION = "0.27.2";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.27.2",
+    title: "Clear Events",
+    notes: [
+      "Every Archetype now draws from exactly 4 Events: 2 from each of its home Landscapes. 48 Events in all, each with its own scene, art, Bright, and Dim.",
+      "Bright costs Psyche you pick from your hand: some cards of a suit (2 Willpower), one card of a suit worth enough (a Lucidity worth 3+), or one card of an exact value (any 2). Each point of the cost buys one small thing: +1 die, −1 Power, Return 1, Draw 2 Psyche, Reveal 1 Landscape, Draw 1 Object, or +1 card in the spread. No Form needed, or a lost spread coming back, is worth 2.",
+      "Fixed: a Bright that Returns Psyche now lets you choose which ones, instead of picking for you.",
+      "Fixed: a Bright that lets you play 4 Psyche really lets you select a fourth card.",
+      "Dim puts one plain drawback on the fight (Power 14, −2 dice, at most 2 Psyche, no stats, a three-card Form, or Repress 2 if you lose), and each one fits its Event.",
+    ],
+  },
   {
     version: "0.27.1",
     title: "NaN",

@@ -3,7 +3,7 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.27.1-nan";
+const CACHE_NAME = "ainmos-0.27.2-clear-events";
 /** Versioned with the release, so a new ship never serves last version's modules. */
 const RUNTIME_CACHE = `${CACHE_NAME}-runtime`;
 
@@ -101,6 +101,7 @@ const PRECACHE = [
   "./js/effects/effect-choices.js",
   "./js/effects/effects.js",
   "./js/board/event-landscapes.js",
+  "./js/dreamers/archetype-events.js",
   "./js/effects/event-resolutions.js",
   "./js/dreamers/final-recurrence-atmosphere.js",
   "./js/dreamers/final-recurrence-rules.js",
@@ -172,6 +173,7 @@ const PRECACHE = [
   "./data/psyche.json",
   "./data/mindstream.json",
   "./data/event-landscapes.json",
+  "./data/archetype-events.json",
   "./data/objects.json",
   "./data/card-manifest.json",
   "./data/landscape-sfx.json",

@@ -27,6 +27,7 @@ import {
   encounterPayHint,
   currentMeetEncounter,
   archetypeSpreadDice,
+  meetSpreadCap,
 } from "../core/rules.js";
 import {
   FINAL_ARCHETYPE_POWER,
@@ -3053,6 +3054,20 @@ function repressChoiceCopy(state, pending) {
   } else {
     instruction = `Choose ${needed - picked} more Psyche in this hand (${picked}/${needed}).`;
   }
+  if (pending.payFor) {
+    // A Bright payment: say what it buys and what it takes.
+    const payInstruction = pool.length === 0
+      ? "No card in your hand can pay this."
+      : picked >= needed
+        ? `Confirm to pay for ${pending.payFor}.`
+        : (pending.reason || `Choose ${needed - picked} more Psyche to pay.`);
+    return {
+      title: `Pay for ${pending.payFor}`,
+      instruction: payInstruction,
+      confirmLabel: owesMore ? `Choose ${needed - picked} more` : (pool.length === 0 ? "Continue" : "Pay"),
+      owesMore,
+    };
+  }
   const title = pending.source === "objects"
     ? `${verb} an Object`
     : (discard ? "Discard Psyche" : "Repress to Subconscious");
@@ -3265,7 +3280,7 @@ export function renderCoopMeetHands(state, onCardClick) {
   renderActiveDreamerHand(state, onCardClick, {
     title: msPrep ? `${player.name} — Mindstream Meet` : `${player.name} — Meet Hand`,
     // Ainmos: need to know. The fight buttons under the spread carry the dice; this just guides the pick.
-    statsText: poolCount ? `Spread ${poolCount} Psyche · fight below` : "Pick 1–3 Psyche to fight",
+    statsText: poolCount ? `Spread ${poolCount} Psyche · fight below` : `Pick 1–${meetSpreadCap(state)} Psyche to fight`,
     canClickCard: (card) => card.type === "psyche-power" || tableSpread || !meetActor || isActor,
   });
 }

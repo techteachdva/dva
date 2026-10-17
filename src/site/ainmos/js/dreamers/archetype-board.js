@@ -23,6 +23,7 @@ import { hexDistance, adjacentTiles } from "../core/hex.js";
 import { matchingForms } from "../cards/dream-forms.js";
 import { queueArchetypeArriveFx, queueArchetypeFleeFx } from "../board/board-fx.js";
 import { searchForArchetypeHome } from "./archetype-call.js";
+import { brightSide, dimSide } from "./archetype-events.js";
 
 export const ARCHETYPE_POWER = 12;
 export const ARCHETYPE_TOKEN_REWARD = 1;
@@ -30,8 +31,6 @@ export const ARCHETYPE_CHOICES = 3;
 export const ARCHETYPE_SPREAD_CAP = 3;
 /** Psyche an Acquired Archetype Returns from the Subconscious. */
 export const ARCHETYPE_RETURN = 4;
-/** Psyche a Bright Event Returns from the Subconscious. */
-export const BRIGHT_RETURN = 2;
 
 function shuffled(list) {
   const copy = [...list];
@@ -306,39 +305,10 @@ export function drawArchetypeEvent(state, arch) {
 
 // ── Bright and Dim: what an Event does to the coming fight ────────────────
 
-const BRIGHT = [
-  { key: "dice", hint: "+3 dice in this fight, and Return 2", mods: { dice: 3 } },
-  { key: "weaken", hint: "The Archetype is Power 9 in this fight, and Return 2", mods: { power: -3 } },
-  { key: "free-form", hint: "No Form needed, +1 die, and Return 2", mods: { formNeed: "none", dice: 1 } },
-  { key: "wide", hint: "Play up to 4 Psyche, +1 die, and Return 2", mods: { cap: 4, dice: 1 } },
-  { key: "stat", hint: "Your matching stat counts twice, +1 die, and Return 2", mods: { statMult: 2, dice: 1 } },
-  { key: "second-wind", hint: "+2 dice; lose, and your spread returns to hand. Return 2", mods: { keepOnLoss: true, dice: 2 } },
-];
-
-const DIM = [
-  { key: "stronger", hint: "The Archetype is Power 15 in this fight", mods: { power: 3 } },
-  { key: "narrow", hint: "Play at most 2 Psyche", mods: { cap: 2 } },
-  { key: "mindless", hint: "Your stats add nothing", mods: { noStat: true } },
-  { key: "strict", hint: "It needs a three-card Form", mods: { formNeed: "three" } },
-  { key: "costly", hint: "Power 13; lose, and Repress 2 from the Waking Mind", mods: { loseRepress: 2, power: 1 } },
-  { key: "fog", hint: "−2 dice in this fight", mods: { dice: -2 } },
-];
-
-function hashOf(text) {
-  let h = 0;
-  for (const ch of String(text || "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return h;
-}
-
-/** The Bright and Dim this Event offers before an Archetype fight. */
-export function archetypeEventSides(event, resolution = null) {
-  const h = hashOf(event?.id);
-  const bright = BRIGHT[h % BRIGHT.length];
-  const dim = DIM[(h >>> 3) % DIM.length];
-  return {
-    bright: { ...bright, label: resolution?.good?.label || "Bright", cost: Math.max(1, Math.min(4, resolution?.cost || 2)) },
-    dim: { ...dim, label: resolution?.bad?.label || "Dim" },
-  };
+/** The Bright and Dim this Event offers before a fight with this Archetype (see archetype-events.js). */
+export function archetypeEventSides(event, arch = null) {
+  const name = arch?.name || "The Archetype";
+  return { bright: brightSide(event, name), dim: dimSide(event, name) };
 }
 
 /** The fight's rules after its Event: Power, card cap, Form need, and dice. */

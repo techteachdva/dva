@@ -432,7 +432,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Archetypes</h3>
-            <p>Meeting one costs 1 action and opens with one of its <strong>Events</strong>. <strong>Bright</strong> (only while one of the Event's Landscapes is placed) costs Psyche and helps the fight. <strong>Dim</strong> is free and hurts it. Then play a spread that makes a <strong>Dream Form</strong> against Power 12. Win: +1 Archetype, +1 Power Token, and its power is yours. You can only call an Archetype whose home Landscape is revealed.</p>
+            <p>Meeting one costs 1 action and opens with one of its <strong>Events</strong>. <strong>Bright</strong> (only while the Event's Landscape is placed) costs Psyche you choose, and each point paid buys one small thing (+1 die, Return 1, Draw 2, Reveal 1, an Object). <strong>Dim</strong> is free and puts one drawback on the fight. Then play a spread that makes a <strong>Dream Form</strong> against Power 12. Win: +1 Archetype, +1 Power Token, and its power is yours. You can only call an Archetype whose home Landscape is revealed.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Repress &amp; Return</h3>

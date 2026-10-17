@@ -701,8 +701,10 @@ function resolveOnePending(state) {
   if (state.pendingMindstreamChoice?.kind === "archetype-event") {
     const good = state.pendingMindstreamChoice.choices.find((c) => c.id === "good" && !c.disabled);
     const me = state.players.find((p) => p.id === state.pendingMindstreamChoice.playerId);
-    const keep = me ? psycheCards(me).length : 0;
-    resolveMindstreamChoice(state, !DUMB && good && keep >= 4 ? "good" : "bad", effectHelpers());
+    // Bright when the hand keeps enough after paying to still make a Form.
+    const pay = state.pendingMindstreamChoice.sides?.bright?.cost;
+    const keep = me ? psycheCards(me).length - (pay?.count || 1) : 0;
+    resolveMindstreamChoice(state, !DUMB && good && keep >= 3 ? "good" : "bad", effectHelpers());
     return true;
   }
   if (state.beastsToReturn?.length && !state.landscapePick) {

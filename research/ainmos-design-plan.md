@@ -166,3 +166,12 @@ Phil's calls, now locked:
 - **The Destroyer of Dreams** shows Power 99 / "99d6" but rolls 30d6 (`rollPower`). Felling it plays `js/ui/leviathan-finale.js` (an impossible fight, then the dice burst across the screen and the dream tears), then the blue screen, whose crash report saves the high score as **NaN** (`NAN_SCORE` = 999999999 with `breakdown.nan`, always shown as "NaN"; no backend change needed).
 - **LEVIATHAN seed** plays that ending straight away (no score recorded).
 - Decks re-tuned for the above: Daydream 11/6/2/1/0 + 2 Wilds (73%), Nap 12/6/2/1/0 + 1 Wild (57%), Deep 9/6/3/2/1 + 3 Wilds (32%).
+
+## 0.27.2 Clear Events (2026-10-17)
+
+- Archetype Events live in `data/archetype-events.json` (rules in `js/dreamers/archetype-events.js`). 48 Events: exactly 2 per home Landscape, so every Archetype draws from 4. Each Event has one Landscape, a flavor line that matches its art, a Bright, and a Dim. The old Mindstream Events are no longer drawn.
+- Bright cost is one of: N Psyche of a suit (worth N), 1 Psyche of a suit worth min+ (worth min), or 1 Psyche of an exact value, any suit (worth that value). Wild counts as 5 of any suit. The player picks the cards (discard picker with a card filter).
+- Each point buys one thing: +1 die, −1 Power, +1 spread card, Return 1 (player picks), Draw 2 Psyche, Reveal 1 Landscape, Draw 1 Object. No Form needed and keep-spread-on-loss are worth 2. `unbalancedEvents()` checks cost = worth.
+- Dim is one drawback: Power 14, −2 dice, cap 2, no stats, three-card Form, or Repress 2 on a loss.
+- Bright is still open only while its Landscape is placed.
+- Smart bot (150/length): Daydream 71%, Nap 53%, Deep 26% (0.27.1 was 75/57/33), all inside the targets. Browser check: `scripts/ainmos-0272-events-check.mjs`.

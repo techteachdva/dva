@@ -182,6 +182,7 @@ import { resolveObjectChoice } from "../effects/object-effects.js";
 import { resolveDreamChoice } from "../cards/dream-choices.js";
 import { resolveEffectChoice } from "../effects/effect-choices.js";
 import { resolveMindstreamChoice } from "../cards/mindstream-choices.js";
+import { refreshArchetypeEventCatalog } from "../dreamers/archetype-events.js";
 import { playMindstreamDrawCinematic } from "../cards/mindstream-draw-cinematic.js";
 import { playBeastMillSequence } from "../encounters/beast-mill-cinematic.js";
 import { continueArchetypeQueues } from "../dreamers/archetypes.js";
@@ -1081,6 +1082,7 @@ function applyLoadedGame(loaded) {
   clearActionHistory();
   resetPhaseOpenerChrome();
   state = reattachGameRuntime(loaded.state);
+  refreshArchetypeEventCatalog(state, gameData);
   seedRandomness(state?.seed || null);
   launchConfig = {
     ...loaded.launchConfig,

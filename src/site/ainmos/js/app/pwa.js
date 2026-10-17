@@ -81,6 +81,7 @@ const WARM_DATA = [
   "./data/mindstream.json",
   "./data/objects.json",
   "./data/event-landscapes.json",
+  "./data/archetype-events.json",
   "./data/landscape-sfx.json",
 ];
 

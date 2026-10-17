@@ -219,7 +219,7 @@ const dataMod = await mod("core/data.js");
 
 /** Same data the game plays with: raw JSON through the game's own prepareGameData. */
 function loadData() {
-  const names = ["dreamers", "archetypes", "landscapes", "dreambeasts", "dreams", "psyche", "mindstream", "event-landscapes", "objects"];
+  const names = ["dreamers", "archetypes", "landscapes", "dreambeasts", "dreams", "psyche", "mindstream", "event-landscapes", "archetype-events", "objects"];
   const data = {};
   for (const name of names) data[name] = JSON.parse(readFileSync(join(DATA_DIR, `${name}.json`), "utf8"));
   return dataMod.prepareGameData(data);

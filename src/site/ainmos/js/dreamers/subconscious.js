@@ -1,4 +1,5 @@
 import { recordQuestEvent } from "./quests.js";
+import { psycheMatchesSuit } from "../cards/psyche.js";
 import { flashMoment } from "../ui/moment-overlay.js";
 import { discardToMindstream, returnDreambeastToMindstreamDeck } from "../cards/mindstream-supply.js";
 import { queueRepressFx, queueReturnFx } from "../board/board-fx.js";
@@ -431,10 +432,15 @@ function sourceCards(player, source) {
   return [];
 }
 
-function cardMatchesFilter(card, filter) {
+/** Does this card meet a hand filter? A Wild Psyche counts as 5 of any suit. */
+export function cardMatchesFilter(card, filter) {
   if (!filter || !card) return true;
-  if (filter.payablePsyche && (card.type === "psyche-power" || card.type === "object")) return false;
-  if (filter.suit && card.suit !== filter.suit && !(card.wild || card.id?.startsWith("wild-"))) return false;
+  if (filter.payablePsyche && (card.type === "psyche-power" || card.type === "object" || isDreambeastPsycheCard(card))) return false;
+  const wild = !!(card.wild || card.id?.startsWith("wild-"));
+  if (filter.suit && !psycheMatchesSuit(card, filter.suit)) return false;
+  const value = wild ? 5 : (Number(card.value) || 0);
+  if (filter.minValue && value < filter.minValue) return false;
+  if (filter.value && value !== filter.value) return false;
   return true;
 }
 
@@ -680,6 +686,7 @@ function beginRepressStep(state, step) {
     cardFilter: step.cardFilter || null,
     confirmEmpty: false,
     strict: !!step.strict,
+    payFor: step.payFor || "",
   };
   if (step.reason) {
     try { flashMoment(step.reason); } catch { /* DOM optional in sim */ }
@@ -713,7 +720,7 @@ export function enqueueRepressObjects(state, player, count, { reason = "", stric
   }
 }
 
-export function enqueueDiscardFromHand(state, player, count, { reason = "", strict = false, cardFilter = null } = {}) {
+export function enqueueDiscardFromHand(state, player, count, { reason = "", strict = false, cardFilter = null, payFor = "" } = {}) {
   state.resolutionQueue = state.resolutionQueue || [];
   state.resolutionQueue.push({
     type: "repress",
@@ -723,6 +730,7 @@ export function enqueueDiscardFromHand(state, player, count, { reason = "", stri
     toDiscard: true,
     strict: !!strict,
     cardFilter: cardFilter || null,
+    payFor: payFor || "",
     reason: reason || `${player.name}: Discard ${count} Psyche card(s).`,
   });
   if (!state.pendingRepress && !state.pendingReturn) {
