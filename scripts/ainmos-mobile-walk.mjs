@@ -33,11 +33,14 @@ const VIEWPORTS = {
   "phone-landscape": { viewport: { width: 844, height: 390 }, dpr: 3, ua: devices["iPhone 13"].userAgent },
   "phone-small": { viewport: { width: 667, height: 375 }, dpr: 2, ua: devices["iPhone SE"].userAgent },
   // iPhone 16e: 1170x2532 at 3x. Pixel 10: 1080x2424 at 2.625x.
-  "iphone-16e": { viewport: { width: 844, height: 390 }, dpr: 3, ua: devices["iPhone 13"].userAgent },
+  // safe: the notch / home-indicator insets the real phone reports (env(safe-area-inset-*)).
+  "iphone-16e": { viewport: { width: 844, height: 390 }, dpr: 3, ua: devices["iPhone 13"].userAgent, safe: { left: 47, right: 47, top: 0, bottom: 21 } },
+  // Safari in landscape: the address bar takes ~48px of the 390.
+  "iphone-16e-safari": { viewport: { width: 844, height: 342 }, dpr: 3, ua: devices["iPhone 13"].userAgent, safe: { left: 47, right: 47, top: 0, bottom: 21 } },
   "iphone-16e-portrait": { viewport: { width: 390, height: 844 }, dpr: 3, ua: devices["iPhone 13"].userAgent },
   "pixel-10": { viewport: { width: 923, height: 412 }, dpr: 2.625, ua: devices["Pixel 7"]?.userAgent || devices["Pixel 5"].userAgent },
   // Pixel 10 in Chrome with the address bar and status bar showing (landscape).
-  "pixel-10-chrome": { viewport: { width: 923, height: 340 }, dpr: 2.625, ua: devices["Pixel 7"]?.userAgent || devices["Pixel 5"].userAgent },
+  "pixel-10-chrome": { viewport: { width: 923, height: 340 }, dpr: 2.625, ua: devices["Pixel 7"]?.userAgent || devices["Pixel 5"].userAgent, safe: { left: 32, right: 0, top: 0, bottom: 0 } },
   "pixel-10-portrait": { viewport: { width: 412, height: 923 }, dpr: 2.625, ua: devices["Pixel 7"]?.userAgent || devices["Pixel 5"].userAgent },
   "phone-android": { viewport: { width: 915, height: 412 }, dpr: 2.625, ua: devices["Pixel 7"]?.userAgent || devices["Pixel 5"].userAgent },
   "tablet-landscape": { viewport: { width: 1180, height: 820 }, dpr: 2, ua: devices["iPad Pro 11"].userAgent },
@@ -59,6 +62,10 @@ const context = await browser.newContext({
   ...(VP.ua ? { userAgent: VP.ua } : {}),
 });
 const page = await context.newPage();
+if (VP.safe) {
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("Emulation.setSafeAreaInsetsOverride", { insets: VP.safe }).catch((e) => console.warn("safe-area override failed:", e.message));
+}
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
 

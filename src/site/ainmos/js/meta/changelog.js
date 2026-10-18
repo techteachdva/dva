@@ -6,10 +6,19 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.29";
+export const SOMNIA_VERSION = "0.29.1";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.29.1",
+    title: "Notch Fit",
+    notes: [
+      "Fixed: on notched phones (iPhone 16e and others) the table slid right by the width of the notch and ran off the far edge, hiding End Round and part of the top bar. It now fits edge to edge.",
+      "Short phone screens (Safari or Chrome with the address bar showing): the card fan in the phase window shrinks to fit instead of being cut off, Lost & Found cards keep room for their rules with the price beside Buy, and Vault cards show their whole action.",
+      "With no free Actions and no card picked, the phase button says Add a Card instead of Take 0 Free.",
+    ],
+  },
   {
     version: "0.29",
     title: "Plain Words",

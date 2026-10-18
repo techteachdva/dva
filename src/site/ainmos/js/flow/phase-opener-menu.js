@@ -83,6 +83,7 @@ function budgetUnit(phase, n, bought) {
 }
 
 function confirmLabel(phase, bought, n) {
+  if (!n) return "Add a Card";
   if (!bought) return `Take ${n} Free`;
   if (phase === "Reveal") return "Open Reveal";
   if (phase === "Explore") return "Open Explore";
@@ -272,7 +273,7 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   const tint = phase === "Reveal" ? "reveal" : phase === "Explore" ? "explore" : "meet";
   const hasOpenerCard = !!player && (player.hand || []).some((c) => isOpenerCard(c, state));
   const idleNote = hasOpenerCard
-    ? `Add a ${suitLabel} card`
+    ? `Add ${suitLabel}`
     : `No ${suitLabel} in hand`;
 
   body.innerHTML = `

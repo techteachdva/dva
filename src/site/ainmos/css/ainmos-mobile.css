@@ -985,3 +985,59 @@ html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #sideba
 html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #sidebar-right > .rail-wake { grid-column: 1; grid-row: 1; }
 html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #sidebar-right > .rail-powers { grid-column: 1; grid-row: 2; }
 html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #sidebar-right > .rail-forms { grid-column: 2; grid-row: 1 / span 3; }
+
+/* 0.29.1: on notched phones the frame no longer pads itself for the notch; each bar and
+   button already adds its own --sa-* inset, so padding #app too pushed the table right
+   and off the far edge. */
+html[data-form="phone"]:root body.ainmos.play-window #app,
+html[data-form="phone"]:root body.ainmos.in-game #app {
+  padding: 0 !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+html[data-form="phone"]:root body.ainmos { overflow-x: hidden; }
+/* Short phone screens (Safari or Chrome bars showing): Vault cards keep their rule, not the suit line. */
+@media (max-height: 360px) {
+  html[data-form="phone"]:root body.ainmos #vault-screen .vs-item .vs-hex { width: 48px !important; height: 48px !important; }
+  html[data-form="phone"]:root body.ainmos #vault-screen .vs-item { padding: 8px !important; row-gap: 0; }
+  html[data-form="phone"]:root body.ainmos #vault-screen .vs-item .lf-item-text { margin-top: 2px; font-size: 12.5px !important; line-height: 1.3; }
+  html[data-form="phone"]:root body.ainmos #vault-screen .vs-budget { margin: 0; }
+}
+/* Short phone screens: Lost & Found cards give their rules the room. Small art, price chips beside Buy. */
+@media (max-height: 360px) {
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-window { gap: 4px; padding-top: 4px !important; }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-titlebar { min-height: 28px; padding-bottom: 2px; }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-title { font-size: 16px; }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-hand { min-height: 32px; padding: 1px 8px; }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-hand-row > * { min-height: 24px; }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item {
+    grid-template-columns: 40px minmax(0, 1fr);
+    padding: 8px !important;
+  }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item :is(.lf-item-art, .lf-insight-sigil) { width: 40px; height: 40px !important; font-size: 20px; }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item .lf-item-name { font-size: 14px !important; }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item .lf-item-kind { font-size: 11px !important; }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item .lf-item-text { margin: 4px 0 2px; font-size: 12.5px !important; line-height: 1.3; }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item .lf-item-foot {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+  }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item .lf-item-foot :is(.lf-pay, .lf-why) { flex: 0 1 auto; min-width: 0; }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item .lf-item-foot .lf-btn { flex: 1 1 auto; min-height: 40px; }
+  html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-foot .lf-btn { min-height: 40px; }
+}
+/* Phone opener: cards size to the height left over, so a short screen never cuts them off. */
+html[data-form="phone"]:root body.ainmos #utility-modal .phase-opener-solo-hand {
+  --op-card-h: clamp(92px, calc(var(--vvh, 100dvh) - 220px), 150px);
+  min-height: calc(var(--op-card-h) + 16px);
+  align-items: center;
+}
+html[data-form="phone"]:root body.ainmos #utility-modal .phase-opener-solo-hand .game-card {
+  height: var(--op-card-h) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  width: calc(var(--op-card-h) * 0.68) !important;
+  min-width: 0 !important;
+}
+html[data-form="phone"]:root body.ainmos #utility-modal .phase-opener-solo-hand .psyche-card .psyche-value { font-size: calc(var(--op-card-h) * 0.3) !important; }
