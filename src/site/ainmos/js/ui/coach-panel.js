@@ -107,7 +107,11 @@ function place(host, ctx, minimized) {
     || document.querySelector("#utility-modal.ms-choice-modal:not(.hidden)");
   if (compactForm()) {
     host.classList.add("is-compact");
-    if (menuUp || document.body.classList.contains("hand-drawer-open")) host.classList.add("is-top");
+    // Phones (0.28): the card docks bottom-right over the empty end of the hand bar, and
+    // moves to the top whenever the bottom holds what the guide is pointing at.
+    const spreadUp = [...document.querySelectorAll(".spread-fight-btn")].some((el) => el.getClientRects().length);
+    if (menuUp || spreadUp || document.body.classList.contains("hand-drawer-open")) host.classList.add("is-top");
+    if (menuUp) host.classList.add("is-over-menu");
     return;
   }
   if (ctx.artScreen) {

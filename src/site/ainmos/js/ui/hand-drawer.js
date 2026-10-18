@@ -16,6 +16,36 @@ function setOpen(open) {
   document.body.classList.toggle("hand-drawer-open", !!open);
   const btn = document.getElementById("hand-drawer-btn");
   if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+  if (open) {
+    requestAnimationFrame(measureDrawer);
+    // The drawer slides up for 0.24s: measure again once it has landed.
+    setTimeout(measureDrawer, 320);
+  }
+}
+
+let drawerObserver = null;
+function observeDrawer() {
+  const section = document.querySelector("#hand-bar > .psyche-hand-section");
+  if (!section || drawerObserver || typeof ResizeObserver === "undefined") return;
+  drawerObserver = new ResizeObserver(() => measureDrawer());
+  drawerObserver.observe(section);
+}
+
+/**
+ * 0.28: the open drawer covers the spread tray, so its Fight / Accept bar rides on the
+ * drawer's top edge. --hd-rise is the drawer's top, measured up from the bottom of the tray's
+ * containing block.
+ */
+function measureDrawer() {
+  const section = document.querySelector("#hand-bar > .psyche-hand-section");
+  if (!section || !isHandDrawerOpen()) return;
+  if (section.getAnimations?.().some((a) => a.playState === "running")) return;
+  const top = section.getBoundingClientRect().top;
+  // The tray's position:fixed resolves against its nearest transformed ancestor, not the screen.
+  let box = document.getElementById("spread-tray")?.parentElement;
+  while (box && box !== document.body && getComputedStyle(box).transform === "none") box = box.parentElement;
+  const floor = box && box !== document.body ? box.getBoundingClientRect().bottom : window.innerHeight;
+  if (top > 0) document.body.style.setProperty("--hd-rise", `${Math.round(floor - top)}px`);
 }
 
 export function isHandDrawerOpen() {
@@ -89,4 +119,6 @@ export function renderHandDrawer(state) {
   if (state.diceBattle && isHandDrawerOpen()) setOpen(false);
   lastFightKey = fightKey;
   btn.classList.toggle("is-wanted", !!fightKey && !selected);
+  observeDrawer();
+  if (isHandDrawerOpen()) requestAnimationFrame(measureDrawer);
 }

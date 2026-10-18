@@ -48,6 +48,33 @@ function reducedMotion() {
     && window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
 }
 
+/** Touch screens land each die on a flat, head-on face (0.28): it reads at a glance on a
+ * small screen, and stays correct where a mobile browser flattens the 3D cube. */
+function flatLanding() {
+  return typeof document !== "undefined" && document.documentElement?.dataset?.touch === "true";
+}
+
+/**
+ * The largest die (px) that fits both trays on this screen without spilling over the
+ * labels. Mirrors the stage layout: pools side by side from 720px wide, stacked below.
+ */
+export function fitDieSize(dreamerCount, beastCount, vw, vh, cap = 64) {
+  const n = Math.max(dreamerCount, beastCount, 1);
+  const stacked = vw < 720;
+  const tableW = Math.min(vw * 0.96, 980) - 32;
+  const poolW = stacked ? tableW - 16 : (tableW - 96 - 32) / 2;
+  // Label, count, banner and paddings: measured at 390px tall (phone) and up.
+  const chrome = vh <= 520 ? 150 : 210;
+  const poolH = stacked ? (vh - chrome - 60) / 2 : vh - chrome;
+  for (let s = cap; s > 20; s -= 1) {
+    const gap = Math.max(4, Math.round(s * 0.16));
+    const cols = Math.max(1, Math.floor((poolW + gap) / (s + gap)));
+    const rows = Math.ceil(n / cols);
+    if (rows * (s + gap) + 14 <= poolH) return s;
+  }
+  return 20;
+}
+
 function clampDice(n) {
   return Math.max(1, Math.min(120, Math.floor(Number(n) || 1)));
 }
@@ -77,7 +104,7 @@ function dieHtml(side, index) {
   const faces = [1, 2, 3, 4, 5, 6]
     .map((v) => `<div class="die-face face-${v}" data-face="${v}"></div>`)
     .join("");
-  return `<div class="battle-die-slot" data-die-slot="${index}"><div class="battle-die-scene"><div class="battle-die ${side}-die" data-die-index="${index}" aria-hidden="true">${faces}</div></div></div>`;
+  return `<div class="battle-die-slot" data-die-slot="${index}"><div class="battle-die-scene"><div class="battle-die ${side}-die" data-die-index="${index}" aria-hidden="true">${faces}</div></div><div class="die-flat ${side}-die" aria-hidden="true"><div class="die-face" data-face="1"></div></div></div>`;
 }
 
 function settlePose(face, spinX, spinY) {
@@ -99,6 +126,7 @@ function cancelBattleAnims() {
   });
   if (activeBattle?.timer) window.clearTimeout(activeBattle.timer);
   if (activeBattle?.raf) window.cancelAnimationFrame(activeBattle.raf);
+  if (activeBattle?.timer2) window.clearTimeout(activeBattle.timer2);
 }
 
 function ensureStage() {
@@ -130,10 +158,22 @@ function markSuccess(el, face) {
   el.classList.add("success", "settled");
   slot?.classList.add("success", "landing");
   el.querySelector(`.die-face[data-face="${face}"]`)?.classList.add("hit");
+  slot?.querySelector(".die-flat")?.classList.add("success");
+  slot?.querySelector(".die-flat .die-face")?.classList.add("hit");
+}
+
+function showFlatFace(el, face) {
+  const slot = el.closest(".battle-die-slot");
+  const flat = slot?.querySelector(".die-flat .die-face");
+  if (!flat) return;
+  flat.className = `die-face face-${face}`;
+  flat.dataset.face = String(face);
+  slot.classList.add("is-flat");
 }
 
 function finishDiePose(el, end, face, onLand) {
   el.style.transform = end;
+  if (activeBattle?.flat) showFlatFace(el, face);
   el.classList.remove("rolling");
   el.style.willChange = "";
   if (face >= SUCCESS_MIN) markSuccess(el, face);
@@ -161,7 +201,26 @@ function rollOneDie(el, face, delay, quiet, onLand, spinScale = 1) {
   el.style.willChange = "transform";
 
   if (quiet) {
-    finishDiePose(el, end, face, onLand);
+    // Reduce Motion (0.28): no tumbling, but still a roll you can watch. The die shows
+    // its flat face flickering through values, then lands on its result.
+    const slot = el.closest(".battle-die-slot");
+    const flat = slot?.querySelector(".die-flat .die-face");
+    slot?.classList.add("is-flat", "is-shuffling");
+    const ticks = 7 + Math.floor(Math.random() * 3);
+    let tick = 0;
+    const shuffle = () => {
+      if (!activeBattle) return;
+      if (tick >= ticks) {
+        slot?.classList.remove("is-shuffling");
+        finishDiePose(el, end, face, onLand);
+        return;
+      }
+      if (flat) flat.className = `die-face face-${1 + ((face + tick * 5) % 6)}`;
+      tick += 1;
+      activeBattle.timer2 = window.setTimeout(shuffle, 80 * tempo());
+    };
+    activeBattle?.anims?.push({ cancel: () => window.clearTimeout(activeBattle?.timer2) });
+    window.setTimeout(shuffle, delay);
     return;
   }
 
@@ -291,17 +350,18 @@ export function playDiceBattle(opts) {
 
   const stage = ensureStage();
   cancelBattleAnims();
-  activeBattle = { result: result(), timer: null, anims: [] };
+  activeBattle = { result: result(), timer: null, anims: [], flat: flatLanding() || reducedMotion() };
 
   const shownD = Math.min(dCount, MAX_SHOWN);
   const shownB = Math.min(bCount, MAX_SHOWN);
   const totalDice = shownD + shownB;
-  const size = totalDice >= 30 ? 34 : totalDice >= 22 ? 40 : totalDice > 14 ? 48 : 58;
+  const legacy = totalDice >= 30 ? 34 : totalDice >= 22 ? 40 : totalDice > 14 ? 48 : 58;
+  const size = Math.min(legacy, fitDieSize(shownD, shownB, window.innerWidth, window.innerHeight));
 
   stage.hidden = false;
   stage.style.setProperty("--die-size", `${size}px`);
   stage.style.setProperty("--die-half", `${size / 2}px`);
-  stage.style.setProperty("--die-gap", totalDice > 18 ? "0.38rem" : "0.62rem");
+  stage.style.setProperty("--die-gap", `${Math.max(4, Math.round(size * (totalDice > 18 ? 0.12 : 0.18)))}px`);
   document.body.classList.add("dice-rolling");
   stage.innerHTML = `
     <div class="dice-battle-veil"></div>
@@ -330,8 +390,8 @@ export function playDiceBattle(opts) {
 
   playSfx("dice-roll");
 
-  const dreamerDiceEls = [...stage.querySelectorAll(".dreamer-die")];
-  const beastDiceEls = [...stage.querySelectorAll(".beast-die")];
+  const dreamerDiceEls = [...stage.querySelectorAll(".battle-die.dreamer-die")];
+  const beastDiceEls = [...stage.querySelectorAll(".battle-die.beast-die")];
   const scoreD = stage.querySelector("[data-score=dreamer]");
   const scoreB = stage.querySelector("[data-score=beast]");
   const compare = stage.querySelector("[data-compare]");
@@ -387,7 +447,8 @@ export function playDiceBattle(opts) {
     }, plan.spinScale);
   });
 
-  const lastDelay = quiet ? 40 : Math.max(
+  const quietEnd = (count, base) => (count ? base + (count - 1) * stagger + 10 * 80 * tempo() : 0);
+  const lastDelay = quiet ? Math.max(quietEnd(shownD, 0), quietEnd(shownB, 28)) + 120 : Math.max(
     shownD ? diePlan(shownD - 1, shownD, 0).end : 0,
     shownB ? diePlan(shownB - 1, shownB, 28).end : 0,
   ) + 80;
@@ -404,6 +465,14 @@ export function playDiceBattle(opts) {
 
   const presentWinner = () => {
     if (!activeBattle) return;
+    // A slow device can still be mid-tumble here: land every die before the banner.
+    const landStragglers = (els, faces) => els.forEach((el, i) => {
+      if (el.classList.contains("settled")) return;
+      el.getAnimations?.().forEach((anim) => { try { anim.cancel(); } catch { /* ignore */ } });
+      finishDiePose(el, settlePose(faces[i], 0, 0), faces[i]);
+    });
+    landStragglers(dreamerDiceEls, shownDreamerFaces);
+    landStragglers(beastDiceEls, shownBeastFaces);
     recount();
     // For recordings and tests: the settled result of the last battle shown.
     globalThis.__ainmosLastDiceResult = result();
@@ -425,7 +494,8 @@ export function playDiceBattle(opts) {
     };
     stage.addEventListener("click", dismiss);
     if (!hold) {
-      activeBattle.timer = window.setTimeout(dismiss, quiet ? 800 : BASE_RESULT_HOLD_MS * tempo());
+      // Reduce Motion keeps the full hold too: the result is the part worth reading.
+      activeBattle.timer = window.setTimeout(dismiss, BASE_RESULT_HOLD_MS * tempo());
     }
   };
 

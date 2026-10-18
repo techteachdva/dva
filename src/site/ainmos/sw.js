@@ -3,7 +3,7 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.27.3-dream-tolls";
+const CACHE_NAME = "ainmos-0.28-pocket-dreams";
 /** Versioned with the release, so a new ship never serves last version's modules. */
 const RUNTIME_CACHE = `${CACHE_NAME}-runtime`;
 
@@ -19,6 +19,7 @@ const PRECACHE = [
   "./css/ainmos.css",
   "./css/ainmos-layout.css",
   "./css/ainmos-polish.css",
+  "./css/ainmos-mobile.css",
   "./css/fonts-local.css",
   "./fonts/font-0.woff2",
   "./fonts/font-1.woff2",
@@ -85,6 +86,7 @@ const PRECACHE = [
   "./js/encounters/boss-twists.js",
   "./js/encounters/boss-ladder.js",
   "./js/ui/compact-chrome.js",
+  "./js/ui/mobile-chrome.js",
   "./js/core/data.js",
   "./js/cards/deck-pressure.js",
   "./js/dev/dev-commands.js",

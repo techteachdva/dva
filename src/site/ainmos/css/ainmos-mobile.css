@@ -1,0 +1,775 @@
+/*
+ * Ainmos 0.28 "Pocket Dreams": phones and tablets get layouts of their own.
+ *
+ * Loads last. Earlier phone rules shrank the desktop table with `zoom` (down to 0.6),
+ * leaving 16px buttons and 8px text on an iPhone. These rules use real sizes instead,
+ * measured with scripts/ainmos-mobile-walk.mjs at 667×375, 844×390 and 915×412:
+ *   - every tap target is at least 44×44 CSS px (Apple HIG / Material: 44pt / 48dp);
+ *   - body text is at least 12px, labels at least 11px;
+ *   - the notch and home bar are respected through the --sa-* insets.
+ * Phones are always landscape (portrait shows the rotate hint).
+ */
+
+:root {
+  --sa-t: env(safe-area-inset-top, 0px);
+  --sa-r: env(safe-area-inset-right, 0px);
+  --sa-b: env(safe-area-inset-bottom, 0px);
+  --sa-l: env(safe-area-inset-left, 0px);
+  --tap: 44px;
+}
+
+/* ==== 1. Dice battle: every screen ============================================================ */
+
+/* A die lands on a flat, head-on face (touch screens and Reduce Motion): crisp at any size. */
+/* The 3D cube's front face sits half a die nearer the eye (perspective 170px): about 1.18×. */
+.battle-die-slot .die-flat {
+  position: absolute;
+  inset: -9%;
+  display: none;
+  pointer-events: none;
+}
+.battle-die-slot.is-flat .die-flat { display: block; }
+.battle-die-slot.is-flat .battle-die-scene { visibility: hidden; }
+.die-flat .die-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+  border-radius: 18%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45), inset 0 -3px 0 rgba(0, 0, 0, 0.12);
+}
+.die-flat.success .die-face { border-color: #e8c45a; }
+.die-flat.dreamer-die.success .die-face { background: linear-gradient(145deg, #fff8dc, #efd27a); }
+.die-flat.beast-die.success .die-face { background: linear-gradient(145deg, #4a3568, #1a1028); color: #ffe08a; }
+.battle-die-slot.is-flat.landing .die-flat { animation: die-flat-thunk 0.32s cubic-bezier(0.18, 1.5, 0.3, 1); }
+.battle-die-slot.is-shuffling .die-flat { opacity: 0.86; }
+@keyframes die-flat-thunk {
+  0% { transform: scale(1.22) rotate(-8deg); }
+  60% { transform: scale(0.94) rotate(2deg); }
+  100% { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-die-slot.is-flat.landing .die-flat { animation: none; }
+}
+
+/* Phones: the battle fills the screen edge to edge; dice are sized by fitDieSize(). */
+html[data-form="phone"] .dice-battle-table {
+  width: calc(100vw - var(--sa-l) - var(--sa-r) - 16px);
+  max-width: none;
+  grid-template-columns: 1fr 84px 1fr;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-radius: 18px;
+}
+html[data-form="phone"] .dice-battle-label { font-size: 15px; letter-spacing: 0.08em; }
+html[data-form="phone"] .dice-battle-count { font-size: 13px; }
+html[data-form="phone"] .dice-battle-count span[data-score] { font-size: 22px; }
+html[data-form="phone"] .dice-battle-pool-size { font-size: 12px; opacity: 0.85; }
+html[data-form="phone"] .dice-battle-tray { padding: 8px 2px 10px; min-height: calc(var(--die-size, 40px) + 14px); }
+html[data-form="phone"] .dice-battle-center { min-width: 0; }
+html[data-form="phone"] .dice-battle-vs { font-size: 20px; }
+html[data-form="phone"] .dice-battle-compare { font-size: 18px; }
+html[data-form="phone"] .dice-battle-banner { margin-top: 8px; padding: 10px 18px; font-size: 16px; min-height: var(--tap); }
+
+/* ==== 2. Phone table: one 48px command bar, no shrink-zoom ===================================== */
+
+html[data-form="phone"]:root body.ainmos.play-window {
+  --ain-night-h: 0px;
+  --ain-cmd-h: 48px;
+}
+html[data-form="phone"]:root body.ainmos.play-window #app { grid-template-rows: var(--ain-cmd-h) minmax(0, 1fr); }
+html[data-form="phone"]:root body.ainmos.play-window .top-bar.play-top-bar > * { zoom: 1 !important; }
+html[data-form="phone"]:root body.ainmos.play-window .top-bar.play-top-bar {
+  min-height: 48px;
+  height: 48px;
+  max-height: 48px;
+  padding: 2px calc(6px + var(--sa-r)) 2px calc(6px + var(--sa-l));
+  gap: 6px;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+html[data-form="phone"]:root body.ainmos.play-window .top-bar .brand,
+html[data-form="phone"]:root body.ainmos.play-window #hud-suits,
+html[data-form="phone"]:root body.ainmos.play-window .btn-music-toggle,
+html[data-form="phone"]:root body.ainmos.play-window .death-clock-label { display: none !important; }
+
+/* The night track hides behind the Cycle chip: tap it to peek (js/ui/mobile-chrome.js). */
+html[data-form="phone"]:root body.ainmos.play-window #night-strip { display: none !important; }
+html[data-form="phone"]:root body.ainmos.play-window.night-peek {
+  --ain-night-h: 64px;
+}
+html[data-form="phone"]:root body.ainmos.play-window.night-peek #night-strip {
+  display: flex !important;
+  height: 76px;
+  min-height: 76px;
+  position: fixed;
+  top: 50px;
+  left: calc(8px + var(--sa-l));
+  right: calc(8px + var(--sa-r));
+  z-index: 960;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(14, 10, 30, 0.94);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(200, 184, 236, 0.3);
+}
+
+/* Phase stepper: three 32px suit icons; the active phase adds its name. */
+html[data-form="phone"]:root body.ainmos.play-window #phase-stepper {
+  flex: none;
+  height: 40px;
+  padding: 0 6px;
+  gap: 2px;
+  align-items: center;
+}
+html[data-form="phone"]:root body.ainmos.play-window #phase-stepper .step {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+html[data-form="phone"]:root body.ainmos.play-window #phase-stepper .step-icon,
+html[data-form="phone"]:root body.ainmos.play-window #phase-stepper .suit-icon { width: 18px; height: 18px; }
+html[data-form="phone"]:root body.ainmos.play-window #phase-stepper .step-label { font-size: 13px; font-weight: 700; }
+html[data-form="phone"]:root body.ainmos.play-window #phase-stepper .step-budget { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window #phase-stepper .step-arrow { font-size: 11px; opacity: 0.6; }
+
+/* HUD chips: 32px tall, 13px numbers; the Mind's dusk loss stays visible. */
+html[data-form="phone"]:root body.ainmos.play-window #hud {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+html[data-form="phone"]:root body.ainmos.play-window #hud .hud-item {
+  height: 32px;
+  min-width: 0;
+  padding: 0 10px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+html[data-form="phone"]:root body.ainmos.play-window #hud .hud-item .label { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window #hud-goal::before { content: "★ "; color: var(--gold, #f0c96a); }
+html[data-form="phone"]:root body.ainmos.play-window #hud-mind::before { content: "Mind "; font-size: 11px; opacity: 0.8; }
+html[data-form="phone"]:root body.ainmos.play-window #hud-mind-dusk { font-size: 11px; }
+html[data-form="phone"]:root body.ainmos.play-window #hud .cycle-label { font-size: 13px; }
+html[data-form="phone"]:root body.ainmos.play-window #hud .hud-cycle { cursor: pointer; }
+html[data-form="phone"]:root body.ainmos.play-window #hud .hud-cycle::after { content: "▾"; font-size: 11px; opacity: 0.75; }
+html[data-form="phone"]:root body.ainmos.play-window.night-peek #hud .hud-cycle::after { content: "▴"; }
+html[data-form="phone"]:root body.ainmos.play-window .hud-feed-cluster { display: inline-flex; gap: 0; }
+
+/* Round icon buttons: 44px hit area. */
+html[data-form="phone"]:root body.ainmos.play-window :is(#btn-dream-feed, #btn-pause, #btn-header-more) {
+  width: var(--tap);
+  height: var(--tap);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 18px;
+  line-height: 1;
+}
+html[data-form="phone"]:root body.ainmos.play-window #btn-pause { font-size: 0; }
+html[data-form="phone"]:root body.ainmos.play-window #btn-pause::before { content: "❚❚"; font-size: 14px; letter-spacing: -1px; }
+html[data-form="phone"]:root body.ainmos.play-window #header-actions { flex: none; gap: 4px; height: 44px; align-items: center; }
+
+/* Death Clock: six 8px pips and a 12px count. */
+html[data-form="phone"]:root body.ainmos.play-window #death-clock {
+  flex: none;
+  height: 32px;
+  padding: 0 8px;
+  gap: 6px;
+  align-items: center;
+  order: 3;
+}
+html[data-form="phone"]:root body.ainmos.play-window .death-clock-pip { width: 8px; height: 8px; }
+html[data-form="phone"]:root body.ainmos.play-window #death-clock-pips { gap: 3px; }
+html[data-form="phone"]:root body.ainmos.play-window #death-clock-count { font-size: 12px; }
+html[data-form="phone"]:root body.ainmos.play-window #header-actions { order: 4; }
+
+/* Orbs at the board's corners: 52px, no zoom. */
+html[data-form="phone"]:root body.ainmos.play-window :is(#btn-map-back, #btn-draw-dream, #btn-next-phase) {
+  zoom: 1 !important;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  min-height: 52px;
+  font-size: 11px;
+  line-height: 1.1;
+}
+html[data-form="phone"]:root body.ainmos.play-window #btn-map-back { left: calc(6px + var(--sa-l)); }
+html[data-form="phone"]:root body.ainmos.play-window #btn-next-phase { right: calc(6px + var(--sa-r)); }
+html[data-form="phone"]:root body.ainmos.play-window #btn-sidebar-drawer {
+  min-width: 52px;
+  min-height: var(--tap);
+  font-size: 11px;
+  padding: 0 12px;
+  top: 55px;
+  bottom: auto;
+  left: calc(66px + var(--sa-l));
+}
+
+/* The Vault column: 48px tiles. */
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault {
+  left: calc(6px + var(--sa-l));
+  width: 58px;
+}
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-tile { min-height: 48px; min-width: 48px; }
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-tile-hex { width: 40px; height: 46px; }
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-btn { min-height: var(--tap); font-size: 11px; }
+
+/* Archetypes window: a compact 44px plaque at the right edge; tap to open. */
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window {
+  left: auto !important;
+  right: calc(6px + var(--sa-r)) !important;
+  top: 64px !important;
+  width: auto !important;
+  min-width: 176px;
+  max-width: min(260px, 34vw);
+}
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window .aw-window { width: 100%; }
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window .aw-title { flex: 1; min-width: 0; }
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window .aw-titlebar { min-height: 32px; gap: 6px; }
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window .aw-title { font-size: 12px; }
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window .aw-count b { font-size: 18px; }
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window .aw-empty { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window .aw-min {
+  width: 36px;
+  min-width: 36px;
+  height: 32px;
+  margin: -6px -6px -6px 0;
+  font-size: 16px;
+}
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window :is(.aw-row, .aw-item, li, button:not(.aw-min)) { font-size: 12px; min-height: 36px; }
+
+/* ==== 3. Phone hand bar: tokens as coins, no empty shelves ===================================== */
+
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar {
+  padding-left: calc(6px + var(--sa-l));
+  padding-right: calc(6px + var(--sa-r));
+}
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar > .objects-hand-section:has(.objects-row.empty),
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar > .persistent-section:has(.objects-row.empty) {
+  visibility: hidden;
+}
+
+/* Power Tokens: round 36px coins that overlap like a stack (0.27 showed 44×19 ovals). */
+html[data-form="phone"]:root body.ainmos.play-window #power-tokens {
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding-left: 4px;
+}
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .power-section #power-tokens .power-token-chip {
+  flex: 0 0 36px;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px;
+  min-height: 36px;
+  max-height: none;
+  aspect-ratio: 1;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  line-height: 1;
+  margin-left: -16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 236, 170, 0.55);
+}
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .power-section #power-tokens .power-token-chip:first-child { margin-left: 0; }
+html[data-form="phone"]:root body.ainmos.play-window .hand-bar > .power-section {
+  min-width: 56px;
+  display: flex;
+  align-items: center;
+}
+html[data-form="phone"]:root body.ainmos.play-window .hand-drawer-btn {
+  min-height: var(--tap);
+  gap: 6px;
+}
+html[data-form="phone"]:root body.ainmos.play-window .hand-drawer-btn .hd-label { font-size: 13px; }
+html[data-form="phone"]:root body.ainmos.play-window .hand-drawer-btn .hd-count { min-width: 22px; height: 22px; font-size: 13px; }
+html[data-form="phone"]:root body.ainmos.play-window .hand-drawer-btn :is(.hd-suits, .hd-suit) { font-size: 12px; }
+
+/* ==== 4. Phone menus: Lost & Found and the Vault ================================================ */
+
+/* One screen, edge to edge. The shelf is a row you swipe; buttons sit at a thumb's reach. */
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) { padding: 0; place-items: stretch; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-window {
+  zoom: 1 !important;
+  width: 100vw !important;
+  height: 100dvh;
+  min-height: 0 !important;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 6px calc(10px + var(--sa-r)) calc(6px + var(--sa-b)) calc(10px + var(--sa-l)) !important;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+  font-size: 13px;
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-window::before { display: none; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-titlebar { flex: none; min-height: 34px; padding: 0 0 4px; gap: 8px; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-title { font-size: 18px; letter-spacing: 0.12em; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-round { font-size: 12px !important; }
+
+/* The whisper keeps only its Glimmer line. */
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-whisper {
+  flex: none;
+  margin: 0;
+  font-size: 0;
+  line-height: 1.3;
+  text-align: left;
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-whisper > * { font-size: 12px; margin: 0; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-whisper:not(:has(> :not(.is-empty))) { display: none; }
+
+/* Hand strip: one line that scrolls sideways if it must. */
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-hand {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 2px 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  white-space: nowrap;
+  flex-wrap: nowrap !important;
+  grid-template-columns: none;
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-hand::-webkit-scrollbar { display: none; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-hand-head { flex: none; display: flex; gap: 8px; align-items: center; margin: 0; font-size: 12px; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-hand-head :is(strong, span) { font-size: 12px; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-hand-row { flex: none; display: flex; flex-wrap: nowrap !important; gap: 6px; margin: 0; padding: 0; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-hand-row > * { min-height: 28px; padding: 0 8px; display: inline-flex; align-items: center; gap: 4px; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-hand-row b { font-size: 15px; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-hand-row i { font-size: 11px; }
+
+/* The shelf: swipe through cards, each a full readable card. */
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-shelf {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex !important;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 2px;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 2px 4px;
+  scrollbar-width: thin;
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item {
+  flex: 0 0 min(300px, 44vw);
+  scroll-snap-align: start;
+  min-height: 0;
+  height: 100%;
+  display: grid !important;
+  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  column-gap: 10px;
+  row-gap: 2px;
+  padding: 10px !important;
+  overflow: hidden;
+  animation-duration: 0.3s;
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item :is(.lf-item-art, .lf-insight-sigil) {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 64px;
+  height: 64px !important;
+  min-height: 0 !important;
+  margin: 0;
+  border-radius: 10px;
+  font-size: 30px;
+  display: grid;
+  place-items: center;
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item .lf-item-name {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  padding-right: 40px;
+  font-size: 15px !important;
+  line-height: 1.2;
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item .lf-item-kind {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+  margin: 0;
+  font-size: 12px !important;
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item .lf-item-text {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin: 6px 0 4px;
+  min-height: 0;
+  overflow-y: auto;
+  font-size: 13px !important;
+  line-height: 1.38;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 14px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 14px), transparent);
+  padding-bottom: 10px;
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item :is(.lf-item-foot, .lf-picker) { grid-column: 1 / -1; grid-row: 4; gap: 4px; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-item :is(.lf-pay, .lf-why) { font-size: 12px !important; line-height: 1.3; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-price { top: 8px; right: 8px; padding: 2px 8px; font-size: 14px; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-chip { min-height: 36px; padding: 0 10px; font-size: 13px; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-chip small { font-size: 11px; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-picker-title { font-size: 12px; }
+
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-btn {
+  min-height: var(--tap);
+  padding: 0 16px;
+  font-size: 13px !important;
+  letter-spacing: 0.08em;
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-foot {
+  flex: none;
+  margin: 0;
+  padding: 6px 0 0;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 10px;
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-foot .lf-continue { min-width: 180px; font-size: 14px !important; }
+
+/* Swipe hint: the shelf's right edge fades while more finds wait off screen. */
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-shelf {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), rgba(0, 0, 0, 0.25));
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), rgba(0, 0, 0, 0.25));
+}
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-shelf.is-scrolled-end {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+html[data-form="phone"]:root body.ainmos.play-window .board-viewport::after,
+html[data-form="phone"]:root body.ainmos.play-window .board-gesture-hint { font-size: 11px; }
+
+/* Vault cards (same window language as the Lost & Found): names read left to right. */
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .vs-item :is(.lf-item-name, .lf-item-kind) { text-align: left; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) :is(.vs-call, .vs-tag) { font-size: 12px !important; }
+
+/* ==== 5. Phone menus: phase openers, choices, card pickers, the pause menu ======================= */
+
+/* Every button in a menu is a full thumb target. */
+html[data-form="phone"]:root body.ainmos :is(#utility-modal, #card-modal, #pause-menu, .cycle-screen, .vault-screen) :is(.btn, button.lf-btn) {
+  min-height: var(--tap);
+  font-size: 13px;
+}
+html[data-form="phone"]:root body.ainmos #utility-modal :is(#btn-view-board, #btn-skip-phase, #btn-spread-opener) {
+  min-height: var(--tap);
+  min-width: 120px;
+  padding: 0 18px;
+  font-size: 13px;
+}
+html[data-form="phone"]:root body.ainmos #utility-modal .phase-opener-kicker { font-size: 12px; }
+html[data-form="phone"]:root body.ainmos #utility-modal .fullscreen-browser-lead { font-size: 12px; line-height: 1.35; }
+html[data-form="phone"]:root body.ainmos #utility-modal .phase-opener-preview-stat { font-size: 12px; }
+html[data-form="phone"]:root body.ainmos #utility-modal :is(.card-choice-hint, .ms-choice-hint, .ms-choice-sub) { font-size: 12px !important; }
+html[data-form="phone"]:root body.ainmos #utility-modal .ms-choice-btn { min-height: var(--tap); }
+html[data-form="phone"]:root body.ainmos .ms-minimize,
+html[data-form="phone"]:root body.ainmos [data-ms-minimize] { min-height: var(--tap); font-size: 12px; }
+
+/* ==== 6. Narrow phones (iPhone SE, 667px; or a notch eating 94px) ================================ */
+
+@media (max-width: 740px) {
+  html[data-form="phone"]:root body.ainmos.play-window #phase-stepper .step-arrow { display: none; }
+  html[data-form="phone"]:root body.ainmos.play-window #phase-stepper { gap: 0; padding: 0 2px; }
+  html[data-form="phone"]:root body.ainmos.play-window #hud-mind::before { content: none; }
+  html[data-form="phone"]:root body.ainmos.play-window #hud .hud-item { padding: 0 8px; }
+  html[data-form="phone"]:root body.ainmos.play-window #hud { gap: 4px; }
+  html[data-form="phone"]:root body.ainmos.play-window .death-clock-pip { width: 6px; height: 6px; }
+  html[data-form="phone"]:root body.ainmos.play-window #death-clock-pips { gap: 2px; }
+  html[data-form="phone"]:root body.ainmos.play-window .top-bar.play-top-bar { gap: 4px; }
+}
+
+/* ==== 7. Thumb targets the art can't grow: an invisible 44px halo ================================ */
+
+html[data-form="phone"]:root body.ainmos.play-window :is(.power-token-chip, #hud-cycle, .aw-min, #btn-dream-feed) { position: relative; }
+html[data-form="phone"]:root body.ainmos.play-window :is(.power-token-chip, #hud-cycle, .aw-min)::before {
+  content: "";
+  position: absolute;
+  inset: -6px -4px;
+}
+html[data-form="phone"]:root body.ainmos.play-window #hud .hud-item { height: 36px; }
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window .aw-min { width: 44px; min-width: 44px; height: 40px; }
+
+/* Archetype plaque rows: 13px name, 12px place and status. */
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window .aw-row { min-height: var(--tap); padding: 4px 8px; gap: 2px 6px; }
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window .aw-name { font-size: 13px; }
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window :is(.aw-where, .aw-status) { font-size: 11px; }
+
+/* The spread tray above the hand: labels you can read, Fight at full height. */
+html[data-form="phone"]:root body.ainmos.play-window .spread-tray-label { font-size: 11px; }
+html[data-form="phone"]:root body.ainmos.play-window .spread-fight-btn { min-height: var(--tap); font-size: 13px; padding: 0 16px; }
+html[data-form="phone"]:root body.ainmos.play-window .spread-fight-why { font-size: 12px; }
+html[data-form="phone"]:root body.ainmos.play-window .hand-drawer-btn .hd-picked { font-size: 11px; }
+html[data-form="phone"]:root body.ainmos.play-window .hand-drawer-btn { min-height: var(--tap); }
+
+/* Dream cards and Archetype Events (Bright / Dim). */
+html[data-form="phone"]:root body.ainmos :is(.ms-choice-kicker, .ms-choice-message) { font-size: 12px !important; line-height: 1.35; }
+html[data-form="phone"]:root body.ainmos .ms-choice-btn__label { font-size: 14px !important; }
+html[data-form="phone"]:root body.ainmos .ms-choice-btn__hint { font-size: 12px !important; line-height: 1.3; }
+html[data-form="phone"]:root body.ainmos #utility-minimize-btn { min-height: var(--tap); padding: 0 16px; font-size: 12px; }
+
+/* The Cycle screen's track and plaques. */
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) :is(.cy-dream-name, .cy-dream-name small) { font-size: 11px !important; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) :is(.cy-reward, .beast-ward) { font-size: 12px !important; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .lf-title small { font-size: 13px; }
+
+/* Choosing an Archetype: home Landscapes as readable chips. */
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .ac-home { font-size: 12px !important; min-height: 26px; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .ac-foot { font-size: 12px !important; }
+html[data-form="phone"]:root body.ainmos :is(#lost-found, .lost-found) .vs-quest { font-size: 11px !important; }
+
+/* ==== 8. Phone title screen ====================================================================== */
+
+html[data-form="phone"] body.menu-window .menu-tutorial-hint { display: none; }
+html[data-form="phone"] body.menu-window :is(.field-hint, .field-optional) { font-size: 12px; }
+/* Dreamer cards: 11px name and stats; the power line (the same on every card) waits for the detail view. */
+html[data-form="phone"] body.menu-window #screen-setup .game-card.dreamer .dreamer-live-name { font-size: 11px !important; line-height: 1.2; height: auto; overflow: visible; white-space: nowrap; }
+html[data-form="phone"] body.menu-window #screen-setup .game-card.dreamer .dreamer-live-stats,
+html[data-form="phone"] body.menu-window #screen-setup .game-card.dreamer .dreamer-live-stats > span { font-size: 11px !important; }
+html[data-form="phone"] body.menu-window #screen-setup .game-card.dreamer .dreamer-live-power { display: none; }
+html[data-form="phone"] body.menu-window #btn-somnia-changelog { min-height: var(--tap); display: inline-flex; align-items: center; }
+html[data-form="phone"] body.menu-window #btn-menu-spiral { width: var(--tap); height: var(--tap); }
+
+/* ==== 9. First Night guide on phones ============================================================= */
+
+/* Docked bottom-right over the hand bar's empty end: the board's middle stays clear. */
+html[data-form="phone"] body.ainmos .coach-hint.is-compact {
+  left: auto;
+  right: calc(8px + var(--sa-r));
+  bottom: calc(6px + var(--sa-b));
+  top: auto;
+  transform: none;
+  width: min(300px, calc(100vw - 260px - var(--sa-l) - var(--sa-r)));
+  justify-content: flex-end;
+}
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-top {
+  top: 54px;
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 140px));
+}
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-top.is-over-menu { top: calc(4px + var(--sa-t)); }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-top .coach-card { max-height: calc(100dvh - 120px); }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-min { width: auto; }
+
+/* Three rows: title + fold, the step, then Why? and Guide off. */
+html[data-form="phone"] body.ainmos .coach-hint.is-compact .coach-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title min"
+    "text text"
+    "why actions";
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+  width: 100%;
+  /* Bottom-docked, it stops below the Archetypes plaque (its bottom edge: 158px). */
+  max-height: calc(100dvh - 172px);
+  overflow-y: auto;
+  padding: 4px 6px 4px 12px;
+}
+html[data-form="phone"] body.ainmos .coach-hint.is-compact .coach-head { display: contents; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact :is(.coach-spark, .coach-goal) { display: none; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact .coach-min {
+  grid-area: min;
+  width: var(--tap);
+  height: var(--tap);
+  min-width: var(--tap);
+  font-size: 18px;
+}
+html[data-form="phone"] body.ainmos .coach-hint.is-compact .coach-title { grid-area: title; margin: 0; font-size: 14px !important; line-height: 1.2; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact .coach-text { grid-area: text; margin: 0 6px 0 0; font-size: 13px !important; line-height: 1.38; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact :is(.coach-why-fold, .coach-farewell .coach-why) { grid-area: why; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact .coach-why-fold summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  cursor: pointer;
+}
+html[data-form="phone"] body.ainmos .coach-hint.is-compact .coach-why-fold[open] { grid-column: 1 / -1; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact .coach-why { font-size: 12px !important; line-height: 1.35; margin: 0 0 4px; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact .coach-actions { grid-area: actions; margin: 0; justify-self: end; display: flex; gap: 6px; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact .coach-actions .coach-btn {
+  min-height: var(--tap);
+  padding: 0 14px;
+  font-size: 12px !important;
+}
+html[data-form="phone"] body.ainmos .coach-pill { min-height: var(--tap); padding: 0 16px; font-size: 13px; }
+
+/* The cursor-following spread tally strands itself wherever the last tap was on a touch screen;
+   the Fight button already says the dice ("11d6 vs 12"). */
+html[data-pointer="coarse"] #psyche-play-cursor { display: none !important; }
+
+/* ==== 10. Phone hand drawer: Done is a real button, Fight rides on the drawer ===================== */
+
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #screen-game .hand-bar.hand-bar.hand-bar > .psyche-hand-section { overflow: visible !important; }
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open .hand-drawer-close {
+  top: -22px;
+  z-index: 2;
+  right: 10px;
+  min-height: var(--tap);
+  min-width: 88px;
+  padding: 0 18px;
+  font-size: 13px;
+}
+/* The spread tray floats on the drawer's top edge, minus its cards (they are the ones you just
+   picked): its label, Form chip, phase button and Fight stay in reach. */
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #spread-tray:not([hidden]) {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: calc(var(--hd-rise, 220px) + 6px) !important;
+  transform: translateX(-50%) !important;
+  z-index: 85;
+  width: max-content !important;
+  max-width: calc(100vw - 24px - var(--sa-l) - var(--sa-r)) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+  padding: 6px 8px 6px 14px !important;
+  border-radius: 28px !important;
+  background: rgba(14, 10, 30, 0.94) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(200, 184, 236, 0.3) !important;
+}
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #spread-tray .spread-tray-fan { display: none !important; }
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #spread-tray :is(.spread-tray-label, .spread-tray-row, .spread-fight-bar) {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+html[data-form="phone"]:root body.ainmos.play-window.hand-drawer-open #spread-tray .spread-fight-btn { max-width: 100%; }
+
+/* ==== 11. Tablets (iPad 1024–1366 wide, either way up) =========================================== */
+
+html[data-form="tablet"]:root body.ainmos.play-window :is(#btn-dream-feed, #btn-moment-history, #btn-header-more, .btn-music-toggle) {
+  width: var(--tap);
+  height: var(--tap);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border-radius: 50%;
+  font-size: 18px;
+}
+html[data-form="tablet"]:root body.ainmos.play-window #btn-pause { min-height: var(--tap); padding: 0 16px; font-size: 14px; }
+html[data-form="tablet"]:root body.ainmos.play-window #hud .hud-item { min-height: 36px; font-size: 13px; display: inline-flex; align-items: center; }
+html[data-form="tablet"]:root body.ainmos.play-window #hud .hud-item .label { font-size: 11px; }
+html[data-form="tablet"]:root body.ainmos.play-window #phase-stepper .step { min-height: 36px; }
+html[data-form="tablet"]:root body.ainmos.play-window #phase-stepper :is(.step-label, .step-budget) { font-size: 12px; }
+html[data-form="tablet"]:root body.ainmos.play-window #death-clock-count { font-size: 12px; }
+html[data-form="tablet"]:root body.ainmos.play-window .night-strip small { font-size: 11px; }
+
+/* Portrait: the logo, the moment history and the speaker step out (Pause has all three). */
+html[data-form="tablet"][data-orientation="portrait"]:root body.ainmos.play-window :is(.top-bar .brand, #btn-moment-history, .btn-music-toggle) { display: none !important; }
+
+html[data-form="tablet"]:root body.ainmos.play-window :is(#btn-map-back, #btn-next-phase, #btn-draw-dream) { font-size: 12px; }
+html[data-form="tablet"]:root body.ainmos.play-window .spread-form-chip { font-size: 12px; }
+html[data-form="tablet"]:root body.ainmos.play-window .spread-fight-btn { min-height: 48px; font-size: 14px; }
+
+/* Minimize buttons on the floating windows: 44px, never squashed (0.27 measured 8×24). */
+html[data-form="tablet"]:root body.ainmos.play-window :is(#archetype-window, .dreamscape-vault) .aw-min {
+  flex: 0 0 auto;
+  width: var(--tap);
+  min-width: var(--tap);
+  height: 40px;
+  font-size: 18px;
+}
+
+/* Power Tokens: 40px coins. */
+html[data-form="tablet"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar > .power-section .power-token-chip {
+  width: 40px !important;
+  height: 40px !important;
+  min-height: 40px;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  font-size: 18px;
+}
+html[data-form="tablet"]:root body.ainmos.play-window .power-token-held { font-size: 12px; }
+
+/* Menus: 48px buttons, 12px floor on labels. */
+html[data-form="tablet"]:root body.ainmos #utility-modal :is(#btn-view-board, #btn-skip-phase, #btn-spread-opener) { min-height: 48px; font-size: 14px; }
+html[data-form="tablet"]:root body.ainmos #utility-minimize-btn { min-height: var(--tap); font-size: 13px; }
+html[data-form="tablet"]:root body.ainmos :is(#lost-found, .lost-found) .lf-btn { min-height: 48px; font-size: 14px !important; }
+html[data-form="tablet"]:root body.ainmos :is(#lost-found, .lost-found) .lf-buyer { min-height: var(--tap); }
+html[data-form="tablet"]:root body.ainmos :is(#lost-found, .lost-found) :is(.cy-phase-name, .vs-quest) { font-size: 12px !important; }
+html[data-form="tablet"]:root body.ainmos #pause-menu input[type="checkbox"] { width: 28px; height: 28px; }
+html[data-form="tablet"]:root body.ainmos #pause-menu label:has(input[type="checkbox"]) { min-height: var(--tap); display: flex; align-items: center; gap: 10px; }
+
+/* Tablet command bar: designed to fit, no zoom (js/ui/fit-bar.js stands down on tablets). */
+html[data-form="tablet"]:root body.ainmos.play-window .top-bar.play-top-bar > * { zoom: 1 !important; }
+html[data-form="tablet"]:root body.ainmos.play-window .top-bar.play-top-bar { gap: 8px; padding-left: calc(10px + var(--sa-l)); padding-right: calc(10px + var(--sa-r)); }
+html[data-form="tablet"]:root body.ainmos.play-window #phase-stepper .step-budget { display: none; }
+html[data-form="tablet"]:root body.ainmos.play-window #header-actions { gap: 6px; flex: none; }
+html[data-form="tablet"]:root body.ainmos.play-window #hud { flex: 1 1 auto; min-width: 0; justify-content: center; gap: 6px; }
+html[data-form="tablet"]:root body.ainmos.play-window .hud-feed-cluster { display: inline-flex; gap: 6px; }
+html[data-form="tablet"][data-orientation="portrait"]:root body.ainmos.play-window #hud .hud-item .label { display: none; }
+html[data-form="tablet"][data-orientation="portrait"]:root body.ainmos.play-window #hud-goal::before { content: "★ "; color: var(--gold, #f0c96a); }
+html[data-form="tablet"][data-orientation="portrait"]:root body.ainmos.play-window #hud-mind::before { content: "Mind "; font-size: 11px; opacity: 0.8; }
+html[data-form="tablet"][data-orientation="portrait"]:root body.ainmos.play-window :is(.death-clock-label, #phase-stepper .step-arrow) { display: none; }
+html[data-form="tablet"][data-orientation="portrait"]:root body.ainmos.play-window #btn-pause { width: var(--tap); padding: 0; font-size: 0; border-radius: 50%; }
+html[data-form="tablet"][data-orientation="portrait"]:root body.ainmos.play-window #btn-pause::before { content: "❚❚"; font-size: 15px; letter-spacing: -1px; }
+
+/* Dream Form hints and the Vault title wrap instead of trailing off. */
+/* Floating window titlebars: the count never sits on the title. */
+html[data-form="tablet"]:root body.ainmos.play-window :is(#archetype-window, .dreamscape-vault) :is(.aw-titlebar, .vault-titlebar) { display: flex; align-items: center; gap: 6px; }
+html[data-form="tablet"]:root body.ainmos.play-window :is(#archetype-window, .dreamscape-vault) :is(.aw-count, .vault-deck, .vault-dots) { flex: none; position: static; }
+html[data-form="tablet"]:root body.ainmos.play-window :is(#archetype-window .aw-title, .dreamscape-vault .vault-title) {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.06em;
+}
+html[data-form="tablet"]:root body.ainmos.play-window :is(.turn-plaque-label, .turn-plaque-phase) { font-size: 12px; }
+html[data-form="tablet"]:root body.ainmos.play-window #hud .hud-feed-cluster :is(#btn-dream-feed, #btn-moment-history),
+html[data-form="phone"]:root body.ainmos.play-window #hud .hud-feed-cluster #btn-dream-feed {
+  width: var(--tap) !important;
+  height: var(--tap) !important;
+  min-width: var(--tap) !important;
+  min-height: var(--tap) !important;
+}
+html:is([data-form="phone"], [data-form="tablet"]):root body.ainmos #utility-modal #utility-minimize-btn { min-height: var(--tap) !important; padding: 0 16px !important; font-size: 12px !important; }
+html[data-form="tablet"]:root body.ainmos.play-window :is(#hud-mind-dusk, .dream-form-pattern) { font-size: 11px; }
+html[data-form="tablet"]:root body.ainmos.play-window :is(#archetype-window, .dreamscape-vault) .vault-dots { display: none; }
+
+/* Last stragglers from the 0.28 audit. */
+html:is([data-form="phone"], [data-form="tablet"]):root body.ainmos .spread-form-chip { font-size: 12px !important; }
+html[data-form="phone"]:root body.ainmos.play-window #screen-game .hand-bar.hand-bar.hand-bar > .hand-drawer-btn { min-height: var(--tap); }
+html[data-form="phone"]:root body.ainmos #card-modal :is(.beast-view-rule, .beast-view-how, .beast-view-threat, .beast-view-how span) { font-size: 12px !important; line-height: 1.35; }
+html[data-form="phone"]:root body.ainmos #card-modal .beast-ward { font-size: 11px !important; }
+html[data-form="phone"]:root body.ainmos #pause-menu :is(.pause-audio-hint, label, .pause-field-label) { font-size: 12px; }

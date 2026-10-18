@@ -6,10 +6,25 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.27.3";
+export const SOMNIA_VERSION = "0.28";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.28",
+    title: "Pocket Dreams",
+    notes: [
+      "Phones and tablets get layouts of their own instead of a shrunken desktop. Every button is at least a thumb wide (44 pixels), and text never drops below 11 pixels.",
+      "The dice roll on every screen. On a phone or tablet each die tumbles, then lands flat and crisp so you can read it at a glance. With Reduce Motion on, the dice flicker through their faces instead of spinning, and the result stays up as long as anyone else's.",
+      "Dice size themselves to your screen, so a big roll no longer spills over the names.",
+      "The Lost & Found and the Vault on a phone: one row of full cards you swipe through, each with its art, its rules at a readable size, and a full-size button. Take it, Into the Dream, and Look again sit where your thumbs are.",
+      "Phone table: one command bar with big round Pause and More buttons. Tap the Cycle chip to peek at the night ahead. Back, Table and End Round are full-size, and the Archetypes plaque fits on screen.",
+      "Power Tokens are round coins again, stacked like a pile of them, on phones and tablets.",
+      "Picking a spread in the phone's hand drawer keeps Fight and Accept right above the drawer, and Done is a real button.",
+      "The First Night guide on a phone waits in the bottom-right corner, clear of the board, and moves to the top when Fight or a menu needs the space. Its text and buttons are full size.",
+      "Tablets: a command bar that fits without shrinking, bigger round buttons, and readable labels in portrait and landscape.",
+    ],
+  },
   {
     version: "0.27.3",
     title: "Dream Tolls",

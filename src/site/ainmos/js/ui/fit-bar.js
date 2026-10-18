@@ -14,6 +14,9 @@ const MIN_FIT = 0.62;
 function fitBar(bar) {
   const kids = [...bar.children].filter((el) => el.offsetParent !== null || getComputedStyle(el).position === "fixed");
   kids.forEach((el) => { el.style.zoom = ""; });
+  // Phones and tablets have bars designed to fit (css/ainmos-mobile.css): never shrink one below a thumb.
+  const form = document.documentElement.dataset.form;
+  if (form === "phone" || form === "tablet") return;
   const avail = bar.clientWidth;
   const need = bar.scrollWidth;
   if (!avail || need <= avail + 1) return;

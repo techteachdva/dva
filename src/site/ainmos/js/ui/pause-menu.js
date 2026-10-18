@@ -33,7 +33,8 @@ function isAppleTouchDevice() {
 
 function silentModeHintHtml() {
   if (!isAppleTouchDevice()) return "";
-  return `<p class="pause-audio-hint">No sound? Ainmos's music and effects follow the iPad's <strong>Silent Mode</strong> — check Control Center, and make sure the volume is up.</p>`;
+  const device = /iPhone|iPod/.test(navigator.userAgent || "") ? "iPhone" : "iPad";
+  return `<p class="pause-audio-hint">No sound? Ainmos's music and effects follow the ${device}'s <strong>Silent Mode</strong> — check Control Center, and make sure the volume is up.</p>`;
 }
 
 function panLabel(value) {

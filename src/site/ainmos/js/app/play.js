@@ -23,6 +23,7 @@ import { initDeviceMode } from "./device-mode.js";
 import { initInputQuarantine } from "../flow/input-quarantine.js";
 import { onViewportSettled, requestRender } from "../ui/viewport-sync.js";
 import { initCompactChrome } from "../ui/compact-chrome.js";
+import { initMobileChrome } from "../ui/mobile-chrome.js";
 import { initSomniaPwa } from "./pwa.js";
 import { writeLaunchConfig, readStoredLaunchConfig } from "./launch-store.js";
 import { initDialogAccessibility } from "../ui/dialog-a11y.js";
@@ -413,6 +414,7 @@ async function init() {
   initInputQuarantine(); // seal overlays + Safari gesture guard before any UI mounts
   initSomniaPwa();
   initCompactChrome();
+  initMobileChrome();
   initDialogAccessibility();
   initFxLayer();
   initTablePolish();
