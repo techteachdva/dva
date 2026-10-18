@@ -6,10 +6,20 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.28";
+export const SOMNIA_VERSION = "0.28.1";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.28.1",
+    title: "Clear Cycles",
+    notes: [
+      "Fixed: on a phone the Cycle screen piled its words on top of each other. Each Dream card now reads top to bottom: its art beside the name, the phases line, the rules, then the reward. All three fit side by side on most phones; smaller phones swipe.",
+      "The Dreambeasts of every Cycle sit beside Begin Cycle, faces and Power big enough to read.",
+      "Choosing an Archetype on a phone: its two home Landscapes sit in a row under its name instead of squeezed beside the art.",
+      "A few last labels on phones (the card view, the Lost & Found's Glimmer discount, the pause menu) are full size.",
+    ],
+  },
   {
     version: "0.28",
     title: "Pocket Dreams",

@@ -115,8 +115,43 @@ async function measure() {
       const cs = getComputedStyle(el);
       return /auto|scroll/.test(cs.overflowY) && el.scrollHeight > el.clientHeight + 4;
     }).map((el) => ({ el: label(el), sh: el.scrollHeight, ch: el.clientHeight }));
+    // Text drawn on top of other text: leaf text boxes in the same window that intersect.
+    const overlaps = [];
+    const leafText = [...document.querySelectorAll("p, h1, h2, h3, h4, span, li, button, small, strong, b, em")].filter((el) => {
+      // Not filtered by covered(): overlapping text is exactly what covers another element.
+      if (!visible(el)) return false;
+      if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1)) return false;
+      return ![...el.children].some((c) => /^(P|H\d|LI|BUTTON)$/.test(c.tagName));
+    });
+    // The text's own box, clipped by every scrolling or clipping ancestor: what is actually seen.
+    const textRect = (el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const t = range.getBoundingClientRect();
+      let r = { left: t.left, top: t.top, right: t.right, bottom: t.bottom };
+      for (let a = el; a && a !== document.body; a = a.parentElement) {
+        const cs = getComputedStyle(a);
+        if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
+        const b = a.getBoundingClientRect();
+        r = { left: Math.max(r.left, b.left), top: Math.max(r.top, b.top), right: Math.min(r.right, b.right), bottom: Math.min(r.bottom, b.bottom) };
+      }
+      return { ...r, width: Math.max(0, r.right - r.left), height: Math.max(0, r.bottom - r.top) };
+    };
+    const boxes = leafText.map((el) => ({ el, r: textRect(el), host: el.closest(".lf-item, .lf-window, .modal-content, .utility-content, .coach-card, header, footer") }));
+    for (let i = 0; i < boxes.length && overlaps.length < 12; i += 1) {
+      for (let j = i + 1; j < boxes.length; j += 1) {
+        const a = boxes[i];
+        const b = boxes[j];
+        if (a.host !== b.host || a.el.contains(b.el) || b.el.contains(a.el)) continue;
+        const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+        const h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+        if (!a.host || w <= 6 || h <= 4) continue;
+        if (a.r.width && b.r.width) overlaps.push(`${label(a.el)} × ${label(b.el)} (${Math.round(w)}×${Math.round(h)})`);
+      }
+    }
     return {
       form: document.documentElement.dataset.form,
+      overlaps,
       taps,
       clipped: clipped.slice(0, 30),
       tiny: tiny.slice(0, 30),
@@ -127,6 +162,13 @@ async function measure() {
 }
 
 async function shot(name) {
+  // Let finite animations (menu fades, slides) land first: never measure a half-faded frame.
+  await page.evaluate(() => Promise.race([
+    Promise.all(document.getAnimations()
+      .filter((a) => a.playState === "running" && Number.isFinite(a.effect?.getComputedTiming?.().endTime))
+      .map((a) => a.finished.catch(() => {}))),
+    new Promise((r) => setTimeout(r, 2500)),
+  ]));
   shotN += 1;
   const file = `${String(shotN).padStart(2, "0")}-${name}`;
   await page.screenshot({ path: `${OUT}/${TAG}--${file}.png` });
@@ -143,7 +185,7 @@ async function shot(name) {
     await browser.close();
     process.exit(0);
   }
-  console.log(`${file}: small=${m.taps.filter((t) => t.small).length} off=${m.taps.filter((t) => t.off).length} clipped=${m.clipped.length} tiny=${m.tiny.length} scrollers=${m.scrollers.length}`);
+  console.log(`${file}: overlap=${m.overlaps.length} small=${m.taps.filter((t) => t.small).length} off=${m.taps.filter((t) => t.off).length} clipped=${m.clipped.length} tiny=${m.tiny.length} scrollers=${m.scrollers.length}`);
 }
 
 async function install() {
