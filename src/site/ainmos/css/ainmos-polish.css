@@ -1058,3 +1058,52 @@ body.lf2-tearing #app, body.lf2-tearing main { animation: lf2-rgb 90ms steps(2) 
 .bsod-save:disabled { opacity: 0.55; cursor: default; }
 .bsod-score-status { width: 100%; margin: 0; min-height: 1.2em; }
 #bsod .bsod-score input { background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.85) !important; border-radius: 0 !important; color: #fff !important; box-shadow: none !important; height: auto; min-height: 0; }
+
+/* 0.29 Plain Words: Lost & Found prices read as suit icons and numbers. */
+body.ainmos .lf-pay { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-style: normal; }
+body.ainmos .lf-pay-chip { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 5px; border-radius: 7px; border: 1.5px solid currentColor; background: rgba(0, 0, 0, 0.28); line-height: 1.2; }
+body.ainmos .lf-pay-chip b { font-family: var(--dc-serif, inherit); font-size: 1rem; color: #fff; }
+body.ainmos .lf-pay-chip.suit-lucidity { color: var(--lucidity); }
+body.ainmos .lf-pay-chip.suit-elasticity { color: var(--elasticity); }
+body.ainmos .lf-pay-chip.suit-willpower { color: var(--willpower); }
+body.ainmos .lf-pay-chip.suit-wild { color: #f3d9ff; }
+body.ainmos .lf-pay-chip.suit-glimmer { color: #ffe9a8; }
+body.ainmos .lf-pay-chip .suit-icon { color: inherit; display: inline-flex; }
+body.ainmos .lf-pay-plus { font-style: normal; color: rgba(232, 228, 255, 0.7); }
+body.ainmos .lf-hand-card { align-items: center; }
+body.ainmos .lf-hand-card .suit-icon, body.ainmos .lf-hand-sum .suit-icon { color: inherit; display: inline-flex; vertical-align: -2px; }
+
+/* 0.29 Plain Words: each Dream Form is drawn as the mini cards that make it. */
+body.ainmos .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+body.ainmos .dream-form-row { grid-template-columns: minmax(6.2em, auto) 1fr auto auto; }
+body.ainmos .form-glyph { display: inline-flex; align-items: center; height: 27px; padding-left: 2px; }
+body.ainmos .form-mini {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 17px;
+  height: 24px;
+  margin-left: -3px;
+  border-radius: 3px;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transform-origin: 50% 90%;
+}
+body.ainmos .form-mini:first-child { margin-left: 0; }
+body.ainmos .form-mini.suit-lucidity { background: linear-gradient(160deg, #6fb4ff, #2f6fd6); }
+body.ainmos .form-mini.suit-elasticity { background: linear-gradient(160deg, #ffe07a, #c99512); color: #3a2800 !important; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45); }
+body.ainmos .form-mini.suit-willpower { background: linear-gradient(160deg, #ff7a6e, #c42e2e); }
+body.ainmos .form-glyph-3 .form-mini:nth-child(1) { transform: rotate(-9deg) translateY(1px); }
+body.ainmos .form-glyph-3 .form-mini:nth-child(3) { transform: rotate(9deg) translateY(1px); z-index: 1; }
+body.ainmos .form-glyph-2 .form-mini:nth-child(1) { transform: rotate(-6deg); }
+body.ainmos .form-glyph-2 .form-mini:nth-child(2) { transform: rotate(6deg); }
+body.ainmos .form-mini-icon { display: inline-flex; color: inherit !important; }
+body.ainmos .form-mini-icon svg { width: 12px; height: 12px; filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.4)); }
+body.ainmos .form-mini.suit-elasticity .form-mini-icon svg { filter: none; }
+body.ainmos .dream-form-row.is-raised .form-mini { border-color: rgba(182, 230, 214, 0.9); }

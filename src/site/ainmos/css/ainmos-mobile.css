@@ -936,3 +936,52 @@ html[data-form="phone"]:root body.ainmos.play-window #spread-tray .spread-tray-f
 html:is([data-form="phone"], [data-form="tablet"]):root body.ainmos #utility-modal .ms-choice-title { margin-top: 4px; }
 html[data-form="phone"]:root body.ainmos #card-modal [class^="beast-view"] span { font-size: 12px !important; }
 html:is([data-form="phone"], [data-form="tablet"]):root body.ainmos :is(#lost-found, .lost-found) .lf-item em { font-size: 12px; }
+
+/* 0.29 Plain Words: the phone's Table menu is a solid sheet, not glass over the board. */
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #screen-game #sidebar-right {
+  background:
+    radial-gradient(120% 90% at 20% 0%, rgba(120, 92, 190, 0.28), transparent 60%),
+    linear-gradient(165deg, #1d1638 0%, #120d26 100%) !important;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-top: max(3.6rem, calc(env(safe-area-inset-top) + 3rem));
+  box-shadow: inset 0 0 0 1px rgba(200, 184, 236, 0.18);
+}
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #sidebar-right > section {
+  padding: 0.55rem 0.7rem;
+  margin: 0 0 0.8rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(200, 184, 236, 0.14);
+}
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #btn-sidebar-drawer {
+  background: rgba(40, 30, 72, 0.96);
+  min-height: 44px;
+  min-width: 88px;
+  justify-content: center;
+}
+html[data-form="phone"]:root body.ainmos.play-window #sidebar-right .dream-form-row { min-height: 40px; }
+html[data-form="phone"]:root body.ainmos.play-window #sidebar-right .dream-form-name { font-size: 13px; }
+html[data-form="phone"]:root body.ainmos.play-window #sidebar-right .dream-form-dice { font-size: 13px; }
+/* 0.29: overlapping cards on a phone show suit by color and icon; the printed suit name only piles up. */
+html[data-form="phone"]:root body.ainmos :is(.phase-opener-solo-hand, .hand-bar, #player-hand, .spread-tray-fan, .card-choice-row) .psyche-card .psyche-label { display: none !important; }
+/* 0.29: the phase map above already names each Dream, so the cards skip that line; short screens drop the phase numbers. */
+html[data-form="phone"]:root body.ainmos #cycle-screen .cy-item .cy-step { display: none !important; }
+@media (max-height: 370px) {
+  html[data-form="phone"]:root body.ainmos #cycle-screen .cy-phase-n { display: none; }
+}
+/* 0.29: the Table menu is two real columns (never a third, off-screen one); Forms keep the right column. */
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #screen-game #sidebar-right {
+  columns: auto !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  grid-auto-rows: min-content;
+  align-content: start;
+  column-gap: 1rem;
+}
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #sidebar-right > .resize-handle { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #sidebar-right > .rail-wake { grid-column: 1; grid-row: 1; }
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #sidebar-right > .rail-powers { grid-column: 1; grid-row: 2; }
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #sidebar-right > .rail-forms { grid-column: 2; grid-row: 1 / span 3; }

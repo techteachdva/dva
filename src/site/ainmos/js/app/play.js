@@ -1919,7 +1919,7 @@ function openArchetypeBoardRadial(anchorEl, arch, tileId) {
       ? {
         id: "fight",
         label: `Fight ${arch.name}`,
-        hint: `${state.archetypeFight.label}: ${state.archetypeFight.hint}. Select a spread that makes a Form, then Fight.`,
+        hint: `${state.archetypeFight.label}: ${state.archetypeFight.hint}. Pick a Form, then Fight.`,
         primary: true,
         onPick: () => handlers.fightArchetype(arch.id),
       }
@@ -2271,14 +2271,14 @@ function describeBackAction() {
   if (isRadialMenuOpen()) {
     return {
       enabled: true,
-      title: "Close this menu.",
+      title: "Close",
       run: () => hideRadialMenu(),
     };
   }
   if (isPhaseOpenerMenuOpen()) {
     return {
       enabled: true,
-      title: "View the board. Return to opener brings this menu back.",
+      title: "View board",
       run: () => {
         parkPhaseOpenerMenu(state);
         renderAll();
@@ -2289,34 +2289,34 @@ function describeBackAction() {
   if (utility === "minimized") {
     return {
       enabled: true,
-      title: "Return to the open choice.",
+      title: "Resume",
       run: () => restoreUtilityModal(),
     };
   }
   if (utility === "required") {
     return {
       enabled: true,
-      title: "View the board. Resume choice brings this back.",
+      title: "View board",
       run: () => dismissUtilityModal(),
     };
   }
   if (utility === "panel") {
     return {
       enabled: true,
-      title: "Close this panel and return to the board.",
+      title: "Close",
       run: () => hideUtilityModal(true),
     };
   }
   if (canUndoAction()) {
     return {
       enabled: true,
-      title: "Undo the most recent action and restore the table.",
+      title: "Undo last action",
       run: () => undoLastTableAction(),
     };
   }
   return {
     enabled: false,
-    title: "No action to undo yet.",
+    title: "Nothing to undo",
     run: () => {},
   };
 }
@@ -2879,10 +2879,10 @@ function renderAll() {
       if (replay) replay.textContent = longer ? "Replay Advanced" : "Replay Tutorial";
       const wake = document.getElementById("end-message");
       if (wake && !longer) {
-        wake.textContent = "You woke on The Bed. The Advanced Tutorial is unlocked on this screen and on the main menu. It teaches trade, objects, powers, death, and the boss.";
+        wake.textContent = "You woke. The Advanced Tutorial is unlocked.";
       }
       if (wake && longer) {
-        wake.textContent = "You woke from the longer night. Replay either lesson from the menu, or begin a real Daydream.";
+        wake.textContent = "You woke. Replay a lesson or begin a Daydream.";
       }
     } else {
       advancedEnd?.classList.add("hidden");

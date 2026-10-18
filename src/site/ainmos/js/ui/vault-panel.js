@@ -113,7 +113,7 @@ export function renderDreamscapeVault(state, handlers = {}) {
       body = `<p class="vault-empty">The Vault is empty.</p>`;
     } else {
       whisper = mode === "rest"
-        ? "Waiting to be dreamed"
+        ? "Next up"
         : chosen ? `Place ${chosen.name}` : "Choose a Landscape";
       body = `<div class="vault-tiles">${cards.map((card, index) => tileHtml(card, {
         index,

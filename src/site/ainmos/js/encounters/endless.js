@@ -105,7 +105,7 @@ export function megaLeviathanCard(tier, ante) {
     reject: def.power,
     repress: def.power,
     twist: "Rising tide",
-    twistText: "Each dusk any Leviathan stands, the edge Landscape farthest from The Bed is Forgotten.",
+    twistText: "At dusk, Forget the edge Landscape farthest from The Bed.",
     instanceId: uid("mega"),
   };
 }

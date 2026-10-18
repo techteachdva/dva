@@ -27,7 +27,7 @@
     <div class="fullscreen-prompt-card">
       <h2>Enter the Dreamscape</h2>
       <p class="input-hint">
-        <span class="hint-fine">Click anywhere to begin and enter fullscreen.</span>
+        <span class="hint-fine">Click to begin (fullscreen).</span>
         <span class="hint-coarse">Tap anywhere to begin.</span>
       </p>
       <span class="fullscreen-prompt-hint input-hint">
@@ -45,7 +45,7 @@
     <div id="night-strip" class="night-strip" role="group" aria-label="The night" hidden></div>
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 0.28.1</span>
+        <span class="version-label">v 0.29</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Ainmos" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -90,7 +90,7 @@
           <div id="phase-banner" class="phase-banner" aria-live="polite"></div>
           <div id="dice-battle-stage" class="dice-battle-stage" hidden aria-hidden="true"></div>
           <div id="guide-panel" class="guide-panel" hidden></div>
-          <div class="board-viewport" id="board-viewport" title="Scroll to zoom · pinch to zoom · drag or Space+drag to pan">
+          <div class="board-viewport" id="board-viewport" title="Scroll or pinch to zoom · drag to pan">
             <div id="turn-plaque" class="turn-plaque hidden" role="status" aria-live="polite">
               <span class="turn-plaque-label">Turn</span>
               <span id="turn-plaque-name" class="turn-plaque-name">—</span>
@@ -184,8 +184,8 @@
                 <span id="hand-stats" class="hand-stats-line"></span>
               </div>
               <span class="hand-hint hand-hint-subtle input-hint">
-                <span class="hint-fine">Click Dreamer chips to switch · double-click cards to inspect</span>
-                <span class="hint-coarse">Tap Dreamer chips to switch · long-press cards to inspect</span>
+                <span class="hint-fine">Double-click a card to inspect</span>
+                <span class="hint-coarse">Long-press a card to inspect</span>
               </span>
             </div>
             <div id="meet-pool-guide" class="meet-pool-guide hidden" hidden aria-hidden="true"></div>
@@ -231,7 +231,7 @@
             <span class="end-game-id-label">Game ID</span>
             <button type="button" id="end-game-id" class="pause-game-id end-game-id" title="Tap to copy"></button>
             <span id="end-seed-badge" class="pause-seed-badge"></span>
-            <p id="end-game-id-hint" class="end-game-id-hint">Enter this Game ID as a seed on the menu to dream this exact dream again.</p>
+            <p id="end-game-id-hint" class="end-game-id-hint">Enter this ID as a seed to replay this dream.</p>
           </div>
           <div id="end-score-breakdown" class="end-score-breakdown hidden"></div>
           <div id="end-leaderboard" class="end-leaderboard hidden">

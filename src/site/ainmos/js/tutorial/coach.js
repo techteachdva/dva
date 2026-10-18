@@ -52,7 +52,7 @@ function nearestArchetype(state) {
 function goalLine(state) {
   const goal = state.scoringGoalPoints || state.goalPoints || 3;
   const have = state.acquiredPoints || 0;
-  return `Wake: Acquire ${goal} Archetypes · ${have} of ${goal}`;
+  return `★ ${have}/${goal} Archetypes`;
 }
 
 function plural(n, word) {
@@ -72,16 +72,16 @@ function cycleScreenStep(state) {
     return {
       id: "cycle-1",
       title: "Your first Cycle",
-      text: "This is the map of a Cycle: three Dreams, each played as Reveal, Explore, Meet. Read it, then press Begin Cycle 1.",
-      why: "Dream 1 is a Dream to survive. Dream 2 brings this Cycle's Dreambeast. Dream 3 lets you call an Archetype, and Acquiring Archetypes is how you win.",
+      text: "A Cycle is 3 Dreams. Each Dream is Reveal, Explore, Meet. Press Begin Cycle 1.",
+      why: "Dream 1: survive. Dream 2: a Dreambeast. Dream 3: call an Archetype. Acquire Archetypes to win.",
       target: "#cycle-screen .lf-continue",
     };
   }
   return {
     id: "cycle-n",
     title: `Cycle ${pos.cycle}`,
-    text: `Same rhythm, a stronger Dreambeast. Press Begin Cycle ${pos.cycle} when you're ready.`,
-    why: "Each Cycle's Dreambeast climbs in Power, so Objects and Insights from the Lost & Found matter more as the night goes on.",
+    text: `Same rhythm, stronger Dreambeast. Press Begin Cycle ${pos.cycle}.`,
+    why: "Dreambeasts grow each Cycle. Lost & Found buys matter more.",
     target: "#cycle-screen .lf-continue",
   };
 }
@@ -92,12 +92,12 @@ function dreamStep(state) {
   return {
     id: first ? "dream-first" : `dream-${pos.dream}`,
     title: pos.dream === 2 ? "A Dream, and a Dreambeast" : pos.dream === 3 ? "A Dream, then an Archetype" : "Every Dream hurts",
-    text: "Read what this Dream does, then press its big glowing button to endure it.",
+    text: "Read the Dream, then press its button.",
     why: first
-      ? "Your Psyche deck is the Waking Mind (the Mind counter at the top). Only Psyche is ever Repressed: it moves into the Subconscious, where 12 already wait. Return brings Psyche back, and you choose which. If the Waking Mind runs dry, you wake in a fright and lose."
+      ? "Your Psyche deck is the Waking Mind (Mind, top bar). Repress sends Psyche to the Subconscious; Return brings it back. If the Mind runs dry, you lose."
       : pos.dream === 2
-        ? "After this Dream, the Cycle's Dreambeast lands on a Landscape of its suit."
-        : "After this Dream you choose which Archetype to call.",
+        ? "Next, the Cycle's Dreambeast lands."
+        : "Next, you call an Archetype.",
     target: "#utility-modal .ms-choice-btn",
   };
 }
@@ -107,10 +107,10 @@ function archetypeEventStep(ctx = {}) {
     id: "arch-event",
     title: "Bright or Dim?",
     text: ctx.brightLocked
-      ? "Every Archetype Meet opens with one of its Events. Bright is locked this time: it needs one of the Landscapes shown at the top placed in the dream. Choose Dim, then pick your spread."
-      : "Every Archetype Meet opens with one of its Events. Choose a side, then pick your spread.",
+      ? "Bright needs a Landscape shown at the top in play. Choose Dim, then pick your spread."
+      : "Choose Bright or Dim, then pick your spread.",
     target: ctx.brightLocked ? "#utility-modal .ms-choice-btn--bad" : "",
-    why: "Bright costs Psyche you choose, and each point you pay buys one small thing: a die, a Return, a draw. Dim is free but puts one drawback on the fight. Low on Psyche? Dim is a fine choice.",
+    why: "Bright costs Psyche; each point buys a small edge. Dim is free with one drawback.",
   };
 }
 
@@ -123,8 +123,8 @@ function noCardStep(state, phase) {
   return {
     id: `open-nocard-${phase}`,
     title: `${phase}: no ${(OPENER_SUIT[phase] || ["", "card"])[1]} card`,
-    text: `No ${color} ${suit} card in hand. Press Take free to use your ${suit} as free Actions. If your ${suit} is 0, Skip.`,
-    why: "Your stats are free Actions every phase. Power Tokens only activate powers: your Dreamer's, and each Archetype's you Acquire.",
+    text: `No ${color} ${suit} card. Press Take Free, or Skip if your ${suit} is 0.`,
+    why: "Stats are free Actions. Power Tokens only activate powers.",
     target: "#btn-spread-opener",
   };
 }
@@ -137,28 +137,28 @@ function openerStep(state, ctx = {}) {
     return {
       id: "open-reveal",
       title: "Phase 1 · Reveal",
-      text: "Your Lucidity is free Reveal Actions. Press Take free, or pick a blue Lucidity card first to add its value.",
-      why: "Your Lucidity is your free Reveal Actions every Dream (each places a Landscape). Want more? A Lucidity card adds its value, and any bought Actions you leave unused become Glimmer ✧ for the Lost & Found.",
+      text: "Lucidity = free Reveal Actions. Press Take Free, or add a blue card first.",
+      why: "Each Reveal Action places a Landscape. Unused bought Actions become Glimmer ✧.",
       target: "#btn-spread-opener",
     };
   }
   if (phase === "Explore") {
     const near = nearestArchetype(state);
     const beasts = standingBeasts(state);
-    let plan = "Nothing to chase yet: a short walk is fine.";
-    if (near) plan = `${near.arch.name} stands on ${near.tile.name}${near.dist != null ? `, ${plural(near.dist, "step")} away` : ""}. It holds still until Meet ends, so walk onto it now.`;
+    let plan = "Nothing to chase yet.";
+    if (near) plan = `${near.arch.name} is on ${near.tile.name}${near.dist != null ? `, ${plural(near.dist, "step")} away` : ""}. Walk onto it.`;
     else if (beasts.length) {
       const hereId = me(state)?.landscapeId;
       const withMe = beasts.find(({ tile }) => tile.id === hereId);
       plan = withMe
-        ? `${withMe.enc.name} shares your Landscape. Stay to fight it in Meet, or walk away from it.`
-        : `${beasts[0].enc.name} chases you. Walk to it if you want the fight, or keep your distance.`;
+        ? `${withMe.enc.name} is here. Stay to fight, or leave.`
+        : `${beasts[0].enc.name} chases you. Fight it or keep away.`;
     }
     return {
       id: "open-explore",
       title: "Phase 2 · Explore",
-      text: `Your Elasticity is free steps. Press Take free, or pick a gold Elasticity card first to add its value. ${plan}`,
-      why: "Your Elasticity is your free steps. An Elasticity card adds its value; bought steps you don't take become Glimmer ✧.",
+      text: `Elasticity = free steps. Press Take Free, or add a gold card. ${plan}`,
+      why: "Unused bought steps become Glimmer ✧.",
       target: "#btn-spread-opener",
     };
   }
@@ -169,16 +169,16 @@ function openerStep(state, ctx = {}) {
     return {
       id: "open-meet-target",
       title: "Phase 3 · Meet",
-      text: `Something waits on ${hereTile.name}. Your Willpower is free Meet Actions: press Take free, or pick a red Willpower card first to add its value.`,
-      why: "Your Willpower is your free Meet Actions; a Willpower card adds its value. A fight, an Archetype Meet, and each of a Landscape's two actions cost 1. Bought leftovers become Glimmer ✧.",
+      text: `Something waits on ${hereTile.name}. Willpower = free Meet Actions. Press Take Free, or add a red card.`,
+      why: "A fight or a Landscape action costs 1. Unused bought Actions become Glimmer ✧.",
       target: "#btn-spread-opener",
     };
   }
   return {
     id: pos.cycle === 1 && pos.dream === 1 ? "open-meet-empty-first" : "open-meet-empty",
     title: "Phase 3 · Meet",
-    text: "No Dreambeast or Archetype here, but your Landscape still has two actions: Call a Dreambeast to fight for 2 Power Tokens or an Object, or its own action. Take your free Meet Actions to use them, or Skip.",
-    why: "Free Actions cost nothing. Only Meet Actions you pay a card for become Glimmer ✧ if you leave them unused.",
+    text: "Nothing here, but your Landscape has 2 actions: Call a Dreambeast, or its own. Take Free to use them, or Skip.",
+    why: "Only bought Actions become Glimmer ✧.",
     target: "#btn-spread-opener",
   };
 }
@@ -188,8 +188,8 @@ function vaultStep(state) {
   return {
     id: "vault",
     title: "Build the dream",
-    text: `Choose a Landscape, then tap a glowing hex next to the dream to place it. ${left} Reveal Action${left === 1 ? "" : "s"} left. Press Done placing when you're happy.`,
-    why: "★ marks a home of an Archetype you may call this Cycle. Place those near The Bed and your Archetype can appear close by. Each Landscape also has an action you can use in Meet.",
+    text: `Choose a Landscape, then tap a glowing hex. ${left} left. Press Done when finished.`,
+    why: "★ marks an Archetype's home. Place it near you so the Archetype appears close.",
   };
 }
 
@@ -197,8 +197,8 @@ function lostFoundStep() {
   return {
     id: "lost-found",
     title: "The Lost & Found",
-    text: "The Lost & Found closes every Dream. Your hand is shown, so you know what a price costs you. Buy one thing, or nothing. Into the Dream draws 3 Psyche for the next round.",
-    why: "Objects help all night. The Insight levels up a Dream Form. Glimmer ✧ pays first; you pay the rest in Psyche of the item's suit, and Psyche is your health, so don't overspend.",
+    text: "Buy one thing, or nothing. Into the Dream draws 3 Psyche.",
+    why: "Glimmer ✧ pays first, then Psyche. Psyche is your health: don't overspend.",
     target: "#lost-found .lf-continue",
   };
 }
@@ -208,8 +208,8 @@ function archetypeChoiceStep(state) {
   return {
     id: "arch-choice",
     title: "Call an Archetype",
-    text: "Choose 1 of 3. It appears on one of its two home Landscapes, as close to you as it can.",
-    why: `Archetypes are how you wake: Acquire ${goal} of them. Each one slips 1 Landscape away as Meet ends, so walk onto it during Explore and Meet it.`,
+    text: "Choose 1 of 3. It appears on its home, near you.",
+    why: `Acquire ${goal} to wake. It moves 1 after each Meet: reach it in Explore.`,
   };
 }
 
@@ -217,8 +217,8 @@ function diceStep() {
   return {
     id: "dice",
     title: "The dice decide",
-    text: "Each side rolls its Power in six-sided dice. Every 5 or 6 is a success.",
-    why: "More successes wins, and ties go to you. Bigger cards, your stat, a Dream Form, and Power Tokens all add dice.",
+    text: "Each side rolls dice. 5s and 6s hit.",
+    why: "More hits wins; ties go to you. Cards, stat and Forms add dice.",
   };
 }
 
@@ -233,14 +233,14 @@ function tableStep(state, ctx = {}) {
       return {
         id: "place",
         title: "Place it",
-        text: "Tap a glowing hex next to the dream to set the Landscape down.",
-        why: "Landscapes must touch the dream. Where you put them is your map for the rest of the night.",
+        text: "Tap a glowing hex.",
+        why: "Landscapes must touch the dream.",
       };
     }
     return {
       id: "reveal-table",
       title: "Build the dream",
-      text: `Pick a Landscape in the Dreamscape panel, then tap a glowing hex. ${left} Reveal Action${left === 1 ? "" : "s"} left.`,
+      text: `Pick a Landscape, then tap a glowing hex. ${left} left.`,
       target: "#dreamscape-vault",
     };
   }
@@ -249,7 +249,7 @@ function tableStep(state, ctx = {}) {
     return {
       id: "reveal-done",
       title: "Dream built",
-      text: "Press Next: Explore (top right) when you're ready to walk.",
+      text: "Press Next: Explore (top right).",
       target: "#btn-next-phase",
     };
   }
@@ -260,14 +260,14 @@ function tableStep(state, ctx = {}) {
       const near = nearestArchetype(state);
       const goal = near
         ? (near.dist === 0
-          ? `You're with ${near.arch.name}. Stay put and Meet it next phase.`
+          ? `You're with ${near.arch.name}. Stay and Meet it.`
           : `Head for ${near.arch.name} on ${near.tile.name}.`)
-        : "Walk toward Landscapes whose actions you want to use in Meet.";
+        : "Walk to a Landscape you want to use.";
       return {
         id: "explore-walk",
         title: "Walk the dream",
-        text: `Tap a glowing Landscape next to you to step there. ${plural(left, "step")} left. ${goal}`,
-        why: "Dreambeasts chased you as Explore began. Archetypes hold still until Meet ends, then slip 1 Landscape away.",
+        text: `Tap a glowing Landscape. ${plural(left, "step")} left. ${goal}`,
+        why: "Archetypes move after Meet; Dreambeasts chase at Explore.",
       };
     }
     return {
@@ -286,17 +286,17 @@ function tableStep(state, ctx = {}) {
     const odds = String(ctx.fightLabel || "").match(/(\d+)\s*d6\s*vs\s*(\d+)/i);
     const dice = odds ? Number(odds[1]) : 0;
     const power = odds ? Number(odds[2]) : 12;
-    const kind = !state.guidedFirstArchetypeDone ? " The dream is kind to your first Archetype fight." : "";
+    const kind = !state.guidedFirstArchetypeDone ? " Your first Archetype fight is kind." : "";
     const short = dice && dice < power
-      ? ` You roll ${dice} dice against its ${power}. More dice wins more often: stack Dream Forms in one spread for more.`
+      ? ` ${dice} dice vs ${power}. Stack Forms for more.`
       : "";
     return {
       id: form ? "fight-ready" : "fight-pick",
       title: form ? "Fight!" : "Pick a spread",
       text: form
-        ? `That spread makes a Dream Form. Press Fight under your spread.${short}${kind}`
-        : "Tap 1 to 3 Psyche in your hand that make a Dream Form, like two cards of the same value (an Echo).",
-      why: "The Dream Forms list on the left shows every Form. Your cards' values, your stat, and the Form become dice against the Archetype's Power 12.",
+        ? `That makes a Form. Press Fight.${short}${kind}`
+        : "Tap 1–3 Psyche that make a Form, like a pair (Echo).",
+      why: "Card values, your stat and the Form become dice vs Power 12.",
       target: form ? ".spread-fight-btn" : ".rail-forms",
     };
   }
@@ -307,8 +307,8 @@ function tableStep(state, ctx = {}) {
     return {
       id: "meet-arch",
       title: `Meet ${archHere.arch.name}`,
-      text: `Tap ${here.name} on the board, then choose Meet ${archHere.arch.name} in the ring of buttons around it.`,
-      why: "Meeting costs 1 action. Win the fight and the Archetype is Acquired: +1 toward waking, +1 Power Token, and its power is yours.",
+      text: `Tap ${here.name}, then Meet ${archHere.arch.name}.`,
+      why: "Win: +1 Archetype, +1 Power Token, its power.",
       target: ".radial-menu-item[data-tutorial-action=\"faceArchetype\"]",
     };
   }
@@ -317,8 +317,8 @@ function tableStep(state, ctx = {}) {
     return {
       id: "meet-beast",
       title: `Face ${beastHere.name}`,
-      text: `Tap 1 to 3 Psyche in your hand (any suit; a ${suit} card adds your ${suit} stat), then press Accept under your spread.`,
-      why: "Any suit can fight it. Beat its Power and you Accept it: it leaves the board and you take 2 Power Tokens or an Object of its suit. Its Ward blunts one Dream Form. Aim for a few more dice than its Power. A standing Dreambeast Represses 1 Psyche from your Waking Mind every dusk.",
+      text: `Tap 1–3 Psyche (a ${suit} card adds your ${suit}), then Accept.`,
+      why: "Win: 2 Power Tokens or an Object. Its Ward weakens one Form. Left standing, it Represses 1 each dusk.",
       target: (state.selectedHand || []).length ? ".spread-fight-btn" : "",
     };
   }
@@ -327,11 +327,11 @@ function tableStep(state, ctx = {}) {
     id: pos.dream === 1 && pos.cycle === 1 ? "meet-empty-first" : "meet-empty",
     title: "End the round",
     text: actionsLeft > 0
-      ? "Nothing to fight here. Use one of your Landscape's two actions (tap the Landscape): Call a Dreambeast to fight for a reward, or its own action. Or press End Round (top right) and bank the rest as Glimmer."
+      ? "Nothing to fight. Tap your Landscape to use an action, or press End Round."
       : "Press End Round (top right).",
     why: beasts.length
-      ? `At dusk each standing Dreambeast Represses 1 from your Waking Mind. Then the next Dream begins.`
-      : "Dusk comes, then dawn: you draw 4 Psyche and the next Dream begins. Unspent bought actions become Glimmer ✧.",
+      ? "At dusk each standing Dreambeast Represses 1."
+      : "Then dawn: draw 4 Psyche. Unused bought Actions become Glimmer ✧.",
     target: "#btn-next-phase",
   };
 }

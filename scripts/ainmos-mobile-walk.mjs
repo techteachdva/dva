@@ -32,6 +32,13 @@ mkdirSync(OUT, { recursive: true });
 const VIEWPORTS = {
   "phone-landscape": { viewport: { width: 844, height: 390 }, dpr: 3, ua: devices["iPhone 13"].userAgent },
   "phone-small": { viewport: { width: 667, height: 375 }, dpr: 2, ua: devices["iPhone SE"].userAgent },
+  // iPhone 16e: 1170x2532 at 3x. Pixel 10: 1080x2424 at 2.625x.
+  "iphone-16e": { viewport: { width: 844, height: 390 }, dpr: 3, ua: devices["iPhone 13"].userAgent },
+  "iphone-16e-portrait": { viewport: { width: 390, height: 844 }, dpr: 3, ua: devices["iPhone 13"].userAgent },
+  "pixel-10": { viewport: { width: 923, height: 412 }, dpr: 2.625, ua: devices["Pixel 7"]?.userAgent || devices["Pixel 5"].userAgent },
+  // Pixel 10 in Chrome with the address bar and status bar showing (landscape).
+  "pixel-10-chrome": { viewport: { width: 923, height: 340 }, dpr: 2.625, ua: devices["Pixel 7"]?.userAgent || devices["Pixel 5"].userAgent },
+  "pixel-10-portrait": { viewport: { width: 412, height: 923 }, dpr: 2.625, ua: devices["Pixel 7"]?.userAgent || devices["Pixel 5"].userAgent },
   "phone-android": { viewport: { width: 915, height: 412 }, dpr: 2.625, ua: devices["Pixel 7"]?.userAgent || devices["Pixel 5"].userAgent },
   "tablet-landscape": { viewport: { width: 1180, height: 820 }, dpr: 2, ua: devices["iPad Pro 11"].userAgent },
   "tablet-portrait": { viewport: { width: 820, height: 1180 }, dpr: 2, ua: devices["iPad Pro 11"].userAgent },
@@ -306,6 +313,7 @@ async function extras() {
     await tapEl("#hand-drawer-btn");
     await sleep(700);
   }
+  if (await tapEl("#btn-sidebar-drawer")) { await sleep(900); await shot("x-table-drawer"); await tapEl("#btn-sidebar-drawer"); await sleep(600); }
   if (await tapEl("#hud-cycle")) { await sleep(500); await shot("x-night-peek"); await (VP.desktop ? page.mouse.click(400, 250) : page.touchscreen.tap(400, 250)); await sleep(400); }
   if (await tapEl("#btn-pause")) { await sleep(1000); await shot("x-pause"); await page.keyboard.press("Escape"); await sleep(800); }
   await page.evaluate(async () => {

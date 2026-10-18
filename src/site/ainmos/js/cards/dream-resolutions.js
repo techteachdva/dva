@@ -8,7 +8,7 @@ export const DREAM_RESOLUTIONS = {
   abandonment: {
     bad: {
       label: "Alone on Empty Ground",
-      hint: "Meet is your only option this round",
+      hint: "Meet only",
       effect: "onlyPhase",
       params: { phase: "Meet" },
     },
@@ -17,7 +17,7 @@ export const DREAM_RESOLUTIONS = {
   trapped: {
     bad: {
       label: "No Way Out",
-      hint: "Reveal is your only phase this round",
+      hint: "Reveal only",
       effect: "onlyPhase",
       params: { phase: "Reveal" },
     },
@@ -26,7 +26,7 @@ export const DREAM_RESOLUTIONS = {
   chase: {
     bad: {
       label: "Nowhere to Run",
-      hint: "Explore is your only phase this round",
+      hint: "Explore only",
       effect: "onlyPhase",
       params: { phase: "Explore" },
     },
@@ -35,7 +35,7 @@ export const DREAM_RESOLUTIONS = {
   powerlessness: {
     bad: {
       label: "Forms Go Dark",
-      hint: "Dream Forms add no dice this round",
+      hint: "Dream Forms add no dice",
       effect: "blockForms",
       params: { forms: "all" },
     },
@@ -44,7 +44,7 @@ export const DREAM_RESOLUTIONS = {
   absurdity: {
     bad: {
       label: "The Pattern Breaks",
-      hint: "Echo and Ladder add no dice this round",
+      hint: "Echo and Ladder add no dice",
       effect: "blockForms",
       params: { forms: ["echo", "ladder"] },
     },
@@ -53,7 +53,7 @@ export const DREAM_RESOLUTIONS = {
   somnambulance: {
     bad: {
       label: "Half the Pattern",
-      hint: "Trinity and Chord add no dice this round",
+      hint: "Trinity and Chord add no dice",
       effect: "blockForms",
       params: { forms: ["trinity", "chord"] },
     },
@@ -62,7 +62,7 @@ export const DREAM_RESOLUTIONS = {
   "pineal-purge": {
     bad: {
       label: "The Third Eye Spills",
-      hint: "Trifecta and Unity add no dice this round",
+      hint: "Trifecta and Unity add no dice",
       effect: "blockForms",
       params: { forms: ["trifecta", "unity"] },
     },
@@ -116,7 +116,7 @@ export const DREAM_RESOLUTIONS = {
   quiet: {
     bad: {
       label: "Silence Eats Motion",
-      hint: "Repress the top card of the Waking Mind",
+      hint: "Repress the top of the Waking Mind",
       effect: "repressTopPsycheDeck",
       params: { count: 1 },
     },
@@ -179,7 +179,7 @@ export const DREAM_RESOLUTIONS = {
   betrayal: {
     bad: {
       label: "Pay the Pack",
-      hint: "Discard Psyche totaling the Dreambeasts on the board",
+      hint: "Discard Psyche equal to Dreambeasts in play",
       effect: "discardPsycheForBeasts",
       params: {},
     },
@@ -224,7 +224,7 @@ export const DREAM_RESOLUTIONS = {
   loss: {
     bad: {
       label: "Too Clear to Keep",
-      hint: "Discard Psyche valued above your Lucidity",
+      hint: "Discard Psyche above your Lucidity",
       effect: "discardPsycheAboveStat",
       params: { stat: "lucidity" },
     },
@@ -233,7 +233,7 @@ export const DREAM_RESOLUTIONS = {
   lost: {
     bad: {
       label: "Too Quick to Keep",
-      hint: "Discard Psyche valued above your Elasticity",
+      hint: "Discard Psyche above your Elasticity",
       effect: "discardPsycheAboveStat",
       params: { stat: "elasticity" },
     },
@@ -242,7 +242,7 @@ export const DREAM_RESOLUTIONS = {
   responsibility: {
     bad: {
       label: "Too Strong to Keep",
-      hint: "Discard Psyche valued above your Willpower",
+      hint: "Discard Psyche above your Willpower",
       effect: "discardPsycheAboveStat",
       params: { stat: "willpower" },
     },

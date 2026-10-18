@@ -34,7 +34,7 @@ function isAppleTouchDevice() {
 function silentModeHintHtml() {
   if (!isAppleTouchDevice()) return "";
   const device = /iPhone|iPod/.test(navigator.userAgent || "") ? "iPhone" : "iPad";
-  return `<p class="pause-audio-hint">No sound? Ainmos's music and effects follow the ${device}'s <strong>Silent Mode</strong> — check Control Center, and make sure the volume is up.</p>`;
+  return `<p class="pause-audio-hint">No sound? Turn off the ${device}'s <strong>Silent Mode</strong> and raise the volume.</p>`;
 }
 
 function panLabel(value) {
@@ -103,8 +103,8 @@ function renderDisplayTab() {
   const seeded = document.body.classList.contains("seed-dmzemo");
   const holoOn = seeded || !!loadSettings().holoFoil;
   const holoLabel = seeded
-    ? "Holographic foil: On (DMZEMO)"
-    : (holoOn ? "Holographic foil: On" : "Holographic foil: Off");
+    ? "Foil: On (seed)"
+    : (holoOn ? "Foil: On" : "Foil: Off");
   const form = getFormOverride();
   const forms = ["auto", "phone", "tablet", "desktop"].map(
     (m) => `<button type="button" class="btn ${form === m ? "primary" : ""}" data-form-override="${m}">${m === "auto" ? "Auto" : m[0].toUpperCase() + m.slice(1)}</button>`,
@@ -114,18 +114,18 @@ function renderDisplayTab() {
   return `
     <div class="pause-section">
       <h3>Table layout</h3>
-      <p class="pause-hint">The Dreamscape fits itself to this screen — Desktop, Tablet or Phone — and re-fits on rotation. Override only if the table picked the wrong chrome.</p>
+      <p class="pause-hint">Auto fits this screen. Override only if it guessed wrong.</p>
       <div class="pause-btn-row">${forms}</div>
     </div>
     ${isDesktop ? `
     <div class="pause-section">
       <h3>Panel layout</h3>
-      <p class="pause-hint">Drag the edges between panels in-game to resize. Reset returns them to the automatic fit.</p>
-      <button type="button" class="btn" id="pause-reset-panels">Reset panel sizes</button>
+      <p class="pause-hint">Drag panel edges to resize.</p>
+      <button type="button" class="btn" id="pause-reset-panels">Reset Panels</button>
     </div>` : ""}
     <div class="pause-section">
       <h3>Holographic foil</h3>
-      <p class="pause-hint">A premium iridescent sheen on every card. It follows the pointer, and on a phone or iPad it follows the tilt of the device. The DMZEMO seed always wears foil.</p>
+      <p class="pause-hint">An iridescent sheen that follows your pointer or tilt.</p>
       <button type="button" class="btn ${holoOn ? "primary" : ""}" id="pause-holo-foil"${seeded ? " disabled" : ""}>${holoLabel}</button>
     </div>
   `;
@@ -172,9 +172,9 @@ function renderGameTab() {
     return `
     <div class="pause-section">
       <h3>Leave tutorial</h3>
-      <p class="pause-hint">The guided tutorial isn't saved. Return to the main menu any time.</p>
+      <p class="pause-hint">The tutorial isn't saved.</p>
       <div class="pause-btn-row pause-btn-col">
-        <button type="button" class="btn pause-exit-btn" id="pause-exit-menu">Return to main menu</button>
+        <button type="button" class="btn pause-exit-btn" id="pause-exit-menu">Main Menu</button>
       </div>
     </div>`;
   }
@@ -191,24 +191,24 @@ function renderGameTab() {
         <span class="pause-game-id" id="pause-game-id" title="Tap to copy">${gameId}</span>
         ${seed ? `<span class="pause-seed-badge">seed ${seed}</span>` : ""}
       </div>
-      <p class="pause-hint">Share this Game ID as a seed on the menu to replay the same dream.</p>
+      <p class="pause-hint">Enter this ID as a seed to replay this dream.</p>
     </div>` : ""}
     <div class="pause-section">
       <h3>Save progress</h3>
-      <p class="pause-hint">${canSave ? `Autosave keeps <strong>${label}</strong> on this device.` : "Finish the guided tutorial steps to unlock saving, or start a Daydream from the menu."}</p>
+      <p class="pause-hint">${canSave ? `Autosave keeps <strong>${label}</strong> on this device.` : "Saving unlocks after the tutorial."}</p>
       <div class="pause-btn-row pause-btn-col">
-        <button type="button" class="btn primary" id="pause-save-local" ${canSave ? "" : "disabled"}>Save on this device</button>
-        <button type="button" class="btn" id="pause-save-cloud" ${canSave && !standalone ? "" : "disabled"}>${standalone ? "Cloud save (web only)" : "Save to cloud"}</button>
-        <button type="button" class="btn pause-exit-btn" id="pause-save-exit" ${canSave ? "" : "disabled"}>Save &amp; return to main menu</button>
+        <button type="button" class="btn primary" id="pause-save-local" ${canSave ? "" : "disabled"}>Save</button>
+        <button type="button" class="btn" id="pause-save-cloud" ${canSave && !standalone ? "" : "disabled"}>${standalone ? "Cloud (web only)" : "Save to Cloud"}</button>
+        <button type="button" class="btn pause-exit-btn" id="pause-save-exit" ${canSave ? "" : "disabled"}>Save &amp; Quit</button>
       </div>
       <p id="pause-save-status" class="pause-hint" aria-live="polite"></p>
     </div>
     ${hooks.canEndNight?.() ? `
     <div class="pause-section">
       <h3>End this night</h3>
-      <p class="pause-hint">Let the dream go and see how far you climbed. The run ends as a loss.</p>
+      <p class="pause-hint">Ends the run as a loss.</p>
       <div class="pause-btn-row">
-        <button type="button" class="btn pause-exit-btn" id="pause-end-night">Let the night go</button>
+        <button type="button" class="btn pause-exit-btn" id="pause-end-night">End Night</button>
       </div>
     </div>` : ""}
     <div class="pause-section">
@@ -217,7 +217,7 @@ function renderGameTab() {
     </div>
     <div class="pause-section">
       <h3>Cloud saves</h3>
-      <p class="pause-hint">Enter the same first name and last initial you use for high scores.</p>
+      <p class="pause-hint">Use your high-score name.</p>
       <div class="pause-save-name-row">
         <label class="pause-field">
           <span>First name</span>

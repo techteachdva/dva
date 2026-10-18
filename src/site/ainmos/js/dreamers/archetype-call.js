@@ -26,7 +26,7 @@ export function archetypeCallable(state, arch) {
 export function archetypeCallBlock(state, arch) {
   if (archetypeCallable(state, arch)) return "";
   const names = archetypeHomeNames(state, arch);
-  return `Reveal ${names.join(" or ")} first.`;
+  return `Needs ${names.join(" or ")}`;
 }
 
 /** True when an Archetype Dream is waiting and none of its options can be called. */

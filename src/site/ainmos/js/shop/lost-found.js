@@ -122,7 +122,7 @@ export function insightText(insight) {
   if (!insight) return "";
   if (insight.kind === "form") {
     const form = formById(insight.formId);
-    return `${form?.name}: ${form?.pattern}. Its spreads roll 1 more die.`;
+    return `${form?.pattern}. +1 die.`;
   }
   return PSYCHE_UPGRADES[insight.upgrade]?.text || "";
 }
@@ -228,7 +228,7 @@ export function objectBlockReason(state, player, card) {
   // At the Object limit you may still buy: you then let one go (and draw its price).
   const rest = objectPrice(card) - glimmerFor(state, objectPrice(card));
   if (!paymentFor(player, rest, { suit: card.suit })) {
-    return `${player.name} needs ${rest} ${SUIT_NAME[card.suit] || ""} Psyche value${glimmerHeld(state) ? ` after ${glimmerFor(state, objectPrice(card))}✧` : ""}.`;
+    return `Need ${rest} ${SUIT_NAME[card.suit] || ""} value.`;
   }
   return "";
 }
@@ -275,16 +275,16 @@ export function insightCost(state) {
 
 export function insightBlockReason(state, player, { targetId = null } = {}) {
   const insight = state?.lostFound?.insight;
-  if (!insight) return "The Insight is gone for this round.";
+  if (!insight) return "Insight taken.";
   if (!player) return "Choose a Dreamer to buy.";
   const exclude = targetId ? [targetId] : [];
   if (insight.kind === "upgrade") {
     const eligible = (player.hand || []).filter((c) => payable(c) && !isWildPsyche(c) && c.upgrade !== insight.upgrade);
-    if (!eligible.length) return `${player.name} has no plain Psyche to take this upgrade.`;
+    if (!eligible.length) return "No plain Psyche to upgrade.";
   }
   const rest = insightCost(state) - glimmerFor(state, insightCost(state));
   if (insightCost(state) > 0 && !paymentFor(player, rest, { excludeIds: exclude })) {
-    return `${player.name} needs ${rest} Psyche value of any suit${insight.kind === "upgrade" ? ", besides the card being upgraded" : ""}.`;
+    return `Need ${rest} value${insight.kind === "upgrade" ? " besides that card" : ""}.`;
   }
   return "";
 }
@@ -348,7 +348,7 @@ export function rerollLostFound(state, spendTokens) {
   if (!shop?.open || !player) return { ok: false, reason: "The Lost & Found is closed." };
   const how = rerollPayment(state, player);
   if (!how) {
-    return { ok: false, reason: `Looking again takes ${REROLL_GLIMMER_COST}✧ Glimmer.` };
+    return { ok: false, reason: `Needs ${REROLL_GLIMMER_COST}✧ Glimmer.` };
   }
   if (how === "glimmer") spendGlimmer(state, REROLL_GLIMMER_COST);
   else spendTokens?.(state, player, REROLL_TOKEN_COST);

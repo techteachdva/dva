@@ -6,10 +6,23 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.28.1";
+export const SOMNIA_VERSION = "0.29";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.29",
+    title: "Plain Words",
+    notes: [
+      "Every screen says less. Buttons are a word or two (Buy, Learn, Reroll, Place, Done, Call, View Board), and pop-ups keep only what you need to decide.",
+      "The Cycle screen: your Archetype count sits once in the corner, each Dream card names its job in a line, and Dreambeast twists are short.",
+      "Lost & Found prices are suit icons and numbers instead of words, and so is your hand.",
+      "Dream Forms show the mini cards that make them: two 2s for an Echo, 1-2-3 for a Ladder, one of each suit for a Trinity.",
+      "Phones: the Table menu is a solid sheet you can read, its button turns into Close, and Dream Forms no longer slide off the right edge on shorter screens.",
+      "Tested on iPhone 16e and Pixel 10 screen sizes, including Chrome's address bar on Android: the Cycle cards show their whole rule, and a full hand no longer piles suit names on top of each other.",
+      "The First Night guide, Landscape actions, Events, and the pause menu are all shorter.",
+    ],
+  },
   {
     version: "0.28.1",
     title: "Clear Cycles",

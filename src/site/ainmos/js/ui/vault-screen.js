@@ -77,12 +77,12 @@ function cardHtml(card, index, questIds) {
   return `
     <article class="lf-item vs-item suit-${esc(card.suit || "none")}${quest ? " is-quest" : ""}">
       <div class="vs-hex" style="background-image:url('${esc(absolute(card.image))}')"></div>
-      ${quest ? `<span class="vs-quest" title="The ${esc(home)} can appear here when it is called">★ ${esc(home)}'s home</span>` : ""}
+      ${quest ? `<span class="vs-quest" title="The ${esc(home)} can appear here">★ ${esc(home)}'s home</span>` : ""}
       <h4 class="lf-item-name">${esc(card.name)}</h4>
       <p class="lf-item-kind">${esc(SUIT_NAME[card.suit] || "Landscape")} Landscape</p>
-      ${action ? `<p class="lf-item-text"><strong>${esc(action.label)}.</strong> ${esc(action.description)} <span class="vs-call">Or Call ${card.suit === "elasticity" ? "an" : "a"} ${esc(SUIT_NAME[card.suit] || "")} Dreambeast.</span></p>` : ""}
+      ${action ? `<p class="lf-item-text"><strong>${esc(action.label)}.</strong> ${esc(action.description)} <span class="vs-call">Or Call a Dreambeast.</span></p>` : ""}
       <div class="lf-item-foot">
-        <button type="button" class="lf-btn lf-buy vs-pick" data-vs-pick="${index}">Dream it</button>
+        <button type="button" class="lf-btn lf-buy vs-pick" data-vs-pick="${index}">Place</button>
       </div>
     </article>`;
 }
@@ -133,11 +133,11 @@ export function renderVaultScreen(state, handlers = {}) {
   lastKey = key;
 
   const refreshBlocked = free
-    ? "Free placements cannot pay for a refresh."
+    ? "Free placements can't refresh."
     : !deck
-      ? "The tile deck is empty."
+      ? "Tile deck empty."
       : remaining < cost
-        ? `Refreshing costs ${cost} Lucidity; ${remaining} left.`
+        ? `Costs ${cost}; ${remaining} left.`
         : "";
   const noun = free ? "free placement" : "Lucidity";
 
@@ -147,18 +147,17 @@ export function renderVaultScreen(state, handlers = {}) {
       <header class="lf-titlebar">
         <span class="vault-dots" aria-hidden="true"><i></i><i></i><i></i></span>
         <h3 id="vs-title" class="lf-title">Dreamscape Vault</h3>
-        <span class="lf-round">${deck} asleep in the deck</span>
+        <span class="lf-round">${deck} in deck</span>
       </header>
-      <p class="lf-whisper">What does the dream become next?</p>
       <div class="vs-budget" aria-live="polite">${free
         ? `<b>${remaining}</b> ${noun}${remaining !== 1 ? "s" : ""} left`
         : `<b>${remaining}</b> Reveal Action${remaining === 1 ? "" : "s"} left · ${unusedGlimmerText(glimmerIfUnused(state, remaining))}`}</div>
-      ${topUps.length ? `<div class="vs-topup"><span>Want more? Spend 1 Lucidity:</span>${topUps.map((c) => `<button type="button" class="lf-btn vs-topup-btn" data-vs-topup="${esc(c.instanceId)}" title="Spend ${esc(c.name || "this Lucidity")} for +${c.value} Reveal Actions. Bought Reveals left unused become Glimmer ✧.">+${c.value}</button>`).join("")}</div>` : ""}
+      ${topUps.length ? `<div class="vs-topup"><span>Add Lucidity:</span>${topUps.map((c) => `<button type="button" class="lf-btn vs-topup-btn" data-vs-topup="${esc(c.instanceId)}" title="+${c.value} Reveal Actions. Unused ones become Glimmer ✧.">+${c.value}</button>`).join("")}</div>` : ""}
       <div class="lf-shelf vs-shelf">${cards.map((card, index) => cardHtml(card, index, questIds)).join("")}</div>
       <footer class="lf-foot">
-        <button type="button" class="lf-btn" data-vs-peek="1">View the dream</button>
-        <button type="button" class="lf-btn lf-reroll" data-vs-refresh="1" ${refreshBlocked ? "aria-disabled=\"true\"" : ""} title="${esc(refreshBlocked || `Redeal the Vault. Each refresh this round costs 1 more.`)}">Refresh · ${cost}✧</button>
-        <button type="button" class="lf-btn lf-continue" data-vs-done="1" title="Stop placing. Each Reveal you paid for and left unused becomes 1 Glimmer ✧ for the Lost &amp; Found.">Done placing →</button>
+        <button type="button" class="lf-btn" data-vs-peek="1">View Board</button>
+        <button type="button" class="lf-btn lf-reroll" data-vs-refresh="1" ${refreshBlocked ? "aria-disabled=\"true\"" : ""} title="${esc(refreshBlocked || `New Landscapes. Each refresh costs 1 more.`)}">Refresh · ${cost}✧</button>
+        <button type="button" class="lf-btn lf-continue" data-vs-done="1" title="Stop placing. Unused bought Reveals become Glimmer ✧.">Done</button>
       </footer>
     </section>`;
 

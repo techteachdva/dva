@@ -55,27 +55,22 @@ function openerTitle(phase) {
 /** Ainmos 0.26: your stat is free base Actions; a card adds its value on top. */
 function openerLead(phase, suitLabel, base) {
   const what = phase === "Reveal"
-    ? "each places a Landscape from the Vault"
+    ? "Each Action places a Landscape."
     : phase === "Explore"
-      ? "each is 1 step"
-      : "fight a Dreambeast, Meet an Archetype, or use a Landscape's actions";
-  const free = base > 0
-    ? `Your ${suitLabel} gives ${base} free ${phase} Action${base === 1 ? "" : "s"}: ${what}.`
-    : `Your ${suitLabel} is 0: no free ${phase} Actions.`;
-  return `${free} Add 1 ${suitLabel} card for +its value.`;
+      ? "Each Action is 1 step."
+      : "Actions fight, Meet, or use a Landscape.";
+  return `${what} A ${suitLabel} card adds its value.`;
 }
 
 function phaseLockNote(state, phase) {
   const notes = [];
   if (state?.onlyPhaseThisRound === phase) {
-    if (phase === "Meet") notes.push("This Dream skipped Reveal and Explore. Meet is your only phase.");
-    else if (phase === "Explore") notes.push("This Dream skipped Reveal. Explore is your only phase.");
-    else if (phase === "Reveal") notes.push("This Dream ends after Reveal. Explore and Meet will not happen.");
+    notes.push(`${phase} only this Dream.`);
   }
   if (phase === "Meet" && state?.blockedForms === "all") {
-    notes.push("Dream Forms add no dice this round.");
+    notes.push("Forms add no dice.");
   } else if (phase === "Meet" && Array.isArray(state?.blockedForms) && state.blockedForms.length) {
-    notes.push("Some Dream Forms add no dice this round.");
+    notes.push("Some Forms add no dice.");
   }
   return notes.length ? ` ${notes.join(" ")}` : "";
 }
@@ -83,12 +78,12 @@ function phaseLockNote(state, phase) {
 /** What the phase budget buys, for the live preview. */
 function budgetUnit(phase, n, bought) {
   const free = n - bought;
-  const parts = bought ? `${free} free + ${bought} bought · ${unusedGlimmerText(bought)}` : "all free";
-  return `${phase} Action${n === 1 ? "" : "s"} · ${parts}`;
+  const unit = `${phase} Action${n === 1 ? "" : "s"}`;
+  return bought ? `${unit} · ${free} free + ${bought} · ${unusedGlimmerText(bought)}` : unit;
 }
 
 function confirmLabel(phase, bought, n) {
-  if (!bought) return `Take ${n} free`;
+  if (!bought) return `Take ${n} Free`;
   if (phase === "Reveal") return "Open Reveal";
   if (phase === "Explore") return "Open Explore";
   return "Open Meet";
@@ -167,8 +162,8 @@ function showOpenerReturnDock(state) {
   dock.dataset.dock = "phase-opener";
   dock.classList.remove("hidden");
   const phase = getPhase(state);
-  if (label) label.textContent = `${phase} opener is waiting`;
-  if (btn) btn.textContent = "Return to opener";
+  if (label) label.textContent = `${phase} waiting`;
+  if (btn) btn.textContent = "Resume";
 }
 
 function hideOpenerReturnDock() {
@@ -177,7 +172,7 @@ function hideOpenerReturnDock() {
   dock.dataset.dock = "";
   dock.classList.add("hidden");
   const btn = document.getElementById("utility-choice-restore");
-  if (btn) btn.textContent = "Resume choice";
+  if (btn) btn.textContent = "Resume";
 }
 
 /** Leave the opener up, but let the table see the board. The dock brings it back. */
@@ -265,7 +260,7 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   if (closeBtn) {
     closeBtn.hidden = false;
     closeBtn.setAttribute("aria-label", "View board");
-    closeBtn.title = "View the board. Return to opener brings this menu back.";
+    closeBtn.title = "View board";
   }
 
   const alive = (state.players || []).filter((p) => p.alive);
@@ -277,15 +272,15 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   const tint = phase === "Reveal" ? "reveal" : phase === "Explore" ? "explore" : "meet";
   const hasOpenerCard = !!player && (player.hand || []).some((c) => isOpenerCard(c, state));
   const idleNote = hasOpenerCard
-    ? `pick a ${suitLabel} card for more Actions`
-    : `no ${suitLabel} in hand`;
+    ? `Add a ${suitLabel} card`
+    : `No ${suitLabel} in hand`;
 
   body.innerHTML = `
     <div id="phase-opener-menu" class="phase-opener-menu phase-opener-solo" data-phase="${phase}" data-suit="${suit || ""}" data-count="1">
       <header class="phase-opener-header fullscreen-browser-header">
         <p class="phase-opener-kicker">${suitIconHtml(suit, { size: 16 })} ${(() => {
           const pos = cyclePosition(state);
-          return pos.longNight ? `The Long Night · ${phase}` : `Cycle ${pos.cycle} · Dream ${pos.dream} of 3 · ${phase} · phase ${pos.step} of 9`;
+          return pos.longNight ? `The Long Night · ${phase}` : `Cycle ${pos.cycle} · Dream ${pos.dream} · ${phase}`;
         })()}</p>
         <h2>${openerTitle(phase)}</h2>
         <p class="fullscreen-browser-lead">${openerLead(phase, suitLabel, bonus)}${phaseLockNote(state, phase)}</p>
@@ -294,14 +289,14 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
         <div class="phase-opener-preview${canConfirm ? " is-ready" : ""}" aria-live="polite">
           <span class="phase-opener-preview-num${canConfirm ? "" : " is-empty"}">${canConfirm ? projected : ""}</span>
           <span class="phase-opener-preview-unit">${canConfirm ? budgetUnit(phase, projected, bought) : idleNote}</span>
-          <span class="phase-opener-preview-stat">${suitIconHtml(suit, { size: 12 })} ${bonus} free from ${suitLabel}</span>
+          <span class="phase-opener-preview-stat">${suitIconHtml(suit, { size: 12 })} ${bonus} free</span>
         </div>
         <div class="phase-opener-hand-row phase-opener-solo-hand" data-hand-for="${player?.id || ""}"></div>
       </div>
       <footer class="phase-opener-footer">
         <div class="phase-opener-actions">
-          <button type="button" id="btn-view-board" class="btn btn-phase-opener-skip">View board</button>
-          <button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip" title="Skip: keep your cards and give up this phase's Actions, free ones too.">Skip</button>
+          <button type="button" id="btn-view-board" class="btn btn-phase-opener-skip">View Board</button>
+          <button type="button" id="btn-skip-phase" class="btn btn-phase-opener-skip" title="Keep your cards; lose this phase's Actions.">Skip</button>
           <button type="button" id="btn-spread-opener" class="btn primary btn-phase-opener-confirm tint-${tint}" data-tutorial-action="${kind}" ${canConfirm ? "" : "disabled"}>
             ${confirmLabel(phase, bought, projected)}
           </button>
@@ -313,7 +308,7 @@ export function showPhaseOpenerMenu(state, handlers, renderAll, opts = {}) {
   const handEl = body.querySelector(".phase-opener-solo-hand");
   if (player && handEl) {
     const hand = (player.hand || []).filter((c) => c.type !== "psyche-power");
-    if (!hand.length) handEl.innerHTML = `<p class="phase-opener-empty">Your hand is empty.</p>`;
+    if (!hand.length) handEl.innerHTML = `<p class="phase-opener-empty">Hand empty</p>`;
     hand.forEach((card) => {
       const usable = isOpenerCard(card, state);
       const el = renderCard(card, {

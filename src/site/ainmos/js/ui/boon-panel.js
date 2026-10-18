@@ -66,7 +66,7 @@ export function renderBoonList(state) {
   if (host.dataset.key === key && host.childElementCount) return;
   host.dataset.key = key;
   if (!boons.length) {
-    host.innerHTML = `<li class="boon-row is-empty">Acquire an Archetype to gain its power.</li>`;
+    host.innerHTML = `<li class="boon-row is-empty">None yet</li>`;
     return;
   }
   host.innerHTML = boons.map((boon) => `

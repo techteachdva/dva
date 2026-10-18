@@ -709,7 +709,7 @@ function topUpAction(state, handlers) {
     kind: "topUpPhase",
     section: "main",
     primary: phase !== "Meet",
-    hint: `You opened on your free Actions. Spend this ${SUIT_LABELS[phaseSuitForOpening(phase)]} Psyche for ${value} more. Bought Actions you leave unused become Glimmer ✧.`,
+    hint: `+${value} Actions. Unused bought ones become Glimmer ✧.`,
     onClick: handlers.topUpPhase,
   };
 }
@@ -956,7 +956,7 @@ export function getPhaseActions(state, handlers) {
         label: "Play Object",
         kind: "playObject",
         section: "objects",
-        hint: "Free in any phase — Instant Objects stay in hand until played, then are Discarded.",
+        hint: "Free, any phase. Discarded after use.",
         disabled: false,
         onClick: handlers.playObject,
       });
@@ -966,7 +966,7 @@ export function getPhaseActions(state, handlers) {
         label: "Activate Persistent",
         kind: "activateObject",
         section: "objects",
-        hint: "Meet — spend 1 Meet action to activate a Persistent Object (Remember Objects Return Psyche).",
+        hint: "1 Meet Action.",
         disabled: getPhase(state) !== "Meet" || !(state.meetActionBudget > 0) || (state.meetActionsUsed || 0) >= (state.meetActionBudget || 0),
         onClick: handlers.activateObject,
       });
@@ -1002,7 +1002,7 @@ export function getPhaseActions(state, handlers) {
       : `Power Token as 1 ${suitLabel}`,
     kind: "phasePowerToken",
     section: "main",
-    hint: "Spend 1 Power Token in place of 1 suited Psyche for this phase opener (max 1).",
+    hint: "1 Power Token for 1 suited Psyche (max 1).",
     disabled: !canUsePhasePowerToken(state, player) && state.phaseTokenAsPsyche !== player.id,
     onClick: handlers.togglePhasePowerToken,
   });
@@ -1832,7 +1832,7 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
     options.push({
       id: "silverFail",
       label: "Fail Accept",
-      hint: "Cannot make the Accept cost — the Dreambeast fails.",
+      hint: "Can't pay: the fight fails.",
       onPick: () => failForcedAccept(state),
     });
   }
@@ -2219,11 +2219,11 @@ export function offerBeastReward(state, actor, encounter) {
     source: "beast",
     cardId: "beast-reward",
     title: `${encounter?.name || "Dreambeast"} is Accepted`,
-    message: "Take your reward.",
+    message: "Choose a reward.",
     choices: [
-      ...(room ? [{ id: "token", label: `${Math.min(BEAST_TOKEN_REWARD, room)} Power Token${Math.min(BEAST_TOKEN_REWARD, room) === 1 ? "" : "s"}`, hint: `You hold ${actor.powerTokens || 0} of ${MAX_POWER_TOKENS}.` }] : []),
-      { id: "object", label: suit ? `A ${SUIT_LABELS[suit]} Object` : "A random Object", hint: suit ? `Drawn from the ${SUIT_LABELS[suit]} Object deck.` : "Drawn from any Object deck." },
-      ...(setPieces.length ? [{ id: "set", label: "Search for a Set piece", hint: `Take a missing piece of a Set you have started (${[...new Set(setPieces.map((p) => SET_NAMES[p.tag] || p.tag))].join(", ")}).` }] : []),
+      ...(room ? [{ id: "token", label: `${Math.min(BEAST_TOKEN_REWARD, room)} Power Token${Math.min(BEAST_TOKEN_REWARD, room) === 1 ? "" : "s"}`, hint: `${actor.powerTokens || 0}/${MAX_POWER_TOKENS} held` }] : []),
+      { id: "object", label: suit ? `A ${SUIT_LABELS[suit]} Object` : "A random Object", hint: "Random draw" },
+      ...(setPieces.length ? [{ id: "set", label: "A Set piece", hint: `Missing from: ${[...new Set(setPieces.map((p) => SET_NAMES[p.tag] || p.tag))].join(", ")}` }] : []),
     ],
     payload: { name: encounter?.name || "", suit },
     log: `${encounter?.name || "The Dreambeast"} is Accepted: ${BEAST_TOKEN_REWARD} Power Tokens or ${suit ? `a ${SUIT_LABELS[suit]}` : "a random"} Object.`,
@@ -2850,7 +2850,7 @@ export function spawnRandomEncounter(state) {
     action: "spawnEncounter",
     encounter,
     title: "A Dreambeast stirs",
-    detail: "Choose a revealed Landscape for the Dreambeast to appear on.",
+    detail: "Choose a Landscape for the Dreambeast.",
   });
   return encounter;
 }

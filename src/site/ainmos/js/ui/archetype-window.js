@@ -83,21 +83,21 @@ export function renderArchetypeWindow(state, { onFocus } = {}) {
           <span class="aw-status">${esc(status.text)}</span>
         </button>`;
     }).join("")
-    : `<p class="aw-empty">No Archetype stands yet. The third Dream of each Cycle calls one.</p>`;
+    : `<p class="aw-empty">None yet. Dream 3 of each Cycle calls one.</p>`;
 
   host.innerHTML = `
     <div class="aw-window" role="region" aria-label="Archetypes">
       <div class="aw-titlebar" data-float-handle>
         <span class="vault-dots" aria-hidden="true"><i></i><i></i><i></i></span>
         <span class="aw-title">Archetypes</span>
-        <span class="aw-count" title="Acquired of the ${goal} you need to wake"><b>${have}</b>/${goal}</span>
+        <span class="aw-count" title="Acquired / needed to wake"><b>${have}</b>/${goal}</span>
         <button type="button" class="aw-min" data-float-min aria-label="Minimize Archetypes">–</button>
       </div>
       <div class="aw-body">
         <div class="aw-pips" aria-label="${have} of ${goal} Acquired">${pips}</div>
         <div class="aw-list">${rows}</div>
-        <p class="aw-rule">Meet one on its Landscape: its Event (Bright or Dim), then a spread that makes a Form vs Power ${ARCHETYPE_POWER}.</p>
-        ${next.length ? `<p class="aw-next"><span>Next calling:</span> ${next.map((a) => esc(a.name)).join(" · ")}</p>` : ""}
+        <p class="aw-rule">Meet it: an Event, then a Form vs Power ${ARCHETYPE_POWER}.</p>
+        ${next.length ? `<p class="aw-next"><span>Next:</span> ${next.map((a) => esc(a.name)).join(" · ")}</p>` : ""}
       </div>
     </div>`;
   restoreFloatWindow(host, KEY);
@@ -130,5 +130,5 @@ export function renderWakeGoal(state) {
   host.innerHTML = `
     <p class="wake-count"><b>${acquired.length}</b><span>of ${total} Archetypes${endless ? " · Endless" : ""}</span></p>
     <div class="wake-slots">${slots}</div>
-    <p class="wake-line">${endless ? esc(line) : state.longNight ? "The Long Night: every dusk takes more. Finish it." : "Acquire them all and you wake."}</p>`;
+    ${endless || state.longNight ? `<p class="wake-line">${endless ? esc(line) : "Long Night: each dusk takes more."}</p>` : ""}`;
 }

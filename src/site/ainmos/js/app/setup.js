@@ -177,15 +177,15 @@ function applyFirstVisitMenu() {
   if (advanced) {
     advanced.disabled = !basicDone;
     advanced.title = basicDone
-      ? "Trade, objects, powers, death, and the boss on The Bed"
-      : "Finish the Tutorial to unlock the longer night";
+      ? "Objects, powers, death, and the boss"
+      : "Finish the Tutorial first";
     advanced.setAttribute("aria-disabled", basicDone ? "false" : "true");
   }
   if (hint) {
-    hint.innerHTML = "Pick one Dreamer and <strong>Begin Dreaming</strong>. New here? <strong>First Night</strong> is a real Daydream with a guide that walks you through your first two Cycles, step by step, and <strong>How to Play</strong> puts every rule on one page.";
+    hint.innerHTML = "New here? Play <strong>First Night</strong>: a guided Daydream.";
   }
   if (firstVisit && tutorial) {
-    tutorial.title = "A real Daydream with a step-by-step guide through your first two Cycles";
+    tutorial.title = "A guided Daydream";
   }
 }
 
@@ -258,7 +258,7 @@ function bindSeedInput() {
     }
     const special = specialSeedLabel(seed);
     preview.textContent = special
-      || `Seeded dream — anyone who enters “${seed}” gets this exact same shuffle.`;
+      || "Same seed, same dream.";
     preview.classList.toggle("seed-preview-special", Boolean(special));
     preview.classList.remove("hidden");
   };

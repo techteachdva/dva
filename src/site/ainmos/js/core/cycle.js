@@ -24,7 +24,7 @@ export function phaseActionsText(phase, n) {
 
 /** The second job of the Psyche you spend: whatever you leave unused becomes Glimmer. */
 export function unusedGlimmerText(n) {
-  return n > 0 ? `If unused: ${n} Glimmer ✧` : "Free Actions · no Glimmer";
+  return n > 0 ? `If unused: ${n} Glimmer ✧` : "Free";
 }
 
 export function cyclesForLength(lengthKey) {

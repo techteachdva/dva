@@ -366,7 +366,7 @@ const TERMS = [
     term: "Lost & Found",
     group: "cards",
     aka: "shop insight reroll",
-    text: "Opens at the end of every Dream, with the hand you finished on in view: three Objects (1–5 Psyche value of their suit) and one Insight (3–6 of any suit: a Form level or a Psyche upgrade). Glimmer pays first. Look again for 3 Glimmer. At the Object limit you can still buy, then let one go. Leaving starts the next round: you draw 3 Psyche, then the Dream.",
+    text: "Opens at the end of every Dream, with the hand you finished on in view: three Objects (1–5 Psyche value of their suit) and one Insight (3–6 of any suit: a Form level or a Psyche upgrade). Glimmer pays first. Reroll for 3 Glimmer. At the Object limit you can still buy, then let one go. Leaving starts the next round: you draw 3 Psyche, then the Dream.",
   },
   {
     term: "Boon",

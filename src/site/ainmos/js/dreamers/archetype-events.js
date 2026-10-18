@@ -38,12 +38,12 @@ const EFFECT_WORTH = {
 };
 
 const DIM_EFFECTS = {
-  stronger: { mods: { power: 2 }, text: (name) => `${name} is Power ${ARCHETYPE_EVENT_POWER + 2} in this fight` },
-  fog: { mods: { dice: -2 }, text: () => "−2 dice in this fight" },
-  narrow: { mods: { cap: 2 }, text: () => "Play at most 2 Psyche in this fight" },
-  noStat: { mods: { noStat: true }, text: () => "Your stats add nothing in this fight" },
-  strict: { mods: { formNeed: "three" }, text: () => "Your spread needs a three-card Form" },
-  costly: { mods: { loseRepress: 2 }, text: () => "Lose, and Repress 2 from the Waking Mind" },
+  stronger: { mods: { power: 2 }, text: (name) => `${name} is Power ${ARCHETYPE_EVENT_POWER + 2}` },
+  fog: { mods: { dice: -2 }, text: () => "−2 dice" },
+  narrow: { mods: { cap: 2 }, text: () => "Max 2 Psyche" },
+  noStat: { mods: { noStat: true }, text: () => "Stats add nothing" },
+  strict: { mods: { formNeed: "three" }, text: () => "Needs a three-card Form" },
+  costly: { mods: { loseRepress: 2 }, text: () => "Lose: Repress 2" },
 };
 
 function plural(n, one, many) {
@@ -72,9 +72,9 @@ export function brightEffectWorth(effects = {}) {
 
 /** "Pay 2 Lucidity Psyche", "Pay a Willpower Psyche worth 3+", "Pay a Psyche worth exactly 2". */
 export function brightCostText(cost = {}) {
-  if (cost.count) return `Pay ${cost.count} ${suitName(cost.suit)} Psyche`;
-  if (cost.min) return `Pay a ${suitName(cost.suit)} Psyche worth ${cost.min}+`;
-  if (cost.value) return `Pay a Psyche worth exactly ${cost.value}, any suit`;
+  if (cost.count) return `Pay ${cost.count} ${suitName(cost.suit)}`;
+  if (cost.min) return `Pay a ${suitName(cost.suit)} ${cost.min}+`;
+  if (cost.value) return `Pay any ${cost.value}`;
   return "Free";
 }
 
@@ -117,13 +117,13 @@ export function canPayBright(player, cost = {}) {
 export function brightEffectLines(effects = {}, archName = "The Archetype") {
   const lines = [];
   const n = (key) => (effects[key] === true ? 1 : Number(effects[key]) || 0);
-  if (n("dice")) lines.push(`+${n("dice")} ${plural(n("dice"), "die", "dice")} in this fight`);
-  if (n("weaken")) lines.push(`${archName} is Power ${ARCHETYPE_EVENT_POWER - n("weaken")} in this fight`);
-  if (n("wide")) lines.push(`Play up to ${3 + n("wide")} Psyche in this fight`);
-  if (n("noForm")) lines.push("No Form needed in this fight");
-  if (n("keep")) lines.push("Lose, and your spread returns to your hand");
+  if (n("dice")) lines.push(`+${n("dice")} ${plural(n("dice"), "die", "dice")}`);
+  if (n("weaken")) lines.push(`${archName} is Power ${ARCHETYPE_EVENT_POWER - n("weaken")}`);
+  if (n("wide")) lines.push(`Up to ${3 + n("wide")} Psyche`);
+  if (n("noForm")) lines.push("No Form needed");
+  if (n("keep")) lines.push("Lose: keep your spread");
   if (n("draw")) lines.push(`Draw ${n("draw")} Psyche`);
-  if (n("return")) lines.push(`Return ${n("return")} Psyche of your choice`);
+  if (n("return")) lines.push(`Return ${n("return")} Psyche`);
   if (n("reveal")) lines.push(`Reveal ${n("reveal")} ${plural(n("reveal"), "Landscape", "Landscapes")}`);
   if (n("object")) lines.push(`Draw ${n("object")} ${plural(n("object"), "Object", "Objects")}`);
   return lines;

@@ -130,6 +130,7 @@ export function setSidebarDrawerOpen(open) {
   document.body.classList.toggle("sidebar-collapsed", !open && getCapabilityProfile().form === "tablet" && getCapabilityProfile().orientation === "landscape");
   const btn = document.getElementById("btn-sidebar-drawer");
   btn?.setAttribute("aria-expanded", open ? "true" : "false");
+  if (btn && getCapabilityProfile().form === "phone") btn.textContent = open ? "Close" : "Table";
   document.getElementById("sidebar-drawer-backdrop")?.classList.toggle("hidden", !open || !isDrawerForm());
 }
 

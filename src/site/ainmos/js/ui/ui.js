@@ -148,7 +148,7 @@ function dreambeastCostMeta(card) {
   const acceptSuit = card.suit ? suitIconHtml(card.suit, { size: 10 }) : "";
   // Ainmos 0.25: beat its Power (any suit) for 2 Power Tokens or an Object of its suit; its ward blunts one Form.
   const ward = beastWardText(card);
-  return `<span class="meta dreambeast-costs"><span title="${encounterPayHint(card, true)}">Power ${card.accept} ${acceptSuit} → 2 Tokens or Object</span>${ward ? ` <span class="beast-ward" title="A spread that counts as this Form loses that many dice.">${ward}</span>` : ""}</span>`;
+  return `<span class="meta dreambeast-costs"><span title="${encounterPayHint(card, true)}">Power ${card.accept} ${acceptSuit} → 2 Tokens or Object</span>${ward ? ` <span class="beast-ward" title="This Form adds fewer dice.">${ward}</span>` : ""}</span>`;
 }
 
 function isDreambeastCard(card) {
@@ -674,6 +674,26 @@ function upgradeBadgeHtml(card) {
   return `${vivid}${watermark}<span class="psyche-upgrade-badge" aria-label="${upgradeLabel(card)}">${glyph}</span><span class="upgrade-ribbon" aria-hidden="true">${name}</span>`;
 }
 
+/**
+ * Each Form drawn as the mini cards that make it: suit color, and a value or the
+ * suit's icon. Echo 2·2, Ladder 1·2·3, Chord three of one suit, Trinity one of
+ * each suit, Trifecta 4·4·4, Unity 1·1·1.
+ */
+const FORM_GLYPHS = {
+  echo: [["lucidity", 2], ["elasticity", 2]],
+  ladder: [["lucidity", 1], ["lucidity", 2], ["elasticity", 3]],
+  chord: [["willpower"], ["willpower"], ["willpower"]],
+  trinity: [["lucidity"], ["elasticity"], ["willpower"]],
+  trifecta: [["lucidity", 4], ["elasticity", 4], ["lucidity", 4]],
+  unity: [["elasticity", 1], ["willpower", 1], ["elasticity", 1]],
+};
+
+export function formGlyphHtml(id) {
+  const cards = FORM_GLYPHS[id] || [];
+  return `<span class="form-glyph form-glyph-${cards.length}" aria-hidden="true">${cards.map(([suit, value]) => `
+    <span class="form-mini suit-${suit}">${value ?? suitIconHtml(suit, { className: "form-mini-icon", size: 10 })}</span>`).join("")}</span>`;
+}
+
 /** Ainmos: the six Dream Forms, their levels, and the dice each adds. */
 export function renderDreamForms(state) {
   const host = document.getElementById("dream-forms");
@@ -686,7 +706,8 @@ export function renderDreamForms(state) {
     const pips = Array.from({ length: Math.min(level, 8) }, () => "<i></i>").join("");
     return `<li class="dream-form-row form-${f.id}${level > 1 ? " is-raised" : ""}" title="${f.name}: ${f.pattern}. Level ${level}, +${level} dice.">
       <span class="dream-form-name">${f.name}</span>
-      <span class="dream-form-pattern">${f.pattern}</span>
+      ${formGlyphHtml(f.id)}
+      <span class="dream-form-pattern sr-only">${f.pattern}</span>
       <span class="dream-form-pips" aria-hidden="true">${pips}</span>
       <span class="dream-form-dice">+${level}</span>
     </li>`;
@@ -1042,7 +1063,7 @@ export function renderPowerTokens(state, { onTokenClick } = {}) {
   if (statsEl) {
     const pendingNote = pending ? `<span class="power-token-pending">+${pending} spread bonus</span>` : "";
     statsEl.innerHTML = `<span class="power-token-held">${held} of ${MAX_POWER_TOKENS}</span>${pendingNote}`;
-    statsEl.title = `You hold up to ${MAX_POWER_TOKENS} Power Tokens. Each one activates your Dreamer's Power or an Acquired Archetype's power. Earn them by beating Dreambeasts and Acquiring Archetypes.`;
+    statsEl.title = `Power Tokens (max ${MAX_POWER_TOKENS}): each activates a Dreamer or Archetype power.`;
   }
 
   // 0.27.1: Power Tokens only activate powers; the old +1 Spread buttons stay hidden.
@@ -1329,12 +1350,12 @@ function appendDreambeastModalDetail(detail, card) {
       </span>
     </div>
     ${boss ? `<p class="beast-view-rule"><b>${boss.twist}.</b> ${boss.twistText}</p>` : card.megaTier && card.twistText ? `<p class="beast-view-rule"><b>${card.twist}.</b> ${card.twistText}</p>` : ""}
-    ${ward ? `<p class="beast-view-rule"><span class="beast-ward">${ward}</span> A spread that counts as that Form loses that many of its dice.</p>` : ""}
-    <p class="beast-view-how">Fight it on its Landscape during Meet with 1–3 Psyche of any suit. Roll 5s and 6s; beat its Power to Accept it.${grown ? ` It grew +${grown} with the Cycle.` : ""}</p>
+    ${ward ? `<p class="beast-view-rule"><span class="beast-ward">${ward}</span> That Form adds fewer dice.</p>` : ""}
+    <p class="beast-view-how">Fight in Meet with 1–3 Psyche, any suit. 5s and 6s hit.${grown ? ` +${grown} from the Cycle.` : ""}</p>
     <div class="beast-view-wins">
-      <div class="beast-view-win is-accept"><b>Accept</b><span>Win the fight with any suit, then take 2 Power Tokens or an Object of its suit.</span></div>
+      <div class="beast-view-win is-accept"><b>Accept</b><span>2 Power Tokens or an Object of its suit</span></div>
     </div>
-    <p class="beast-view-threat">Left standing at dusk, it Represses 1 Psyche.</p>`;
+    <p class="beast-view-threat">At dusk: Repress 1.</p>`;
   detail.appendChild(view);
 }
 
@@ -1368,7 +1389,7 @@ function appendDreambeastModalDetailLegacy(detail, card) {
 
   const dusk = document.createElement("p");
   dusk.className = "modal-fail";
-  dusk.innerHTML = "<strong>While it stands:</strong> it chases you each Explore and Represses 1 Psyche from your Waking Mind every dusk.";
+  dusk.innerHTML = "<strong>While it stands:</strong> chases you; Represses 1 each dusk.";
   detail.appendChild(dusk);
 
   if (card.beastKind) {
@@ -1394,16 +1415,16 @@ function fillModalObjectActions(card, options = {}) {
   const canActivate = zone === "persistent" && persistentObjectCanActivate(card);
   if (zone === "persistent" && canActivate) {
     hint.textContent = options.canActivateNow === false
-      ? "Activate it during Meet, for 1 Meet action."
-      : "Activating it spends 1 Meet action.";
+      ? "Use in Meet: 1 Meet Action."
+      : "Costs 1 Meet Action.";
   } else if (zone === "persistent") {
-    hint.textContent = "This Object works on its own while it is in play. There is nothing to activate.";
+    hint.textContent = "Always on.";
   } else if (fate === "play") {
-    hint.textContent = "Put this Persistent Object into play. It stays on the table until used.";
+    hint.textContent = "Stays in play until used.";
   } else if (fate === "repress") {
-    hint.textContent = "Use: this Object is Repressed to the Subconscious.";
+    hint.textContent = "Repressed after use.";
   } else {
-    hint.textContent = "Use: discard this Object to its Mindstream pile.";
+    hint.textContent = "Discarded after use.";
   }
   actions.appendChild(hint);
 
@@ -1482,7 +1503,7 @@ export function showModal(card, options = {}) {
           <span class="psyche-suit large">+${card.powerTokens ?? 1}</span>
         </div>
         <h2>${card.name}</h2>
-        <p>Click to play at any time, in any phase: take <strong>${card.powerTokens ?? 1} Power Token${(card.powerTokens ?? 1) === 1 ? "" : "s"}</strong>, then discard this card.</p>
+        <p>Play anytime: take <strong>${card.powerTokens ?? 1} Power Token${(card.powerTokens ?? 1) === 1 ? "" : "s"}</strong>, then discard this card.</p>
       `;
     } else {
       detail.innerHTML = `
@@ -1804,7 +1825,7 @@ function cardChoiceShellHtml({ title, message, statusText = "", showConfirm = tr
       <div class="card-choice-row"></div>
       <p class="card-choice-status">${statusText}</p>
       <div class="utility-actions card-choice-actions">
-        <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">Minimize — view board</button>
+        <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">View Board</button>
         ${showCancel ? '<button type="button" class="btn" id="card-choice-cancel">Cancel</button>' : ""}
         ${showConfirm ? `<button type="button" class="btn primary" id="card-choice-confirm" disabled>${confirmLabel}</button>` : ""}
       </div>
@@ -1888,8 +1909,8 @@ function syncUtilityChoiceDock() {
   if (show) {
     dock.dataset.dock = "choice";
     dock.classList.remove("hidden");
-    if (label) label.textContent = `${utilityModalRequiredLabel} — paused (board visible)`;
-    if (btn) btn.textContent = "Resume choice";
+    if (label) label.textContent = utilityModalRequiredLabel;
+    if (btn) btn.textContent = "Resume";
     return;
   }
   if (dock.dataset.dock === "phase-opener") return;
@@ -1899,13 +1920,13 @@ function syncUtilityChoiceDock() {
 function ensureChoiceMinimizeChrome() {
   const body = document.getElementById("utility-modal-body");
   if (!body || body.querySelector(".subconscious-binder-shell")) return;
-  if (body.querySelector("#utility-minimize-btn")) return;
+  if (body.querySelector("#utility-minimize-btn, #btn-view-board")) return;
   const row = body.querySelector(".utility-actions, .card-choice-actions, .phase-skip-choices");
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "btn btn-minimize-choice";
   btn.id = "utility-minimize-btn";
-  btn.textContent = "Minimize — view board";
+  btn.textContent = "View Board";
   btn.addEventListener("click", () => minimizeUtilityModal());
   if (row) row.prepend(btn);
   else {
@@ -2778,7 +2799,7 @@ export function renderBoard(
         const title = entry.overflow
           ? `${arch.name} is on ${homeName}. Shown on the next Landscape because that hex's six corners are full.`
           : `${arch.name} — Remaining Archetype. Click to defeat or view.`;
-        const duskBadge = arch.defeated ? "" : `<span class="hex-dusk-badge" style="${snap}" title="Still standing at dusk: Represses 1 from the Waking Mind">−1</span>`;
+        const duskBadge = arch.defeated ? "" : `<span class="hex-dusk-badge" style="${snap}" title="At dusk: Represses 1">−1</span>`;
         return `<img class="hex-occupant-token hex-occupant-beast hex-occupant-archetype${overflow}" style="${snap}" data-archetype-id="${arch.id}" data-home-tile="${entry.homeId}" src="${arch.image}" alt="${arch.name}" title="${title}" decoding="async" draggable="false" onerror="this.remove()">${duskBadge}`;
       }
       const encounter = entry.encounter;
@@ -2788,7 +2809,7 @@ export function renderBoard(
       const title = entry.overflow
         ? `${encounter.name} is on ${homeName}. Shown on the next Landscape because that hex's six corners are full.`
         : `${encounter.name} — Accept, Repress, or View`;
-      const duskBadge = arriving ? "" : `<span class="hex-dusk-badge" style="${snap}" title="Still standing at dusk: Represses 1 from the Waking Mind">−1</span>`;
+      const duskBadge = arriving ? "" : `<span class="hex-dusk-badge" style="${snap}" title="At dusk: Represses 1">−1</span>`;
       return `<img class="hex-occupant-token hex-occupant-beast${arriving}${overflow}" style="${snap}" data-encounter-key="${encKey}" data-home-tile="${entry.homeId}" src="${encounter.image}" alt="${encounter.name}" title="${title}" decoding="async" draggable="false" onerror="this.remove()">${duskBadge}`;
     });
     const occupantsHtml = occupantTokens.length
@@ -3157,7 +3178,7 @@ export function renderObjects(state, onCardClick) {
       const badge = document.createElement("span");
       badge.className = `object-set-badge${progress.held >= progress.need ? " is-complete" : ""}`;
       badge.textContent = `${tag} ${Math.min(progress.held, progress.need)}/${progress.need}`;
-      badge.title = `${tag[0].toUpperCase()}${tag.slice(1)} set: ${progress.held} of ${progress.need}. Complete it to Acquire an Archetype from the deck.`;
+      badge.title = `${tag[0].toUpperCase()}${tag.slice(1)} set: ${progress.held}/${progress.need}. Complete it: Acquire an Archetype.`;
       el.appendChild(badge);
     }
     if (card.passive) el.classList.add("object-passive");
@@ -3169,7 +3190,7 @@ export function renderObjects(state, onCardClick) {
 
   if (!player.objects.length) {
     container.classList.add("empty");
-    container.textContent = "No Objects yet · the Lost & Found sells them";
+    container.textContent = "No Objects";
   } else {
     container.classList.remove("empty");
     player.objects.forEach((card) => mountObject(container, card, "hand"));
@@ -3178,7 +3199,7 @@ export function renderObjects(state, onCardClick) {
   if (persistentEl) {
     if (!player.persistent?.length) {
       persistentEl.classList.add("empty");
-      persistentEl.textContent = "Persistent Objects you keep stay here";
+      persistentEl.textContent = "None";
     } else {
       persistentEl.classList.remove("empty");
       player.persistent.forEach((card) => mountObject(persistentEl, card, "persistent"));
@@ -3593,7 +3614,7 @@ export function showDiscardPileModal(state, deckId, _onCardClick) {
   ];
   openCardBinder({
     title: "Discard piles",
-    lead: "Every deck's discard on one page. Look lifts a card so you can read it.",
+    lead: "Every discard pile.",
     piles,
     tabs,
     initialTab: "all",
@@ -4221,13 +4242,19 @@ function dreamsUrgencyClass(_count) {
   return "";
 }
 
+/** "2 Reveal Actions", plus the Glimmer they bank only when some were bought. */
+function chipActions(state, phase, n) {
+  const glim = glimmerIfUnused(state, n);
+  return glim ? `${phaseActionsText(phase, n)} · unused → ${glim} ✧` : phaseActionsText(phase, n);
+}
+
 function phaseBudgetChipLabel(state) {
   const phase = getPhase(state);
   if (phase === "Reveal") {
     if (!state.dreamDrawn) return null;
     if (state.landscapePick?.mode === "choose") return "Choose a hex";
     if (state.landscapePick?.mode === "reveal" && state.landscapePick.remaining > 0) {
-      return `${phaseActionsText("Reveal", state.landscapePick.remaining)} · unused → ${glimmerIfUnused(state, state.landscapePick.remaining)} ✧`;
+      return chipActions(state, "Reveal", state.landscapePick.remaining);
     }
     if (state.landscapePick?.excessOnly && state.landscapePick.remaining > 0) {
       return `${state.landscapePick.remaining} psyche`;
@@ -4240,12 +4267,12 @@ function phaseBudgetChipLabel(state) {
   }
   if (phase === "Explore") {
     if (!state.exploreActivated) return phaseOpeningActive(state) ? "Spend Elasticity" : null;
-    return `${phaseActionsText("Explore", state.exploreMovesLeft)} · unused → ${glimmerIfUnused(state, state.exploreMovesLeft)} ✧`;
+    return chipActions(state, "Explore", state.exploreMovesLeft);
   }
   if (phase === "Meet") {
     if (!state.meetActionBudget) return phaseOpeningActive(state) ? "Spend Willpower" : null;
     const left = Math.max(0, state.meetActionBudget - state.meetActionsUsed);
-    return left ? `${phaseActionsText("Meet", left)} · unused → ${glimmerIfUnused(state, left)} ✧` : "Meet Actions spent";
+    return left ? chipActions(state, "Meet", left) : "Meet Actions spent";
   }
   return null;
 }
@@ -4308,7 +4335,7 @@ function renderTurnPlaque(state) {
   nameEl.textContent = phaseActionsText(phaseName, n);
   const glim = glimmerIfUnused(state, n);
   if (phaseEl) phaseEl.textContent = unusedGlimmerText(glim);
-  plaque.title = `${phaseActionsText(phaseName, n)} left. Free Actions (your stat) are used first; only the ${glim} you paid for become Glimmer ✧ if unused.`;
+  plaque.title = `${phaseActionsText(phaseName, n)} left. Free ones go first; unused bought ones become ${glim} Glimmer ✧.`;
   if (passBtn) {
     passBtn.classList.toggle("hidden", !canPass);
     passBtn.textContent = "Pass";
@@ -4958,7 +4985,7 @@ function renderEndGameId(dream) {
         try {
           await navigator.share({
             title: "Ainmos Game ID",
-            text: `Ainmos Game ID ${text} — enter it as a seed to replay this exact dream.`,
+            text: `Ainmos Game ID ${text}: enter it as a seed to replay this dream.`,
           });
           say(`Game ID ${text} shared.`);
           return;
@@ -5615,7 +5642,7 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
     setZoomChrome(false);
     root.innerHTML = "";
     if (!entries.length) {
-      root.innerHTML = "<p class='resolution-empty'>The Subconscious is empty — nothing to Return.</p>";
+      root.innerHTML = "<p class='resolution-empty'>Subconscious empty.</p>";
       confirmBtn.disabled = true;
       return;
     }
@@ -5799,7 +5826,7 @@ export function showDreamReplayPicker(state, onReplay) {
     if (!row || !status || !confirm) return;
     row.replaceChildren();
     if (!options.length) {
-      row.innerHTML = "<p class='resolution-empty'>The Dream discard has nothing to replay.</p>";
+      row.innerHTML = "<p class='resolution-empty'>No Dreams to replay.</p>";
       status.textContent = "Nothing to replay.";
       confirm.disabled = false;
       confirm.textContent = "Continue";
@@ -5835,7 +5862,7 @@ export function showDreamReplayPicker(state, onReplay) {
       <div id="dream-replay-row" class="card-choice-row"></div>
       <p class="card-choice-status" id="dream-replay-status"></p>
       <div class="utility-actions card-choice-actions">
-        <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">Minimize — view board</button>
+        <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">View Board</button>
         <button type="button" class="btn primary" id="dream-replay-confirm">Replay this Dream</button>
       </div>
     </div>
@@ -5909,7 +5936,7 @@ export function showRepressPicker(state, onPick, onConfirm) {
       <div id="repress-pool" class="subconscious-piles card-choice-piles"></div>
       <p class="card-choice-status">${picked}/${needed}${valueMode ? " value" : ""} pending</p>
       <div class="utility-actions card-choice-actions">
-        <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">Minimize — view board</button>
+        <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">View Board</button>
         <button type="button" class="btn primary" id="repress-confirm"${owesMore ? " disabled" : ""}>${confirmLabel}</button>
       </div>
     </div>
@@ -5932,7 +5959,7 @@ export function showRepressPicker(state, onPick, onConfirm) {
   };
 
   if (!pool.length) {
-    container.innerHTML = "<p class='resolution-empty'>Nothing left to choose — click Continue.</p>";
+    container.innerHTML = "<p class='resolution-empty'>Nothing left. Continue.</p>";
   } else if (!isEmpty) {
     if (collective) {
       state.players.filter((p) => p.alive).forEach((p) => {
@@ -5979,7 +6006,7 @@ export function showSubconsciousBrowse(state, _onCardClick) {
   ];
   openCardBinder({
     title: "☠ The Subconscious",
-    lead: "Every Repressed Psyche waits here, face-up. When an effect Returns Psyche, you choose which.",
+    lead: "Repressed Psyche. You choose what Returns.",
     piles,
     tabs,
     initialTab: "all",

@@ -46,20 +46,20 @@ export function getLandscapePickNarration(state) {
     if (pick.flipCard) {
       return {
         title: `The Bed dreams onward: ${pick.flipCard.name}`,
-        detail: `Tap a glowing hex beside the dream to place ${pick.flipCard.name}, free. Or put it back on the bottom of the tile deck.`,
+        detail: `Tap a glowing hex to place ${pick.flipCard.name} free, or put it back.`,
         consequences: [],
       };
     }
     return {
       title: "Build the Dreamscape",
-      detail: `Choose a Landscape in the Dreamscape Vault, then tap a glowing hex that touches the dream. Refreshing the Vault costs 1 Lucidity, +1 for each refresh this round.`,
+      detail: `Choose a Landscape, then tap a glowing hex.`,
       consequences: pick.remaining > 0 ? [`${pick.remaining} placement(s) remaining`] : [],
     };
   }
   if (pick.mode === "reveal") {
     return {
       title: "Choose Landscapes to Reveal",
-      detail: `Click ${pick.remaining} hex tile(s) on the map that are face-down. Each click flips a tile to its active Landscape face.`,
+      detail: `Tap ${pick.remaining} face-down tile${pick.remaining === 1 ? "" : "s"} to flip.`,
       consequences: pick.remaining > 0
         ? [`${pick.remaining} reveal(s) remaining`]
         : [],
@@ -68,7 +68,7 @@ export function getLandscapePickNarration(state) {
   if (pick.mode === "forget") {
     return {
       title: "Choose Landscapes to Forget",
-      detail: `Click ${pick.remaining} revealed Landscape tile(s) on the map. Each shuffles back into the Landscape deck. Anyone standing there dies and wakes on The Bed.`,
+      detail: `Tap ${pick.remaining} Landscape${pick.remaining === 1 ? "" : "s"} to Forget. Anyone there wakes on The Bed.`,
       consequences: pick.remaining > 0
         ? [`${pick.remaining} forget(s) remaining`]
         : [],
@@ -109,7 +109,7 @@ export function getNarratorView(state) {
     const count = state.players.filter((p) => p.alive).length + 6;
     return {
       title: "The Nothing",
-      detail: `Lose 1 Power Token, or Repress ${count} Psyche from the top of the Psyche deck.`,
+      detail: `Lose 1 Power Token, or Repress ${count}.`,
       consequences: ["Then The Nothing is discarded to its Mindstream discard pile."],
     };
   }
@@ -117,7 +117,7 @@ export function getNarratorView(state) {
   if (state.pendingObjectFollowup) {
     return {
       title: "Finish the Object",
-      detail: "The Object still needs a map pick or a follow-up choice.",
+      detail: "Finish the Object's choice.",
       consequences: ["Complete the highlighted hexes or popup."],
     };
   }

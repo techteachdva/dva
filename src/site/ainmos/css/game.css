@@ -4244,7 +4244,7 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight:not(:disabled) {
 }
 
 .board-viewport::after {
-  content: "F fit table · scroll zoom · arrow keys or Space+drag pan";
+  content: "Scroll zoom · drag pan · F fit";
   position: absolute;
   left: 0.65rem;
   right: auto;
@@ -4258,11 +4258,11 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight:not(:disabled) {
 }
 
 html[data-touch="true"] .board-viewport::after {
-  content: "Pinch to zoom · drag to pan";
+  content: "Pinch zoom · drag pan";
 }
 
 html[data-pointer="hybrid"] .board-viewport::after {
-  content: "Pinch or scroll to zoom · drag or Space+drag to pan";
+  content: "Pinch zoom · drag pan · F fit";
 }
 
 .board-camera-controls {

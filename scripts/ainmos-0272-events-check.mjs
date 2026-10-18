@@ -132,7 +132,7 @@ const m1 = await modalText();
 console.log("modal", m1);
 check("event modal opens", !!m1);
 check("modal shows the Event's own flavor", /judges/i.test(m1?.message || ""), m1?.message);
-check("Bright text lists every reward and the cost", /Power 11/.test(m1?.bright || "") && /\+1 die/.test(m1?.bright || "") && /Return 1/.test(m1?.bright || "") && /worth 3\+/.test(m1?.bright || ""), m1?.bright);
+check("Bright text lists every reward and the cost", /Power 11/.test(m1?.bright || "") && /\+1 die/.test(m1?.bright || "") && /Return 1/.test(m1?.bright || "") && /Lucidity 3\+/.test(m1?.bright || ""), m1?.bright);
 check("image matches the Event", /the-council-of-the-years/.test(m1?.img || ""), m1?.img);
 await snap("01-council-event");
 await g(() => document.querySelector("#utility-modal .ms-choice-btn--good")?.click());
@@ -201,7 +201,7 @@ console.log("staged", two);
 await wait(3500);
 const m2 = await modalText();
 console.log("modal", m2);
-check("Flashing Lights offers 4 Psyche", /Play up to 4 Psyche/.test(m2?.bright || ""), m2?.bright);
+check("Flashing Lights offers 4 Psyche", /Up to 4 Psyche/.test(m2?.bright || ""), m2?.bright);
 await g(() => document.querySelector("#utility-modal .ms-choice-btn--good")?.click());
 await wait(1200);
 await g(async () => {

@@ -1079,16 +1079,16 @@ function discardPlayerObjects(state, player) {
 function announceDeath(state, player, lost, target) {
   const names = lost.map((o) => o.name).filter(Boolean);
   const objectLine = names.length
-    ? `Lost your Objects (${names.join(", ")}).`
-    : "You had no Objects to lose.";
+    ? `Lost: ${names.join(", ")}.`
+    : "No Objects lost.";
   const tokens = player.powerTokens || 0;
-  const message = `${objectLine} Redrew a new hand of ${target} Psyche. You keep your ${tokens} Power Token${tokens === 1 ? "" : "s"}, your Forms, and your Archetypes. Deaths: ${state.deathClock}/${DEATH_CLOCK_CAP}.`;
+  const message = `${objectLine} New hand of ${target}. Kept: ${tokens}⚡, Forms, Archetypes. Deaths ${state.deathClock}/${DEATH_CLOCK_CAP}.`;
   logMoment(state, `You die... and wake back up on The Bed. ${objectLine} Redrew a new hand.`);
   if (state.pendingEffectChoice || state.tutorialMode) return;
   offerEffectChoice(state, player, {
     cardId: "dreamer-death-notice",
     source: "death",
-    title: "You die... and wake back up on The Bed",
+    title: "You died. Back to The Bed.",
     message,
     log: "You die... and wake back up on The Bed.",
     choices: [{ id: "ok", label: "Wake up" }],

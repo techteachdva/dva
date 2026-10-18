@@ -293,11 +293,11 @@ export function beginArchetypeEventChoice(state, event, player, arch, tileId) {
         role: "good",
         shape: suit,
         label: `Bright: ${sides.bright.label}`,
-        hint: `${sides.bright.costText}. You get: ${sides.bright.hint}`,
+        hint: `${sides.bright.costText} → ${sides.bright.hint}`,
         disabled: !landscapesOk || !payable,
         disabledReason: !landscapesOk
           ? gate
-          : `${sides.bright.costText}: no card in your hand can. It would give: ${sides.bright.hint}`,
+          : `Can't pay: ${sides.bright.costText}`,
       },
       {
         id: "bad",

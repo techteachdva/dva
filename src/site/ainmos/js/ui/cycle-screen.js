@@ -63,7 +63,6 @@ function bossPower(entry, cycle = 0, plan = null, sep = "·") {
 
 /** Nine phases as three Dreams of Reveal · Explore · Meet. */
 function phaseMapHtml() {
-  const tags = ["A Dream", "A Dreambeast lands", "An Archetype stirs"];
   return Array.from({ length: DREAMS_PER_CYCLE }, (_, d) => {
     const phases = PHASE_SUITS.map((suit, i) => {
       const n = d * 3 + i + 1;
@@ -74,7 +73,7 @@ function phaseMapHtml() {
       </span>`;
     }).join("");
     return `<div class="cy-dream">
-      <p class="cy-dream-name">Dream ${d + 1}${tags[d] ? ` <small>${tags[d]}</small>` : ""}</p>
+      <p class="cy-dream-name">Dream ${d + 1}</p>
       <div class="cy-phases">${phases}</div>
     </div>`;
   }).join(`<span class="cy-arrow" aria-hidden="true">›</span>`);
@@ -151,53 +150,51 @@ export function renderCycleScreen(state, handlers = {}) {
       <header class="lf-titlebar">
         <span class="vault-dots" aria-hidden="true"><i></i><i></i><i></i></span>
         <h3 id="cy-title" class="lf-title">Cycle ${cycle} <small>${endless ? "· Endless" : `of ${cycles}`}</small></h3>
-        <span class="lf-round">${endless ? "Endless Mode" : finalCycle ? "The last Cycle" : `${cycles - cycle} more after this`}</span>
+        <span class="lf-round">★ ${endless ? have : `${have}/${goal}`} Archetypes</span>
       </header>
-      <p class="lf-whisper">${endless
-        ? (mega ? `${have} Archetypes Acquired. Every Archetype is yours. This Cycle ends with ${esc(mega.name)}.` : `${have} Archetypes Acquired. The dream goes on.`)
-        : `${have} of ${goal} Archetypes Acquired. ${finalCycle ? "The last Cycle. Morning is close: its Archetype is your last call." : "Three Dreams, nine phases, and an Archetype at the end."}`}</p>
+      ${endless || finalCycle ? `<p class="lf-whisper">${endless ? (mega ? `Ends with ${esc(mega.name)}.` : "The dream goes on.") : "Last Cycle. Last Archetype."}</p>` : ""}
       <div class="cy-map" aria-label="This Cycle: three Dreams of Reveal, Explore, Meet">${phaseMapHtml()}</div>
       <div class="lf-shelf cy-shelf">
         <article class="lf-item cy-item cy-dream-card">
           <div class="cy-art cy-art-back" aria-hidden="true"><span>?</span></div>
-          <p class="cy-step">Dream 1 · phases 1–3</p>
+          <p class="cy-step">Dream 1</p>
           <h4 class="lf-item-name">${openingDrawn ? esc(state.activeDream?.name || dream.name) : "A Dream"}</h4>
           <p class="lf-item-kind">${openingDrawn ? "Drawn" : "Face down"}</p>
-          <p class="lf-item-text">Every Dream hurts. Endure it, then build, walk, and meet.</p>
+          <p class="lf-item-text">Endure it.</p>
         </article>
         <article class="lf-item cy-item cy-boss suit-${esc(boss?.suit || "none")}">
           <div class="cy-art" style="background-image:url('${esc(absolute(boss?.image))}')"></div>
-          <p class="cy-step">Dream 2 · phases 4–6 · Dreambeast</p>
+          <p class="cy-step">Dream 2 · Dreambeast</p>
           <h4 class="lf-item-name">${esc(boss?.name || "A Dreambeast")}</h4>
           <p class="lf-item-kind">Power ${esc(entry ? bossPower(entry, cycle, boss, ", then ") : (boss?.mini?.power ?? "grows with the Cycle"))} · ${esc(SUIT_NAME[boss?.suit] || "")}${ward ? ` · <span class="beast-ward">${esc(ward)}</span>` : ""}</p>
-          <p class="lf-item-text">${entry ? `<strong>${esc(entry.twist)}.</strong> ${esc(entry.twistText)} ` : ""}Lands on a ${esc(SUIT_NAME[boss?.suit] || "")} Landscape, chases you each Explore, and bleeds 1 Psyche every dusk it stands.</p>
-          <p class="cy-reward">Beat it with any suit: 2 Power Tokens or an Object of its suit</p>
+          <p class="lf-item-text">${entry ? `<strong>${esc(entry.twist)}.</strong> ${esc(entry.twistText)} ` : ""}Chases you. −1 Psyche each dusk.</p>
+          <p class="cy-reward">Win: 2 Power Tokens or a ${esc(SUIT_NAME[boss?.suit] || "")} Object</p>
         </article>
         ${mega ? `
         <article class="lf-item cy-item cy-boss cy-mega mega-${mega.tier}">
           <div class="cy-art" style="background-image:url('${esc(absolute(mega.image))}')"></div>
-          <p class="cy-step">Dream 3 · phases 7–9 · Leviathan ${mega.tier} of 5</p>
+          <p class="cy-step">Dream 3 · Leviathan ${mega.tier}/5</p>
           <h4 class="lf-item-name">${esc(mega.name)}</h4>
           <p class="lf-item-kind">Power ${mega.power} · <span class="beast-ward">${esc(beastWardText({ ward: mega.ward }))}</span></p>
-          <p class="lf-item-text"><em>${esc(mega.flavor)}</em> While it stands, the tide Forgets the edge Landscape farthest from The Bed each dusk.</p>
-          <p class="cy-reward">${mega.tier === 5 ? "Fell it, and the dream ends" : "Fell it before the next one rises"}</p>
+          <p class="lf-item-text"><em>${esc(mega.flavor)}</em> At dusk, Forget the edge Landscape farthest from The Bed.</p>
+          <p class="cy-reward">${mega.tier === 5 ? "Win: the dream ends" : "Win before the next one rises"}</p>
         </article>` : `
         <article class="lf-item cy-item cy-arch">
           <div class="cy-art cy-art-back" aria-hidden="true"><span>★</span></div>
-          <p class="cy-step">Dream 3 · phases 7–9 · Archetype</p>
+          <p class="cy-step">Dream 3 · Archetype</p>
           <h4 class="lf-item-name">Choose 1 of 3</h4>
           <p class="lf-item-kind">${offered.length ? esc(offered.map((x) => x.name).join(" · ")) : "No Archetypes left"}</p>
-          <p class="lf-item-text">Call one whose home Landscape is revealed. It appears there and slips 1 away as each Meet ends. Meet it, face its Event, and beat Power 12 with a Form.</p>
-          <p class="cy-reward">Acquire it: +1${endless ? "" : ` of ${goal}`}, +1 Power Token, its power</p>
+          <p class="lf-item-text">Appears on its revealed home. Moves 1 after each Meet. Beat Power 12 with a Form.</p>
+          <p class="cy-reward">Win: +1 Archetype, +1 Power Token, its power</p>
         </article>`}
       </div>
       <div class="cy-ladder" aria-label="The Boss of every Cycle and its Power">
-        <span class="cy-ladder-title">The Dreambeasts grow stronger</span>
+        <span class="cy-ladder-title">Dreambeasts ahead</span>
         <span class="cy-rungs">${ladderHtml(state, cycle)}</span>
       </div>
       <footer class="lf-foot cy-foot">
-        <span class="cy-note">${have} of ${goal} Archetypes</span>
-        <button type="button" class="lf-btn lf-continue" data-cy-enter="1">Begin Cycle ${cycle} →</button>
+        <span class="cy-note"></span>
+        <button type="button" class="lf-btn lf-continue" data-cy-enter="1">Begin Cycle ${cycle}</button>
       </footer>
     </section>`;
 

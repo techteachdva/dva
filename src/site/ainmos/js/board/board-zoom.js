@@ -688,11 +688,11 @@ function onWheel(event) {
 }
 
 function boardHintText() {
-  if (prefersTouchUi()) return "Pinch to zoom · drag to pan · tap Fit";
+  if (prefersTouchUi()) return "Pinch zoom · drag pan";
   if (document.documentElement?.dataset?.pointer === "hybrid") {
-    return "Pinch or scroll to zoom · drag or Space+drag to pan · F fits";
+    return "Pinch zoom · drag pan · F fit";
   }
-  return "F fit table · scroll zoom · arrow keys or Space + drag to pan";
+  return "Scroll zoom · drag pan · F fit";
 }
 
 function mountCameraControls() {
