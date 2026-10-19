@@ -14,6 +14,7 @@ import { logMoment } from "../core/narrator.js";
 import { random } from "../core/rng.js";
 import { archetypeChoiceOptions, archetypeHomeTiles, archetypeHomeNames } from "./archetype-board.js";
 import { placementSlots, takeUnplacedLandscape, makeBoardTile, isFreeformBoard } from "../board/dreamscape-vault.js";
+import { checkDreamscapeWhole } from "../board/landscapes.js";
 import { revealLandscapeTile } from "../core/state.js";
 import { repressCard, isDreambeastPsycheCard } from "./subconscious.js";
 
@@ -73,6 +74,7 @@ export function placeLandscapeRandomly(state, landscapeId) {
   const tile = makeBoardTile(card, slot.q, slot.r);
   state.board.push(tile);
   revealLandscapeTile(state, tile);
+  checkDreamscapeWhole(state);
   state.runStats = state.runStats || {};
   state.runStats.landscapesPlaced = (state.runStats.landscapesPlaced || 0) + 1;
   return tile;

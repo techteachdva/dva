@@ -2,6 +2,7 @@
 
 import { burstSparkles } from "../ui/fx.js";
 import { cardBackForCard } from "./card-backs.js";
+import { markFxBusy, menuHoldsFlights, retryWhenMenusClose } from "../ui/fx-timeline.js";
 
 const queue = [];
 const queuedDiscardIds = new Set();
@@ -29,6 +30,10 @@ function cardSnapshot(card) {
 }
 
 /** Drop queued card animations (used after the tutorial replays its steps off-screen). */
+export function pendingCardFxCount() {
+  return queue.length;
+}
+
 export function clearCardFxQueue() {
   queue.length = 0;
   queuedDiscardIds.clear();
@@ -200,6 +205,7 @@ function flyCard(from, to, card, kind, delay = 0) {
     ghost.classList.add("fx-flying-active");
   });
 
+  markFxBusy((tarot ? 1080 : 650) + delay);
   setTimeout(() => {
     ghost.remove();
     if (kind === "draw" || kind === "spend" || kind === "trade") {
@@ -235,6 +241,10 @@ function pulseDeck(deckId, className) {
 
 export function runPendingCardFx(state) {
   if (!queue.length) return;
+  if (menuHoldsFlights()) {
+    retryWhenMenusClose(() => runPendingCardFx(state));
+    return;
+  }
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     queue.length = 0;
     return;
@@ -242,7 +252,7 @@ export function runPendingCardFx(state) {
 
   const items = queue.splice(0);
   let delay = 0;
-  const step = 70;
+  const step = 110;
 
   items.forEach((evt) => {
     if (evt.type === "draw") {

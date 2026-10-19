@@ -6,10 +6,28 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.29.1";
+export const SOMNIA_VERSION = "0.30";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.30",
+    title: "Dream Tales",
+    notes: [
+      "Waking tells your story. The end credits roll a few pages written from your own night: where you walked, which Dreambeasts you beat and which beat you, how each Archetype joined you, what the dream took, and the final tally, with every name and number glowing. Read the Dream on the end screen plays it again.",
+      "The play-by-play reads like a story too: fights name the cards you laid down and the Form they made, Archetypes, first steps onto a Landscape, deaths and dusks each get their own varied line.",
+      "Sets wait for you. A complete set no longer cashes itself in: a Use button appears beside your Objects, and you pick the Archetype from all twelve, each with its power on hover. The pieces spiral into a shadow that becomes the Archetype. A used set stays in the Subconscious for good.",
+      "Jewelry matches its suits: the Silver Sapphire Ring is Lucidity, the Golden Ruby Necklace is Willpower, and the new Yellow Diamond Bracelet is Elasticity.",
+      "Every Dreambeast bends one rule of its own, shown on its card: the Gorgon takes 2 dice, the Ghost Light stops all Returns while it stands, the Mandrake and Nixie Forget a Landscape at dusk, the Vampyre drains a Power Token, and more.",
+      "Dreambeasts grow slowly now: +1 Power every 4 Cycles, never above 11. The Leviathan is the top of the night at 12 and closes Deep Sleep; only Endless Mode's Leviathans stand above it.",
+      "Dreambeasts rise on a Landscape of their own suit when one is placed.",
+      "Dusk bites: each Dreambeast still standing Represses 2, and dusk plays as its own moment, each beast stepping forward with its toll.",
+      "Losing a fight tears the dream: the Dreambeast Forgets a Landscape (one it names, if placed).",
+      "Placing every Landscape is a feat: the Dream is Whole (+2 Power Tokens, Return 4), and at the next Dream it folds back into The Bed with its own animation.",
+      "Animations take turns. A menu waits for cards in flight to land, and cards wait for a big menu to close, so nothing streaks across a window you are reading.",
+      "Sort your hand by suit or by value with the two buttons beside it.",
+    ],
+  },
   {
     version: "0.29.1",
     title: "Notch Fit",

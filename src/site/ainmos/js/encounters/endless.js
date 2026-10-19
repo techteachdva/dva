@@ -14,6 +14,7 @@
  * Leviathan Power is printed, not grown by the Cycle.
  */
 
+import { tellEndless } from "../meta/chronicle.js";
 import { uid, archetypeDreamCard } from "../core/data.js";
 import { BOSS_LADDER, bossDreamCard } from "./boss-ladder.js";
 import { addLog } from "../core/state.js";
@@ -206,6 +207,7 @@ export function ensureEndlessDeck(state) {
 /** Keep dreaming after waking. `beastCatalog` maps ladder ids to their Dreambeast cards. */
 export function startEndless(state, { beastCatalog = {} } = {}) {
   if (!state || state.endless) return false;
+  tellEndless(state);
   state.endless = {
     startedRound: state.round,
     startedCycle: plannedCycles(state),

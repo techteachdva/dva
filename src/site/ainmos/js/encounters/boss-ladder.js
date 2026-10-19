@@ -15,8 +15,8 @@ export const BOSS_LADDER = Object.freeze([
     rung: 10,
     id: "winged-turtle",
     power: 3,
-    twist: "First flight",
-    twistText: "A plain fight. Later Dreambeasts each bend a rule.",
+    twist: "Shell",
+    twistText: "Your fight rolls 1 fewer die.",
   },
   {
     rung: 9,

@@ -10,7 +10,8 @@
 import { getPhase } from "../core/state.js";
 import { ladderEntry } from "../encounters/boss-ladder.js";
 import { megaLeviathan } from "../encounters/endless.js";
-import { beastWardText } from "../encounters/beast-wards.js";
+import { beastWardText, powerForCycle } from "../encounters/beast-wards.js";
+import { twistInfo } from "../encounters/beast-twists.js";
 import { cyclesForLength, PHASE_NAMES, PHASE_SUITS, DREAMS_PER_CYCLE } from "../core/cycle.js";
 import { suitIconHtml } from "../core/rules.js";
 
@@ -57,8 +58,8 @@ export function cycleScreenWanted(state) {
 /** A Cycle's Dreambeast Power as it will arrive: printed + the Cycle (Leviathans of Endless Mode are fixed). */
 function bossPower(entry, cycle = 0, plan = null, sep = "·") {
   if (plan?.mega) return String(megaLeviathan(plan.mega)?.power ?? "?");
-  if (!entry) return "?";
-  return String(entry.power + cycle);
+  if (!entry) return plan?.accept != null ? String(powerForCycle(plan, Number(plan.accept), cycle)) : "?";
+  return String(powerForCycle(entry, entry.power, cycle));
 }
 
 /** Nine phases as three Dreams of Reveal · Explore · Meet. */
@@ -134,6 +135,7 @@ export function renderCycleScreen(state, handlers = {}) {
   const plan = state.nightPlan || [];
   const [dream, boss, closer] = plan.slice((cycle - 1) * 3, cycle * 3);
   const entry = boss?.bossId ? ladderEntry(boss.bossId) : null;
+  const twist = twistInfo(boss?.bossId ? { id: boss.bossId } : boss);
   const endless = !!state.endless;
   const cycles = cyclesForLength(state.lengthKey);
   const finalCycle = !endless && cycle === cycles;
@@ -166,8 +168,8 @@ export function renderCycleScreen(state, handlers = {}) {
           <div class="cy-art" style="background-image:url('${esc(absolute(boss?.image))}')"></div>
           <p class="cy-step">Dream 2 · Dreambeast</p>
           <h4 class="lf-item-name">${esc(boss?.name || "A Dreambeast")}</h4>
-          <p class="lf-item-kind">Power ${esc(entry ? bossPower(entry, cycle, boss, ", then ") : (boss?.mini?.power ?? "grows with the Cycle"))} · ${esc(SUIT_NAME[boss?.suit] || "")}${ward ? ` · <span class="beast-ward">${esc(ward)}</span>` : ""}</p>
-          <p class="lf-item-text">${entry ? `<strong>${esc(entry.twist)}.</strong> ${esc(entry.twistText)} ` : ""}Chases you. −1 Psyche each dusk.</p>
+          <p class="lf-item-kind">Power ${esc(bossPower(entry, cycle, boss, ", then "))} · ${esc(SUIT_NAME[boss?.suit] || "")}${ward ? ` · <span class="beast-ward">${esc(ward)}</span>` : ""}</p>
+          <p class="lf-item-text">${twist ? `<strong>${esc(twist.twist)}.</strong> ${esc(twist.twistText)} ` : ""}Chases you. −2 Psyche each dusk.</p>
           <p class="cy-reward">Win: 2 Power Tokens or a ${esc(SUIT_NAME[boss?.suit] || "")} Object</p>
         </article>
         ${mega ? `

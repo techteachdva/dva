@@ -1,3 +1,4 @@
+import { tellArrival } from "../meta/chronicle.js";
 import { BOSS_LADDER } from "../encounters/boss-ladder.js";
 /** Dream deck draw/discard — boss Dreambeasts always spawn instead of vanishing. */
 
@@ -103,6 +104,7 @@ export function spawnBossEncounterOnBed(state, card) {
   const tile = bossLandingTile(state, card);
   if (!tile) return false;
   const placed = setEncounterOnLandscape(state, tile.id, encounter) || encounter;
+  if (!state.tutorialMode) tellArrival(state, placed, tile);
   logMoment(state, `Dreambeast: ${card.name} (Power ${placed.accept}) lands on ${tile.name}!${card.twistText ? ` ${card.twist}: ${card.twistText}` : ""}`, { boss: true });
   markDreamFeedNudge();
   queueBossStingerFx(card.id, tile.id);

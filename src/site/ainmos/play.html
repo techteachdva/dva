@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/ainmos-layout.css">
   <link rel="stylesheet" href="css/ainmos-polish.css">
   <link rel="stylesheet" href="css/ainmos-mobile.css">
+  <link rel="stylesheet" href="css/ainmos-beats.css">
 </head>
 <body class="in-game play-window ainmos">
   <div id="final-nightmare-backdrop" class="final-nightmare-backdrop" aria-hidden="true"></div>
@@ -45,7 +46,7 @@
     <div id="night-strip" class="night-strip" role="group" aria-label="The night" hidden></div>
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">v 0.29.1</span>
+        <span class="version-label">v 0.30</span>
         <img class="brand-wordmark" src="images/somnia-logo.png" alt="Ainmos" />
       </div>
       <div id="death-clock" class="death-clock" title="Six deaths, shared by the table, end the night.">
@@ -182,6 +183,10 @@
               <div class="hand-header-row">
                 <h3 id="hand-title">Your Psyche Hand</h3>
                 <span id="hand-stats" class="hand-stats-line"></span>
+                <span class="hand-sort" role="group" aria-label="Sort hand">
+                  <button type="button" class="hand-sort-btn" data-hand-sort="suit" title="Sort by suit, then value">♠ Suit</button>
+                  <button type="button" class="hand-sort-btn" data-hand-sort="value" title="Sort by value">1→9 Value</button>
+                </span>
               </div>
               <span class="hand-hint hand-hint-subtle input-hint">
                 <span class="hint-fine">Double-click a card to inspect</span>
@@ -202,6 +207,7 @@
           <div class="hand-section objects-hand-section">
             <div class="hand-header keep-header">
               <h3>Objects</h3>
+              <span id="ready-sets" class="ready-sets" hidden></span>
               <span class="keep-scroll-btns" role="group" aria-label="Scroll Objects">
                 <button type="button" class="keep-scroll-btn" data-scroll-target="player-objects" data-scroll-dir="-1" aria-label="Scroll Objects left">‹</button>
                 <button type="button" class="keep-scroll-btn" data-scroll-target="player-objects" data-scroll-dir="1" aria-label="Scroll Objects right">›</button>
@@ -247,6 +253,7 @@
           </div>
           <div class="end-actions">
             <button type="button" id="btn-endless" class="btn primary endless-btn hidden" title="Keep this board and hand. Archetypes and Dreambeasts keep coming, then five Leviathans, each worse than the last.">Keep Dreaming · Endless Mode</button>
+            <button type="button" id="btn-dream-story" class="btn">Read the Dream</button>
             <button type="button" id="btn-start-daydream" class="btn primary hidden">Start Daydream</button>
             <button type="button" id="btn-advanced-tutorial" class="btn primary hidden">Advanced Tutorial</button>
             <button id="btn-restart" class="btn">Return to Menu</button>
@@ -286,6 +293,7 @@
   <div id="cycle-screen" class="lost-found cycle-screen" hidden></div>
   <div id="boon-draft" class="lost-found boon-draft" hidden></div>
   <div id="archetype-choice" class="lost-found archetype-choice" hidden></div>
+  <div id="set-archetype" class="lost-found set-archetype" hidden></div>
   <div id="coach-hint" class="coach-hint" hidden></div>
   <div id="tutorial-brief" class="tutorial-brief hidden" role="dialog" aria-modal="true" aria-labelledby="tutorial-brief-title">
     <div class="tutorial-brief-backdrop"></div>

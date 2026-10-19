@@ -15,6 +15,7 @@
  *     The Weaver     Reweave       discard up to 3 Psyche, then draw that many plus 1
  */
 
+import { twistBlocksDreamerPower } from "../encounters/beast-twists.js";
 import {
   addLog,
   landscapeById,
@@ -109,6 +110,8 @@ export function dreamerPowerBlockReason(state, player) {
   const phase = DREAMER_POWER_PHASE[id];
   if (!phase) return "This Dreamer has no Power.";
   if (getPhase(state) !== phase) return `${player.dreamer.name}'s Power works in ${phase}.`;
+  const gazed = twistBlocksDreamerPower(state);
+  if (gazed) return gazed;
   switch (id) {
     case "the-visionary":
       return revealCapacity(state) ? "" : "Nothing is left in the Vault to place.";

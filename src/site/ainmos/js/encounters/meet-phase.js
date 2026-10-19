@@ -1,4 +1,6 @@
-import { applyBossTwistsAtMeetStart, applyBossTwistsAtDusk, bossSkipsStep } from "./boss-twists.js";
+import { tellDusk } from "../meta/chronicle.js";
+import { applyBossTwistsAtMeetStart, applyBossTwistsAtDusk, applyBeastTwistsAtDusk, bossSkipsStep } from "./boss-twists.js";
+import { twistDuskMill } from "./beast-twists.js";
 import { discardDreamCard, popDiscardableDream } from "../cards/dream-deck.js";
 import { forgetTile } from "../board/landscapes.js";
 import { BOSS_LADDER } from "./boss-ladder.js";
@@ -29,7 +31,7 @@ import { logMoment } from "../core/narrator.js";
 export const MEET_PHASE_FLOW = Object.freeze({
   start: "Bosses step toward the nearest Dreamer. No cards are taxed from hands.",
   middle: "Spend 1 Willpower Psyche for shared Meet Actions. Accept a Dreambeast by beating its Power. Roaming beasts stay until won.",
-  end: "Dusk: Repress 1 Psyche from the Waking Mind per Dreambeast still on the board. In the Final Recurrence, count remaining Archetypes.",
+  end: "Dusk: Repress 2 Psyche from the Waking Mind per Dreambeast still on the board. In the Final Recurrence, count remaining Archetypes.",
 });
 
 export function countActiveDreambeasts(state) {
@@ -149,8 +151,12 @@ function roundResourceTaxCount(state) {
     return (state.finalArchetypes || []).filter((arch) => !arch.defeated).length;
   }
   const spared = state.duskSparedRound === state.round;
-  return (spared ? 0 : roamingDreambeastsInSpawnOrder(state).length) + longNightToll(state);
+  return (spared ? 0 : roamingDreambeastsInSpawnOrder(state).length * DUSK_REPRESS_PER_BEAST + twistDuskMill(state))
+    + longNightToll(state);
 }
+
+/** 0.30: each Dreambeast still standing at dusk Represses 2 from the Waking Mind. */
+export const DUSK_REPRESS_PER_BEAST = 2;
 
 /** Cards the dusk mill will take from the Waking Mind when this round ends. */
 export function duskMillCount(state) {
@@ -165,17 +171,38 @@ export function wakingMindCount(state) {
 function applyRoundResourceTax(state) {
   const count = roundResourceTaxCount(state);
   if (!count) return;
-  const kind = state.finalRecurrence ? "Archetype" : "Dreambeast";
-  const beasts = count - longNightToll(state);
-  const plural = beasts === 1 ? "" : "s";
+  const spared = state.duskSparedRound === state.round;
+  const standing = spared ? [] : roamingDreambeastsInSpawnOrder(state);
+  const long = longNightToll(state);
+  const omen = spared ? 0 : twistDuskMill(state);
+  const n = standing.length;
   logMoment(
     state,
-    state.longNight
-      ? `Dusk in the Long Night. Repress ${count} from the Waking Mind${beasts ? ` (${beasts} for the ${kind}${plural} still standing)` : ""}.`
-      : `Dusk. ${count} ${kind}${plural} still stand. Repress ${count} from the Waking Mind.`,
+    n
+      ? `Dusk. ${n} Dreambeast${n === 1 ? "" : "s"} still stand${n === 1 ? "s" : ""}: Repress ${count} from the Waking Mind.`
+      : `Dusk in the Long Night. Repress ${count} from the Waking Mind.`,
     { durationMs: 14000 },
   );
-  repressTopPsycheFromDeck(state, count);
+  // The table plays this as its own beat (js/ui/dusk-toll.js); the cards fly there.
+  if (typeof document !== "undefined") {
+    state.pendingDuskToll = {
+      round: state.round,
+      beasts: standing.map(({ encounter }) => ({
+        name: encounter.name,
+        image: encounter.image,
+        suit: encounter.suit,
+        n: DUSK_REPRESS_PER_BEAST,
+      })),
+      omen,
+      long,
+      count,
+    };
+    state._quietRepressFx = true;
+  }
+  const taken = repressTopPsycheFromDeck(state, count);
+  state._quietRepressFx = false;
+  tellDusk(state, { count: taken, beasts: standing.map(({ encounter }) => encounter.name) });
+  if (state.pendingDuskToll) state.pendingDuskToll.taken = taken;
 }
 
 function applyTutorialMeetEnd(state) {
@@ -202,6 +229,7 @@ export function applyMeetEndConsequences(state) {
     popDream: popDiscardableDream,
     forgetTile,
   });
+  if (state.duskSparedRound !== state.round) applyBeastTwistsAtDusk(state, { forgetTile });
   applyRoundResourceTax(state);
 }
 

@@ -90,7 +90,7 @@ export function encounterPowerBreakdown(encounter) {
   if (!encounter) return "";
   const power = encounterPower(encounter);
   const bonus = encounter.cycleBonus || 0;
-  return bonus ? `Power ${power} (${power - bonus} + Cycle ${bonus})` : `Power ${power}`;
+  return bonus ? `Power ${power} (${power - bonus} +${bonus})` : `Power ${power}`;
 }
 
 /** Ainmos: Repress draws Psyche equal to half the beast's Power, rounded down. */

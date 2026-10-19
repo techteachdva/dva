@@ -101,7 +101,7 @@ function placeFromVault(state) {
 const { getLegalMoveTargets, hexDistance } = hexMod;
 const { activeQuestLandscapeIds, isQuestConditionMet, sacrificeHeldObject, listSacrificableObjects } = questsMod;
 const { undefeatedFinalArchetypes } = finalMod;
-const { resolveObjectChoice, resumeObjectEffect } = objectEffects;
+const { resolveObjectChoice, resumeObjectEffect, readyObjectSets, useObjectSet } = objectEffects;
 const { resolveNothingChoice } = objectsMod;
 const { resolveEffectChoice } = effectChoices;
 const { resolveDreamChoice, advanceDreamQueue } = dreamChoices;
@@ -927,6 +927,14 @@ function tryDreamerPower(state) {
   return true;
 }
 
+/** Sets no longer cash in by themselves: the bot uses one as soon as it is complete. */
+function useReadySet(state) {
+  const player = holder(state);
+  const ready = readyObjectSets(player);
+  if (!ready.length || !(state.archetypeDeck || []).length) return false;
+  return useObjectSet(state, player, ready[0].tag);
+}
+
 function act(state) {
   // Ainmos: the bot leaves the Lost & Found without shopping (shopping policy comes later).
   if (state.lostFound?.open) {
@@ -934,6 +942,7 @@ function act(state) {
     return true;
   }
   focusBestDream(state);
+  if (useReadySet(state)) return true;
   if (placeRememberObjects(state)) return true;
   if (trySacrifice(state)) return true;
   const phase = getPhase(state);

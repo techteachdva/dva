@@ -1,6 +1,9 @@
+import { tellFight, tellArchetypeFight, tellMove, tellDream } from "../meta/chronicle.js";
 import { shuffle, uid } from "./data.js";
 import { offerBoonDraft } from "../dreamers/boons.js";
-import { bossExtraPower } from "../encounters/boss-twists.js";
+import { bossExtraPower, applyBeastTwistOnLoss } from "../encounters/boss-twists.js";
+import { twistPowerMod, twistSpreadCap, twistTiesToBeast } from "../encounters/beast-twists.js";
+import { forgetTile, forgetRandomLandscapes } from "../board/landscapes.js";
 import { isLostFoundOpen, bankGlimmer, GLIMMER_MAX } from "../shop/lost-found.js";
 import { bestForm } from "../cards/dream-forms.js";
 import { beastWard, beastWardText } from "../encounters/beast-wards.js";
@@ -1467,6 +1470,7 @@ export function drawDreamCard(state, onShowModal) {
   checkDefeat(state);
   applySkeletonKeyAfterDream(state);
   playSfx("dream");
+  tellDream(state, card);
   queueDreamDrawFx(card);
   if (onShowModal) onShowModal(card);
   return card;
@@ -1481,8 +1485,10 @@ function rowanSpawn(state) {
   const away = open.filter((t) => t.id !== me?.landscapeId);
   const spots = away.length ? away : open;
   if (!spots.length) return;
-  const tile = spots[Math.floor(random() * spots.length)];
   const [beast] = pool.splice(Math.floor(random() * pool.length), 1);
+  const suited = spots.filter((t) => t.suit && t.suit === beast.suit);
+  const from = suited.length ? suited : spots;
+  const tile = from[Math.floor(random() * from.length)];
   const placed = setEncounterOnLandscape(state, tile.id, { ...beast, type: "dreambeast", instanceId: beast.instanceId || uid("enc") });
   logMoment(state, `Rowan: ${placed?.name || beast.name} rises on ${tile.name} (Power ${placed?.accept ?? beast.accept}).`, { boss: true });
 }
@@ -1664,6 +1670,7 @@ export function moveDreamer(state, targetLandscapeId) {
     recordCancellableMove(state, player, fromId, targetLandscapeId);
 
     addLog(state, `${player.name} moves to ${to.name}. (${state.exploreMovesLeft} moves left)`);
+    tellMove(state, to);
 
     if ((state.exploreMovesLeft || 0) > 0) {
       passMeetToken(state);
@@ -2018,10 +2025,11 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
   const isReject = mode === "reject" || mode === "repress";
   const verb = isReject ? "Repress" : "Accept";
   const paySuitForTwist = isReject ? (encounter.rejectSuit || encounter.suit) : encounter.suit;
-  const beastPower = encounterPower(encounter, !isReject)
-    + bossExtraPower(encounter, actorForTwist(state) ? totalStat(actorForTwist(state), paySuitForTwist, state) : 0);
-  const recommended = recommendedEncounterPower(encounter, !isReject);
   const selected = selectedCards(state, actor);
+  const beastPower = encounterPower(encounter, !isReject)
+    + bossExtraPower(encounter, actorForTwist(state) ? totalStat(actorForTwist(state), paySuitForTwist, state) : 0)
+    + twistPowerMod(encounter, selected);
+  const recommended = recommendedEncounterPower(encounter, !isReject);
   const suitName = SUIT_LABELS[encounterPaySuit(encounter, !isReject)] || "Psyche";
 
   if (!isReject) {
@@ -2035,6 +2043,11 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
 
   if (selected.filter((c) => !isDreambeastPsycheCard(c)).length > 3) {
     say("Play up to 3 Psyche cards against a Dreambeast.");
+    return;
+  }
+  const twistCap = twistSpreadCap(encounter);
+  if (twistCap && selected.filter((c) => !isDreambeastPsycheCard(c)).length > twistCap) {
+    say(`${encounter.name}: fight it with ${twistCap} Psyche at most.`);
     return;
   }
 
@@ -2103,6 +2116,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
       beastName: encounter.name,
       dreamerDice: played,
       beastDice: rolledBeast,
+      tiesToBeast: twistTiesToBeast(encounter),
       instant: true,
       onComplete: ({ dreamerWins }) => finish(dreamerWins),
     });
@@ -2125,6 +2139,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
     beastDice: rolledBeast,
     shownBeastDice: beastPower,
     forceWinner: scriptedWinner,
+    tiesToBeast: twistTiesToBeast(encounter),
     instant: false,
     onComplete: ({ dreamerWins }) => finish(dreamerWins),
   });
@@ -2133,8 +2148,34 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone,
 /** Power Tokens a fallen Mini-Boss pays. */
 export const MINI_BOSS_BOUNTY = 1;
 
+/**
+ * Losing a fight tears the dream (0.30): the beast Forgets one Landscape it names
+ * if one is placed, otherwise a random edge Landscape no Dreamer stands on.
+ */
+function forgetOnLostFight(state, encounter, tile) {
+  const named = [];
+  const collect = (spec) => {
+    if (!spec) return;
+    if (spec.type === "forget-named") named.push(...(spec.ids || []));
+    (spec.steps || []).forEach(collect);
+  };
+  collect(encounter.failEffect);
+  const occupied = new Set(state.players.filter((p) => p.alive).map((p) => p.landscapeId));
+  const target = named
+    .map((id) => landscapeById(state, id))
+    .find((t) => t && t.revealed && !t.wasteland && !t.center && t.id !== tile?.id && !occupied.has(t.id));
+  if (target) {
+    forgetTile(state, target);
+    logMoment(state, `${encounter.name} tears the dream: ${target.name} is Forgotten.`, { boss: true });
+    return;
+  }
+  const [lost] = forgetRandomLandscapes(state, 1, { skipOccupied: true });
+  if (lost) logMoment(state, `${encounter.name} tears the dream: ${lost.name} is Forgotten.`, { boss: true });
+}
+
 function resolveDiceMeet(state, ctx, dreamerWins) {
   const { isReject, encounter, tile, actor, selected } = ctx;
+  if (!state.tutorialMode) tellFight(state, ctx, dreamerWins);
 
   queuePsycheSwirlFx(selected, tile.id);
   queueMeetFlashFx(isReject ? "reject" : "accept", tile.id, selected);
@@ -2155,6 +2196,10 @@ function resolveDiceMeet(state, ctx, dreamerWins) {
     if (ctx.fromMindstreamDraw || encounter.drawnFromMindstream) {
       applyFailEffect(state, actor, encounter);
       logMoment(state, `${encounter.name} Fail resolves — failed Accept on draw.`);
+    }
+    if (!state.tutorialMode) {
+      forgetOnLostFight(state, encounter, tile);
+      applyBeastTwistOnLoss(state, actor, encounter, tile);
     }
     return;
   }
@@ -2845,8 +2890,10 @@ export function spawnRandomEncounter(state) {
   const pulled = pullDreambeastFromMindstream(state);
   if (!pulled) return null;
   const encounter = encounterFromDreambeastCard(pulled.card);
+  // A Dreambeast rises on a Landscape of its own suit when one is placed.
+  const suited = revealed.filter((t) => t.suit && t.suit === encounter.suit);
   requestChooseTile(state, {
-    allowedIds: revealed.map((t) => t.id),
+    allowedIds: (suited.length ? suited : revealed).map((t) => t.id),
     action: "spawnEncounter",
     encounter,
     title: "A Dreambeast stirs",
@@ -3376,6 +3423,13 @@ export function fightArchetype(state, archId, onDone = null) {
   addLog(state, `${actor.name} rolls ${dice}d6 against ${arch.name}'s Power ${rules.power}.`);
 
   const finish = (dreamerWins) => {
+    if (!state.tutorialMode) {
+      const cards = archetypeSpread(state, actor);
+      tellArchetypeFight(state, {
+        arch, tile: landscapeById(state, fight.tileId), cards, dice, power: rules.power,
+        side: fight.side, label: fight.label, form: bestForm(state, cards)?.name || "",
+      }, dreamerWins);
+    }
     state.diceBattle = null;
     state.archetypeFight = null;
     state.pendingPowerBonus = 0;

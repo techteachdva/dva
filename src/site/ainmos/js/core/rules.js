@@ -1,6 +1,7 @@
 import { statIgnoredBy } from "../encounters/boss-twists.js";
 import { bestForm } from "../cards/dream-forms.js";
 import { beastWard, beastWardText } from "../encounters/beast-wards.js";
+import { twistDiceMod, twistPhasePenalty } from "../encounters/beast-twists.js";
 import { noteTokenFlow } from "../cards/power-tokens.js";
 /** SOMNIA 18.5.1 rules helpers */
 
@@ -172,7 +173,8 @@ export function phaseBaseActions(state, player, phase = PHASES[state.phaseIndex]
   if (!player || !suit) return 0;
   let n = Math.max(0, totalStat(player, suit, state)) + objectBudgetBonus(player, phase);
   if (phase === "Explore") n += state.sugarRushSteps || 0;
-  return n;
+  // A standing Guardian, Sandman or Minotaur takes one of this phase's Actions.
+  return Math.max(0, n - twistPhasePenalty(state, phase));
 }
 
 /** The value a phase spend adds: the selected suited Psyche, or 1 for a Power Token. */
@@ -498,7 +500,8 @@ export function encounterDiceTotal(state, actor, selected, encounter, { accept =
   // Ainmos Dream Forms: the spread's best pattern adds its dice, less the beast's ward.
   total += bestForm(state, cards, { ward: beastWard(encounter) })?.dice || 0;
   total += state.nextFightDice || 0;
-  return total;
+  total += twistDiceMod(encounter, cards);
+  return Math.max(0, total);
 }
 
 /** Meet pay total for Accept or Reject, including matching Dreamer stat when the required color is played. */

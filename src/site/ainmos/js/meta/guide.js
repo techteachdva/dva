@@ -281,7 +281,7 @@ export function getCurrentObjective(state) {
         suit: "willpower",
         title: "Open Meet",
         steps: ["Your Willpower is your free Meet Actions. Add 1 Willpower card for +its value."],
-        tip: "Every beast left standing bleeds 1 Psyche from the Waking Mind at dusk.",
+        tip: "Every beast left standing bleeds 2 Psyche from the Waking Mind at dusk.",
       };
     }
     const beasts = allEncountersOnBoard(state).length;
@@ -289,7 +289,7 @@ export function getCurrentObjective(state) {
     const lines = [
       `**${left}** action${left === 1 ? "" : "s"} left. Fight the beast on your hex as often as you can afford.`,
       beasts > 0
-        ? `${beasts} Dreambeast${beasts === 1 ? "" : "s"} still stand${beasts === 1 ? "s" : ""}: each bleeds 1 Psyche at dusk.`
+        ? `${beasts} Dreambeast${beasts === 1 ? "" : "s"} still stand${beasts === 1 ? "s" : ""}: each bleeds 2 Psyche at dusk.`
         : "Nothing stands. Dusk will be quiet.",
     ];
     if (state.activeEncounter) {
@@ -428,7 +428,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Fights</h3>
-            <p>Play 1–3 Psyche of any suit. Each Dreambeast arrives at its Power plus the Cycle, and wards one Dream Form (−1 to −5 dice off that Form). Your Power is their values plus your matching stat (if a card of its suit is in the spread), your Dream Form. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Win and you <strong>Accept</strong> it: it leaves the board and you take <strong>2 Power Tokens</strong>, an <strong>Object of its suit</strong>, or (once you have started a Set) <strong>a missing Set piece</strong>. Lose and the cards are spent; the beast stays.</p>
+            <p>Play 1–3 Psyche of any suit. Each Dreambeast grows +1 every 4 Cycles (never above 11), wards one Dream Form (−1 to −5 dice off that Form), and bends one rule of its own. Your Power is their values plus your matching stat (if a card of its suit is in the spread), your Dream Form. Each side rolls its Power in d6; 5s and 6s succeed; <strong>ties go to you</strong>. Aim for the beast's Power + 2. Win and you <strong>Accept</strong> it: it leaves the board and you take <strong>2 Power Tokens</strong>, an <strong>Object of its suit</strong>, or (once you have started a Set) <strong>a missing Set piece</strong>. Lose and the cards are spent, the beast stays, and it Forgets a Landscape.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Archetypes</h3>
@@ -438,7 +438,7 @@ export function infoHubHtml(options = {}) {
             <h3>Repress &amp; Return</h3>
             <p><strong>Only Psyche is Repressed</strong>: it leaves play and waits in the <strong>Subconscious</strong>. The night starts with 12 random Psyche already there. <strong>Return</strong> always brings back Psyche, and you choose which. Lost Objects are Discarded. A <strong>Forgotten</strong> Landscape shuffles back into the Landscape deck; anyone on it dies and wakes on The Bed.</p>
             <p><strong>Dying</strong> (no Psyche left, or a Forgotten Landscape under you): you wake on The Bed with a new hand of 6, lose your <strong>Objects</strong>, and keep your Power Tokens, Forms, and Archetypes. The sixth death ends the night.</p>
-            <p><strong>Sets</strong>: collect every piece (Body 5, Elements 4, Jewelry 3, Sticks 3) to Acquire an Archetype. Once you hold a piece, the Lost &amp; Found always shows a missing one, a beaten Dreambeast can pay one, and <strong>The One</strong> Mimics one.</p>
+            <p><strong>Sets</strong>: collect every piece (Body 5, Elements 4, Jewelry 3, Sticks 3), then press <strong>Use</strong> when you choose to Acquire an Archetype. A used set leaves play for good. Once you hold a piece, the Lost &amp; Found always shows a missing one, a beaten Dreambeast can pay one, and <strong>The One</strong> Mimics one.</p>
             <p><strong>Power Tokens</strong>: hold up to 6. You start with 2, take 2 for beating a Dreambeast (or an Object of its suit instead), and gain 1 for each Archetype.</p>
           </div>
           <div class="info-hub-rule info-hub-glimmer">

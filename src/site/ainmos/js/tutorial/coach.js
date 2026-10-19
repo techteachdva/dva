@@ -318,7 +318,7 @@ function tableStep(state, ctx = {}) {
       id: "meet-beast",
       title: `Face ${beastHere.name}`,
       text: `Tap 1–3 Psyche (a ${suit} card adds your ${suit}), then Accept.`,
-      why: "Win: 2 Power Tokens or an Object. Its Ward weakens one Form. Left standing, it Represses 1 each dusk.",
+      why: "Win: 2 Power Tokens or an Object. Its Ward weakens one Form. Left standing, it Represses 2 each dusk.",
       target: (state.selectedHand || []).length ? ".spread-fight-btn" : "",
     };
   }
@@ -330,7 +330,7 @@ function tableStep(state, ctx = {}) {
       ? "Nothing to fight. Tap your Landscape to use an action, or press End Round."
       : "Press End Round (top right).",
     why: beasts.length
-      ? "At dusk each standing Dreambeast Represses 1."
+      ? "At dusk each standing Dreambeast Represses 2."
       : "Then dawn: draw 4 Psyche. Unused bought Actions become Glimmer ✧.",
     target: "#btn-next-phase",
   };

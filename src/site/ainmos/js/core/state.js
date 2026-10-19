@@ -1,6 +1,7 @@
+import { tellDeath, tellAcquire } from "../meta/chronicle.js";
 import { openLostFound } from "../shop/lost-found.js";
 import { rollChaoticValue, PSYCHE_UPGRADES, applyPsycheUpgrade } from "../cards/dream-forms.js";
-import { resetDreamscape } from "../board/landscapes.js";
+import { resetDreamscape, checkDreamscapeWhole } from "../board/landscapes.js";
 import { finalBossForLength } from "../encounters/boss-ladder.js";
 import { createQuestTracker, recordQuestEvent, isQuestConditionMet } from "../dreamers/quests.js";
 import { FINAL_ARCHETYPE_POWER } from "../dreamers/final-recurrence-rules.js";
@@ -12,6 +13,8 @@ import {
   resetVaultRoundCounters,
   isFreeformBoard,
   vaultExhausted,
+  nearestPlacementSlot,
+  makeBoardTile,
 } from "../board/dreamscape-vault.js";
 import { effectiveDreamerStat } from "../dreamers/archetype-stats.js";
 import { playSfx } from "../audio/audio.js";
@@ -108,7 +111,7 @@ function stackBeastKindToTop(mindstreamDecks, kind) {
 
 /**
  * Ainmos 0.27 scenario seeds that reshape the Psyche deck:
- * OOPS every suited card is a 1; JILLY every card (Wilds too) is a 4;
+ * OOPS every suited card is a 1;
  * BUBBLEGUM every card carries a random upgrade (Wilds can't take one).
  */
 function applyPsycheSeedCodes(deck, seedFlags) {
@@ -117,13 +120,6 @@ function applyPsycheSeedCodes(deck, seedFlags) {
       if (card.wild) return;
       card.value = 1;
       card.name = `${card.suit.charAt(0).toUpperCase()}${card.suit.slice(1)} 1`;
-    });
-  }
-  if (seedFlags.jilly) {
-    deck.forEach((card) => {
-      card.value = 4;
-      if (card.wild) card.text = "Counts as 4 of any suit.";
-      else card.name = `${card.suit.charAt(0).toUpperCase()}${card.suit.slice(1)} 4`;
     });
   }
   if (seedFlags.bubblegum) {
@@ -427,7 +423,29 @@ export function createInitialState(data, options) {
   if (state.tutorialMode) resolveAllPowerCardsInHands(state);
   state.checkPsycheDeath = (player, opts) => checkDreamerPsycheDeath(state, player, opts);
   if (seedFlags.lemon && !state.tutorialMode) beginLemonNight(state, data);
+  if (seedFlags.jilly && !state.tutorialMode) beginJillyNight(state);
   return state;
+}
+
+/**
+ * JILLY seed (0.30): the night opens with the Dream already Whole. Every
+ * Landscape is placed face up around The Bed, the fanfare plays, and at the
+ * next Dream it folds back into The Bed.
+ */
+function beginJillyNight(state) {
+  if (!isFreeformBoard(state)) return;
+  const bed = state.board.find((t) => t.center || t.id === "bed");
+  const cards = [...(state.landscapeVault || []), ...(state.landscapeTileDeck || [])];
+  state.landscapeVault = [];
+  state.landscapeTileDeck = [];
+  cards.forEach((card) => {
+    const slot = nearestPlacementSlot(state, bed);
+    if (!slot) return;
+    const tile = makeBoardTile(card, slot.q, slot.r);
+    state.board.push(tile);
+    revealLandscapeTile(state, tile);
+  });
+  checkDreamscapeWhole(state);
 }
 
 /**
@@ -1110,6 +1128,7 @@ export function applyDreamerDeath(state, player, { cause = "" } = {}) {
   const clock = state.deathClock;
 
   queueDreamerDeathFx(player.id, player.name, player.landscapeId);
+  if (!state.tutorialMode) tellDeath(state, player, cause);
   // Ainmos 0.26: death costs your Objects and your hand. Power Tokens stay.
   const lostObjects = discardPlayerObjects(state, player);
   clearPlayerHandOnDeath(state, player);
@@ -1299,6 +1318,10 @@ export function markFinalArchetypeDefeated(state, archetypeId) {
  */
 function grantAcquiredArchetype(state, player, archetype) {
   state.acquiredPoints = (state.acquiredPoints || 0) + 1;
+  if (!state.tutorialMode) {
+    const land = landscapeById(state, player?.landscapeId)?.name || "";
+    tellAcquire(state, archetype, { how: state._acquireHow || "fight", set: state._acquireSet || "", land });
+  }
   const boon = archetypeBoon(archetype);
   if (!(state.boons || []).some((b) => b.id === boon.id)) state.boons = [...(state.boons || []), boon];
   const paid = grantPowerTokens(state, player, ARCHETYPE_TOKEN_REWARD, { logQuest: false, source: "archetype" });

@@ -48,6 +48,7 @@ import {
   encounterPowerBreakdown,
 } from "../encounters/dreambeasts.js";
 import { beastWard, beastWardText } from "../encounters/beast-wards.js";
+import { twistInfo } from "../encounters/beast-twists.js";
 import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate, persistentObjectCanActivate } from "../effects/objects.js";
 import { OBJECT_SETS, setProgress } from "../effects/object-sets.js";
 import { alliesInHand, psycheCardsInHand, allyHandCount, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue, tradablePsycheInHand, TRADE_OFFER_LIMIT } from "../cards/psyche.js";
@@ -1338,6 +1339,7 @@ function appendDreambeastModalDetail(detail, card) {
   const grown = card.cycleBonus || 0;
   const powerText = boss?.stack && !card.megaTier ? boss.stack.map((n) => n + grown).join(" → ") : String(power);
   const ward = beastWardText(card);
+  const twist = twistInfo(card);
   const view = document.createElement("div");
   view.className = `beast-view-body suit-${card.suit || "none"}`;
   view.innerHTML = `
@@ -1349,13 +1351,13 @@ function appendDreambeastModalDetail(detail, card) {
         ${card.beastKind ? `<span class="beast-view-tag">${beastKindLabel(card.beastKind)}</span>` : ""}
       </span>
     </div>
-    ${boss ? `<p class="beast-view-rule"><b>${boss.twist}.</b> ${boss.twistText}</p>` : card.megaTier && card.twistText ? `<p class="beast-view-rule"><b>${card.twist}.</b> ${card.twistText}</p>` : ""}
+    ${twist ? `<p class="beast-view-rule"><b>${twist.twist}.</b> ${twist.twistText}</p>` : ""}
     ${ward ? `<p class="beast-view-rule"><span class="beast-ward">${ward}</span> That Form adds fewer dice.</p>` : ""}
-    <p class="beast-view-how">Fight in Meet with 1–3 Psyche, any suit. 5s and 6s hit.${grown ? ` +${grown} from the Cycle.` : ""}</p>
+    <p class="beast-view-how">Fight in Meet with 1–3 Psyche, any suit. 5s and 6s hit.${grown ? ` +${grown} from the night.` : ""}</p>
     <div class="beast-view-wins">
       <div class="beast-view-win is-accept"><b>Accept</b><span>2 Power Tokens or an Object of its suit</span></div>
     </div>
-    <p class="beast-view-threat">At dusk: Repress 1.</p>`;
+    <p class="beast-view-threat">At dusk: Repress 2.</p>`;
   detail.appendChild(view);
 }
 
@@ -1380,16 +1382,17 @@ function appendDreambeastModalDetailLegacy(detail, card) {
   `;
   detail.appendChild(costs);
 
-  if (card.twistText) {
+  const ownTwist = twistInfo(card);
+  if (ownTwist) {
     const twist = document.createElement("p");
     twist.className = "modal-effect";
-    twist.innerHTML = `<strong>${card.twist || "Twist"}:</strong> ${card.twistText}`;
+    twist.innerHTML = `<strong>${ownTwist.twist}:</strong> ${ownTwist.twistText}`;
     detail.appendChild(twist);
   }
 
   const dusk = document.createElement("p");
   dusk.className = "modal-fail";
-  dusk.innerHTML = "<strong>While it stands:</strong> chases you; Represses 1 each dusk.";
+  dusk.innerHTML = "<strong>While it stands:</strong> chases you; Represses 2 each dusk.";
   detail.appendChild(dusk);
 
   if (card.beastKind) {
@@ -3178,7 +3181,7 @@ export function renderObjects(state, onCardClick) {
       const badge = document.createElement("span");
       badge.className = `object-set-badge${progress.held >= progress.need ? " is-complete" : ""}`;
       badge.textContent = `${tag} ${Math.min(progress.held, progress.need)}/${progress.need}`;
-      badge.title = `${tag[0].toUpperCase()}${tag.slice(1)} set: ${progress.held}/${progress.need}. Complete it: Acquire an Archetype.`;
+      badge.title = `${tag[0].toUpperCase()}${tag.slice(1)} set: ${progress.held}/${progress.need}. Complete it, then use it for an Archetype.`;
       el.appendChild(badge);
     }
     if (card.passive) el.classList.add("object-passive");
@@ -3196,6 +3199,8 @@ export function renderObjects(state, onCardClick) {
     player.objects.forEach((card) => mountObject(container, card, "hand"));
   }
 
+  renderReadySets(player, onCardClick);
+
   if (persistentEl) {
     if (!player.persistent?.length) {
       persistentEl.classList.add("empty");
@@ -3205,6 +3210,27 @@ export function renderObjects(state, onCardClick) {
       player.persistent.forEach((card) => mountObject(persistentEl, card, "persistent"));
     }
   }
+}
+
+const SET_NAMES = { body: "Body", element: "Elements", jewelry: "Jewelry", stick: "Sticks", chess: "Chess" };
+
+/** A complete set waits for you: one button per set, used when you choose. */
+function renderReadySets(player, onCardClick) {
+  const host = document.getElementById("ready-sets");
+  if (!host) return;
+  const ready = Object.keys(OBJECT_SETS).filter((tag) => {
+    const p = setProgress(player, tag);
+    return p && p.held >= p.need;
+  });
+  host.hidden = !ready.length;
+  const key = ready.join(",");
+  if (host.dataset.key === key) return;
+  host.dataset.key = key;
+  host.innerHTML = ready.map((tag) => `<button type="button" class="ready-set-btn" data-set-tag="${tag}" title="Trade the ${SET_NAMES[tag]} set for an Archetype">★ Use ${SET_NAMES[tag]}</button>`).join("");
+  host.querySelectorAll("[data-set-tag]").forEach((btn) => btn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onCardClick({ setTag: btn.dataset.setTag }, "use-set");
+  }));
 }
 
 export function renderHand(state, onCardClick, newCardIds = null) {
@@ -5993,7 +6019,12 @@ export function showRepressPicker(state, onPick, onConfirm) {
 }
 
 export function showSubconsciousBrowse(state, _onCardClick) {
-  const source = subconsciousPilesForUI(state);
+  // Used sets rest here for good (0.30): shown, never Returned.
+  const spent = (state.spentSets || []).flatMap((set) => set.cards || []);
+  const source = [
+    ...subconsciousPilesForUI(state),
+    ...(spent.length ? [{ label: "Used Sets", cards: spent, icon: "★" }] : []),
+  ];
   const piles = source.map((pile) => ({
     id: pile.label.toLowerCase().replace(/\s+/g, "-"),
     label: pile.label,
@@ -6006,7 +6037,7 @@ export function showSubconsciousBrowse(state, _onCardClick) {
   ];
   openCardBinder({
     title: "☠ The Subconscious",
-    lead: "Repressed Psyche. You choose what Returns.",
+    lead: "Repressed Psyche. You choose what Returns. Used sets stay here for good.",
     piles,
     tabs,
     initialTab: "all",

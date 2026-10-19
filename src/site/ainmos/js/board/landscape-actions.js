@@ -67,7 +67,7 @@ export const CALL_DREAMBEAST = "call-dreambeast";
 export const LANDSCAPE_ACTION_DEFS = {
   [CALL_DREAMBEAST]: {
     label: "Call a Dreambeast",
-    description: "A Dreambeast of this suit appears here at Power + Cycle. Win: 2 Power Tokens or an Object of its suit. At dusk it Represses 1.",
+    description: "A Dreambeast of this suit appears here at Power + Cycle. Win: 2 Power Tokens or an Object of its suit. At dusk it Represses 2.",
   },
   // Lucidity: see and remember.
   "lure-archetype": { label: "Call an Archetype", description: "The nearest Archetype steps 2 toward you." },

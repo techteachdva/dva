@@ -179,8 +179,8 @@ export const PSYCHE_HAND_LIMIT = 10;
 export const PSYCHE_DECK_BY_LENGTH = {
   // 62 cards: 73% (smart bot, 500 games; 0.27.1 with stacking Forms and power-only tokens).
   daydream: { distribution: { 1: 11, 2: 6, 3: 2, 4: 1, 5: 0 }, wildCount: 2 },
-  // 64 cards: 57%.
-  nap: { distribution: { 1: 12, 2: 6, 3: 2, 4: 1, 5: 0 }, wildCount: 1 },
+  // 65 cards: 55% (0.30, smart bot 600 games, with dusk 2 per beast and lost fights Forgetting).
+  nap: { distribution: { 1: 11, 2: 6, 3: 3, 4: 1, 5: 0 }, wildCount: 2 },
   // 66 cards: 32%. Fifteen Cycles and twelve Archetypes are the hard part, so its deck is kinder.
   deep: { distribution: { 1: 9, 2: 6, 3: 3, 4: 2, 5: 1 }, wildCount: 3 },
 };
@@ -520,12 +520,16 @@ export function archetypeDreamCard(ante) {
  *   2. the Cycle's Dreambeast, landing on a Landscape of its suit,
  *   3. an Archetype Dream: choose 1 of 3 Archetypes to appear.
  * The Dreambeasts climb the Boss ladder; a night longer than the ladder adds
- * Power 12 Nightmares. Returns the night and the Nightmare pool.
+ * ordinary Nightmares before the Leviathan. Returns the night and the Nightmare pool.
  */
 export function insertBossDreams(deck, dreambeasts, lengthKey = "daydream") {
   const cycles = (LENGTHS[lengthKey] || LENGTHS.daydream).antes;
-  const ladder = BOSS_LADDER;
   const minis = shuffle(ordinaryDreambeasts(dreambeasts));
+  // A night longer than the ladder keeps its top rung (the Leviathan) for the last Cycle,
+  // with ordinary Nightmares in between (0.30): the Leviathan always closes Deep Sleep.
+  const ladder = cycles > BOSS_LADDER.length
+    ? [...BOSS_LADDER.slice(0, -1), ...Array(cycles - BOSS_LADDER.length).fill(null), BOSS_LADDER[BOSS_LADDER.length - 1]]
+    : BOSS_LADDER;
   const night = [];
   for (let c = 0; c < cycles; c += 1) {
     const ante = c + 1;
@@ -534,7 +538,7 @@ export function insertBossDreams(deck, dreambeasts, lengthKey = "daydream") {
     const beast = entry && dreambeasts.find((b) => b.id === entry.id);
     if (beast) night.push(bossDreamCard(beast, entry, uid));
     else if (minis.length) {
-      const extra = { ...miniBossCard(minis.shift(), ante), accept: 12, reject: 12, repress: 12 };
+      const extra = miniBossCard(minis.shift(), ante);
       night.push({ ...extra, type: "boss-dream", boss: true, nightmare: true, ante, instanceId: uid("boss") });
     }
     night.push(archetypeDreamCard(ante));

@@ -12,7 +12,7 @@ import { PSYCHE_POWER_GRANT } from "../core/data.js";
  */
 export const MAX_POWER_TOKENS = 6;
 export const STARTING_POWER_TOKENS = 2;
-const TOKEN_SOURCES = new Set(["start", "beast", "archetype", "refund"]);
+const TOKEN_SOURCES = new Set(["start", "beast", "archetype", "refund", "dreamscape"]);
 
 function log(state, message) {
   if (!state?.log) return;

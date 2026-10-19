@@ -43,11 +43,16 @@ import { initTablePolish, syncTablePolish } from "../ui/table-polish.js";
 import { initMomentOverlay, resetMomentOverlay, flashMoment } from "../ui/moment-overlay.js";
 import {
   runPendingCardFx,
+  pendingCardFxCount,
   syncHandRemovals,
   updateHandSnapshots,
   resetHandSnapshots,
 } from "../cards/card-fx.js";
-import { runPendingBoardFx, syncBoardMotion, resetBoardMotion, cancelQueuedEncounterSpawn } from "../board/board-fx.js";
+import { runPendingBoardFx, syncBoardMotion, resetBoardMotion, cancelQueuedEncounterSpawn, pendingBoardFxCount } from "../board/board-fx.js";
+import { markFxBusy, noteWaitingMenus, menuHoldsFlights, fxBusy, whenFxSettled } from "../ui/fx-timeline.js";
+import { playDuskToll } from "../ui/dusk-toll.js";
+import { playDreamscapeWhole } from "../ui/dreamscape-whole.js";
+import { showDreamCredits, isDreamCreditsOpen } from "../ui/dream-credits.js";
 import { playOpeningCinematic } from "../flow/opening-cinematic.js";
 import { calculateFinalScore } from "../core/scoring.js";
 import { seedRandomness } from "../core/rng.js";
@@ -156,6 +161,7 @@ import { initCardFans } from "../ui/ui.js";
 import { initFitBars } from "../ui/fit-bar.js";
 import { initMenuBridge } from "../ui/menu-bridge.js";
 import { renderArchetypeChoice } from "../ui/archetype-choice.js";
+import { renderSetArchetypeScreen, hideSetArchetypeScreen } from "../ui/set-archetype-screen.js";
 import { renderArchetypeWindow, renderWakeGoal } from "../ui/archetype-window.js";
 import { initFloatWindow, restoreFloatWindow } from "../ui/float-window.js";
 import { chooseArchetype } from "../dreamers/archetype-board.js";
@@ -179,7 +185,8 @@ import {
 } from "../dreamers/dreamer-powers.js";
 import { resolveNothingChoice, letGoObject } from "../effects/objects.js";
 import { letGoValue } from "../shop/lost-found.js";
-import { resolveObjectChoice } from "../effects/object-effects.js";
+import { resolveObjectChoice, useObjectSet } from "../effects/object-effects.js";
+import { isDreambeastPsycheCard } from "../dreamers/subconscious.js";
 import { resolveDreamChoice } from "../cards/dream-choices.js";
 import { resolveEffectChoice } from "../effects/effect-choices.js";
 import { resolveMindstreamChoice } from "../cards/mindstream-choices.js";
@@ -427,6 +434,12 @@ async function init() {
   initPauseMenu({ gameSaveHooks: buildPauseSaveHooks() });
   gameData = await loadGameData();
   bindModal();
+  document.addEventListener("click", (event) => {
+    const btn = event.target.closest?.("[data-hand-sort]");
+    if (!btn || !state) return;
+    event.preventDefault();
+    sortHand(btn.dataset.handSort);
+  });
   bindHelp();
   bindTurnPlaquePass();
   bindBoardResize();
@@ -869,6 +882,9 @@ function bindRestart() {
     returnToMainMenu();
   });
   document.getElementById("btn-endless")?.addEventListener("click", continueEndless);
+  document.getElementById("btn-dream-story")?.addEventListener("click", () => {
+    if (state && !isDreamCreditsOpen()) showDreamCredits(state, calculateFinalScore(state));
+  });
 
   document.getElementById("btn-replay-tutorial")?.addEventListener("click", () => {
     launchReplayTutorial(state?.tutorialTrack === "advanced" ? "advanced" : "basic");
@@ -1718,6 +1734,15 @@ function focusRepressOwner() {
 }
 
 function onObjectCardClick(card, zone) {
+  if (zone === "use-set") {
+    if (isBlockingGameChoice(state)) {
+      flashMoment("Finish the choice first.");
+      return;
+    }
+    if (useObjectSet(state, activePlayer(state), card.setTag)) playSfx("select");
+    renderAll();
+    return;
+  }
   const pending = repressChoiceActive();
   if (pending?.source === "objects" && !pending.confirmEmpty) {
     const wasPicked = pending.picked.some((entry) => entry.instanceId === card.instanceId);
@@ -2163,6 +2188,7 @@ function maybeShowObjectChoice() {
   }
   const pending = state?.pendingDreamChoice || state?.pendingEffectChoice || state?.pendingObjectChoice;
   const kind = state?.pendingDreamChoice ? "dream" : state?.pendingEffectChoice ? "effect" : "object";
+  if (!pending || pending.ui !== "archetype-grid") hideSetArchetypeScreen();
   if (!pending) {
     lastObjectChoiceKey = null;
     return;
@@ -2180,6 +2206,13 @@ function maybeShowObjectChoice() {
     lastObjectChoiceKey = null;
     renderAll();
   };
+  if (pending.ui === "archetype-grid") {
+    const owner = state.players.find((p) => p.id === pending.playerId) || activePlayer(state);
+    const ids = pending.payload?.instanceIds || [];
+    const pieces = [...(owner?.persistent || []), ...(owner?.objects || [])].filter((c) => ids.includes(c.instanceId));
+    renderSetArchetypeScreen(pending, { pieces, onPick: finish, onCancel: () => finish("cancel") });
+    return;
+  }
   if (pending.ui === "cards") {
     showObjectCardPicker(pending, finish);
     return;
@@ -2788,8 +2821,66 @@ function handleDrawPileClick(deckId) {
   }
 }
 
+let duskTollPlaying = false;
+let storyShownFor = null;
+
+/**
+ * Big table beats play before any menu can open over them (0.30): the dusk toll,
+ * the Dream is Whole, and any card still waiting to fly.
+ */
+let beatWaiting = false;
+
+function startTableBeats() {
+  // A big beat waits for cards already in the air to land.
+  const bigBeat = state.pendingDuskToll || state.pendingDreamscapeWhole;
+  // Queued flights that a menu is holding back don't count: they play after the menu.
+  const flightsDue = (pendingCardFxCount() || pendingBoardFxCount()) && !menuHoldsFlights();
+  if (bigBeat && !duskTollPlaying && (fxBusy() || flightsDue)) {
+    if (!beatWaiting) {
+      beatWaiting = true;
+      whenFxSettled().then(() => { beatWaiting = false; renderAll(); });
+    }
+  }
+  const clear = !beatWaiting && !fxBusy();
+  if (flightsDue) markFxBusy(360);
+  if (state.pendingDuskToll && clear && !duskTollPlaying && !menuHoldsFlights()) {
+    const job = state.pendingDuskToll;
+    state.pendingDuskToll = null;
+    duskTollPlaying = true;
+    playDuskToll(job).finally(() => {
+      duskTollPlaying = false;
+      renderAll();
+    });
+  }
+  // The Dream is Whole plays over any menu; menus opening under it wait their turn.
+  if (state.pendingDreamscapeWhole && clear && !duskTollPlaying) {
+    const job = state.pendingDreamscapeWhole;
+    state.pendingDreamscapeWhole = null;
+    playDreamscapeWhole(job);
+  }
+}
+
+const HAND_SUIT_ORDER = { lucidity: 0, elasticity: 1, willpower: 2 };
+
+/** Sort the Psyche hand by suit (then value) or by value (then suit), left to right ascending. */
+function sortHand(mode) {
+  const player = activePlayer(state);
+  if (!player?.hand?.length) return;
+  const isPsyche = (c) => c && c.type !== "object" && !isDreambeastPsycheCard(c);
+  const suitRank = (c) => (c.isWild || c.suit === "wild" ? 3 : HAND_SUIT_ORDER[c.suit] ?? 4);
+  const value = (c) => Number(c.value) || 0;
+  const bySuit = (a, b) => suitRank(a) - suitRank(b) || value(a) - value(b);
+  const byValue = (a, b) => value(a) - value(b) || suitRank(a) - suitRank(b);
+  const psyche = player.hand.filter(isPsyche).sort(mode === "value" ? byValue : bySuit);
+  const rest = player.hand.filter((c) => !isPsyche(c));
+  player.hand = [...psyche, ...rest];
+  playSfx("flip");
+  renderAll();
+}
+
 function renderAll() {
   if (!state) return;
+  startTableBeats();
   syncActingHand(state);
   document.body.classList.toggle("seed-dmzemo", !!state.seedFlags?.dmzemo);
   bindUiRenderState(state);
@@ -2826,7 +2917,15 @@ function renderAll() {
     });
     return;
   }
-  if (isBsodOpen() || isLeviathanFinaleRunning()) return;
+  if (isBsodOpen() || isLeviathanFinaleRunning() || isDreamCreditsOpen()) return;
+  // 0.30: waking tells the story of the night first, as end credits.
+  if (state.status === "won" && !state.tutorialMode && !state.tutorialVictory && !state.leviathanSeedRun
+    && storyShownFor !== (state.gameId || state.seed || "night")) {
+    storyShownFor = state.gameId || state.seed || "night";
+    syncTurnHalo(null);
+    showDreamCredits(state, calculateFinalScore(state)).then(() => renderAll());
+    return;
+  }
   if (state.status === "won") {
     syncTurnHalo(null);
     syncDeckPressure(state);
@@ -3226,9 +3325,11 @@ function renderAll() {
   syncBoardMotion(state);
   syncGameCursor(state);
   scheduleAutoSave();
+  noteWaitingMenus();
   requestAnimationFrame(() => {
     runPendingCardFx(state);
     runPendingBoardFx();
+    noteWaitingMenus();
   });
 }
 

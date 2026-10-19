@@ -1,3 +1,4 @@
+import { twistBlocksReturn } from "../encounters/beast-twists.js";
 import { recordQuestEvent } from "./quests.js";
 import { psycheMatchesSuit } from "../cards/psyche.js";
 import { flashMoment } from "../ui/moment-overlay.js";
@@ -131,7 +132,7 @@ export function repressCard(state, card, origin = {}) {
   state.subconscious = normalizeSubconscious(state.subconscious);
   pileForCard(state.subconscious, card).push(card);
   markFreshlyRepressed(state, card);
-  if (typeof document !== "undefined") queueRepressFx(card, from);
+  if (typeof document !== "undefined" && !state._quietRepressFx) queueRepressFx(card, from);
 }
 
 export function repressCards(state, cards) {
@@ -278,8 +279,20 @@ export function finalizeReturn(state, cards, { log = true } = {}) {
  * Request Return of N cards. Opens picker when choice matters; auto-returns if only one option.
  * @returns {{ pending: true, count: number } | Card[]}
  */
+/** The Ghost Light: nothing Returns while it stands (said once per round). */
+function hauntBlocksReturn(state) {
+  const why = twistBlocksReturn(state);
+  if (!why) return false;
+  if (state.hauntNotedRound !== state.round) {
+    state.hauntNotedRound = state.round;
+    if (Array.isArray(state.log)) state.log.unshift(why);
+  }
+  return true;
+}
+
 export function requestReturnCards(state, count, player = null, { filter = null } = {}) {
   if (count <= 0) return [];
+  if (hauntBlocksReturn(state)) return [];
 
   const available = cardsForReturn(state, filter);
   if (!available.length) return [];
@@ -307,6 +320,7 @@ export function requestReturnCards(state, count, player = null, { filter = null 
 /** Queue a Return step; processes sequentially when multiple effects fire in one resolution. */
 export function enqueueReturnCards(state, count, player = null, { reason = "", filter = null } = {}) {
   if (count <= 0) return [];
+  if (hauntBlocksReturn(state)) return [];
   state.resolutionQueue = state.resolutionQueue || [];
   const label = player?.name || "Team";
   state.resolutionQueue.push({

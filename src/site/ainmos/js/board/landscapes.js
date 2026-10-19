@@ -1,3 +1,4 @@
+import { tellForget, tellWhole, tellFold } from "../meta/chronicle.js";
 import {
   addLog,
   revealLandscapeTile,
@@ -21,7 +22,9 @@ import { narrate, logMoment } from "../core/narrator.js";
 import { recordQuestEvent, activeQuestLandscapeIds } from "../dreamers/quests.js";
 import { isEdgeLandscape } from "../core/hex.js";
 import { markTileForgotten } from "../ui/fx.js";
-import { queueTileForgetFx } from "./board-fx.js";
+import { queueTileForgetFx, queueDreamscapeCollapseFx } from "./board-fx.js";
+import { grantPowerTokens } from "../cards/power-tokens.js";
+import { requestReturnCards } from "../dreamers/subconscious.js";
 import { recordCancellableMove } from "../dreamers/dreamer-powers.js";
 import { rehomeArchetypesFrom } from "../dreamers/archetype-board.js";
 import {
@@ -187,6 +190,7 @@ export function forgetTile(state, tile) {
     addLog(state, `${beasts.map((b) => b.name).join(" and ")} ${beasts.length === 1 ? "is" : "are"} discarded with ${tile.name}.`);
   }
   queueTileForgetFx(tile.id);
+  tellForget(state, tile);
   markTileForgotten(tile.id);
   state.board = (state.board || []).filter((t) => t !== tile && t.id !== tile.id);
   if (state.selectedLandscapeId === tile.id) state.selectedLandscapeId = "bed";
@@ -522,6 +526,7 @@ export function surfaceLandscapeNear(state, landscapeId, nearTileId = "bed") {
   const tile = makeBoardTile(card, slot.q, slot.r);
   state.board.push(tile);
   revealLandscapeTile(state, tile);
+  checkDreamscapeWhole(state);
   return tile;
 }
 
@@ -543,10 +548,45 @@ function tileToCard(tile) {
  * shuffles back into the tile deck, ordinary Dreambeasts on them are discarded,
  * Bosses drift back to The Bed, and you wake on The Bed.
  */
+/** Every Landscape is placed and none is set aside. */
+export function dreamscapeWhole(state) {
+  return isFreeformBoard(state) && vaultExhausted(state) && !(state.landscapesSetAside || []).length;
+}
+
+export const DREAMSCAPE_WHOLE_TOKENS = 2;
+export const DREAMSCAPE_WHOLE_RETURN = 4;
+
+/**
+ * The last Landscape is placed (0.30): the dream is whole. +2 Power Tokens and
+ * Return 4, once per Dreamscape. It folds at the start of the next Dream.
+ */
+export function checkDreamscapeWhole(state) {
+  if (!dreamscapeWhole(state)) return false;
+  const stamp = state.dreamscapeResets || 0;
+  if (state.dreamscapeWholeAt === stamp) return false;
+  state.dreamscapeWholeAt = stamp;
+  const me = (state.players || []).find((p) => p.alive);
+  const placed = (state.board || []).filter((t) => !t.center && t.id !== "bed").length;
+  state.runStats = state.runStats || {};
+  state.runStats.dreamsWhole = (state.runStats.dreamsWhole || 0) + 1;
+  tellWhole(state, placed);
+  logMoment(state, `The Dream is Whole: all ${placed} Landscapes. +${DREAMSCAPE_WHOLE_TOKENS}⚡, Return ${DREAMSCAPE_WHOLE_RETURN}. Next Dream it folds into The Bed.`, { boss: true });
+  if (me) {
+    grantPowerTokens(state, me, DREAMSCAPE_WHOLE_TOKENS, { source: "dreamscape", reason: "The Dream is Whole" });
+    requestReturnCards(state, DREAMSCAPE_WHOLE_RETURN, me);
+  }
+  if (typeof document !== "undefined") {
+    state.pendingDreamscapeWhole = { placed, tokens: DREAMSCAPE_WHOLE_TOKENS, returns: DREAMSCAPE_WHOLE_RETURN };
+  }
+  return true;
+}
+
 export function resetDreamscape(state) {
   if (!isFreeformBoard(state)) return false;
   const bed = state.board.find((t) => t.center || t.id === "bed");
   if (!bed) return false;
+  queueDreamscapeCollapseFx();
+  tellFold(state);
   const outer = state.board.filter((t) => t !== bed);
   outer.forEach((tile) => rehomeArchetypesFrom(state, tile));
   const bosses = [];
@@ -620,6 +660,7 @@ export function placeLandscapeAt(state, q, r) {
   const tile = makeBoardTile(card, q, r);
   state.board.push(tile);
   revealLandscapeTile(state, tile);
+  checkDreamscapeWhole(state);
   state.runStats = state.runStats || {};
   state.runStats.landscapesPlaced = (state.runStats.landscapesPlaced || 0) + 1;
   finishRevealStep(state, pick, tile, 1);

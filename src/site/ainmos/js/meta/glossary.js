@@ -138,7 +138,7 @@ const TERMS = [
   {
     term: "Dusk",
     group: "round",
-    text: "The end of each round. Each Dreambeast still on the board Represses 1 Psyche from the Waking Mind into the Subconscious. Some Bosses act at dusk too: the Baku eats a Dream, the Devourer makes the table Discard an Object, Leviathan Forgets a Landscape. The −1 badge on a beast and the Mind counter's forecast show what dusk will take.",
+    text: "The end of each round. Each Dreambeast still on the board Represses 2 Psyche from the Waking Mind into the Subconscious. Some Bosses act at dusk too: the Baku eats a Dream, the Devourer makes the table Discard an Object, Leviathan Forgets a Landscape. The badge on a beast and the Mind counter's forecast show what dusk will take.",
   },
   {
     term: "Memory Landscape",
@@ -213,7 +213,7 @@ const TERMS = [
     term: "Boss",
     group: "meet",
     aka: "cerberus double leviathan",
-    text: "Each Cycle's Dreambeast: the Winged Turtle first (a plain Power 3 beast), climbing to Leviathan. It arrives at its Power plus the Cycle, lands on a Landscape of its suit (The Bed if none), chases you each Explore, bends one rule while it stands (all but the Turtle), and Represses 1 Psyche from the Waking Mind every dusk. Beating it is optional but stops the bleeding: Accept it for 2 Power Tokens, an Object of its suit, or a missing piece of a Set you have started.",
+    text: "Each Cycle's Dreambeast: the Winged Turtle first (a plain Power 3 beast), climbing to Leviathan. It arrives at its Power, +1 every 4 Cycles (never above 11; the Leviathan reaches 12), lands on a Landscape of its suit (The Bed if none), chases you each Explore, bends one rule while it stands, and Represses 2 Psyche from the Waking Mind every dusk. Beating it is optional but stops the bleeding: Accept it for 2 Power Tokens, an Object of its suit, or a missing piece of a Set you have started.",
   },
   {
     term: "Bright",
@@ -384,7 +384,7 @@ const TERMS = [
     term: "Dreambeast",
     group: "meet",
     aka: "encounter beast",
-    text: "A creature on a Landscape. It has one Power, a suit, a Ward, and a Fantasy or Nightmare kind. Every Dreambeast arrives at its printed Power plus the Cycle it arrives in (Cycle 1 +1, Cycle 2 +2, and so on). At the start of each Explore every beast chases you one hex. During Meet, Accept the one on your hex with 1 to 3 Psyche of any suit by beating its Power, then take 2 Power Tokens or an Object of its suit. A beast left standing at dusk Represses 1 Psyche from the Waking Mind. It stays until you beat it.",
+    text: "A creature on a Landscape. It has one Power, a suit, a Ward, and a Fantasy or Nightmare kind. Every Dreambeast arrives at its printed Power, +1 for every 4 Cycles the night has run (never above 11). Each bends one rule of its own, shown on its card. At the start of each Explore every beast chases you one hex. During Meet, Accept the one on your hex with 1 to 3 Psyche of any suit by beating its Power, then take 2 Power Tokens or an Object of its suit. A beast left standing at dusk Represses 2 Psyche from the Waking Mind. Lose a fight to it and it Forgets a Landscape. It stays until you beat it.",
   },
   {
     term: "Dreamer",
@@ -557,7 +557,7 @@ const TERMS = [
     term: "Object set",
     group: "cards",
     aka: "sticks jewelry chess elements body",
-    text: "Four families: Body (5 pieces), Elements (4), Jewelry (3), and Sticks (3). Each piece shows how much of its set you hold. The moment the last piece arrives, even straight from the Lost & Found, you Acquire an Archetype of your choice from the deck and the set is Discarded. The One counts as any 1 piece.",
+    text: "Four families: Body (5 pieces), Elements (4), Jewelry (3), and Sticks (3). Each piece shows how much of its set you hold. Once it is complete, a Use button appears beside your Objects: use it whenever you choose to Acquire an Archetype of your choice from the deck. A used set stays in the Subconscious for good and never returns. The One counts as any 1 piece.",
   },
   {
     term: "Orphan",
@@ -600,7 +600,7 @@ const TERMS = [
   {
     term: "Psyche Deck",
     group: "cards",
-    text: "The draw pile for Psyche: 78 cards, 12 of which start the night in the Subconscious. With its discard, it is the Waking Mind. When the deck is empty, shuffle the discard. If the deck and the discard are both empty, the table loses. At dusk, each Dreambeast still on the board Represses 1 card from the top of this deck.",
+    text: "The draw pile for Psyche: 78 cards, 12 of which start the night in the Subconscious. With its discard, it is the Waking Mind. When the deck is empty, shuffle the discard. If the deck and the discard are both empty, the table loses. At dusk, each Dreambeast still on the board Represses 2 cards from the top of this deck.",
   },
   {
     term: "Quest",

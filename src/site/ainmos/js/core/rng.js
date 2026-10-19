@@ -61,7 +61,7 @@ export const SPECIAL_SEED_DESCRIPTIONS = {
   nightmare: "Nightmare stacked — Nightmare Dreambeasts rise to the top of the Mindstream decks.",
   rem: "REM cycle — each round, the team gets 1 free Reveal, 1 free Explore, and 1 free Meet action before spending Psyche.",
   oops: "Oops — every suited Psyche card is a 1. Wilds stay as they are.",
-  jilly: "Jilly — every Psyche card is a 4, Wilds included.",
+  jilly: "Jilly — the Dream begins Whole: every Landscape placed and revealed.",
   rowan: "Rowan — no Dream cards. A Dreambeast rises at the start of every round instead.",
   lemon: "Lemon — every Archetype is already yours. Straight to the Endless Leviathans.",
   bubblegum: "Bubblegum — every Psyche card carries a random upgrade.",

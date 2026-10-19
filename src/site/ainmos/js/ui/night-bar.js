@@ -16,6 +16,7 @@ import { cyclePosition, cyclePositionText, PHASE_SUITS, PHASE_NAMES, DREAMS_PER_
 import { suitIconHtml } from "../core/rules.js";
 
 import { ladderEntry, antesForLength } from "../encounters/boss-ladder.js";
+import { powerForCycle } from "../encounters/beast-wards.js";
 
 let lastKey = "";
 
@@ -133,8 +134,8 @@ export function renderNightBar(state) {
             ? "passed"
             : "ahead";
       const mega = p.mega ? megaLeviathan(p.mega) : null;
-      const power = mega ? mega.power : entry?.power;
-      const label = `Cycle ${p.ante}, Dream ${mega ? 3 : 2} · ${mega ? "Leviathan" : "Dreambeast"}: ${p.name}${mega ? `, Power ${power}. ${mega.flavor}` : entry ? `, Power ${power} + the Cycle. ${entry.twist}: ${entry.twistText}` : ""}${status === "defeated" ? " Defeated." : status === "standing" ? " Standing on the Dreamscape." : ""}${spawnLabel(spawns)}`;
+      const power = mega ? mega.power : entry ? powerForCycle(entry, entry.power, p.ante) : null;
+      const label = `Cycle ${p.ante}, Dream ${mega ? 3 : 2} · ${mega ? "Leviathan" : "Dreambeast"}: ${p.name}${mega ? `, Power ${power}. ${mega.flavor}` : entry ? `, Power ${power}. ${entry.twist}: ${entry.twistText}` : ""}${status === "defeated" ? " Defeated." : status === "standing" ? " Standing on the Dreamscape." : ""}${spawnLabel(spawns)}`;
       return `<span class="night-card night-boss is-${status} suit-${p.suit || "none"}${isNext ? " is-next" : ""}${mega ? ` is-mega mega-${mega.tier}` : ""}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
         <span class="night-face" style="--night-art:url('${escapeHtml(absolute(p.image))}')"></span>
         <span class="night-boss-rung">${mega ? `∞${mega.tier}` : (entry?.rung ?? "")}</span>

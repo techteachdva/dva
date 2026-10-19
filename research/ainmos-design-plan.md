@@ -148,7 +148,7 @@ Type one in the menu's Seed box (case doesn't matter). The seed preview names it
 | Code | Effect |
 | --- | --- |
 | OOPS | Every suited Psyche card is a 1; Wilds unchanged |
-| JILLY | Every Psyche card is a 4, Wilds included |
+| JILLY | The Dream begins Whole: every Landscape is placed face up (the Whole fanfare plays, and it folds at the next Dream) |
 | ROWAN | Ordinary Dream cards do nothing; a Dreambeast rises on a random Landscape at the start of every round (the Cycle's Dreambeast and Archetype Dreams still come) |
 | LEMON | All 12 Archetypes are already yours; the night is Endless Mode from the start, each Cycle closing with the next enhanced Leviathan |
 | BUBBLEGUM | Every suited Psyche card carries a random upgrade (Chaotic, Vivid, Lucid, Recurring); Wilds can't take one |
@@ -175,3 +175,20 @@ Phil's calls, now locked:
 - Dim is one drawback: Power 14, −2 dice, cap 2, no stats, three-card Form, or Repress 2 on a loss.
 - Bright is still open only while its Landscape is placed.
 - Smart bot (150/length): Daydream 71%, Nap 53%, Deep 26% (0.27.1 was 75/57/33), all inside the targets. Browser check: `scripts/ainmos-0272-events-check.mjs`.
+
+## 0.30 Dream Tales (2026-10-18)
+
+Phil's calls, now locked:
+
+- **Sets are used by choice.** Completing a set announces it once; a Use button sits beside Objects (`readyObjectSets`/`useObjectSet` in `js/effects/object-effects.js`). The picker shows all 12 Archetypes as pills with their power on hover (`js/ui/set-archetype-screen.js`); only those still in the deck can be picked. A used set goes to `state.spentSets`, shows in the Subconscious viewer as "Used Sets", and never returns. The pieces spiral into a shadow that lights into the Archetype (`js/ui/set-spiral.js`).
+- **Jewelry matches suit colour:** Silver Sapphire Ring = Lucidity, Golden Ruby Necklace = Willpower, Yellow Diamond Bracelet (new art `art/objects/yellow-diamond-bracelet.webp`, hue-shifted from the Brass Emerald) = Elasticity.
+- **Power curve:** `cycleGrowth` = +1 every 4 Cycles; ordinary beasts cap at 11, the ladder Leviathan at 12, Endless Leviathans stay fixed 13+ (`js/encounters/beast-wards.js`). Deep Sleep keeps the Leviathan for Cycle 15, with ordinary Nightmares (Mini-Boss Power) filling Cycles 10–14 (`insertBossDreams`).
+- **Every Dreambeast has a twist** (`js/encounters/beast-twists.js` for the 23 ordinary beasts + Winged Turtle "Shell"; ladder Bosses keep theirs). Hooks: fight dice/power/cap/ties, phase Actions while standing, no Returns, no Dreamer Power, dusk effects, loss effects, Meet-start hops (`applyBeastTwistsAtDusk`/`applyBeastTwistOnLoss` in `boss-twists.js`).
+- **Pressure:** dusk Represses 2 per standing beast (`DUSK_REPRESS_PER_BEAST`), played as its own cinematic (`js/ui/dusk-toll.js`). Losing a beast fight Forgets a Landscape (one the beast names if placed, else a random unoccupied edge; `forgetOnLostFight` in game.js). Random spawns prefer a tile of the beast's suit.
+- **The Dream is Whole:** placing every Landscape (vault + deck empty, none set aside) pays +2 Power Tokens and Return 4 once per Dreamscape (`checkDreamscapeWhole` in landscapes.js); the fold at the next round animates (`js/ui/dreamscape-whole.js`). JILLY now starts the night Whole (no longer makes every Psyche a 4).
+- **One beat at a time** (`js/ui/fx-timeline.js`): card flights mark the table busy; menus opening mid-flight wait and fade in; flights wait while a big menu is open (Lost & Found and Vault stay live); the dusk toll and Whole fanfare wait for cards in the air.
+- **Hand sort** buttons (suit then value / value then suit).
+- **Story:** `js/meta/chronicle.js` records the night (`state.chronicle`) and writes mad-lib play-by-play lines with glowing slots (`pbp-*` classes); `js/meta/dream-story.js` builds ~3 pages of end credits from it (falls back to runStats/acquiredArchetypes for older saves); `js/ui/dream-credits.js` rolls them on every win before the end screen ("Read the Dream" replays). Endless triumph closes with the lines about the dream someone else dreamed first.
+- Checks: `scripts/ainmos-030-check.mjs` (features, Playwright), `scripts/ainmos-030-story-check.mjs` (bot plays a night in the browser, saves the story text).
+- Retune: Nap deck 11/6/3/1/0 + 2 Wilds (was 12/6/2/1/0 + 1). Smart bot, 400 per length: Daydream 75.3%, Nap 56.3%, Deep 29.3%; 0 errors, 0 step caps.
+- Phil's own 0.29.1 Deep Sleep save (The Immovable, cloud save "DM Z"): 12/12 Archetypes by Round 26 (Cycle 10 of 15, five Cycles spare), 11–10 in fights, 2 deaths, Subconscious empty at the end; two Archetypes came from sets. That ease drove the 0.30 pressure changes.

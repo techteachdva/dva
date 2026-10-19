@@ -25,6 +25,9 @@ import { random } from "../core/rng.js";
 import { ladderEntry } from "./boss-ladder.js";
 import { repressCard, enqueueRepressFromHand } from "../dreamers/subconscious.js";
 import { offerEffectChoice, registerEffectResolver } from "../effects/effect-choices.js";
+import { standingTwists, beastTwist } from "./beast-twists.js";
+import { spendPowerTokens } from "../cards/power-tokens.js";
+import { BEAST_POWER_CAP } from "./beast-wards.js";
 
 function bossId(encounter) {
   return encounter?.refId || encounter?.id;
@@ -96,11 +99,23 @@ function hopJackalope(state) {
 
 /** Bosses that move on their own at the start of Meet (they skip the normal step). */
 export function bossSkipsStep(encounter) {
-  return bossId(encounter) === "jackalope";
+  return bossId(encounter) === "jackalope" || beastTwist(encounter)?.kind === "hop";
+}
+
+/** The Pooka (and any "hop" beast) hops 1 hex to a revealed Landscape. */
+function hopTricksters(state) {
+  standingTwists(state, "hop").forEach(({ tile, encounter }) => {
+    const open = (state.board || []).filter((t) => t.id !== tile.id && t.revealed && !t.wasteland && hexDistance(t, tile) === 1);
+    if (!open.length) return;
+    const dest = open[Math.floor(random() * open.length)];
+    moveEncounterBetweenLandscapes(state, tile.id, dest.id, encounter);
+    logMoment(state, `${encounter.name} hops to ${dest.name}.`, { boss: true });
+  });
 }
 
 export function applyBossTwistsAtMeetStart(state) {
   hopJackalope(state);
+  hopTricksters(state);
 }
 
 // ---- Dusk -----------------------------------------------------------------------
@@ -179,4 +194,103 @@ export function applyBossTwistsAtDusk(state, helpers = {}) {
   devourerHungers(state);
   bogeyUnderTheBed(state);
   leviathanRises(state, helpers.forgetTile);
+}
+
+// ---- Every Dreambeast's own twist (0.30) -------------------------------------
+
+function soloDreamer(state) {
+  return (state.players || []).find((p) => p.alive) || null;
+}
+
+function psycheInHand(player) {
+  return (player?.hand || []).filter((c) => c.type !== "object" && c.type !== "psyche-power" && !c.isDreambeastPsyche && c.type !== "psyche-dreambeast");
+}
+
+/** Forget one Landscape next to this beast that no Dreamer stands on. */
+function forgetNextTo(state, tile, encounter, forgetTileFn) {
+  const occupied = new Set((state.players || []).filter((p) => p.alive).map((p) => p.landscapeId));
+  const near = (state.board || []).filter((t) => t.id !== tile.id && !t.center && t.id !== "bed"
+    && t.revealed && !t.wasteland && !occupied.has(t.id) && hexDistance(t, tile) === 1);
+  if (!near.length || !forgetTileFn) return;
+  const lost = near[Math.floor(random() * near.length)];
+  forgetTileFn(state, lost);
+  logMoment(state, `${encounter.name}: ${lost.name} is Forgotten.`, { boss: true });
+}
+
+/** Dusk: each standing beast's own twist, one clear line each. */
+export function applyBeastTwistsAtDusk(state, helpers = {}) {
+  const me = soloDreamer(state);
+  standingTwists(state).forEach(({ tile, encounter, twist }) => {
+    switch (twist.kind) {
+      case "dusk-grow": {
+        const now = Number(encounter.accept) || 0;
+        if (now >= BEAST_POWER_CAP) return;
+        const next = Math.min(BEAST_POWER_CAP, now + twist.n);
+        encounter.accept = next;
+        encounter.reject = next;
+        encounter.repress = next;
+        encounter.cycleBonus = (encounter.cycleBonus || 0) + (next - now);
+        logMoment(state, `${encounter.name} grows under the moon: Power ${next}.`, { boss: true });
+        return;
+      }
+      case "dusk-repress-hand":
+        if (!me || !psycheInHand(me).length) return;
+        enqueueRepressFromHand(state, me, twist.n, { reason: `${encounter.name}: Repress ${twist.n} Psyche.`, strict: true });
+        return;
+      case "dusk-object-hand": {
+        const obj = (me?.objects || [])[0];
+        if (!obj) return;
+        me.objects = me.objects.filter((o) => o !== obj);
+        repressCard(state, obj);
+        logMoment(state, `${encounter.name} hoards your ${obj.name}.`, { boss: true });
+        return;
+      }
+      case "dusk-forget-near":
+        forgetNextTo(state, tile, encounter, helpers.forgetTile);
+        return;
+      case "dusk-glimmer": {
+        const lost = Math.min(state.glimmer || 0, twist.n);
+        if (!lost) return;
+        state.glimmer -= lost;
+        logMoment(state, `${encounter.name} watches. −${lost} Glimmer.`, { boss: true });
+        return;
+      }
+      case "dusk-token":
+        if (!me || (me.powerTokens || 0) < 1) return;
+        spendPowerTokens(state, me, twist.n, { reason: encounter.name });
+        logMoment(state, `${encounter.name} drains a Power Token.`, { boss: true });
+        return;
+      case "dusk-discard-hand": {
+        const cards = psycheInHand(me);
+        if (!cards.length) return;
+        const card = cards[Math.floor(random() * cards.length)];
+        me.hand = me.hand.filter((c) => c.instanceId !== card.instanceId);
+        state.psycheDiscard.push(card);
+        logMoment(state, `${encounter.name} takes ${card.name}.`, { boss: true });
+        return;
+      }
+      default:
+    }
+  });
+}
+
+/** You lost a fight to this beast: its own loss twist, if it has one. */
+export function applyBeastTwistOnLoss(state, actor, encounter, tile) {
+  const twist = beastTwist(encounter);
+  if (!twist || !actor) return;
+  if (twist.kind === "loss-repress-hand" && psycheInHand(actor).length) {
+    enqueueRepressFromHand(state, actor, twist.n, { reason: `${encounter.name}: Repress ${twist.n} Psyche.`, strict: true });
+  } else if (twist.kind === "loss-object") {
+    const obj = (actor.persistent || [])[0];
+    if (!obj) return;
+    actor.persistent = actor.persistent.filter((o) => o !== obj);
+    repressCard(state, obj);
+    logMoment(state, `${encounter.name} smashes your ${obj.name}.`, { boss: true });
+  } else if (twist.kind === "loss-teleport" && tile) {
+    const open = (state.board || []).filter((t) => t.id !== tile.id && t.revealed && !t.wasteland && !t.center && t.id !== "bed");
+    if (!open.length) return;
+    const dest = open[Math.floor(random() * open.length)];
+    moveEncounterBetweenLandscapes(state, tile.id, dest.id, encounter);
+    logMoment(state, `${encounter.name} grins and slips away to ${dest.name}.`, { boss: true });
+  }
 }

@@ -3,7 +3,7 @@
  * installs can pick up a new dreamscape after the player taps Reload.
  */
 
-const CACHE_NAME = "ainmos-0.29.1-notch-fit";
+const CACHE_NAME = "ainmos-0.30-dream-tales";
 /** Versioned with the release, so a new ship never serves last version's modules. */
 const RUNTIME_CACHE = `${CACHE_NAME}-runtime`;
 
@@ -20,6 +20,7 @@ const PRECACHE = [
   "./css/ainmos-layout.css",
   "./css/ainmos-polish.css",
   "./css/ainmos-mobile.css",
+  "./css/ainmos-beats.css",
   "./css/fonts-local.css",
   "./fonts/font-0.woff2",
   "./fonts/font-1.woff2",
@@ -69,6 +70,16 @@ const PRECACHE = [
   "./js/ui/float-window.js",
   "./js/ui/archetype-window.js",
   "./js/ui/archetype-choice.js",
+  "./js/ui/set-archetype-screen.js",
+  "./js/ui/set-spiral.js",
+  "./js/ui/dusk-toll.js",
+  "./js/ui/dreamscape-whole.js",
+  "./js/ui/fx-timeline.js",
+  "./js/ui/dream-credits.js",
+  "./js/meta/dream-story.js",
+  "./js/meta/chronicle.js",
+  "./js/encounters/beast-twists.js",
+  "./art/objects/yellow-diamond-bracelet.webp",
   "./js/dreamers/archetype-board.js",
   "./js/effects/object-sets.js",
   "./js/effects/set-search.js",

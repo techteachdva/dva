@@ -85,6 +85,28 @@ export function beastWardText(encounter) {
   return `Wards ${name} −${ward.amount}`;
 }
 
+/**
+ * The power curve (0.30). Dreambeasts grow slowly with the night: +1 every
+ * 4 Cycles (Cycles 1-4 +0, 5-8 +1, 9-12 +2, 13-16 +3 ...). Nothing in the night
+ * passes the Leviathan: ordinary beasts top out at 11, the ladder's Leviathan at 12,
+ * and only Endless Mode's Leviathans (fixed 13, 14, 16, 20, 99) stand above it.
+ */
+export const BEAST_POWER_CAP = 11;
+export const LEVIATHAN_POWER_CAP = 12;
+
+export function cycleGrowth(cycle) {
+  return Math.max(0, Math.floor(((Number(cycle) || 1) - 1) / 4));
+}
+
+export function beastPowerCap(encounter) {
+  return beastId(encounter) === "leviathan" ? LEVIATHAN_POWER_CAP : BEAST_POWER_CAP;
+}
+
+/** The Power a beast printed at `printed` arrives with in this Cycle. */
+export function powerForCycle(encounter, printed, cycle) {
+  return Math.min(beastPowerCap(encounter), printed + cycleGrowth(cycle));
+}
+
 /** Stamp a fresh Dreambeast with its ward and the Cycle it arrived in. */
 export function stampBeastForCycle(encounter, cycle) {
   if (!encounter || encounter.cycleBonus != null) return encounter;
@@ -94,11 +116,11 @@ export function stampBeastForCycle(encounter, cycle) {
     encounter.cycleBonus = 0;
     return encounter;
   }
-  const bonus = Math.max(0, Number(cycle) || 0);
-  if (encounter.basePower == null) encounter.basePower = before;
-  encounter.cycleBonus = bonus;
-  encounter.accept = before + bonus;
-  encounter.reject = before + bonus;
-  encounter.repress = before + bonus;
+  const power = powerForCycle(encounter, before, cycle);
+  if (encounter.basePower == null) encounter.basePower = Math.min(before, power);
+  encounter.cycleBonus = Math.max(0, power - encounter.basePower);
+  encounter.accept = power;
+  encounter.reject = power;
+  encounter.repress = power;
   return encounter;
 }

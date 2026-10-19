@@ -280,6 +280,7 @@ export function playDiceBattle(opts) {
     beastDice,
     forceWinner = null,
     minBeastLead = 0,
+    tiesToBeast = false,
     shownBeastDice = null,
     instant = false,
     hold = false,
@@ -324,7 +325,8 @@ export function playDiceBattle(opts) {
 
   let dreamerSuccesses = countSuccesses(dreamerFaces);
   let beastSuccesses = countSuccesses(beastFaces);
-  let dreamerWins = dreamerSuccesses >= beastSuccesses;
+  const beats = (d, b) => (tiesToBeast ? d > b : d >= b);
+  let dreamerWins = beats(dreamerSuccesses, beastSuccesses);
   const result = () => ({
     dreamerWins,
     dreamerSuccesses,
@@ -456,7 +458,7 @@ export function playDiceBattle(opts) {
   const recount = () => {
     dreamerSuccesses = countSuccesses(dreamerFaces);
     beastSuccesses = countSuccesses(beastFaces);
-    dreamerWins = dreamerSuccesses >= beastSuccesses;
+    dreamerWins = beats(dreamerSuccesses, beastSuccesses);
     if (activeBattle) activeBattle.result = result();
     if (scoreD) scoreD.textContent = String(dreamerSuccesses);
     if (scoreB) scoreB.textContent = String(beastSuccesses);

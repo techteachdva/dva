@@ -1,3 +1,4 @@
+import { tellSet } from "../meta/chronicle.js";
 import {
   addLog,
   drawPsycheForPlayer,
@@ -37,6 +38,7 @@ import { logMoment } from "../core/narrator.js";
 import { resumeLandscapeAction } from "../board/landscape-actions.js";
 import { resumeArchetypeFollowup, continueArchetypeQueues } from "../dreamers/archetypes.js";
 import { beginRemember } from "./remember.js";
+import { queueSetSpiralFx } from "../board/board-fx.js";
 
 let lastHelpers = null;
 
@@ -190,31 +192,53 @@ function spawnBeastOn(state, helpers, landscapeId, options = {}) {
   addLog(state, `${pulled.card.name}${kindNote} appears on ${tile?.name || "the Dreamscape"} from the ${pulled.suit} Mindstream.`);
 }
 
-function offerSetAcquire(state, player, label, instanceIds = []) {
+function offerSetAcquire(state, player, label, instanceIds = [], { tag = null, wildUsed = 0 } = {}) {
   const deck = state.archetypeDeck || [];
   if (!deck.length) {
     addLog(state, `${label} is complete, and the Archetype deck is empty. The set stays.`);
     return false;
   }
   if (state.pendingObjectChoice?.cardId === "object-set") return false;
+  const inDeck = new Set(deck.map((arch) => arch.id));
   state.pendingObjectChoice = {
     cardId: "object-set",
     step: "pick-archetype",
-    ui: "choice",
+    ui: "archetype-grid",
     playerId: player.id,
     title: `${label} set`,
-    message: "Pick an Archetype from the deck. You Acquire it, then the set is Repressed.",
-    choices: deck.map((arch) => ({ id: arch.id, label: `${arch.name} (${arch.points || 0} pts)` })),
-    payload: { label, instanceIds },
+    message: "Choose an Archetype to Acquire.",
+    // Every Archetype shows; only those still in the deck can be picked.
+    choices: archetypeRoster(state).map((arch) => ({
+      id: arch.id,
+      label: arch.name,
+      image: arch.image,
+      suit: arch.suit,
+      power: arch.power || arch.passive || "",
+      disabled: !inDeck.has(arch.id),
+    })),
+    payload: { label, tag, instanceIds, wildUsed },
   };
-  addLog(state, `${label} set complete. Choose an Archetype to Acquire.`);
   return true;
+}
+
+/** All twelve Archetypes in a fixed order: the deck, the board, and those already yours. */
+function archetypeRoster(state) {
+  const seen = new Map();
+  const add = (arch) => { if (arch?.id && !seen.has(arch.id)) seen.set(arch.id, arch); };
+  (state.players || []).forEach((p) => (p.acquiredArchetypes || []).forEach(add));
+  (state.finalArchetypes || []).forEach(add);
+  (state.archetypeRow || []).forEach(add);
+  (state.archetypeDeck || []).forEach(add);
+  return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function trackChessPlay(state, player) {
   player.chessPlayed = (player.chessPlayed || 0) + 1;
   if (player.chessPlayed < 3) return;
-  if (offerSetAcquire(state, player, "Chess", [])) player.chessPlayed = 0;
+  // The pawns are already spent, so three plays stand in for the set: use it when you choose.
+  player.chessPlayed = 0;
+  player.setWildcards = [...(player.setWildcards || []), "chess", "chess", "chess"];
+  checkObjectTagSet(state, player, "chess");
 }
 
 function askMoveDreamer(state, player, { cardId, title, destIds, thenReturn = 0, log }) {
@@ -473,18 +497,20 @@ export function resumeObjectEffect(state, helpers = null) {
   return true;
 }
 
-function repressSetCards(state, player, instanceIds) {
+/** A used set leaves play for good: it shows in the Subconscious and never Returns. */
+function repressSetCards(state, player, instanceIds, record = {}) {
   const ids = new Set(instanceIds || []);
-  const pull = (list) => {
-    const kept = [];
-    for (const card of list || []) {
-      if (ids.has(card.instanceId)) repressCard(state, card);
-      else kept.push(card);
-    }
-    return kept;
-  };
+  const spent = [];
+  const pull = (list) => (list || []).filter((card) => {
+    if (!ids.has(card.instanceId)) return true;
+    spent.push(card);
+    return false;
+  });
   player.objects = pull(player.objects);
   player.persistent = pull(player.persistent);
+  if (!Array.isArray(state.spentSets)) state.spentSets = [];
+  state.spentSets.push({ ...record, cards: spent, round: state.round });
+  return spent;
 }
 
 export function resolveObjectChoice(state, choiceId, helpers = null) {
@@ -493,14 +519,36 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
   helpers = useHelpers(helpers);
   const player = playerById(state, pending.playerId);
   if (pending.cardId === "object-set" && pending.step === "pick-archetype") {
-    state.pendingObjectChoice = null;
-    const acquired = acquireArchetypeFromDeck(state, player, choiceId);
-    if (!acquired) {
-      addLog(state, "That Archetype is no longer in the deck.");
+    const payload = pending.payload || {};
+    if (choiceId === "cancel") {
+      state.pendingObjectChoice = null;
+      return true;
+    }
+    if (!(state.archetypeDeck || []).some((arch) => arch.id === choiceId)) {
+      addLog(state, "That Archetype is not in the deck.");
       return false;
     }
-    repressSetCards(state, player, pending.payload?.instanceIds);
-    logMoment(state, `${pending.payload?.label || "The set"} set complete: ${acquired.name} Acquired (+${acquired.points || 0} points). The set is Repressed.`, { boss: true });
+    state.pendingObjectChoice = null;
+    // Snapshot the pieces before they leave, so the spiral can show them.
+    const pieces = [...(player.persistent || []), ...(player.objects || [])]
+      .filter((card) => (payload.instanceIds || []).includes(card.instanceId));
+    state._acquireHow = "set";
+    state._acquireSet = payload.label || "";
+    const acquired = acquireArchetypeFromDeck(state, player, choiceId);
+    state._acquireHow = null;
+    state._acquireSet = null;
+    if (!acquired) return false;
+    tellSet(state, payload.label || "The", acquired, pieces);
+    if (payload.tag && payload.wildUsed) {
+      for (let i = 0; i < payload.wildUsed; i += 1) {
+        const idx = (player.setWildcards || []).indexOf(payload.tag);
+        if (idx >= 0) player.setWildcards.splice(idx, 1);
+      }
+    }
+    repressSetCards(state, player, payload.instanceIds, { tag: payload.tag, label: payload.label, archetypeId: acquired.id, archetypeName: acquired.name });
+    if (player.setsAnnounced && payload.tag) delete player.setsAnnounced[payload.tag];
+    queueSetSpiralFx(pieces, acquired, payload.label);
+    logMoment(state, `${payload.label || "The"} set becomes ${acquired.name}. Acquired.`, { boss: true });
     return true;
   }
   const step = pending.step;
@@ -807,22 +855,50 @@ const SET_LABELS = {
   jewelry: "Jewelry",
 };
 
-export function checkObjectTagSet(state, player, tag, { extra = 0 } = {}) {
-  if (!OBJECT_SETS[tag]) return;
-  if (!player.persistent) player.persistent = [];
-  const inPlay = [...player.persistent, ...(player.objects || [])];
-  const tagged = inPlay.filter((o) => o.tags?.some((t) => t.startsWith(tag)));
-  const wild = (player.setWildcards || []).filter((t) => t === tag).length;
-  const distinct = new Set(tagged.map((o) => o.id)).size;
-  if (distinct + extra + wild < setRequiredForTag(tag)) return;
-  const label = SET_LABELS[tag] || tag;
-  if (wild) {
-    const idx = player.setWildcards.indexOf(tag);
-    if (idx >= 0) player.setWildcards.splice(idx, 1);
+/** Distinct pieces of a set this Dreamer holds: one card per piece, in play first. */
+function setPieces(player, tag) {
+  const byId = new Map();
+  [...(player.persistent || []), ...(player.objects || [])]
+    .filter((o) => o.tags?.some((t) => t.startsWith(tag)))
+    .forEach((card) => { if (!byId.has(card.id)) byId.set(card.id, card); });
+  return [...byId.values()];
+}
+
+/** Sets this Dreamer could use right now. */
+export function readyObjectSets(player) {
+  if (!player) return [];
+  return Object.keys(OBJECT_SETS)
+    .filter((tag) => {
+      const p = setProgress(player, tag);
+      return p && p.held >= p.need;
+    })
+    .map((tag) => ({ tag, label: SET_LABELS[tag] || tag }));
+}
+
+/**
+ * A set no longer cashes in by itself (0.30): completing it announces it once,
+ * and you choose when to use it from your Objects.
+ */
+export function checkObjectTagSet(state, player, tag) {
+  if (!OBJECT_SETS[tag] || !player) return;
+  const progress = setProgress(player, tag);
+  if (!player.setsAnnounced) player.setsAnnounced = {};
+  if (!progress || progress.held < progress.need) {
+    delete player.setsAnnounced[tag];
+    return;
   }
-  if (!offerSetAcquire(state, player, label, tagged.map((card) => card.instanceId)) && wild) {
-    player.setWildcards.push(tag);
-  }
+  if (player.setsAnnounced[tag]) return;
+  player.setsAnnounced[tag] = true;
+  logMoment(state, `${SET_LABELS[tag] || tag} set complete. Use it from your Objects when you choose.`);
+}
+
+/** Use a complete set: pick an Archetype, and the set leaves play for good. */
+export function useObjectSet(state, player, tag) {
+  if (!player || !readyObjectSets(player).some((s) => s.tag === tag)) return false;
+  const need = OBJECT_SETS[tag];
+  const pieces = setPieces(player, tag).slice(0, need);
+  const wildUsed = Math.max(0, need - pieces.length);
+  return offerSetAcquire(state, player, SET_LABELS[tag] || tag, pieces.map((c) => c.instanceId), { tag, wildUsed });
 }
 
 export const OBJECT_EFFECTS = {

@@ -15,6 +15,7 @@
  * Each Dreamer may hold OBJECT_LIMIT Objects (in hand and in play together).
  */
 
+import { tellBuy } from "../meta/chronicle.js";
 import { addLog, finishRoundOpening } from "../core/state.js";
 import { random } from "../core/rng.js";
 import { drawObjectCard, ensureObjectPiles } from "../cards/mindstream-supply.js";
@@ -257,6 +258,7 @@ export function buyLostFoundObject(state, index, giveObject) {
   addLog(state, `${player.name} finds ${card.name} in the Lost & Found for ${paid}.`);
   state.runStats = state.runStats || {};
   state.runStats.objectsBought = (state.runStats.objectsBought || 0) + 1;
+  tellBuy(state, card);
   giveObject?.(state, player, card);
   return { ok: true, card, paid: pay.cards };
 }

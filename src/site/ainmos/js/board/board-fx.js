@@ -3,6 +3,9 @@
 import { burstSparkles, burstInkDissolve, playDreamRipple, playMeetFlash, playPointRipple, playDreamWarble, playBossFlash, playHaptic } from "../ui/fx.js";
 import { playSfx, playLandscapeSfx, playBossStinger } from "../audio/audio.js";
 import { cardBackForDeckId } from "../cards/card-backs.js";
+import { markFxBusy, menuHoldsFlights, retryWhenMenusClose } from "../ui/fx-timeline.js";
+import { playSetSpiral } from "../ui/set-spiral.js";
+import { playDreamscapeCollapse, snapshotDreamscape } from "../ui/dreamscape-whole.js";
 
 const queue = [];
 const prevDreamerTiles = new Map();
@@ -100,6 +103,22 @@ export function isBeastTokenHidden(encKey) {
 }
 
 /** Drop queued board animations (used after the tutorial replays its steps off-screen). */
+export function pendingBoardFxCount() {
+  return queue.length;
+}
+
+/** A used set spirals into its Archetype (js/ui/set-spiral.js). */
+export function queueSetSpiralFx(pieces, archetype, label = "") {
+  if (typeof document === "undefined") return;
+  queue.push({ type: "set-spiral", pieces: (pieces || []).map((c) => ({ name: c.name, image: c.image, suit: c.suit })), archetype: { name: archetype?.name, image: archetype?.image, suit: archetype?.suit }, label });
+}
+
+/** The whole Dreamscape folds into The Bed. Snapshot the tiles now, while they are still drawn. */
+export function queueDreamscapeCollapseFx() {
+  if (typeof document === "undefined") return;
+  queue.push({ type: "dreamscape-collapse", tiles: snapshotDreamscape() });
+}
+
 export function clearBoardFxQueue() {
   queue.length = 0;
 }
@@ -242,6 +261,7 @@ function flyDriftSnap(from, to, { html, className = "", duration = FLY_MS } = {}
     { duration, easing: "cubic-bezier(0.14, 0.72, 0.18, 1.18)", fill: "forwards" },
   );
 
+  markFxBusy(duration + 40);
   window.setTimeout(() => el.remove(), duration + 40);
 }
 
@@ -339,6 +359,7 @@ function flyCard(from, to, card, kind, delay = 0, size = { w: 44, h: 62 }, extra
   });
 
   const life = extraClass.includes("tarot") ? 1080 : 680;
+  markFxBusy(life + delay);
   setTimeout(() => ghost.remove(), life + delay);
 }
 
@@ -522,6 +543,19 @@ function playRailShuffle(deckId) {
 
 export function runPendingBoardFx() {
   if (!queue.length) return;
+  if (menuHoldsFlights()) {
+    // The night's big beats play over anything; the small flights wait their turn.
+    const big = queue.filter((evt) => evt.type === "set-spiral" || evt.type === "dreamscape-collapse");
+    if (big.length && !document.querySelector(".set-spiral, .dream-fold-banner")) {
+      big.forEach((evt) => queue.splice(queue.indexOf(evt), 1));
+      big.forEach((evt) => {
+        if (evt.type === "set-spiral") { markFxBusy(4600); playSetSpiral(evt); }
+        else { markFxBusy(2600); playDreamscapeCollapse(evt.tiles); }
+      });
+    }
+    if (queue.length) retryWhenMenusClose(() => runPendingBoardFx());
+    return;
+  }
   if (reducedMotion()) {
     queue.length = 0;
     return;
@@ -535,6 +569,18 @@ export function runPendingBoardFx() {
   const step = 85;
 
   items.forEach((evt) => {
+    if (evt.type === "set-spiral") {
+      markFxBusy(4500 + delay);
+      window.setTimeout(() => playSetSpiral(evt), delay);
+      delay += 4300;
+      return;
+    }
+    if (evt.type === "dreamscape-collapse") {
+      markFxBusy(2600 + delay);
+      window.setTimeout(() => playDreamscapeCollapse(evt.tiles), delay);
+      delay += 2400;
+      return;
+    }
     if (evt.type === "dream-draw") {
       const from = centerOf(deckEl("dream")) || { x: window.innerWidth * 0.1, y: window.innerHeight * 0.35 };
       const to = boardCenter();
@@ -746,6 +792,7 @@ export function runPendingBoardFx() {
         }, 520 + i * 40);
       });
       flashEl(tile, "hex-psyche-gold", 720);
+      markFxBusy(1150 + delay);
       delay += 220;
     } else if (evt.type === "object-draw") {
       const deckKey = evt.suit ? `mindstream-${evt.suit}` : "mindstream-lucidity";
