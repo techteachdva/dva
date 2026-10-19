@@ -438,3 +438,39 @@ Each version is a playable checkpoint. Wright's rule: build the toy before the g
 - WordBuild (Dynamic Literacy): [review](https://cathyduffyreviews.com/homeschool-reviews-core-curricula/spelling-vocabulary/vocabulary-resources/wordbuild-vocabulary-development-system)
 - Classroom games: [Teach Starter morphology games](https://www2.teachstarter.com/us/teaching-resource-collection/morphology/games/) · [This Reading Mama](https://thisreadingmama.com/?p=73337) · [Spelfabet Go Fish](https://www.spelfabet.com.au/?p=163236) · [Twinkl Morphology Memory](https://www.twinkl.com/resource/morphology-memory-au-l-1626255641)
 - In repo: `research/ainmos-mobile-layout-research.md`, `src/site/tech-escape/README.md`, `src/site/tech-escape/js/minigames/quiz.js`, `src/site/scripts/morphology-morpheme-catalog.js`
+
+---
+
+## As built — 1.0.0 (19 Oct 2026)
+
+Branch `cybermorph`. Plays at `/cybermorph/` (passthrough copy in `.eleventy.js`). Content audit: `node scripts/audit-cybermorph-bank.mjs` (159 built checks, 0 errors).
+
+### What shipped
+
+- **The whole loop.** Title, profiles (up to 6 per browser) → avatar builder → the Core (hub) → the Anglo-Saxon, Latin and Greek Districts (3 rooms each) → the Secret Secretary Desk → the Lingo District (2 rooms) → the 3-stage Rot finale → ending credits with the Inspirations list.
+- **Four verbs, one interface.** COMPILE (the 3D Morph Compiler drum), DEBUG (cut seams, then judge real vs Rot), PATCH (firewall locks: turn the ending ring), LINK (family branches and look-alikes). Lingo adds UNPACK (compile the pieces a slang word came from, then watch the change chain) and a translation firewall.
+- **Learning engine.** Leitner mastery per morpheme with glow tiers and fading; fading morphemes spawn review Rotlings in the Core; first try recorded quietly; elaborated feedback on every attempt; Unknown File consoles run the Word Detective routine; spelling-joint animations for drop-e, e-merge, y→i, doubling and prefix assimilation.
+- **Stakes.** The Anglo-Saxon District is failure-free. The Rot meter (Latin and Greek Rotling halls) crashes the room at 100%: reboot at the entrance, loose morphemes drop where you stood. Debugging wrong shoves you back a tile.
+- **Extras.** Overclock Mode (2-minute arcade run, browser-only top 10, screenshot-ready score card), the free Morph Compiler console with Made-up Words, Lexicon Tree leaves (one per word, coloured by origin), end-of-shift Lexinet patch notes, progress report (printable), avatar unlocks per milestone.
+- **Teacher links.** `?set=er,or` (game ids or catalog keys) focuses review and Overclock on those morphemes; `?cognates=es` turns on Spanish cognates; `?projector=1` opens a big-type free compiler with every morpheme.
+- **Chromebook.** No build, three.js r169 vendored, no network calls, Lambert materials only, pixel ratio ≤ 1.25 with an automatic drop under 30 fps, browser-only saves written on change and on `pagehide`, offline service worker on https.
+- **Games page.** `/games/` is now an 80s arcade: synthwave background, a cartridge console with a slot, screen and EJECT button, and a rack of eleven cartridges in six shell shapes. Picking one flies it into the slot and opens the game in a new tab (`src/site/scripts/arcade-console.js`). CyberMorph has its own cartridge (three interlocking prefix/base/suffix tiles).
+
+### Departures from the plan, and why
+
+- **No separate "fork" of the word list.** Only the catalog is forked (`js/data/catalog.js`); the game's words live in the district files, which are what the audit checks. The Garden's `morphology-words-data.js` had nothing the game needed.
+- **The camera is a fixed three-quarter perspective at a narrow FOV** rather than a true orthographic camera, so the parallax tilt reads as 3D.
+- **Mr. Phil is drawn as his own teacher avatar** (a screen head with teacher specs and a MR. PHIL tag) rather than a guess at his real appearance.
+- **Rotlings don't block movement**, so a student can never be trapped by one.
+
+### Playtest tooling
+
+- `src/site/cybermorph/dev/autoplay.js` drives the game through its real buttons (`await import('/cybermorph/dev/autoplay.js')`). The game exposes `window.__cybermorph` for it.
+- `scripts/serve-nocache.py` serves `src/site` without stale ES-module caching.
+
+### Still open
+
+1. Real-Chromebook check (the Part 4 table) on the slowest school model.
+2. Teacher review of the Lingo word list for each school.
+3. Mr. Phil's recorded voice lines (stretch goal).
+4. Untracked note `src/site/notes/Game Design/Granny - Research for SPARK Lodge Game.md` has broken front matter (JSON and YAML mixed) and stops the Eleventy build.

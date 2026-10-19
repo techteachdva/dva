@@ -1,808 +1,889 @@
-/* Games page — 3D game cartridges (/games/)
-   Pivot from arcade cabinets to a vertical stack of playable cartridges.
-   Each cartridge is a CSS 3D cuboid: front label, plastic shell, grip ridges.
-   Hover lifts the cartridge forward — like picking it up to slot into a console.
-*/
+/* Games page (/games/) — an 80s arcade: a synthwave night, a cartridge console on top,
+   and a rack of varied cartridges below. Pick a cartridge and it flies into the slot
+   (scripts/arcade-console.js), then the game opens in a new tab.
 
-.cartridge-games-page {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 0.5rem 0 3rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+   Cartridge shells come in six silhouettes (shape-*), each a nod to an era, none a copy:
+     brick   tall grey brick with grip ridges     mega   black shell with rounded shoulders
+     super   two-tone with notched lower corners  wood   woodgrain band over black plastic
+     pocket  small handheld cartridge, cut corner neo    translucent neon plastic
+   Every game keeps its own label art (cart--<game>). */
+
+$neon-pink: #ff3df0;
+$neon-cyan: #00e5ff;
+$neon-yellow: #ffd23f;
+$night: #0b0420;
+
+// ── Page and background ─────────────────────────────────────────
+
+body:has(.arcade-page) {
+  background:
+    radial-gradient(ellipse 60% 38% at 50% 34%, rgba(255, 61, 240, 0.28), transparent 70%),
+    linear-gradient(180deg, #05010f 0%, #1a0533 38%, #3a0b4d 52%, #12031f 53%, #05010d 100%) fixed;
+  color: #eef1ff;
 }
 
-.cartridge-games-page__intro {
-  font-size: 1.1rem;
-  line-height: 1.55;
-  margin-bottom: 2.5rem;
-  opacity: 0.92;
-  text-align: center;
-  letter-spacing: 0.02em;
-}
-
-/* ── Cartridge Stack ────────────────────────────────────────────── */
-.cartridge-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2.5rem;
-  width: 100%;
-}
-
-/* ── Cartridge Dimensions ─────────────────────────────────────── */
-.cartridge {
-  --cart-w: 320px;
-  --cart-h: 190px;
-  --cart-d: 22px;
-  --cart-half-z: calc(var(--cart-d) / 2);
-  --cart-half-x: calc(var(--cart-w) / 2);
-  --cart-half-y: calc(var(--cart-h) / 2);
-}
-
-.cartridge__scene {
-  position: relative;
-  perspective: 1100px;
-  -webkit-perspective: 1100px;
-  perspective-origin: 50% 40%;
-  transform-style: preserve-3d;
-  min-height: 240px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0;
-}
-
-/* Hover: lift forward as if being picked up */
-.cartridge__tilt {
-  position: relative;
-  z-index: 1;
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
-  transform: translateZ(0) rotateY(0deg) rotateX(4deg);
-  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.cartridge:hover .cartridge__tilt {
-  transform: translateZ(28px) rotateY(0deg) rotateX(8deg);
-}
-
-.cartridge-cuboid {
-  position: relative;
-  width: var(--cart-w);
-  height: var(--cart-h);
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
-}
-
-.cartridge-cuboid__face {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  backface-visibility: hidden;
-  box-sizing: border-box;
-  transform-style: preserve-3d;
-}
-
-/* ── Front Face: Label Art ──────────────────────────────────── */
-.cartridge-cuboid__face--front {
-  width: var(--cart-w);
-  height: var(--cart-h);
-  margin-left: calc(var(--cart-w) / -2);
-  margin-top: calc(var(--cart-h) / -2);
-  transform: rotateY(0deg) translateZ(var(--cart-half-z));
-  border-radius: 10px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  border: 2px solid rgba(180, 180, 190, 0.3);
-  box-shadow:
-    0 14px 32px rgba(0, 0, 0, 0.45),
-    0 6px 14px rgba(0, 0, 0, 0.35),
-    inset 1px 1px 0 rgba(255, 255, 255, 0.18),
-    inset -2px -2px 6px rgba(0, 0, 0, 0.25);
-  background: linear-gradient(145deg, #d4d4dc 0%, #b8b8c2 100%);
-}
-
-/* Plastic shell ridge around the edge */
-.cartridge-cuboid__face--front::before {
+body:has(.arcade-page)::before {
+  // The setting sun with its stripes.
   content: "";
-  position: absolute;
-  inset: 3px;
-  border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* Grip notch at the bottom */
-.cartridge-cuboid__face--front::after {
-  content: "";
-  position: absolute;
+  position: fixed;
   left: 50%;
-  bottom: 6px;
+  top: 18vh;
+  width: min(52vw, 520px);
+  aspect-ratio: 1;
   transform: translateX(-50%);
-  width: 64px;
-  height: 10px;
-  border-radius: 4px;
-  background:
-    linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.22) 100%);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* ── Label Area ──────────────────────────────────────────────── */
-.cartridge-label {
-  position: relative;
-  flex: 1 1 auto;
-  margin: 14px 16px 22px;
-  border-radius: 6px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow:
-    inset 0 2px 6px rgba(0, 0, 0, 0.15),
-    0 1px 0 rgba(255, 255, 255, 0.15);
-  z-index: 1;
-}
-
-.cartridge-label__title {
-  position: relative;
-  z-index: 3;
-  padding: 0.7rem 1.2rem;
-  font-weight: 800;
-  font-size: 1.35rem;
-  text-decoration: none !important;
-  border-radius: 6px;
-  text-align: center;
-  line-height: 1.2;
-  letter-spacing: 0.03em;
-  transition: transform 0.2s ease, box-shadow 0.25s ease, filter 0.25s ease;
-  display: block;
-}
-
-.cartridge-label__title:focus-visible {
-  outline: 2px solid rgb(255, 255, 255);
-  outline-offset: 3px;
-}
-
-.cartridge-label__title:hover,
-.cartridge-label__title:focus-visible {
-  transform: scale(1.05);
-}
-
-/* ── Top / Bottom / Back / Left faces ───────────────────────── */
-.cartridge-cuboid__face--top {
-  width: var(--cart-w);
-  height: var(--cart-d);
-  margin-left: calc(var(--cart-w) / -2);
-  margin-top: calc(var(--cart-d) / -2);
-  transform: rotateX(90deg) translateZ(var(--cart-half-y));
-  background: linear-gradient(90deg, #c0c0ca 0%, #a8a8b4 50%, #c0c0ca 100%);
-  border: 1px solid rgba(140, 140, 152, 0.4);
-  border-radius: 3px;
-}
-
-/* End label tab on the top edge */
-.cartridge-cuboid__face--top::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 90px;
-  height: 14px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.cartridge-cuboid__face--bottom {
-  width: var(--cart-w);
-  height: var(--cart-d);
-  margin-left: calc(var(--cart-w) / -2);
-  margin-top: calc(var(--cart-d) / -2);
-  transform: rotateX(-90deg) translateZ(var(--cart-half-y));
-  background: linear-gradient(90deg, #b0b0ba 0%, #9898a4 50%, #b0b0ba 100%);
-  border: 1px solid rgba(130, 130, 142, 0.4);
-  border-radius: 3px;
-}
-
-.cartridge-cuboid__face--right {
-  width: var(--cart-d);
-  height: var(--cart-h);
-  margin-left: calc(var(--cart-d) / -2);
-  margin-top: calc(var(--cart-h) / -2);
-  transform: rotateY(90deg) translateZ(var(--cart-half-x));
-  background:
-    linear-gradient(180deg, rgba(0,0,0,0.06) 0%, transparent 8%),
-    linear-gradient(180deg, #b8b8c2 0%, #a0a0aa 100%);
-  border: 1px solid rgba(140, 140, 152, 0.35);
-  border-radius: 3px;
-}
-
-/* Grip ridges on the right edge */
-.cartridge-cuboid__face--right::before {
-  content: "";
-  position: absolute;
-  inset: 10% 25%;
-  background: repeating-linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.08) 0 4px,
-    rgba(255, 255, 255, 0.06) 4px 5px,
-    transparent 5px 10px
-  );
-  border-radius: 2px;
-  pointer-events: none;
-}
-
-.cartridge-cuboid__face--left {
-  width: var(--cart-d);
-  height: var(--cart-h);
-  margin-left: calc(var(--cart-d) / -2);
-  margin-top: calc(var(--cart-h) / -2);
-  transform: rotateY(-90deg) translateZ(var(--cart-half-x));
-  background:
-    linear-gradient(180deg, rgba(0,0,0,0.06) 0%, transparent 8%),
-    linear-gradient(180deg, #b8b8c2 0%, #a0a0aa 100%);
-  border: 1px solid rgba(140, 140, 152, 0.35);
-  border-radius: 3px;
-}
-
-.cartridge-cuboid__face--back {
-  width: var(--cart-w);
-  height: var(--cart-h);
-  margin-left: calc(var(--cart-w) / -2);
-  margin-top: calc(var(--cart-h) / -2);
-  transform: rotateY(180deg) translateZ(var(--cart-half-z));
-  background: linear-gradient(145deg, #c0c0ca 0%, #a8a8b4 100%);
-  border: 1px solid rgba(140, 140, 152, 0.3);
-  border-radius: 8px;
-}
-
-/* ── Decorative connector pins on the bottom face ───────────── */
-.cartridge-cuboid__face--bottom::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 120px;
-  height: 8px;
-  background: repeating-linear-gradient(
-    90deg,
-    #d4d4dc 0 8px,
-    #888894 8px 9px,
-    #d4d4dc 9px 18px
-  );
-  border-radius: 2px;
-  opacity: 0.7;
-}
-
-/* ── Shadow beneath each cartridge ──────────────────────────── */
-.cartridge__shadow {
-  position: absolute;
-  left: 50%;
-  bottom: -18px;
-  width: 280px;
-  height: 20px;
-  margin-left: -140px;
   border-radius: 50%;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(0, 0, 0, 0.35) 0%,
-    rgba(0, 0, 0, 0.15) 55%,
-    transparent 72%
-  );
-  transform: rotateX(72deg);
-  pointer-events: none;
-  z-index: 0;
-  filter: blur(3px);
-  transition: opacity 0.35s ease, transform 0.35s ease;
-}
-
-.cartridge:hover .cartridge__shadow {
-  opacity: 0.55;
-  transform: rotateX(72deg) scale(0.92);
-}
-
-/* ── Label Brand Strip ─────────────────────────────────────────── */
-.cartridge-label__brand {
-  position: absolute;
-  top: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.42rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  z-index: 3;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-/* ── Per-Game Label Themes ─────────────────────────────────── */
-
-/* ===== Tech Escape ===== */
-.cartridge--tech .cartridge-cuboid__face--front {
-  background: linear-gradient(145deg, #d8d8e0 0%, #c0c0cc 100%);
-}
-.cartridge--tech .cartridge-label {
   background:
-    repeating-linear-gradient(0deg, transparent 0 1px, rgba(0, 255, 220, 0.04) 1px 2px, transparent 2px 3px),
-    radial-gradient(ellipse at 50% 20%, rgba(0, 255, 220, 0.08), transparent 55%),
-    linear-gradient(180deg, #050a10 0%, #0a1520 100%);
-}
-.cartridge--tech .cartridge-label__title {
-  color: #b8fff5 !important;
-  background: rgba(0, 40, 50, 0.75);
-  border: 1px solid rgba(0, 255, 220, 0.4);
-  font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
-  letter-spacing: 0.04em;
-  box-shadow: 0 0 24px rgba(0, 220, 255, 0.2);
+    repeating-linear-gradient(180deg, transparent 0 55%, rgba(5, 1, 15, 0.9) 55% 58%, transparent 58% 63%, rgba(5, 1, 15, 0.9) 63% 67%, transparent 67% 73%, rgba(5, 1, 15, 0.9) 73% 78%, transparent 78% 85%, rgba(5, 1, 15, 0.9) 85% 91%, transparent 91%),
+    linear-gradient(180deg, #ffe66b 0%, #ff9a3d 40%, #ff3df0 80%);
+  box-shadow: 0 0 80px rgba(255, 61, 240, 0.45);
+  opacity: 0.55;
+  z-index: -2;
+  pointer-events: none;
 }
 
-/* Code lines decoration */
-.cartridge--tech .cartridge-label::before {
-  content: "function escape() {\a  while (alive) {\a    hack(mainframe);\a  }\a}";
+body:has(.arcade-page)::after {
+  // The perspective grid floor and a whisper of scanlines.
+  content: "";
+  position: fixed;
+  left: -50vw;
+  right: -50vw;
+  bottom: 0;
+  height: 46vh;
+  background:
+    linear-gradient(180deg, #05010d 0%, transparent 30%),
+    repeating-linear-gradient(90deg, rgba(255, 61, 240, 0.55) 0 2px, transparent 2px 80px),
+    repeating-linear-gradient(0deg, rgba(0, 229, 255, 0.45) 0 2px, transparent 2px 46px),
+    #0b0218;
+  transform: perspective(380px) rotateX(62deg);
+  transform-origin: 50% 100%;
+  z-index: -1;
+  pointer-events: none;
+  animation: grid-roll 3.5s linear infinite;
+}
+
+@keyframes grid-roll {
+  from { background-position: 0 0, 0 0, 0 0, 0 0; }
+  to { background-position: 0 0, 0 0, 0 46px, 0 0; }
+}
+
+body:has(.arcade-page) main.content.arcade-page {
+  max-width: 1120px;
+  background: transparent;
+}
+
+main.content.arcade-page > header h1 {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-weight: 900;
+  font-size: clamp(1.8rem, 4.6vw, 3.4rem);
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  line-height: 1.05;
+  margin: 0.2rem 0 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #8ff7ff 42%, $neon-pink 52%, $neon-yellow 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.55)) drop-shadow(0 0 26px rgba(255, 61, 240, 0.35));
+}
+
+body.title-note-icon main.content.arcade-page > header > h1[data-note-icon]::before { display: none; }
+
+main.content.arcade-page > header .header-meta,
+main.content.arcade-page > header .header-tags { display: none; }
+
+.arcade {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4rem;
+  padding-bottom: 4rem;
+}
+
+.arcade__intro {
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #cfd3ff;
+  max-width: 760px;
+  margin: 0;
+
+  a { color: $neon-cyan; }
+}
+
+// ── The console ─────────────────────────────────────────────────
+
+.console {
+  width: min(640px, 94vw);
+  perspective: 1200px;
+}
+
+.console__body {
+  position: relative;
+  border-radius: 18px 18px 26px 26px;
+  background: linear-gradient(180deg, #2b2b33 0%, #17171d 60%, #0f0f13 100%);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.6),
+    0 0 0 2px #3c3c48,
+    inset 0 2px 0 rgba(255, 255, 255, 0.12),
+    0 0 40px rgba(255, 61, 240, 0.25);
+  transform: rotateX(14deg);
+  transform-origin: 50% 100%;
+  padding: 1.1rem 1.4rem 1.2rem;
+}
+
+.console__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.console__slot {
+  position: relative;
+  flex: 0 0 auto;
+  width: 220px;
+  height: 46px;
+  margin-left: 4%;
+}
+
+.console__slot-mouth {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #020203 0%, #0b0b10 100%);
+  box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.9), 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 2px solid #33333d;
+  z-index: 2;
+}
+
+.console__slot-mouth::after {
+  content: "";
   position: absolute;
   left: 8%;
-  top: 10%;
-  font-family: ui-monospace, "Cascadia Code", monospace;
-  font-size: 0.38rem;
-  line-height: 1.3;
-  color: rgba(0, 255, 220, 0.35);
-  white-space: pre;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* ===== Dungeon Class ===== */
-.cartridge--dungeon .cartridge-cuboid__face--front {
-  background: linear-gradient(145deg, #c8c0b8 0%, #b0a898 100%);
-}
-.cartridge--dungeon .cartridge-label {
-  background:
-    linear-gradient(335deg, rgba(255,255,255,0.03) 25%, transparent 25%) 0 0 / 10px 10px,
-    linear-gradient(155deg, rgba(0,0,0,0.15) 25%, transparent 25%) 0 0 / 10px 10px,
-    linear-gradient(180deg, #2e2824 0%, #1e1812 50%, #12100c 100%);
-}
-.cartridge--dungeon .cartridge-label__title {
-  color: #f0e6d4 !important;
-  background: rgba(40, 32, 26, 0.85);
-  border: 1px solid rgba(180, 140, 90, 0.5);
-  font-family: Georgia, "Times New Roman", serif;
-}
-
-/* Wooden door on label */
-.cartridge--dungeon .cartridge-label::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 55%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 55px;
-  background:
-    repeating-linear-gradient(90deg, transparent 0 12px, rgba(0,0,0,0.3) 12px 13px, transparent 13px 25px),
-    linear-gradient(180deg, #4a3528 0%, #3d2b20 30%, #35241a 60%, #2e1e14 100%);
-  border: 2px solid #1e1410;
+  right: 8%;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
   border-radius: 2px;
-  pointer-events: none;
-  z-index: 1;
-}
-.cartridge--dungeon .cartridge-label::after {
-  content: "";
-  position: absolute;
-  left: 56%;
-  top: 62%;
-  width: 8px;
-  height: 8px;
-  background:
-    radial-gradient(circle, #ffd700 0%, #b8860b 40%, transparent 70%);
-  border-radius: 50%;
-  box-shadow: 0 0 6px rgba(255, 200, 60, 0.5);
-  pointer-events: none;
-  z-index: 2;
+  background: #000;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.0);
+  transition: box-shadow 0.4s;
 }
 
-/* ===== Crystal Wizards ===== */
-.cartridge--crystal .cartridge-cuboid__face--front {
-  background: linear-gradient(145deg, #d4c8e0 0%, #c0b4d0 100%);
-}
-.cartridge--crystal .cartridge-label {
-  background:
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px) 0 0 / 20px 100%,
-    linear-gradient(180deg, rgba(255,255,255,0.02) 1px, transparent 1px) 0 0 / 100% 20px,
-    radial-gradient(ellipse at 50% 40%, rgba(30, 15, 60, 0.5) 0%, transparent 65%),
-    linear-gradient(180deg, #0c0618 0%, #140a28 40%, #080412 100%);
-}
-.cartridge--crystal .cartridge-label__title {
-  color: #fff9fc !important;
-  background: rgba(40, 20, 60, 0.75);
-  border: 1px solid rgba(200, 160, 255, 0.5);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-  box-shadow: 0 0 24px rgba(200, 160, 255, 0.2);
-}
+.console.is-loaded .console__slot-mouth::after { box-shadow: 0 0 14px rgba(0, 229, 255, 0.9); }
 
-/* Central crystal */
-.cartridge--crystal .cartridge-label::before {
-  content: "";
+// The cartridge sticking out of the slot once loaded (built by arcade-console.js).
+.console__inserted {
   position: absolute;
   left: 50%;
-  top: 48%;
-  transform: translate(-50%, -50%);
-  width: 55px;
-  height: 68px;
-  background:
-    conic-gradient(
-      from 200deg at 50% 55%,
-      rgba(255, 80, 120, 0.45) 0deg,
-      rgba(255, 220, 100, 0.35) 72deg,
-      rgba(80, 255, 160, 0.4) 144deg,
-      rgba(100, 180, 255, 0.45) 216deg,
-      rgba(255, 80, 160, 0.35) 288deg,
-      rgba(255, 80, 120, 0.45) 360deg
-    ),
-    linear-gradient(180deg, rgba(30, 15, 55, 0.4), rgba(10, 5, 25, 0.85));
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  box-shadow: 0 0 30px rgba(200, 160, 255, 0.35);
-  pointer-events: none;
-  z-index: 1;
-  animation: crystal-pulse 3s ease-in-out infinite;
-}
-
-@keyframes crystal-pulse {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.2); }
-}
-
-/* ===== Somnia ===== */
-.cartridge--somnia .cartridge-cuboid__face--front {
-  background: linear-gradient(145deg, #c8c0d8 0%, #b0a8c4 100%);
-}
-.cartridge--somnia .cartridge-label {
-  background:
-    linear-gradient(180deg, rgba(8, 5, 20, 0.25) 0%, rgba(8, 5, 20, 0.55) 100%),
-    url("/somnia/images/somnia-box-art.jpg") center / cover no-repeat;
-}
-.cartridge--somnia .cartridge-label__title {
-  color: #f5eeff !important;
-  background: rgba(18, 8, 36, 0.88);
-  border: 1px solid rgba(180, 140, 255, 0.55);
-  font-family: var(--font-display, "Cinzel", serif);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  box-shadow: 0 0 28px rgba(140, 100, 255, 0.25);
-}
-
-/* ===== Purple Worm Escape ===== */
-.cartridge--worm .cartridge-cuboid__face--front {
-  background: linear-gradient(145deg, #d0c0d8 0%, #b8a8c4 100%);
-}
-.cartridge--worm .cartridge-label {
-  background:
-    radial-gradient(ellipse 85% 80% at 50% 45%, rgba(140, 40, 200, 0.2) 0%, transparent 55%),
-    linear-gradient(150deg, rgba(255,255,255,0.02) 25%, transparent 25%) 0 0 / 10px 10px,
-    linear-gradient(210deg, rgba(0,0,0,0.12) 25%, transparent 25%) 0 0 / 10px 10px,
-    linear-gradient(180deg, #1a0c24 0%, #0f0618 50%, #080210 100%);
-}
-.cartridge--worm .cartridge-label__title {
-  color: #f5e0ff !important;
-  background: rgba(50, 15, 70, 0.85);
-  border: 1px solid rgba(200, 120, 230, 0.5);
-}
-
-/* Worm maw */
-.cartridge--worm .cartridge-label::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 52%;
-  transform: translate(-50%, -50%);
-  width: 100px;
-  height: 70px;
-  background:
-    radial-gradient(ellipse 70% 55% at 50% 35%, rgba(200, 100, 255, 0.3) 0%, rgba(100, 30, 160, 0.12) 40%, transparent 65%),
-    radial-gradient(ellipse 50% 45% at 50% 55%, #0a0310 0%, #1a0520 50%, #0f0418 100%);
-  border-radius: 50% 50% 45% 45% / 55% 55% 45% 45%;
-  pointer-events: none;
-  z-index: 1;
-  animation: worm-maw-pulse 3s ease-in-out infinite;
-}
-
-@keyframes worm-maw-pulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
-  50% { transform: translate(-50%, -50%) scale(1.04); filter: brightness(1.15); }
-}
-
-/* Teeth */
-.cartridge--worm .cartridge-label::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 42%;
+  bottom: 22px;
+  width: 168px;
+  height: 0;
   transform: translateX(-50%);
-  width: 80px;
-  height: 28px;
-  background:
-    linear-gradient(180deg, #f0f0f5 0%, #c8c8d0 40%, transparent 40%, transparent 60%, #c8c8d0 60%, #f0f0f5 100%);
-  clip-path: polygon(
-    0 0, 8% 40%, 16% 0, 24% 40%, 32% 0, 40% 40%, 48% 0, 56% 40%, 64% 0, 72% 40%, 80% 0, 88% 40%, 100% 0,
-    100% 100%, 92% 60%, 84% 100%, 76% 60%, 68% 100%, 60% 60%, 52% 100%, 44% 60%, 36% 100%, 28% 60%, 20% 100%, 12% 60%, 0 100%
-  );
-  pointer-events: none;
-  z-index: 2;
+  z-index: 1;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+  transition: height 0.35s ease;
 }
 
-/* ===== Dragon Trail ===== */
-.cartridge--dragon .cartridge-cuboid__face--front {
-  background: linear-gradient(145deg, #c0d0c0 0%, #a8b8a8 100%);
-}
-.cartridge--dragon .cartridge-label {
-  background:
-    repeating-linear-gradient(0deg, rgba(0, 255, 100, 0.03) 0 2px, transparent 2px 4px),
-    radial-gradient(ellipse at 50% 30%, rgba(0, 255, 120, 0.1), transparent 55%),
-    #020804;
-}
-.cartridge--dragon .cartridge-label__title {
-  color: #c8ffc0 !important;
-  background: rgba(10, 40, 15, 0.75);
-  border: 1px solid rgba(100, 255, 120, 0.4);
-  font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
-  letter-spacing: 0.04em;
-  box-shadow: 0 0 24px rgba(80, 255, 100, 0.15);
-}
+.console.is-loaded .console__inserted { height: 62px; }
 
-/* ASCII dragon mini */
-.cartridge--dragon .cartridge-label::before {
-  content: "      /\  /\\\a     /  \/  \\\a    / /\/\ \\ \\a   / /    \ \\ \\a  /_/      \_\\_";
+.console__inserted .cart__label {
   position: absolute;
+  inset: 8px 10px -40px;
+}
+
+.console__vents {
+  flex: 1 1 auto;
+  height: 34px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(90deg, #0a0a0e 0 6px, #24242c 6px 12px);
+  opacity: 0.8;
+}
+
+.console__front {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.console__screen {
+  height: 74px;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 50%, #0d2b2b 0%, #03100f 100%);
+  border: 3px solid #2a2a33;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.9), 0 0 0 1px #000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.console__screen-text {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-weight: 800;
+  font-size: clamp(0.85rem, 2.2vw, 1.15rem);
+  letter-spacing: 0.14em;
+  color: #63ffcf;
+  text-shadow: 0 0 8px rgba(99, 255, 207, 0.8);
+  text-align: center;
+  padding: 0 0.6rem;
+  animation: screen-blink 1.2s steps(2) infinite;
+}
+
+.console.is-loading .console__screen-text { color: $neon-yellow; text-shadow: 0 0 8px rgba(255, 210, 63, 0.8); }
+.console.is-loaded .console__screen-text { animation: none; }
+
+@keyframes screen-blink { 50% { opacity: 0.55; } }
+
+.console__panel {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.console__led {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #4a0d12;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.console.is-loading .console__led,
+.console.is-loaded .console__led {
+  background: #ff3b5c;
+  box-shadow: 0 0 10px #ff3b5c, 0 0 2px #fff;
+}
+
+.console__brand {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-weight: 900;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  line-height: 1.25;
+  color: #d9dbe8;
+
+  small { color: $neon-pink; font-size: 0.6rem; }
+}
+
+.console__btn {
+  min-height: 40px;
+  padding: 0 0.9rem;
+  border-radius: 8px;
+  border: 0;
+  background: linear-gradient(180deg, #5b5b68, #34343e);
+  color: #f0f0f7;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  box-shadow: 0 3px 0 #15151a, inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+
+  &:active { transform: translateY(2px); box-shadow: 0 1px 0 #15151a; }
+  &:focus-visible { outline: 3px solid $neon-yellow; outline-offset: 2px; }
+}
+
+.console__stripes {
+  height: 10px;
+  margin: 1rem -1.4rem -1.2rem;
+  border-radius: 0 0 26px 26px;
+  background: linear-gradient(90deg, $neon-cyan 0 25%, $neon-pink 25% 50%, $neon-yellow 50% 75%, #9dff7a 75% 100%);
+  opacity: 0.85;
+}
+
+// ── The rack ────────────────────────────────────────────────────
+
+.rack {
+  width: 100%;
+  padding: 1.4rem 1rem 0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(20, 8, 40, 0.75), rgba(10, 4, 22, 0.9));
+  border: 2px solid rgba(255, 61, 240, 0.35);
+  box-shadow: 0 0 40px rgba(255, 61, 240, 0.15), inset 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.rack__shelf {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  gap: 2.4rem 1.1rem;
+  justify-items: center;
+
+  padding-bottom: 1.6rem;
+
+  li { position: relative; margin: 0; padding: 0; }
+  li::before { display: none; }
+
+  // A glowing shelf rail under every row: each slot draws its piece, wide enough to meet its neighbours.
+  li::after {
+    content: "";
+    position: absolute;
+    left: -0.7rem;
+    right: -0.7rem;
+    bottom: -16px;
+    height: 5px;
+    background: linear-gradient(180deg, #ff6af4, #b0189f);
+    box-shadow: 0 0 14px rgba(255, 61, 240, 0.8), 0 8px 14px rgba(0, 0, 0, 0.6);
+  }
+}
+
+// ── A cartridge ─────────────────────────────────────────────────
+
+.cart {
+  --shell: #b9bcc6;
+  --shell-dark: #9a9daa;
+  --shell-edge: rgba(255, 255, 255, 0.35);
+  position: relative;
+  display: block;
+  width: 168px;
+  height: 222px;
+  text-decoration: none !important;
+  color: inherit;
+  perspective: 800px;
+  outline: none;
+  background-image: none !important; // the theme's external-link arrow
+  padding: 0 !important;
+}
+
+.cart__shell {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px 10px 6px 6px;
+  background: linear-gradient(160deg, var(--shell) 0%, var(--shell-dark) 100%);
+  box-shadow:
+    0 14px 24px rgba(0, 0, 0, 0.55),
+    inset 1px 1px 0 var(--shell-edge),
+    inset -2px -3px 6px rgba(0, 0, 0, 0.25);
+  transform: rotateX(6deg) translateZ(0);
+  transform-origin: 50% 100%;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.25s, filter 0.25s;
+}
+
+.cart:hover .cart__shell,
+.cart:focus-visible .cart__shell {
+  transform: translateY(-16px) rotateX(-4deg) scale(1.04);
+  box-shadow:
+    0 26px 34px rgba(0, 0, 0, 0.6),
+    0 0 26px rgba(0, 229, 255, 0.45),
+    inset 1px 1px 0 var(--shell-edge);
+}
+
+.cart:focus-visible .cart__shell { outline: 3px solid $neon-yellow; outline-offset: 4px; }
+
+.cart.is-flying { visibility: hidden; }
+
+.cart__label {
+  position: relative;
+  flex: 1 1 auto;
+  margin: 14px 12px 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.15);
+  background: #111;
+}
+
+.cart__brand {
+  position: absolute;
+  top: 5px;
   left: 50%;
-  top: 52%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
+  font-size: 0.4rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  z-index: 3;
+}
+
+.cart__art {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.cart__title {
+  position: relative;
+  z-index: 3;
+  display: block;
+  max-width: 92%;
+  padding: 0.38rem 0.6rem;
+  border-radius: 5px;
+  font-weight: 800;
+  font-size: 0.98rem;
+  line-height: 1.15;
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+
+.cart__tag {
+  position: relative;
+  z-index: 3;
+  margin-top: 0.3rem;
+  font-size: 0.5rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cart__grip {
+  flex: 0 0 26px;
+  margin: 0 22px 8px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0 3px, rgba(255, 255, 255, 0.08) 3px 4px, transparent 4px 8px);
+}
+
+.cart__new {
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  z-index: 5;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: $neon-yellow;
+  color: #200;
+  font-weight: 900;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  transform: rotate(10deg);
+  box-shadow: 0 0 14px rgba(255, 210, 63, 0.7);
+  animation: new-bob 1.4s ease-in-out infinite;
+}
+
+@keyframes new-bob { 50% { transform: rotate(10deg) translateY(-3px); } }
+
+// ── Shell silhouettes ───────────────────────────────────────────
+
+.shape-brick .cart__shell {
+  border-radius: 6px 6px 4px 4px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 88% 100%, 88% 96%, 12% 96%, 12% 100%, 0 100%);
+}
+
+.shape-brick .cart__label { margin-top: 18px; }
+
+.shape-mega .cart__shell {
+  --shell: #2c2c33;
+  --shell-dark: #121216;
+  --shell-edge: rgba(255, 255, 255, 0.15);
+  border-radius: 34px 34px 8px 8px;
+}
+
+.shape-mega .cart__grip {
+  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 2px, transparent 2px 5px);
+}
+
+.shape-super .cart__shell {
+  --shell: #c9c9d2;
+  --shell-dark: #8e8e9c;
+  border-radius: 16px 16px 4px 4px;
+  clip-path: polygon(0 0, 100% 0, 100% 86%, 90% 100%, 10% 100%, 0 86%);
+}
+
+.shape-super .cart__shell::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18%;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.shape-wood .cart__shell {
+  --shell: #1a1a1e;
+  --shell-dark: #08080a;
+  --shell-edge: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.shape-wood .cart__shell::before {
+  content: "";
+  height: 22px;
+  margin: 8px 8px 0;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(95deg, rgba(0, 0, 0, 0.18) 0 3px, transparent 3px 9px),
+    linear-gradient(180deg, #8a5a2e, #5e3a1a);
+}
+
+.shape-wood .cart__label { margin-top: 8px; }
+
+.shape-pocket { height: 196px; width: 156px; margin-top: 26px; }
+
+.shape-pocket .cart__shell {
+  --shell: #d7d7de;
+  --shell-dark: #b3b3bd;
+  border-radius: 6px 22px 6px 6px;
+  clip-path: polygon(0 0, 84% 0, 100% 9%, 100% 100%, 0 100%);
+}
+
+.shape-pocket .cart__grip { flex-basis: 14px; }
+
+.shape-neo .cart__shell {
+  --shell: rgba(150, 70, 255, 0.55);
+  --shell-dark: rgba(40, 10, 90, 0.85);
+  --shell-edge: rgba(255, 255, 255, 0.5);
+  border-radius: 20px 20px 10px 10px;
+  border: 2px solid rgba(255, 61, 240, 0.8);
+  box-shadow:
+    0 14px 24px rgba(0, 0, 0, 0.55),
+    0 0 18px rgba(255, 61, 240, 0.45),
+    inset 0 0 18px rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(2px);
+}
+
+.shape-neo .cart__grip { background: repeating-linear-gradient(90deg, rgba(0, 229, 255, 0.55) 0 2px, transparent 2px 7px); }
+
+// ── Label art per game ──────────────────────────────────────────
+
+/* CyberMorph: three interlocking morpheme tiles (prefix, base, suffix) on a neon grid */
+.cart--cybermorph .cart__label {
+  background:
+    linear-gradient(90deg, rgba(0, 229, 255, 0.12) 1px, transparent 1px) 0 0 / 14px 14px,
+    linear-gradient(180deg, rgba(255, 61, 240, 0.12) 1px, transparent 1px) 0 0 / 14px 14px,
+    radial-gradient(ellipse at 50% 30%, rgba(255, 61, 240, 0.35), transparent 60%),
+    linear-gradient(180deg, #120428 0%, #07021a 100%);
+}
+
+.cart--cybermorph .cart__art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  top: 26%;
+  bottom: auto;
+  height: 34px;
+
+  i {
+    font-style: normal;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-weight: 900;
+    font-size: 0.72rem;
+    padding: 0.32rem 0.38rem;
+    border-radius: 4px;
+    border: 2px solid;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  i:nth-child(1) { color: #39d0ff; border-color: #39d0ff; box-shadow: 0 0 10px rgba(57, 208, 255, 0.7); border-radius: 6px; }
+  i:nth-child(2) { color: #ffd23f; border-color: #ffd23f; box-shadow: 0 0 10px rgba(255, 210, 63, 0.7); border-radius: 1px; }
+  i:nth-child(3) { color: #ff4fd8; border-color: #ff4fd8; box-shadow: 0 0 10px rgba(255, 79, 216, 0.7); border-radius: 6px; }
+}
+
+.cart--cybermorph .cart__title {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-weight: 900;
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #ffffff 0%, #7ff6ff 45%, #ff3df0 55%, #ffd23f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.7));
+}
+
+/* Tech Escape */
+.cart--tech .cart__label {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 1px, rgba(0, 255, 220, 0.05) 1px 2px, transparent 2px 3px),
+    radial-gradient(ellipse at 50% 20%, rgba(0, 255, 220, 0.12), transparent 55%),
+    linear-gradient(180deg, #050a10 0%, #0a1520 100%);
+}
+.cart--tech .cart__title {
+  color: #b8fff5;
+  background: rgba(0, 40, 50, 0.8);
+  border: 1px solid rgba(0, 255, 220, 0.45);
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  box-shadow: 0 0 20px rgba(0, 220, 255, 0.25);
+}
+.cart--tech .cart__art::before {
+  content: "function escape() {\a  while (alive) {\a    hack(mainframe);\a  }\a}";
+  position: absolute;
+  left: 9%;
+  top: 16%;
   font-family: ui-monospace, "Cascadia Code", monospace;
   font-size: 0.42rem;
-  line-height: 0.48rem;
-  color: rgba(140, 255, 120, 0.45);
+  line-height: 1.35;
+  color: rgba(0, 255, 220, 0.5);
   white-space: pre;
-  text-shadow: 0 0 6px rgba(100, 220, 80, 0.35);
-  pointer-events: none;
-  z-index: 1;
 }
 
-/* ===== Physix ===== */
-.cartridge--physix .cartridge-cuboid__face--front {
-  background: linear-gradient(145deg, #c8d0d8 0%, #b0b8c4 100%);
-}
-.cartridge--physix .cartridge-label {
+/* Somnia */
+.cart--somnia .cart__label {
   background:
-    linear-gradient(90deg, rgba(0, 200, 255, 0.03) 1px, transparent 1px) 0 0 / 16px 100%,
-    linear-gradient(180deg, rgba(0, 200, 255, 0.03) 1px, transparent 1px) 0 0 / 100% 16px,
-    linear-gradient(180deg, #020508 0%, #061018 50%, #020508 100%);
+    linear-gradient(180deg, rgba(8, 5, 20, 0.1) 0%, rgba(8, 5, 20, 0.6) 100%),
+    url("/somnia/images/somnia-box-art.jpg") center / cover no-repeat,
+    #1a0f33;
 }
-.cartridge--physix .cartridge-label__title {
-  color: #b8f5ff !important;
-  background: rgba(0, 40, 60, 0.75);
-  border: 1px solid rgba(0, 200, 255, 0.4);
-  font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
-  letter-spacing: 0.04em;
-  box-shadow: 0 0 24px rgba(0, 200, 255, 0.15);
+.cart--somnia .cart__title {
+  color: #f5eeff;
+  background: rgba(18, 8, 36, 0.88);
+  border: 1px solid rgba(180, 140, 255, 0.55);
+  font-family: "Cinzel", Georgia, serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-/* Rolling ball on slope */
-.cartridge--physix .cartridge-label::before {
+/* Dragon Trail */
+.cart--dragon .cart__label {
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 255, 100, 0.04) 0 2px, transparent 2px 4px),
+    radial-gradient(ellipse at 50% 30%, rgba(0, 255, 120, 0.12), transparent 55%),
+    #020804;
+}
+.cart--dragon .cart__title {
+  color: #c8ffc0;
+  background: rgba(10, 40, 15, 0.8);
+  border: 1px solid rgba(100, 255, 120, 0.45);
+  font-family: ui-monospace, "Cascadia Code", monospace;
+}
+.cart--dragon .cart__art::before {
+  content: "      /\\  /\\\a     /  \\/  \\\a    / /\\/\\ \\ \\\a   / /    \\ \\ \\\a  /_/      \\_\\_\\";
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-size: 0.5rem;
+  line-height: 0.6rem;
+  color: rgba(140, 255, 120, 0.6);
+  white-space: pre;
+  text-shadow: 0 0 6px rgba(100, 220, 80, 0.45);
+}
+
+/* Crystal Wizards */
+.cart--crystal .cart__label {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(60, 30, 120, 0.6) 0%, transparent 65%),
+    linear-gradient(180deg, #0c0618 0%, #140a28 40%, #080412 100%);
+}
+.cart--crystal .cart__title {
+  color: #fff9fc;
+  background: rgba(40, 20, 60, 0.8);
+  border: 1px solid rgba(200, 160, 255, 0.55);
+}
+.cart--crystal .cart__art::before {
   content: "";
   position: absolute;
-  left: 38%;
-  top: 42%;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 64px;
+  background:
+    conic-gradient(from 200deg at 50% 55%, rgba(255, 80, 120, 0.55), rgba(255, 220, 100, 0.45), rgba(80, 255, 160, 0.5), rgba(100, 180, 255, 0.55), rgba(255, 80, 160, 0.45), rgba(255, 80, 120, 0.55)),
+    #1e0f37;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  animation: crystal-pulse 3s ease-in-out infinite;
+}
+@keyframes crystal-pulse { 50% { filter: brightness(1.3); } }
+
+/* Dungeon Class */
+.cart--dungeon .cart__label {
+  background: linear-gradient(180deg, #2e2824 0%, #1e1812 50%, #12100c 100%);
+}
+.cart--dungeon .cart__title {
+  color: #f0e6d4;
+  background: rgba(40, 32, 26, 0.88);
+  border: 1px solid rgba(180, 140, 90, 0.55);
+  font-family: Georgia, "Times New Roman", serif;
+}
+.cart--dungeon .cart__art::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  transform: translateX(-50%);
+  width: 62px;
+  height: 70px;
+  border-radius: 31px 31px 2px 2px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 12px, rgba(0, 0, 0, 0.35) 12px 13px, transparent 13px 20px),
+    linear-gradient(180deg, #4a3528 0%, #2e1e14 100%);
+  border: 2px solid #1e1410;
+}
+.cart--dungeon .cart__art::after {
+  content: "";
+  position: absolute;
+  left: 58%;
+  top: 40%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffd700 0%, #b8860b 60%);
+  box-shadow: 0 0 6px rgba(255, 200, 60, 0.6);
+}
+
+/* Purple Worm Escape */
+.cart--worm .cart__label {
+  background:
+    radial-gradient(ellipse 85% 80% at 50% 40%, rgba(140, 40, 200, 0.3) 0%, transparent 55%),
+    linear-gradient(180deg, #1a0c24 0%, #0f0618 50%, #080210 100%);
+}
+.cart--worm .cart__title {
+  color: #f5e0ff;
+  background: rgba(50, 15, 70, 0.88);
+  border: 1px solid rgba(200, 120, 230, 0.55);
+}
+.cart--worm .cart__art::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  width: 92px;
+  height: 64px;
+  transform: translate(-50%, -50%);
+  border-radius: 50% 50% 45% 45% / 55% 55% 45% 45%;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 35%, rgba(200, 100, 255, 0.35) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 45% at 50% 55%, #0a0310 0%, #1a0520 50%, #0f0418 100%);
+  animation: worm-maw 3s ease-in-out infinite;
+}
+.cart--worm .cart__art::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 27%;
+  transform: translateX(-50%);
+  width: 74px;
+  height: 26px;
+  background: linear-gradient(180deg, #f0f0f5 0%, #c8c8d0 40%, transparent 40%, transparent 60%, #c8c8d0 60%, #f0f0f5 100%);
+  clip-path: polygon(0 0, 8% 40%, 16% 0, 24% 40%, 32% 0, 40% 40%, 48% 0, 56% 40%, 64% 0, 72% 40%, 80% 0, 88% 40%, 100% 0, 100% 100%, 92% 60%, 84% 100%, 76% 60%, 68% 100%, 60% 60%, 52% 100%, 44% 60%, 36% 100%, 28% 60%, 20% 100%, 12% 60%, 0 100%);
+}
+@keyframes worm-maw { 50% { transform: translate(-50%, -50%) scale(1.05); } }
+
+/* Physix */
+.cart--physix .cart__label {
+  background:
+    linear-gradient(90deg, rgba(0, 200, 255, 0.05) 1px, transparent 1px) 0 0 / 14px 100%,
+    linear-gradient(180deg, rgba(0, 200, 255, 0.05) 1px, transparent 1px) 0 0 / 100% 14px,
+    linear-gradient(180deg, #020508 0%, #061018 50%, #020508 100%);
+}
+.cart--physix .cart__title {
+  color: #b8f5ff;
+  background: rgba(0, 40, 60, 0.8);
+  border: 1px solid rgba(0, 200, 255, 0.45);
+  font-family: ui-monospace, "Cascadia Code", monospace;
+}
+.cart--physix .cart__art::before {
+  content: "";
+  position: absolute;
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 35%, #a8f0ff 0%, #7ee8ff 25%, #0077b6 70%, #005a8c 100%);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 200, 255, 0.3);
-  pointer-events: none;
-  z-index: 1;
+  background: radial-gradient(circle at 35% 35%, #a8f0ff 0%, #0077b6 70%, #005a8c 100%);
+  box-shadow: 0 0 12px rgba(0, 200, 255, 0.4);
   animation: physix-roll 3s ease-in-out infinite;
 }
-
-@keyframes physix-roll {
-  0% { left: 38%; top: 42%; transform: rotate(0deg); }
-  50% { left: 58%; top: 55%; transform: rotate(360deg); }
-  100% { left: 38%; top: 42%; transform: rotate(720deg); }
-}
-
-/* Slope line */
-.cartridge--physix .cartridge-label::after {
+.cart--physix .cart__art::after {
   content: "";
   position: absolute;
-  left: 32%;
-  top: 52%;
-  width: 80px;
+  left: 22%;
+  top: 40%;
+  width: 96px;
   height: 3px;
-  background: linear-gradient(180deg, #3a5060 0%, #2a3a48 100%);
-  border: 1px solid #4a6070;
+  background: #3a5060;
   border-radius: 2px;
   transform: rotate(-20deg);
   transform-origin: left center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-  z-index: 1;
+}
+@keyframes physix-roll {
+  0%, 100% { left: 26%; top: 22%; transform: rotate(0deg); }
+  50% { left: 64%; top: 36%; transform: rotate(360deg); }
 }
 
-/* ===== Summer Writing Test ===== */
-.cartridge--writing .cartridge-cuboid__face--front {
-  background: linear-gradient(145deg, #f5e6c8 0%, #e8d4a8 100%);
-}
-.cartridge--writing .cartridge-label {
-  background: linear-gradient(180deg, #1a2a3a 0%, #0f1a24 50%, #1a2a3a 100%);
-}
-.cartridge--writing .cartridge-label__title {
-  color: #fef3c7 !important;
-  background: rgba(30, 58, 95, 0.8);
-  border: 1px solid rgba(251, 191, 36, 0.45);
-  font-family: Georgia, "Times New Roman", serif;
-  letter-spacing: 0.02em;
-}
-.cartridge--writing .cartridge-label::before {
-  content: "✏️";
-  position: absolute;
-  left: 42%;
-  top: 38%;
-  font-size: 1.4rem;
-  pointer-events: none;
-  z-index: 1;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-}
-.cartridge--writing .cartridge-label::after {
-  content: "";
-  position: absolute;
-  left: 30%;
-  top: 58%;
-  width: 70px;
-  height: 44px;
-  background: linear-gradient(180deg, #fffef8 0%, #f0ead6 100%);
-  border: 1px solid #c4b896;
-  border-radius: 2px;
-  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* ===== WriteFlow Studio ===== */
-.cartridge--writeflow .cartridge-cuboid__face--front {
-  background: linear-gradient(145deg, #e8f0fe 0%, #d2e3fc 100%);
-}
-.cartridge--writeflow .cartridge-label {
-  background: linear-gradient(180deg, #1a73e8 0%, #174ea6 55%, #9334e6 100%);
-}
-.cartridge--writeflow .cartridge-label__title {
-  color: #fff !important;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  font-family: Roboto, "Segoe UI", sans-serif;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-.cartridge--writeflow .cartridge-label::before {
-  content: "✎";
-  position: absolute;
-  left: 44%;
-  top: 36%;
-  font-size: 1.5rem;
-  pointer-events: none;
-  z-index: 1;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
-}
-
-/* ===== ITEM Diagnostic ===== */
-.cartridge--item .cartridge-cuboid__face--front {
-  background: linear-gradient(145deg, #064e3b 0%, #065f46 100%);
-}
-.cartridge--item .cartridge-label {
-  background: linear-gradient(180deg, #047857 0%, #064e3b 50%, #022c22 100%);
-}
-.cartridge--item .cartridge-label__title {
-  color: #ecfdf5 !important;
-  background: rgba(6, 78, 59, 0.85);
-  border: 1px solid rgba(251, 191, 36, 0.5);
-  font-family: Roboto, "Segoe UI", sans-serif;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
-.cartridge--item .cartridge-label::before {
-  content: "🎯";
-  position: absolute;
-  left: 42%;
-  top: 34%;
-  font-size: 1.45rem;
-  pointer-events: none;
-  z-index: 1;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-}
-.cartridge--item .cartridge-label::after {
-  content: "";
-  position: absolute;
-  right: 14%;
-  top: 52%;
-  width: 36px;
-  height: 36px;
-  border: 3px solid rgba(251, 191, 36, 0.7);
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 4px rgba(52, 211, 153, 0.35);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* ===== Global Tech Gauntlet ===== */
-.cartridge--gauntlet .cartridge-cuboid__face--front {
-  background: linear-gradient(145deg, #3d0a14 0%, #1a0508 100%);
-}
-.cartridge--gauntlet .cartridge-label {
-  background: linear-gradient(135deg, #8b0000 0%, #c41e3a 40%, #ffd700 100%);
-}
-.cartridge--gauntlet .cartridge-label__title {
-  color: #fff8e7 !important;
-  background: rgba(0, 0, 0, 0.45);
-  border: 2px solid rgba(255, 215, 0, 0.55);
+/* Global Tech Gauntlet */
+.cart--gauntlet .cart__shell { --shell: rgba(255, 90, 60, 0.55); --shell-dark: rgba(120, 0, 20, 0.85); border-color: rgba(255, 215, 0, 0.8); }
+.cart--gauntlet .cart__label { background: linear-gradient(135deg, #8b0000 0%, #c41e3a 45%, #ffd700 100%); }
+.cart--gauntlet .cart__title {
+  color: #fff8e7;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 215, 0, 0.6);
   font-family: "Arial Narrow", "Arial Black", sans-serif;
-  font-weight: 800;
-  letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-size: 1rem;
+  font-size: 0.85rem;
 }
-.cartridge--gauntlet .cartridge-label::before {
-  content: "🌐";
+.cart--gauntlet .cart__art::before { content: "🌐"; position: absolute; left: 50%; top: 32%; transform: translate(-50%, -50%); font-size: 2.2rem; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6)); }
+
+/* ITEM Diagnostic */
+.cart--item .cart__shell { --shell: #0b6b52; --shell-dark: #064e3b; }
+.cart--item .cart__label { background: linear-gradient(180deg, #047857 0%, #064e3b 50%, #022c22 100%); }
+.cart--item .cart__title {
+  color: #ecfdf5;
+  background: rgba(6, 78, 59, 0.88);
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  font-size: 0.85rem;
+}
+.cart--item .cart__art::before { content: "🎯"; position: absolute; left: 50%; top: 32%; transform: translate(-50%, -50%); font-size: 2.1rem; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5)); }
+
+/* Summer Writing Test */
+.cart--writing .cart__shell { --shell: #f2e2bf; --shell-dark: #d9c393; }
+.cart--writing .cart__label { background: linear-gradient(180deg, #1a2a3a 0%, #0f1a24 50%, #1a2a3a 100%); }
+.cart--writing .cart__title {
+  color: #fef3c7;
+  background: rgba(30, 58, 95, 0.85);
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.85rem;
+}
+.cart--writing .cart__art::before {
+  content: "";
   position: absolute;
-  left: 40%;
-  top: 32%;
-  font-size: 1.5rem;
+  left: 50%;
+  top: 30%;
+  width: 62px;
+  height: 46px;
+  transform: translate(-50%, -50%) rotate(-4deg);
+  background: repeating-linear-gradient(180deg, #fffef8 0 7px, #c9d6ef 7px 8px);
+  border: 1px solid #c4b896;
+  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.35);
+}
+.cart--writing .cart__art::after { content: "✏️"; position: absolute; left: 58%; top: 18%; font-size: 1.3rem; }
+
+// ── The flying cartridge (cloned by arcade-console.js) ──────────
+
+.cart-flight {
+  position: fixed;
+  z-index: 9999;
   pointer-events: none;
-  z-index: 1;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+  transition: transform 0.55s cubic-bezier(0.3, 0.6, 0.3, 1), opacity 0.3s;
+  transform-origin: 50% 0;
+
+  .cart__shell { transform: none; }
 }
 
-/* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 48rem) {
-  .cartridge {
-    --cart-w: 280px;
-    --cart-h: 170px;
-    --cart-d: 18px;
-  }
-  .cartridge__scene {
-    min-height: 210px;
-  }
-  .cartridge-label__title {
-    font-size: 1.1rem;
-    padding: 0.55rem 0.9rem;
-  }
+  .rack__shelf { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .cart { width: 148px; height: 200px; }
+  .console__slot { width: 160px; }
+  .console__brand { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cartridge__tilt,
-  .cartridge:hover .cartridge__tilt {
-    transition: none;
-    transform: translateZ(0) rotateY(0deg) rotateX(4deg);
-  }
-  .cartridge__shadow,
-  .cartridge:hover .cartridge__shadow {
-    transition: none;
-  }
-  .cartridge--crystal .cartridge-label::before {
-    animation: none;
-  }
-  .cartridge--worm .cartridge-label::before {
-    animation: none;
-  }
-  .cartridge--physix .cartridge-label::before {
-    animation: none;
-  }
+  body:has(.arcade-page)::after,
+  .console__screen-text,
+  .cart__new,
+  .cart--crystal .cart__art::before,
+  .cart--worm .cart__art::before,
+  .cart--physix .cart__art::before { animation: none; }
+  .cart__shell { transition: none; }
 }

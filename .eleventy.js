@@ -562,6 +562,7 @@ module.exports = function (eleventyConfig) {
   });
   eleventyConfig.addPassthroughCopy("src/site/physix");
   eleventyConfig.addPassthroughCopy("src/site/tech-escape");
+  eleventyConfig.addPassthroughCopy("src/site/cybermorph");
   eleventyConfig.addPassthroughCopy("src/site/tech-trail/images");
   eleventyConfig.addPassthroughCopy("src/site/tech-trail/audio");
   eleventyConfig.addPassthroughCopy("src/site/tech-trail/sw.js");

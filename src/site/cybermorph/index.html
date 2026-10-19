@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#07040f">
+  <meta name="description" content="CyberMorph: build real words from morphemes in a 3D diorama of the Lexinet. A morphology game by Mr. Phil.">
+  <title>CyberMorph</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2307040f'/%3E%3Crect x='8' y='22' width='16' height='20' rx='3' fill='%2339d0ff'/%3E%3Crect x='24' y='22' width='16' height='20' fill='%23ffd23f'/%3E%3Crect x='40' y='22' width='16' height='20' rx='3' fill='%23ff4fd8'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <div id="stage" aria-label="CyberMorph diorama. Click the floor to walk; click things to use them."></div>
+
+    <div id="hud" hidden>
+      <section id="hud-objective" class="glass hud-card" aria-live="polite">
+        <div class="kicker">OBJECTIVE</div>
+        <div id="objective-text"></div>
+      </section>
+
+      <section id="hud-place" class="glass">
+        <span id="place-name"></span>
+        <span id="place-dots" aria-hidden="true"></span>
+      </section>
+
+      <div id="hud-right">
+        <div id="rot-meter" class="glass" hidden>
+          <span class="kicker">ROT</span>
+          <div class="bar"><div id="rot-fill"></div></div>
+          <span id="carry-count"></span>
+        </div>
+        <button id="btn-help" class="icon-btn" title="How to play (H)" aria-label="How to play">?</button>
+        <button id="btn-pause" class="icon-btn" title="Pause (Esc)" aria-label="Pause">⏸</button>
+      </div>
+
+      <section id="inventory" class="glass">
+        <div class="inv-tabs" role="tablist">
+          <button class="inv-tab active" data-tab="morphemes" role="tab">MORPHEMES</button>
+          <button class="inv-tab" data-tab="clues" role="tab">CLUES</button>
+          <button class="inv-collapse" id="inv-collapse" aria-label="Collapse inventory">▾</button>
+        </div>
+        <div id="inv-body"></div>
+      </section>
+
+      <button id="ctx-btn" class="ctx-btn" hidden></button>
+
+      <aside id="log" class="glass collapsed">
+        <button id="log-toggle" aria-expanded="false">COMPILE LOG</button>
+        <ol id="log-list"></ol>
+      </aside>
+
+      <div id="toasts" aria-live="polite"></div>
+    </div>
+
+    <div id="dialogue" class="glass" hidden>
+      <div id="dlg-portrait" aria-hidden="true"></div>
+      <div class="dlg-body">
+        <div id="dlg-name"></div>
+        <div id="dlg-text"></div>
+      </div>
+      <button id="dlg-next" class="btn btn-primary">Next ▸</button>
+    </div>
+
+    <div id="panel-layer"></div>
+    <div id="screen-layer"></div>
+    <div id="crash-fx" aria-hidden="true"></div>
+    <div id="fade" aria-hidden="true"></div>
+    <div id="scanlines" aria-hidden="true"></div>
+  </div>
+
+  <noscript>CyberMorph needs JavaScript turned on.</noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

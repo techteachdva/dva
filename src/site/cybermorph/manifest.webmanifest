@@ -1,0 +1,11 @@
+{
+  "name": "CyberMorph",
+  "short_name": "CyberMorph",
+  "description": "Build real words from morphemes in a 3D diorama of the Lexinet.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#07040f",
+  "theme_color": "#07040f",
+  "icons": []
+}

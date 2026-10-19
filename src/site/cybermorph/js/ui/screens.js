@@ -1,0 +1,351 @@
+import { $, el } from '../core/util.js';
+import { settings, setSetting } from '../core/settings.js';
+import { profiles, canAddProfile, deleteProfile, loadScores } from '../core/save.js';
+import { AVATAR, AVATAR_CATEGORIES, UNLOCK_LABEL, INSPIRATIONS, DISTRICTS, MAIN_ORDER } from '../data/world.js';
+import { morph, ORIGIN_LABEL } from '../data/morphemes.js';
+import { glow } from '../core/mastery.js';
+import { R, setFocus, setDim } from '../engine/renderer.js';
+import { createMorpher } from '../engine/characters.js';
+import { sfx, unlockAudio } from '../core/audio.js';
+import { mtile } from './hud.js';
+import { openPanel, closeButton } from '../panels/host.js';
+
+export const VERSION = '1.0.0';
+
+const layer = () => $('screen-layer');
+let stack = [];
+
+export function showScreen(node, { clear = false } = {}) {
+  const s = el('div', { class: `screen${clear ? ' clear' : ''}` }, node);
+  layer().append(s);
+  stack.push(s);
+  document.body.classList.add('screen-open');
+  return () => {
+    s.remove();
+    stack = stack.filter((x) => x !== s);
+    if (!stack.length) document.body.classList.remove('screen-open');
+  };
+}
+export const screenOpen = () => stack.length > 0;
+export function closeAllScreens() { stack.forEach((s) => s.remove()); stack = []; document.body.classList.remove('screen-open'); }
+
+const progressOf = (p) => {
+  const cleared = MAIN_ORDER.filter((d) => p.districts[d] && p.districts[d].cleared).length;
+  const extra = [p.deskOpen ? 'desk open' : null, p.finale.beaten ? 'Rot defeated' : null].filter(Boolean);
+  return `${cleared}/3 districts${extra.length ? ' · ' + extra.join(' · ') : ''} · ${p.lexicon.length} words`;
+};
+
+// ── Title ─────────────────────────────────────────────────────────
+export function titleScreen({ onPlay, onNew, onTimed }) {
+  const list = el('div', { class: 'profiles' });
+  const render = () => {
+    list.innerHTML = '';
+    profiles().forEach((p) => {
+      const torso = AVATAR.torso.find((x) => x.id === p.avatar.torso) || AVATAR.torso[0];
+      const card = el('button', { class: 'profile-card', type: 'button' },
+        el('div', { class: 'nm' }, p.name), el('div', { class: 'pr' }, progressOf(p)),
+        el('span', { class: 'swatch', style: { background: torso.color } }));
+      card.addEventListener('click', () => { unlockAudio(); sfx.click(); close(); onPlay(p); });
+      const del = el('button', { class: 'profile-del', type: 'button' }, 'delete');
+      del.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (await confirmBox(`Delete ${p.name}? This erases that save from this browser.`, 'Delete')) { deleteProfile(p.id); render(); }
+      });
+      card.append(del);
+      list.append(card);
+    });
+  };
+  render();
+  const newBtn = el('button', { class: 'btn btn-pink', type: 'button', disabled: !canAddProfile() }, canAddProfile() ? '+ NEW MORPHER' : 'Six saves max: delete one first');
+  newBtn.addEventListener('click', () => { unlockAudio(); sfx.click(); close(); onNew(); });
+  const btn = (label, fn) => { const b = el('button', { class: 'btn', type: 'button' }, label); b.addEventListener('click', () => { unlockAudio(); sfx.click(); fn(); }); return b; };
+  const wrap = el('div', { class: 'title-wrap' },
+    el('div', { class: 'logo' }, 'CYBERMORPH'),
+    el('div', { class: 'tagline' }, 'BUILD WORDS · DEBUG THE ROT'),
+    profiles().length ? el('div', { class: 'kicker', style: { alignSelf: 'flex-start' } }, 'CONTINUE') : null,
+    list,
+    el('div', { class: 'row-btns', style: { justifyContent: 'center' } }, newBtn,
+      btn('How to play', () => howToScreen()),
+      btn('Settings', () => settingsScreen()),
+      btn('Overclock scores', () => scoresScreen()),
+      btn('Inspirations', () => inspirationsScreen())),
+    el('div', { style: { color: 'var(--ink-dim)', fontSize: '0.85rem', textAlign: 'center', marginTop: '0.6rem' } }, 'A morphology game by Mr. Phil · Saves stay in this browser.'));
+  const close = showScreen(el('div', {}, wrap, el('div', { class: 'version' }, `v${VERSION}`)));
+  return close;
+}
+
+// ── Avatar creator ────────────────────────────────────────────────
+export function avatarScreen({ profile = null, unlocked = [], onDone }) {
+  const av = profile ? { ...profile.avatar } : { limbs: AVATAR.limbs[0].id, torso: AVATAR.torso[1].id, head: AVATAR.head[0].id, face: AVATAR.face[0].id };
+  const bot = createMorpher(av);
+  bot.group.scale.setScalar(2.3);
+  bot.group.position.set(-1.6, -1.6, 0);
+  R.focusScene.add(bot.group);
+  const cam = R.focusCam;
+  const camSave = cam.position.clone();
+  cam.position.set(0, 0.2, 9);
+  cam.lookAt(0, -0.2, 0);
+  setFocus(true);
+  setDim(0.5);
+  let spin = 0;
+  const upd = { update: (dt) => { spin += dt * 0.6; bot.group.rotation.y = Math.sin(spin) * 0.7; bot.update(dt, false); } };
+  R.updates.add(upd);
+
+  const side = el('div', { class: 'avatar-side' });
+  const name = el('input', { type: 'text', maxlength: '16', value: profile ? profile.name : '', placeholder: 'First name', 'aria-label': 'Your Morpher name' });
+  const note = el('div', { class: 'unlock-note' });
+  side.append(el('div', { class: 'kicker' }, profile ? 'CUSTOMIZE YOUR MORPHER' : 'NEW MORPHER'), el('h2', { style: { margin: '0.3rem 0' } }, 'Build your repair bot'));
+  if (!profile) side.append(el('label', {}, 'Name'), name);
+  AVATAR_CATEGORIES.forEach(({ key, label }) => {
+    const sw = el('div', { class: 'swatches' });
+    const paint = () => [...sw.children].forEach((b) => b.classList.toggle('on', b.dataset.id === av[key]));
+    AVATAR[key].forEach((opt) => {
+      const locked = opt.unlock && !unlocked.includes(opt.unlock);
+      const b = el('button', { class: `swatch-btn${locked ? ' locked' : ''}`, type: 'button', 'data-id': opt.id, title: locked ? `${opt.name}: ${UNLOCK_LABEL[opt.unlock]}` : opt.name, 'aria-label': `${label}: ${opt.name}${locked ? ' (locked)' : ''}`, style: { background: key === 'face' ? '#05060c' : opt.color, color: opt.color } }, key === 'face' ? '☻' : '');
+      b.addEventListener('click', () => {
+        if (locked) { note.textContent = `🔒 ${opt.name}: ${UNLOCK_LABEL[opt.unlock]} to unlock.`; sfx.bad(); return; }
+        av[key] = opt.id;
+        note.textContent = opt.name;
+        sfx.click();
+        bot.setAvatar(av);
+        paint();
+      });
+      sw.append(b);
+    });
+    paint();
+    side.append(el('label', {}, label), sw);
+  });
+  const go = el('button', { class: 'btn btn-primary', type: 'button', style: { marginTop: '1rem', width: '100%', minHeight: '56px' } }, profile ? 'SAVE ✔' : 'START ▸');
+  go.addEventListener('click', () => {
+    const n = (name.value || '').trim().slice(0, 16) || (profile ? profile.name : 'Morpher');
+    cleanup();
+    onDone({ name: n, avatar: av });
+  });
+  side.append(note, go);
+  if (profile) {
+    const cancel = el('button', { class: 'btn btn-ghost', type: 'button', style: { marginTop: '0.4rem', width: '100%' } }, 'Cancel');
+    cancel.addEventListener('click', () => { cleanup(); onDone(null); });
+    side.append(cancel);
+  }
+  const close = showScreen(el('div', { class: 'avatar-screen' }, el('div'), side), { clear: true });
+  setTimeout(() => (profile ? go : name).focus(), 50);
+  function cleanup() {
+    R.updates.delete(upd);
+    R.focusScene.remove(bot.group);
+    cam.position.copy(camSave);
+    setFocus(false);
+    setDim(0);
+    close();
+  }
+}
+
+// ── Settings ──────────────────────────────────────────────────────
+export function settingsScreen() {
+  const grid = el('div', { class: 'settings-grid' });
+  const toggle = (key, label) => {
+    const b = el('button', { class: `toggle${settings[key] ? ' on' : ''}`, type: 'button', role: 'switch', 'aria-checked': String(!!settings[key]), 'aria-label': label });
+    b.addEventListener('click', () => { setSetting(key, !settings[key]); b.classList.toggle('on', settings[key]); b.setAttribute('aria-checked', String(settings[key])); sfx.click(); });
+    grid.append(el('label', {}, label), b);
+  };
+  const range = (key, label) => {
+    const r = el('input', { type: 'range', min: '0', max: '1', step: '0.05', value: String(settings[key]), 'aria-label': label });
+    r.addEventListener('input', () => setSetting(key, Number(r.value)));
+    grid.append(el('label', {}, label), r);
+  };
+  const seg = (key, label, options) => {
+    const s = el('div', { class: 'seg', role: 'radiogroup', 'aria-label': label });
+    options.forEach(([v, t]) => {
+      const b = el('button', { class: settings[key] === v ? 'on' : '', type: 'button' }, t);
+      b.addEventListener('click', () => { setSetting(key, v); [...s.children].forEach((x) => x.classList.remove('on')); b.classList.add('on'); sfx.click(); });
+      s.append(b);
+    });
+    grid.append(el('label', {}, label), s);
+  };
+  range('music', 'Music volume');
+  range('sfx', 'Sound effects');
+  toggle('speakWords', 'Say words and morphemes aloud');
+  toggle('speakDialogue', 'Read mentor lines aloud');
+  seg('rate', 'Speech speed', [[0.8, 'Slow'], [0.95, 'Normal'], [1.15, 'Fast']]);
+  seg('textSize', 'Text size', [[0.9, 'A−'], [1, 'A'], [1.15, 'A+'], [1.3, 'A++']]);
+  seg('font', 'Font', [['default', 'Default'], ['readable', 'Extra readable']]);
+  toggle('reducedMotion', 'Reduce motion');
+  toggle('cognates', 'Show Spanish cognates');
+  seg('quality', 'Graphics (reload to apply)', [['auto', 'Auto'], ['low', 'Low'], ['high', 'High']]);
+  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'DONE');
+  const close = showScreen(el('section', { class: 'sheet glass' }, el('h2', {}, 'SETTINGS'), grid, el('div', { class: 'row-btns' }, done)));
+  done.addEventListener('click', close);
+  done.focus();
+}
+
+// ── How to play ───────────────────────────────────────────────────
+export function howToScreen() {
+  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'GOT IT');
+  const close = showScreen(el('section', { class: 'sheet glass' },
+    el('h2', {}, 'HOW TO PLAY'),
+    el('div', { class: 'howto-grid' },
+      el('div', {}, el('b', {}, 'MOVE'), 'Click a floor tile to walk there. WASD or the arrow keys also work.'),
+      el('div', {}, el('b', {}, 'USE'), 'Click a person or a machine to walk over and use it. The big button bottom-right (or E) does the same.'),
+      el('div', {}, el('b', {}, 'COMPILE'), 'Turn the rings with ▲▼ (or scroll) until the pieces build the word the request means. Press COMPILE.'),
+      el('div', {}, el('b', {}, 'DEBUG'), 'Click Rotlings. Cut their word between morphemes, then decide: real word or Rot fake?'),
+      el('div', {}, el('b', {}, 'PATCH'), 'Firewall locks: turn the ending ring until the word fits the sentence.'),
+      el('div', {}, el('b', {}, 'LINK'), 'Hang words on their family branch. Watch for look-alikes that are not family.')),
+    el('h3', {}, 'SHAPES TELL YOU THE TYPE'),
+    el('div', { class: 'legend' },
+      el('span', { class: 'mtile', 'data-type': 'pfx', 'data-origin': 'anglo' }, 'un'), 'prefix: pin on the right',
+      el('span', { class: 'mtile', 'data-type': 'base', 'data-origin': 'latin' }, 'port'), 'base: square',
+      el('span', { class: 'mtile', 'data-type': 'sfx', 'data-origin': 'greek' }, 'ic'), 'suffix: socket on the left',
+      el('span', { class: 'mtile', 'data-type': 'link', 'data-origin': 'greek' }, 'o'), 'linking vowel'),
+    el('h3', {}, 'THE LOOK TELLS YOU THE ORIGIN'),
+    el('div', { class: 'legend' }, ['anglo', 'latin', 'greek', 'lingo'].map((o) => [el('span', { class: 'mtile', 'data-type': 'base', 'data-origin': o }, ORIGIN_LABEL[o]), ' '])),
+    el('div', { class: 'row-btns' }, done)));
+  done.addEventListener('click', close);
+  done.focus();
+}
+
+// ── Inspirations ──────────────────────────────────────────────────
+export function inspirationsScreen() {
+  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
+  const body = el('section', { class: 'sheet glass' }, el('h2', {}, 'INSPIRATIONS'), el('p', {}, 'CyberMorph stands on the shoulders of these programs, researchers and designers. It never copies their lessons; it practises the ideas.'));
+  INSPIRATIONS.forEach((g) => {
+    body.append(el('h3', {}, g.group.toUpperCase()), el('ul', { class: 'insp-list' }, g.items.map((it) => el('li', {}, it.u ? el('a', { href: it.u, target: '_blank', rel: 'noopener noreferrer' }, it.t) : it.t))));
+  });
+  body.append(el('div', { class: 'row-btns' }, done));
+  const close = showScreen(body);
+  done.addEventListener('click', close);
+  done.focus();
+}
+
+// ── Overclock Mode scores (browser only) ──────────────────────────────
+export function scoresTable(highlight = -1) {
+  const list = loadScores();
+  if (!list.length) return el('p', {}, 'No Overclock Mode scores in this browser yet.');
+  return el('table', { class: 'report' },
+    el('tr', {}, el('th', {}, '#'), el('th', {}, 'NAME'), el('th', {}, 'SCORE'), el('th', {}, 'WORDS'), el('th', {}, 'DATE')),
+    list.map((s, i) => el('tr', { style: i === highlight ? { color: 'var(--yellow)', fontWeight: '800' } : {} }, el('td', {}, i + 1), el('td', {}, s.name), el('td', {}, s.score), el('td', {}, s.words), el('td', {}, new Date(s.t).toLocaleDateString()))));
+}
+export function scoresScreen() {
+  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
+  const close = showScreen(el('section', { class: 'sheet glass' }, el('h2', {}, 'OVERCLOCK MODE · TOP 10 (THIS BROWSER)'), scoresTable(), el('div', { class: 'row-btns' }, done)));
+  done.addEventListener('click', close);
+  done.focus();
+}
+
+// ── Progress report ───────────────────────────────────────────────
+export function reportScreen(profile) {
+  const stars = (l) => '★'.repeat(l) + '☆'.repeat(4 - l);
+  const body = el('section', { class: 'sheet glass' }, el('h2', {}, `PROGRESS REPORT · ${profile.name}`));
+  const st = profile.stats;
+  const rate = st.tasks ? Math.round((st.firstTry / st.tasks) * 100) : 0;
+  body.append(el('p', {}, `Words compiled: ${st.compiled} · First-try rate: ${rate}% · Rotlings debugged: ${st.splits} · Lexicon: ${profile.lexicon.length} words · Made-up Words: ${profile.madeUp.length} · Districts cleared: ${MAIN_ORDER.filter((d) => profile.districts[d] && profile.districts[d].cleared).length}/3`));
+  ['anglo', 'latin', 'greek', 'lingo'].forEach((o) => {
+    const ids = profile.learned.filter((id) => morph(id).origin === o);
+    if (!ids.length) return;
+    body.append(el('h3', {}, ORIGIN_LABEL[o].toUpperCase()));
+    body.append(el('table', { class: 'report' },
+      el('tr', {}, el('th', {}, 'MORPHEME'), el('th', {}, 'MEANING'), el('th', {}, 'MASTERY'), el('th', {}, 'FIRST TRY'), el('th', {}, 'STATUS')),
+      ids.map((id) => {
+        const r = profile.mastery[id];
+        const g = glow(profile, id);
+        return el('tr', {}, el('td', {}, morph(id).text), el('td', {}, morph(id).meaning), el('td', { class: 'stars' }, stars(r ? r.l : 0)), el('td', {}, r ? `${r.ok}/${r.n}` : '—'), el('td', {}, !r ? 'not practised' : g.fading ? 'needs review' : g.tier));
+      })));
+  });
+  const print = el('button', { class: 'btn', type: 'button' }, 'Print');
+  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
+  body.append(el('div', { class: 'row-btns' }, print, done));
+  const close = showScreen(body);
+  print.addEventListener('click', () => window.print());
+  done.addEventListener('click', close);
+  done.focus();
+}
+
+// ── Lexicon viewer (from the Lexicon Tree) ────────────────────────
+export function lexiconPanel(profile) {
+  return new Promise((resolve) => {
+    const panel = openPanel({ dim: 0.65 });
+    const fam = new Map();
+    profile.lexicon.forEach(({ w, p }) => p.filter((id) => morph(id).type === 'base').forEach((b) => { if (!fam.has(b)) fam.set(b, []); fam.get(b).push(w); }));
+    const body = el('section', { class: 'glass lesson' }, el('div', { class: 'kicker' }, 'THE LEXICON TREE'), el('h2', {}, `${profile.lexicon.length} words on your tree`));
+    const grid = el('div', { class: 'lesson-grid' });
+    [...fam.entries()].sort((a, b) => b[1].length - a[1].length).forEach(([b, words]) => {
+      grid.append(el('div', { class: 'lesson-item' }, mtile(b, { profile }), el('div', { class: 'meta' }, `${words.length} word${words.length > 1 ? 's' : ''}`), el('div', { class: 'mean' }, words.join(', '))));
+    });
+    if (!fam.size) grid.append(el('p', {}, 'Compile words to grow the tree. Each word becomes a leaf.'));
+    body.append(grid);
+    body.append(el('h3', {}, 'MADE-UP WORDS'), el('p', {}, profile.madeUp.length ? profile.madeUp.map((m) => `${m.w} (${m.p.map((id) => morph(id).meaning).join(' + ')})`).join(' · ') : 'None yet. Build a legal word that isn\'t in the dictionary at the Morph Compiler, then save it.'));
+    const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
+    body.append(el('div', { class: 'lesson-foot' }, el('span'), done));
+    panel.root.append(body, closeButton(() => { panel.close(); resolve(); }));
+    done.addEventListener('click', () => { panel.close(); resolve(); });
+    panel.onKey((e) => { if (e.key === 'Escape') { panel.close(); resolve(); } });
+  });
+}
+
+// ── Pause ─────────────────────────────────────────────────────────
+export function pauseScreen({ profile, onResume, onQuit, onLexicon, onAvatar }) {
+  const b = (label, fn, cls = 'btn') => { const x = el('button', { class: cls, type: 'button', style: { width: '100%' } }, label); x.addEventListener('click', () => { sfx.click(); fn(); }); return x; };
+  const col = el('div', { style: { display: 'grid', gap: '0.5rem', marginTop: '0.6rem' } },
+    b('RESUME', () => { close(); onResume(); }, 'btn btn-primary'),
+    b('How to play', () => howToScreen()),
+    b('Progress report', () => reportScreen(profile)),
+    b('Lexicon', () => { close(); onLexicon(); }),
+    b('Customize Morpher', () => { close(); onAvatar(); }),
+    b('Settings', () => settingsScreen()),
+    b('Inspirations', () => inspirationsScreen()),
+    b('Save and quit to title', () => { close(); onQuit(); }));
+  const close = showScreen(el('section', { class: 'sheet glass', style: { width: 'min(420px, 92vw)' } }, el('h2', {}, 'PAUSED'), el('div', { style: { color: 'var(--ink-dim)' } }, `${profile.name} · saved in this browser`), col));
+  col.firstChild.focus();
+  return close;
+}
+
+// ── Confirm ───────────────────────────────────────────────────────
+export function confirmBox(text, yes = 'Yes', no = 'Cancel') {
+  return new Promise((resolve) => {
+    const y = el('button', { class: 'btn btn-pink', type: 'button' }, yes);
+    const n = el('button', { class: 'btn', type: 'button' }, no);
+    const close = showScreen(el('section', { class: 'sheet glass', style: { width: 'min(460px, 92vw)' } }, el('p', { style: { fontSize: '1.1rem' } }, text), el('div', { class: 'row-btns' }, y, n)));
+    y.addEventListener('click', () => { close(); resolve(true); });
+    n.addEventListener('click', () => { close(); resolve(false); });
+    n.focus();
+  });
+}
+
+// ── Overclock Mode result ─────────────────────────────────────────────
+export function timedResultScreen({ profile, result, rank, onAgain, onExit }) {
+  const again = el('button', { class: 'btn btn-pink', type: 'button' }, 'PLAY AGAIN');
+  const exit = el('button', { class: 'btn btn-primary', type: 'button' }, 'BACK TO THE CORE');
+  const close = showScreen(el('section', { class: 'sheet glass score-card' },
+    el('div', { class: 'kicker' }, 'OVERCLOCK MODE · FINAL SCORE'),
+    el('div', { class: 'big' }, String(result.score)),
+    el('div', { style: { fontSize: '1.2rem', fontWeight: '800' } }, `${profile.name} · ${new Date().toLocaleString()}`),
+    el('div', { class: 'score-grid' },
+      el('div', {}, el('b', {}, result.words), 'words debugged'),
+      el('div', {}, el('b', {}, `${result.accuracy}%`), 'first-try'),
+      el('div', {}, el('b', {}, result.bestStreak), 'best streak')),
+    rank >= 0 ? el('div', { style: { color: 'var(--yellow)', fontWeight: '800' } }, `#${rank + 1} on this browser's top 10!`) : null,
+    el('p', { style: { color: 'var(--ink-dim)' } }, '📸 Take a screenshot of this card to show Mr. Phil.'),
+    el('div', { class: 'row-btns', style: { justifyContent: 'center' } }, again, exit)));
+  again.addEventListener('click', () => { close(); onAgain(); });
+  exit.addEventListener('click', () => { close(); onExit(); });
+  exit.focus();
+}
+
+// ── Ending ────────────────────────────────────────────────────────
+export function endingScreen({ profile, onDone }) {
+  const st = profile.stats;
+  const rate = st.tasks ? Math.round((st.firstTry / st.tasks) * 100) : 0;
+  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'BACK TO THE CORE');
+  const body = el('section', { class: 'sheet glass credits' },
+    el('div', { class: 'kicker' }, 'THE ROT IS GONE'),
+    el('h1', { class: 'logo', style: { fontSize: '3rem' } }, 'LEXINET RESTORED'),
+    el('p', { style: { fontSize: '1.15rem' } }, `${profile.name} rebuilt the Lexinet: ${profile.lexicon.length} words on the tree, ${st.compiled} compiles, ${st.splits} Rotlings debugged, ${rate}% on the first try.`),
+    el('p', {}, 'Every word you know is built from parts. Every part you know opens a door.'),
+    el('p', { style: { color: 'var(--yellow)' } }, 'New Rot Slayer parts are unlocked in Customize.'),
+    el('p', { style: { color: 'var(--ink-dim)' } }, '📸 Take a screenshot of this screen to show Mr. Phil.'));
+  INSPIRATIONS.forEach((g) => body.append(el('h3', {}, g.group.toUpperCase()), el('div', { style: { color: 'var(--ink-dim)', fontSize: '0.9rem' } }, g.items.map((i) => i.t).join(' · '))));
+  body.append(el('h3', {}, 'MADE BY'), el('div', {}, 'Mr. Phil · Games Mr. Phil Has Made'), el('div', { class: 'row-btns', style: { justifyContent: 'center' } }, done));
+  const close = showScreen(body);
+  done.addEventListener('click', () => { close(); onDone(); });
+  done.focus();
+}
+
+export { DISTRICTS };

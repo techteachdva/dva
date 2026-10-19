@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cybermorph",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "scripts/serve-nocache.py",
+        "8765",
+        "src/site"
+      ],
+      "port": 8765
+    },
+    {
+      "name": "site-dist",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "scripts/serve-nocache.py",
+        "8766",
+        "dist"
+      ],
+      "port": 8766
+    }
+  ]
+}
