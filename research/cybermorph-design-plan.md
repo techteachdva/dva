@@ -15,20 +15,27 @@ Plan only. Nothing here has been implemented.
 | --- | --- | --- |
 | 1 | Title | **CyberMorph** |
 | 2 | Theme | **A full cyber reskin.** The three layers of English are three districts of a computer network. |
-| 3 | Camera | **A 3D diorama.** Simple, easy and intuitive for casual players, with 3D elements that make the diorama view pop. |
+| 3 | Camera | **A 3D diorama.** Simple to display, easy to code, and intuitive for casual players, paralax effects with 3D elements that make the diorama view pop. |
 | 4 | Grades | **6–8** |
 | 5 | Device | **Chromebook first.** Phones don't matter. Everything must work within a school Chromebook's limits. |
 | 6 | Stakes | **Soft push-back** from district 2 on. You never lose knowledge or words. |
 | 7 | Spanish cognates | **A setting, off by default** (plus a teacher link flag). |
 | 8 | Data | **Fork a copy** of the Morphology Garden data into the game. |
+| 9 | Names | **Plain names.** Districts are named by origin (Anglo-Saxon, Latin, Greek, Lingo). The pieces are called **morphemes**, never "chips". The villain is **the Rot**, its creatures are **Rotlings**, and the pressure gauge is the **Rot meter**. "Beta Words" became **Made-up Words**. The verbs COMPILE / DEBUG / PATCH / LINK stay. |
+| 10 | Lingo District | **Hidden in plain sight** on the hub: the **Secret Secretary Desk**, locked by three keywords earned at the end of the three main districts (Part 2, "The Secret Secretary Desk"). |
+| 11 | Lingo mentor | **Mr. Phil**, at the Smart Board in his own CS classroom. |
+| 12 | Lingo content | All four kinds: reductions and contractions, clippings and blends, compounds and phrases, old affixes on new bases. |
+| 13 | Saves | **Browser only.** `localStorage`, no save codes, no server, no online leaderboard. |
+| 14 | Arcade page | **Console + cartridge rack.** An 80s console up top, cartridge spines in a rack below, and a slot-in animation before a game opens. |
+| 15 | Build | **The whole game with starter content**, on a `cybermorph` branch. |
 
 ---
 
 ## The pillar
 
-**Compile a word, and the network changes.** The player assembles real English words from morpheme chips in a 3D diorama of a computer world. Meaning comes first, then structure, then family. Every chip shows what it means. Every word compiled shows its word sum. Every word belongs to a family you can see grow.
+**Compile a word, and the network changes.** The player assembles real English words from morphemes in a 3D diorama of a computer world. Meaning comes first, then structure, then family. Every morpheme shows what it means. Every word compiled shows its word sum. Every word belongs to a family you can see grow.
 
-In one line: *three layers, three districts, one compiler.*
+In one line: *4 layers, 4 districts, one compiler.*
 
 ---
 
@@ -66,7 +73,7 @@ What the game takes from it:
 | The explicit routine: teach the spelling, sound and meaning, show it in words and sentences, build with old and new pieces, then keep reviewing. | Windward summary of explicit morphology teaching | Each new morpheme gets a 20-second intro from a mentor, then guided compiling, then compiling on your own, then spaced review. |
 | English has three layers: **Anglo-Saxon → Latin → Greek**. Teach them in that order. | Henry, *Unlocking Literacy*; Henry 2017/2019 | The three layers become three districts (Part 2). For grades 6–8 the Anglo-Saxon district is a short warm-up, and the weight goes to Latin and Greek. |
 | **Elaborated feedback** (explain why) beats right/wrong. | van der Kleij et al. 2015, already applied in Tech Escape `quiz.js` | Every compile explains itself, including correct ones. Students retry until right. First-try results are recorded quietly. |
-| Retrieval, spacing and interleaving beat massed practice. | Roediger & Karpicke 2006; Cepeda et al. 2006; Rohrer & Taylor 2007 (standard findings, not re-checked here) | A Leitner-style mastery level per morpheme. Review shows up in the game world as chips losing charge. Look-alike morphemes (from the catalog's `confusedWith`) are mixed together on purpose. |
+| Retrieval, spacing and interleaving beat massed practice. | Roediger & Karpicke 2006; Cepeda et al. 2006; Rohrer & Taylor 2007 (standard findings, not re-checked here) | A Leitner-style mastery level per morpheme. Review shows up in the game world as morphemes losing mastery. Look-alike morphemes (from the catalog's `confusedWith`) are mixed together on purpose. |
 
 ---
 
@@ -74,56 +81,92 @@ What the game takes from it:
 
 ### In one paragraph
 
-You are a new **Morph Tech**, a small customizable repair bot, on the **Lexinet**, the network that stores every word. At its core runs the **Lexicon Tree**, a glowing data tree whose leaves are words. A corruption called **the Glitch** has shattered words into loose **morph chips** and spawns **Glitchlings**: buggy creatures made of broken or fake words. You work through three districts, one for each layer of English. In each you collect chips, compile real words at the **Morph Compiler**, debug Glitchlings back into clean pieces, and hang every word you make on its family branch of the Lexicon Tree. Your words open firewalls, bridge data gaps and reboot the district mentors.
+You are a new **Morpher**, a small customizable repair bot, on **The Lexinet**, the network that stores every word. At its core runs the **Lexicon Tree**, a glowing fractal data tree whose leaves are words. A corruption called **the Rot** has shattered words into loose **morphemes** and spawns **Rotlings**: buggy creatures made of nonsense. You work through three districts, one for each layer of English, and a fourth secret one for the English you already speak. In each you collect morphemes, compile real words at the **Morph Compiler**, debug Rotlings back into clean pieces, and hang every word you make on its family branch of the Lexicon Tree. Your words open firewalls, bridge data gaps and reboot the district mentors.
 
-### The world: three layers, three districts
+### The world: three layers, three districts, and a secret fourth
 
-| District | Layer | Look | Chip style | Teaches (grades 6–8 weighting) | Spelling joints |
+| District | Layer | Look | Morpheme style | Teaches (grades 6–8 weighting) | Spelling joints |
 | --- | --- | --- | --- | --- | --- |
-| **Old Code** (start, short) | Anglo-Saxon | A retro 8-bit terminal town: amber phosphor screens, chunky cables, arcade cabinets. | **amber CRT glass** | Quick review of `-s/-es -ed -ing -er -est -ful -less -ness -ly -y`, `un- re- mis- over- fore-`, compounds (`key + board`, `fire + wall`). 1–2 shifts. | drop e (`hop(e) + ing`), double the consonant (`run + n + ing`), y → i (`happ(y→i) + ness`) |
-| **Server Forum** | Latin (and Latin via French) | A data center built like a Roman forum: white server racks as columns, aqueduct-style cable runs, marble-white light. | **white ceramic** | `port rupt struct spect dict tract ject form scrib/script mit/miss duct fer vis/vid cede/ceed` · `in-/im-/il-/ir- inter- sub- trans- de- ex- con-/com- pre- dis- ad- contra-` · `-tion -able/-ible -ive -ment -or -ity -ous -ence/-ance` | prefix assimilation (`in + mobile → immobile`, `ad + tract → attract`), `-able` vs `-ible`, `-tion` vs `-sion` |
-| **Orbital Array** | Greek | A satellite dish and star tracker in orbit, with holograms and blue starlight. | **holographic blue** | `bio geo graph/gram phon photo tele micro scope logy therm auto meter chron hydro psych demo crat` | the linking `o`, stress shifts (PHO-to-graph → pho-TOG-ra-phy), `ph` / `ch` / `y` spellings |
+| **The Anglo-Saxon District** (start, short) | Anglo-Saxon | A retro 8-bit terminal town: amber phosphor screens, chunky cables, arcade cabinets. | **amber CRT glass** | Quick review of `-s/-es -ed -ing -er -est -ful -less -ness -ly -y`, `un- re- mis- over- fore-`, compounds (`key + board`, `fire + wall`). 1–2 shifts. | drop e (`hop(e) + ing`), double the consonant (`run + n + ing`), y → i (`happ(y→i) + ness`) |
+| **The Latin District** | Latin (and Latin via French) | A data center built like a Roman forum: white server racks as columns, aqueduct-style cable runs, marble-white light. | **grey marble** | `port rupt struct spect dict tract ject form scrib/script mit/miss duct fer vis/vid cede/ceed` · `in-/im-/il-/ir- inter- sub- trans- de- ex- con-/com- pre- dis- ad- contra-` · `-tion -able/-ible -ive -ment -or -ity -ous -ence/-ance` | prefix assimilation (`in + mobile → immobile`, `ad + tract → attract`), `-able` vs `-ible`, `-tion` vs `-sion` |
+| **The Greek District** | Greek | A satellite dish and star tracker in orbit, with holograms and blue starlight. | **holographic blue** | `bio geo graph/gram phon photo tele micro scope logy therm auto meter chron hydro psych demo crat` | the linking `o`, stress shifts (PHO-to-graph → pho-TOG-ra-phy), `ph` / `ch` / `y` spellings |
+| **The Lingo District** | Conversational Middle School English | A clean computer science classroom, computers and desks and a Smart Board on the left.| **white lined paper** | Teaches threads and connections between common everyday phrases that students use and the morphemes from previous lessons and new multisyllabic words. This District should teach students that morphemes are everywhere and they use them all the time, and unlocking their meaning unlocks new worlds of words to them. | Show how slang is often modified/morphed/truncated English |
 
 Academic words for grades 6–8 come from science and social studies on purpose: `transportation`, `interruption`, `photosynthesis`, `thermometer`, `democracy`, `chronological`.
 
 **The hub** is the Core. Each base you meet grows a branch of the Lexicon Tree, and each word you compile hangs a glowing leaf on it. It reuses the Morphology Garden's tree idea (`morphology-garden.js` already draws trees in three.js).
 
-The chip style is the layer, so a word's origin is visible without a label. (The Millers: the world explains itself.)
+The morpheme style is the layer, so a word's origin is visible without a label. (The Millers: the world explains itself.)
 
 ### Characters: mentors with wants
 
-Following Phil's rule, no mentor is called "The Teacher." All three are programs or bots with a personality.
+Following Phil's rule, no mentor is called "The Teacher." All three are programs with a personality.
 
-- **Old Wynn**, an early maintenance bot in Old Code. (Wynn, ƿ, is a lost Old English letter.) She talks in short, plain words. She wants to reboot her arcade cabinet, the *Unbreakable*, before the district shuts down. Quirk: she counts everything aloud with `-s` and `-es`.
-- **Aurelia Cache**, the Server Forum's archive AI. The Glitch corrupted her memory, so she is literally missing her roots, and each root you return restores a line of her log. **Secret:** she released the Glitch herself by compiling a word that wouldn't hold. That sets up Beta Words (below).
-- **Theo Parsec**, the Orbital Array's satellite operator. He names every satellite with Greek compounds and is never happy with them. He wants to finish his star map before the eclipse cuts the uplink.
+- **Old Wynn**, an early maintenance program in the Anglo-Saxon District. (Wynn, ƿ, is a lost Old English letter.) She talks in short, plain words. She wants to reboot her arcade cabinet, the *Unbreakable*, before the district shuts down. Quirk: she counts everything aloud with `-s` and `-es`.
+- **Aurelia Cache**, the Latin District's archive AI. The Rot corrupted her memory, so she is literally missing her roots, and each root you return restores a line of her log. **Secret:** she released the Rot herself on accident by compiling a word that exploded. That sets up Made-up Words (below).
+- **Theo Parsec**, the Greek District's satellite operator. He names every satellite with Greek compounds and is never happy with them. He wants to finish his star map before the eclipse cuts the uplink.
 
-The player's **Morph Tech** can be customized (chassis, colour, face screen) with parts unlocked by compiling. Monster, P.I. shows that avatar customization works for this age.
+- **Mr. Phil**, in the Lingo District. He is himself, at the Smart Board in his computer science classroom. He connects each everyday word back to the morphemes students learned in the three main districts.
+
+The player's **Morpher** can be customized (chassis, colour, face screen) with parts unlocked by compiling. Monster, P.I. shows that avatar customization works for this age. Customization and unlocking customizations is a strong design choice for middle-schoolers.
+
+### The Secret Secretary Desk (how the Lingo District unlocks)
+
+- **Hidden in plain sight.** An ornate secretary desk stands in the hub from the first visit, with a golden plaque on its desktop that reads **Secret Secretary Desk**. Clicking it zooms in on a locked drawer with **three combination letter locks**. Players learn about it early and wonder about it all game.
+- **Three keywords, three districts.** Finishing each main district reveals one keyword, a single morpheme, in its mentor's last line and on a clue card added to the inventory:
+  - the Anglo-Saxon District gives the **prefix**;
+  - the Latin District gives the **base**;
+  - the Greek District gives the **suffix**.
+- **A new puzzle every run.** The three keywords are drawn at random when a save is created, from a pool of three-morpheme words, so every browser run has its own key. Examples: `bene + fic + ial → beneficial`, `in + scrip + tion → inscription`, `un + tie + ed → untied` (tie's `e` drops), `re + act + ion → reaction`, `dis + rupt + ive → disruptive`, `pre + dict + able → predictable`, `trans + port + er → transporter`.
+- **Each lock spells one morpheme.** Each lock has letter wheels for its morpheme's length. When all three are right, the morphemes slide together, the spelling joint animates, and the full **key word** is built and spoken. Then the drawer opens into the Lingo District.
+- **Fair clues.** The clue cards say what each keyword *is* (prefix, base, suffix) and what it *means*. A player who forgets one can return to its mentor, who repeats it.
+
+### The Lingo District (Mr. Phil's classroom)
+
+**Pillar:** morphemes are everywhere, including in the words students already use, and knowing them opens new words.
+
+Every Lingo word gets a card with five lines:
+1. **The word** as students say it.
+2. **What it means.**
+3. **Its morphemes**, as a word sum that shows the change: `fix + ing + to → fixin' to → finna`.
+4. **How it changed**: reduction, contraction, clipping, blend, compound, conversion, or new meaning.
+5. **Where it comes from** (AAVE, Southern US English, internet and gaming, or general English) and one line that links it to an academic word with the same morpheme.
+
+**The respect note.** Every dialect has rules. AAVE is a full, rule-governed variety of English, and slang is not "wrong English". It is English doing what English has always done: reshaping morphemes. *Finna* gets its own spotlight: it comes from *fixing to*. Linguists call one form that carries several morphemes (`fix + -ing + to`) a portmanteau morph, and here that form was then worn down in speech to *finna*. It means "about to".
+
+| Process | Starter words |
+| --- | --- |
+| **Reductions and contractions** | finna (fix + ing + to), gonna (go + ing + to), wanna (want + to), gotta (got + to), aight (all + right), 'sup (what + is + up), y'all (you + all), let's (let + us), ain't |
+| **Clippings and blends** | sus (suspicious), rizz (charisma), bro (brother), fam (family), vibe (vibration); situationship (situation + relationship), frenemy (friend + enemy), brunch (breakfast + lunch) |
+| **Compounds and phrases** | crash out (crash + out), glow-up (glow + up), lowkey / highkey (low + key), no cap, let's go!, hey (one free morpheme, no parts) |
+| **Old affixes, new bases** | cooked (cook + ed, now "doomed"), goated (G.O.A.T. + ed), ghosted (ghost + ed, noun → verb), unbothered (un + bother + ed), rewatchable (re + watch + able), bet (an old word with a new meaning) |
+
+The verbs work the same here. COMPILE builds `un + bother + ed`. DEBUG splits `situationship`. PATCH fits *"I'm ___ to leave"* → `finna`. LINK hangs `sus` on the same branch as `suspicious` and `suspect`. Before release, a teacher reviews the word list for anything inappropriate at their school.
 
 ### The four verbs, one interface
 
-Meier's Covert Action rule: two games inside one game fight each other. So there is **one interface**, the morph chip and the matrix, used for four verbs.
+Meier's Covert Action rule: two games inside one game fight each other. So there is **one interface**, the morpheme and the matrix, used for four verbs.
 
 | Verb | Morphological skill | What the player does |
 | --- | --- | --- |
 | **COMPILE** | putting a word together from its meaning | A mentor or a firewall asks for a meaning: *"able to be carried from one place to another."* You turn the compiler rings to `trans + port + able` and hit Compile. |
-| **DEBUG** | taking a word apart | A Glitchling crawls up wearing a word, like `interruption` or the fake `unhopeing`. Click the seams to cut it into morphemes. A real word breaks clean, drops its chips and becomes a friendly helper sprite. A fake shows the bad joint and dissolves. |
+| **DEBUG** | taking a word apart | A Rotling crawls up wearing a word, like mispelled `interruption` or the nonsense `unhopeing`. Click the seams to cut it into morphemes. A real word breaks clean, drops its morphemes and becomes a friendly helper sprite. A nonsense word shows the bad joint and dissolves into its component morphemes. |
 | **PATCH** | suffix grammar in a sentence | A firewall lock reads *"The volcano is still ___."* You turn the suffix ring on `act` until `active` fits. Other locks ask for `action`, `actively` or `react`. |
-| **LINK** | which words are related | At the Lexicon Tree, hang words on their base's branch. Some are false friends: `corner` is not `corn + er`, and `report` is not `rep + ort`. Catching one gives a bonus leaf. |
+| **LINK** | which words are related | At the Lexicon Tree, hang words on their base's branch. Some are false friends: `corner` is not `corn + er`, and `report` is not `rep + ort`. Catching one gives a satisfying sparkle spark. |
 
-Every verb uses the same chips and the same word-sum readout. A student who learns one has learned the controls for all four.
+Every verb uses the same morphemes and the same word-sum readout. A student who learns one has learned the controls for all four. They should be able to learn the entire base mechanics and GUI of the game in 2 minutes or less.
 
 ### The Morph Compiler (the 3D centerpiece)
 
 The compiler is a **3D drum of rotating rings** on a terminal console, like a cryptex rebuilt as hardware.
 
 - **Columns, left to right:** prefix ring(s), the base core (fixed, set by the request or picked from your inventory), and suffix ring(s). This follows Ramsden's matrix rule: one piece per column, and no skipping a column.
-- **Shape is the rule.** Prefix chips have a connector pin on the right. Suffix chips have a socket on the left. Base chips are square cores. Chips only seat in their own column, so the structure is learned by touch. This is the same non-colour channel idea as Tech Escape's `SLOT_SHAPES`.
+- **Shape is the rule.** Prefix morphemes have a connector pin on the right. Suffix morphemes have a socket on the left. Base morphemes are square cores. Morphemes only seat in their own column, so the structure is learned by touch. This is the same non-colour channel idea as Tech Escape's `SLOT_SHAPES`.
 - **Live meaning.** Under each ring the gloss updates as you turn it (`trans-` *across*, `port` *carry*, `-able` *can be*). Under the whole drum, the word sum prints like a compile log: `trans + port + able → transportable`.
 - **Joints are animated.** When a spelling rule fires, the compiler shows it: the `e` of `hope` is ejected as a little spark before `-ing` seats. The rule is shown, not just stated.
 - **Literal vs today's meaning.** A compiled word shows two lines: *Root sense: carry back.* *Today: a person who brings back the news.* This is honest about meaning drift, which SWI cares about.
 - **Compile to commit.** Commit is a two-step action (the big Compile button), with the 350 ms open lockout from Tech Escape `quiz.js`. The word is spoken on every compile.
-- **Beta Words (the "No, but you could…" rule).** If you compile a word that is legal in structure but not in the dictionary, such as `unsad`, the compiler doesn't say "wrong." It says *"That word isn't in the Lexicon yet. Save it as a beta word?"* It goes into your Beta folder with its built meaning (*not sad*). Beta words don't count toward requests, but they are a safe, playful use of morphology. Aurelia's secret makes them a story beat: she pushed a beta word into the core and it broke, so the Beta folder also teaches the line between *possible* and *real*.
+- **Made-up Words (the "No, but you could…" rule).** If you compile a word that is legal in structure but not in the dictionary, such as `unsad`, the compiler doesn't say "wrong." It says *"That word isn't in the Lexicon yet. Save it as a made-up word?"* It goes into your Made-up Words list with its built meaning (*not sad*). Beta words don't count toward requests, but they are a safe, playful use of morphology. Aurelia's secret makes them a story beat: she pushed a made-up word into the core and it broke, so the Made-up Words list also teaches the line between *possible* and *real*.
 
 **Controls (casual-first).**
 - Click the ▲ / ▼ arrows above and below a ring, or scroll over it. The keyboard alternative is ← / → to pick a ring and ↑ / ↓ to turn it.
@@ -132,21 +175,21 @@ The compiler is a **3D drum of rotating rings** on a terminal console, like a cr
 
 ### Loops on three time scales
 
-Meier's "one more turn": something is always about to pay off.
+Meier's "one more turn": something is always about to pay off and this keeps momentum with the player moving forward.
 
 | Scale | Length | Loop | Payoff |
 | --- | --- | --- | --- |
 | **Moment** | 20–40 s | read a meaning → turn the rings → compile → read the feedback | the word builds in 3D, a word sum, its sound |
-| **Errand** | 3–5 min | go to a mentor or firewall → 3–5 requests → debug the Glitchlings blocking the path | a firewall opens, a data bridge forms, a mentor speaks |
-| **Shift** | 10–15 min | one daily session: new morphemes from a mentor, errands, a review run, one Unknown File | chips recharge, Lexicon leaves, end-of-shift patch notes |
-| **Campaign** | weeks | Old Code (1–2 shifts) → Server Forum (~5–6) → Orbital Array (~4–5) | a district cleared of Glitch, the Lexicon Tree lights up, the finale |
+| **Errand** | 3–5 min | go to a mentor or firewall → 3–5 requests → debug the Rotlings blocking the path | a firewall opens, a data bridge forms, a mentor speaks |
+| **Shift** | 10–15 min | one daily session: new morphemes from a mentor, errands, a review run, one Unknown File | morphemes regain mastery, Lexicon leaves, end-of-shift patch notes |
+| **Campaign** | weeks | Anglo-Saxon (1–2 shifts) → Latin (~5–6) → Greek (~4–5), with the Lingo District found along the way | a district cleared of Rot, the Lexicon Tree lights up, the finale |
 
 **End-of-shift patch notes** borrow from Ainmos 0.30 Dream Tales and from Phil's own changelogs. They are a short, generated release note that uses **the words you compiled today** in sentences about the network: *"Patch 1.3: Interrupted uplink restored. Theo called the new satellite transportable."* It is the reading-in-context step for free.
 
 ### The learning engine
 
-- **Mastery levels (Leitner 0–4) per morpheme**, shown in the world as **chip charge**: dim → lit → gold.
-- **Losing charge is spacing.** Chips you haven't used lose charge over days (1, 3, 7, 14-day gaps by level). Low-charge chips turn up in Glitchlings or requests, and using one recharges it. Forgetting is shown as a place to go back to, not a red bar.
+- **Mastery levels (Leitner 0–4) per morpheme**, shown in the world as **morpheme mastery**: dim → lit → gold.
+- **Losing mastery is spacing.** Morphemes you haven't used lose mastery over days (1, 3, 7, 14-day gaps by level). Low-mastery morphemes turn up in Rotlings or requests, and using one restores it. Forgetting is shown as a place to go back to, not a red bar.
 - **Interleave the look-alikes.** The catalog's `confusedWith` field (102 rows) drives mixed sets: `-er/-or`, `in-` (not) vs `in-` (into), `-able/-ible`, `inter-/intra-`, `-tion/-sion`.
 - **Unknown Files for transfer.** Each shift gives one unfamiliar word built only from mastered pieces (`transportable`, `interruption`). The player must debug it and pick its meaning. This targets the weak reading transfer that Colenbrander found.
 - **Word Detective (the Kieffer & Lesaux strategy)** comes up when a sentence has a word you haven't met: (1) flag the word you don't know, (2) split it, (3) say what each piece means, (4) check the sentence. The four steps sit on screen as a small fixed card.
@@ -154,25 +197,25 @@ Meier's "one more turn": something is always about to pay off.
 
 ### Failure and stakes (Decision 6: soft push-back)
 
-Feed, then poke, but not too much.
+Feed information, then poke for understanding, but not too much.
 
-- **Old Code has no failure state.** It is a safe first shop.
-- **From the Server Forum on, the Glitch level is a meter you can see** (TRN-13 Time Track). Glitchlings left alone push it up. At 100% the district **crashes**: you reboot at the last save terminal, and your loose, uncompiled chips drop where you stood. They stay there, glowing, and you can pick them up again. Failure costs a walk, never knowledge or words.
-- **Overclock Mode** (optional, unlocked after Old Code) adds a timer, more Glitchlings and a leaderboard score. It is opt-in, for students who want pressure.
-- Debugging a Glitchling wrong doesn't hurt you. It bumps you back one tile and the explanation appears.
+- **Anglo-Saxon has no failure state.** It is a safe first shop.
+- **From the Latin District on, the Rot level is a meter you can see** (TRN-13 Time Track). Rotlings left alone push it up. At 100% the district **crashes**: you reboot at the last save terminal, and your loose, uncompiled morphemes drop where you stood. They stay there, glowing, and you can pick them up again. Failure costs time and mild irritation, never knowledge or words.
+- **Overclock Mode** (optional, unlocked after Anglo-Saxon) adds a timer, more Rotlings and a final score. It is opt-in, for students who want pressure. Do not bother with a digital leaderboard functionality. Players can easily save a screenshot of their final score and submit this to the teacher for proof of doing the activity and the score of the game.
+- Debugging a Rotling wrong doesn't hurt you. It bumps you back one tile and the explanation appears.
 
 ### Mechanisms (Building Blocks codes, from the code index; the PDF is not in `research/`)
 
 | Code | Where |
 | --- | --- |
-| SET-02 Tile-Laying | chips seating in matrix columns |
+| SET-02 Tile-Laying | morphemes seating in matrix columns |
 | SET-01 Set Valuation | Lexicon families pay more when complete (all the known `port` words) |
 | ECO-15 Contracts | mentor and firewall requests |
 | ACT-15 Gating and Unlocking | firewalls open with words, and districts open with mastery |
 | ACT-16 Tech Trees | the Lexicon Tree itself: bases → words → families |
-| TRN-13 Time Track | the Glitch meter |
+| TRN-13 Time Track | the Rot meter |
 | TRN-07 Real-Time | Overclock Mode only |
-| STR-08 Campaign | Old Code → Server Forum → Orbital Array |
+| STR-08 Campaign | Anglo-Saxon → Latin → Greek → Lingo|
 
 The book's PDF wasn't found at the path `bb_lookup.py` expects, so these codes come from the skill's index only. Read the entries before relying on any pitfall.
 
@@ -182,19 +225,19 @@ The book's PDF wasn't found at the path `bb_lookup.py` expects, so these codes c
 
 ### The diorama camera (Decision 3)
 
-- **Each area is one diorama:** a self-contained 3D room on a tile grid (about 12×12 tiles), seen from a fixed three-quarter view above. Think of a cutaway model on a table.
+- **Each area is one diorama:** a self-contained 3D room on a tile grid (about 12×12 tiles), seen from a fixed three-quarter view above. Think of a cutaway model on a table. Think of isometric perspective videogames.
 - **Perspective camera with a narrow field of view** (about 30°), so it reads almost like a flat 2D board but keeps real depth and lighting. The camera never needs the player to steer it.
 - **Gentle parallax:** the diorama tilts a few degrees toward the mouse. It is cheap and makes the 3D obvious. It turns off with Reduced motion.
-- **Click to move.** Click a tile and the Morph Tech walks there along a grid path (A* on the tile grid). Click a thing to walk to it and use it. WASD and arrows also work for students who want them.
+- **Click to move.** Click a tile and the Morpher walks there along a grid path (A* on the tile grid). Click a thing to walk to it and use it. WASD and arrows also work for students who want them.
 - **Moving between areas:** walk through a glowing port at the diorama's edge. The camera does a short slide to the next diorama, and the next room builds itself in, tile by tile. This is a cheap, impressive 3D moment that also hides loading.
-- **Zoom on focus.** Opening the compiler, a Glitchling or a firewall lock zooms the camera onto that object while the room dims. Closing zooms back. No separate 2D screens are needed: the panels sit *in* the diorama.
+- **Zoom on focus.** Opening the compiler, a Rotling, or a firewall lock zooms the camera onto that object while the room dims. Closing zooms back. No separate 2D screens are needed: the panels sit *in* the diorama.
 
 **What makes it pop (the 3D on top of a flat-feeling view):**
-- chips are real 3D objects that float, spin slowly and glow by charge;
+- morphemes are real 3D objects that float, spin slowly and glow by mastery;
 - the compiler drum is a real 3D model whose rings visibly turn and click;
-- Glitchlings are 3D creatures whose bodies are built from their word's letters, and debugging splits them in 3D along your cuts;
+- Rotlings are 3D creatures whose bodies are built from their word's letters, and debugging splits them in 3D along your cuts;
 - leaves pop onto the Lexicon Tree in the hub with a burst of light;
-- emissive "neon" edges on everything interactive, so clickable things read at a glance.
+- emissive "neon" edges on everything interactive, so clickable things read at a glance and with high contrast.
 
 ### Reuse from Tech Escape and Somnia
 
@@ -208,7 +251,7 @@ The book's PDF wasn't found at the path `bb_lookup.py` expects, so these codes c
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │ [Request]             [ trans ][ port ][ able ]  word slots [⏸][⚙]│
-│  "able to be carried                                    Glitch ▮▮▯│
+│  "able to be carried                                      Rot ▮▮▯│
 │   from place to place"                                          │
 │                                                                 │
 │            ╱‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾╲                 [Compile │
@@ -227,8 +270,8 @@ The book's PDF wasn't found at the path `bb_lookup.py` expects, so these codes c
 
 - **Top-left:** the request, written as a meaning. Click 🔊 to hear it.
 - **Top-center:** word slots that fill as you compile.
-- **Top-right:** pause and settings, and the Glitch meter from district 2 on.
-- **Bottom-left:** inventory, mini chips grouped in three rows by type (like Somnia's hand).
+- **Top-right:** pause and settings, and the Rot meter from district 2 on.
+- **Bottom-left:** inventory, mini morphemes grouped in three rows by type (like Somnia's hand).
 - **Bottom-right:** one big context button: COMPILE, DEBUG, PATCH, LINK or TALK.
 - **Right edge:** the compile log, collapsible like the Ainmos Vault column. It lists recent word sums.
 
@@ -242,14 +285,14 @@ Phones are out of scope. Chromebooks are the target, and these are their real li
 
 | Constraint | What CyberMorph does |
 | --- | --- |
-| **Low-end hardware** (Celeron / MediaTek class, 4 GB RAM, integrated GPU) | Budget: ≤ 100 draw calls, ≤ 100k triangles on screen, one diorama loaded at a time, no real-time shadows (baked or blob shadows), DPR capped at 1.25, a 30 fps floor, instanced chips. An auto Low setting if the first 3 seconds run under 30 fps. |
+| **Low-end hardware** (Celeron / MediaTek class, 4 GB RAM, integrated GPU) | Budget: ≤ 100 draw calls, ≤ 100k triangles on screen, one diorama loaded at a time, no real-time shadows (baked or blob shadows), DPR capped at 1.25, a 30 fps floor, instanced morphemes. An auto Low setting if the first 3 seconds run under 30 fps. |
 | **Small screens** (1366×768 and 1280×720 are common) | The HUD layout above is designed at 1366×768. Text is never under 16 px at 100% zoom. |
 | **Trackpads** | Nothing needs right-click, drag, hover or a double-click. Every hover tooltip also opens on click. Scrolling over a ring turns it. |
 | **Chromebook keyboard** (top-row keys replace F1–F12, no Delete or Home) | Only letters, arrows, Space, Enter, Esc and Tab. |
 | **Touchscreen and tablet-mode Chromebooks** | Every control is a tap target ≥ 44 px, and click-to-move already works by touch. No separate touch layout. |
-| **Managed school network** (blocked CDNs, filtered sites) | Everything is self-hosted: three.js vendored, fonts local, no external calls except the optional leaderboard. |
+| **Managed school network** (blocked CDNs, filtered sites) | Everything is self-hosted: three.js vendored, fonts local, no external calls at all. |
 | **Offline or flaky Wi-Fi** | A service worker caches the game after the first load (Somnia's `sw.js` pattern). It plays fully offline. |
-| **Saves** (shared or guest Chromebooks can wipe local storage on sign-out) | Save to `localStorage` per profile, *and* show a short **save code** at the end of each shift that a student can type back in on any Chromebook. Teachers can also export class saves. |
+| **Saves** | **Browser only (Phil, 19 Oct 2026).** One `localStorage` save per profile, written on every change and on `pagehide`. No save codes, no server, no class export. Shared or guest Chromebooks that wipe storage on sign-out lose the save. That trade is accepted for simplicity. |
 | **Audio** (classrooms are loud, headphones vary) | Every spoken line is also captioned. ChromeOS has built-in `speechSynthesis` voices. Pick the first local en-US voice and test on a managed device. |
 | **WebGL** | three.js needs WebGL2, which current ChromeOS supports. If `getContext('webgl2')` fails, show a plain message instead of a blank screen. |
 
@@ -257,10 +300,10 @@ Phones are out of scope. Chromebooks are the target, and these are their real li
 
 ## Part 5 — 3D art direction
 
-- **Low-poly neon:** flat-shaded meshes, emissive edges, a dark background per district (amber, white and blue light). Baked ambient light.
-- **Words in 3D:** chip faces get text from `CanvasTexture`, cached per morpheme. Floating Glitchling words use CSS2D labels for crisp text (the Garden already uses `CSS2DRenderer`).
+- **Low-poly neon:** flat-shaded meshes, emissive edges, a dark background per district (amber, grey, blue, and white light). Baked ambient light.
+- **Words in 3D:** morpheme faces get text from `CanvasTexture`, cached per morpheme. Floating Rotling words use CSS2D labels for crisp text (the Garden already uses `CSS2DRenderer`).
 - **Juice that teaches:** the ejected-`e` spark, a doubled consonant snapping in, the y → i morph, and leaves popping onto the Lexicon Tree. Every effect shows a rule. None is only decoration.
-- **Audio:** `speechSynthesis` for every morpheme and word, short synth sounds for ring clicks and compiles. Reuse Tech Escape's `audio.js` pattern and its music approach. Recorded mentor voices are a stretch goal.
+- **Audio:** `speechSynthesis` for every morpheme and word, short synth sounds for ring clicks and compiles. Reuse Tech Escape's `audio.js` pattern and its music approach. Recorded mentor voices voiced by Mr. Phil are a stretch goal.
 
 ---
 
@@ -284,12 +327,13 @@ What the fork starts with: about 220 morpheme rows (24 suffix, 21 prefix, 63 roo
 | Need | Count to start | Notes |
 | --- | --- | --- |
 | **Greek catalog rows** missing today: `phon photo micro scope therm auto meter chron hydro demo crat`, plus `-est`, a separate `-or` row, `-sion`, `-ance/-ence` and `cede/ceed` | ~18 rows | Only in the fork. |
-| **Matrices** (base → legal prefix/suffix chains, with the resulting words) | Old Code ~6 bases, Forum ~14, Array ~12 | Generate a first pass from the word trees, then check by hand. |
-| **Requests** (a meaning prompt → target word) | Old Code ~25, Forum ~70, Array ~60 | Plain-language meanings. Tier 2 and grades 6–8 science and social studies words first. |
+| **Matrices** (base → legal prefix/suffix chains, with the resulting words) | Anglo-Saxon ~6 bases, Latin ~14, Greek ~12 | Generate a first pass from the word trees, then check by hand. |
+| **Requests** (a meaning prompt → target word) | Anglo-Saxon ~25, Latin ~70, Greek ~60 | Plain-language meanings. Tier 2 and grades 6–8 science and social studies words first. |
 | **Fakes** (bad joint, wrong order, false family) with a one-line reason each | ~25 per district | e.g. `hopeing`, `ableport`, `corn + er ≠ corner` |
 | **Firewall locks** (sentence + base + the right suffix) | ~30 per district | Each needs one clearly right fit. |
 | **Unknown Files** | ~20 per district | Must use only pieces taught earlier in that district. |
 | **Spelling-joint engine** | 1 module | drop e, double the consonant, y → i, prefix assimilation. Unit tests from the catalog's `wordSums`. |
+| **Student Lingo** | 1 whole District | Need to use actually used slang and lingo. Some examples are "bet", "aight", "sup", "hey", "crash-out", "cooked", "finna", and "let's go!".
 
 **New audit script:** `scripts/audit-cybermorph-bank.mjs` checks that every request's target can be built from that district's matrix, that every Unknown File uses only earlier pieces, that every fake gives a reason, and that every word sum round-trips through the joint engine.
 
@@ -298,9 +342,9 @@ What the fork starts with: about 220 morpheme rows (24 suffix, 21 prefix, 63 roo
 ## Part 7 — Teacher tools
 
 - **Practice picker.** A teacher link like `?set=sfx:-er,sfx:-or,pfx:re-` (catalog keys, not publisher names) narrows a shift to this week's morphemes, whatever program the class follows.
-- **Class code.** `?class=` tags saves and the optional leaderboard, as Tech Escape does.
+- **No class code and no server.** Everything stays in the browser.
 - **Cognates.** `?cognates=es` turns on Spanish cognates for the class (Decision 7). Students can also turn it on in Settings.
-- **Study Guide / report.** First-try rate per morpheme, low-charge (due) chips, fakes missed, and Unknown Files solved. It prints and exports as CSV. Data stays on the Chromebook unless a class code is set.
+- **Study Guide / report.** First-try rate per morpheme, low-mastery (due) morphemes, fakes missed, and Unknown Files solved. It prints from the browser. Students can screenshot it with their final score.
 - **Projector mode.** One compiler, big type, no diorama. For whole-class word building on a smart board. It is the same compiler with no new code path.
 
 ---
@@ -309,7 +353,7 @@ What the fork starts with: about 220 morpheme rows (24 suffix, 21 prefix, 63 roo
 
 - TTS on every piece, word, request and caption. Captions are always on for mentor speech.
 - A font choice (the default, Lexend, or OpenDyslexic, all self-hosted) and text size A− / A / A+, like the Garden.
-- Chip type is shown by shape and colour, and district by chip style, so colour is never the only cue.
+- Morpheme type is shown by shape and colour, and district by morpheme style, so colour is never the only cue.
 - No timers outside Overclock Mode. Reduced motion turns off parallax, camera slides and particles.
 - Full keyboard play. Focus traps in panels (Somnia's `dialog-a11y.js`).
 
@@ -328,12 +372,12 @@ src/site/cybermorph/
   js/main.js  config.js  audio.js  util.js
   js/world/    diorama.js (tile grid, camera, parallax, transitions)  pathfind.js
                old-code.js  server-forum.js  orbital-array.js  core-hub.js  lexicon-tree.js
-  js/entities/ morph-tech.js  mentor.js  glitchling.js  chip.js  firewall.js
+  js/entities/ morpher.js  mentor.js  rotling.js  morpheme.js  lock.js
   js/compiler/ drum.js (3D rings)  wordsum.js (joint engine)  beta-words.js
-  js/learn/    mastery.js (Leitner + charge)  scheduler.js (interleave, Unknown Files)  detective.js
+  js/learn/    mastery.js (Leitner + fade)  scheduler.js (interleave, Unknown Files)  detective.js
   js/data/     catalog.js  words.js  (forked from scripts/morphology-*.js)
                old-code.js  server-forum.js  orbital-array.js  (requests, locks, fakes, unknown files)
-  js/meta/     save.js (localStorage + save codes)  settings.js  highscores.js  report.js  changelog.js
+  js/meta/     save.js (localStorage only)  settings.js  highscores.js  report.js  changelog.js
   js/ui/       hud.js  inventory.js  panels.js  captions.js  tutorial.js
   js/input/    pointer.js  keyboard.js
 scripts/audit-cybermorph-bank.mjs
@@ -350,27 +394,29 @@ Each version is a playable checkpoint. Wright's rule: build the toy before the g
 
 | Version | Name | What ships | Done when |
 | --- | --- | --- | --- |
-| **0.1** | The Toy | The compiler drum alone on a console. Turn rings over the Old Code morphemes, compile, hear the word, see the word sum, see joints animate. Beta Words. | A student plays with it for 5 minutes with no goal and asks what else it can make. |
-| **0.2** | Boot Up | One Old Code diorama: click-to-move, Old Wynn, COMPILE requests, inventory HUD, save + save code. | A new student finishes three errands with no help from the teacher. |
-| **0.3** | Glitchlings | DEBUG, fakes, end-of-shift patch notes. | Fake debugs are right on first try ≥ 70% by the third shift. |
-| **0.4** | The Core | The hub, the Lexicon Tree, LINK, chip charge and fade, a daily shift, diorama-to-diorama transitions. | On day 2, students see low-charge chips and go to recharge them. |
-| **0.5** | Server Forum | Aurelia, Latin roots, prefix assimilation, PATCH locks, the Glitch meter and crash/reboot. | The joint tests pass, and a crash feels fair in a playtest. |
-| **0.6** | Orbital Array | Theo, Greek forms, stress-shift audio, Unknown Files, Word Detective. | Meaning picks on Unknown Files are above chance on untrained words. |
-| **0.7** | Teacher's Desk | Practice picker, class code, cognates flag, report export, projector mode. | One teacher runs a full week with it. |
-| **0.8** | Chromebook Lab | The Part 4 checklist on real hardware: a low-end Chromebook, 1366×768, a touchscreen model, a managed account, offline play. | 30 fps on the slowest school Chromebook, and a save survives a sign-out via save code. |
-| **1.0** | CyberMorph | Overclock Mode, leaderboard, finale, changelog, art pass. | — |
+| **0.1** | The Toy | The compiler drum alone on a console. Turn rings over the Anglo-Saxon morphemes, compile, hear the word, see the word sum, see joints animate. Made-up Words. | A student plays with it for 5 minutes with no goal and asks what else it can make. |
+| **0.2** | Boot Up | One Anglo-Saxon diorama: click-to-move, Old Wynn, COMPILE requests, inventory HUD, browser save. | A new student finishes three errands with no help from the teacher. |
+| **0.3** | Rotlings | DEBUG, fakes, end-of-shift patch notes. | Fake debugs are right on first try ≥ 70% by the third shift. |
+| **0.4** | The Core | The hub, the Lexicon Tree, LINK, mastery glow and fade, a daily shift, diorama-to-diorama transitions. | On day 2, students see low-mastery morphemes and go to restore them. |
+| **0.5** | Latin District | Aurelia, Latin roots, prefix assimilation, PATCH locks, the Rot meter and crash/reboot. | The joint tests pass, and a crash feels fair in a playtest. |
+| **0.6** | Greek District | Theo, Greek forms, stress-shift audio, Unknown Files, Word Detective. | Meaning picks on Unknown Files are above chance on untrained words. |
+| **0.7** | Teacher's Desk | Practice picker, cognates flag, printable report, projector mode. | One teacher runs a full week with it. |
+| **0.8** | Chromebook Lab | The Part 4 checklist on real hardware: a low-end Chromebook, 1366×768, a touchscreen model, a managed account, offline play. | 30 fps on the slowest school Chromebook, and saves survive closing and reopening Chrome. |
+| **1.0** | CyberMorph | Overclock Mode with a browser-only high-score table, changelog, art pass. | — |
 
 **Size check.** Tech Escape is about 17,700 lines of JS. The diorama is simpler than Tech Escape's maze and first-person controller, so plan for about 9–12k lines here, plus content files.
 
 ---
 
-## Still open
+## Resolved (Phil, 19 Oct 2026)
 
-None of these block 0.1.
-
-1. **Avatar parts.** How much customization, and does it unlock through play or is it all open from the start?
-2. **Leaderboard.** Overclock Mode only, or also a calm "words compiled this week" class board?
-3. **Finale.** What the Glitch is at the end: a boss that is one huge fake word to debug, or Aurelia's broken beta word that you must finally compile correctly.
+1. **Avatar parts.** Before play starts, players build their Morpher from **4 starting options in each of four categories**: Arms & Legs, Torso, Head, and Face. Clearing a district, opening the Secret Secretary Desk and beating the finale each unlock more colours and textures.
+2. **Leaderboard.** Overclock Mode only, saved in the browser. No Google Sheet. A final-score screen is laid out for a clean screenshot to hand to the teacher.
+3. **Finale.** The Rot is a **3-stage boss**, one word per origin, each picked at random from a pool:
+   - **Greek:** triskaidekaphobia = `tris + kai + deka + phob + ia` (5 morphemes; it is only 4 if `phobia` counts as one piece), plus pool words like `photo + syn + the + sis`, `chron + o + log + ic + al`, `bio + graph + y`, `tele + scop + ic`, `psych + o + log + ist`.
+   - **Latin:** indestructible = `in + de + struct + ible`, plus `inter + rupt + ion`, `trans + port + ation`, `in + vis + ible`, `pre + dict + able`, `contra + dict + ion`.
+   - **Anglo-Saxon:** unhelpfulness = `un + help + ful + ness`, plus `un + friend + ly + ness` (y → i), `fore + see + able` (a Latin suffix on Anglo-Saxon pieces), `over + whelm + ing`, `mis + under + stand + ing`, `care + less + ness`.
+   - The player DEBUGs each stage by splitting the boss word at every seam, then COMPILEs it back together clean.
 
 ## Next playtest (for 0.1)
 
@@ -378,7 +424,7 @@ None of these block 0.1.
 
 ---
 
-## Sources
+## Sources (Please include these in the game itself under "Inspirations")
 
 - 95 Percent Group, *Morpheme Magic*: [product page](https://www.95percentgroup.com/products/morpheme-magic/) · [3rd ed. sample](https://www.95percentgroup.com/morpheme-magic-3e-sample-unlock/) · [XanEdu listing](https://www.xanedu.com/catalog-product-details/morpheme-magic-lessons-to-build-morphological-awareness-for-grades-4-12?hsLang=en)
 - Bowers, Kirby & Deacon (2010), *Review of Educational Research* 80(2): [SAGE](https://journals.sagepub.com/doi/10.3102/0034654309359353)
