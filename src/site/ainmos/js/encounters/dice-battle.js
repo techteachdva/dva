@@ -12,9 +12,20 @@ const MAX_SHOWN = 22;
 const BASE_SPIN_MS = 780;
 const BASE_SETTLE_MS = 460;
 const BASE_RESULT_HOLD_MS = 4200;
+/** Pause > Display > Fast dice (0.31): every roll, landing and result hold in under half the time. */
+const FAST_DICE_TEMPO = 0.45;
+let fastDice = readFastDice();
+function readFastDice() {
+  try {
+    return !!JSON.parse(globalThis.localStorage?.getItem("ainmos.settings") || "{}").fastDice;
+  } catch {
+    return false;
+  }
+}
 /** Slow motion for recordings: globalThis.__ainmosDiceTempo = 2 plays every roll at half speed. */
 function tempo() {
-  return Math.max(0.25, Number(globalThis.__ainmosDiceTempo) || 1);
+  if (globalThis.__ainmosDiceTempo) return Math.max(0.25, Number(globalThis.__ainmosDiceTempo) || 1);
+  return fastDice ? FAST_DICE_TEMPO : 1;
 }
 const CAM_X = -24;
 const CAM_Y = 32;
@@ -352,6 +363,7 @@ export function playDiceBattle(opts) {
 
   const stage = ensureStage();
   cancelBattleAnims();
+  fastDice = readFastDice();
   activeBattle = { result: result(), timer: null, anims: [], flat: flatLanding() || reducedMotion() };
 
   const shownD = Math.min(dCount, MAX_SHOWN);

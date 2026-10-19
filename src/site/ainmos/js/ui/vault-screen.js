@@ -43,6 +43,8 @@ function absolute(src) {
 /** Placing from the Vault with Lucidity (or for free), and no tile chosen yet. */
 export function vaultScreenWanted(state) {
   if (!state || state.status !== "playing" || !isFreeformBoard(state)) return false;
+  // Phones (0.31) pick from the Vault column on the board: no screen between each placement.
+  if (typeof document !== "undefined" && document.documentElement.dataset.form === "phone") return false;
   const pick = state.landscapePick;
   if (pick?.mode !== "reveal" || pick.excessOnly || pick.flipCard) return false;
   if ((pick.remaining || 0) < 1 || pick.vaultIndex != null) return false;

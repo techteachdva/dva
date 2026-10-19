@@ -97,16 +97,76 @@ function railGap(minHeight) {
   return { left: railRect.left + 10, width: railRect.width - 20, top, bottom };
 }
 
+function isPhone() {
+  return document.documentElement.dataset.form === "phone";
+}
+
+/** Phones (0.31): the guide's strip pushes menus down by its own height, so it covers nothing. */
+function clearStrip() {
+  document.body.classList.remove("guide-strip");
+  document.documentElement.style.removeProperty("--guide-strip-h");
+}
+
+function placeStrip(host, overMenu = true) {
+  host.classList.add("is-strip");
+  // On the table the strip hangs under the command bar and pushes nothing.
+  if (!overMenu) {
+    host.classList.add("is-under-bar");
+    return;
+  }
+  document.body.classList.add("guide-strip");
+  const h = Math.ceil(host.getBoundingClientRect().height);
+  document.documentElement.style.setProperty("--guide-strip-h", `${h + 6}px`);
+}
+
+/** Phones on the table: the card waits in the free column right of the board, above Next. */
+function placeSide(host) {
+  const vw = window.innerWidth;
+  const board = document.getElementById("hex-board")?.getBoundingClientRect();
+  const bar = document.querySelector(".top-bar.play-top-bar")?.getBoundingClientRect();
+  const arch = document.getElementById("archetype-window");
+  const archRect = arch && !arch.hidden && arch.getClientRects().length ? arch.getBoundingClientRect() : null;
+  const next = document.getElementById("btn-next-phase");
+  const nextRect = next && !next.hidden && next.getClientRects().length ? next.getBoundingClientRect() : null;
+  const safeRight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sa-r")) || 0;
+  const right = vw - 8 - safeRight;
+  const left = Math.max((board?.right || vw * 0.62) + 8, right - 300);
+  const top = Math.max(archRect ? archRect.bottom + 6 : 0, bar ? bar.bottom + 6 : 54);
+  const bottom = nextRect ? nextRect.top - 6 : window.innerHeight - 60;
+  if (right - left < 180 || bottom - top < 96) return false;
+  host.classList.add("is-side");
+  host.style.left = `${Math.round(left)}px`;
+  host.style.top = `${Math.round(top)}px`;
+  host.style.width = `${Math.round(right - left)}px`;
+  host.style.setProperty("--side-max-h", `${Math.round(bottom - top)}px`);
+  // A card taller than the gap would clip its buttons: it takes the top strip instead.
+  const card = host.firstElementChild;
+  if (card && card.scrollHeight > bottom - top + 1) {
+    host.classList.remove("is-side");
+    host.style.cssText = "";
+    return false;
+  }
+  return true;
+}
+
 function place(host, ctx, minimized) {
   const card = host.firstElementChild;
   host.style.cssText = "";
   host.className = "coach-hint";
   document.body.classList.remove("guide-docked");
+  clearStrip();
   if (!card) return;
   const menuUp = ctx.cycleScreen || ctx.vaultScreen || ctx.lostFound || ctx.archetypeChoice || ctx.opener || ctx.dice
     || document.querySelector("#utility-modal.ms-choice-modal:not(.hidden)");
   if (compactForm()) {
     host.classList.add("is-compact");
+    if (isPhone()) {
+      const drawerUp = document.body.classList.contains("hand-drawer-open")
+        || [...document.querySelectorAll(".spread-fight-btn")].some((el) => el.getClientRects().length);
+      if (menuUp) placeStrip(host);
+      else if (drawerUp || !placeSide(host)) placeStrip(host, false);
+      return;
+    }
     // Phones (0.28): the card docks bottom-right over the empty end of the hand bar, and
     // moves to the top whenever the bottom holds what the guide is pointing at.
     const spreadUp = [...document.querySelectorAll(".spread-fight-btn")].some((el) => el.getClientRects().length);
@@ -215,6 +275,7 @@ function hideHost(host) {
   host.className = "coach-hint";
   host.style.cssText = "";
   document.body.classList.remove("guide-docked");
+  clearStrip();
   clearTargets();
   lastKey = "";
 }

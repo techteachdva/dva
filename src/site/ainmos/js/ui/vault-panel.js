@@ -25,6 +25,23 @@ function escapeHtml(text) {
   })[ch]);
 }
 
+/** Phones (0.31): the Vault column is the picker, so the chosen Landscape's rule shows above the hand. */
+function pickInfoHtml(state, mode, chosen, remaining) {
+  if (document.documentElement.dataset.form !== "phone" || (mode !== "buy" && mode !== "free")) return "";
+  const left = `${remaining} ${mode === "free" ? `free placement${remaining === 1 ? "" : "s"}` : `Reveal Action${remaining === 1 ? "" : "s"}`} left`;
+  if (!chosen) {
+    return `<div class="vault-pick-info" role="status"><span class="vpi-name">Choose a Landscape</span><span class="vpi-rule">Tap one on the left to read it.</span><span class="vpi-left">${left}</span></div>`;
+  }
+  const def = LANDSCAPE_ACTION_DEFS[chosen.uniqueAction || chosen.landscapeActions?.[0]];
+  // Same mark as the full Vault screen: a home of an Archetype the next Archetype Dream offers.
+  const home = (state.archetypeDeck || []).slice(0, 3).find((arch) => (arch.landscapes || []).includes(chosen.id));
+  return `<div class="vault-pick-info is-chosen suit-${escapeHtml(chosen.suit || "none")}" role="status">
+      <span class="vpi-name">${escapeHtml(chosen.name)}${home ? ` <em class="vpi-home">★ ${escapeHtml(home.name)}'s home</em>` : ""}</span>
+      ${def ? `<span class="vpi-rule"><b>${escapeHtml(def.label)}.</b> ${escapeHtml(def.description)}</span>` : ""}
+      <span class="vpi-left">Tap a glowing hex · ${left}</span>
+    </div>`;
+}
+
 function actionLabel(card) {
   const id = card?.uniqueAction || card?.landscapeActions?.[0];
   if (!id) return "";
@@ -89,6 +106,7 @@ export function renderDreamscapeVault(state, handlers = {}) {
     chosen?.id || "",
     remaining,
     pick?.flipCard?.id || "",
+    document.documentElement.dataset.form,
   ].join("|");
   host.hidden = false;
   host.dataset.mode = mode;
@@ -149,7 +167,8 @@ export function renderDreamscapeVault(state, handlers = {}) {
       <p class="vault-whisper">${escapeHtml(whisper)}</p>
       ${body}
       <div class="vault-footer">${footer}</div>
-    </div>`;
+    </div>
+    ${pickInfoHtml(state, mode, chosen, remaining)}`;
 
   host.querySelectorAll("[data-vault-index]").forEach((el) => {
     el.addEventListener("click", () => handlers.onSelect?.(Number(el.dataset.vaultIndex)));

@@ -102,6 +102,7 @@ function renderAudioTab() {
 function renderDisplayTab() {
   const seeded = document.body.classList.contains("seed-dmzemo");
   const holoOn = seeded || !!loadSettings().holoFoil;
+  const fastDice = !!loadSettings().fastDice;
   const holoLabel = seeded
     ? "Foil: On (seed)"
     : (holoOn ? "Foil: On" : "Foil: Off");
@@ -127,6 +128,11 @@ function renderDisplayTab() {
       <h3>Holographic foil</h3>
       <p class="pause-hint">An iridescent sheen that follows your pointer or tilt.</p>
       <button type="button" class="btn ${holoOn ? "primary" : ""}" id="pause-holo-foil"${seeded ? " disabled" : ""}>${holoLabel}</button>
+    </div>
+    <div class="pause-section">
+      <h3>Dice</h3>
+      <p class="pause-hint">Rolls land and clear in under half the time.</p>
+      <button type="button" class="btn ${fastDice ? "primary" : ""}" id="pause-fast-dice" aria-pressed="${fastDice}">${fastDice ? "Fast dice: On" : "Fast dice: Off"}</button>
     </div>
   `;
 }
@@ -481,6 +487,10 @@ function bindDisplayControls(root) {
   });
   root.querySelector("#pause-reset-panels")?.addEventListener("click", () => {
     resetPanelLayout();
+  });
+  root.querySelector("#pause-fast-dice")?.addEventListener("click", () => {
+    saveSettings({ fastDice: !loadSettings().fastDice });
+    showTab("display");
   });
   root.querySelector("#pause-holo-foil")?.addEventListener("click", () => {
     if (document.body.classList.contains("seed-dmzemo")) return;

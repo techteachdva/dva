@@ -1029,7 +1029,7 @@ html[data-form="phone"]:root body.ainmos { overflow-x: hidden; }
 }
 /* Phone opener: cards size to the height left over, so a short screen never cuts them off. */
 html[data-form="phone"]:root body.ainmos #utility-modal .phase-opener-solo-hand {
-  --op-card-h: clamp(92px, calc(var(--vvh, 100dvh) - 220px), 150px);
+  --op-card-h: clamp(72px, calc(var(--vvh, 100dvh) - 220px - var(--guide-strip-h, 0px)), 150px);
   min-height: calc(var(--op-card-h) + 16px);
   align-items: center;
 }
@@ -1041,3 +1041,170 @@ html[data-form="phone"]:root body.ainmos #utility-modal .phase-opener-solo-hand 
   min-width: 0 !important;
 }
 html[data-form="phone"]:root body.ainmos #utility-modal .phase-opener-solo-hand .psyche-card .psyche-value { font-size: calc(var(--op-card-h) * 0.3) !important; }
+
+/* ==== 13. 0.31 Thumb Reach: Next at the right thumb, a guide that covers nothing ================= */
+/* research/ainmos-mobile-layout-research.md, plan P0 and P1. */
+
+/* Next phase: a wide pill at the board's bottom-right, just above the hand strip. It was a 52px
+   orb in the top-right corner, the hardest reach on a landscape phone, and "NEXT: EXPLORE"
+   spilled past its rim. */
+html[data-form="phone"]:root body.ainmos.play-window #btn-next-phase {
+  top: auto;
+  bottom: 6px;
+  right: calc(8px + var(--sa-r));
+  width: auto;
+  min-width: 132px;
+  max-width: 44vw;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 24px;
+  font-size: 13px;
+  line-height: 1.1;
+  white-space: nowrap;
+  display: inline-grid;
+  place-items: center;
+}
+html[data-form="phone"]:root body.ainmos.play-window.sidebar-drawer-open #btn-next-phase { visibility: hidden; }
+/* With the orb gone, the Archetypes plaque rises into the top-right corner. */
+html[data-form="phone"]:root body.ainmos.play-window #archetype-window { top: 8px !important; }
+
+/* The guide on the table: a card in the free column right of the board, between the
+   Archetypes plaque and Next (coach-panel.js placeSide sets left, top and width). */
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-side {
+  right: auto;
+  bottom: auto;
+  transform: none;
+  justify-content: stretch;
+}
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-side .coach-card { max-height: var(--side-max-h, 160px); }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-side.is-min { justify-content: flex-end; }
+
+/* Over a menu, the hand drawer or a spread: one strip across the top. The menu below moves
+   down by the strip's height (--guide-strip-h, measured in coach-panel.js placeStrip). */
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-strip {
+  top: calc(3px + var(--sa-t));
+  bottom: auto;
+  left: calc(8px + var(--sa-l));
+  right: calc(8px + var(--sa-r));
+  width: auto;
+  transform: none;
+  justify-content: flex-start;
+}
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-strip .coach-card {
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas: "title text why actions min";
+  column-gap: 12px;
+  max-height: 40vh;
+  padding: 0 4px 0 14px;
+}
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-strip .coach-title { max-width: 30vw; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-strip .coach-text { margin: 0; line-height: 1.3; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-strip .coach-why-fold[open] { grid-column: 1 / -1; grid-row: 2; }
+
+html[data-form="phone"] body.ainmos.guide-strip :is(.lost-found, #utility-modal, #dice-battle-stage) {
+  top: var(--guide-strip-h, 0px) !important;
+}
+html[data-form="phone"]:root body.ainmos.guide-strip :is(#lost-found, .lost-found) .lf-window {
+  height: calc(100dvh - var(--guide-strip-h, 0px));
+  max-height: calc(100dvh - var(--guide-strip-h, 0px));
+}
+html[data-form="phone"] body.ainmos.guide-strip #utility-modal :is(.ms-choice-fullscreen, .ms-choice-stage) {
+  height: calc(100dvh - var(--guide-strip-h, 0px));
+}
+/* The Dream screen's window is pinned to the viewport itself, so it moves on its own. */
+html[data-form="phone"] body.ainmos.guide-strip #utility-modal.ms-choice-modal .utility-content.ms-choice-modal-wrap { top: var(--guide-strip-h, 0px) !important; }
+/* The Cycle map (three Dreams of three phases) steps aside while the guide explains it. */
+html[data-form="phone"]:root body.ainmos.guide-strip #cycle-screen .cy-map { display: none; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-strip.is-min { justify-content: center; }
+/* Table notices ("Meet Phase begins.") stay between the left rail and Next. */
+html[data-form="phone"]:root body.ainmos.play-window #screen-game #table-bottom {
+  max-width: calc(100vw - 316px - var(--sa-l) - var(--sa-r));
+}
+
+/* Portrait: the turn-sideways screen sits above everything, the guide included. */
+html[data-form="phone"][data-orientation="portrait"] body.ainmos.play-window .rotate-hint { z-index: 2147483000; }
+html[data-form="phone"][data-orientation="portrait"] body.ainmos.play-window .coach-hint { display: none !important; }
+
+/* Narrow phones keep a mark on the Mind count (a bare "43" said nothing). */
+@media (max-width: 740px) {
+  html[data-form="phone"]:root body.ainmos.play-window #hud-mind::before { content: "Ψ "; font-size: 12px; opacity: 0.8; }
+}
+
+/* The phase window's Skip loses this phase's Actions: a quiet word beside View Board, never a
+   big pill next to the main button. */
+html[data-form="phone"]:root body.ainmos #utility-modal #btn-skip-phase {
+  margin-right: auto;
+  min-width: 0;
+  padding: 0 12px;
+  background: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  opacity: 0.85;
+}
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-strip.is-under-bar { top: calc(var(--ain-cmd-h, 48px) + 4px); }
+/* The side card, tightened so it fits the gap on a 342px-tall Safari screen. */
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-side .coach-card {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "title title min"
+    "text text text"
+    "why actions actions";
+  row-gap: 2px;
+  padding: 2px 4px 2px 10px;
+}
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-side .coach-title { font-size: 13px !important; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-side .coach-text { font-size: 12.5px !important; line-height: 1.3; margin: 0; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-side :is(.coach-min, .coach-why-fold summary, .coach-actions .coach-btn) { min-height: 38px; height: 38px; }
+html[data-form="phone"] body.ainmos .coach-hint.is-compact.is-side .coach-min { width: 40px; min-width: 40px; }
+/* The phone pick plaque: the chosen Landscape's rule, between the Vault column and Next. */
+.vault-pick-info { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window .vault-pick-info {
+  position: fixed;
+  z-index: 40;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--ain-bar-h, 46px) + 8px);
+  width: min(440px, calc(100vw - 340px - var(--sa-l) - var(--sa-r)));
+  display: grid;
+  gap: 1px;
+  padding: 6px 12px 7px;
+  border-radius: 14px;
+  background: rgba(14, 10, 30, 0.92);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(200, 184, 236, 0.3);
+  text-align: center;
+  pointer-events: none;
+}
+html[data-form="phone"]:root body.ainmos.play-window .vault-pick-info .vpi-name { font: 700 14px/1.2 var(--font-display, serif); letter-spacing: 0.06em; color: #fff4d6; }
+html[data-form="phone"]:root body.ainmos.play-window .vault-pick-info .vpi-rule { font-size: 12.5px; line-height: 1.3; color: #ece6ff; }
+html[data-form="phone"]:root body.ainmos.play-window .vault-pick-info .vpi-left { font-size: 11px; opacity: 0.8; letter-spacing: 0.04em; }
+html[data-form="phone"]:root body.ainmos.play-window .vault-pick-info.suit-lucidity { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(90, 150, 255, 0.6); }
+html[data-form="phone"]:root body.ainmos.play-window .vault-pick-info.suit-elasticity { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(240, 200, 60, 0.6); }
+html[data-form="phone"]:root body.ainmos.play-window .vault-pick-info.suit-willpower { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(240, 90, 90, 0.6); }
+/* While picking, the Vault column's live tiles pulse so the thumb finds them. */
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault:is([data-mode="buy"], [data-mode="free"]) .vault-tile.is-live:not(.is-selected) { animation: vault-tile-call 1.8s ease-in-out infinite; }
+html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-tile.is-selected { outline: 3px solid #f5d77a; outline-offset: 1px; border-radius: 10px; }
+@keyframes vault-tile-call { 0%, 100% { filter: none; } 50% { filter: brightness(1.35) drop-shadow(0 0 6px rgba(245, 215, 122, 0.8)); } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-form="phone"]:root body.ainmos.play-window .dreamscape-vault .vault-tile.is-live { animation: none !important; }
+}
+/* While the pick plaque is up it says what to do: the table's own notices (the same words, and
+   toasts that would sit on top of it) wait, and the pinch hint leaves the Vault column room. */
+html[data-form="phone"]:root body.ainmos.play-window:has(#dreamscape-vault .vault-pick-info) #table-notices { visibility: hidden; }
+html[data-form="phone"]:root body.ainmos.play-window:has(#dreamscape-vault .vault-pick-info) .board-viewport::after { display: none; }
+html[data-form="phone"]:root body.ainmos.play-window .vault-pick-info .vpi-home { font: italic 600 12px/1 var(--font-whisper, serif); letter-spacing: 0.02em; color: #f5d77a; margin-left: 6px; }
+/* Pause is its own world: the guide steps out while it is open. */
+html[data-form="phone"] body.ainmos:has(#pause-menu:not(.hidden)) .coach-hint { display: none !important; }
+/* With the guide strip up, Lost & Found cards get the short-screen layout (0.29.1) at any height:
+   small art, the rule gets the room, and the "need" line never prints over it. */
+html[data-form="phone"]:root body.ainmos.guide-strip :is(#lost-found, .lost-found) .lf-item {
+  grid-template-columns: 40px minmax(0, 1fr);
+  padding: 8px !important;
+}
+html[data-form="phone"]:root body.ainmos.guide-strip :is(#lost-found, .lost-found) .lf-item :is(.lf-item-art, .lf-insight-sigil) { width: 40px; height: 40px !important; font-size: 20px; }
+html[data-form="phone"]:root body.ainmos.guide-strip :is(#lost-found, .lost-found) .lf-item .lf-item-text { margin: 4px 0 2px; font-size: 12.5px !important; line-height: 1.3; }
+html[data-form="phone"]:root body.ainmos.guide-strip :is(#lost-found, .lost-found) .lf-item .lf-item-foot { display: flex !important; align-items: center; gap: 6px; }
+html[data-form="phone"]:root body.ainmos.guide-strip :is(#lost-found, .lost-found) .lf-item .lf-item-foot :is(.lf-pay, .lf-why) { flex: 0 1 auto; min-width: 0; }
+html[data-form="phone"]:root body.ainmos.guide-strip :is(#lost-found, .lost-found) .lf-item .lf-item-foot .lf-btn { flex: 1 1 auto; min-height: 40px; }

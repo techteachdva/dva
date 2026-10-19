@@ -6,10 +6,21 @@ import {
 } from "../audio/audio-settings.js";
 import { hideUtilityModal } from "../ui/ui.js";
 
-export const SOMNIA_VERSION = "0.30";
+export const SOMNIA_VERSION = "0.31";
 
 /** Ainmos: a roguelike dream forked from Somnia 42.0 (newest first). */
 export const CHANGELOG = [
+  {
+    version: "0.31",
+    title: "Thumb Reach",
+    notes: [
+      "Phones: Next phase is a big button at the bottom-right of the board, where your right thumb rests, instead of a small orb in the top corner. Its label no longer runs off the edge.",
+      "Phones: place Landscapes straight from the Vault column on the left of the board. Tap one to read its rule above your hand, then tap a glowing hex. No more jumping to a separate screen for every tile.",
+      "Phones: the First Night guide never covers what it is talking about. Over a menu it is a strip across the top and the menu moves down to make room; on the table it waits beside the board. It also steps out of the way of Pause.",
+      "Phones: Skip in the phase window is a quiet word beside View Board, away from the main button, so it is harder to hit by mistake.",
+      "Fast dice: Pause, then Display, then Dice. Rolls land and clear in under half the time.",
+    ],
+  },
   {
     version: "0.30",
     title: "Dream Tales",
