@@ -1,6 +1,6 @@
 /**
  * Everything that is not one room: the hub, the Secret Secretary Desk keywords,
- * the finale word pools, avatar parts, the dictionary and the Inspirations list.
+ * the finale word pools, avatar parts and the dictionary.
  */
 
 import { ANGLO } from './anglo.js';
@@ -294,28 +294,28 @@ export function collectFakes() {
   return out;
 }
 
-export const INSPIRATIONS = [
-  { group: 'Programs and tools', items: [
-    { t: '95 Percent Group, Morpheme Magic (3rd ed.), Deb Glaser', u: 'https://www.95percentgroup.com/products/morpheme-magic/' },
-    { t: 'Structured Word Inquiry: word sums and word matrices (Peter Bowers)', u: 'https://en.wikipedia.org/wiki/Structured_word_inquiry' },
-    { t: 'Neil Ramsden, Word Microscope and Mini Matrix-Maker', u: 'https://neilramsden.co.uk/spelling/matrix' },
-    { t: 'Vanderbilt Word Detectives and Monster, P.I. (Amanda Goodwin)', u: 'https://my.vanderbilt.edu/worddetectives/' },
-    { t: 'Word Explorer, Stanford Learning Design and Technology', u: 'https://ed.stanford.edu/ldt/students/projects/word-explorer-0' },
-    { t: 'WordBuild, Dynamic Literacy', u: 'https://cathyduffyreviews.com/homeschool-reviews-core-curricula/spelling-vocabulary/vocabulary-resources/wordbuild-vocabulary-development-system' },
-  ] },
-  { group: 'Research', items: [
-    { t: 'Bowers, Kirby & Deacon (2010). The effects of morphological instruction on literacy skills. Review of Educational Research, 80(2).', u: 'https://journals.sagepub.com/doi/10.3102/0034654309359353' },
-    { t: 'Goodwin & Ahn (2010). A meta-analysis of morphological interventions. Annals of Dyslexia.', u: 'https://apps.asha.org/EvidenceMaps/Articles/ArticleSummary/93cb3843-8a27-4b52-887b-32781be13e92' },
-    { t: 'Colenbrander et al. (2024). The effects of morphological instruction on literacy outcomes. Educational Psychology Review, 36:119.', u: 'https://link.springer.com/article/10.1007/s10648-024-09953-3' },
-    { t: 'Kieffer & Lesaux (2007). Breaking down words to build meaning. The Reading Teacher, 61(2).', u: 'https://www.gse.harvard.edu/news/uk/10/07/making-words-add' },
-    { t: 'Marcia Henry, Unlocking Literacy and "Morphemes Matter": the Anglo-Saxon, Latin and Greek layers of English', u: 'https://www.onlinedigeditions.com/article/Morphemes+Matter%3A+A+Framework+for+Instruction/2757855/398575/article.html' },
-    { t: 'van der Kleij, Feskens & Eggen (2015). Effects of feedback in a computer-based learning environment. Review of Educational Research.', u: 'https://journals.sagepub.com/doi/10.3102/0034654314564881' },
-  ] },
-  { group: 'Game design', items: [
-    { t: 'Sid Meier: a game is a series of interesting decisions', u: '' },
-    { t: 'Will Wright: build the toy before the game', u: '' },
-    { t: 'Robyn & Rand Miller: the world explains itself', u: '' },
-    { t: 'Engelstein & Shalev, Building Blocks of Tabletop Game Design (2020)', u: '' },
-    { t: 'Mr. Phil\'s own Tech Escape and Somnia', u: '/games/' },
-  ] },
-];
+/*
+ * Inspirations: the programs, research and designers CyberMorph learned from.
+ * (Kept as credits in the code; the game no longer shows them.)
+ *
+ * Programs and tools
+ *   - 95 Percent Group, Morpheme Magic (3rd ed.), Deb Glaser <https://www.95percentgroup.com/products/morpheme-magic/>
+ *   - Structured Word Inquiry: word sums and word matrices (Peter Bowers) <https://en.wikipedia.org/wiki/Structured_word_inquiry>
+ *   - Neil Ramsden, Word Microscope and Mini Matrix-Maker <https://neilramsden.co.uk/spelling/matrix>
+ *   - Vanderbilt Word Detectives and Monster, P.I. (Amanda Goodwin) <https://my.vanderbilt.edu/worddetectives/>
+ *   - Word Explorer, Stanford Learning Design and Technology <https://ed.stanford.edu/ldt/students/projects/word-explorer-0>
+ *   - WordBuild, Dynamic Literacy <https://cathyduffyreviews.com/homeschool-reviews-core-curricula/spelling-vocabulary/vocabulary-resources/wordbuild-vocabulary-development-system>
+ * Research
+ *   - Bowers, Kirby & Deacon (2010). The effects of morphological instruction on literacy skills. Review of Educational Research, 80(2). <https://journals.sagepub.com/doi/10.3102/0034654309359353>
+ *   - Goodwin & Ahn (2010). A meta-analysis of morphological interventions. Annals of Dyslexia. <https://apps.asha.org/EvidenceMaps/Articles/ArticleSummary/93cb3843-8a27-4b52-887b-32781be13e92>
+ *   - Colenbrander et al. (2024). The effects of morphological instruction on literacy outcomes. Educational Psychology Review, 36:119. <https://link.springer.com/article/10.1007/s10648-024-09953-3>
+ *   - Kieffer & Lesaux (2007). Breaking down words to build meaning. The Reading Teacher, 61(2). <https://www.gse.harvard.edu/news/uk/10/07/making-words-add>
+ *   - Marcia Henry, Unlocking Literacy and "Morphemes Matter": the Anglo-Saxon, Latin and Greek layers of English <https://www.onlinedigeditions.com/article/Morphemes+Matter%3A+A+Framework+for+Instruction/2757855/398575/article.html>
+ *   - van der Kleij, Feskens & Eggen (2015). Effects of feedback in a computer-based learning environment. Review of Educational Research. <https://journals.sagepub.com/doi/10.3102/0034654314564881>
+ * Game design
+ *   - Sid Meier: a game is a series of interesting decisions
+ *   - Will Wright: build the toy before the game
+ *   - Robyn & Rand Miller: the world explains itself
+ *   - Engelstein & Shalev, Building Blocks of Tabletop Game Design (2020)
+ *   - Mr. Phil's own Tech Escape and Somnia </games/>
+ */

@@ -340,6 +340,7 @@ button.mtile { cursor: pointer; }
 .screen.clear { background: transparent; }
 .sheet { width: min(1000px, 92vw); padding: 1.4rem 1.6rem; max-height: 92vh; overflow-y: auto; font-size: 1.08rem; }
 .sheet h2 { margin: 0 0 0.8rem; letter-spacing: 0.06em; font-size: 1.7rem; }
+.report-tools { justify-content: flex-start; margin: 0.2rem 0 0.8rem; }
 .sheet h3 { margin: 1.1rem 0 0.5rem; color: var(--cyan); font-size: 1.15rem; letter-spacing: 0.06em; }
 .row-btns { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-top: 1.1rem; }
 
@@ -381,8 +382,6 @@ button.mtile { cursor: pointer; }
 .howto-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
 .howto-grid > div { border: 2px solid var(--line); border-radius: 14px; padding: 0.8rem 0.9rem; font-size: 1.08rem; }
 .howto-grid b { color: var(--yellow); display: block; margin-bottom: 0.25rem; font-size: 1.15rem; }
-.insp-list { margin: 0; padding-left: 1.3rem; line-height: 1.55; }
-.insp-list li { margin: 0.3rem 0; }
 
 table.report { width: 100%; border-collapse: collapse; font-size: 1.02rem; }
 table.report th, table.report td { border-bottom: 1px solid rgba(255, 255, 255, 0.15); padding: 0.4rem 0.5rem; text-align: left; }
