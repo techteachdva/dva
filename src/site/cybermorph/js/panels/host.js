@@ -44,5 +44,5 @@ export function openPanel({ dim = 0.62, focus = false, className = '' } = {}) {
 }
 
 export function closeButton(onClose) {
-  return el('button', { class: 'icon-btn panel-close', type: 'button', 'aria-label': 'Close (Esc)', title: 'Close (Esc)', onclick: onClose }, '✕');
+  return el('button', { class: 'x-btn panel-close', type: 'button', 'aria-label': 'Close (Esc)', title: 'Close (Esc)', onclick: onClose }, '✕ CLOSE');
 }

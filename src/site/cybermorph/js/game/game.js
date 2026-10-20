@@ -131,7 +131,7 @@ function newProfileFlow() {
     onDone: (res) => {
       if (!res) { showTitle(); return; }
       const p = store.newProfile(res.name, res.avatar);
-      startProfile(p, true);
+      screens.welcomeScreen({ name: p.name, onContinue: () => startProfile(p, true) });
     },
   });
 }
@@ -163,8 +163,7 @@ async function startProfile(p, fresh = false) {
   else await enterRoom(place.id, '@');
   if (fresh) {
     await say('system', [
-      `Welcome to the Lexinet, ${p.name}. You are a Morpher: a repair bot for words.`,
-      'The Rot has broken our words into morphemes, the small parts that carry meaning. Rotlings made of nonsense are crawling everywhere.',
+      `This is the Hub of the Lexinet, ${p.name}. Every room starts here.`,
       'Click the floor to walk, or use W A S D. Click a machine or a person to use it. Q and E turn the camera, Z and X zoom.',
       'Start at the amber door labeled ANGLO-SAXON. It leads to the room where the oldest English lives.',
     ]);
@@ -728,10 +727,11 @@ function objectiveText() {
     const next = MAIN_ORDER.find((d) => !(p.districts[d] && p.districts[d].cleared));
     const reviews = G.rotlings.filter((r) => r.review).length;
     if (reviews) return `${reviews} review Rotling${reviews > 1 ? 's' : ''} in the Hub: DEBUG them to restore fading morphemes.`;
+    const labTip = !p.labUsed && p.learned.some((id) => MORPHEMES[id] && morph(id).type === 'base') ? ' Tip: try the WORD LAB to discover new words.' : '';
     if (next) {
       const where = { anglo: 'the amber door labeled ANGLO-SAXON', latin: 'the grey door labeled LATIN', greek: 'the blue door labeled GREEK' }[next];
       const deskHint = p.clues.some(Boolean) && !p.deskOpen ? ' Your clue cards open something on the Secret Secretary Desk.' : '';
-      return `Enter ${DISTRICTS[next].name} through ${where}.${deskHint}`;
+      return `Enter ${DISTRICTS[next].name} through ${where}.${deskHint}${labTip}`;
     }
     if (!p.finale.beaten) return `All three keywords are yours. ${p.deskOpen ? '' : 'Try the Secret Secretary Desk, then '}Face the Rot through the green door labeled THE ROT.`;
     return p.deskOpen ? 'The Lexinet is restored. Try Overclock Mode, or build Made-up Words at the Morph Compiler.' : 'The Lexinet is restored. The Secret Secretary Desk is still locked…';
@@ -781,6 +781,11 @@ async function enterHub(fromPort = null) {
   G.carried = [];
   spawnReviews();
   refreshObjective();
+  // Broadcast the Word Lab once per session until the player has tried it.
+  if (!G.profile.labUsed && !G.labNudged && G.profile.learned.some((id) => MORPHEMES[id] && morph(id).type === 'base')) {
+    G.labNudged = true;
+    setTimeout(() => hud.toast('✨ Try the WORD LAB here in the Hub: build any word you like and discover new ones!', 'gold'), 1500);
+  }
   if (fromPort && fromPort !== 'O') await showPatchNotes();
 }
 
@@ -844,11 +849,25 @@ function hubObject(ch, c, r) {
     return { mesh, label: open ? 'PLAY' : 'LOCKED', use: async () => { if (!open) { sfx.bad(); hud.toast('Overclock Mode unlocks when you clear the Anglo-Saxon Room.', 'warn'); return; } await startTimed(); } };
   }
   if (ch === 'X') {
-    return { mesh: compilerConsole('hub'), label: 'COMPILE', use: async () => {
-      if (!G.profile.learned.some((id) => morph(id).type === 'base')) { hud.toast('Learn some morphemes from Old Wynn first.', 'warn'); return; }
-      zoomTo(G.room.toWorld(c, r), 0.6);
-      await openCompile({ mode: 'free', profile: G.profile, onMadeUp: (w) => hud.toast(`Made-up Word saved: ${w}`, 'gold') });
-    } };
+    // The WORD LAB: the free Morph Compiler, signposted so players go and play with it.
+    const mesh = compilerConsole('hub');
+    const sign = labelSprite('✨ WORD LAB · DISCOVER NEW WORDS', { color: '#ffffff', bg: 'rgba(160,20,140,0.92)', border: '#ffd23f', height: 0.5 });
+    sign.position.y = 2.2;
+    mesh.add(sign);
+    let t = 0;
+    return { mesh, label: 'WORD LAB', update: (dt) => { t += dt; sign.position.y = 2.2 + Math.sin(t * 2) * 0.08; },
+      use: async () => {
+        if (!G.profile.learned.some((id) => morph(id).type === 'base')) { hud.toast('Learn some morphemes from Old Wynn first.', 'warn'); return; }
+        G.profile.labUsed = true;
+        store.save();
+        zoomTo(G.room.toWorld(c, r), 0.6);
+        await openCompile({
+          mode: 'free', profile: G.profile, title: 'WORD LAB · BUILD ANYTHING, DISCOVER NEW WORDS',
+          onSolved: (_, r2) => { if (r2 && r2.fresh) hud.miniCelebrate(`New word discovered: ${r2.word}!`); },
+          onMadeUp: (w, def) => hud.toast(`Made-up Word saved: ${w}${def ? ` (“${def}”)` : ''}`, 'gold'),
+        });
+        refreshObjective();
+      } };
   }
   return null;
 }
@@ -1077,7 +1096,10 @@ async function teach(ids, tasks, note) {
   const fresh = (ids || []).filter((id) => !G.profile.learned.includes(id));
   if (!fresh.length) return;
   await showLesson({ ids: fresh, profile: G.profile, tasks, note });
+  const before = G.profile.learned.length;
   store.learn(G.profile, fresh);
+  const after = G.profile.learned.length;
+  if (Math.floor(after / 10) > Math.floor(before / 10)) hud.miniCelebrate(`🧩 ${Math.floor(after / 10) * 10} morphemes collected!`);
   hud.renderInventory(G.profile);
 }
 
@@ -1240,9 +1262,10 @@ function unlockMilestone(key) {
   const a = achievement(key);
   const parts = rewardsOf(key).map(({ part }) => `${part.icon ? `${part.icon} ` : ''}${part.name}`);
   sfx.unlock();
-  hud.toast(`🏆 ${a ? a.name : 'Achievement'}! Unlocked: ${parts.join(', ') || 'a surprise'}. Change parts at CUSTOMIZE in the Hub.`, 'gold');
+  hud.fanfare({ name: a ? a.name : 'Achievement', how: a ? a.how : '', rewards: parts.length ? [...parts, 'wear them at CUSTOMIZE in the Hub'] : [] });
 }
 const achieve = unlockMilestone;
+const ALL_MORPHEMES = Object.values(MORPHEMES).filter((m) => m.origin !== 'lingo').length;
 
 /** Count-based achievements, checked every couple of seconds. */
 setInterval(() => {
@@ -1250,7 +1273,10 @@ setInterval(() => {
   if (!p) return;
   if (p.lexicon.length >= 50) achieve('lexicon50');
   if (p.lexicon.length >= 150) achieve('lexicon150');
-  if (p.learned.length >= 300) achieve('learned300');
+  const known = p.learned.filter((id) => MORPHEMES[id] && morph(id).origin !== 'lingo').length;
+  [[5, 'learned5'], [10, 'learned10'], [50, 'learned50'], [100, 'learned100'], [300, 'learned300']].forEach(([n, key]) => { if (known >= n) achieve(key); });
+  if (known >= ALL_MORPHEMES) achieve('learnedAll');
+  if (p.madeUp.length >= 3) achieve('madeup3');
   if (p.madeUp.length >= 5) achieve('madeup5');
   if (p.stats.firstTry >= 25) achieve('firsttry25');
   if (p.stats.crashes >= 1) achieve('crash');

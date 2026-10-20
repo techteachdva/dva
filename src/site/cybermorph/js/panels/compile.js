@@ -112,8 +112,24 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
     const feedback = el('div');
     const compileBtn = el('button', { class: 'btn btn-primary compile-btn', type: 'button' }, 'COMPILE');
     const nextBtn = el('button', { class: 'btn btn-good compile-btn', type: 'button', hidden: true }, 'NEXT ▸');
-    const sum = el('section', { class: 'glass sum-bar' }, el('div', { class: 'sum-main' }, sumLine, feedback), el('div', { class: 'sum-actions' }, compileBtn, nextBtn));
-    panel.root.append(top, ctlLayer, sum, closeButton(() => finish()));
+    const sum = el('section', { class: 'glass sum-bar' }, el('div', { class: 'sum-main' }, sumLine), el('div', { class: 'sum-actions' }, compileBtn, nextBtn));
+    // Feedback lives in a tray that slides up above the bar. One click (or turning any dial) tucks it away.
+    const trayBtn = el('button', { class: 'tray-tab', type: 'button', 'aria-expanded': 'true' });
+    const tray = el('section', { class: 'glass fb-tray', hidden: true }, trayBtn, el('div', { class: 'tray-body' }, feedback));
+    const setTray = (open) => {
+      const kind = feedback.querySelector('.feedback.bad') ? 'bad' : 'other';
+      tray.classList.toggle('min', !open);
+      trayBtn.setAttribute('aria-expanded', String(open));
+      trayBtn.textContent = open ? '▾ HIDE' : kind === 'bad' ? '▴ SHOW MISTAKES AND CLUE' : '▴ SHOW DETAILS';
+    };
+    trayBtn.addEventListener('click', () => setTray(tray.classList.contains('min')));
+    new MutationObserver(() => {
+      tray.hidden = !feedback.childNodes.length;
+      tray.classList.toggle('bad', !!feedback.querySelector('.feedback.bad'));
+      if (feedback.childNodes.length) setTray(true);
+    }).observe(feedback, { childList: true });
+    const placeTray = () => { tray.style.bottom = `${sum.offsetHeight + 24}px`; };
+    panel.root.append(top, ctlLayer, tray, sum, closeButton(() => finish()));
 
     let idx = 0;
     let done = 0;
@@ -150,7 +166,11 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       if (drum) { R.focusScene.remove(drum.root); drum.dispose(); }
       cols = isFree ? freeColumns(learned) : columnsFor(task(), effMode(), learned);
       drum = createDrum(cols);
-      drum.onChange = () => { if (isFree) feedback.innerHTML = ''; renderLive(); };
+      drum.onChange = () => {
+        if (isFree) feedback.innerHTML = '';
+        else if (!tray.hidden && tray.classList.contains('bad')) setTray(false);
+        renderLive();
+      };
       R.focusScene.add(drum.root);
       buildControls();
       renderTop();
@@ -212,6 +232,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         ring.gloss.style.maxWidth = `${Math.max(120, s.width + 30)}px`;
       });
       // The request sits just above the dials (above the ▲ buttons), where the eye already is.
+      placeTray();
       const minTop = Math.min(...slots.map((sl) => sl.top));
       const gap = drum.rings.some((r) => r.up) ? 44 : 18;
       const y = Math.max(14, Math.round(minTop - gap - top.offsetHeight));
@@ -259,6 +280,33 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       } catch { sumLine.append('…'); }
     }
 
+    /** A full-width box for the player's own definition of a Made-up Word. */
+    function askDefinition(word, ids, saveBtn) {
+      panel.root.querySelectorAll('.def-bar').forEach((n) => n.remove());
+      const input = el('input', { type: 'text', maxlength: '120', placeholder: `What does ${word} mean? Use its parts: ${ids.map((id) => morph(id).meaning).join(' + ')}`, 'aria-label': `Definition of ${word}` });
+      const ok = el('button', { class: 'btn btn-pink', type: 'button' }, 'SAVE WORD');
+      const skip = el('button', { class: 'btn', type: 'button' }, 'No definition');
+      const bar = el('section', { class: 'glass def-bar' }, el('label', {}, `Define “${word}”:`), input, ok, skip);
+      bar.style.bottom = `${sum.offsetHeight + 24}px`;
+      const keep = (def) => {
+        addMadeUp(profile, word, ids, def.trim());
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saved ✔';
+        bar.remove();
+        onMadeUp && onMadeUp(word, def.trim());
+      };
+      ok.addEventListener('click', () => keep(input.value));
+      skip.addEventListener('click', () => keep(''));
+      // Typing here must not turn the rings or close the panel.
+      input.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') keep(input.value);
+        if (e.key === 'Escape') bar.remove();
+      });
+      panel.root.append(bar);
+      input.focus();
+    }
+
     function record(ids, ok, word) {
       touch(profile, ids, ok);
       logAttempt(ids, ok, { word: !!word });
@@ -294,6 +342,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         if (!ids.length) return;
         const res = build(ids);
         if (DICTIONARY.has(res.word)) {
+          const fresh = !profile.lexicon.some((w) => w.w === res.word);
           sfx.good();
           drum.flash(true);
           speak(res.word);
@@ -302,12 +351,12 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
           profile.stats.compiled += 1;
           fb('good', `REAL WORD ✔  ${res.word}`, glossLine(ids));
           showSum(ids, { solved: true });
-          onSolved && onSolved(null, { ids, word: res.word, real: true });
+          onSolved && onSolved(null, { ids, word: res.word, real: true, fresh });
         } else {
           sfx.click();
           speak(res.word);
           const saveBtn = el('button', { class: 'btn btn-pink', type: 'button' }, 'Save as a Made-up Word');
-          saveBtn.addEventListener('click', () => { addMadeUp(profile, res.word, ids); saveBtn.disabled = true; saveBtn.textContent = 'Saved ✔'; onMadeUp && onMadeUp(res.word); });
+          saveBtn.addEventListener('click', () => askDefinition(res.word, ids, saveBtn));
           fb('info', `"${res.word}" isn't in the Lexicon yet.`, `Built meaning: ${ids.map((id) => morph(id).meaning).join(' + ')}.`, 'That\'s a legal build. Want to keep it?', saveBtn);
         }
         return;
@@ -354,6 +403,11 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
           else rows.push(`Ring ${i + 1}: ${have.text} means "${have.meaning}". This spot needs a ${TYPE_LABEL[need.type]} that means "${attempts >= 2 ? need.meaning : '…'}".`);
         }
       });
+      const wrongAt = ids.findIndex((id, i) => id !== target[i]);
+      if (attempts === 1 && wrongAt >= 0) {
+        const need = morph(target[wrongAt]);
+        rows.push(`Clue: ring ${wrongAt + 1} needs a ${TYPE_LABEL[need.type]} that starts with "${need.text[0]}".`);
+      }
       fb('bad', 'Compile error: the joint won\'t hold.', ...rows);
     }
 

@@ -274,6 +274,12 @@ export function patternTexture(pattern, color) {
       ctx.bezierCurveTo(sx + 40, 40, sx - 40, 80, sx + 10, 128);
       ctx.stroke();
     }
+  } else if (pattern === 'grid') {
+    ctx.strokeStyle = light;
+    ctx.lineWidth = 3;
+    for (let i = 0; i <= 128; i += 32) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 128); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(128, i); ctx.stroke(); }
+    ctx.fillStyle = '#ffd23f';
+    [[16, 16], [80, 48], [48, 80], [112, 112]].forEach(([x, y]) => ctx.fillRect(x - 6, y - 4, 12, 8));
   } else if (pattern === 'plaid') {
     ctx.globalAlpha = 0.45;
     ctx.fillStyle = dark;
@@ -369,6 +375,10 @@ export function faceTexture(pattern, color) {
     case 'mono': eye(44, 52, 9); ctx.beginPath(); ctx.arc(86, 52, 16, 0, Math.PI * 2); ctx.stroke(); eye(86, 52, 7); ctx.beginPath(); ctx.moveTo(100, 62); ctx.lineTo(108, 96); ctx.lineWidth = 3; ctx.stroke(); ctx.lineWidth = 7; smile(); break;
     case 'glasses': ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(42, 52, 16, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(86, 52, 16, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(58, 52); ctx.lineTo(70, 52); ctx.stroke(); eye(42, 52, 5); eye(86, 52, 5); ctx.lineWidth = 7; smile(); break;
     case 'glitch': ctx.fillStyle = '#ff2a6d'; ctx.fillRect(30, 40, 18, 18); ctx.fillStyle = '#05d9e8'; ctx.fillRect(36, 44, 18, 18); ctx.fillStyle = color; ctx.fillRect(78, 42, 18, 18); ctx.fillRect(30, 84, 30, 6); ctx.fillRect(66, 80, 32, 6); break;
+    case 'spark':
+      star(44, 52, 15); star(84, 52, 15);
+      ctx.beginPath(); ctx.arc(64, 82, 12, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+      break;
     case 'sleepy':
       ctx.beginPath(); ctx.arc(44, 50, 12, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
       ctx.beginPath(); ctx.arc(84, 50, 12, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();

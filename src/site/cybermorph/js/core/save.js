@@ -92,8 +92,10 @@ export function addLexicon(profile, word, ids) {
   save();
 }
 
-export function addMadeUp(profile, word, ids) {
-  if (!profile.madeUp.some((w) => w.w === word)) profile.madeUp.push({ w: word, p: ids });
+/** A Made-up Word, with the player's own definition (d) if they wrote one. */
+export function addMadeUp(profile, word, ids, def = '') {
+  const have = profile.madeUp.find((w) => w.w === word);
+  if (have) { if (def) have.d = def; } else profile.madeUp.push({ w: word, p: ids, d: def });
   save();
 }
 

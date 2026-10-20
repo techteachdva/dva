@@ -1,7 +1,7 @@
 import { $, el } from '../core/util.js';
 import { morph, ORIGIN_LABEL, TYPE_LABEL } from '../data/morphemes.js';
 import { glow } from '../core/mastery.js';
-import { sayMorph } from '../core/audio.js';
+import { sayMorph, sfx } from '../core/audio.js';
 import { KEY_POOL, SLOT_NAMES, DISTRICTS, MAIN_ORDER } from '../data/world.js';
 
 /** A DOM morpheme tile: shape by type (data-type), look by origin (data-origin). */
@@ -180,4 +180,86 @@ export function criticalHit() {
   setTimeout(() => root.classList.add('split'), 1300);
   setTimeout(() => root.classList.add('out'), 4600);
   setTimeout(() => root.remove(), 5500);
+}
+
+// ── Achievement fanfare ───────────────────────────────────────────
+/**
+ * CONGRATULATIONS! slams on, the achievement name and how it was earned sit below it.
+ * The word breaks into its morphemes (con · grat · ul · ation · s), they swirl around the
+ * middle like water circling a drain, shrink into the centre and vanish with a bubble pop.
+ * Achievements earned together play one after another.
+ */
+const fanfareQueue = [];
+let fanfareBusy = false;
+const CONGRATS = [
+  { t: 'CON', type: 'pfx', m: 'together' },
+  { t: 'GRAT', type: 'base', m: 'thanks; pleasing' },
+  { t: 'UL', type: 'sfx', m: 'little; doing' },
+  { t: 'ATION', type: 'sfx', m: 'the act of' },
+  { t: 'S', type: 'sfx', m: 'more than one' },
+];
+
+export function fanfare(item) {
+  fanfareQueue.push(item);
+  if (!fanfareBusy) nextFanfare();
+}
+
+function nextFanfare() {
+  const item = fanfareQueue.shift();
+  if (!item) { fanfareBusy = false; return; }
+  fanfareBusy = true;
+  const reduced = document.documentElement.classList.contains('reduced-motion');
+  const pieces = CONGRATS.map((p) => el('span', { class: 'ff-piece', 'data-type': p.type }, el('span', { class: 'ff-t' }, p.t), el('span', { class: 'ff-m' }, p.m)));
+  const bang = el('span', { class: 'ff-bang' }, '!');
+  const word = el('div', { class: 'ff-word' }, ...pieces, bang);
+  const swirl = el('div', { class: 'ff-swirl' });
+  const pop = el('div', { class: 'ff-pop' });
+  const info = el('div', { class: 'ff-info' },
+    el('div', { class: 'ff-kick' }, '🏆 ACHIEVEMENT'),
+    el('div', { class: 'ff-name' }, item.name),
+    el('div', { class: 'ff-how' }, item.how),
+    item.rewards && item.rewards.length ? el('div', { class: 'ff-rew' }, `Unlocked: ${item.rewards.join(', ')}`) : null);
+  const root = el('div', { class: 'fanfare', role: 'status', 'aria-label': `Congratulations! ${item.name}. ${item.how}` }, word, swirl, pop, info);
+  document.body.append(root);
+  const at = (ms, fn) => setTimeout(fn, reduced ? Math.min(ms, 400) : ms);
+  at(30, () => root.classList.add('in'));
+  at(1100, () => root.classList.add('split'));
+  // Hand each piece to the swirl at its current spot, as an angle and a distance from the centre.
+  at(2700, () => {
+    const box = swirl.getBoundingClientRect();
+    const arms = pieces.map((p, i) => {
+      const r = p.querySelector('.ff-t').getBoundingClientRect();
+      const dx = r.left + r.width / 2 - box.left;
+      const dy = r.top + r.height / 2 - box.top;
+      const ang = Math.atan2(dy, dx) * (180 / Math.PI);
+      const dist = Math.hypot(dx, dy);
+      const arm = el('div', { class: 'ff-arm' }, el('span', { class: 'ff-orb', 'data-type': CONGRATS[i].type }, CONGRATS[i].t));
+      arm.style.transform = `rotate(${ang}deg) translateX(${dist}px) rotate(${-ang}deg)`;
+      swirl.append(arm);
+      p.style.visibility = 'hidden';
+      return { arm, ang };
+    });
+    bang.classList.add('gone');
+    // Circle the drain: two more turns while the distance shrinks to nothing, so the path is a spiral.
+    setTimeout(() => arms.forEach(({ arm, ang }) => {
+      arm.style.transform = `rotate(${ang + 720}deg) translateX(0px) rotate(${-ang - 720}deg) scale(0.12)`;
+    }), 40);
+  });
+  at(4450, () => { swirl.innerHTML = ''; pop.classList.add('go'); sfx.pop(); });
+  at(5700, () => root.classList.add('out'));
+  at(6400, () => { root.remove(); nextFanfare(); });
+}
+
+/** A small, quick celebration that doesn't stop play (every few morphemes, a new word discovered). */
+export function miniCelebrate(text) {
+  const colors = ['var(--pfx)', 'var(--base)', 'var(--sfx)', 'var(--cyan)', 'var(--green)'];
+  const burst = el('div', { class: 'mini-cel' }, el('div', { class: 'mc-text' }, text));
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    const d = 70 + (i % 3) * 30;
+    burst.append(el('span', { class: 'mc-chip', style: { background: colors[i % colors.length], '--dx': `${Math.round(Math.cos(a) * d)}px`, '--dy': `${Math.round(Math.sin(a) * d * 0.6)}px` } }));
+  }
+  document.body.append(burst);
+  sfx.pickup();
+  setTimeout(() => burst.remove(), 2300);
 }

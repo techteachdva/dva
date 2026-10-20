@@ -176,14 +176,17 @@ button.mtile { cursor: pointer; }
 /* ── Panels ──────────────────────────────────────────────────── */
 #panel-layer { position: absolute; inset: 0; pointer-events: none; z-index: 30; }
 #panel-layer > * { pointer-events: auto; }
-.panel-top { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); width: min(1100px, 86vw); padding: 0.8rem 1.3rem; text-align: center; border: 2px solid var(--yellow); box-shadow: 0 0 24px rgba(255, 210, 63, 0.25); }
+.panel-top { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); width: min(1100px, calc(100vw - 340px)); padding: 0.8rem 1.3rem; text-align: center; border: 2px solid var(--yellow); box-shadow: 0 0 24px rgba(255, 210, 63, 0.25); }
 .sum-line .eq.wait { color: var(--ink-dim); font-size: 1.15rem; font-weight: 600; }
 .sum-line .eq.miss { color: var(--red); text-decoration: line-through; text-decoration-thickness: 3px; }
 .panel-top .prompt { font-size: 1.65rem; font-weight: 800; line-height: 1.3; margin-top: 0.3rem; }
 .panel-top .prompt .blank { display: inline-block; min-width: 5ch; border-bottom: 4px solid var(--yellow); color: var(--yellow); }
 .panel-top .progress { position: absolute; right: 16px; top: 12px; font-size: 1rem; font-weight: 800; color: var(--ink-dim); }
 .panel-top .hint { font-size: 0.95rem; color: var(--ink-dim); margin-top: 0.4rem; }
-.panel-close { position: absolute; right: 16px; top: 16px; z-index: 2; }
+.panel-close { position: absolute; right: 16px; top: 16px; z-index: 6; }
+/* The big, obvious way out of every window (Escape works too). */
+.x-btn { position: absolute; right: 16px; top: 16px; z-index: 6; min-width: 132px; height: 58px; padding: 0 1.1rem; border-radius: 16px; border: 3px solid var(--yellow); background: rgba(20, 12, 40, 0.94); color: #fff; font: 800 1.15rem var(--font); letter-spacing: 0.06em; cursor: pointer; box-shadow: 0 0 18px rgba(255, 210, 63, 0.35); }
+.x-btn:hover, .x-btn:focus-visible { background: var(--yellow); color: #160b2c; }
 
 .ring-btn { width: 66px; height: 50px; border-radius: 12px; border: 3px solid var(--cyan); background: rgba(10, 30, 50, 0.92); font-size: 1.35rem; font-weight: 800; color: var(--cyan); pointer-events: auto; }
 .ring-btn:hover { background: rgba(46, 240, 255, 0.35); color: #fff; }
@@ -494,9 +497,63 @@ body.panel-open #session-clock { top: auto; bottom: 16px; }
 .howto .row-btns { margin-top: clamp(0.4rem, 1.2vh, 0.8rem); justify-content: center; }
 @media (max-width: 1100px) { .howto .howto-grid { grid-template-columns: repeat(2, 1fr); } .howto-keys { grid-template-columns: 1fr; } }
 
-/* The compiler's bottom bar: word sum and feedback side by side on wide screens, so it stays short. */
-.sum-main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0.6rem 1.1rem; align-items: center; }
-.sum-main > :empty { display: none; }
-.sum-main:has(> :empty) { grid-template-columns: 1fr; }
-.sum-main .feedback { margin: 0; }
-@media (max-width: 1000px) { .sum-main { grid-template-columns: 1fr; } }
+/* The compiler's feedback tray: slides up above the bottom bar, tucks down to a tab. */
+.fb-tray { position: absolute; left: 50%; transform: translateX(-50%); width: min(980px, 92vw); padding: 0 1rem 0.8rem; max-height: 42vh; overflow-y: auto; transition: max-height 0.25s ease, padding 0.25s ease; z-index: 3; }
+.fb-tray.bad { border-color: var(--red); }
+.fb-tray.min { max-height: 3.2rem; overflow: hidden; padding-bottom: 0; }
+.fb-tray.min .tray-body { visibility: hidden; }
+.tray-tab { display: block; width: 100%; margin: 0 0 0.3rem; padding: 0.55rem 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--cyan); font-weight: 800; font-size: 1.05rem; letter-spacing: 0.06em; cursor: pointer; position: sticky; top: 0; backdrop-filter: blur(6px); }
+.fb-tray.bad .tray-tab { color: var(--red); }
+.tray-tab:hover { color: #fff; }
+.fb-tray .feedback { margin-top: 0.2rem; }
+
+/* Achievement fanfare: CONGRATULATIONS splits into morphemes, swirls down a drain, pops. */
+.fanfare { position: fixed; inset: 0; z-index: 95; pointer-events: none; font-family: var(--font); }
+.fanfare::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(20, 8, 40, 0.8), rgba(20, 8, 40, 0) 72%); opacity: 0; transition: opacity 0.4s; }
+.fanfare.in::before { opacity: 1; }
+.ff-word { position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%) scale(2.2); opacity: 0; display: flex; align-items: flex-start; gap: 0; transition: transform 0.4s cubic-bezier(0.2, 1.6, 0.4, 1), opacity 0.25s, gap 1.4s ease; white-space: nowrap; }
+.fanfare.in .ff-word { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+.fanfare.split .ff-word { gap: clamp(0.6rem, 2vw, 1.6rem); }
+.ff-piece { display: flex; flex-direction: column; align-items: center; }
+.ff-t, .ff-bang { font-size: clamp(2.4rem, 7vw, 5.6rem); font-weight: 800; color: #ffd23f; text-shadow: 0 0 24px rgba(255, 210, 63, 0.85), 0 5px 0 #6b4a08; border-bottom: 6px solid transparent; transition: color 0.6s, border-color 0.6s; line-height: 1.05; }
+.ff-bang.gone { opacity: 0; transition: opacity 0.4s; }
+.ff-m { font-size: 1rem; font-weight: 700; color: #fff; opacity: 0; transition: opacity 0.5s 0.5s; background: rgba(10, 6, 24, 0.85); border-radius: 8px; padding: 0.1rem 0.45rem; margin-top: 0.3rem; }
+.fanfare.split .ff-m { opacity: 1; }
+.fanfare.split .ff-piece[data-type='pfx'] .ff-t { color: var(--pfx); border-color: var(--pfx); }
+.fanfare.split .ff-piece[data-type='base'] .ff-t { color: var(--base); border-color: var(--base); }
+.fanfare.split .ff-piece[data-type='sfx'] .ff-t { color: var(--sfx); border-color: var(--sfx); }
+.ff-swirl { position: absolute; top: 34%; left: 50%; width: 0; height: 0; }
+.ff-arm { position: absolute; left: 0; top: 0; transition: transform 1.7s cubic-bezier(0.5, 0, 0.8, 0.45); }
+.ff-orb { display: block; transform: translate(-50%, -50%); font-size: clamp(2.4rem, 7vw, 5.6rem); font-weight: 800; text-shadow: 0 0 18px currentColor; white-space: nowrap; }
+.ff-orb[data-type='pfx'] { color: var(--pfx); }
+.ff-orb[data-type='base'] { color: var(--base); }
+.ff-orb[data-type='sfx'] { color: var(--sfx); }
+.ff-pop { position: absolute; top: 34%; left: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 5px solid rgba(160, 230, 255, 0.95); box-shadow: inset 0 0 22px rgba(160, 230, 255, 0.7), 0 0 30px rgba(160, 230, 255, 0.6); transform: scale(0); opacity: 0; }
+.ff-pop.go { animation: ff-pop 0.55s ease-out forwards; }
+@keyframes ff-pop { 0% { transform: scale(0.1); opacity: 1; } 70% { transform: scale(1.3); opacity: 0.9; } 100% { transform: scale(1.7); opacity: 0; } }
+.ff-info { position: absolute; top: 55%; left: 50%; transform: translate(-50%, 0); text-align: center; opacity: 0; transition: opacity 0.4s 0.3s; background: rgba(10, 6, 24, 0.92); border: 2px solid var(--yellow); border-radius: 16px; padding: 0.8rem 1.4rem; width: max-content; max-width: min(720px, 90vw); }
+.fanfare.in .ff-info { opacity: 1; }
+.ff-kick { font-size: 0.95rem; font-weight: 800; letter-spacing: 0.25em; color: var(--yellow); }
+.ff-name { font-size: 1.8rem; font-weight: 800; color: #fff; }
+.ff-how { font-size: 1.15rem; color: var(--ink-dim); }
+.ff-rew { font-size: 1.05rem; color: var(--cyan); margin-top: 0.3rem; }
+.fanfare.out { opacity: 0; transition: opacity 0.6s; }
+
+/* A small celebration that never stops play. */
+.mini-cel { position: fixed; left: 50%; top: 22%; z-index: 85; pointer-events: none; transform: translateX(-50%); }
+.mc-text { font-size: 1.5rem; font-weight: 800; color: #fff; background: rgba(10, 6, 24, 0.9); border: 2px solid var(--green); border-radius: 14px; padding: 0.4rem 1rem; white-space: nowrap; animation: mc-text 2.2s ease forwards; }
+.mc-chip { position: absolute; left: 50%; top: 50%; width: 14px; height: 10px; border-radius: 3px; animation: mc-chip 1.2s ease-out forwards; }
+@keyframes mc-chip { 0% { transform: translate(-50%, -50%) scale(0.4); opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 40px)) rotate(200deg) scale(1); opacity: 0; } }
+@keyframes mc-text { 0% { transform: scale(0.6); opacity: 0; } 12% { transform: scale(1.08); opacity: 1; } 20% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+
+/* Word Lab: a full-width box for a Made-up Word's definition. */
+.def-bar { position: absolute; left: 16px; right: 16px; z-index: 7; padding: 0.7rem 0.9rem; display: grid; grid-template-columns: auto 1fr auto auto; gap: 0.6rem; align-items: center; border: 2px solid var(--pink, #ff4fd8); }
+.def-bar label { font-weight: 800; white-space: nowrap; }
+.def-bar input { width: 100%; font: 600 1.15rem var(--font); color: var(--ink); background: rgba(0, 0, 0, 0.4); border: 2px solid var(--cyan); border-radius: 10px; padding: 0.55rem 0.7rem; }
+
+/* Welcome screen for a new Morpher. */
+.welcome { width: min(1080px, 94vw); max-height: 94vh; overflow-y: auto; padding: clamp(1rem, 3vh, 2rem) clamp(1.2rem, 3vw, 2.4rem); }
+.welcome h2 { font-size: clamp(1.8rem, 4.5vh, 2.6rem); margin: 0 0 0.6rem; }
+.welcome p { font-size: clamp(1.05rem, 2.5vh, 1.3rem); line-height: 1.55; margin: 0 0 0.8rem; }
+.welcome .mission { border-left: 5px solid var(--cyan); padding: 0.4rem 0 0.4rem 1rem; background: rgba(0, 229, 255, 0.07); border-radius: 8px; }
+.welcome .row-btns { justify-content: center; margin-top: 0.8rem; }

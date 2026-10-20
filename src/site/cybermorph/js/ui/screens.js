@@ -15,17 +15,44 @@ export const VERSION = '1.2.0';
 const layer = () => $('screen-layer');
 let stack = [];
 
-export function showScreen(node, { clear = false } = {}) {
+/**
+ * Every screen gets a big ✕ CLOSE button in the corner, and Escape does the same thing.
+ * x: what closing means for this screen. Left out, it presses the screen's own close-style
+ * button (CLOSE, GOT IT, DONE, BACK, CANCEL, RESUME, CONTINUE), or just closes. false: no X.
+ */
+const CLOSE_LIKE = /^(✕|CLOSE|GOT IT|DONE|BACK|CANCEL|RESUME|CONTINUE)/i;
+export function showScreen(node, { clear = false, x } = {}) {
   const s = el('div', { class: `screen${clear ? ' clear' : ''}` }, node);
   layer().append(s);
   stack.push(s);
   document.body.classList.add('screen-open');
-  return () => {
+  const close = () => {
     s.remove();
-    stack = stack.filter((x) => x !== s);
+    stack = stack.filter((k) => k !== s);
     if (!stack.length) document.body.classList.remove('screen-open');
   };
+  if (x !== false) {
+    s.onX = () => {
+      if (typeof x === 'function') { x(); return; }
+      const own = [...node.querySelectorAll('button')].find((b) => CLOSE_LIKE.test(b.textContent.trim()));
+      if (own) own.click(); else close();
+    };
+    const xb = el('button', { class: 'x-btn', type: 'button', 'aria-label': 'Close (Esc)', title: 'Close (Esc)' }, '✕ CLOSE');
+    xb.addEventListener('click', () => { sfx.click(); s.onX(); });
+    s.append(xb);
+  }
+  return close;
 }
+
+// Escape closes the top screen, before the game can treat it as "open the pause menu".
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || !stack.length) return;
+  const top = stack[stack.length - 1];
+  if (!top.onX) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  top.onX();
+}, true);
 export const screenOpen = () => stack.length > 0;
 export function closeAllScreens() { stack.forEach((s) => s.remove()); stack = []; document.body.classList.remove('screen-open'); }
 
@@ -70,7 +97,7 @@ export function titleScreen({ onPlay, onNew, onTimed }) {
       btn('Overclock scores', () => scoresScreen()),
       btn('Inspirations', () => inspirationsScreen())),
     el('div', { style: { color: 'var(--ink-dim)', fontSize: '1rem', textAlign: 'center', marginTop: '0.6rem' } }, 'A morphology game by Mr. Phil · Saves stay in this browser.'));
-  const close = showScreen(el('div', {}, wrap, el('div', { class: 'version' }, `v${VERSION}`)));
+  const close = showScreen(el('div', {}, wrap, el('div', { class: 'version' }, `v${VERSION}`)), { x: false });
   return close;
 }
 
@@ -134,7 +161,7 @@ export function avatarScreen({ profile = null, unlocked = [], onDone }) {
     cancel.addEventListener('click', () => { cleanup(); onDone(null); });
     side.append(cancel);
   }
-  const close = showScreen(el('div', { class: 'avatar-screen' }, el('div'), side), { clear: true });
+  const close = showScreen(el('div', { class: 'avatar-screen' }, el('div'), side), { clear: true, x: () => { cleanup(); onDone(null); } });
   setTimeout(() => (profile ? go : name).focus(), 50);
   function cleanup() {
     R.updates.delete(upd);
@@ -338,7 +365,7 @@ export function lexiconPanel(profile) {
     });
     if (!fam.size) grid.append(el('p', {}, 'Compile words to grow the tree. Each word becomes a leaf.'));
     body.append(grid);
-    body.append(el('h3', {}, 'MADE-UP WORDS'), el('p', {}, profile.madeUp.length ? profile.madeUp.map((m) => `${m.w} (${m.p.map((id) => morph(id).meaning).join(' + ')})`).join(' · ') : 'None yet. Build a legal word that isn\'t in the dictionary at the Morph Compiler, then save it.'));
+    body.append(el('h3', {}, 'MADE-UP WORDS'), el('p', {}, profile.madeUp.length ? profile.madeUp.map((m) => `${m.w}${m.d ? `: “${m.d}”` : ''} (${m.p.map((id) => morph(id).meaning).join(' + ')})`).join(' · ') : 'None yet. Build a legal word that isn\'t in the dictionary at the Morph Compiler, then save it.'));
     const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
     body.append(el('div', { class: 'lesson-foot' }, el('span'), done));
     panel.root.append(body, closeButton(() => { panel.close(); resolve(); }));
@@ -371,7 +398,7 @@ export function confirmBox(text, yes = 'Yes', no = 'Cancel') {
   return new Promise((resolve) => {
     const y = el('button', { class: 'btn btn-pink', type: 'button' }, yes);
     const n = el('button', { class: 'btn', type: 'button' }, no);
-    const close = showScreen(el('section', { class: 'sheet glass', style: { width: 'min(460px, 92vw)' } }, el('p', { style: { fontSize: '1.1rem' } }, text), el('div', { class: 'row-btns' }, y, n)));
+    const close = showScreen(el('section', { class: 'sheet glass', style: { width: 'min(460px, 92vw)' } }, el('p', { style: { fontSize: '1.1rem' } }, text), el('div', { class: 'row-btns' }, y, n)), { x: () => n.click() });
     y.addEventListener('click', () => { close(); resolve(true); });
     n.addEventListener('click', () => { close(); resolve(false); });
     n.focus();
@@ -505,4 +532,18 @@ export function achievementsScreen(earned = []) {
   const close = showScreen(el('section', { class: 'sheet glass' }, el('h2', {}, `ACHIEVEMENTS · ${got} / ${ACHIEVEMENTS.length}`), list, el('div', { class: 'row-btns' }, done)));
   done.addEventListener('click', close);
   done.focus();
+}
+
+// ── Welcome (a brand-new Morpher) ─────────────────────────────────
+export function welcomeScreen({ name, onContinue }) {
+  const go = el('button', { class: 'btn btn-primary', type: 'button', style: { minWidth: '240px', minHeight: '56px' } }, 'CONTINUE ▸');
+  const close = showScreen(el('section', { class: 'sheet glass welcome' },
+    el('div', { class: 'kicker' }, `HELLO, ${String(name).toUpperCase()}`),
+    el('h2', {}, 'Welcome to CyberMorph!'),
+    el('p', {}, 'You\'re going to be learning about ', el('b', {}, 'MORPHEMES'), ', the smallest unit of meaning within a word. Morphemes are like building blocks: when you put them together (', el('b', {}, 'COMPILE'), ' them), you can create a new word that means something based on its morphemes.'),
+    el('p', {}, 'In other words, you can break down any word and discover its meaning just by learning about the parts that make the word! Let\'s get started with the Worky Work...'),
+    el('p', { class: 'mission' }, el('b', {}, 'Your mission: '), 'the Rot has smashed the Lexinet\'s words into pieces and filled its rooms with nonsense Rotlings. You are a Morpher, a little repair bot. Learn morphemes from each room\'s mentor, ', el('b', {}, 'COMPILE'), ' them back into real words, and ', el('b', {}, 'DEBUG'), ' Rotlings by splitting their words at the seams. Restore the Anglo-Saxon, Latin and Greek Rooms, find the secret room, and defeat the Rot!'),
+    el('div', { class: 'row-btns' }, go)), { x: () => go.click() });
+  go.addEventListener('click', () => { close(); onContinue(); });
+  setTimeout(() => go.focus(), 60);
 }

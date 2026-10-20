@@ -159,6 +159,35 @@ function buildTopper(part, face, headTop) {
       anim.sway = tassel;
       break;
     }
+    case 'p-books': {
+      [[0xc0392b, 0.0, 0.3], [0x2f6fde, 0.05, -0.2], [0x1fa33a, 0.1, 0.15]].forEach(([col, y, rot]) => {
+        const book = box(0.3, 0.05, 0.22, mat(col), 0, 0.03 + y, 0);
+        book.rotation.y = rot;
+        add(book, box(0.28, 0.04, 0.2, mat(0xf4f4ef), 0.012, 0.03 + y, 0));
+      });
+      break;
+    }
+    case 'p-goggles': {
+      add(box(0.5, 0.05, 0.05, mat(0x2a2f38), 0, -0.07, 0.17));
+      [-0.1, 0.1].forEach((x) => {
+        const lens = cyl(0.075, 0.06, mat(c, { emissive: c, ei: 0.4 }), x, -0.04, 0.18);
+        lens.rotation.x = Math.PI / 2;
+        add(lens);
+      });
+      break;
+    }
+    case 'p-orbit': {
+      const rings = new THREE.Group();
+      [0, 1].forEach((i) => {
+        const r = new THREE.Mesh(new THREE.TorusGeometry(0.3 + i * 0.05, 0.012, 6, 32), glowMat(i ? 0xff4fd8 : c));
+        r.rotation.x = Math.PI / 2 + (i ? 0.5 : -0.4);
+        rings.add(r, sphere(0.035, glowMat(i ? 0x38b6ff : 0x9dff7a), (0.3 + i * 0.05) * (i ? -1 : 1), 0, 0));
+      });
+      rings.position.y = -0.1;
+      add(rings);
+      anim.spinY = rings;
+      break;
+    }
     case 'p-curls': {
       // Mr. Phil's wild curls, robot sized.
       let seed = 4242;

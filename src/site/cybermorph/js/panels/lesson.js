@@ -5,7 +5,7 @@
  */
 
 import { el } from '../core/util.js';
-import { openPanel } from './host.js';
+import { openPanel, closeButton } from './host.js';
 import { morph, ORIGIN_LABEL, TYPE_LABEL } from '../data/morphemes.js';
 import { MORPHEME_CATALOG } from '../data/catalog.js';
 import { mtile } from '../ui/hud.js';
@@ -54,7 +54,7 @@ export function showLesson({ ids, profile, tasks = [], title = 'NEW MORPHEMES', 
           el('span', { class: 'mtile', 'data-type': 'base', 'data-origin': 'latin' }, 'port'), 'base: square',
           el('span', { class: 'mtile', 'data-type': 'sfx', 'data-origin': 'latin' }, 'able'), 'suffix: socket on the left'),
         el('div', { style: { display: 'flex', gap: '0.5rem' } }, hearAll, go)));
-    panel.root.append(card);
+    panel.root.append(card, closeButton(() => go.click()));
     go.addEventListener('click', () => { panel.close(); resolve(); });
     panel.onKey((e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); panel.close(); resolve(); } });
     setTimeout(() => go.focus(), 50);

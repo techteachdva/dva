@@ -102,6 +102,7 @@ export const AVATAR = {
     { id: 'l-dice', name: 'Dice Dots', color: '#18a83a', pattern: 'dots', unlock: 'roll10' },
     { id: 'l-rotcamo', name: 'Rot Camo', color: '#5a7a2a', pattern: 'camo', unlock: 'rotreturn' },
     { id: 'l-neon', name: 'Overclocked', color: '#ff3df0', pattern: 'glow', unlock: 'overclock' },
+    { id: 'l-chip', name: 'Chip Set', color: '#4f7cff', pattern: 'circuit', unlock: 'learned10' },
   ],
   torso: [
     { id: 't-white', name: 'Lab White', color: '#e9edf2', pattern: 'solid' },
@@ -118,6 +119,8 @@ export const AVATAR = {
     { id: 't-goldrush', name: 'Gold Rush', color: '#ffc928', pattern: 'sparkle', unlock: 'golden' },
     { id: 't-leafy', name: 'Word Forest', color: '#3ccf6a', pattern: 'leaves', unlock: 'lexicon150' },
     { id: 't-buttondown', name: 'Mr. Phil\'s Shirt', color: '#6f9fd8', pattern: 'buttons', unlock: 'curious' },
+    { id: 't-matrix', name: 'Word Matrix', color: '#1d2b4f', pattern: 'grid', unlock: 'learned50' },
+    { id: 't-labcoat', name: 'Lab Coat', color: '#eef3fb', pattern: 'buttons', unlock: 'madeup3' },
   ],
   head: [
     { id: 'h-steel', name: 'Steel', color: '#9aa4b2', pattern: 'solid' },
@@ -134,6 +137,7 @@ export const AVATAR = {
     { id: 'h-d20', name: 'Critical d20', color: '#18a83a', pattern: 'solid', shape: 'd20', icon: '🎲', unlock: 'crit' },
     { id: 'h-tv', name: 'Retro TV', color: '#7a4f2a', pattern: 'solid', shape: 'tv', icon: '📺', unlock: 'firsttry25' },
     { id: 'h-prism', name: 'Prism', color: '#b98cff', pattern: 'glow', shape: 'prism', icon: '◆', unlock: 'learned300' },
+    { id: 'h-galaxy', name: 'Galaxy Brain', color: '#3a2a8f', pattern: 'sparkle', shape: 'round', icon: '🌌', unlock: 'learnedAll' },
   ],
   face: [
     { id: 'f-smile', name: 'Smile', color: '#5cf2ff', pattern: 'smile' },
@@ -152,6 +156,7 @@ export const AVATAR = {
     { id: 'f-wink', name: 'Wink', color: '#7fe0ff', pattern: 'wink', unlock: 'curious' },
     { id: 'f-beard', name: 'Teacher Beard', color: '#c89a6a', pattern: 'beard', unlock: 'mrphil' },
     { id: 'f-static', name: 'Static', color: '#d9dce6', pattern: 'static', unlock: 'crash' },
+    { id: 'f-spark', name: 'Spark Eyes', color: '#ffe066', pattern: 'spark', unlock: 'learned5' },
   ],
   top: [
     { id: 'p-antenna', name: 'Antenna', icon: '📶', color: '#888899' },
@@ -170,6 +175,9 @@ export const AVATAR = {
     { id: 'p-sprout', name: 'Sprout', icon: '🌱', color: '#3ccf6a', unlock: 'lexicon50' },
     { id: 'p-grad', name: 'Grad Cap', icon: '🎓', color: '#1d2b4f', unlock: 'session' },
     { id: 'p-curls', name: 'Wild Curls', icon: '➰', color: '#a47a4f', unlock: 'mrphil' },
+    { id: 'p-books', name: 'Book Stack', icon: '📚', color: '#c0392b', unlock: 'learned100' },
+    { id: 'p-goggles', name: 'Lab Goggles', icon: '🥽', color: '#7fe0ff', unlock: 'madeup3' },
+    { id: 'p-orbit', name: 'Morpheme Orbit', icon: '🪐', color: '#ffd23f', unlock: 'learnedAll' },
   ],
 };
 
@@ -201,8 +209,14 @@ export const ACHIEVEMENTS = [
   { key: 'firsttry25', name: 'Sharp Eye', how: 'Get 25 tasks right on the first try' },
   { key: 'lexicon50', name: 'Growing Tree', how: 'Grow your Lexicon to 50 words' },
   { key: 'lexicon150', name: 'Word Forest', how: 'Grow your Lexicon to 150 words' },
-  { key: 'learned300', name: 'Morpheme Master', how: 'Learn 300 morphemes' },
-  { key: 'madeup5', name: 'Word Inventor', how: 'Save 5 Made-up Words at the Morph Compiler' },
+  { key: 'learned5', name: 'First Pieces', how: 'Learn 5 morphemes' },
+  { key: 'learned10', name: 'Collector', how: 'Learn 10 morphemes' },
+  { key: 'learned50', name: 'Morpheme Hoarder', how: 'Learn 50 morphemes' },
+  { key: 'learned100', name: 'Century', how: 'Learn 100 morphemes' },
+  { key: 'learned300', name: 'Morpheme Expert', how: 'Learn 300 morphemes' },
+  { key: 'learnedAll', name: 'Morpheme Master', how: 'Learn every morpheme in the game' },
+  { key: 'madeup3', name: 'Mad Scientist', how: 'Save 3 Made-up Words in the Word Lab (the Morph Compiler in the Hub)' },
+  { key: 'madeup5', name: 'Word Inventor', how: 'Save 5 Made-up Words in the Word Lab' },
   { key: 'overclock', name: 'Overclocked', how: 'Score 1,000 or more in Overclock Mode' },
   { key: 'session', name: 'Class Dismissed', how: 'Finish a class session and get your exit ticket' },
   { key: 'curious', name: 'Curious Morpher', how: 'Inspect 12 different morpheme props in the rooms' },

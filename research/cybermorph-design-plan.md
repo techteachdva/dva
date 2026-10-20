@@ -531,3 +531,12 @@ Requested by Phil after playing 1.1: "way more variety in the rotlings", every m
 - **Five free choices in every category**, and a fifth category, **Toppers**. 74 parts in all: 14 arms & legs, 14 torsos, 14 heads, 16 faces, 16 toppers.
 - **Head shapes**, not just colours: box, Round Bot (free), Retro TV, Prism and the **Critical d20** (a natural 20 on Mr. Phil's die). Toppers include a propeller, ball cap, horned helm, laurel wreath, satellite dish, top hat, headphones, halo, crown, light bulb, sprout, grad cap and Mr. Phil's wild curls.
 - **23 achievements** (pause menu → Achievements): 6 story milestones, 12 skill goals (golden Rotling, 5 and 10 clean streaks, Rot Return, 25 first tries, Lexicon 50 and 150, 300 morphemes, 5 Made-up Words, 1,000 in Overclock, finishing a class session, inspecting 12 props), and 5 secrets that show only a hint (natural 20, natural 1, 10 rolls, hearing all of Mr. Phil's small talk, getting crashed by the Rot). Each one names the parts it unlocks. Earning one pops a toast with them.
+
+### Comfort and celebration pass (1.2.0)
+
+- **Mistake tray.** Compiler feedback slides up in a tray above the bottom bar, with every mistake, the word it built and, on the first miss, a clue (the first letter of the piece a ring needs). One click on ▾ HIDE tucks it to a one-line tab, and turning any dial tucks it automatically.
+- **A way out of every window.** Every menu and panel has a big ✕ CLOSE button in the corner. Escape does the same, and closes only the top window.
+- **The WORD LAB.** The Hub's free compiler is signposted (a floating sign, the action button, an objective tip, a one-time nudge, Old Wynn's advice). Discovering a new real word there gets a small celebration. Saving a Made-up Word opens a full-width box for the player's own definition, shown in the Lexicon.
+- **More achievements:** learn 5, 10, 50, 100, 300 and every morpheme; save 3 Made-up Words (Mad Scientist). 29 achievements, 82 parts.
+- **Fanfare.** Every achievement plays CONGRATULATIONS!, which splits into con · grat · ul · ation · s with meanings, swirls into the centre like water down a drain, and pops like a bubble, over the achievement name, how it was earned and what it unlocked. Every 10 morphemes learned gets a small confetti celebration.
+- **Welcome screen.** A new Morpher first sees Phil's welcome to morphemes and a one-paragraph mission, on one screen with CONTINUE.

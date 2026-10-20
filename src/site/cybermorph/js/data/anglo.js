@@ -87,6 +87,7 @@ export const ANGLO = {
     ],
     done: [
       'Good hands. The glowing firewall wants a sentence fixed. Pick the ending that fits the sentence.',
+      'A tip from an old bot: the Morph Compiler in the Hub is a WORD LAB. Build anything you like there. You might discover words nobody taught you, or invent your own.',
     ],
     repeat: ['Click the glowing firewall. Pick the ending that fits each sentence.'],
   },
