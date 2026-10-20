@@ -431,6 +431,16 @@ table.report th { color: var(--cyan); font-size: 0.9rem; letter-spacing: 0.08em;
 .print-report .pr-meta { font-size: 9pt; color: #444; }
 .print-report .pr-stats { margin: 5pt 0 2pt; font-size: 10pt; }
 .print-report .pr-key { font-size: 8.5pt; color: #444; }
+.print-report .pr-lex { columns: 3; column-gap: 18pt; font-size: 10pt; }
+.print-report .pr-letter { font-weight: 800; font-size: 12pt; border-bottom: 1pt solid #000; margin: 6pt 0 2pt; break-after: avoid; }
+.print-report .pr-word { break-inside: avoid; padding: 1pt 0; }
+.print-report .pr-word span { color: #444; }
+.print-report .pr-madeup { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt 18pt; margin-top: 8pt; }
+.print-report .pr-mu { border: 1pt solid #888; border-radius: 6pt; padding: 7pt 9pt; break-inside: avoid; }
+.print-report .pr-mu-word { font-size: 15pt; font-weight: 800; }
+.print-report .pr-mu-parts { font-size: 9.5pt; color: #444; margin: 2pt 0 4pt; }
+.print-report .pr-mu-def { font-size: 11pt; font-style: italic; }
+.print-report .pr-mu-blank { font-size: 10pt; color: #444; border-bottom: 1pt solid #000; padding-bottom: 14pt; }
 .print-report .pr-line { font-size: 10pt; margin: 2pt 0 3pt; padding-left: 8pt; text-indent: -8pt; }
 .print-report .pr-label { font-weight: 800; }
 .print-report .pr-line.review { border: 1pt solid #000; padding: 2pt 4pt 2pt 12pt; }

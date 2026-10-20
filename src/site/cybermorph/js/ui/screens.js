@@ -287,11 +287,16 @@ export function reportScreen(profile) {
         return el('tr', {}, el('td', {}, morph(id).text), el('td', {}, morph(id).meaning), el('td', { class: 'stars' }, stars(r ? r.l : 0)), el('td', {}, r ? `${r.ok}/${r.n}` : '—'), el('td', {}, !r ? 'not practised' : g.fading ? 'needs review' : g.tier));
       })));
   });
-  const print = el('button', { class: 'btn', type: 'button' }, 'Print');
+  const print = el('button', { class: 'btn', type: 'button' }, '🖨 Print Report');
   const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
   body.append(el('div', { class: 'row-btns' }, print, done));
   const close = showScreen(body);
   print.addEventListener('click', () => printReport(profile));
+  const pLex = el('button', { class: 'btn', type: 'button' }, '🖨 Print Lexicon');
+  const pMade = el('button', { class: 'btn', type: 'button' }, '🖨 Print Made-up Words');
+  pLex.addEventListener('click', () => printLexicon(profile));
+  pMade.addEventListener('click', () => printMadeUp(profile));
+  print.after(pLex, pMade);
   done.addEventListener('click', close);
   done.focus();
 }
@@ -338,18 +343,68 @@ function printReport(profile) {
         list.map((id) => `${shown(id)}${withScore ? score(id) : ''}`).join(', ')));
     });
   });
+  printPage(page, { fit: true });
+}
+
+/**
+ * Print a plain black-on-white page built off-screen. fit: scale it down to one page
+ * (the progress report); otherwise it flows across as many pages as it needs (the Lexicon).
+ */
+function printPage(page, { fit = false } = {}) {
   document.querySelectorAll('.print-report').forEach((n) => n.remove());
   document.body.append(page);
   page.style.width = `${PAGE_W}px`;
-  const h = page.scrollHeight;
-  // Fit one page; below half size it would be unreadable, so then it flows onto a second page instead.
-  const zoom = Math.max(0.5, Math.min(1, PAGE_H / h));
-  page.style.width = `${PAGE_W / zoom}px`;
-  page.style.zoom = String(zoom);
+  if (fit) {
+    const h = page.scrollHeight;
+    // Fit one page; below half size it would be unreadable, so then it flows onto a second page instead.
+    const zoom = Math.max(0.5, Math.min(1, PAGE_H / h));
+    page.style.width = `${PAGE_W / zoom}px`;
+    page.style.zoom = String(zoom);
+  }
   page.classList.remove('measuring');
   const cleanup = () => { page.remove(); window.removeEventListener('afterprint', cleanup); };
   window.addEventListener('afterprint', cleanup);
   window.print();
+}
+
+const today = () => new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+const partsOf = (ids) => ids.map((id) => morph(id).text).join(' + ');
+
+/** The whole Lexicon: every word compiled, A to Z, with the morphemes it is built from. */
+export function printLexicon(profile) {
+  const words = [...profile.lexicon].sort((a, b) => a.w.localeCompare(b.w));
+  const page = el('div', { class: 'print-report measuring' },
+    el('h1', {}, `CyberMorph Lexicon · ${profile.name}`),
+    el('div', { class: 'pr-meta' }, `${today()} · ${words.length} words`),
+    el('div', { class: 'pr-key' }, 'Every word on your Lexicon Tree, A to Z, with the morphemes it is built from.'));
+  const list = el('div', { class: 'pr-lex' });
+  let letter = '';
+  words.forEach(({ w, p }) => {
+    const first = w[0].toUpperCase();
+    if (first !== letter) { letter = first; list.append(el('div', { class: 'pr-letter' }, letter)); }
+    list.append(el('div', { class: 'pr-word' }, el('b', {}, w), el('span', {}, ` = ${partsOf(p)}`)));
+  });
+  if (!words.length) list.append(el('p', {}, 'No words yet. Compile words to grow your Lexicon.'));
+  page.append(list);
+  printPage(page);
+}
+
+/** Made-up Words with their parts, meanings and the player's definitions (a line to write one if blank). */
+export function printMadeUp(profile) {
+  const page = el('div', { class: 'print-report measuring' },
+    el('h1', {}, `Made-up Words · ${profile.name}`),
+    el('div', { class: 'pr-meta' }, `${today()} · ${profile.madeUp.length} word${profile.madeUp.length === 1 ? '' : 's'} invented in the CyberMorph Word Lab`),
+    el('div', { class: 'pr-key' }, 'Each word is built from real morphemes. Its meaning comes from its parts.'));
+  const list = el('div', { class: 'pr-madeup' });
+  profile.madeUp.forEach((m) => {
+    list.append(el('div', { class: 'pr-mu' },
+      el('div', { class: 'pr-mu-word' }, m.w),
+      el('div', { class: 'pr-mu-parts' }, m.p.map((id) => `${morph(id).text} (${morph(id).meaning})`).join(' + ')),
+      m.d ? el('div', { class: 'pr-mu-def' }, `“${m.d}”`) : el('div', { class: 'pr-mu-blank' }, 'My definition: ')));
+  });
+  if (!profile.madeUp.length) list.append(el('p', {}, 'No Made-up Words yet. Build one in the Word Lab in the Hub and save it.'));
+  page.append(list);
+  printPage(page);
 }
 
 // ── Lexicon viewer (from the Lexicon Tree) ────────────────────────
@@ -367,7 +422,11 @@ export function lexiconPanel(profile) {
     body.append(grid);
     body.append(el('h3', {}, 'MADE-UP WORDS'), el('p', {}, profile.madeUp.length ? profile.madeUp.map((m) => `${m.w}${m.d ? `: “${m.d}”` : ''} (${m.p.map((id) => morph(id).meaning).join(' + ')})`).join(' · ') : 'None yet. Build a legal word that isn\'t in the dictionary at the Morph Compiler, then save it.'));
     const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
-    body.append(el('div', { class: 'lesson-foot' }, el('span'), done));
+    const pLex = el('button', { class: 'btn', type: 'button' }, '🖨 Print Lexicon');
+    const pMade = el('button', { class: 'btn', type: 'button' }, '🖨 Print Made-up Words');
+    pLex.addEventListener('click', () => printLexicon(profile));
+    pMade.addEventListener('click', () => printMadeUp(profile));
+    body.append(el('div', { class: 'lesson-foot' }, el('div', { style: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' } }, pLex, pMade), done));
     panel.root.append(body, closeButton(() => { panel.close(); resolve(); }));
     done.addEventListener('click', () => { panel.close(); resolve(); });
     panel.onKey((e) => { if (e.key === 'Escape') { panel.close(); resolve(); } });
