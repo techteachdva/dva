@@ -102,10 +102,17 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
     const sumLine = el('div', { class: 'sum-line' });
     let sumLoop = null; // the word-sum teaching loop under the rings
     const showSum = (ids, opts) => { if (sumLoop) sumLoop.stop(); sumLoop = loopJoint(sumLine, ids, opts); };
+    /** Before COMPILE: just the pieces, so the rings don't give away the spelling. After a miss: the word it built. */
+    const staticSum = (ids, word = null) => {
+      if (sumLoop) { sumLoop.stop(); sumLoop = null; }
+      sumLine.innerHTML = '';
+      sumLine.append(ids.map((id) => morph(id).text).join(' + '), ' → ',
+        word ? el('span', { class: 'eq miss' }, word) : el('span', { class: 'eq wait' }, '? press COMPILE'));
+    };
     const feedback = el('div');
     const compileBtn = el('button', { class: 'btn btn-primary compile-btn', type: 'button' }, 'COMPILE');
     const nextBtn = el('button', { class: 'btn btn-good compile-btn', type: 'button', hidden: true }, 'NEXT ▸');
-    const sum = el('section', { class: 'glass sum-bar' }, el('div', {}, sumLine, feedback), el('div', { class: 'sum-actions' }, compileBtn, nextBtn));
+    const sum = el('section', { class: 'glass sum-bar' }, el('div', { class: 'sum-main' }, sumLine, feedback), el('div', { class: 'sum-actions' }, compileBtn, nextBtn));
     panel.root.append(top, ctlLayer, sum, closeButton(() => finish()));
 
     let idx = 0;
@@ -204,6 +211,11 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         ring.gloss.style.top = `${s.bottom + (ring.up ? 44 : 14)}px`;
         ring.gloss.style.maxWidth = `${Math.max(120, s.width + 30)}px`;
       });
+      // The request sits just above the dials (above the ▲ buttons), where the eye already is.
+      const minTop = Math.min(...slots.map((sl) => sl.top));
+      const gap = drum.rings.some((r) => r.up) ? 44 : 18;
+      const y = Math.max(14, Math.round(minTop - gap - top.offsetHeight));
+      if (top.dataset.y !== String(y)) { top.dataset.y = String(y); top.style.top = `${y}px`; }
     }
 
     function renderLive() {
@@ -239,9 +251,11 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         const res = build(ids);
         if (m === 'patch') {
           const blank = $('patch-blank');
-          if (blank) blank.textContent = res.word;
+          if (blank) blank.textContent = ids.map((id) => morph(id).text).join('·');
         }
-        showSum(ids);
+        // The free toy shows its word at once; tasks wait for COMPILE so the joint is a reveal.
+        if (isFree) { sumLine.append(res.parts.map((p) => p.text).join(' + '), ' → ', el('span', { class: 'eq' }, res.word)); return; }
+        staticSum(ids);
       } catch { sumLine.append('…'); }
     }
 
@@ -306,6 +320,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         if (pickIdx === t.a) return succeed(ids, word, () => fb('good', 'LOCK RELEASED ✔', `${word}: ${t.why}`, glossLine(ids)));
         sfx.bad();
         drum.flash(false);
+        staticSum(ids, word);
         logError(t.ring[t.a], 'meaning');
         const fit = DICTIONARY.has(word) ? `"${word}" is a real word, but it doesn't fit this sentence.` : `"${word}" isn't a word the lock knows.`;
         return fb('bad', 'The lock rejects that shape.', fit, attempts >= 2 ? `Hint: ${t.why}` : 'Read the whole sentence aloud with your word in the blank.');
@@ -326,6 +341,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       const rows = [];
       if (m !== 'unpack') {
         const word = build(ids).word;
+        staticSum(ids, word);
         if (DICTIONARY.has(word)) rows.push(`That compiles "${word}", a real word, but not the one requested.`);
         else rows.push(`"${word}" isn't in the Lexicon.`);
       }
@@ -351,7 +367,11 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       else { profile.stats.tasks += 1; if (firstTry) profile.stats.firstTry += 1; save(); }
       if (word) { profile.stats.compiled += 1; speak(word); }
       showFeedback();
-      if (word && ids.length) showSum(ids, { solved: true });
+      if (word && ids.length) {
+        const blank = $('patch-blank');
+        if (blank) blank.textContent = word;
+        showSum(ids, { solved: true });
+      }
       done += 1;
       onSolved && onSolved(task(), { firstTry, ids, word });
       nextBtn.hidden = false;

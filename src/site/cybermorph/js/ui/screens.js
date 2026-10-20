@@ -186,25 +186,28 @@ export function settingsScreen() {
 // ── How to play ───────────────────────────────────────────────────
 export function howToScreen() {
   const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'GOT IT');
-  const close = showScreen(el('section', { class: 'sheet glass' },
+  const close = showScreen(el('section', { class: 'sheet glass howto' },
     el('h2', {}, 'HOW TO PLAY'),
     el('div', { class: 'howto-grid' },
       el('div', {}, el('b', {}, 'MOVE'), 'Click a floor tile to walk there. W A S D or the arrow keys walk the way you face on screen, even after you turn the camera.'),
       el('div', {}, el('b', {}, 'USE'), 'Click a person or a machine to walk over and use it. The big button at the bottom (or SPACE) does the same.'),
       el('div', {}, el('b', {}, 'CAMERA'), 'Q and E (or the round buttons in the corners) turn the camera. Z zooms in, X zooms out. VIEW (or V) puts it back.'),
-      el('div', {}, el('b', {}, 'COMPILE'), 'Turn the rings with ▲▼ (or scroll) until the pieces build the word the request means. Press COMPILE.'),
+      el('div', {}, el('b', {}, 'COMPILE'), 'Turn the rings with ▲▼ (or scroll) to pick the pieces the request means. Press COMPILE to join them and watch how the spelling changes.'),
       el('div', {}, el('b', {}, 'DEBUG'), 'Click Rotlings. Cut their word between morphemes, then decide: real word or Rot fake? Every run brings new Rotlings. Golden ones carry long words worth bonus bits. Three clean splits in a row start a streak.'),
       el('div', {}, el('b', {}, 'PATCH'), 'Firewall locks: turn the ending ring until the word fits the sentence.'),
       el('div', {}, el('b', {}, 'LINK'), 'Hang words on their family branch. Watch for look-alikes that are not family.'),
       el('div', {}, el('b', {}, 'UNLOCK'), 'Achievements unlock new Morpher parts: heads, faces, toppers and more. Some are secret, so click around. See them all in the pause menu.')),
-    el('h3', {}, 'SHAPES TELL YOU THE TYPE'),
-    el('div', { class: 'legend' },
-      el('span', { class: 'mtile', 'data-type': 'pfx', 'data-origin': 'anglo' }, 'un'), 'prefix: pin on the right',
-      el('span', { class: 'mtile', 'data-type': 'base', 'data-origin': 'latin' }, 'port'), 'base: square',
-      el('span', { class: 'mtile', 'data-type': 'sfx', 'data-origin': 'greek' }, 'ic'), 'suffix: socket on the left',
-      el('span', { class: 'mtile', 'data-type': 'link', 'data-origin': 'greek' }, 'o'), 'linking vowel'),
-    el('h3', {}, 'THE LOOK TELLS YOU THE ORIGIN'),
-    el('div', { class: 'legend' }, ['anglo', 'latin', 'greek', 'lingo'].map((o) => [el('span', { class: 'mtile', 'data-type': 'base', 'data-origin': o }, ORIGIN_LABEL[o]), ' '])),
+    el('div', { class: 'howto-keys' },
+      el('div', {},
+        el('h3', {}, 'SHAPES TELL YOU THE TYPE'),
+        el('div', { class: 'legend' },
+          el('span', { class: 'key-item' }, el('span', { class: 'mtile', 'data-type': 'pfx', 'data-origin': 'anglo' }, 'un'), 'prefix: pin on the right'),
+          el('span', { class: 'key-item' }, el('span', { class: 'mtile', 'data-type': 'base', 'data-origin': 'latin' }, 'port'), 'base: square'),
+          el('span', { class: 'key-item' }, el('span', { class: 'mtile', 'data-type': 'sfx', 'data-origin': 'greek' }, 'ic'), 'suffix: socket on the left'),
+          el('span', { class: 'key-item' }, el('span', { class: 'mtile', 'data-type': 'link', 'data-origin': 'greek' }, 'o'), 'linking vowel'))),
+      el('div', {},
+        el('h3', {}, 'THE LOOK TELLS YOU THE ORIGIN'),
+        el('div', { class: 'legend' }, ['anglo', 'latin', 'greek', 'lingo'].map((o) => el('span', { class: 'mtile', 'data-type': 'base', 'data-origin': o }, ORIGIN_LABEL[o]))))),
     el('div', { class: 'row-btns' }, done)));
   done.addEventListener('click', close);
   done.focus();

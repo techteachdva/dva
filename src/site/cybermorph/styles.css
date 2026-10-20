@@ -176,7 +176,9 @@ button.mtile { cursor: pointer; }
 /* ── Panels ──────────────────────────────────────────────────── */
 #panel-layer { position: absolute; inset: 0; pointer-events: none; z-index: 30; }
 #panel-layer > * { pointer-events: auto; }
-.panel-top { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); width: min(1100px, 86vw); padding: 0.9rem 1.3rem; text-align: center; }
+.panel-top { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); width: min(1100px, 86vw); padding: 0.8rem 1.3rem; text-align: center; border: 2px solid var(--yellow); box-shadow: 0 0 24px rgba(255, 210, 63, 0.25); }
+.sum-line .eq.wait { color: var(--ink-dim); font-size: 1.15rem; font-weight: 600; }
+.sum-line .eq.miss { color: var(--red); text-decoration: line-through; text-decoration-thickness: 3px; }
 .panel-top .prompt { font-size: 1.65rem; font-weight: 800; line-height: 1.3; margin-top: 0.3rem; }
 .panel-top .prompt .blank { display: inline-block; min-width: 5ch; border-bottom: 4px solid var(--yellow); color: var(--yellow); }
 .panel-top .progress { position: absolute; right: 16px; top: 12px; font-size: 1rem; font-weight: 800; color: var(--ink-dim); }
@@ -479,3 +481,22 @@ body.panel-open #session-clock { top: auto; bottom: 16px; }
 .ach-how { color: var(--ink-dim); font-size: 1rem; }
 .ach-reward { font-size: 0.95rem; margin-top: 0.2rem; color: var(--cyan); }
 .swatch-btn { font-size: 1.1rem; line-height: 1; }
+
+/* How to Play fits one screen: a wide sheet, four cards per row, sizes that follow the window height. */
+.sheet.howto { width: min(1500px, 96vw); max-height: 96vh; padding: clamp(0.8rem, 2vh, 1.4rem) clamp(1rem, 2vw, 1.8rem); overflow-y: auto; }
+.sheet.howto h2 { margin-bottom: clamp(0.4rem, 1.4vh, 0.9rem); }
+.howto .howto-grid { grid-template-columns: repeat(4, 1fr); gap: clamp(0.5rem, 1.3vh, 0.9rem); }
+.howto .howto-grid > div { font-size: clamp(0.92rem, 2vh, 1.1rem); line-height: 1.38; letter-spacing: 0.01em; padding: clamp(0.5rem, 1.4vh, 0.9rem) 0.9rem; }
+.howto-keys { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+.howto-keys h3 { margin: clamp(0.5rem, 1.3vh, 0.9rem) 0 0.4rem; }
+.howto .legend { font-size: clamp(0.9rem, 1.9vh, 1.05rem); gap: 0.6rem 1.1rem; }
+.key-item { display: inline-flex; align-items: center; gap: 0.5rem; }
+.howto .row-btns { margin-top: clamp(0.4rem, 1.2vh, 0.8rem); justify-content: center; }
+@media (max-width: 1100px) { .howto .howto-grid { grid-template-columns: repeat(2, 1fr); } .howto-keys { grid-template-columns: 1fr; } }
+
+/* The compiler's bottom bar: word sum and feedback side by side on wide screens, so it stays short. */
+.sum-main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0.6rem 1.1rem; align-items: center; }
+.sum-main > :empty { display: none; }
+.sum-main:has(> :empty) { grid-template-columns: 1fr; }
+.sum-main .feedback { margin: 0; }
+@media (max-width: 1000px) { .sum-main { grid-template-columns: 1fr; } }
