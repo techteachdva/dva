@@ -21,6 +21,7 @@ import { applySettings } from '../core/settings.js';
 import { sfx, startMusic, unlockAudio, speak } from '../core/audio.js';
 import * as store from '../core/save.js';
 import { touch, dueIds } from '../core/mastery.js';
+import * as session from '../core/session.js';
 import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, collectFakes } from '../data/world.js';
 import { makeWave, makeFake, taughtBy, randomWord, allWords, isKnown } from './waves.js';
 import { zoneOf, CORRIDOR, CHASM_COLS } from '../data/layout.js';
@@ -38,6 +39,9 @@ import { showLesson } from '../panels/lesson.js';
 import { openDesk } from '../panels/desk.js';
 
 const PARAMS = new URLSearchParams(location.search);
+/** The teacher's link can set a session length (?mins=12) and a Google Form for exit-ticket codes (?form=…). */
+const SESSION_MINS = Math.max(0, Math.min(60, parseInt(PARAMS.get('mins') || '0', 10) || 0));
+const SESSION_FORM = /^https:\/\//.test(PARAMS.get('form') || '') ? PARAMS.get('form') : '';
 const PRACTICE = (PARAMS.get('set') || '').split(',').map((s) => s.trim()).filter(Boolean).map((k) => (MORPHEMES[k] ? k : Object.values(MORPHEMES).find((m) => m.cat === k)?.id)).filter(Boolean);
 
 const ARENA = (special) => [
@@ -111,7 +115,7 @@ async function showTitle() {
   G.titleSpin = true;
   startMusic('hub');
   screens.titleScreen({
-    onPlay: (p) => { store.setActive(p.id); startProfile(p); },
+    onPlay: (p) => { store.setActive(p.id); playProfile(p); },
     onNew: () => newProfileFlow(),
   });
 }
@@ -132,8 +136,22 @@ function newProfileFlow() {
   });
 }
 
+/** Continue a save, unless this browser's timed session just ended (the teacher's cooldown). */
+function playProfile(p) {
+  const wait = SESSION_MINS ? session.cooldownLeft(p) : 0;
+  if (!wait) { startProfile(p); return; }
+  screens.sessionDoneScreen({
+    profile: p,
+    minutes: wait,
+    onTicket: () => screens.exitTicketScreen({ profile: p, ticket: session.ticket(p), form: SESSION_FORM, onDone: () => showTitle() }),
+    onBack: () => showTitle(),
+  });
+}
+
 async function startProfile(p, fresh = false) {
   G.profile = p;
+  session.beginSession(p, SESSION_MINS);
+  G.sessionOver = false;
   G.titleSpin = false;
   unlockAudio();
   hud.showHud(true);
@@ -538,7 +556,7 @@ function updateRotling(r, dt) {
       const home = roomZone(r.c);
       const options = G.room.neighbors(r.c, r.r).filter((n) => G.room.isWalkable(n.c, n.r) && !G.room.isPort(n.c, n.r)
         && roomZone(n.c) === home && G.room.cells[n.r][n.c] !== '~'
-        && !(n.c === G.player.c && n.r === G.player.r) && !G.rotlings.some((o) => o !== r && o.c === n.c && o.r === n.r));
+        && !(G.player && n.c === G.player.c && n.r === G.player.r) && !G.rotlings.some((o) => o !== r && o.c === n.c && o.r === n.r));
       if (options.length) r.target = pick(options);
       r.wait = 1 + Math.random() * 2;
     }
@@ -1332,11 +1350,48 @@ function openPause() {
   screens.pauseScreen({
     profile: G.profile,
     onResume: () => {},
-    onQuit: async () => { store.save(); if (G.player) R.scene.remove(G.player.entity.group); G.player = null; G.profile = null; screens.closeAllScreens(); await showTitle(); },
+    onQuit: () => quitToTitle(),
     onLexicon: () => screens.lexiconPanel(G.profile),
     onAvatar: () => customize(),
+    onEndSession: () => showExitTicket(false),
   });
 }
+
+// ── Class sessions: the teacher's timer and the exit ticket ───────
+
+async function quitToTitle() {
+  store.save();
+  if (G.player) R.scene.remove(G.player.entity.group);
+  G.player = null;
+  G.profile = null;
+  screens.closeAllScreens();
+  await showTitle();
+}
+
+function showExitTicket(timeUp) {
+  if (!G.profile) return;
+  const ticket = session.endSession();
+  G.sessionOver = true;
+  $('session-clock').hidden = true;
+  sfx.unlock();
+  screens.exitTicketScreen({ profile: G.profile, ticket, form: SESSION_FORM, timeUp, onDone: () => quitToTitle() });
+}
+
+/** Once a second: the clock, a one-minute warning, and the exit ticket when time is up (never mid-task). */
+setInterval(() => {
+  const clock = $('session-clock');
+  if (!G.profile || G.sessionOver || G.place === 'title') { clock.hidden = true; return; }
+  const left = session.secondsLeft();
+  if (left === null) { clock.hidden = true; return; }
+  clock.hidden = false;
+  clock.textContent = `⏱ ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} left`;
+  clock.classList.toggle('low', left <= 60);
+  if (left === 60) hud.toast('One minute left. Finish the task you are on.', 'gold');
+  if (left > 0) return;
+  if (G.place === 'timed' && G.timed && !G.timed.over) { G.timed.t = 0; return; }
+  if (panelOpen() || dialogueOpen() || screens.screenOpen() || G.busy) { clock.textContent = '⏱ Time! Finish this task'; return; }
+  showExitTicket(true);
+}, 1000);
 
 // Playtest hooks (see dev/autoplay.js).
 window.__cybermorph = G;

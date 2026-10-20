@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>CyberMorph Class Report</title>
+<style>
+@font-face { font-family: 'Lexend'; src: url('fonts/lexend-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Lexend'; src: url('fonts/lexend-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Lexend'; src: url('fonts/lexend-latin-800-normal.woff2') format('woff2'); font-weight: 800; font-display: swap; }
+:root {
+  --bg: #f4f6fb; --card: #ffffff; --ink: #141826; --dim: #5b6377; --line: #d9deea; --accent: #2f6fde; --pink: #c2187e;
+  --good: #1f9d55; --mid: #d99a0a; --bad: #d23c4a; --none: #eef1f7;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0b0a14; --card: #161427; --ink: #f2f3f8; --dim: #a3a8bd; --line: #2c2a45; --accent: #5aa0ff; --pink: #ff6fc8; --none: #1d1b31; }
+}
+:root[data-theme="dark"] { --bg: #0b0a14; --card: #161427; --ink: #f2f3f8; --dim: #a3a8bd; --line: #2c2a45; --accent: #5aa0ff; --pink: #ff6fc8; --none: #1d1b31; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 Lexend, system-ui, sans-serif; }
+main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 1.7rem; margin: 0 0 4px; letter-spacing: 0.02em; }
+h2 { font-size: 1.15rem; margin: 0 0 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }
+.sub { color: var(--dim); margin: 0 0 20px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 18px; }
+textarea, input, select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+textarea { width: 100%; min-height: 110px; font-size: 0.85rem; }
+button { font: 600 0.95rem Lexend, sans-serif; border: 0; border-radius: 10px; padding: 9px 16px; background: var(--accent); color: #fff; cursor: pointer; }
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.stat { background: var(--bg); border-radius: 12px; padding: 12px; }
+.stat b { display: block; font-size: 1.6rem; }
+.stat span { color: var(--dim); font-size: 0.9rem; }
+.picks { display: grid; gap: 10px; }
+.pick { border-left: 6px solid var(--bad); background: var(--bg); border-radius: 10px; padding: 10px 14px; }
+.pick b { font-size: 1.05rem; }
+.pick .why { color: var(--dim); font-size: 0.92rem; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 0.88rem; min-width: 100%; }
+th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; white-space: nowrap; }
+th { color: var(--dim); font-weight: 600; position: sticky; top: 0; background: var(--card); }
+td.cell { text-align: center; font-weight: 700; border-radius: 6px; min-width: 52px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--dim); font-size: 0.88rem; margin-top: 8px; }
+.sw { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 4px; }
+.err { color: var(--bad); font-size: 0.9rem; }
+.lessons { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px 12px; max-height: 260px; overflow-y: auto; padding: 6px; border: 1px solid var(--line); border-radius: 10px; }
+.lessons label { font-size: 0.88rem; display: flex; gap: 6px; align-items: baseline; }
+.out { width: 100%; font-size: 0.85rem; word-break: break-all; }
+ol li { margin-bottom: 4px; }
+@media print {
+  .noprint { display: none !important; }
+  body { background: #fff; color: #000; }
+  .card { border: 0; padding: 0; break-inside: avoid; }
+  th { position: static; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>CyberMorph class report</h1>
+  <p class="sub">Exit-ticket codes in, class data by Morpheme Magic lesson out. Everything stays in this browser: nothing is uploaded.</p>
+
+  <section class="card noprint">
+    <h2>1 · Paste the codes</h2>
+    <p class="sub" style="margin-bottom:10px">Copy the code column from your Google Form's response sheet (or any text with codes in it) and paste it here.</p>
+    <textarea id="paste" placeholder="CM1.eyJ2IjoxLCJuIjoi….k3f9a"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button id="read">Read codes</button>
+      <label>From <input type="date" id="from"></label>
+      <label>to <input type="date" id="to"></label>
+      <button class="ghost" id="week">Last 7 days</button>
+      <button class="ghost" id="all">All dates</button>
+      <button class="ghost" id="print">Print</button>
+      <button class="ghost" id="clear">Clear</button>
+    </div>
+    <div id="errors" class="err"></div>
+  </section>
+
+  <section class="card" id="summary" hidden>
+    <h2>This report</h2>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section class="card" id="picksCard" hidden>
+    <h2>Warm-up picks</h2>
+    <p class="sub" style="margin-bottom:10px">The lessons the class missed most on the first try, with the mistake behind it and a move for your daily "morphological problem to solve".</p>
+    <div class="picks" id="picks"></div>
+  </section>
+
+  <section class="card" id="heatCard" hidden>
+    <h2>Students × lessons</h2>
+    <p class="sub" style="margin-bottom:10px">Percent right on the first try, this date range. Hover a cell for tries and mistakes.</p>
+    <div class="scroll"><table id="heat"></table></div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--good)"></i>80% or more</span>
+      <span><i class="sw" style="background:var(--mid)"></i>60–79%</span>
+      <span><i class="sw" style="background:var(--bad)"></i>under 60%</span>
+      <span><i class="sw" style="background:var(--none)"></i>not practised</span>
+    </div>
+  </section>
+
+  <section class="card" id="lessonCard" hidden>
+    <h2>Lessons and mistakes</h2>
+    <div class="scroll"><table id="lessonTable"></table></div>
+  </section>
+
+  <section class="card noprint">
+    <h2>2 · Make a class link</h2>
+    <p class="sub" style="margin-bottom:10px">Students open this link. It sets the session timer, focuses Hub reviews and Overclock Mode on the lessons you tick, and sends exit-ticket codes to your form.</p>
+    <div class="row">
+      <label>Session length
+        <select id="mins">
+          <option value="0">No timer</option><option value="8">8 min</option><option value="10">10 min</option>
+          <option value="12" selected>12 min</option><option value="15">15 min</option><option value="20">20 min</option>
+        </select>
+      </label>
+    </div>
+    <p style="margin:12px 0 6px"><b>Focus lessons</b> (optional: the lessons you've taught that need practice)</p>
+    <div class="lessons" id="lessonPick"></div>
+    <p style="margin:12px 0 6px"><b>Your Google Form's pre-filled link</b> (optional)</p>
+    <input id="form" class="out" placeholder="https://docs.google.com/forms/d/e/…/viewform?usp=pp_url&entry.123456=CODE">
+    <div class="row" style="margin-top:12px">
+      <input id="link" class="out" readonly style="flex:1">
+      <button id="copyLink">Copy link</button>
+    </div>
+    <details style="margin-top:14px">
+      <summary><b>How to set up the Google Form (once)</b></summary>
+      <ol>
+        <li>Make a Google Form with one <b>Short answer</b> question: "Paste your CyberMorph code". Turn on "Collect email addresses" if you want names checked.</li>
+        <li>In the form's ⋮ menu, choose <b>Get pre-filled link</b>. Type <code>CODE</code> in the answer box and press <b>Get link</b>, then <b>Copy link</b>.</li>
+        <li>Paste that link in the box above. The game swaps <code>CODE</code> for each student's code, so they only press Submit.</li>
+        <li>Each week, open the responses in Sheets, copy the code column, and paste it at the top of this page.</li>
+      </ol>
+    </details>
+  </section>
+</main>
+
+<script type="module">
+import { decodeReport, findCodes, ERROR_KINDS, ERROR_LABEL } from './js/core/report.js';
+import { MM_LESSONS, mmName, mmOrder } from './js/data/mm.js';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const STORE = 'cybermorph.teacher.v1';
+const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(STORE) || '{}')[k]; return v === undefined ? d : v; } catch { return d; } };
+const keep = (k, v) => { try { const o = JSON.parse(localStorage.getItem(STORE) || '{}'); o[k] = v; localStorage.setItem(STORE, JSON.stringify(o)); } catch { /* private window */ } };
+
+/** What to do in class for each kind of mistake (from the teacher guide). */
+const MOVES = {
+  seam: 'Scoop it together: put three of the words on the board and scoop the morphemes aloud.',
+  joint: 'Spelling-joint mini-lesson: double it, change it, drop it, using the exact words they missed.',
+  order: 'Order check: prefix · base · suffix. Build two words with cards in the wrong order and fix them.',
+  link: 'Greek linking o: therm + o + meter. Sort Greek words that need the o and ones that don\'t.',
+  real: 'Real or Rot? Show real words whose spelling changed (hoping, stopped) and prove each with a word sum.',
+  family: 'Family sort: which spelling does each word take (tain or ten, able or ible)? Use the wall card\'s word list.',
+  meaning: 'Reteach the meaning: key word and key sentence, then two focus words.',
+};
+
+const isoDay = (d) => d.toISOString().slice(0, 10);
+function setWeek() { const now = new Date(); $('to').value = isoDay(now); $('from').value = isoDay(new Date(now - 6 * 864e5)); }
+
+let sessions = [];
+
+function read() {
+  const text = $('paste').value;
+  keep('paste', text);
+  const codes = [...new Set(findCodes(text))];
+  const errs = [];
+  sessions = [];
+  codes.forEach((c) => { const p = decodeReport(c); if (p.error) errs.push(`${c.slice(0, 18)}… ${p.error}`); else sessions.push(p); });
+  const loose = (text.match(/CM1\.\S*/g) || []).filter((c) => !codes.includes(c));
+  loose.forEach((c) => errs.push(`${c.slice(0, 18)}… looks cut off`));
+  $('errors').textContent = errs.length ? `Skipped ${errs.length}: ${errs.join(' · ')}` : '';
+  render();
+}
+
+function inRange(s) {
+  const t = s.s * 1000;
+  const from = $('from').value ? new Date(`${$('from').value}T00:00`).getTime() : -Infinity;
+  const to = $('to').value ? new Date(`${$('to').value}T23:59:59`).getTime() : Infinity;
+  return t >= from && t <= to;
+}
+
+const pct = (ft, a) => (a ? Math.round((ft / a) * 100) : null);
+const tone = (p) => (p === null ? 'var(--none)' : p >= 80 ? 'var(--good)' : p >= 60 ? 'var(--mid)' : 'var(--bad)');
+
+function render() {
+  const list = sessions.filter(inRange);
+  const show = list.length > 0;
+  ['summary', 'picksCard', 'heatCard', 'lessonCard'].forEach((id) => { $(id).hidden = !show; });
+  if (!show) return;
+  // Per student, per lesson totals for the date range.
+  const students = new Map();
+  const lessons = new Map();
+  list.forEach((s) => {
+    const name = String(s.n || 'Morpher').trim();
+    const st = students.get(name.toLowerCase()) || { name, sessions: 0, mins: 0, L: {}, latest: null };
+    st.sessions += 1;
+    st.mins += s.m || 0;
+    if (!st.latest || s.s > st.latest.s) st.latest = s;
+    Object.entries(s.L || {}).forEach(([k, v]) => {
+      const a = st.L[k] || (st.L[k] = v.map(() => 0));
+      v.forEach((x, i) => { a[i] += x; });
+      const l = lessons.get(k) || { k, v: v.map(() => 0), who: new Set() };
+      v.forEach((x, i) => { l.v[i] += x; });
+      l.who.add(name.toLowerCase());
+      lessons.set(k, l);
+    });
+    students.set(name.toLowerCase(), st);
+  });
+  // Fading (all-time) from each student's latest code.
+  const fading = new Map();
+  students.forEach((st) => Object.entries(st.latest.M || {}).forEach(([k, m]) => { if (m[1] > 0) fading.set(k, (fading.get(k) || 0) + 1); }));
+
+  const tries = [...lessons.values()].reduce((x, l) => x + l.v[0], 0);
+  const ft = [...lessons.values()].reduce((x, l) => x + l.v[1], 0);
+  const mins = list.reduce((x, s) => x + (s.m || 0), 0);
+  $('stats').innerHTML = [
+    [students.size, 'students'], [list.length, 'sessions'], [`${mins}`, 'minutes played'],
+    [tries ? `${pct(ft, tries)}%` : '—', 'right on the first try'], [list.reduce((x, s) => x + (s.w || 0), 0), 'words built'],
+    [list.reduce((x, s) => x + (s.r || 0), 0), 'Rotlings debugged'],
+  ].map(([b, t]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(t)}</span></div>`).join('');
+
+  // Warm-up picks: lowest first-try lessons with enough tries to trust.
+  const ranked = [...lessons.values()].filter((l) => l.k !== 'X' && l.v[0] >= 4)
+    .map((l) => ({ ...l, p: pct(l.v[1], l.v[0]) })).filter((l) => l.p < 80).sort((a, b) => a.p - b.p).slice(0, 4);
+  $('picks').innerHTML = ranked.length ? ranked.map((l) => {
+    const errs = ERROR_KINDS.map((kind, i) => [kind, l.v[2 + i]]).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+    const top = errs[0] ? errs[0][0] : 'meaning';
+    const detail = errs.slice(0, 3).map(([kind, n]) => `${n}× ${ERROR_LABEL[kind]}`).join(' · ') || 'slow first tries, few clear mistakes';
+    return `<div class="pick" style="border-color:${tone(l.p)}"><b>${esc(mmName(l.k))}: ${l.p}% first try</b> <span class="why">(${l.v[0]} tries, ${l.who.size} student${l.who.size === 1 ? '' : 's'})</span><div class="why">${esc(detail)}</div><div>${esc(MOVES[top])}</div></div>`;
+  }).join('') : '<div class="why">Nothing under 80% with at least 4 tries. Keep going, and mix in older lessons for review.</div>';
+
+  // Heatmap.
+  const keys = [...lessons.keys()].sort((a, b) => mmOrder(a) - mmOrder(b));
+  const short = (k) => (k === 'X' ? 'Other' : k.replace(/^S/, 'Suf ').replace(/^P/, 'Pre ').replace(/^R/, 'Root ').replace(/^G/, 'Grk '));
+  const rows = [...students.values()].sort((a, b) => a.name.localeCompare(b.name));
+  $('heat').innerHTML = `<thead><tr><th>Student</th><th>Sessions</th><th>Min</th>${keys.map((k) => `<th title="${esc(mmName(k))}">${esc(short(k))}</th>`).join('')}</tr></thead><tbody>${rows.map((st) => `<tr><td>${esc(st.name)}</td><td>${st.sessions}</td><td>${st.mins}</td>${keys.map((k) => {
+    const v = st.L[k];
+    if (!v || !v[0]) return '<td class="cell" style="background:var(--none)"></td>';
+    const p = pct(v[1], v[0]);
+    const why = ERROR_KINDS.map((kind, i) => (v[2 + i] ? `${v[2 + i]}× ${ERROR_LABEL[kind]}` : '')).filter(Boolean).join('; ');
+    return `<td class="cell" style="background:${tone(p)};color:#fff" title="${esc(`${mmName(k)}: ${v[1]}/${v[0]} first try${why ? `. ${why}` : ''}`)}">${p}%</td>`;
+  }).join('')}</tr>`).join('')}</tbody>`;
+
+  // Lesson table.
+  $('lessonTable').innerHTML = `<thead><tr><th>Lesson</th><th>Students</th><th>Tries</th><th>First try</th>${ERROR_KINDS.map((k) => `<th title="${esc(ERROR_LABEL[k])}">${esc(k)}</th>`).join('')}<th title="Students whose latest code shows a fading morpheme in this lesson">Fading</th></tr></thead><tbody>${keys.map((k) => {
+    const l = lessons.get(k);
+    const p = pct(l.v[1], l.v[0]);
+    return `<tr><td>${esc(mmName(k))}</td><td>${l.who.size}</td><td>${l.v[0]}</td><td style="color:${tone(p)};font-weight:700">${p === null ? '—' : `${p}%`}</td>${ERROR_KINDS.map((_, i) => `<td>${l.v[2 + i] || ''}</td>`).join('')}<td>${fading.get(k) || ''}</td></tr>`;
+  }).join('')}</tbody>`;
+}
+
+// ── Class link builder ──
+const picked = new Set(load('picked', []));
+$('lessonPick').innerHTML = MM_LESSONS.map((l) => `<label><input type="checkbox" value="${l.key}" ${picked.has(l.key) ? 'checked' : ''}> ${esc(`${l.section} ${l.n} · ${l.label}`)}</label>`).join('');
+$('form').value = load('form', '');
+$('mins').value = String(load('mins', 12));
+function buildLink() {
+  const base = new URL('./', location.href);
+  const q = new URLSearchParams();
+  if ($('mins').value !== '0') q.set('mins', $('mins').value);
+  const ids = MM_LESSONS.filter((l) => picked.has(l.key)).flatMap((l) => l.ids);
+  if (ids.length) q.set('set', ids.join(','));
+  const form = $('form').value.trim();
+  if (/^https:\/\//.test(form)) q.set('form', form);
+  $('link').value = `${base.href}${q.toString() ? `?${q}` : ''}`;
+  keep('picked', [...picked]); keep('form', form); keep('mins', Number($('mins').value));
+}
+$('lessonPick').addEventListener('change', (e) => { if (e.target.checked) picked.add(e.target.value); else picked.delete(e.target.value); buildLink(); });
+$('form').addEventListener('input', buildLink);
+$('mins').addEventListener('change', buildLink);
+$('copyLink').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('link').value); $('copyLink').textContent = 'Copied ✔'; } catch { $('link').select(); $('copyLink').textContent = 'Press Ctrl+C'; }
+  setTimeout(() => { $('copyLink').textContent = 'Copy link'; }, 1800);
+});
+buildLink();
+
+// ── Report controls ──
+$('read').addEventListener('click', read);
+$('week').addEventListener('click', () => { setWeek(); render(); });
+$('all').addEventListener('click', () => { $('from').value = ''; $('to').value = ''; render(); });
+$('from').addEventListener('change', render);
+$('to').addEventListener('change', render);
+$('print').addEventListener('click', () => window.print());
+$('clear').addEventListener('click', () => { $('paste').value = ''; keep('paste', ''); sessions = []; render(); $('errors').textContent = ''; });
+setWeek();
+$('paste').value = load('paste', '');
+if ($('paste').value) read();
+</script>
+</body>
+</html>

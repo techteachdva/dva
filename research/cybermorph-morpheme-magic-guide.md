@@ -132,7 +132,8 @@ What the game records today, per student, in the browser:
 
 - every morpheme they've met, with a mastery level (0–4 stars), first-try hits / tries, and whether it is fading (due for review);
 - words compiled, Rotlings debugged, first-try rate;
-- a **Progress report** (pause menu) that prints on one page, morphemes grouped by mastery, with "Needs review" boxed first.
+- a **Progress report** (pause menu) that prints on one page, morphemes grouped by mastery, with "Needs review" boxed first;
+- per class session: tries, first tries and mistakes by kind for every morpheme, packed into the exit-ticket code (see below).
 
 How to use it each week (the thresholds are my suggestions; adjust to your class):
 
@@ -144,14 +145,46 @@ How to use it each week (the thresholds are my suggestions; adjust to your class
 | An older morpheme marked "needs review" for several students | Forgetting, which is normal | Put it in Thursday's review mix and in Friday's "Write" word bank. |
 | Strong game numbers, weak Friday assessment | Recognition without production | More Write tasks. The game mostly tests recognising parts, not using words. |
 
-**The catch today:** the data is on 30 separate Chromebooks. Printing 30 reports every week isn't realistic. That's the main thing to build next.
+## Class sessions, exit tickets and the class report (built)
 
-## What I'd build next (your call)
+**Before the first class (once):**
+1. Make a Google Form with one Short answer question, "Paste your CyberMorph code".
+2. Form menu ⋮ → **Get pre-filled link**, type `CODE` in the answer, copy the link.
+3. Open the class report page (`/cybermorph/teacher.html`), paste the form link under "Make a class link", pick the session length, and tick this week's focus lessons. Copy the class link and post it in Google Classroom.
 
-1. **Morpheme Magic mode.** A teacher page where you pick the lesson you're on (say, "Prefix 13: DE-") and the order you're using. It gives you a class link. In that mode, the game only uses morphemes you've taught, and each wave is about half this week's morpheme, a third the last few weeks, and the rest older review (spaced and mixed). That fixes the ordering gap.
-2. **Session timer and exit ticket.** The game stops itself after your set minutes and shows a short exit screen: three morphemes practised, and one "say it" prompt.
-3. **Class report without a server.** The exit screen shows a short code (or a QR code). Students paste it into a Google Form you own. A teacher page on your site reads the sheet and shows a class heatmap by Morpheme Magic lesson: who missed what, and which error type. You walk in Wednesday knowing the warm-up problem. Saves stay in the browser, as you wanted.
-4. **This week's word list.** Type the focus words from your wall card into the teacher page. The game uses those exact words for Rotlings (any it can't build from its morphemes are flagged).
+**What students see:**
+- A clock under the objective card. One minute before the end: "Finish the task you are on." At zero, the game waits for the current task to finish, then shows the **exit ticket**:
+  - what they practised, by Morpheme Magic lesson (first-try score for each morpheme);
+  - **Say it**: a partner prompt on one morpheme (with a Check button);
+  - **Look again next time**: the morphemes they made mistakes on;
+  - their **report code**, with COPY CODE and OPEN THE FORM (the code is already filled in, so they just press Submit).
+- After a timed session, that browser shows "Session complete" for 45 minutes (they can reopen their exit ticket). It's a soft lock: opening the game without your link skips it.
+- Without a timer, students can end a session any time from the pause menu (End session · exit ticket).
+
+**What you see (teacher.html):** paste the code column from the response sheet. You get:
+- class totals for the date range (last 7 days by default);
+- **warm-up picks**: the lessons under 80% first try, with the main mistake behind each and a move for your daily "morphological problem to solve";
+- **students × lessons**: first-try % per student per Morpheme Magic lesson, colour coded, with tries and mistakes on hover;
+- **lessons and mistakes**: every lesson's tries, first-try %, mistakes by kind, and how many students have it fading.
+
+Mistakes are sorted by kind, and each kind points to a different move:
+
+| Kind | Means | Move |
+|---|---|---|
+| seam | cut the word in the wrong place | Scoop three words together on the board. |
+| joint | missed a spelling change (drop-e, double, y→i, assimilation) | Double it, change it, drop it, with their words. |
+| order | accepted parts in the wrong order | Prefix · base · suffix card sort. |
+| link | missed a Greek linking o | Sort Greek words with and without the o. |
+| real | called a real word fake (usually one with a spelling change) | Prove real words with a word sum. |
+| family | right meaning, wrong spelling (tain/ten, able/ible, ance/ence) | Family sort from the wall card. |
+| meaning | picked a part with the wrong meaning | Key word, key sentence, two focus words. |
+
+Codes carry the student's name as typed in the game, the date, minutes, words built and Rotlings debugged, this session's tries and mistakes by lesson, and all-time mastery by lesson. Nothing is uploaded by the game or the report page; the only place codes live is your own form.
+
+## What's next
+
+- **Morpheme Magic mode**: pick the lesson you're on, and the story and the waves only use what you've taught, weighted to this week with spaced review. That fixes the ordering gap above.
+- **This week's word list**: type your wall card's focus words and the game uses them as Rotlings.
 
 ## Sources
 

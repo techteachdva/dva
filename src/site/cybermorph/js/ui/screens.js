@@ -337,7 +337,7 @@ export function lexiconPanel(profile) {
 }
 
 // ── Pause ─────────────────────────────────────────────────────────
-export function pauseScreen({ profile, onResume, onQuit, onLexicon, onAvatar }) {
+export function pauseScreen({ profile, onResume, onQuit, onLexicon, onAvatar, onEndSession }) {
   const b = (label, fn, cls = 'btn') => { const x = el('button', { class: cls, type: 'button', style: { width: '100%' } }, label); x.addEventListener('click', () => { sfx.click(); fn(); }); return x; };
   const col = el('div', { style: { display: 'grid', gap: '0.5rem', marginTop: '0.6rem' } },
     b('RESUME', () => { close(); onResume(); }, 'btn btn-primary'),
@@ -347,6 +347,7 @@ export function pauseScreen({ profile, onResume, onQuit, onLexicon, onAvatar }) 
     b('Customize Morpher', () => { close(); onAvatar(); }),
     b('Settings', () => settingsScreen()),
     b('Inspirations', () => inspirationsScreen()),
+    onEndSession ? b('End session · exit ticket', () => { close(); onEndSession(); }) : null,
     b('Save and quit to title', () => { close(); onQuit(); }));
   const close = showScreen(el('section', { class: 'sheet glass', style: { width: 'min(420px, 92vw)' } }, el('h2', {}, 'PAUSED'), el('div', { style: { color: 'var(--ink-dim)' } }, `${profile.name} · saved in this browser`), col));
   col.firstChild.focus();
@@ -405,3 +406,70 @@ export function endingScreen({ profile, onDone }) {
 }
 
 export { DISTRICTS };
+
+// ── Exit ticket ───────────────────────────────────────────────────
+/**
+ * The end of a class session: what the student practised, one "say it" prompt for a partner,
+ * the morphemes to look at again, and the report code for the teacher's Google Form.
+ * form: the teacher's pre-filled form link; the word CODE in it is replaced by the code.
+ */
+export function exitTicketScreen({ profile, ticket, form = '', timeUp = false, onDone }) {
+  const t = ticket;
+  const body = el('section', { class: 'sheet glass ticket' },
+    el('h2', {}, timeUp ? "TIME'S UP · EXIT TICKET" : 'EXIT TICKET'),
+    el('div', { class: 'meta' }, `${profile.name} · ${new Date().toLocaleDateString()} · ${t.minutes} min · ${t.words} word${t.words === 1 ? '' : 's'} built · ${t.rotlings} Rotling${t.rotlings === 1 ? '' : 's'} debugged`));
+  if (t.practised.length) {
+    body.append(el('h3', {}, 'YOU PRACTISED'), el('div', { class: 'chips' }, t.practised.slice(0, 12).map((x) => el('div', { class: 'chip' },
+      mtile(x.id, { button: false }), el('span', {}, `${x.ft}/${x.a} first try`), el('small', {}, t.lessonName(x.id))))));
+  } else body.append(el('p', {}, 'No morphemes practised this session yet.'));
+  if (t.focus) {
+    const m = morph(t.focus);
+    const ans = el('span', { class: 'ans', hidden: true }, ` ${m.text} means "${m.meaning}".`);
+    const show = el('button', { class: 'btn', type: 'button', style: { marginLeft: '0.6rem' } }, 'Check');
+    show.addEventListener('click', () => { ans.hidden = false; show.remove(); });
+    body.append(el('h3', {}, 'SAY IT'), el('div', { class: 'sayit' }, `Turn to a partner: what does `, el('b', {}, m.type === 'pfx' ? `${m.text}-` : m.type === 'sfx' ? `-${m.text}` : m.text), ` mean? Name one word that uses it.`, show, ans));
+  }
+  if (t.shaky.length) body.append(el('h3', {}, 'LOOK AGAIN NEXT TIME'), el('div', { class: 'chips' }, t.shaky.map((id) => mtile(id, { button: false }))));
+  const code = el('textarea', { class: 'code', readonly: true, rows: 3, 'aria-label': 'Your report code' });
+  code.value = t.code;
+  code.addEventListener('focus', () => code.select());
+  const copy = el('button', { class: 'btn btn-primary', type: 'button' }, 'COPY CODE');
+  copy.addEventListener('click', async () => {
+    let ok = false;
+    try { await navigator.clipboard.writeText(t.code); ok = true; } catch { code.select(); try { ok = document.execCommand('copy'); } catch { ok = false; } }
+    copy.textContent = ok ? 'COPIED ✔' : 'Select the code and press Ctrl+C';
+    sfx.click();
+  });
+  const btns = [copy];
+  if (form) {
+    const open = el('button', { class: 'btn btn-pink', type: 'button' }, 'OPEN THE FORM ▸');
+    open.addEventListener('click', () => {
+      const url = /=CODE(&|#|$)/.test(form) ? form.replace(/=CODE(&|#|$)/, `=${encodeURIComponent(t.code)}$1`) : form;
+      window.open(url, '_blank', 'noopener');
+    });
+    btns.push(open);
+  }
+  const done = el('button', { class: 'btn', type: 'button' }, 'DONE · SAVE AND LOG OFF');
+  btns.push(done);
+  body.append(el('h3', {}, 'YOUR REPORT CODE'),
+    el('div', { class: 'how' }, form ? 'Press OPEN THE FORM, check your code is in the answer box, then press Submit.' : "Copy the code and paste it into your teacher's form."),
+    code, el('div', { class: 'row-btns' }, ...btns));
+  const close = showScreen(body);
+  done.addEventListener('click', () => { close(); onDone && onDone(); });
+  copy.focus();
+  return close;
+}
+
+/** Shown instead of the game when a timed session ended recently in this browser. */
+export function sessionDoneScreen({ profile, minutes, onTicket, onBack }) {
+  const ticket = el('button', { class: 'btn btn-primary', type: 'button' }, 'SHOW MY EXIT TICKET');
+  const back = el('button', { class: 'btn', type: 'button' }, 'BACK');
+  const close = showScreen(el('section', { class: 'sheet glass', style: { width: 'min(520px, 92vw)' } },
+    el('h2', {}, 'SESSION COMPLETE'),
+    el('p', {}, `Nice work today, ${profile.name}. Your teacher's timer for this session is done.`),
+    el('p', { style: { color: 'var(--ink-dim)' } }, `The game opens again in about ${minutes} minute${minutes === 1 ? '' : 's'}.`),
+    el('div', { class: 'row-btns' }, ticket, back)));
+  ticket.addEventListener('click', () => { close(); onTicket(); });
+  back.addEventListener('click', () => { close(); onBack(); });
+  ticket.focus();
+}

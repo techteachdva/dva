@@ -455,3 +455,17 @@ table.report th { color: var(--cyan); font-size: 0.9rem; letter-spacing: 0.08em;
 .crit.split .cp-m { opacity: 1; max-height: 3rem; }
 .crit.split .crit-sum { opacity: 1; }
 .crit.out { opacity: 0; transform: translate(-50%, -70%); transition: opacity 0.8s, transform 0.8s; }
+
+/* Class sessions: the teacher's timer and the exit ticket. */
+#session-clock { position: absolute; left: 16px; top: 112px; padding: 0.35rem 0.9rem; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.04em; }
+#session-clock.low { color: var(--yellow); border-color: var(--yellow); }
+body.panel-open #session-clock { top: auto; bottom: 16px; }
+.ticket h2 { margin-bottom: 0.2rem; }
+.ticket .meta { color: var(--ink-dim); margin-bottom: 0.8rem; }
+.ticket .chips { display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem; }
+.ticket .chip { display: flex; align-items: center; gap: 0.45rem; }
+.ticket .chip small { color: var(--ink-dim); font-size: 0.9rem; }
+.ticket .sayit { margin-top: 0.6rem; padding: 0.7rem 1rem; border-left: 5px solid var(--cyan); background: rgba(0, 229, 255, 0.08); border-radius: 8px; font-size: 1.15rem; }
+.ticket .sayit .ans { color: var(--yellow); font-weight: 800; }
+.ticket textarea.code { width: 100%; min-height: 4.4rem; font: 600 0.95rem/1.35 ui-monospace, monospace; color: var(--ink); background: rgba(0, 0, 0, 0.35); border: 2px solid var(--cyan); border-radius: 10px; padding: 0.5rem; resize: none; word-break: break-all; user-select: all; }
+.ticket .how { color: var(--ink-dim); margin: 0.3rem 0 0.5rem; }

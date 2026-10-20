@@ -11,6 +11,7 @@ import { loopJoint } from '../compiler/joint.js';
 import { morph } from '../data/morphemes.js';
 import { sfx, speak, sayMorph } from '../core/audio.js';
 import { touch } from '../core/mastery.js';
+import { logAttempt, logError, jointIds } from '../core/session.js';
 import { save } from '../core/save.js';
 
 export function openDebug({ item, profile, mode = 'rotling', title = null, realNote = null }) {
@@ -82,6 +83,7 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
       const player = [...cuts];
       if (cutsMatch(player, expected, doubled)) { splitDone(); return; }
       mistakes++;
+      logError(item.p, 'seam');
       sfx.bad();
       keys.classList.remove('shake');
       void keys.offsetWidth;
@@ -119,6 +121,7 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
       if (phase === 'done') {
         fb('good', 'CLEAN SPLIT ✔', glossLine(item.p));
         touch(profile, item.p, mistakes === 0);
+        logAttempt(item.p, mistakes === 0);
         finishButton('CONTINUE ▸');
         return;
       }
@@ -136,6 +139,7 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
       const right = saysFake === !!item.fake;
       if (!right) {
         mistakes++;
+        logVerdictError();
         sfx.bad();
         fb('bad', 'The Rotling shoves you back.', item.fake ? `Look closer. ${item.why}` : `It's real. ${item.p.map((id) => morph(id).text).join(' + ')} → ${res.word}. ${realNote || ''}`);
         return;
@@ -143,6 +147,7 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
       phase = 'done';
       actions.innerHTML = '';
       touch(profile, item.p, mistakes === 0);
+      logAttempt(item.p, mistakes === 0, { rotling: true });
       profile.stats.splits += 1;
       save();
       if (item.fake) {
@@ -158,6 +163,16 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
         fb('good', 'REAL WORD ✔ Clean split!', glossLine(item.p), realNote);
       }
       finishButton('COLLECT ▸');
+    }
+
+    /** A wrong REAL / ROT call, logged against the morphemes it is about. */
+    function logVerdictError() {
+      const types = item.p.map((id) => morph(id).type);
+      if (item.fake === 'joint') logError(jointIds(item.p), 'joint');
+      else if (item.fake === 'order') logError(item.p.filter((_, i) => types[i] === 'pfx' || types[i] === 'sfx'), 'order');
+      else if (item.fake === 'link') logError(item.p.filter((_, i) => types[i] === 'base'), 'link');
+      else if (item.fake) logError(item.p, 'joint');
+      else logError(res.steps.length ? jointIds(item.p) : item.p, 'real');
     }
 
     function finishButton(label) {

@@ -22,6 +22,7 @@ import { R, onUpdate, pickFocus } from '../engine/renderer.js';
 import { sfx, speak, sayMorph } from '../core/audio.js';
 import { settings } from '../core/settings.js';
 import { touch } from '../core/mastery.js';
+import { logAttempt, logError } from '../core/session.js';
 import { addLexicon, addMadeUp, save } from '../core/save.js';
 
 const OPEN_LOCKOUT_MS = 350;
@@ -246,6 +247,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
 
     function record(ids, ok, word) {
       touch(profile, ids, ok);
+      logAttempt(ids, ok, { word: !!word });
       profile.stats.tasks += 1;
       if (ok) profile.stats.firstTry += 1;
       save();
@@ -304,6 +306,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         if (pickIdx === t.a) return succeed(ids, word, () => fb('good', 'LOCK RELEASED ✔', `${word}: ${t.why}`, glossLine(ids)));
         sfx.bad();
         drum.flash(false);
+        logError(t.ring[t.a], 'meaning');
         const fit = DICTIONARY.has(word) ? `"${word}" is a real word, but it doesn't fit this sentence.` : `"${word}" isn't a word the lock knows.`;
         return fb('bad', 'The lock rejects that shape.', fit, attempts >= 2 ? `Hint: ${t.why}` : 'Read the whole sentence aloud with your word in the blank.');
       }
@@ -330,6 +333,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         if (id !== target[i]) {
           const have = morph(id);
           const need = morph(target[i]);
+          logError([target[i]], have.meaning === need.meaning ? 'family' : 'meaning');
           if (have.meaning === need.meaning) rows.push(`Ring ${i + 1}: ${have.text} has the right meaning, but this word uses a different spelling of it. Read the word you are building.`);
           else rows.push(`Ring ${i + 1}: ${have.text} means "${have.meaning}". This spot needs a ${TYPE_LABEL[need.type]} that means "${attempts >= 2 ? need.meaning : '…'}".`);
         }
