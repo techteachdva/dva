@@ -158,3 +158,26 @@ export function renderInventory(profile) {
     body.append(el('div', { class: 'inv-row' }, el('span', {}, label), el('div', { class: 'inv-tiles' }, ids.map((id) => mtile(id, { profile })))));
   }
 }
+
+/**
+ * A natural 20 on Mr. Phil's d20: CRITICAL HIT slams onto the screen, splits into its
+ * morphemes (crit · ic · al  hit) with their meanings, then fades away.
+ */
+export function criticalHit() {
+  const pieces = [
+    { t: 'CRIT', type: 'base', m: 'to judge (Greek)' },
+    { t: 'IC', type: 'sfx', m: 'relating to' },
+    { t: 'AL', type: 'sfx', m: 'relating to' },
+    { t: 'HIT', type: 'base', m: 'to strike (Old Norse)', gap: true },
+  ];
+  document.querySelectorAll('.crit').forEach((n) => n.remove());
+  const word = el('div', { class: 'crit-word' }, pieces.map((p) => el('span', { class: `cp${p.gap ? ' gap' : ''}`, 'data-type': p.type }, el('span', { class: 'cp-t' }, p.t), el('span', { class: 'cp-m' }, p.m))));
+  const root = el('div', { class: 'crit', role: 'status', 'aria-label': 'Critical hit! crit, ic, al, hit' }, el('div', { class: 'crit-kick' }, 'NATURAL 20'), word,
+    el('div', { class: 'crit-sum' }, 'crit + ic + al → critical  ·  hit'));
+  document.body.append(root);
+  requestAnimationFrame(() => root.classList.add('in'));
+  setTimeout(() => root.classList.add('in'), 30);
+  setTimeout(() => root.classList.add('split'), 1300);
+  setTimeout(() => root.classList.add('out'), 4600);
+  setTimeout(() => root.remove(), 5500);
+}

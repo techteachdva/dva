@@ -519,3 +519,9 @@ Requested by Phil after playing 1.1: "way more variety in the rotlings", every m
 - **The word sum teaches the joint, on a loop.** Under the compiler (and after a Rot fake is caught), the parts sit apart, each spelling change is spotlighted with a caption, then applied: a dropped letter is struck through in red and falls away, an added letter pops in green, a changed letter flips gold. The parts join (changed letters stay coloured beside the plain word), then split back apart, undoing each change in reverse, and repeat. Reduced motion shows one marked still frame.
 - **Fix:** wave Rotlings only spawn on the near side of the data chasm, so none can be stranded before the bridge exists.
 - **Printable progress report.** Print builds a plain black-on-white Letter page: stats, then each origin's morphemes grouped by mastery (Needs review boxed first) as compact lists. A full game's 392 morphemes fit on one page at full size; it scales down only if needed.
+
+### Mr. Phil's classroom (Lingo Room, 1.2.0)
+
+- **Mr. Phil is a person now:** wild curly light-brown hair, a thick full beard and moustache, dark green glasses, a button-down shirt, jeans and sneakers. His first-visit speech is Phil's own welcome ("Oh hey! Welcome to my digital classroom!…"), and later visits get one line of classroom small talk each.
+- **The room mimics the real classroom.** Teacher corner: a green-screen wall, a Chromebook charging cart with a desktop drawing a rainbow fractal, and a big green d20. The class: the Smart Board on the far wall typing the morpheme lesson on repeat (it is the room core), long desks in a triangle pointing at it, and two blue and grey 3D printers on the back wall.
+- **The d20.** Click it from anywhere: it bounces around the teacher corner, settles flat and shows its number. A natural 20 shows CRITICAL HIT, which splits into crit · ic · al  hit with meanings and fades.

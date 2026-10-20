@@ -9,6 +9,7 @@
  *   R  Rotling spawn   N  link node      W  Unknown File       C  room core
  *   H  port to the hub @  arrival        &  checkpoint inside the Rotling zone
  *   a–h  named props (morpheme objects)  o k  generic decor
+ *   Lingo Room only: P Chromebook cart · Q 3D printer · Y triangle desks · x blocked tile under big furniture
  *   Hub only: L tree · D desk · A booth · O Overclock cabinet · X compiler · 1 2 3 4 ports
  *
  * Zones (left to right): 0 = lesson zone, 1 = Rotling zone, 2 = core zone.

@@ -436,3 +436,22 @@ table.report th { color: var(--cyan); font-size: 0.9rem; letter-spacing: 0.08em;
   body > *:not(.print-report) { display: none !important; }
   .print-report { display: block !important; position: static !important; visibility: visible !important; }
 }
+
+/* CRITICAL HIT (a natural 20 on Mr. Phil's d20). */
+.crit { position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%); z-index: 80; pointer-events: none; text-align: center; font-family: var(--font); }
+.crit-kick { font-size: 1.2rem; font-weight: 800; letter-spacing: 0.3em; color: #fff; opacity: 0; transition: opacity 0.3s; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); }
+.crit-word { display: flex; justify-content: center; align-items: flex-start; gap: 0; transform: scale(2.4); opacity: 0; transition: transform 0.35s cubic-bezier(0.2, 1.6, 0.4, 1), opacity 0.2s, gap 0.6s; }
+.crit .cp { display: flex; flex-direction: column; align-items: center; transition: margin 0.6s; }
+.crit .cp.gap { margin-left: 0.5ch; }
+.crit .cp-t { font-size: clamp(2.6rem, 8vw, 5.2rem); font-weight: 800; color: #ffd23f; letter-spacing: 0.02em; text-shadow: 0 0 22px rgba(255, 210, 63, 0.9), 0 4px 0 #6b4a08; border-bottom: 6px solid transparent; transition: color 0.4s, border-color 0.4s, padding 0.6s; padding: 0; }
+.crit .cp-m { font-size: 1.05rem; font-weight: 700; color: #fff; opacity: 0; max-height: 0; transition: opacity 0.4s 0.3s, max-height 0.4s; background: rgba(10, 6, 24, 0.85); border-radius: 8px; padding: 0.15rem 0.5rem; margin-top: 0.3rem; white-space: nowrap; }
+.crit-sum { margin-top: 0.8rem; font-size: 1.3rem; font-weight: 800; color: #fff; opacity: 0; transition: opacity 0.4s 0.4s; background: rgba(10, 6, 24, 0.85); display: inline-block; padding: 0.3rem 0.9rem; border-radius: 10px; }
+.crit.in .crit-word { transform: scale(1); opacity: 1; }
+.crit.in .crit-kick { opacity: 1; }
+.crit.split .crit-word { gap: 1.1rem; }
+.crit.split .cp.gap { margin-left: 2rem; }
+.crit.split .cp[data-type='base'] .cp-t { color: var(--base); border-color: var(--base); padding: 0 0.2rem; }
+.crit.split .cp[data-type='sfx'] .cp-t { color: var(--sfx); border-color: var(--sfx); padding: 0 0.2rem; }
+.crit.split .cp-m { opacity: 1; max-height: 3rem; }
+.crit.split .crit-sum { opacity: 1; }
+.crit.out { opacity: 0; transform: translate(-50%, -70%); transition: opacity 0.8s, transform 0.8s; }

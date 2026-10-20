@@ -10,6 +10,30 @@
 
 import { buildRoomMap } from './layout.js';
 
+/**
+ * The classroom layout. Zone 0 is Mr. Phil's teacher corner: the green-screen wall,
+ * the Chromebook cart with the desktop, and the d20 on the floor. Past the lab door is
+ * the class: the Smart Board on the far wall (it is the room core), long desks in a
+ * triangle pointing at it, and two 3D printers on the back wall.
+ */
+const DESK_ANCHOR = [15, 8];
+const DESK_CORNERS = [[15, 4], [11, 10], [19, 10]]; // the first corner points at the Smart Board
+
+/** Every tile a straight desk passes over, so nobody walks through the furniture. */
+function deskTiles() {
+  const out = new Map();
+  for (let i = 0; i < 3; i++) {
+    const [a, b] = [DESK_CORNERS[i], DESK_CORNERS[(i + 1) % 3]];
+    const steps = 24;
+    for (let k = 0; k <= steps; k++) {
+      const c = Math.round(a[0] + ((b[0] - a[0]) * k) / steps);
+      const r = Math.round(a[1] + ((b[1] - a[1]) * k) / steps);
+      out.set(`${c},${r}`, [c, r, 'x']);
+    }
+  }
+  return [...out.values()];
+}
+
 export const LINGO = {
   id: 'lingo',
   name: 'The Lingo Room',
@@ -22,13 +46,24 @@ export const LINGO = {
     name: 'Mr. Phil',
     role: 'computer science teacher',
   },
-  // One big room. Zone 0: the classroom. Zone 1: the computer lab (Rotlings, LINK, Unknown File, core).
+  // One big room. Zone 0: Mr. Phil's teacher corner. Zone 1: the class (Rotlings, LINK, Unknown File, the Smart Board core).
   map: buildRoomMap([
-    [4, 4, 'M'], [1, 3, 'k'], [3, 9, 'o'], [6, 9, 'o'], [3, 11, 'o'], [6, 11, 'o'], [6, 2, 'a'],
-    [11, 3, 'R'], [13, 10, 'R'], [16, 4, 'R'], [18, 11, 'R'], [20, 3, 'R'], [12, 6, 'R'],
-    [15, 2, 'N'], [15, 12, 'W'], [20, 7, 'C'], [10, 1, 'b'], [22, 1, 'c'], [22, 12, 'd'], [10, 12, 'e'], [17, 8, 'f'],
+    [4, 4, 'M'], [1, 1, 'P'], [6, 12, 'a'],
+    [15, 1, 'C'], [13, 1, 'x'], [14, 1, 'x'], [16, 1, 'x'], [17, 1, 'x'],
+    [DESK_ANCHOR[0], DESK_ANCHOR[1], 'Y'], ...deskTiles(),
+    [13, 12, 'Q'], [17, 12, 'Q'],
+    [10, 2, 'N'], [21, 12, 'W'],
+    [10, 5, 'R'], [10, 9, 'R'], [12, 3, 'R'], [18, 3, 'R'], [20, 6, 'R'], [20, 11, 'R'],
+    [22, 4, 'b'], [22, 1, 'c'], [22, 9, 'd'], [10, 12, 'e'], [19, 1, 'f'],
   ], { chasm: false, secondGate: false }),
+  /** Wall paint: the north wall of the teacher corner is green-screen green. */
+  paint: [{ c0: 0, c1: 8, r0: 0, r1: 0, color: 0x00b140 }],
+  desks: { anchor: DESK_ANCHOR, corners: DESK_CORNERS },
+  /** The d20 lives in the teacher corner (tiles 1–7 across, 1–12 down) and starts here. */
+  d20: { c0: 1, c1: 7, r0: 1, r1: 12, start: [5, 9] },
   props: {
+    P: { word: 'Chromebook cart', note: 'Chrome + book, a compound. The desktop on top draws a fractal: fract (Latin, to break) + -al, the same root as fraction and fracture.', model: 'cart', rot: Math.PI / 4 },
+    Q: { word: '3D printer', note: 'print + -er: a machine that prints. Mr. Phil\'s printers are mostly making keychains.', model: 'printer3d', rot: Math.PI },
     a: { word: 'backpack', note: 'back + pack: a compound you carry every day', model: 'backpack' },
     b: { word: 'G.O.A.T. trophy', note: 'goated = G.O.A.T. (Greatest Of All Time) + -ed', model: 'trophy' },
     c: { word: 'vibe lamp', note: 'vibe: clipped from vibration', model: 'lavalamp' },
@@ -39,8 +74,14 @@ export const LINGO = {
 
   mentorFlow: {
     intro: [
-      'Hey! Welcome to my classroom. Yep, I\'m Mr. Phil. You opened the Secret Secretary Desk. Nice detective work.',
-      'Here\'s the big idea: morphemes aren\'t only in textbooks. They\'re in the words you already say every day.',
+      'Oh hey! Welcome to my digital classroom! It\'s a work in progress, but it\'ll do for now.',
+      'I hope you\'ve been enjoying the game so far! I hope it\'s been fun learning words and their meanings and connections.',
+      'But there is one last important connection I want you to make. LINGO. SLANG. NON-ACADEMIC ENGLISH.',
+      'There is a whole world out there of meaning, and we are making it every day whenever we communicate. I think it\'s a lot like magic.',
+      'If you know a magic morpheme, it unlocks doors to worlds of words you never dreamed of. And we\'re unlocking worlds of meaning all the time!',
+      'Even when you\'re about to be cooked because the goated teacher Mr. Phil caught you playing Granny again instead of doing the Worky Work.',
+      'There are sus morphemes and there are fam morphemes. There are words within words. And the cool part is you already know a ton of them!',
+      'Let\'s explore Lingo together!',
       'Take "finna". It comes from AAVE, and you\'ll hear it in Southern US English too. It started as "fixing to": fix + -ing + to. People said it so often that it wore down into one smooth word.',
       'Linguists call one form that carries several morphemes a portmanteau morph. Every dialect has rules, and so does slang. It isn\'t "wrong English". It\'s English doing what English has always done: reshaping morphemes.',
       'Here\'s how this works: I show you the word, you compile the pieces it came from, and then we watch it change.',
@@ -78,6 +119,16 @@ export const LINGO = {
       'Okay, I see you. The door to the computer lab needs a translation. Slang to formal, both directions.',
     ],
     repeat: ['Click the glowing lab door. Translate each sentence.'],
+    /** Mr. Phil's small talk when you come back to him. One line per visit, in order. */
+    chatter: [
+      'Go ahead, roll my d20. It\'s on the floor. Land a natural 20 and you get a CRITICAL HIT. Critical: crit (to judge) + -ic + -al.',
+      'The green screen is for my videos. Green: one free morpheme. Screen: one free morpheme. Green screen: a compound.',
+      'See the desktop on the Chromebook cart? It\'s drawing a fractal. Fract means "to break". Same root as fraction and fracture.',
+      'Chromebooks go back on the cart at the end of class. Plugged in. Every time. I\'m serious.',
+      'The desks make a triangle pointing at the Smart Board. Tri- means three. Triangle: three angles. Morphemes are everywhere in here.',
+      'The 3D printers in the back? print + -er, a thing that prints. Somebody always wants a keychain.',
+      'Worky Work is not a real word. Yet. If enough people use it and understand it, it will be.',
+    ],
   },
 
   rooms: [

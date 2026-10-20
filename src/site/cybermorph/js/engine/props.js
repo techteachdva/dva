@@ -606,6 +606,7 @@ export function animateProp(g, t, dt) {
   if (u.spinZ) u.spinZ.rotation.z -= dt * 0.8;
   if (u.spinY) u.spinY.rotation.y += dt * 0.5;
   if (u.bob) u.bob.position.y = 0.35 + Math.sin(t * 1.5) * 0.15;
+  if (u.tick) u.tick(t, dt);
 }
 
 /** The tree's small click zone: a softly pulsing disc at the base of the trunk. */

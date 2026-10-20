@@ -3,6 +3,7 @@
  * Every character is a few boxes and spheres: cheap to draw, easy to read from the diorama camera.
  */
 
+import { createMrPhil } from './classroom.js';
 import { THREE } from './renderer.js';
 import { box, cyl, sphere, ring, mat, glowMat, screen } from './props.js';
 import { patternTexture, faceTexture, labelSprite, morphemeTexture, screenTexture } from './textures.js';
@@ -96,8 +97,11 @@ export function createMentor(id) {
     g.add(dish, cyl(0.02, 0.3, mat(0xaaaaaa), 0, 1.15, 0));
     g.add(box(0.07, 0.4, 0.07, navy, -0.28, 0.55, 0), box(0.07, 0.4, 0.07, navy, 0.28, 0.55, 0));
     anim.spin = dish;
+  } else if (id === 'phil') {
+    // Mr. Phil is a person, not a robot (see engine/classroom.js).
+    return createMrPhil();
   } else {
-    // Mr. Phil appears in the Lexinet as his own teacher avatar: a screen-head with teacher specs.
+    // Fallback: a screen-head teacher avatar.
     g.add(box(0.13, 0.42, 0.15, mat(0x2b3550), -0.1, 0.21, 0), box(0.13, 0.42, 0.15, mat(0x2b3550), 0.1, 0.21, 0));
     g.add(box(0.46, 0.46, 0.3, mat(0x1f8a8a), 0, 0.65, 0));
     g.add(box(0.1, 0.42, 0.11, mat(0x1f8a8a), -0.3, 0.66, 0), box(0.1, 0.42, 0.11, mat(0x1f8a8a), 0.3, 0.66, 0));

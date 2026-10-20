@@ -77,6 +77,8 @@ export const sfx = {
   crash: () => { noise(0.8, 0.3, 0, 200); tone({ f: 400, f2: 40, type: 'sawtooth', dur: 0.8, vol: 0.15 }); },
   unlock: () => [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone({ f, type: 'square', dur: 0.14, vol: 0.08, delay: i * 0.09 })),
   rot: () => tone({ f: 90, f2: 70, type: 'sawtooth', dur: 0.3, vol: 0.05 }),
+  bounce: () => tone({ f: 260 + Math.random() * 120, f2: 140, type: 'triangle', dur: 0.07, vol: 0.09 }),
+  crit: () => { [392, 523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone({ f, type: 'square', dur: 0.12, vol: 0.09, delay: i * 0.05 })); noise(0.4, 0.08, 0.35, 2000); },
   warp: () => { tone({ f: 200, f2: 1200, type: 'sine', dur: 0.4, vol: 0.08 }); noise(0.3, 0.05, 0.1, 3000); },
 };
 

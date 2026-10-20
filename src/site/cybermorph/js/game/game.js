@@ -15,6 +15,7 @@ import { THREE, R, debugStep, toScreen, initRenderer, fitRoom, zoomTo, zoomReset
 import { buildRoom } from '../engine/diorama.js';
 import { STYLES, terminal, gate, port, linkNode, newWordConsole, core, compilerConsole, avatarBooth, arcadeCabinet, secretaryDesk, lexiconTree, morphProp, animateProp, treeBaseZone } from '../engine/props.js';
 import { labelSprite } from '../engine/textures.js';
+import { smartBoard, triangleDesks, printer3d, chromebookCart, createD20 } from '../engine/classroom.js';
 import { createMorpher, createMentor, createRotling, createPickup } from '../engine/characters.js';
 import { applySettings } from '../core/settings.js';
 import { sfx, startMusic, unlockAudio, speak } from '../core/audio.js';
@@ -163,7 +164,7 @@ function projectorMode() {
 
 // ── Loading a room ────────────────────────────────────────────────
 
-async function loadRoom(map, style, { arrival = '@', arrivalCell = null, noPlayer = false, makeObject = null, flowers = false } = {}) {
+async function loadRoom(map, style, { arrival = '@', arrivalCell = null, noPlayer = false, makeObject = null, flowers = false, paint = [] } = {}) {
   const S = STYLES[style];
   $('fade').classList.add('on');
   await wait(G.room ? 220 : 120);
@@ -179,9 +180,10 @@ async function loadRoom(map, style, { arrival = '@', arrivalCell = null, noPlaye
   G.mentor = null;
   G.tree = null;
   G.treeZone = null;
+  G.die = null;
   if (G.player) R.scene.remove(G.player.entity.group);
   setBackground(S.bg);
-  const room = buildRoom(map, style, { makeObject, flowers });
+  const room = buildRoom(map, style, { makeObject, flowers, paint });
   G.room = room;
   R.scene.add(room.group);
   fitRoom(room.W, room.H);
@@ -239,6 +241,7 @@ function bindInput() {
       if (n && n.userData.obj) {
         const o = n.userData.obj;
         if (o.info) { showPropInfo(o); return; }
+        if (o.instant) { o.use(); return; }
         walkToUse({ obj: o });
         return;
       }
@@ -417,6 +420,7 @@ function update(dt) {
   G.pickups.forEach((p) => p.entity.update(dt));
   G.rotlings.forEach((r) => updateRotling(r, dt));
   G.props.forEach((o) => animateProp(o.mesh, G.t, dt));
+  if (G.die) updateDie(dt);
   if (G.tree) G.tree.rotation.y += dt * 0.05;
   if (G.treeZone) G.treeZone.userData.pulse(G.t);
   if (!G.player) return;
@@ -865,6 +869,58 @@ async function useDesk() {
 
 // ── The four Rooms ────────────────────────────────────────────────
 
+/** Mr. Phil's d20: click it from anywhere to throw it around the teacher corner. */
+function placeDie(d) {
+  const z = d.d20;
+  const a = G.room.toWorld(z.c0, z.r0);
+  const b = G.room.toWorld(z.c1, z.r1);
+  const obstacles = G.room.objects.filter((o) => o.mesh && roomZone(o.c) === 0 && o.ch !== 'H').map((o) => {
+    const p = G.room.toWorld(o.c, o.r);
+    return { x: p.x, z: p.z, r: 0.42 };
+  });
+  const die = createD20({ minX: a.x - 0.5, maxX: b.x + 0.5, minZ: a.z - 0.5, maxZ: b.z + 0.5, obstacles }, {
+    onBounce: () => sfx.bounce(),
+    onLand: (n) => dieLanded(n),
+  });
+  G.room.group.add(die.group);
+  const o = { mesh: die.group, label: 'ROLL', instant: true, walkable: true, ch: 'd20', use: () => rollDie() };
+  const cell = G.room.toCell(die.pos);
+  o.c = cell.c; o.r = cell.r;
+  die.group.traverse((n) => { n.userData.obj = o; });
+  G.room.objects.push(o);
+  G.die = die;
+  G.dieObj = o;
+}
+
+function rollDie() {
+  if (!G.die || !G.die.roll()) return;
+  sfx.click();
+  if (G.dieLabel) { G.room.group.remove(G.dieLabel); G.dieLabel = null; }
+}
+
+function updateDie(dt) {
+  G.die.update(dt);
+  const cell = G.room.toCell(G.die.pos);
+  G.dieObj.c = cell.c; G.dieObj.r = cell.r;
+  if (G.dieLabel) G.dieLabel.position.set(G.die.pos.x, 1.35, G.die.pos.z);
+}
+
+function dieLanded(n) {
+  G.profile.stats.rolls = (G.profile.stats.rolls || 0) + 1;
+  store.save();
+  const crit = n === 20;
+  const label = labelSprite(String(n), { color: '#ffffff', bg: crit ? 'rgba(201,148,20,0.95)' : 'rgba(24,168,58,0.95)', border: '#ffffff', height: 0.5 });
+  label.position.set(G.die.pos.x, 1.35, G.die.pos.z);
+  G.room.group.add(label);
+  G.dieLabel = label;
+  speak(String(n));
+  if (crit) { sfx.crit(); hud.criticalHit(); } else { sfx.pickup(); hud.toast(`d20 rolled a ${n}${n === 1 ? '. Oof. A natural 1.' : '.'}`, n >= 15 ? 'good' : 'info'); }
+  setTimeout(() => {
+    if (G.dieLabel !== label) return;
+    tween(500, (k) => { label.material.opacity = 1 - k; }, () => { G.room && G.room.group.remove(label); if (G.dieLabel === label) G.dieLabel = null; });
+  }, 3000);
+}
+
 /**
  * The Rotling hall. The Lingo Room keeps its hand-written Rotlings; the three main rooms
  * draw a fresh random wave from the word bank (saved, so leaving and coming back keeps it).
@@ -912,7 +968,8 @@ async function enterRoom(id, arrival) {
   G.profile.place = { id };
   const prog = store.dprog(G.profile, id);
   store.save();
-  await loadRoom(d.map, id, { arrival, makeObject: (ch, c, r) => roomObject(d, ch, c, r) });
+  await loadRoom(d.map, id, { arrival, paint: d.paint || [], makeObject: (ch, c, r) => roomObject(d, ch, c, r) });
+  if (d.d20) placeDie(d);
   if (prog.done.terminal1) G.room.formBridge(CORRIDOR, true);
   spawnWave(d, prog);
   hud.setPlace(d.name.toUpperCase());
@@ -924,16 +981,18 @@ async function enterRoom(id, arrival) {
   }
 }
 
+const CLASSROOM_MODELS = { cart: chromebookCart, printer3d };
+
 function roomObject(d, ch, c, r) {
   const prog = store.dprog(G.profile, d.id);
   const style = d.id;
   const last = d.rooms.length - 1;
   if (d.props && d.props[ch]) {
     const prop = d.props[ch];
-    const mesh = morphProp(prop.model, style);
-    mesh.rotation.y = c > d.map[0].length / 2 ? -Math.PI / 2 : Math.PI / 2;
+    const mesh = CLASSROOM_MODELS[prop.model] ? CLASSROOM_MODELS[prop.model]() : morphProp(prop.model, style);
+    mesh.rotation.y = prop.rot ?? (c > d.map[0].length / 2 ? -Math.PI / 2 : Math.PI / 2);
     const tag = labelSprite(prop.ids ? prop.ids.map((id) => morph(id).text).join(' · ') : prop.word, { color: '#ffffff', bg: 'rgba(10,6,24,0.88)', border: '#ffd23f', height: 0.3 });
-    tag.position.y = 1.75;
+    tag.position.y = prop.tagY || 1.75;
     tag.material.opacity = 0;
     tag.visible = false;
     mesh.add(tag);
@@ -961,10 +1020,20 @@ function roomObject(d, ch, c, r) {
     case 'N': return { mesh: linkNode(style), label: 'LINK', use: () => runLink(d, last) };
     case 'W': return { mesh: newWordConsole(style), label: 'OPEN', use: () => runNewWord(d, last) };
     case 'C': {
+      if (d.id === 'lingo') {
+        // The Smart Board is the Lingo Room's core: it types the morpheme lesson on repeat.
+        const mesh = smartBoard();
+        return { mesh, label: 'FINISH', use: () => runCore(d, last), update: (dt) => mesh.userData.tick(G.t, dt) };
+      }
       const mesh = core(style);
       return { mesh, label: d.id === 'lingo' ? 'FINISH' : 'RESTORE', use: () => runCore(d, last), update: (dt) => { mesh.userData.spin.rotation.y += dt; mesh.userData.rings[0].rotation.z += dt * 0.7; mesh.userData.rings[1].rotation.y += dt * 1.1; } };
     }
     case 'R': return { walkable: true };
+    case 'Y': {
+      // The long desks: scenery only (their tiles are blocked by the x tiles under them).
+      const [ac, ar] = d.desks.anchor;
+      return { scenery: triangleDesks(d.desks.corners.map(([cc, rr]) => [cc - ac, rr - ar])) };
+    }
     case 'H': return { mesh: port(style, { label: 'HUB', axis: 'x', color: 0x00e5ff }), walkable: true, port: () => enterHub(d.id === 'lingo' ? 'D' : ROOM_PORT[d.id]) };
     default: return null;
   }
@@ -1025,6 +1094,15 @@ async function runMentor(d) {
   } else if (prog.cleared && d.keySlot >= 0) {
     const c = hud.clueText(G.profile, d.keySlot);
     await say(sp, [`Your keyword clue: the ${c.slotName} shared by ${c.words.join(', ')}. ${c.length} letters.`]);
+  } else if (d.mentorFlow.chatter) {
+    // Mr. Phil's small talk: the next line each visit, after any instruction still needed.
+    const chat = d.mentorFlow.chatter;
+    prog.chat = (prog.chat || 0) % chat.length;
+    const lines = prog.done.gate0 ? [] : [...d.mentorFlow.repeat];
+    lines.push(chat[prog.chat]);
+    prog.chat += 1;
+    store.save();
+    await say(sp, lines);
   } else {
     await say(sp, d.mentorFlow.repeat);
   }
@@ -1267,5 +1345,7 @@ G.R = R;
 G.toScreen = toScreen;
 G.walkToUse = (t) => walkToUse(t);
 G.walkTo = (c) => walkTo(c);
+G.enterRoom = (id) => enterRoom(id, "@");
+G.rollDie = () => rollDie();
 
 export { G };

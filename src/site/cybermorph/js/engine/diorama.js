@@ -10,13 +10,14 @@ import { THREE } from './renderer.js';
 import { STYLES, mat, decor } from './props.js';
 import { easeOutBack, clamp, tween, tweenP } from '../core/util.js';
 
-const BLOCKING = new Set(['#', ' ', '~', 'M', 'T', 'G', 'F', 'N', 'W', 'C', 'D', 'A', 'O', 'X', 'L', 'o', 'k', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
+// x is an invisible blocker under furniture that spans several tiles (the Lingo Room's desks and Smart Board).
+const BLOCKING = new Set(['#', ' ', '~', 'M', 'T', 'G', 'F', 'N', 'W', 'C', 'D', 'A', 'O', 'X', 'L', 'o', 'k', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'P', 'Q', 'Y', 'x']);
 const PORTS = new Set(['H', '1', '2', '3', '4']);
 const TALL = 1.5;
 const LOW = 0.26;
 const INNER = 0.5;
 
-export function buildRoom(map, style, { makeObject, flowers = false } = {}) {
+export function buildRoom(map, style, { makeObject, flowers = false, paint = [] } = {}) {
   const S = STYLES[style];
   const H = map.length;
   const W = map[0].length;
@@ -74,7 +75,13 @@ export function buildRoom(map, style, { makeObject, flowers = false } = {}) {
   const grid = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(linePts), new THREE.LineBasicMaterial({ color: S.line, transparent: true, opacity: style === 'lingo' ? 0.16 : 0.26 }));
   group.add(grid);
 
-  const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), mat(S.wall), wallCells.length);
+  // Walls take per-tile colour, so a room can paint a wall (the Lingo Room's green screen).
+  const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), mat(0xffffff), wallCells.length);
+  const wallColor = new THREE.Color(S.wall);
+  wallCells.forEach((t, i) => {
+    const pt = paint.find((p) => t.c >= p.c0 && t.c <= p.c1 && t.r >= p.r0 && t.r <= p.r1);
+    walls.setColorAt(i, pt ? new THREE.Color(pt.color) : wallColor);
+  });
   const caps = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.07, 1), mat(S.wallTop, { emissive: S.line, ei: style === 'lingo' ? 0 : 0.12 }), wallCells.length);
   group.add(walls, caps);
 
