@@ -66,7 +66,7 @@ export function deleteProfile(id) {
 export function setActive(id) { data.activeId = id; save(); }
 export const active = () => data.profiles.find((p) => p.id === data.activeId) || null;
 
-/** Per-district progress record, created on first visit. */
+/** Per-room progress record, created on first visit. */
 export function dprog(profile, id) {
   if (!profile.districts[id]) profile.districts[id] = { done: {}, cleared: false, room: 0, rotlings: {}, bridges: {}, gates: {}, batch: 0 };
   return profile.districts[id];

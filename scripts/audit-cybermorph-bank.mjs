@@ -18,6 +18,7 @@
 import { MORPHEMES } from '../src/site/cybermorph/js/data/morphemes.js';
 import { build, sumText } from '../src/site/cybermorph/js/compiler/wordsum.js';
 import { DISTRICTS, MAIN_ORDER, KEY_POOL, FINALE_POOLS, DICTIONARY } from '../src/site/cybermorph/js/data/world.js';
+import { ROOM_W, ROOM_H, CORRIDOR } from '../src/site/cybermorph/js/data/layout.js';
 import { MORPHEME_CATALOG as FORK } from '../src/site/cybermorph/js/data/catalog.js';
 import { MORPHEME_CATALOG as GARDEN } from '../src/site/scripts/morphology-morpheme-catalog.js';
 
@@ -49,17 +50,33 @@ for (const id of [...MAIN_ORDER, 'lingo']) {
     Object.values(MORPHEMES).filter((m) => m.origin === 'lingo').forEach((m) => learned.add(m.id));
     learned.add('friend');
   }
-  d.maps.forEach((map, i) => {
-    if (map.length !== 9 || map.some((r) => r.length !== 12)) errors.push(tag(`map ${i} must be 12×9`));
-    if (!map.join('').includes('@')) errors.push(tag(`map ${i} has no @ arrival`));
-    // Every port needs a walkable tile in front of it.
+  // One big room per origin: every station must be reachable once firewalls open and the bridge forms.
+  {
+    const map = d.map;
+    if (!map || map.length !== ROOM_H || map.some((r) => r.length !== ROOM_W)) errors.push(tag(`map must be ${ROOM_W}×${ROOM_H}`));
+    const grid = map.map((row) => [...row]);
+    const walk = (ch) => '.@&RGFH'.includes(ch);
+    grid[CORRIDOR] = grid[CORRIDOR].map((ch) => (ch === '~' ? '.' : ch));
+    const start = { c: 1, r: CORRIDOR };
+    const seen = new Set([`${start.c},${start.r}`]);
+    const q = [start];
+    while (q.length) {
+      const { c, r } = q.shift();
+      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const n = { c: c + dc, r: r + dr };
+        if (!grid[n.r] || !grid[n.r][n.c] || seen.has(`${n.c},${n.r}`) || !walk(grid[n.r][n.c])) continue;
+        seen.add(`${n.c},${n.r}`);
+        q.push(n);
+      }
+    }
     map.forEach((row, r) => [...row].forEach((ch, c) => {
-      if (!'EBH'.includes(ch)) return;
-      const inward = r === 0 ? [c, 1] : r === 8 ? [c, 7] : c === 0 ? [1, r] : [10, r];
-      const front = map[inward[1]][inward[0]];
-      if (!'.@&RG'.includes(front)) errors.push(tag(`map ${i}: port ${ch} at ${c},${r} is blocked by "${front}"`));
+      if (!'MTNWCabcdefgh'.includes(ch)) return;
+      const ok = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dc, dr]) => seen.has(`${c + dc},${r + dr}`));
+      if (!ok) errors.push(tag(`"${ch}" at ${c},${r} can't be reached`));
+      if ('abcdefgh'.includes(ch) && !(d.props && d.props[ch])) errors.push(tag(`prop "${ch}" has no entry in props`));
     }));
-  });
+    Object.entries(d.props || {}).forEach(([ch, p]) => { (p.ids || []).forEach((id) => { if (!MORPHEMES[id]) errors.push(tag(`prop ${ch}: unknown morpheme ${id}`)); }); });
+  }
   d.mentorFlow.batches.forEach((b, bi) => {
     teach(b.teach);
     b.tasks.forEach((t, ti) => {

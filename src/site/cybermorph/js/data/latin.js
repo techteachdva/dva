@@ -1,8 +1,10 @@
-/** The Latin District. Map legend: see anglo.js. */
+/** The Latin Room. Map legend and zones: see layout.js. */
+
+import { buildRoomMap } from './layout.js';
 
 export const LATIN = {
   id: 'latin',
-  name: 'The Latin District',
+  name: 'The Latin Room',
   short: 'Latin',
   origin: 'latin',
   keySlot: 1,
@@ -12,45 +14,25 @@ export const LATIN = {
     name: 'Aurelia Cache',
     role: 'archive AI',
   },
-  maps: [
-    [
-      '############',
-      '#o.k.o.k.o.#',
-      '#..........#',
-      '#....M.....#',
-      'H@.......&GE',
-      '#..........#',
-      '#..........#',
-      '#o.k.o.k.o.#',
-      '############',
-    ],
-    [
-      '############',
-      '#o..R#~~..k#',
-      '#....#~~...#',
-      '#.R..T~~...#',
-      'B@....~~.&GE',
-      '#..R..~~...#',
-      '#....#~~...#',
-      '#o.R.#~~..k#',
-      '############',
-    ],
-    [
-      '#####H######',
-      '#o..k..k..o#',
-      '#..N....W..#',
-      '#..........#',
-      'B@...C.....#',
-      '#..........#',
-      '#o........o#',
-      '#..k....k..#',
-      '############',
-    ],
-  ],
+  // One big room. Zone 0: the archive. Zone 1: the server hall and the chasm. Zone 2: the core.
+  map: buildRoomMap([
+    [4, 4, 'M'], [2, 2, 'a'], [6, 2, 'b'], [2, 11, 'c'], [6, 11, 'd'], [3, 8, 'o'],
+    [10, 2, 'R'], [12, 4, 'R'], [10, 10, 'R'], [12, 11, 'R'], [13, 6, 'T'], [9, 12, 'k'], [13, 1, 'k'],
+    [19, 3, 'N'], [19, 11, 'W'], [21, 7, 'C'], [22, 2, 'e'], [22, 12, 'f'], [18, 1, 'g'],
+  ]),
+  props: {
+    a: { word: 'dictionary', note: 'dict (to say) + ion + ary: a book of what words say', model: 'dictionary' },
+    b: { word: 'structure', ids: ['struct', 'ure'], model: 'structure' },
+    c: { word: 'tractor', ids: ['tract', 'or'], model: 'tractor' },
+    d: { word: 'projector', note: 'pro (forward) + ject (throw) + or: it throws light forward', model: 'projector' },
+    e: { word: 'aqueduct', note: 'aqua (water) + duct (lead): it leads water', model: 'aqueduct' },
+    f: { word: 'transporter', ids: ['trans', 'port', 'er'], model: 'cart' },
+    g: { word: 'inscription', ids: ['in2', 'script', 'ion'], model: 'tablet' },
+  },
 
   mentorFlow: {
     intro: [
-      'Visitor detected. Identity... Morpher. Welcome to the Latin District. I am Aurelia Cache, keeper of the archive.',
+      'Visitor detected. Identity... Morpher. Welcome to the Latin Room. I am Aurelia Cache, keeper of the archive.',
       'Forgive my gaps. The Rot ate my roots. Without roots, my records have no meaning.',
       'Latin bases are often bound: "port" or "rupt" cannot stand alone. They need a prefix or suffix to make a word.',
       'Return my roots and each one restores a line of my memory.',
@@ -170,7 +152,7 @@ export const LATIN = {
         needs: ['link', 'newword'],
         lockedMsg: 'The core needs the Link Node and the Unknown File console finished.',
         teach: ['ation'],
-        say: ['DISTRICT CORE: restore three long words.'],
+        say: ['ROOM CORE: restore three long words.'],
         tasks: [
           { m: 'the act of carrying people or things across', p: ['trans', 'port', 'ation'] },
           { m: 'tending to break things apart', p: ['dis', 'rupt', 'ive'] },

@@ -1,6 +1,6 @@
 /**
  * The Secret Secretary Desk. Three combination letter locks, one per keyword:
- * prefix (Anglo-Saxon District clue), base (Latin), suffix (Greek).
+ * prefix (Anglo-Saxon Room clue), base (Latin), suffix (Greek).
  * The keywords are drawn per save, so every browser run has its own key word.
  * When all three are right, the morphemes slide together and the key word is built.
  */
@@ -29,7 +29,7 @@ export function openDesk({ profile }) {
     const locksEl = el('div', { class: 'locks' });
     const desk = el('section', { class: 'desk glass' },
       el('div', { class: 'plaque' }, 'SECRET SECRETARY DESK'),
-      el('div', { style: { marginTop: '0.6rem', color: '#f3e2b5' } }, 'Three locks. Three keywords. One word. Each district\'s mentor gives you one keyword when you clear it.'),
+      el('div', { style: { marginTop: '0.6rem', color: '#f3e2b5' } }, 'Three locks. Three keywords. One word. Each room\'s mentor gives you one keyword when you clear the room.'),
       locksEl, result);
     panel.root.append(desk, closeButton(() => finish()));
 

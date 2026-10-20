@@ -1,8 +1,10 @@
-/** The Greek District. Map legend: see anglo.js. */
+/** The Greek Room. Map legend and zones: see layout.js. */
+
+import { buildRoomMap } from './layout.js';
 
 export const GREEK = {
   id: 'greek',
-  name: 'The Greek District',
+  name: 'The Greek Room',
   short: 'Greek',
   origin: 'greek',
   keySlot: 2,
@@ -12,41 +14,21 @@ export const GREEK = {
     name: 'Theo Parsec',
     role: 'satellite operator',
   },
-  maps: [
-    [
-      '############',
-      '#o..k...k.o#',
-      '#..........#',
-      '#.....M....#',
-      'H@.......&GE',
-      '#..........#',
-      '#..........#',
-      '#o..k...k.o#',
-      '############',
-    ],
-    [
-      '############',
-      '#o...#~~..k#',
-      '#..R.#~~...#',
-      '#....T~~...#',
-      'B@.R..~~.&GE',
-      '#.....~~...#',
-      '#.R..#~~...#',
-      '#o..R#~~..k#',
-      '############',
-    ],
-    [
-      '#####H######',
-      '#o..k.....o#',
-      '#..N....W..#',
-      '#..........#',
-      'B@...C.....#',
-      '#..........#',
-      '#o........o#',
-      '#...k..k...#',
-      '############',
-    ],
-  ],
+  // One big room. Zone 0: the observatory deck. Zone 1: the uplink hall and the chasm. Zone 2: the core.
+  map: buildRoomMap([
+    [4, 4, 'M'], [2, 2, 'a'], [6, 2, 'b'], [2, 11, 'c'], [6, 11, 'd'], [3, 8, 'o'],
+    [10, 3, 'R'], [12, 5, 'R'], [10, 10, 'R'], [12, 11, 'R'], [13, 6, 'T'], [11, 1, 'k'], [9, 12, 'k'],
+    [19, 3, 'N'], [19, 11, 'W'], [21, 7, 'C'], [22, 2, 'e'], [22, 12, 'f'], [18, 1, 'g'],
+  ]),
+  props: {
+    a: { word: 'telescope', ids: ['tele', 'scope'], model: 'telescope' },
+    b: { word: 'microscope', ids: ['micro', 'scope'], model: 'microscope' },
+    c: { word: 'telephone', ids: ['tele', 'phone'], model: 'telephone' },
+    d: { word: 'thermometer', ids: ['therm', 'o', 'meter'], model: 'thermometer' },
+    e: { word: 'geography globe', ids: ['geo', 'graph', 'gy'], model: 'globe' },
+    f: { word: 'chronometer', ids: ['chron', 'o', 'meter'], model: 'clock' },
+    g: { word: 'photograph camera', ids: ['photo', 'graph'], model: 'camera' },
+  },
 
   mentorFlow: {
     intro: [
@@ -164,7 +146,7 @@ export const GREEK = {
         needs: ['link', 'newword'],
         lockedMsg: 'The core needs the Link Node and the Unknown File console finished.',
         teach: ['syn', 'the', 'sis'],
-        say: ['DISTRICT CORE: three long words to restore the star map.'],
+        say: ['ROOM CORE: three long words to restore the star map.'],
         tasks: [
           { m: 'one who studies the mind', p: ['psych', 'o', 'log', 'ist'] },
           { m: 'putting things together with light (how plants make food)', p: ['photo', 'syn', 'the', 'sis'] },
@@ -172,7 +154,7 @@ export const GREEK = {
         ],
         outro: [
           'The star map is whole! The eclipse can come. I have finally named my newest satellite: the Telegraphoscope. ...No. Still wrong.',
-          'Here, the last KEYWORD. Three keywords, three parts. Somewhere in the Core, something wants them.',
+          'Here, the last KEYWORD. Three keywords, three parts. Somewhere in the Hub, something wants them.',
         ],
       },
     },

@@ -137,6 +137,7 @@ export async function use(ch) {
   for (let attempt = 0; attempt < 3; attempt++) {
     await run(400);
     if (o.walkable && !o.use) return; // already done (an opened firewall)
+    G().R.rig.zoomIdx = 3;
     G().walkToUse({ obj: o });
     await run(3000);
     if (!(await step())) continue;
@@ -171,47 +172,28 @@ export async function port(ch) {
   await settle();
 }
 
-/** Resume a district from wherever the player stands. */
-export async function finishDistrict() {
+/** Play a whole room from wherever the player stands (one big room, zones split by firewalls). */
+export async function finishRoom() {
   const g = G();
   const d = g.profile.districts[g.place];
-  if (g.roomIndex === 0) {
-    if (!d.done.mentor) await use('M');
-    if (!d.done.gate0) await use('G');
-    await port('E');
-  }
-  if (G().roomIndex === 1) {
-    await debugAll(8);
-    await collectPickups();
-    if (!d.done.terminal1) await use('T');
-    if (!d.done.gate1) await use('G');
-    await port('E');
-  }
-  if (G().roomIndex === 2) {
-    if (!d.done.link2) await use('N');
-    if (!d.done.newword2) await use('W');
-    if (!d.done.core2) await use('C');
-    await settle();
-  }
+  const lingo = g.place === 'lingo';
+  const last = lingo ? 1 : 2;
+  if (!d.done.mentor) await use('M');
+  if (!d.done.gate0) await use('G');
+  await debugAll(8);
+  await collectPickups();
+  if (!lingo && !d.done.terminal1) await use('T');
+  if (!lingo && !d.done.gate1) await use('F');
+  if (!d.done[`link${last}`]) await use('N');
+  if (!d.done[`newword${last}`]) await use('W');
+  if (!d.done[`core${last}`]) await use('C');
+  await settle();
   return state();
 }
 
-/** Play a whole district from its first room, through every task, back to the hub. */
-export async function clearDistrict(id) {
+export async function enter(id) {
   const g = G();
-  if (g.place === 'hub') await port({ anglo: '1', latin: '2', greek: '3' }[id]);
+  if (g.place !== 'hub') return;
+  await port({ anglo: '1', latin: '2', greek: '3' }[id]);
   await settle();
-  await use('M');
-  await use('G');
-  await port('E');
-  await debugAll();
-  await collectPickups();
-  await use('T');
-  await use('G');
-  await port('E');
-  await use('N');
-  await use('W');
-  await use('C');
-  await settle();
-  return state();
 }

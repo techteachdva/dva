@@ -44,5 +44,5 @@ export function applySettings() {
   const root = document.documentElement;
   root.style.setProperty('--text-scale', String(settings.textSize));
   root.classList.toggle('reduced-motion', !!settings.reducedMotion);
-  root.classList.toggle('font-readable', settings.font === 'readable');
+
 }

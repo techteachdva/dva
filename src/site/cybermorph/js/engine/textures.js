@@ -196,7 +196,7 @@ export function morphemeTexture(spec, { blank = false, dim = false } = {}) {
 
   // Text.
   const ts = TEXT_STYLE[m.origin] || TEXT_STYLE.lingo;
-  ctx.font = `800 ${label.length > 8 ? 62 : 76}px "Segoe UI", Roboto, Arial, sans-serif`;
+  ctx.font = `800 ${label.length > 8 ? 62 : 76}px Lexend, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const tx = x + w / 2 + (m.type === 'sfx' ? 10 : m.type === 'pfx' ? -6 : 0);
@@ -343,10 +343,10 @@ export function faceTexture(pattern, color) {
 }
 
 /** A crisp text label drawn to a sprite that always faces the camera. */
-export function labelSprite(text, { color = '#ffffff', bg = 'rgba(8,6,20,0.82)', border = null, size = 46, height = 0.42 } = {}) {
+export function labelSprite(text, { color = '#ffffff', bg = 'rgba(8,6,20,0.9)', border = null, size = 52, height = 0.5 } = {}) {
   const pad = 22;
   const c0 = canvas(8, 8).getContext('2d');
-  c0.font = `700 ${size}px "Segoe UI", Roboto, Arial, sans-serif`;
+  c0.font = `800 ${size}px Lexend, sans-serif`;
   const tw = Math.ceil(c0.measureText(text).width);
   const c = canvas(tw + pad * 2, size + pad * 1.4);
   const ctx = c.getContext('2d');
@@ -354,7 +354,7 @@ export function labelSprite(text, { color = '#ffffff', bg = 'rgba(8,6,20,0.82)',
   ctx.fillStyle = bg;
   ctx.fill();
   if (border) { ctx.strokeStyle = border; ctx.lineWidth = 4; ctx.stroke(); }
-  ctx.font = `700 ${size}px "Segoe UI", Roboto, Arial, sans-serif`;
+  ctx.font = `800 ${size}px Lexend, sans-serif`;
   ctx.fillStyle = color;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -382,7 +382,7 @@ export function screenTexture(lines, { fg = '#5cf2ff', bg = '#03060c', w = 256, 
   ctx.shadowBlur = bg === 'transparent' ? 0 : 10;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `800 ${font}px "Segoe UI", Roboto, Arial, sans-serif`;
+  ctx.font = `800 ${font}px Lexend, sans-serif`;
   lines.forEach((l, i) => ctx.fillText(l, w / 2, h / 2 + (i - (lines.length - 1) / 2) * font * 1.25));
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;

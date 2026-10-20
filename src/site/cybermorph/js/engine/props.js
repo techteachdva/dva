@@ -7,7 +7,7 @@ import { THREE } from './renderer.js';
 import { screenTexture, labelSprite } from './textures.js';
 
 export const STYLES = {
-  hub: { bg: 0x07040f, floorA: 0x1b1533, floorB: 0x141028, line: 0xff3df0, wall: 0x261c4a, wallTop: 0x4b3a8f, accent: 0x00e5ff, sky: 0x6b5cff, ground: 0x1a0f2e, music: 'hub' },
+  hub: { bg: 0x07040f, floorA: 0x2b2352, floorB: 0x221c44, line: 0xff3df0, wall: 0x261c4a, wallTop: 0x4b3a8f, accent: 0x00e5ff, sky: 0x6b5cff, ground: 0x1a0f2e, music: 'hub' },
   anglo: { bg: 0x120a03, floorA: 0x2e1d0a, floorB: 0x261808, line: 0xffb000, wall: 0x3d270e, wallTop: 0x6b4515, accent: 0xffb000, sky: 0xffc46b, ground: 0x2a1600, music: 'anglo' },
   latin: { bg: 0x0d0f13, floorA: 0x83868e, floorB: 0x71747c, line: 0xdfe8f5, wall: 0xa3a7af, wallTop: 0xc9cdd4, accent: 0x9fc6ff, sky: 0xdfe8ff, ground: 0x3a3d44, music: 'latin' },
   greek: { bg: 0x020615, floorA: 0x0c1a3c, floorB: 0x0a1532, line: 0x38b6ff, wall: 0x14244e, wallTop: 0x22407e, accent: 0x38b6ff, sky: 0x8fd8ff, ground: 0x050a1c, music: 'greek' },
@@ -178,7 +178,7 @@ export function core(style) {
   g.add(r1, r2);
   g.userData.spin = crystal;
   g.userData.rings = [r1, r2];
-  const s = labelSprite('DISTRICT CORE', { color: hex(S.accent), height: 0.26 });
+  const s = labelSprite('ROOM CORE', { color: hex(S.accent), height: 0.26 });
   s.position.y = 1.9;
   g.add(s);
   return g;
@@ -290,9 +290,7 @@ export function lexiconTree() {
   }
   branch(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0), 1.0, 4);
   g.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
-  g.add(cyl(0.7, 0.12, mat(0x1d1440), 0, 0.06, 0));
-  g.add(ring(0.75, glowMat(0x00e5ff), 0, 0.13, 0));
-  g.children[g.children.length - 1].rotation.x = Math.PI / 2;
+  g.add(cyl(0.5, 0.1, mat(0x1d1440), 0, 0.05, 0));
   const leafGeo = new THREE.OctahedronGeometry(0.07, 0);
   const leafMat = new THREE.MeshBasicMaterial({ color: 0x9dff7a });
   const leaves = new THREE.InstancedMesh(leafGeo, leafMat, 300);
@@ -316,9 +314,6 @@ export function lexiconTree() {
     if (leaves.instanceColor) leaves.instanceColor.needsUpdate = true;
   };
   g.scale.setScalar(1.15);
-  const s = labelSprite('LEXICON TREE', { color: '#00e5ff', height: 0.3 });
-  s.position.y = 3.25;
-  g.add(s);
   return g;
 }
 
@@ -387,5 +382,247 @@ export function decor(style, ch, seed = 0) {
     g.add(ring(0.16, glowMat(ch === 'o' ? 0xff3df0 : 0x00e5ff), 0, 1.0, 0));
     g.children[1].rotation.x = Math.PI / 2;
   }
+  return g;
+}
+
+// ── Morpheme props: furniture named by each room's morphemes ─────
+// Every model is a handful of primitives so the larger rooms stay cheap to draw.
+
+export function morphProp(model, style) {
+  const S = STYLES[style];
+  const g = new THREE.Group();
+  const acc = S.accent;
+  const add = (...m) => g.add(...m);
+  const lastAt = (y) => { g.children[g.children.length - 1].position.y = y; };
+  switch (model) {
+    // Anglo-Saxon
+    case 'keyboard': {
+      add(box(1.0, 0.5, 0.5, mat(0x3a2a14), 0, 0.25, 0), box(0.9, 0.06, 0.4, mat(0x1b130a), 0, 0.53, 0));
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 9; j++) add(box(0.07, 0.04, 0.06, glowMat(i === 3 && j > 2 && j < 7 ? acc : 0xffd36b), -0.36 + j * 0.09, 0.58, -0.13 + i * 0.09));
+      break;
+    }
+    case 'firewall': {
+      add(box(1.0, 0.9, 0.3, mat(0x6b4515), 0, 0.45, 0));
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) add(box(0.22, 0.12, 0.02, mat(0x8a5a22), -0.33 + j * 0.22 + (i % 2) * 0.11, 0.2 + i * 0.28, 0.16));
+      const flames = [-0.3, 0, 0.3].map((x, i) => { const f = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.38 + i * 0.05, 7), glowMat([0xff6a00, 0xffb000, 0xff3b00][i])); f.position.set(x, 1.1, 0); return f; });
+      add(...flames);
+      g.userData.flicker = flames;
+      break;
+    }
+    case 'laptop': {
+      add(box(0.6, 0.5, 0.45, mat(0x3a2a14), 0, 0.25, 0), box(0.55, 0.03, 0.38, mat(0x222222), 0, 0.52, 0.03));
+      const lid = screen(0.52, 0.34, screenTexture(['lap + top'], { fg: '#ffb000', font: 30 }), 0, 0.71, -0.15);
+      lid.rotation.x = -0.25;
+      add(lid, box(0.55, 0.36, 0.02, mat(0x222222), 0, 0.71, -0.165));
+      break;
+    }
+    case 'network': {
+      add(cyl(0.04, 1.2, mat(0x5a3a18), -0.4, 0.6, 0), cyl(0.04, 1.2, mat(0x5a3a18), 0.4, 0.6, 0));
+      const pts = [];
+      for (let i = 0; i <= 5; i++) {
+        pts.push(new THREE.Vector3(-0.4, 0.25 + i * 0.17, 0), new THREE.Vector3(0.4, 0.25 + i * 0.17, 0));
+        pts.push(new THREE.Vector3(-0.4 + i * 0.16, 0.25, 0), new THREE.Vector3(-0.4 + i * 0.16, 1.1, 0));
+      }
+      add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: acc })));
+      for (let i = 0; i < 4; i++) add(sphere(0.04, glowMat(0xffd36b), -0.24 + i * 0.16, 0.42 + (i % 2) * 0.34, 0.02));
+      break;
+    }
+    case 'rainbow': {
+      [0xff3b5c, 0xff9d1f, 0xffd23f, 0x6bff7a, 0x38b6ff, 0x8a5cff].forEach((c, i) => {
+        const r = new THREE.Mesh(new THREE.TorusGeometry(0.62 - i * 0.07, 0.035, 6, 24, Math.PI), glowMat(c));
+        r.position.y = 0.08;
+        add(r);
+      });
+      add(sphere(0.16, mat(0xffffff, { emissive: 0x666666 }), -0.6, 0.12, 0), sphere(0.16, mat(0xffffff, { emissive: 0x666666 }), 0.6, 0.12, 0));
+      break;
+    }
+    case 'windmill': {
+      add(cyl(0.22, 1.1, mat(0x8a5a22), 0, 0.55, 0, true), new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.3, 8), mat(0x5a3a18)));
+      lastAt(1.25);
+      const blades = new THREE.Group();
+      for (let i = 0; i < 4; i++) { const p = new THREE.Group(); p.add(box(0.08, 0.55, 0.02, mat(0xf3e2b5), 0, 0.28, 0)); p.rotation.z = (i * Math.PI) / 2; blades.add(p); }
+      blades.position.set(0, 0.95, 0.24);
+      add(blades);
+      g.userData.spinZ = blades;
+      break;
+    }
+    // Latin
+    case 'dictionary': {
+      add(cyl(0.1, 0.8, mat(0xb1b4bb), 0, 0.4, 0), box(0.5, 0.06, 0.4, mat(0x9ea2aa), 0, 0.82, 0));
+      const book = box(0.46, 0.08, 0.34, mat(0x5a2e14), 0, 0.89, 0);
+      book.rotation.x = -0.25;
+      add(book, box(0.42, 0.02, 0.3, mat(0xf3eedd), 0, 0.94, 0));
+      break;
+    }
+    case 'structure': {
+      [-0.35, 0.35].forEach((x) => add(cyl(0.09, 1.2, mat(0xd3d6dc), x, 0.6, 0)));
+      add(box(0.95, 0.14, 0.3, mat(0xc9ccd2), 0, 1.25, 0));
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(0.6, 0.3, 4), mat(0xc9ccd2));
+      roof.position.y = 1.47;
+      roof.rotation.y = Math.PI / 4;
+      add(roof);
+      break;
+    }
+    case 'tractor': {
+      add(box(0.6, 0.3, 0.42, mat(0x2f8a3a), 0.05, 0.42, 0), box(0.3, 0.32, 0.38, mat(0x3a9a46), -0.18, 0.72, 0));
+      const wheel = (x, z, r) => { const w = cyl(r, 0.12, mat(0x1a1a1a), x, r, z); w.rotation.x = Math.PI / 2; return w; };
+      add(wheel(-0.2, 0.25, 0.26), wheel(-0.2, -0.25, 0.26), wheel(0.28, 0.22, 0.15), wheel(0.28, -0.22, 0.15), cyl(0.03, 0.3, mat(0x333333), 0.25, 0.75, 0));
+      break;
+    }
+    case 'projector': {
+      add(cyl(0.05, 0.8, mat(0x555a66), 0, 0.4, 0), box(0.45, 0.25, 0.32, mat(0x7d8088), 0, 0.9, 0));
+      const lens = cyl(0.08, 0.1, glowMat(0xfff3c9), 0.27, 0.9, 0);
+      lens.rotation.z = Math.PI / 2;
+      const beam = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.0, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff3c9, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false }));
+      beam.rotation.z = Math.PI / 2;
+      beam.position.set(0.8, 0.9, 0);
+      add(lens, beam);
+      break;
+    }
+    case 'aqueduct': {
+      for (let i = 0; i < 3; i++) add(box(0.14, 0.8, 0.3, mat(0xc9ccd2), -0.4 + i * 0.4, 0.4, 0));
+      add(box(1.0, 0.16, 0.34, mat(0xb1b4bb), 0, 0.88, 0), box(0.96, 0.05, 0.2, glowMat(0x7fd0ff), 0, 0.98, 0));
+      break;
+    }
+    case 'cart': {
+      add(box(0.7, 0.3, 0.45, mat(0x8a5a22), 0, 0.45, 0), box(0.25, 0.25, 0.25, mat(0xd3d6dc), -0.12, 0.72, 0), box(0.2, 0.2, 0.2, mat(0xb1b4bb), 0.15, 0.7, 0.05));
+      const w = (x, z) => { const m = cyl(0.14, 0.06, mat(0x333333), x, 0.14, z); m.rotation.x = Math.PI / 2; return m; };
+      add(w(-0.25, 0.25), w(0.25, 0.25), w(-0.25, -0.25), w(0.25, -0.25));
+      break;
+    }
+    case 'tablet': {
+      add(box(0.7, 0.9, 0.14, mat(0xd3d6dc), 0, 0.5, 0), box(0.8, 0.1, 0.3, mat(0xb1b4bb), 0, 0.05, 0));
+      add(screen(0.56, 0.6, screenTexture(['IN', 'SCRIPT', 'ION'], { fg: '#3a3d44', bg: '#d3d6dc', font: 34, w: 256, h: 256 }), 0, 0.55, 0.075));
+      break;
+    }
+    // Greek
+    case 'telescope': {
+      [-1, 0, 1].forEach((i) => { const l = cyl(0.025, 0.8, mat(0x22407e), i * 0.18, 0.4, i === 0 ? 0.18 : -0.1); l.rotation.z = i * 0.25; add(l); });
+      const tube = cyl(0.09, 0.9, mat(0xdfe8ff), 0, 0.95, 0);
+      tube.rotation.z = -0.9;
+      add(tube, sphere(0.06, glowMat(acc), 0.35, 1.2, 0));
+      break;
+    }
+    case 'microscope': {
+      add(box(0.45, 0.06, 0.4, mat(0x14244e), 0, 0.03, 0), cyl(0.04, 0.6, mat(0x22407e), -0.12, 0.33, 0));
+      const tube = cyl(0.06, 0.38, mat(0xdfe8ff), 0.02, 0.62, 0);
+      tube.rotation.z = -0.35;
+      add(tube, box(0.25, 0.03, 0.25, mat(0x22407e), 0.08, 0.32, 0), sphere(0.03, glowMat(acc), 0.08, 0.36, 0));
+      break;
+    }
+    case 'telephone': {
+      add(box(0.4, 0.5, 0.3, mat(0x14244e), 0, 0.25, 0), box(0.45, 0.16, 0.34, mat(0x22407e), 0, 0.58, 0));
+      const handset = cyl(0.05, 0.42, mat(0x0b0b1a), 0, 0.72, 0);
+      handset.rotation.z = Math.PI / 2;
+      add(handset, ring(0.1, glowMat(acc), 0, 0.42, 0.16));
+      break;
+    }
+    case 'thermometer': {
+      add(cyl(0.07, 1.1, mat(0xdfe8ff, { transparent: true, opacity: 0.6 }), 0, 0.65, 0), cyl(0.035, 0.75, glowMat(0xff3b5c), 0, 0.5, 0), sphere(0.11, glowMat(0xff3b5c), 0, 0.12, 0));
+      for (let i = 0; i < 6; i++) add(box(0.08, 0.012, 0.02, mat(0xffffff), 0.1, 0.35 + i * 0.12, 0));
+      break;
+    }
+    case 'globe': {
+      add(cyl(0.18, 0.06, mat(0x22407e), 0, 0.03, 0), cyl(0.03, 0.5, mat(0x22407e), 0, 0.28, 0));
+      const earth = new THREE.Group();
+      earth.position.y = 0.82;
+      earth.add(sphere(0.3, mat(0x2a6fd6, { emissive: 0x0a2a6a })));
+      for (let i = 0; i < 4; i++) earth.add(sphere(0.09, mat(0x3ccf6a), Math.cos(i * 1.6) * 0.24, Math.sin(i * 2) * 0.15, Math.sin(i * 1.6) * 0.24));
+      add(earth, ring(0.34, glowMat(acc), 0, 0.82, 0));
+      g.userData.spinY = earth;
+      break;
+    }
+    case 'clock': {
+      add(box(0.12, 0.9, 0.12, mat(0x22407e), 0, 0.45, 0));
+      const face = cyl(0.32, 0.06, mat(0xdfe8ff), 0, 1.15, 0);
+      face.rotation.x = Math.PI / 2;
+      const hands = new THREE.Group();
+      hands.position.set(0, 1.15, 0.05);
+      hands.add(box(0.03, 0.24, 0.02, mat(0x0b0b1a), 0, 0.1, 0));
+      add(face, ring(0.33, glowMat(acc), 0, 1.15, 0.03), hands);
+      g.userData.spinZ = hands;
+      break;
+    }
+    case 'camera': {
+      [-1, 0, 1].forEach((i) => { const l = cyl(0.02, 0.8, mat(0x14244e), i * 0.16, 0.4, i === 0 ? 0.16 : -0.08); l.rotation.z = i * 0.2; add(l); });
+      add(box(0.36, 0.26, 0.24, mat(0x0b0b1a), 0, 0.92, 0));
+      const lens = cyl(0.08, 0.14, mat(0x22407e), 0, 0.92, 0.18);
+      lens.rotation.x = Math.PI / 2;
+      add(lens, sphere(0.04, glowMat(0xffffff), 0.12, 1.07, 0));
+      break;
+    }
+    // Lingo
+    case 'backpack': {
+      add(box(0.45, 0.55, 0.25, mat(0x2f6fde), 0, 0.3, 0), box(0.35, 0.2, 0.08, mat(0x1f4fb0), 0, 0.22, 0.15));
+      add(box(0.07, 0.4, 0.04, mat(0x1a1a1a), -0.14, 0.4, -0.14), box(0.07, 0.4, 0.04, mat(0x1a1a1a), 0.14, 0.4, -0.14));
+      break;
+    }
+    case 'trophy': {
+      const gold = mat(0xe6b84a, { emissive: 0x6b4a10 });
+      add(box(0.36, 0.12, 0.36, mat(0x3a2a14), 0, 0.06, 0), cyl(0.05, 0.3, gold, 0, 0.27, 0));
+      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.1, 0.32, 14), gold);
+      cup.position.y = 0.58;
+      const tag = labelSprite('G.O.A.T.', { color: '#3a2408', bg: 'rgba(246,210,122,0.95)', height: 0.16 });
+      tag.position.y = 0.95;
+      add(cup, tag);
+      break;
+    }
+    case 'lavalamp': {
+      const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.13, 0.55, 12), mat(0xff7ad9, { emissive: 0xb0189f, ei: 0.6, transparent: true, opacity: 0.85 }));
+      glass.position.y = 0.4;
+      const blob = sphere(0.06, glowMat(0xffd23f), 0, 0.35, 0);
+      add(cyl(0.12, 0.12, mat(0x333a44), 0, 0.06, 0), glass, blob);
+      g.userData.bob = blob;
+      break;
+    }
+    case 'tray': {
+      add(box(0.5, 0.55, 0.4, mat(0xc8a27a), 0, 0.27, 0), box(0.56, 0.03, 0.42, mat(0x7a7f88), 0, 0.57, 0));
+      add(sphere(0.07, mat(0xffd23f), -0.14, 0.62, 0), box(0.14, 0.04, 0.1, mat(0xc8752a), 0.05, 0.6, 0.05), cyl(0.05, 0.12, mat(0xff7a6b), 0.17, 0.64, -0.08));
+      break;
+    }
+    case 'caphook': {
+      add(box(0.06, 1.3, 0.06, mat(0x7a7f88), 0, 0.65, 0), box(0.24, 0.03, 0.03, mat(0x7a7f88), 0.1, 1.15, 0));
+      const cap = sphere(0.14, mat(0xff3b5c), 0.2, 1.05, 0);
+      cap.scale.y = 0.5;
+      add(cap, box(0.16, 0.02, 0.12, mat(0xd02a48), 0.3, 1.0, 0));
+      break;
+    }
+    case 'mirror': {
+      add(box(0.6, 0.9, 0.06, mat(0xf3f5f8), 0, 0.75, 0), box(0.5, 0.78, 0.02, mat(0xbfd8ff, { emissive: 0x405a80 }), 0, 0.75, 0.04));
+      for (let i = 0; i < 6; i++) add(sphere(0.03, glowMat(0xffd23f), -0.3 + (i % 2) * 0.6, 0.4 + Math.floor(i / 2) * 0.35, 0.05));
+      add(box(0.3, 0.3, 0.2, mat(0xc8a27a), 0, 0.15, 0));
+      break;
+    }
+    default:
+      add(box(0.5, 0.5, 0.5, mat(S.wall), 0, 0.25, 0));
+  }
+  return g;
+}
+
+/** Idle motion for the props that have some (flames, blades, globes, lamps). */
+export function animateProp(g, t, dt) {
+  const u = g.userData;
+  if (u.flicker) u.flicker.forEach((f, i) => { f.scale.y = 1 + Math.sin(t * 9 + i * 2) * 0.15; });
+  if (u.spinZ) u.spinZ.rotation.z -= dt * 0.8;
+  if (u.spinY) u.spinY.rotation.y += dt * 0.5;
+  if (u.bob) u.bob.position.y = 0.35 + Math.sin(t * 1.5) * 0.15;
+}
+
+/** The tree's small click zone: a softly pulsing disc at the base of the trunk. */
+export function treeBaseZone() {
+  const g = new THREE.Group();
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(0.42, 28), new THREE.MeshBasicMaterial({ color: 0x9dff7a, transparent: true, opacity: 0.35, depthWrite: false }));
+  disc.rotation.x = -Math.PI / 2;
+  disc.position.y = 0.16;
+  const halo = ring(0.42, glowMat(0x9dff7a), 0, 0.17, 0);
+  halo.rotation.x = Math.PI / 2;
+  const tag = labelSprite('LEXICON TREE', { color: '#9dff7a', border: '#9dff7a', height: 0.34 });
+  tag.position.y = 0.9;
+  g.add(disc, halo, tag);
+  g.userData.pulse = (t) => {
+    const k = 0.5 + 0.5 * Math.sin(t * 2.4);
+    disc.material.opacity = 0.18 + k * 0.32;
+    halo.scale.setScalar(1 + k * 0.12);
+  };
   return g;
 }

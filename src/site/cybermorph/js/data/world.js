@@ -1,5 +1,5 @@
 /**
- * Everything that is not one district: the hub, the Secret Secretary Desk keywords,
+ * Everything that is not one room: the hub, the Secret Secretary Desk keywords,
  * the finale word pools, avatar parts, the dictionary and the Inspirations list.
  */
 
@@ -9,31 +9,17 @@ import { GREEK } from './greek.js';
 import { LINGO } from './lingo.js';
 import { build } from '../compiler/wordsum.js';
 import { MORPHEMES } from './morphemes.js';
+import { buildHubMap } from './layout.js';
 
 export const DISTRICTS = { anglo: ANGLO, latin: LATIN, greek: GREEK, lingo: LINGO };
 export const MAIN_ORDER = ['anglo', 'latin', 'greek'];
 
-/**
- * The hub (the Core).
- *   L  Lexicon Tree (center)       1 2 3  district ports      4  finale port
- *   D  Secret Secretary Desk       A  avatar booth            O  Overclock Mode arcade cabinet
- *   X  free Morph Compiler console @  arrival                 o  props
- */
-export const HUB_MAP = [
-  '#####1######',
-  '#o........o#',
-  '#.X.....D..#',
-  '#..........#',
-  '2@...L.....3',
-  '#..........#',
-  '#.A......O.#',
-  '#o........o#',
-  '#####4######',
-];
+/** The Hub: a larger room with the Lexicon Tree at its heart (see layout.js). */
+export const HUB_MAP = buildHubMap();
 
 /**
  * Secret Secretary Desk keywords: one is drawn for each new save.
- * The Anglo-Saxon District reveals the prefix, Latin the base, Greek the suffix.
+ * The Anglo-Saxon Room reveals the prefix, Latin the base, Greek the suffix.
  * Each clue asks the player to find the shared morpheme in three words.
  */
 export const KEY_POOL = [
@@ -155,11 +141,11 @@ export const AVATAR_CATEGORIES = [
 ];
 
 export const UNLOCK_LABEL = {
-  anglo: 'Clear the Anglo-Saxon District',
-  latin: 'Clear the Latin District',
-  greek: 'Clear the Greek District',
+  anglo: 'Clear the Anglo-Saxon Room',
+  latin: 'Clear the Latin Room',
+  greek: 'Clear the Greek Room',
   desk: 'Open the Secret Secretary Desk',
-  lingo: 'Finish the Lingo District',
+  lingo: 'Finish the Lingo Room',
   finale: 'Defeat the Rot',
 };
 
@@ -214,7 +200,7 @@ export function collectPartWords() {
   return out;
 }
 
-/** Fake words for Overclock Mode, drawn from every district's fake Rotlings. */
+/** Fake words for Overclock Mode, drawn from every room's fake Rotlings. */
 export function collectFakes() {
   const out = [];
   for (const id of MAIN_ORDER) {

@@ -14,6 +14,12 @@ import { runTweens, clamp, lerp } from '../core/util.js';
 
 export { THREE };
 
+// The storybook camera: low (about 29 degrees above the floor), facing the room's front.
+// Q/E rotate in 45-degree steps, Z/X step through ZOOMS, VIEW resets both.
+export const DEFAULT_PITCH = 0.5;
+export const ZOOMS = [0.55, 0.68, 0.82, 1, 1.2, 1.42, 1.68];
+export const DEFAULT_ZOOM = 3;
+
 export const R = {
   renderer: null,
   scene: null,
@@ -26,11 +32,16 @@ export const R = {
   rig: {
     target: new THREE.Vector3(),
     goalTarget: new THREE.Vector3(),
-    yaw: Math.PI / 4,
-    pitch: 0.92,
-    dist: 30,
-    goalDist: 30,
-    baseDist: 30,
+    follow: new THREE.Vector3(),
+    focus: null,
+    yaw: 0,
+    yawGoal: 0,
+    pitch: DEFAULT_PITCH,
+    dist: 16,
+    goalDist: 16,
+    baseDist: 16,
+    focusFactor: 1,
+    zoomIdx: DEFAULT_ZOOM,
     px: 0, py: 0, gx: 0, gy: 0,
   },
   pointer: { x: 0, y: 0, inside: false },
@@ -71,7 +82,7 @@ export function initRenderer(container) {
 
   R.scene = new THREE.Scene();
   R.scene.background = new THREE.Color(0x07040f);
-  R.camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.5, 200);
+  R.camera = new THREE.PerspectiveCamera(34, window.innerWidth / window.innerHeight, 0.5, 200);
 
   R.focusScene = new THREE.Scene();
   R.focusCam = new THREE.PerspectiveCamera(32, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -104,33 +115,53 @@ function onResize() {
 
 let lastW = 12;
 let lastH = 9;
-/** Pick a camera distance that frames a w×h tile room with margin, at any aspect ratio. */
+/** Base distance: about 15 tiles across the screen at the default zoom, whatever the aspect ratio. */
 export function fitRoom(w, h) {
   lastW = w; lastH = h;
-  const diag = Math.hypot(w, h) * 0.98;
   const vfov = THREE.MathUtils.degToRad(R.camera.fov);
   const hfov = 2 * Math.atan(Math.tan(vfov / 2) * R.camera.aspect);
-  const byW = (diag / 2) / Math.tan(hfov / 2);
-  const byH = (h * 0.95 + 2.2) / 2 / Math.tan(vfov / 2);
-  const d = Math.max(byW, byH) * 1.06 + 3;
-  R.rig.baseDist = d;
-  if (!zoomed) R.rig.goalDist = d;
+  const byW = 7.5 / Math.tan(hfov / 2);
+  const byH = 4.6 / Math.tan(vfov / 2);
+  R.rig.baseDist = Math.max(byW, byH);
+  R.rig.goalDist = R.rig.baseDist * ZOOMS[R.rig.zoomIdx] * R.rig.focusFactor;
 }
 
-let zoomed = false;
+/** Follow a point (the player) when nothing is in focus. */
+export function setFollow(v) { R.rig.follow.copy(v); }
+
 export function zoomTo(pos, factor = 0.5) {
-  zoomed = true;
-  R.rig.goalTarget.copy(pos);
+  R.rig.focus = pos.clone();
+  R.rig.focusFactor = factor / ZOOMS[R.rig.zoomIdx];
   R.rig.goalDist = R.rig.baseDist * factor;
 }
 export function zoomReset() {
-  zoomed = false;
-  R.rig.goalTarget.set(0, 0, 0);
-  R.rig.goalDist = R.rig.baseDist;
+  R.rig.focus = null;
+  R.rig.focusFactor = 1;
+  R.rig.goalDist = R.rig.baseDist * ZOOMS[R.rig.zoomIdx];
 }
+export function rotateView(dir) {
+  R.rig.yawGoal += dir * (Math.PI / 4);
+}
+export function zoomStep(dir) {
+  R.rig.zoomIdx = clamp(R.rig.zoomIdx + dir, 0, ZOOMS.length - 1);
+  if (!R.rig.focus) R.rig.goalDist = R.rig.baseDist * ZOOMS[R.rig.zoomIdx];
+  return R.rig.zoomIdx;
+}
+/** VIEW: back to the default angle and zoom, turning the short way round. */
+export function resetView() {
+  const full = Math.PI * 2;
+  R.rig.yawGoal = Math.round(R.rig.yawGoal / full) * full;
+  R.rig.zoomIdx = DEFAULT_ZOOM;
+  if (!R.rig.focus) R.rig.goalDist = R.rig.baseDist * ZOOMS[DEFAULT_ZOOM];
+}
+/** Camera yaw (radians, 0 = looking north from the south side). */
+export const viewYaw = () => R.rig.yaw;
+export const viewYawGoal = () => R.rig.yawGoal;
+
 export function snapCamera() {
-  R.rig.target.copy(R.rig.goalTarget);
+  R.rig.target.copy(R.rig.focus || R.rig.follow);
   R.rig.dist = R.rig.goalDist;
+  R.rig.yaw = R.rig.yawGoal;
 }
 
 export function setDim(v) { R.dimTarget = v; }
@@ -139,23 +170,25 @@ export function setBackground(hex) { R.scene.background = new THREE.Color(hex); 
 
 function updateCamera(dt) {
   const rig = R.rig;
-  const k = 1 - Math.pow(0.0015, dt);
+  const k = 1 - Math.pow(0.002, dt);
+  rig.goalTarget.copy(rig.focus || rig.follow);
   rig.target.lerp(rig.goalTarget, k);
   rig.dist = lerp(rig.dist, rig.goalDist, k);
+  rig.yaw = lerp(rig.yaw, rig.yawGoal, 1 - Math.pow(0.0008, dt));
   const allowParallax = !settings.reducedMotion && !R.focusOn;
   rig.gx = allowParallax ? R.pointer.x : 0;
   rig.gy = allowParallax ? R.pointer.y : 0;
   rig.px = lerp(rig.px, rig.gx, 1 - Math.pow(0.02, dt));
   rig.py = lerp(rig.py, rig.gy, 1 - Math.pow(0.02, dt));
-  const yaw = rig.yaw + rig.px * 0.06;
-  const pitch = clamp(rig.pitch + rig.py * 0.035, 0.5, 1.3);
+  const yaw = rig.yaw + rig.px * 0.035;
+  const pitch = clamp(rig.pitch + rig.py * 0.025, 0.3, 1.2);
   const c = R.camera;
   c.position.set(
     rig.target.x + Math.sin(yaw) * Math.cos(pitch) * rig.dist,
-    rig.target.y + Math.sin(pitch) * rig.dist,
+    rig.target.y + 0.4 + Math.sin(pitch) * rig.dist,
     rig.target.z + Math.cos(yaw) * Math.cos(pitch) * rig.dist,
   );
-  c.lookAt(rig.target);
+  c.lookAt(rig.target.x, rig.target.y + 0.4, rig.target.z);
 }
 
 let last = performance.now();

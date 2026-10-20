@@ -1,25 +1,33 @@
 /**
- * CyberMorph's game loop and flow: places (hub, districts, Overclock Mode, the finale),
- * click-to-move, objects and what they do, district progress, the Rot meter,
- * the Secret Secretary Desk and the Lingo District.
+ * CyberMorph's game loop and flow: places (the Hub, the four Rooms, Overclock Mode, the finale),
+ * click-to-move and camera-relative keys, objects and what they do, room progress, the Rot meter,
+ * the Secret Secretary Desk and the Lingo Room.
+ *
+ * Each Room is one big diorama split into zones by firewalls (see data/layout.js):
+ *   zone 0  the mentor's lessons                → firewall G
+ *   zone 1  Rotlings, the terminal, the chasm   → firewall F
+ *   zone 2  LINK, the Unknown File, the core
+ * (The Lingo Room has two zones: the classroom, then the computer lab.)
  */
 
 import { $, el, shuffle, pick, wait, clamp, tween } from '../core/util.js';
-import { THREE, R, debugStep, toScreen, initRenderer, fitRoom, zoomTo, zoomReset, snapCamera, setBackground, pickWorld, groundPoint, onUpdate, webglAvailable } from '../engine/renderer.js';
+import { THREE, R, debugStep, toScreen, initRenderer, fitRoom, zoomTo, zoomReset, snapCamera, setBackground, pickWorld, groundPoint, onUpdate, webglAvailable, setFollow, rotateView, zoomStep, resetView, viewYawGoal } from '../engine/renderer.js';
 import { buildRoom } from '../engine/diorama.js';
-import { STYLES, terminal, gate, port, linkNode, newWordConsole, core, compilerConsole, avatarBooth, arcadeCabinet, secretaryDesk, lexiconTree } from '../engine/props.js';
+import { STYLES, terminal, gate, port, linkNode, newWordConsole, core, compilerConsole, avatarBooth, arcadeCabinet, secretaryDesk, lexiconTree, morphProp, animateProp, treeBaseZone } from '../engine/props.js';
+import { labelSprite } from '../engine/textures.js';
 import { createMorpher, createMentor, createRotling, createPickup } from '../engine/characters.js';
-import { settings, applySettings } from '../core/settings.js';
+import { applySettings } from '../core/settings.js';
 import { sfx, startMusic, unlockAudio, speak } from '../core/audio.js';
 import * as store from '../core/save.js';
 import { touch, dueIds } from '../core/mastery.js';
-import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, KEY_POOL, collectPartWords, collectFakes } from '../data/world.js';
+import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, collectPartWords, collectFakes } from '../data/world.js';
+import { zoneOf, CORRIDOR } from '../data/layout.js';
 import { morph, MORPHEMES } from '../data/morphemes.js';
 import { build } from '../compiler/wordsum.js';
 import * as hud from '../ui/hud.js';
 import { say, dialogueOpen } from '../ui/dialogue.js';
 import * as screens from '../ui/screens.js';
-import { panelOpen } from '../panels/host.js';
+import { panelOpen, openPanel } from '../panels/host.js';
 import { openCompile } from '../panels/compile.js';
 import { openDebug } from '../panels/debug.js';
 import { openLink } from '../panels/link.js';
@@ -30,31 +38,47 @@ import { openDesk } from '../panels/desk.js';
 const PARAMS = new URLSearchParams(location.search);
 const PRACTICE = (PARAMS.get('set') || '').split(',').map((s) => s.trim()).filter(Boolean).map((k) => (MORPHEMES[k] ? k : Object.values(MORPHEMES).find((m) => m.cat === k)?.id)).filter(Boolean);
 
-const TIMED_MAP = ['############', '#..........#', '#..o....o..#', '#..........#', '#....@.....#', '#..........#', '#..o....o..#', '#..........#', '############'];
-const FINALE_MAP = ['############', '#o........o#', '#..........#', '#..........#', '#@...C.....#', '#..........#', '#..........#', '#o........o#', '#####H######'];
+const ARENA = (special) => [
+  '##################',
+  '#o..............o#',
+  '#................#',
+  '#....o......o....#',
+  '#................#',
+  `#@.......${special}.......#`,
+  '#................#',
+  '#....o......o....#',
+  '#................#',
+  '#o..............o#',
+  special === 'C' ? '########H#########' : '##################',
+];
+const TIMED_MAP = ARENA('.');
+const FINALE_MAP = ARENA('C');
 const PORT_TARGET = { 1: 'anglo', 2: 'latin', 3: 'greek' };
-const DISTRICT_PORT = { anglo: '1', latin: '2', greek: '3' };
+const ROOM_PORT = { anglo: '1', latin: '2', greek: '3' };
 const ORIGIN_COLOR = { anglo: 0xffb000, latin: 0xdfe8f5, greek: 0x38b6ff };
+const MOVE_KEYS = { w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right' };
 
 const G = {
   profile: null,
   place: 'title',
-  roomIndex: 0,
   room: null,
   player: null,
   mentor: null,
   rotlings: [],
   pickups: [],
   carried: [],
+  props: [],
   rot: 0,
   rotSpawned: false,
   busy: false,
   pending: null,
-  keys: new Set(),
+  keys: [],
   timed: null,
   finale: null,
   tree: null,
+  treeZone: null,
   titleSpin: false,
+  t: 0,
 };
 
 // ── Boot ──────────────────────────────────────────────────────────
@@ -65,11 +89,14 @@ export async function boot() {
     document.body.append(el('div', { class: 'screen' }, el('div', { class: 'sheet glass' }, el('h2', {}, 'CyberMorph needs WebGL 2'), el('p', {}, 'This browser could not start 3D graphics. Try Chrome on a Chromebook with hardware acceleration turned on (chrome://settings → System).'))));
     return;
   }
+  // Canvas text (morpheme tiles, labels) needs Lexend loaded before it is drawn.
+  try { await Promise.all(['400', '600', '800'].map((w) => document.fonts.load(`${w} 40px Lexend`))); } catch { /* fall back quietly */ }
   initRenderer($('stage'));
   onUpdate({ update });
   bindInput();
   $('btn-pause').addEventListener('click', () => openPause());
   $('btn-help').addEventListener('click', () => screens.howToScreen());
+  bindCameraButtons();
   await showTitle();
   if (PARAMS.get('projector') === '1') projectorMode();
 }
@@ -77,13 +104,19 @@ export async function boot() {
 async function showTitle() {
   G.place = 'title';
   hud.showHud(false);
-  await loadRoom(HUB_MAP, 'hub', { arrival: '@', noPlayer: true });
+  await loadRoom(HUB_MAP, 'hub', { arrival: '@', noPlayer: true, makeObject: titleObject, flowers: true });
+  G.room.setFlowers(40, 0.6);
   G.titleSpin = true;
   startMusic('hub');
   screens.titleScreen({
     onPlay: (p) => { store.setActive(p.id); startProfile(p); },
     onNew: () => newProfileFlow(),
   });
+}
+
+function titleObject(ch) {
+  if (ch === 'L') { const t = lexiconTree(); t.scale.setScalar(1.6); G.tree = t; return { scenery: t }; }
+  return null;
 }
 
 function newProfileFlow() {
@@ -104,36 +137,35 @@ async function startProfile(p, fresh = false) {
   hud.showHud(true);
   hud.renderInventory(p);
   hud.renderLog(p);
-  const place = p.place && DISTRICTS[p.place.id] ? p.place : { id: 'hub', room: 0 };
+  resetView();
+  const place = p.place && DISTRICTS[p.place.id] ? p.place : { id: 'hub' };
   if (place.id === 'hub') await enterHub();
-  else await enterDistrict(place.id, place.room || 0, '@');
+  else await enterRoom(place.id, '@');
   if (fresh) {
     await say('system', [
       `Welcome to the Lexinet, ${p.name}. You are a Morpher: a repair bot for words.`,
       'The Rot has broken our words into morphemes, the small parts that carry meaning. Rotlings made of nonsense are crawling everywhere.',
-      'Click the floor to walk. Click a machine or a person to use it.',
-      'Start at the amber port labeled ANGLO-SAXON: the district where the oldest English lives.',
+      'Click the floor to walk, or use W A S D. Click a machine or a person to use it. Q and E turn the camera, Z and X zoom.',
+      'Start at the amber door labeled ANGLO-SAXON. It leads to the room where the oldest English lives.',
     ]);
   }
 }
 
 function projectorMode() {
   const all = Object.values(MORPHEMES).filter((m) => m.origin !== 'lingo').map((m) => m.id);
-  document.documentElement.style.setProperty('--text-scale', '1.3');
+  document.documentElement.style.setProperty('--text-scale', '1.25');
   screens.closeAllScreens();
   const fake = { learned: all, mastery: {}, stats: { tasks: 0, firstTry: 0, compiled: 0, splits: 0, bits: 0 }, lexicon: [], madeUp: [], log: [] };
   G.busy = true;
   openCompile({ mode: 'free', profile: fake, title: 'PROJECTOR MODE · MORPH COMPILER' }).then(() => location.reload());
 }
 
-// ── Rooms ─────────────────────────────────────────────────────────
+// ── Loading a room ────────────────────────────────────────────────
 
-let roomUpdate = null;
-
-async function loadRoom(map, style, { arrival = '@', arrivalCell = null, noPlayer = false, makeObject = null, slide = true } = {}) {
+async function loadRoom(map, style, { arrival = '@', arrivalCell = null, noPlayer = false, makeObject = null, flowers = false } = {}) {
   const S = STYLES[style];
   $('fade').classList.add('on');
-  await wait(slide && G.room ? 220 : 120);
+  await wait(G.room ? 220 : 120);
   if (G.room) {
     R.scene.remove(G.room.group);
     G.room.dispose();
@@ -142,32 +174,35 @@ async function loadRoom(map, style, { arrival = '@', arrivalCell = null, noPlaye
   G.pickups.forEach((p) => R.scene.remove(p.entity.group));
   G.rotlings = [];
   G.pickups = [];
+  G.props = [];
   G.mentor = null;
   G.tree = null;
+  G.treeZone = null;
   if (G.player) R.scene.remove(G.player.entity.group);
   setBackground(S.bg);
-  const room = buildRoom(map, style, { makeObject });
+  const room = buildRoom(map, style, { makeObject, flowers });
   G.room = room;
   R.scene.add(room.group);
   fitRoom(room.W, room.H);
   zoomReset();
-  snapCamera();
-  startMusic(S.music);
-
-  let cell = arrivalCell || room.marks[arrival] || room.marks['@'] || { c: 1, r: Math.floor(room.H / 2) };
+  const cell = arrivalCell || room.marks[arrival] || room.marks['@'] || { c: Math.floor(room.W / 2), r: Math.floor(room.H / 2) };
   if (!noPlayer) {
     if (!G.player) G.player = makePlayer();
     G.player.entity.setAvatar(G.profile.avatar);
     placePlayer(cell);
     R.scene.add(G.player.entity.group);
-  }
+    setFollow(G.player.pos);
+  } else setFollow(new THREE.Vector3());
+  snapCamera();
+  room.setCamera(R.camera.position);
+  startMusic(S.music);
   $('fade').classList.remove('on');
   await room.animateIn(cell);
 }
 
 function makePlayer() {
   const entity = createMorpher(G.profile ? G.profile.avatar : { limbs: 'l-steel', torso: 't-red', head: 'h-steel', face: 'f-smile' });
-  return { entity, c: 0, r: 0, path: [], pos: new THREE.Vector3(), moving: false, stepT: 0 };
+  return { entity, c: 0, r: 0, path: [], pos: new THREE.Vector3(), stepT: 0 };
 }
 
 function placePlayer(cell) {
@@ -191,47 +226,99 @@ function bindInput() {
   R.renderer.domElement.addEventListener('pointerdown', (e) => {
     unlockAudio();
     if (blocked() || !G.room || !G.player) {
-      G.lastIgnored = { busy: G.busy, panel: panelOpen(), dialogue: dialogueOpen(), screen: screens.screenOpen(), place: G.place, swallow: performance.now() < (R.swallowUntil || 0) };
+      G.lastIgnored = { busy: G.busy, panel: panelOpen(), dialogue: dialogueOpen(), screen: screens.screenOpen(), place: G.place };
       return;
     }
-    const targets = [...G.room.objects.filter((o) => o.mesh && o.use).map((o) => o.mesh), ...G.rotlings.map((r) => r.entity.group)];
+    const targets = [...G.room.objects.filter((o) => o.mesh && (o.use || o.info)).map((o) => o.mesh), ...G.rotlings.map((r) => r.entity.group)];
     const hits = pickWorld(e.clientX, e.clientY, targets);
     if (hits.length) {
       let n = hits[0].object;
       while (n && !n.userData.obj && !n.userData.rotling) n = n.parent;
       if (n && n.userData.rotling) { walkToUse({ rotling: n.userData.rotling }); return; }
-      if (n && n.userData.obj) { walkToUse({ obj: n.userData.obj }); return; }
+      if (n && n.userData.obj) {
+        const o = n.userData.obj;
+        if (o.info) { showPropInfo(o); return; }
+        walkToUse({ obj: o });
+        return;
+      }
     }
     const pt = groundPoint(e.clientX, e.clientY);
     if (!pt) return;
-    // A click on the floor right under a Rotling counts as clicking the Rotling.
     const near = G.rotlings.find((r) => r.pos.distanceTo(pt) < 0.6);
     if (near) { walkToUse({ rotling: near }); return; }
-    const cell = G.room.toCell(pt);
-    walkTo(cell);
+    walkTo(G.room.toCell(pt), pt);
   });
 
   window.addEventListener('keydown', (e) => {
-    if (e.repeat && !['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(e.key.toLowerCase())) return;
     const k = e.key.toLowerCase();
     if (k === 'escape') {
-      if (G.place === 'title' || panelOpen() || dialogueOpen()) return;
-      if (screens.screenOpen()) return;
+      if (G.place === 'title' || panelOpen() || dialogueOpen() || screens.screenOpen()) return;
       e.preventDefault();
       openPause();
       return;
     }
-    if (blocked() || !G.player) return;
-    if (k === 'h') { screens.howToScreen(); return; }
-    if (k === 'e' || k === 'enter' || k === ' ') { const near = nearestInteractable(); if (near) { e.preventDefault(); use(near); } return; }
-    const dir = { w: [0, -1], arrowup: [0, -1], s: [0, 1], arrowdown: [0, 1], a: [-1, 0], arrowleft: [-1, 0], d: [1, 0], arrowright: [1, 0] }[k];
+    if (G.place === 'title' || !G.player) return;
+    // Camera keys work whenever the world is visible.
+    if (!panelOpen() && !screens.screenOpen()) {
+      if (k === 'q' && !e.repeat) { cameraTurn(1); return; }
+      if (k === 'e' && !e.repeat) { cameraTurn(-1); return; }
+      if (k === 'z' && !e.repeat) { zoomStep(-1); hud.flashCamera('zoom-in'); return; }
+      if (k === 'x' && !e.repeat) { zoomStep(1); hud.flashCamera('zoom-out'); return; }
+      if (k === 'v' && !e.repeat) { resetView(); hud.flashCamera('view'); return; }
+    }
+    if (blocked()) return;
+    if (k === 'h' && !e.repeat) { screens.howToScreen(); return; }
+    if ((k === ' ' || k === 'enter') && !e.repeat) {
+      const near = nearestInteractable();
+      if (near) { e.preventDefault(); use(near); }
+      return;
+    }
+    const dir = MOVE_KEYS[k];
     if (dir) {
       e.preventDefault();
-      G.keys.add(k);
-      if (!G.player.path.length) stepDir(dir);
+      if (!G.keys.includes(dir)) G.keys.push(dir);
+      if (!G.player.path.length) stepDir(screenToGrid(dir));
     }
   });
-  window.addEventListener('keyup', (e) => G.keys.delete(e.key.toLowerCase()));
+  window.addEventListener('keyup', (e) => {
+    const dir = MOVE_KEYS[e.key.toLowerCase()];
+    if (dir) G.keys = G.keys.filter((x) => x !== dir);
+  });
+  window.addEventListener('blur', () => { G.keys = []; });
+}
+
+function bindCameraButtons() {
+  hud.onCamera((action) => {
+    if (action === 'rotate-left') cameraTurn(1);
+    else if (action === 'rotate-right') cameraTurn(-1);
+    else if (action === 'zoom-in') zoomStep(-1);
+    else if (action === 'zoom-out') zoomStep(1);
+    else if (action === 'view') resetView();
+  });
+}
+
+function cameraTurn(dir) {
+  rotateView(dir);
+  hud.flashCamera(dir > 0 ? 'rotate-left' : 'rotate-right');
+}
+
+/**
+ * Map a screen direction to a grid step for the camera's current angle, so W always
+ * walks "up the screen" however the view is turned. A tiny bias settles the 45° ties.
+ */
+function screenToGrid(dir) {
+  const yaw = viewYawGoal() + 0.02;
+  const f = { x: -Math.sin(yaw), z: -Math.cos(yaw) };
+  const right = { x: -f.z, z: f.x };
+  const want = { up: f, down: { x: -f.x, z: -f.z }, right, left: { x: -right.x, z: -right.z } }[dir];
+  const options = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  let best = options[0];
+  let bestDot = -Infinity;
+  for (const o of options) {
+    const d = o[0] * want.x + o[1] * want.z;
+    if (d > bestDot) { bestDot = d; best = o; }
+  }
+  return best;
 }
 
 function stepDir([dc, dr]) {
@@ -240,22 +327,26 @@ function stepDir([dc, dr]) {
   if (G.room.isWalkable(n.c, n.r)) { p.path = [n]; G.pending = null; }
   else {
     const obj = objectAt(n.c, n.r);
-    if (obj) use({ obj });
+    if (obj && !obj.info) use({ obj });
   }
 }
 
 function objectAt(c, r) {
-  const o = G.room.objects.find((x) => x.c === c && x.r === r && x.use && !x.walkable);
-  if (o) return o;
-  return null;
+  return G.room.objects.find((x) => x.c === c && x.r === r && (x.use || x.info) && !x.walkable) || null;
 }
 
-function walkTo(cell) {
+/** Walk to a cell. A click on a blocked cell walks next to it; objects with a small click zone only open from that zone. */
+function walkTo(cell, point = null) {
   const p = G.player;
   G.pending = null;
   if (!G.room.isWalkable(cell.c, cell.r)) {
     const o = objectAt(cell.c, cell.r);
-    if (o) { walkToUse({ obj: o }); return; }
+    if (o && o.smallZone && point) {
+      const centre = G.room.toWorld(o.c, o.r);
+      if (Math.hypot(point.x - centre.x, point.z - centre.z) < o.smallZone) { walkToUse({ obj: o }); return; }
+    } else if (o && !o.info) { walkToUse({ obj: o }); return; }
+    const path = G.room.path({ c: p.c, r: p.r }, (c, r) => adjacent({ c, r }, cell));
+    if (path) p.path = path;
     return;
   }
   const path = G.room.path({ c: p.c, r: p.r }, (c, r) => c === cell.c && r === cell.r);
@@ -268,7 +359,7 @@ function walkToUse(target) {
   if (target.obj && target.obj.walkable) { walkTo(tc); return; }
   if (adjacent(p, tc) || (p.c === tc.c && p.r === tc.r)) { use(target); return; }
   const path = G.room.path({ c: p.c, r: p.r }, (c, r) => adjacent({ c, r }, tc));
-  if (!path) { hud.toast('Can\'t reach that from here.', 'warn'); return; }
+  if (!path) { hud.toast('Can\'t reach that from here yet.', 'warn'); return; }
   if (target.rotling) target.rotling.frozen = true;
   p.path = path;
   G.pending = target;
@@ -291,11 +382,7 @@ async function use(target) {
     if (target.rotling) await (target.rotling.boss ? bossFight(target.rotling) : debugRotling(target.rotling));
     else if (target.obj && target.obj.use) {
       const o = target.obj;
-      if (o.mesh) {
-        const dx = o.c - G.player.c;
-        const dz = o.r - G.player.r;
-        G.player.entity.group.rotation.y = Math.atan2(dx, dz);
-      }
+      G.player.entity.group.rotation.y = Math.atan2(o.c - G.player.c, o.r - G.player.r);
       await o.use();
     }
   } catch (err) {
@@ -308,18 +395,33 @@ async function use(target) {
   }
 }
 
+/** Morpheme props: click one to hear and see how its name is built. */
+function showPropInfo(o) {
+  const p = o.prop;
+  const parts = p.ids ? `${p.ids.map((id) => `${morph(id).text} (${morph(id).meaning})`).join(' + ')}` : p.note;
+  hud.toast(`${p.word}: ${parts}`, 'gold');
+  speak(p.word);
+  sfx.click();
+}
+
 // ── Per-frame update ──────────────────────────────────────────────
 
 function update(dt) {
-  if (G.titleSpin) R.rig.yaw += dt * 0.05;
+  G.t += dt;
+  if (G.titleSpin) R.rig.yawGoal += dt * 0.06;
   if (!G.room) return;
+  G.room.setCamera(R.camera.position);
   G.room.update(dt);
   if (G.mentor) G.mentor.update(dt);
   G.pickups.forEach((p) => p.entity.update(dt));
   G.rotlings.forEach((r) => updateRotling(r, dt));
-  if (G.tree) G.tree.rotation.y += dt * 0.08;
+  G.props.forEach((o) => animateProp(o.mesh, G.t, dt));
+  if (G.tree) G.tree.rotation.y += dt * 0.05;
+  if (G.treeZone) G.treeZone.userData.pulse(G.t);
   if (!G.player) return;
   updatePlayer(dt);
+  setFollow(G.player.pos);
+  updatePropLabels();
   if (G.place === 'timed') updateTimed(dt);
   else updateRot(dt);
   if (!blocked()) updateContext();
@@ -333,7 +435,7 @@ function updatePlayer(dt) {
     const target = G.room.toWorld(next.c, next.r);
     const d = target.clone().sub(p.pos);
     const dist = d.length();
-    const speed = 3.8;
+    const speed = 4;
     if (dist < 0.02 || dist <= speed * dt) {
       p.pos.copy(target);
       p.c = next.c;
@@ -347,10 +449,8 @@ function updatePlayer(dt) {
       p.entity.group.rotation.y = Math.atan2(d.x, d.z);
     }
     moving = true;
-  } else if (G.keys.size && !blocked()) {
-    const k = [...G.keys].pop();
-    const dir = { w: [0, -1], arrowup: [0, -1], s: [0, 1], arrowdown: [0, 1], a: [-1, 0], arrowleft: [-1, 0], d: [1, 0], arrowright: [1, 0] }[k];
-    if (dir) stepDir(dir);
+  } else if (G.keys.length && !blocked()) {
+    stepDir(screenToGrid(G.keys[G.keys.length - 1]));
   }
   p.entity.group.position.copy(p.pos);
   p.entity.update(dt, moving);
@@ -365,7 +465,6 @@ function updatePlayer(dt) {
 
 function onEnterCell() {
   const p = G.player;
-  // Pickups.
   for (let i = G.pickups.length - 1; i >= 0; i--) {
     const pk = G.pickups[i];
     if (pk.c === p.c && pk.r === p.r) {
@@ -374,10 +473,9 @@ function onEnterCell() {
       G.carried.push(pk.id);
       sfx.pickup();
       hud.toast(`+ ${morph(pk.id).text}`, 'good');
-      if (G.place === 'timed') { G.timed.score += 15; }
+      if (G.place === 'timed') G.timed.score += 15;
     }
   }
-  // Ports.
   const o = G.room.objects.find((x) => x.walkable && x.port && x.c === p.c && x.r === p.r);
   if (o && !G.busy) {
     p.path = [];
@@ -390,7 +488,17 @@ function updateContext() {
   const near = nearestInteractable();
   if (!near) { hud.setContext(null); return; }
   const label = near.rotling ? 'DEBUG' : near.obj.label || 'USE';
-  hud.setContext(label, () => use(near), 'E');
+  hud.setContext(label, () => use(near), 'SPACE');
+}
+
+/** Prop name tags appear when the Morpher walks close. */
+function updatePropLabels() {
+  const p = G.player;
+  G.props.forEach((o) => {
+    const near = Math.abs(o.c - p.c) + Math.abs(o.r - p.r) <= 3;
+    o.tag.material.opacity += ((near ? 1 : 0) - o.tag.material.opacity) * 0.15;
+    o.tag.visible = o.tag.material.opacity > 0.02;
+  });
 }
 
 // ── Rotlings and pickups ──────────────────────────────────────────
@@ -406,6 +514,11 @@ function spawnRotling(item, cell, opts = {}) {
   return r;
 }
 
+function roomZone(c) {
+  const d = DISTRICTS[G.place];
+  return d ? zoneOf(c, d.id !== 'lingo') : 0;
+}
+
 function updateRotling(r, dt) {
   r.entity.update(dt);
   if (r.boss) return;
@@ -417,7 +530,10 @@ function updateRotling(r, dt) {
   } else if (!r.frozen && !G.busy) {
     r.wait -= dt;
     if (r.wait <= 0) {
-      const options = G.room.neighbors(r.c, r.r).filter((n) => G.room.isWalkable(n.c, n.r) && !G.room.isPort(n.c, n.r) && !(n.c === G.player.c && n.r === G.player.r) && !G.rotlings.some((o) => o !== r && o.c === n.c && o.r === n.r));
+      const home = roomZone(r.c);
+      const options = G.room.neighbors(r.c, r.r).filter((n) => G.room.isWalkable(n.c, n.r) && !G.room.isPort(n.c, n.r)
+        && roomZone(n.c) === home && G.room.cells[n.r][n.c] !== '~'
+        && !(n.c === G.player.c && n.r === G.player.r) && !G.rotlings.some((o) => o !== r && o.c === n.c && o.r === n.r));
       if (options.length) r.target = pick(options);
       r.wait = 1 + Math.random() * 2;
     }
@@ -456,7 +572,7 @@ async function debugRotling(r) {
   zoomTo(r.pos.clone(), 0.55);
   const d = DISTRICTS[G.place];
   const realNote = G.place === 'lingo' ? 'Mr. Phil\'s rule: if people use it and understand it, it\'s a real word.' : null;
-  const res = await openDebug({ item: r.item, profile: G.profile, mode: r.boss ? 'finale' : 'rotling', realNote, title: r.review ? 'REVIEW ROTLING · a morpheme you haven\'t used in a while' : null });
+  const res = await openDebug({ item: r.item, profile: G.profile, mode: 'rotling', realNote, title: r.review ? 'REVIEW ROTLING · a morpheme you haven\'t used in a while' : null });
   r.frozen = false;
   if (G.place === 'timed') { timedResult(r, res); return; }
   if (!res.solved) {
@@ -469,14 +585,13 @@ async function debugRotling(r) {
   if (r.review) { hud.toast('Review complete: morpheme restored', 'good'); return; }
   if (d && r.index !== undefined) {
     const prog = store.dprog(G.profile, G.place);
-    const list = prog.rotlings[G.roomIndex] || (prog.rotlings[G.roomIndex] = []);
+    const list = prog.rotlings[1] || (prog.rotlings[1] = []);
     if (!list.includes(r.index)) list.push(r.index);
     G.rot = Math.max(0, G.rot - 18);
     store.save();
-    const left = G.rotlings.filter((x) => !x.review && x.index !== undefined).length;
-    if (left === 0) {
-      hud.toast('Room clear! The terminal is free.', 'good');
-      if (G.place === 'lingo') prog.done[`rotlings${G.roomIndex}`] = true;
+    if (!G.rotlings.some((x) => x.index !== undefined)) {
+      hud.toast('Rotling zone clear!', 'good');
+      if (d.id === 'lingo') prog.done.rotlings1 = true;
     }
   }
 }
@@ -492,7 +607,8 @@ function bumpBack(r) {
 function updateRot(dt) {
   const d = DISTRICTS[G.place];
   const live = G.rotlings.filter((r) => !r.review).length;
-  const visible = !!(d && d.rotMeter && G.room && (live > 0 || G.rot > 0) && G.roomIndex === 1);
+  const inZone = !!(d && G.player && roomZone(G.player.c) === 1);
+  const visible = !!(d && d.rotMeter && (live > 0 || G.rot > 0) && inZone);
   hud.setRot(visible, G.rot, G.carried.length);
   if (!visible || blocked()) return;
   G.rot = clamp(G.rot + dt * 0.33 * live, 0, 100);
@@ -500,11 +616,9 @@ function updateRot(dt) {
     G.rotSpawned = true;
     const words = collectPartWords().filter((w) => w.origin === G.place);
     const w = pick(words);
-    const free = shuffle(G.room.find('.')).find((c) => G.room.isWalkable(c.c, c.r));
+    const free = shuffle(G.room.find('.')).find((c) => roomZone(c.c) === 1 && G.room.isWalkable(c.c, c.r));
     if (w && free) {
-      const r = spawnRotling({ p: w.ids }, free, { review: false });
-      r.index = undefined;
-      r.extra = true;
+      spawnRotling({ p: w.ids }, free);
       sfx.rot();
       hud.toast('The Rot spreads! A new Rotling crawled in.', 'warn');
     }
@@ -519,13 +633,13 @@ async function crash() {
   fx.classList.remove('on');
   void fx.offsetWidth;
   fx.classList.add('on');
-  hud.toast('SYSTEM CRASH. Rebooting at the room entrance…', 'warn');
+  hud.toast('SYSTEM CRASH. Rebooting at the firewall…', 'warn');
   const spot = { c: G.player.c, r: G.player.r };
   if (G.carried.length) { dropPickups(G.carried, spot); G.carried = []; }
   G.profile.stats.crashes += 1;
   store.save();
   await wait(900);
-  placePlayer(G.room.marks['@']);
+  placePlayer(G.room.marks['&'] || G.room.marks['@']);
   G.rot = 30;
   G.busy = false;
   hud.toast('Your loose morphemes are where you crashed. Go get them.', 'gold');
@@ -538,6 +652,7 @@ function refreshObjective() {
   hud.renderInventory(G.profile);
   hud.renderLog(G.profile);
   if (G.tree) G.tree.userData.setLeaves(G.profile.lexicon.length, leafOrigin);
+  if (G.place === 'hub') G.room.setFlowers(6 + G.profile.lexicon.length, Math.min(1, G.profile.milestones.length / 6));
   hud.setObjective(objectiveText());
 }
 
@@ -553,13 +668,13 @@ function objectiveText() {
   if (G.place === 'hub') {
     const next = MAIN_ORDER.find((d) => !(p.districts[d] && p.districts[d].cleared));
     const reviews = G.rotlings.filter((r) => r.review).length;
-    if (reviews) return `${reviews} review Rotling${reviews > 1 ? 's' : ''} in the Core: DEBUG them to restore fading morphemes.`;
+    if (reviews) return `${reviews} review Rotling${reviews > 1 ? 's' : ''} in the Hub: DEBUG them to restore fading morphemes.`;
     if (next) {
-      const where = { anglo: 'the amber port labeled ANGLO-SAXON', latin: 'the grey port labeled LATIN', greek: 'the blue port labeled GREEK' }[next];
+      const where = { anglo: 'the amber door labeled ANGLO-SAXON', latin: 'the grey door labeled LATIN', greek: 'the blue door labeled GREEK' }[next];
       const deskHint = p.clues.some(Boolean) && !p.deskOpen ? ' Your clue cards open something on the Secret Secretary Desk.' : '';
       return `Enter ${DISTRICTS[next].name} through ${where}.${deskHint}`;
     }
-    if (!p.finale.beaten) return `All three keywords are yours. ${p.deskOpen ? '' : 'Try the Secret Secretary Desk, then '}Face the Rot through the green port labeled THE ROT.`;
+    if (!p.finale.beaten) return `All three keywords are yours. ${p.deskOpen ? '' : 'Try the Secret Secretary Desk, then '}Face the Rot through the green door labeled THE ROT.`;
     return p.deskOpen ? 'The Lexinet is restored. Try Overclock Mode, or build Made-up Words at the Morph Compiler.' : 'The Lexinet is restored. The Secret Secretary Desk is still locked…';
   }
   if (G.place === 'timed') return 'DEBUG as many Rotlings as you can before time runs out.';
@@ -567,49 +682,41 @@ function objectiveText() {
   const d = DISTRICTS[G.place];
   if (!d) return '';
   const prog = store.dprog(p, d.id);
-  const room = d.rooms[G.roomIndex];
   const done = prog.done;
-  const r = G.roomIndex;
-  if (prog.cleared && r === d.rooms.length - 1) return 'District clear! Take the CORE port back to the hub.';
-  if (r === 0) {
-    if (!done.mentor) return `Talk to ${d.mentor.name}.`;
-    if (room.gate && !done.gate0) return 'Click the glowing firewall to unlock it.';
-    return 'Walk through the NEXT port.';
-  }
+  const last = d.rooms.length - 1;
+  if (prog.cleared) return 'Room clear! Take the HUB door back.';
+  if (!done.mentor) return `Talk to ${d.mentor.name}.`;
+  if (!done.gate0) return 'Click the glowing firewall to unlock it.';
   const live = G.rotlings.filter((x) => x.index !== undefined).length;
-  if (room.rotlings && live) return `DEBUG the Rotlings: ${live} left. Click one to start.`;
-  if (room.terminal && !done[`terminal${r}`]) return 'Use the terminal to build the bridge.';
-  if (room.gate && !done[`gate${r}`]) return 'Cross the bridge and click the glowing firewall to unlock it.';
-  if (room.link && !done[`link${r}`]) return 'Use the LINK node.';
-  if (room.newword && !done[`newword${r}`]) return 'Open the UNKNOWN FILE console.';
-  if (room.core && !done[`core${r}`]) return d.id === 'lingo' ? 'Finish the lesson at the Smart Board core.' : 'Restore the District Core.';
-  if (G.roomIndex < d.rooms.length - 1) return 'Walk through the NEXT port.';
-  return 'Take the CORE port back to the hub.';
+  if (live) return `DEBUG the Rotlings: ${live} left. Click one to start.`;
+  if (d.rooms[1].terminal && !done.terminal1) return 'Use the terminal to build the bridge.';
+  if (d.rooms[1].gate && !done.gate1) return 'Cross the bridge and unlock the second firewall.';
+  if (!done[`link${last}`]) return 'Use the LINK node.';
+  if (!done[`newword${last}`]) return 'Open the UNKNOWN FILE console.';
+  return d.id === 'lingo' ? 'Finish the lesson at the Smart Board core.' : 'Restore the room core.';
 }
 
-// ── Hub ───────────────────────────────────────────────────────────
+// ── The Hub ───────────────────────────────────────────────────────
 
 const cleared = (id) => !!(G.profile.districts[id] && G.profile.districts[id].cleared);
 const portOpen = (id) => id === 'anglo' || cleared(MAIN_ORDER[MAIN_ORDER.indexOf(id) - 1]);
 
 async function enterHub(fromPort = null) {
   G.place = 'hub';
-  G.roomIndex = 0;
-  G.profile.place = { id: 'hub', room: 0 };
+  G.profile.place = { id: 'hub' };
   store.save();
   let arrivalCell = null;
-  const map = HUB_MAP;
   if (fromPort) {
-    const H = map.length;
-    const W = map[0].length;
-    map.forEach((row, r) => [...row].forEach((ch, c) => {
+    const H = HUB_MAP.length;
+    const W = HUB_MAP[0].length;
+    HUB_MAP.forEach((row, r) => [...row].forEach((ch, c) => {
       if (ch !== fromPort) return;
       arrivalCell = { c: c === 0 ? 1 : c === W - 1 ? W - 2 : c, r: r === 0 ? 1 : r === H - 1 ? H - 2 : r };
-      if (fromPort === 'D') arrivalCell = { c, r: r + 1 };
+      if ('DOAX'.includes(fromPort)) arrivalCell = { c, r: r + 1 };
     }));
   }
-  await loadRoom(map, 'hub', { arrivalCell, makeObject: hubObject });
-  hud.setPlace('THE CORE');
+  await loadRoom(HUB_MAP, 'hub', { arrivalCell, makeObject: hubObject, flowers: true });
+  hud.setPlace('THE HUB');
   G.carried = [];
   spawnReviews();
   refreshObjective();
@@ -627,13 +734,13 @@ async function showPatchNotes() {
   store.save();
   const words = [...new Set(fresh.map((e) => e.w))];
   const list = (ws) => (ws.length === 1 ? ws[0] : `${ws.slice(0, -1).join(', ')} and ${ws[ws.length - 1]}`);
-  const panel = (await import('../panels/host.js')).openPanel({ dim: 0.6 });
+  const panel = openPanel({ dim: 0.6 });
   const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'INSTALL PATCH ✔');
   panel.root.append(el('section', { class: 'glass lesson' },
     el('div', { class: 'kicker' }, `LEXINET PATCH NOTES · v1.${patch.n}`),
     el('h2', {}, `Patch 1.${patch.n}: ${p.name} restored ${list(words.slice(0, 4))}${words.length > 4 ? `, plus ${words.length - 4} more` : ''}.`),
     el('ul', { class: 'insp-list' }, fresh.slice(0, 10).map((e) => el('li', {}, el('b', {}, e.w), `: ${e.p.map((id) => morph(id).text).join(' + ')}`))),
-    el('p', { style: { color: 'var(--ink-dim)' } }, `Known issues: the Rot. Words on your Lexicon Tree: ${p.lexicon.length}.`),
+    el('p', {}, `Known issues: the Rot. Words on your Lexicon Tree: ${p.lexicon.length}.`),
     el('div', { class: 'lesson-foot' }, el('span'), done)));
   sfx.unlock();
   await new Promise((res) => {
@@ -651,34 +758,32 @@ function hubObject(ch, c, r) {
     const open = portOpen(id);
     const mesh = port('hub', { color: ORIGIN_COLOR[id], label: open ? DISTRICTS[id].short.toUpperCase() : 'LOCKED', locked: !open, axis: edgeAxis });
     if (!open) return { mesh, label: 'LOCKED', use: async () => { sfx.bad(); hud.toast(`Clear ${DISTRICTS[MAIN_ORDER[MAIN_ORDER.indexOf(id) - 1]].name} first.`, 'warn'); } };
-    return { mesh, walkable: true, port: () => enterDistrict(id, 0, '@') };
+    return { mesh, walkable: true, port: () => enterRoom(id, '@') };
   }
   if (ch === '4') {
     const open = MAIN_ORDER.every(cleared);
     const mesh = port('rot', { color: 0x7dff3a, label: open ? 'THE ROT' : 'SEALED', locked: !open, axis: edgeAxis });
-    if (!open) return { mesh, label: 'SEALED', use: async () => { sfx.bad(); hud.toast('Sealed. Clear all three districts to face the Rot.', 'warn'); } };
+    if (!open) return { mesh, label: 'SEALED', use: async () => { sfx.bad(); hud.toast('Sealed. Clear all three rooms to face the Rot.', 'warn'); } };
     return { mesh, walkable: true, port: () => startFinale() };
   }
   if (ch === 'L') {
-    const mesh = lexiconTree();
-    G.tree = mesh;
-    return { mesh, label: 'VIEW', use: () => screens.lexiconPanel(G.profile) };
+    // The tree itself never takes clicks: only the small glowing ring at its base does.
+    const tree = lexiconTree();
+    tree.scale.setScalar(1.6);
+    G.tree = tree;
+    const zone = treeBaseZone();
+    G.treeZone = zone;
+    return { mesh: zone, scenery: tree, label: 'VIEW TREE', smallZone: 0.45, use: () => screens.lexiconPanel(G.profile) };
   }
-  if (ch === 'D') {
-    const mesh = secretaryDesk();
-    mesh.rotation.y = 0;
-    return { mesh, label: 'OPEN', use: () => useDesk(mesh) };
-  }
+  if (ch === 'D') return { mesh: secretaryDesk(), label: 'OPEN', use: () => useDesk() };
   if (ch === 'A') return { mesh: avatarBooth('hub'), label: 'CUSTOMIZE', use: () => customize() };
   if (ch === 'O') {
     const open = G.profile.milestones.includes('anglo');
     const mesh = arcadeCabinet('OVERCLOCK', 0xff3df0, !open);
-    mesh.rotation.y = -Math.PI / 2;
-    return { mesh, label: open ? 'PLAY' : 'LOCKED', use: async () => { if (!open) { sfx.bad(); hud.toast('Overclock Mode unlocks when you clear the Anglo-Saxon District.', 'warn'); return; } await startTimed(); } };
+    return { mesh, label: open ? 'PLAY' : 'LOCKED', use: async () => { if (!open) { sfx.bad(); hud.toast('Overclock Mode unlocks when you clear the Anglo-Saxon Room.', 'warn'); return; } await startTimed(); } };
   }
   if (ch === 'X') {
-    const mesh = compilerConsole('hub');
-    return { mesh, label: 'COMPILE', use: async () => {
+    return { mesh: compilerConsole('hub'), label: 'COMPILE', use: async () => {
       if (!G.profile.learned.some((id) => morph(id).type === 'base')) { hud.toast('Learn some morphemes from Old Wynn first.', 'warn'); return; }
       zoomTo(G.room.toWorld(c, r), 0.6);
       await openCompile({ mode: 'free', profile: G.profile, onMadeUp: (w) => hud.toast(`Made-up Word saved: ${w}`, 'gold') });
@@ -695,7 +800,7 @@ function spawnReviews() {
   const picks = shuffle(words).slice(0, 3);
   const spots = shuffle(G.room.find('.').filter((c) => G.room.isWalkable(c.c, c.r)));
   picks.forEach((w, i) => { if (spots[i]) spawnRotling({ p: w.ids }, spots[i], { review: true }); });
-  if (picks.length) hud.toast(`${picks.length} morpheme${picks.length > 1 ? 's are' : ' is'} fading. Review Rotlings appeared in the Core.`, 'gold');
+  if (picks.length) hud.toast(`${picks.length} morpheme${picks.length > 1 ? 's are' : ' is'} fading. Review Rotlings appeared in the Hub.`, 'gold');
 }
 
 async function customize() {
@@ -709,10 +814,11 @@ async function customize() {
   });
 }
 
-async function useDesk(mesh) {
-  zoomTo(mesh.position.clone().add(new THREE.Vector3(0, 0.8, 0)), 0.38);
+async function useDesk() {
+  const d = G.room.objects.find((o) => o.ch === 'D');
+  zoomTo(G.room.toWorld(d.c, d.r).add(new THREE.Vector3(0, 0.8, 0)), 0.4);
   if (!G.profile.clues.some(Boolean) && !G.profile.deskOpen) {
-    await say('system', ['An ornate desk with a golden plaque: SECRET SECRETARY DESK. Its drawer has three combination letter locks.', 'Each district\'s mentor holds one keyword. Collect all three.']);
+    await say('system', ['An ornate desk with a golden plaque: SECRET SECRETARY DESK. Its drawer has three combination letter locks.', 'Each room\'s mentor holds one keyword. Collect all three.']);
   }
   const res = await openDesk({ profile: G.profile });
   if (res.opened && !G.profile.deskOpen) {
@@ -720,90 +826,80 @@ async function useDesk(mesh) {
     unlockMilestone('desk');
     store.save();
   }
-  if (res.action === 'enter') await enterDistrict('lingo', 0, '@');
+  if (res.action === 'enter') await enterRoom('lingo', '@');
 }
 
-// ── Districts ─────────────────────────────────────────────────────
+// ── The four Rooms ────────────────────────────────────────────────
 
-async function enterDistrict(id, roomIndex, arrival) {
+async function enterRoom(id, arrival) {
   const d = DISTRICTS[id];
   G.place = id;
-  G.roomIndex = roomIndex;
   G.rot = 0;
   G.rotSpawned = false;
   G.carried = [];
-  G.profile.place = { id, room: roomIndex };
+  G.profile.place = { id };
   const prog = store.dprog(G.profile, id);
   store.save();
-  const map = d.maps[roomIndex];
-  await loadRoom(map, id, { arrival, makeObject: (ch, c, r) => districtObject(d, roomIndex, ch, c, r) });
-  // Restore what is already done in this room.
-  if (prog.done[`terminal${roomIndex}`]) G.room.formBridge(G.room.marks['@'].r, true);
-  const room = d.rooms[roomIndex];
-  if (room.rotlings) {
-    const killed = prog.rotlings[roomIndex] || [];
-    const spots = G.room.find('R');
-    room.rotlings.forEach((item, i) => {
-      if (killed.includes(i)) return;
-      const spot = spots[i % spots.length];
-      const rr = spawnRotling(item, spot);
-      rr.index = i;
-    });
-  }
-  hud.setPlace(d.name.toUpperCase(), d.maps.length, roomIndex);
+  await loadRoom(d.map, id, { arrival, makeObject: (ch, c, r) => roomObject(d, ch, c, r) });
+  if (prog.done.terminal1) G.room.formBridge(CORRIDOR, true);
+  const killed = prog.rotlings[1] || [];
+  const spots = G.room.find('R');
+  (d.rooms[1].rotlings || []).forEach((item, i) => {
+    if (killed.includes(i)) return;
+    const rr = spawnRotling(item, spots[i % spots.length]);
+    rr.index = i;
+  });
+  hud.setPlace(d.name.toUpperCase());
   refreshObjective();
-  if (roomIndex === 0 && !prog.introDone) {
-    // Start the mentor once the port transition has released the game.
+  if (!prog.introDone) {
+    // Start the mentor once the door transition has released the game.
     const mentor = G.room.objects.find((o) => o.ch === 'M');
     setTimeout(() => { if (!G.busy && G.place === id) use({ obj: mentor }); }, 400);
-  } else if (room.rotlings && G.rotlings.length && !prog[`rotSay${roomIndex}`]) {
-    prog[`rotSay${roomIndex}`] = true;
-    store.save();
-    const sp = d.id === 'lingo' ? 'phil' : 'system';
-    const lines = room.rotlingSay || (d.rotMeter
-      ? ['Rotlings! Click one to DEBUG it: cut its word at the seams, then judge it, real word or Rot fake.', 'Watch the ROT meter. Rotlings left alone make it rise. If it fills, the room crashes and you reboot at the entrance.']
-      : ['Rotlings! Click one to DEBUG it: cut its word at the seams, then judge it, real word or Rot fake.']);
-    await say(sp, lines);
   }
 }
 
-function districtObject(d, ri, ch, c, r) {
+function roomObject(d, ch, c, r) {
   const prog = store.dprog(G.profile, d.id);
-  const room = d.rooms[ri];
   const style = d.id;
-  const H = d.maps[ri].length;
-  const axis = r === 0 || r === H - 1 ? 'z' : 'x';
+  const last = d.rooms.length - 1;
+  if (d.props && d.props[ch]) {
+    const prop = d.props[ch];
+    const mesh = morphProp(prop.model, style);
+    mesh.rotation.y = c > d.map[0].length / 2 ? -Math.PI / 2 : Math.PI / 2;
+    const tag = labelSprite(prop.ids ? prop.ids.map((id) => morph(id).text).join(' · ') : prop.word, { color: '#ffffff', bg: 'rgba(10,6,24,0.88)', border: '#ffd23f', height: 0.3 });
+    tag.position.y = 1.75;
+    tag.material.opacity = 0;
+    tag.visible = false;
+    mesh.add(tag);
+    const o = { mesh, info: true, prop, tag };
+    G.props.push(o);
+    return o;
+  }
   switch (ch) {
     case 'M': {
       const m = createMentor(d.mentor.id);
       G.mentor = m;
-      m.group.rotation.y = Math.PI / 4;
       return { mesh: m.group, label: 'TALK', use: () => runMentor(d) };
     }
-    case 'G': {
+    case 'G':
+    case 'F': {
+      const gz = ch === 'G' ? 0 : 1;
       const mesh = gate(style);
-      const open = !!prog.done[`gate${ri}`];
+      const open = !!prog.done[`gate${gz}`];
       mesh.userData.setOpen(open);
-      const o = { mesh, label: 'UNLOCK', walkable: false, use: () => runGate(d, ri, o) };
+      const o = { mesh, label: 'UNLOCK', walkable: false, use: () => runGate(d, gz, o) };
       if (open) { o.walkable = true; o.use = null; o.label = null; }
       return o;
     }
-    case 'T': return { mesh: terminal(style, 'BRIDGE'), label: 'USE', use: () => runTerminal(d, ri) };
-    case 'N': return { mesh: linkNode(style), label: 'LINK', use: () => runLink(d, ri) };
-    case 'W': return { mesh: newWordConsole(style), label: 'OPEN', use: () => runNewWord(d, ri) };
+    case 'T': return { mesh: terminal(style, 'BRIDGE'), label: 'USE', use: () => runTerminal(d) };
+    case 'N': return { mesh: linkNode(style), label: 'LINK', use: () => runLink(d, last) };
+    case 'W': return { mesh: newWordConsole(style), label: 'OPEN', use: () => runNewWord(d, last) };
     case 'C': {
       const mesh = core(style);
-      return { mesh, label: d.id === 'lingo' ? 'FINISH' : 'RESTORE', use: () => runCore(d, ri), update: (dt) => { mesh.userData.spin.rotation.y += dt; mesh.userData.rings[0].rotation.z += dt * 0.7; mesh.userData.rings[1].rotation.y += dt * 1.1; } };
+      return { mesh, label: d.id === 'lingo' ? 'FINISH' : 'RESTORE', use: () => runCore(d, last), update: (dt) => { mesh.userData.spin.rotation.y += dt; mesh.userData.rings[0].rotation.z += dt * 0.7; mesh.userData.rings[1].rotation.y += dt * 1.1; } };
     }
     case 'R': return { walkable: true };
-    case 'E': return { mesh: port(style, { label: 'NEXT', axis }), walkable: true, port: () => enterDistrict(d.id, ri + 1, '@') };
-    case 'B': return { mesh: port(style, { label: 'BACK', axis }), walkable: true, port: () => enterDistrict(d.id, ri - 1, '&') };
-    case 'H': {
-      const toHub = ri === 0 || prog.cleared;
-      const mesh = port(style, { label: toHub ? 'CORE' : 'LOCKED', locked: !toHub, axis, color: 0x00e5ff });
-      if (!toHub) return { mesh, label: 'LOCKED', use: async () => { sfx.bad(); hud.toast('This port opens when the district is clear.', 'warn'); } };
-      return { mesh, walkable: true, port: () => enterHub(d.id === 'lingo' ? 'D' : DISTRICT_PORT[d.id]) };
-    }
+    case 'H': return { mesh: port(style, { label: 'HUB', axis: 'x', color: 0x00e5ff }), walkable: true, port: () => enterHub(d.id === 'lingo' ? 'D' : ROOM_PORT[d.id]) };
     default: return null;
   }
 }
@@ -823,10 +919,12 @@ async function teach(ids, tasks, note) {
   hud.renderInventory(G.profile);
 }
 
+const objPos = (ch, lift = 0) => { const o = G.room.objects.find((x) => x.ch === ch); return G.room.toWorld(o.c, o.r).add(new THREE.Vector3(0, lift, 0)); };
+
 async function runMentor(d) {
   const prog = store.dprog(G.profile, d.id);
   const sp = d.mentor.id;
-  if (G.mentor) zoomTo(G.room.toWorld(G.room.objects.find((o) => o.ch === 'M').c, G.room.objects.find((o) => o.ch === 'M').r).add(new THREE.Vector3(0, 0.8, 0)), 0.5);
+  zoomTo(objPos('M', 0.8), 0.5);
   if (!prog.introDone) {
     await say(sp, d.mentorFlow.intro);
     prog.introDone = true;
@@ -837,11 +935,9 @@ async function runMentor(d) {
     const b = batches[prog.batch];
     await teach(b.teach, b.tasks);
     if (b.say && !prog[`said${prog.batch}`]) { await say(sp, b.say); prog[`said${prog.batch}`] = true; }
-    const start = prog.batchTask || 0;
-    const tasks = b.tasks.slice(start);
     const res = await openCompile({
       mode: b.kind === 'unpack' ? 'unpack' : 'compile',
-      tasks,
+      tasks: b.tasks.slice(prog.batchTask || 0),
       profile: G.profile,
       pool: poolFor(d),
       onSolved: (t) => {
@@ -868,17 +964,17 @@ async function runMentor(d) {
   }
 }
 
-async function runGate(d, ri, obj) {
+async function runGate(d, gz, obj) {
   const prog = store.dprog(G.profile, d.id);
-  const g = d.rooms[ri].gate;
-  const needOk = g.needs === 'mentor' ? prog.done.mentor : g.needs === 'terminal' ? prog.done[`terminal${ri}`] : true;
+  const g = d.rooms[gz].gate;
+  const needOk = g.needs === 'mentor' ? prog.done.mentor : g.needs === 'terminal' ? prog.done.terminal1 : true;
   if (!needOk) { sfx.bad(); hud.toast(g.lockedMsg, 'warn'); return; }
   zoomTo(G.room.toWorld(obj.c, obj.r), 0.55);
-  if (!prog[`gateSay${ri}`]) { await say(d.mentor.id === 'phil' ? 'phil' : 'system', g.say); prog[`gateSay${ri}`] = true; }
-  const key = `gateTask${ri}`;
+  if (!prog[`gateSay${gz}`]) { await say(d.mentor.id === 'phil' ? 'phil' : 'system', g.say); prog[`gateSay${gz}`] = true; }
+  const key = `gateTask${gz}`;
   const res = await openCompile({ mode: 'patch', tasks: g.tasks.slice(prog[key] || 0), profile: G.profile, pool: poolFor(d), onSolved: () => { prog[key] = (prog[key] || 0) + 1; store.save(); } });
   if (res.done < res.total) return;
-  prog.done[`gate${ri}`] = true;
+  prog.done[`gate${gz}`] = true;
   store.save();
   bankCarried();
   obj.mesh.userData.setOpen(true);
@@ -890,71 +986,66 @@ async function runGate(d, ri, obj) {
   hud.toast('Firewall open!', 'good');
 }
 
-async function runTerminal(d, ri) {
+async function runTerminal(d) {
   const prog = store.dprog(G.profile, d.id);
-  const t = d.rooms[ri].terminal;
+  const t = d.rooms[1].terminal;
   if (G.rotlings.some((r) => r.index !== undefined)) { sfx.bad(); hud.toast(t.lockedMsg, 'warn'); return; }
-  if (prog.done[`terminal${ri}`]) { hud.toast('The bridge is already up.'); return; }
-  const tObj = G.room.objects.find((o) => o.ch === 'T');
-  zoomTo(G.room.toWorld(tObj.c, tObj.r), 0.55);
+  if (prog.done.terminal1) { hud.toast('The bridge is already up.'); return; }
+  zoomTo(objPos('T'), 0.55);
   await teach(t.teach, t.tasks);
-  if (!prog[`termSay${ri}`]) { await say('system', t.say); prog[`termSay${ri}`] = true; }
-  const key = `termTask${ri}`;
-  const res = await openCompile({ mode: 'compile', tasks: t.tasks.slice(prog[key] || 0), profile: G.profile, pool: poolFor(d), onSolved: () => { prog[key] = (prog[key] || 0) + 1; store.save(); } });
+  if (!prog.termSay1) { await say('system', t.say); prog.termSay1 = true; }
+  const res = await openCompile({ mode: 'compile', tasks: t.tasks.slice(prog.termTask1 || 0), profile: G.profile, pool: poolFor(d), onSolved: () => { prog.termTask1 = (prog.termTask1 || 0) + 1; store.save(); } });
   if (res.done < res.total) return;
-  prog.done[`terminal${ri}`] = true;
+  prog.done.terminal1 = true;
   store.save();
   bankCarried();
-  G.room.formBridge(G.room.marks['@'].r);
+  G.room.formBridge(CORRIDOR);
   G.rot = 0;
   sfx.bridge();
   hud.toast('Data bridge online!', 'good');
 }
 
-async function runLink(d, ri) {
+async function runLink(d, zone) {
   const prog = store.dprog(G.profile, d.id);
-  const link = d.rooms[ri].link;
-  if (prog.done[`link${ri}`]) { hud.toast('Already linked. Nice tree.'); return; }
-  const n = G.room.objects.find((o) => o.ch === 'N');
-  zoomTo(G.room.toWorld(n.c, n.r), 0.55);
-  if (!prog[`linkSay${ri}`]) { await say(d.id === 'lingo' ? 'phil' : 'system', link.say); prog[`linkSay${ri}`] = true; }
+  const link = d.rooms[zone].link;
+  if (prog.done[`link${zone}`]) { hud.toast('Already linked. Nice tree.'); return; }
+  zoomTo(objPos('N'), 0.55);
+  if (!prog[`linkSay${zone}`]) { await say(d.id === 'lingo' ? 'phil' : 'system', link.say); prog[`linkSay${zone}`] = true; }
   const res = await openLink({ link, profile: G.profile });
   if (!res.solved) return;
-  prog.done[`link${ri}`] = true;
+  prog.done[`link${zone}`] = true;
   link.bases.forEach((b) => b.words.forEach((w) => { if (b.id) store.addLexicon(G.profile, w, [b.id]); }));
   store.save();
   hud.toast('Families linked!', 'good');
 }
 
-async function runNewWord(d, ri) {
+async function runNewWord(d, zone) {
   const prog = store.dprog(G.profile, d.id);
-  const item = d.rooms[ri].newword;
-  if (prog.done[`newword${ri}`]) { hud.toast(`Solved: ${item.w}.`); return; }
-  const w = G.room.objects.find((o) => o.ch === 'W');
-  zoomTo(G.room.toWorld(w.c, w.r), 0.55);
+  const item = d.rooms[zone].newword;
+  if (prog.done[`newword${zone}`]) { hud.toast(`Solved: ${item.w}.`); return; }
+  zoomTo(objPos('W'), 0.55);
   if (item.teachFirst) await teach(item.teachFirst, [], 'Two new Greek pieces before the case.');
   const res = await openNewWord({ item, profile: G.profile });
   if (!res.solved) return;
-  prog.done[`newword${ri}`] = true;
+  prog.done[`newword${zone}`] = true;
   if (d.id !== 'lingo') store.addLexicon(G.profile, item.w, item.p);
   store.save();
   hud.toast('Case closed!', 'good');
 }
 
-async function runCore(d, ri) {
+async function runCore(d, zone) {
   const prog = store.dprog(G.profile, d.id);
-  const c = d.rooms[ri].core;
-  if (prog.done[`core${ri}`]) { hud.toast('The core is already restored.'); return; }
-  const missing = (c.needs || []).filter((k) => !prog.done[`${k}${ri}`] && !(k === 'rotlings' && !G.rotlings.some((r) => r.index !== undefined)));
+  const c = d.rooms[zone].core;
+  if (prog.done[`core${zone}`]) { hud.toast('The core is already restored.'); return; }
+  const missing = (c.needs || []).filter((k) => !prog.done[`${k}${zone}`] && !(k === 'rotlings' && !G.rotlings.some((r) => r.index !== undefined)));
   if (missing.length) { sfx.bad(); hud.toast(c.lockedMsg, 'warn'); return; }
-  const cObj = G.room.objects.find((o) => o.ch === 'C');
-  zoomTo(G.room.toWorld(cObj.c, cObj.r).add(new THREE.Vector3(0, 0.6, 0)), 0.5);
+  zoomTo(objPos('C', 0.6), 0.5);
   await teach(c.teach, c.tasks);
   if (!prog.coreSay) { await say(d.mentor.id === 'phil' ? 'phil' : 'system', c.say); prog.coreSay = true; }
-  const key = `coreTask${ri}`;
+  const key = `coreTask${zone}`;
   const res = await openCompile({ mode: c.kind === 'unpack' ? 'unpack' : 'compile', tasks: c.tasks.slice(prog[key] || 0), profile: G.profile, pool: poolFor(d), onSolved: (t) => { prog[key] = (prog[key] || 0) + 1; if (c.kind === 'unpack') store.learn(G.profile, t.p); store.save(); } });
   if (res.done < res.total) return;
-  prog.done[`core${ri}`] = true;
+  prog.done[`core${zone}`] = true;
   prog.cleared = true;
   store.save();
   bankCarried();
@@ -963,31 +1054,18 @@ async function runCore(d, ri) {
   if (d.keySlot >= 0) {
     G.profile.clues[d.keySlot] = true;
     const clue = hud.clueText(G.profile, d.keySlot);
-    await say('system', [`KEYWORD ${d.keySlot + 1} RECEIVED. It is a ${clue.slotName} with ${clue.length} letters: the ${clue.slotName} shared by ${clue.words.join(', ')}.`, 'Clue cards live in the CLUES tab of your inventory. Something in the Core is waiting for all three.']);
+    await say('system', [`KEYWORD ${d.keySlot + 1} RECEIVED. It is a ${clue.slotName} with ${clue.length} letters: the ${clue.slotName} shared by ${clue.words.join(', ')}.`, 'Clue cards live in the CLUES tab of your morphemes drawer. Something in the Hub is waiting for all three.']);
     hud.toast(`Keyword ${d.keySlot + 1} clue added to CLUES`, 'gold');
   }
   unlockMilestone(d.id);
   store.save();
-  // Re-open the hub port in this room.
-  const hObj = G.room.objects.find((o) => o.ch === 'H');
-  if (hObj) {
-    G.room.group.remove(hObj.mesh);
-    const fresh = districtObject(d, ri, 'H', hObj.c, hObj.r);
-    delete hObj.use; // the locked port's "not yet" handler
-    delete hObj.label;
-    Object.assign(hObj, fresh);
-    hObj.mesh.position.copy(G.room.toWorld(hObj.c, hObj.r));
-    hObj.mesh.traverse((n) => { n.userData.obj = hObj; });
-    G.room.group.add(hObj.mesh);
-    G.room.setBlocked(hObj.c, hObj.r, false);
-  }
 }
 
 function unlockMilestone(key) {
-  if (store.addMilestone(G.profile, key)) hud.toast('New Morpher parts unlocked! Visit CUSTOMIZE in the Core.', 'gold');
+  if (store.addMilestone(G.profile, key)) hud.toast('New Morpher parts unlocked! Visit CUSTOMIZE in the Hub.', 'gold');
 }
 
-// ── Overclock Mode ────────────────────────────────────────────────────
+// ── Overclock Mode ────────────────────────────────────────────────
 
 async function startTimed() {
   const origins = MAIN_ORDER.filter((d) => G.profile.milestones.includes(d));
@@ -998,8 +1076,7 @@ async function startTimed() {
   G.timed = { t: 120, score: 0, words: 0, first: 0, attempts: 0, streak: 0, bestStreak: 0, spawn: 0, pool: words, fakes, over: false };
   await loadRoom(TIMED_MAP, 'arcade', {});
   hud.setPlace('OVERCLOCK MODE');
-  const timer = el('div', { class: 'timer glass', id: 'timed-clock' }, '2:00');
-  $('hud').append(timer);
+  $('hud').append(el('div', { class: 'timer glass', id: 'timed-clock' }, '2:00'));
   refreshObjective();
   await say('system', ['OVERCLOCK MODE: 2 minutes. Rotlings pour in. DEBUG as many as you can.', 'First-try splits build a streak. Streaks multiply your score. Go!']);
 }
@@ -1043,8 +1120,7 @@ async function endTimed() {
   const clock = $('timed-clock');
   if (clock) clock.remove();
   const result = { score: T.score, words: T.words, accuracy: T.attempts ? Math.round((T.first / T.attempts) * 100) : 0, bestStreak: T.bestStreak };
-  const entry = { name: G.profile.name, score: result.score, words: result.words, t: Date.now() };
-  const rank = store.addScore(entry);
+  const rank = store.addScore({ name: G.profile.name, score: result.score, words: result.words, t: Date.now() });
   sfx.unlock();
   screens.timedResultScreen({
     profile: G.profile, result, rank,
@@ -1063,17 +1139,14 @@ async function startFinale() {
     if (ch === 'C') { G.finale.cell = { c, r }; return null; }
     return null;
   } });
-  hud.setPlace('THE ROT', 3, 0);
   spawnBoss();
   refreshObjective();
   await say('rot', ['So. The little Morpher who glues words back together.', 'I am the Rot. I am every word that never held. Split me if you can.']);
 }
 
 function spawnBoss() {
-  const ids = G.finale.words[G.finale.stage];
-  const r = spawnRotling({ p: ids }, G.finale.cell, { boss: true });
+  const r = spawnRotling({ p: G.finale.words[G.finale.stage] }, G.finale.cell, { boss: true });
   r.boss = true;
-  r.entity.group.scale.setScalar(1);
   hud.setPlace(`THE ROT · ${FINALE_POOLS[G.finale.stage].label.toUpperCase()} FORM`, 3, G.finale.stage);
 }
 
@@ -1108,19 +1181,19 @@ async function bossFight(r) {
 function openPause() {
   if (!G.profile || G.place === 'title') return;
   if (G.place === 'timed') {
-    screens.confirmBox('End this Overclock Mode run now?', 'End run', 'Keep playing').then((yes) => { if (yes) { G.timed.t = 0; } });
+    screens.confirmBox('End this Overclock Mode run now?', 'End run', 'Keep playing').then((yes) => { if (yes) G.timed.t = 0; });
     return;
   }
   screens.pauseScreen({
     profile: G.profile,
     onResume: () => {},
-    onQuit: async () => { store.save(); G.player && R.scene.remove(G.player.entity.group); G.player = null; G.profile = null; screens.closeAllScreens(); await showTitle(); },
+    onQuit: async () => { store.save(); if (G.player) R.scene.remove(G.player.entity.group); G.player = null; G.profile = null; screens.closeAllScreens(); await showTitle(); },
     onLexicon: () => screens.lexiconPanel(G.profile),
     onAvatar: () => customize(),
   });
 }
 
-// Debug hook for playtests: window.__cybermorph in the console.
+// Playtest hooks (see dev/autoplay.js).
 window.__cybermorph = G;
 G.step = debugStep;
 G.R = R;

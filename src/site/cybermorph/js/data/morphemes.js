@@ -2,7 +2,7 @@
  * Every morpheme CyberMorph can put on a ring.
  *
  * Fields:
- *  - id       unique key used by every district file (two morphemes can share a spelling: `in` and `in2`)
+ *  - id       unique key used by every room file (two morphemes can share a spelling: `in` and `in2`)
  *  - text     how it is spelled when it joins a word
  *  - type     pfx | base | sfx | link | word   (word = a whole free word inside a Lingo phrase)
  *  - origin   anglo | latin | greek | lingo     (sets the morpheme's look: amber glass, grey marble, holo blue, lined paper)

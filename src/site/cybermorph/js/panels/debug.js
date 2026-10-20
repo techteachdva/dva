@@ -30,7 +30,7 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
     const top = el('section', { class: 'glass panel-top' },
       el('div', { class: 'kicker' }, title || (mode === 'finale' ? 'BOSS DEBUG · split the Rot\'s word at every seam' : 'DEBUG · split the word at every seam')),
       el('div', { class: 'prompt' }, `Find ${seamsNeeded} seam${seamsNeeded === 1 ? '' : 's'}.`),
-      el('div', { style: { fontSize: '0.8rem', color: 'var(--ink-dim)', marginTop: '0.3rem' } }, 'Click between letters to cut · ←→ move · Space cut · Enter split'));
+      el('div', { style: { fontSize: '1rem', color: 'var(--ink-dim)', marginTop: '0.4rem' } }, 'Click between letters to cut · ←→ move · Space cut · Enter split'));
     const keys = el('div', { class: 'keys', role: 'group', 'aria-label': `Letters of ${shown}` });
     const segs = el('div', { class: 'seg-gloss' });
     const msg = el('div', { style: { width: 'min(760px, 80vw)' } });
@@ -106,12 +106,14 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
       [...expected, shown.length].forEach((c) => { pieces.push(shown.slice(last, c)); last = c; });
       segs.innerHTML = '';
       pieces.forEach((piece, i) => {
-        const id = item.p[i];
+        // Match each cut piece to the morpheme it is (fakes can shuffle the order), then fall back to position.
+        const byText = item.p.find((x) => morph(x).text === piece);
+        const id = byText || item.p[i];
         const m = id ? morph(id) : null;
-        const known = m && (piece === m.text || res.segments[i] === piece || piece.startsWith(m.text.slice(0, -1)));
+        const known = m && (piece === m.text || res.segments[i] === piece || (piece.length > 2 && piece.startsWith(m.text.slice(0, -1))));
         const b = el('button', { class: 'mtile', type: 'button', 'data-type': m ? m.type : 'base', 'data-origin': m ? m.origin : 'lingo' }, piece);
         b.addEventListener('click', () => (m ? sayMorph(id) : speak(piece)));
-        segs.append(el('div', { style: { textAlign: 'center' } }, b, el('div', { style: { fontSize: '0.85rem', color: 'var(--ink-dim)', marginTop: '0.25rem', maxWidth: '12rem' } }, known ? m.meaning : '? not a morpheme')));
+        segs.append(el('div', { style: { textAlign: 'center' } }, b, el('div', { style: { fontSize: '1rem', color: 'var(--ink-dim)', marginTop: '0.3rem', maxWidth: '14rem' } }, known ? m.meaning : '? not a morpheme')));
       });
       actions.innerHTML = '';
       if (phase === 'done') {

@@ -58,11 +58,33 @@ export function setContext(label, handler, sub = '') {
   ctxHandler = handler;
 }
 
-$('log-toggle').addEventListener('click', () => {
-  const log = $('log');
-  log.classList.toggle('collapsed');
-  $('log-toggle').setAttribute('aria-expanded', String(!log.classList.contains('collapsed')));
-});
+// ── Drawers (morphemes on the left, word log on the right) ────────
+function drawer(tabId, panelId, closeId) {
+  const tab = $(tabId);
+  const panel = $(panelId);
+  const set = (open) => { panel.hidden = !open; tab.setAttribute('aria-expanded', String(open)); tab.classList.toggle('open', open); };
+  tab.addEventListener('click', (e) => { e.stopPropagation(); set(panel.hidden); });
+  $(closeId).addEventListener('click', (e) => { e.stopPropagation(); set(false); });
+  return set;
+}
+export const setInventoryOpen = drawer('tab-inventory', 'inventory', 'inv-collapse');
+export const setLogOpen = drawer('tab-log', 'log', 'log-close');
+
+// ── Camera buttons ────────────────────────────────────────────────
+let camHandler = null;
+document.querySelectorAll('[data-cam]').forEach((b) => b.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (camHandler) camHandler(b.dataset.cam);
+  flashCamera(b.dataset.cam);
+}));
+export function onCamera(fn) { camHandler = fn; }
+export function flashCamera(action) {
+  const b = document.querySelector(`[data-cam="${action}"]`);
+  if (!b) return;
+  b.classList.remove('pressed');
+  void b.offsetWidth;
+  b.classList.add('pressed');
+}
 
 export function renderLog(profile) {
   const list = $('log-list');
@@ -82,11 +104,6 @@ document.querySelectorAll('.inv-tab').forEach((b) => b.addEventListener('click',
   document.querySelectorAll('.inv-tab').forEach((x) => x.classList.toggle('active', x === b));
   if (invProfile) renderInventory(invProfile);
 }));
-$('inv-collapse').addEventListener('click', () => {
-  const inv = $('inventory');
-  inv.classList.toggle('collapsed');
-  $('inv-collapse').textContent = inv.classList.contains('collapsed') ? '▴' : '▾';
-});
 
 export function setInventoryFilter(origin) { invFilter = origin; }
 
@@ -114,9 +131,10 @@ export function renderInventory(profile) {
         body.append(el('div', { class: 'clue-card sealed' }, `KEYWORD ${slot + 1} · sealed. Clear ${DISTRICTS[d].name} to reveal it.`));
       }
     });
-    body.append(el('div', { class: 'clue-card sealed' }, 'The three keywords open the Secret Secretary Desk in the hub.'));
+    body.append(el('div', { class: 'clue-card sealed' }, 'The three keywords open the Secret Secretary Desk in the Hub.'));
     return;
   }
+  $('tab-inventory').textContent = `MORPHEMES · ${profile.learned.length}`;
   const learned = profile.learned.filter((id) => !invFilter || morph(id).origin === invFilter);
   const origins = [...new Set(profile.learned.map((id) => morph(id).origin))];
   if (origins.length > 1) {

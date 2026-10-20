@@ -1,18 +1,12 @@
 /**
- * The Anglo-Saxon District — the short warm-up.
- *
- * Map legend (every district uses it):
- *   #  wall          .  floor         (space) no tile    ~  gap (a bridge forms on row of '@' when the terminal is done)
- *   M  mentor        T  terminal      G  gate (firewall lock)    R  Rotling
- *   N  link node     W  new-word console    C  district core
- *   E  exit to next room    B  back to previous room    H  back to the hub
- *   @  arrival from the previous room or hub    &  arrival when walking back from the next room
- *   o  k  decorative props in the district's style
+ * The Anglo-Saxon Room — the short warm-up. Map legend and zones: see layout.js.
  */
+
+import { buildRoomMap } from './layout.js';
 
 export const ANGLO = {
   id: 'anglo',
-  name: 'The Anglo-Saxon District',
+  name: 'The Anglo-Saxon Room',
   short: 'Anglo-Saxon',
   origin: 'anglo',
   keySlot: 0,
@@ -22,41 +16,20 @@ export const ANGLO = {
     name: 'Old Wynn',
     role: 'maintenance program',
   },
-  maps: [
-    [
-      '############',
-      '#o..k.o..k.#',
-      '#..........#',
-      '#...M......#',
-      'H@.......&GE',
-      '#..........#',
-      '#..........#',
-      '#o..k.o..k.#',
-      '############',
-    ],
-    [
-      '############',
-      '#o...#~~..k#',
-      '#.R..#~~...#',
-      '#....T~~...#',
-      'B@..R.~~.&GE',
-      '#.....~~...#',
-      '#.R..#~~...#',
-      '#o..R#~~..k#',
-      '############',
-    ],
-    [
-      '#####H######',
-      '#o........o#',
-      '#..N....W..#',
-      '#..........#',
-      'B@...C.....#',
-      '#..........#',
-      '#o...k....o#',
-      '#..........#',
-      '############',
-    ],
-  ],
+  // One big room. Zone 0: Old Wynn's workshop. Zone 1: the Rotling hall and the chasm. Zone 2: the core.
+  map: buildRoomMap([
+    [4, 4, 'M'], [2, 2, 'a'], [6, 2, 'b'], [2, 11, 'c'], [6, 11, 'd'], [3, 9, 'o'],
+    [10, 3, 'R'], [12, 4, 'R'], [10, 10, 'R'], [12, 11, 'R'], [13, 5, 'T'], [11, 1, 'k'], [11, 12, 'k'],
+    [19, 3, 'N'], [19, 11, 'W'], [21, 7, 'C'], [22, 2, 'e'], [22, 12, 'f'], [18, 1, 'o'],
+  ]),
+  props: {
+    a: { word: 'keyboard', ids: ['key', 'board'], model: 'keyboard' },
+    b: { word: 'firewall', ids: ['fire', 'wall'], model: 'firewall' },
+    c: { word: 'laptop', ids: ['lap', 'top'], model: 'laptop' },
+    d: { word: 'network', ids: ['net', 'work'], model: 'network' },
+    e: { word: 'rainbow', note: 'rain + bow: two Anglo-Saxon free bases', model: 'rainbow' },
+    f: { word: 'windmill', note: 'wind + mill: an Anglo-Saxon compound', model: 'windmill' },
+  },
 
   mentorFlow: {
     intro: [
@@ -171,7 +144,7 @@ export const ANGLO = {
         needs: ['link', 'newword'],
         lockedMsg: 'The core needs the Link Node and the Unknown File console finished.',
         teach: ['y'],
-        say: ['DISTRICT CORE: three long words to restore. Suffixes can stack.'],
+        say: ['ROOM CORE: three long words to restore. Suffixes can stack.'],
         tasks: [
           { m: 'the state of being friendly', p: ['friend', 'ly', 'ness'] },
           { m: 'the state of being sleepy', p: ['sleep', 'y', 'ness'] },

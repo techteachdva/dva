@@ -160,7 +160,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       } else if (isFree) {
         top.append(el('div', { class: 'prompt', style: { fontSize: '1.05rem' } }, 'Turn any ring. Prefix · base · base · suffix · suffix. Read left to right, and don\'t skip a column. Real words go in your Lexicon; new ones become Made-up Words.'));
       }
-      top.append(el('div', { style: { fontSize: '0.8rem', color: 'var(--ink-dim)', marginTop: '0.35rem' } }, '▲▼ or scroll to turn a ring · ←→ pick a ring · Enter to compile'));
+      top.append(el('div', { style: { fontSize: '1rem', color: 'var(--ink-dim)', marginTop: '0.4rem' } }, '▲▼ or scroll to turn a ring · ←→ pick a ring · Enter to compile'));
     }
 
     function buildControls() {

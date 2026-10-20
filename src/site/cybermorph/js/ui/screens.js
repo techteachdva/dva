@@ -10,7 +10,7 @@ import { sfx, unlockAudio } from '../core/audio.js';
 import { mtile } from './hud.js';
 import { openPanel, closeButton } from '../panels/host.js';
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 
 const layer = () => $('screen-layer');
 let stack = [];
@@ -32,7 +32,7 @@ export function closeAllScreens() { stack.forEach((s) => s.remove()); stack = []
 const progressOf = (p) => {
   const cleared = MAIN_ORDER.filter((d) => p.districts[d] && p.districts[d].cleared).length;
   const extra = [p.deskOpen ? 'desk open' : null, p.finale.beaten ? 'Rot defeated' : null].filter(Boolean);
-  return `${cleared}/3 districts${extra.length ? ' · ' + extra.join(' · ') : ''} · ${p.lexicon.length} words`;
+  return `${cleared}/3 rooms${extra.length ? ' · ' + extra.join(' · ') : ''} · ${p.lexicon.length} words`;
 };
 
 // ── Title ─────────────────────────────────────────────────────────
@@ -69,7 +69,7 @@ export function titleScreen({ onPlay, onNew, onTimed }) {
       btn('Settings', () => settingsScreen()),
       btn('Overclock scores', () => scoresScreen()),
       btn('Inspirations', () => inspirationsScreen())),
-    el('div', { style: { color: 'var(--ink-dim)', fontSize: '0.85rem', textAlign: 'center', marginTop: '0.6rem' } }, 'A morphology game by Mr. Phil · Saves stay in this browser.'));
+    el('div', { style: { color: 'var(--ink-dim)', fontSize: '1rem', textAlign: 'center', marginTop: '0.6rem' } }, 'A morphology game by Mr. Phil · Saves stay in this browser.'));
   const close = showScreen(el('div', {}, wrap, el('div', { class: 'version' }, `v${VERSION}`)));
   return close;
 }
@@ -167,7 +167,6 @@ export function settingsScreen() {
   toggle('speakDialogue', 'Read mentor lines aloud');
   seg('rate', 'Speech speed', [[0.8, 'Slow'], [0.95, 'Normal'], [1.15, 'Fast']]);
   seg('textSize', 'Text size', [[0.9, 'A−'], [1, 'A'], [1.15, 'A+'], [1.3, 'A++']]);
-  seg('font', 'Font', [['default', 'Default'], ['readable', 'Extra readable']]);
   toggle('reducedMotion', 'Reduce motion');
   toggle('cognates', 'Show Spanish cognates');
   seg('quality', 'Graphics (reload to apply)', [['auto', 'Auto'], ['low', 'Low'], ['high', 'High']]);
@@ -183,8 +182,9 @@ export function howToScreen() {
   const close = showScreen(el('section', { class: 'sheet glass' },
     el('h2', {}, 'HOW TO PLAY'),
     el('div', { class: 'howto-grid' },
-      el('div', {}, el('b', {}, 'MOVE'), 'Click a floor tile to walk there. WASD or the arrow keys also work.'),
-      el('div', {}, el('b', {}, 'USE'), 'Click a person or a machine to walk over and use it. The big button bottom-right (or E) does the same.'),
+      el('div', {}, el('b', {}, 'MOVE'), 'Click a floor tile to walk there. W A S D or the arrow keys walk the way you face on screen, even after you turn the camera.'),
+      el('div', {}, el('b', {}, 'USE'), 'Click a person or a machine to walk over and use it. The big button at the bottom (or SPACE) does the same.'),
+      el('div', {}, el('b', {}, 'CAMERA'), 'Q and E (or the round buttons in the corners) turn the camera. Z zooms in, X zooms out. VIEW (or V) puts it back.'),
       el('div', {}, el('b', {}, 'COMPILE'), 'Turn the rings with ▲▼ (or scroll) until the pieces build the word the request means. Press COMPILE.'),
       el('div', {}, el('b', {}, 'DEBUG'), 'Click Rotlings. Cut their word between morphemes, then decide: real word or Rot fake?'),
       el('div', {}, el('b', {}, 'PATCH'), 'Firewall locks: turn the ending ring until the word fits the sentence.'),
@@ -236,7 +236,7 @@ export function reportScreen(profile) {
   const body = el('section', { class: 'sheet glass' }, el('h2', {}, `PROGRESS REPORT · ${profile.name}`));
   const st = profile.stats;
   const rate = st.tasks ? Math.round((st.firstTry / st.tasks) * 100) : 0;
-  body.append(el('p', {}, `Words compiled: ${st.compiled} · First-try rate: ${rate}% · Rotlings debugged: ${st.splits} · Lexicon: ${profile.lexicon.length} words · Made-up Words: ${profile.madeUp.length} · Districts cleared: ${MAIN_ORDER.filter((d) => profile.districts[d] && profile.districts[d].cleared).length}/3`));
+  body.append(el('p', {}, `Words compiled: ${st.compiled} · First-try rate: ${rate}% · Rotlings debugged: ${st.splits} · Lexicon: ${profile.lexicon.length} words · Made-up Words: ${profile.madeUp.length} · Rooms cleared: ${MAIN_ORDER.filter((d) => profile.districts[d] && profile.districts[d].cleared).length}/3`));
   ['anglo', 'latin', 'greek', 'lingo'].forEach((o) => {
     const ids = profile.learned.filter((id) => morph(id).origin === o);
     if (!ids.length) return;
@@ -312,7 +312,7 @@ export function confirmBox(text, yes = 'Yes', no = 'Cancel') {
 // ── Overclock Mode result ─────────────────────────────────────────────
 export function timedResultScreen({ profile, result, rank, onAgain, onExit }) {
   const again = el('button', { class: 'btn btn-pink', type: 'button' }, 'PLAY AGAIN');
-  const exit = el('button', { class: 'btn btn-primary', type: 'button' }, 'BACK TO THE CORE');
+  const exit = el('button', { class: 'btn btn-primary', type: 'button' }, 'BACK TO THE HUB');
   const close = showScreen(el('section', { class: 'sheet glass score-card' },
     el('div', { class: 'kicker' }, 'OVERCLOCK MODE · FINAL SCORE'),
     el('div', { class: 'big' }, String(result.score)),
@@ -333,7 +333,7 @@ export function timedResultScreen({ profile, result, rank, onAgain, onExit }) {
 export function endingScreen({ profile, onDone }) {
   const st = profile.stats;
   const rate = st.tasks ? Math.round((st.firstTry / st.tasks) * 100) : 0;
-  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'BACK TO THE CORE');
+  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'BACK TO THE HUB');
   const body = el('section', { class: 'sheet glass credits' },
     el('div', { class: 'kicker' }, 'THE ROT IS GONE'),
     el('h1', { class: 'logo', style: { fontSize: '3rem' } }, 'LEXINET RESTORED'),

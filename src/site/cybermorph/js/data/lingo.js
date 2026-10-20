@@ -1,5 +1,5 @@
 /**
- * The Lingo District — Mr. Phil's computer science classroom, behind the Secret Secretary Desk.
+ * The Lingo Room — Mr. Phil's computer science classroom, behind the Secret Secretary Desk.
  *
  * Lingo words are taught as UNPACK tasks: the player compiles the source pieces on the
  * Morph Compiler, then watches how speech reshaped them (fixing to → fixin' to → fixna → finna).
@@ -8,9 +8,11 @@
  * doing what English has always done. A teacher should review this list for their school.
  */
 
+import { buildRoomMap } from './layout.js';
+
 export const LINGO = {
   id: 'lingo',
-  name: 'The Lingo District',
+  name: 'The Lingo Room',
   short: 'Lingo',
   origin: 'lingo',
   keySlot: -1,
@@ -20,30 +22,20 @@ export const LINGO = {
     name: 'Mr. Phil',
     role: 'computer science teacher',
   },
-  maps: [
-    [
-      '############',
-      '#....o..o..#',
-      '#k.........#',
-      '#...M......#',
-      'H@..o..o.&GE',
-      '#..........#',
-      '#...o..o...#',
-      '#..........#',
-      '############',
-    ],
-    [
-      '#####H######',
-      '#o.o..o.o.o#',
-      '#..N....W..#',
-      '#.R......R.#',
-      'B@...C.....#',
-      '#..R....R..#',
-      '#o.o.o.o.o.#',
-      '#.........k#',
-      '############',
-    ],
-  ],
+  // One big room. Zone 0: the classroom. Zone 1: the computer lab (Rotlings, LINK, Unknown File, core).
+  map: buildRoomMap([
+    [4, 4, 'M'], [1, 3, 'k'], [3, 9, 'o'], [6, 9, 'o'], [3, 11, 'o'], [6, 11, 'o'], [6, 2, 'a'],
+    [11, 3, 'R'], [13, 10, 'R'], [16, 4, 'R'], [18, 11, 'R'], [20, 3, 'R'], [12, 6, 'R'],
+    [15, 2, 'N'], [15, 12, 'W'], [20, 7, 'C'], [10, 1, 'b'], [22, 1, 'c'], [22, 12, 'd'], [10, 12, 'e'], [17, 8, 'f'],
+  ], { chasm: false, secondGate: false }),
+  props: {
+    a: { word: 'backpack', note: 'back + pack: a compound you carry every day', model: 'backpack' },
+    b: { word: 'G.O.A.T. trophy', note: 'goated = G.O.A.T. (Greatest Of All Time) + -ed', model: 'trophy' },
+    c: { word: 'vibe lamp', note: 'vibe: clipped from vibration', model: 'lavalamp' },
+    d: { word: 'brunch tray', note: 'brunch = br(eakfast) + (l)unch, a blend', model: 'tray' },
+    e: { word: 'no-cap hat hook', note: 'no cap = no lie (AAVE): the cap stays on the hook', model: 'caphook' },
+    f: { word: 'glow-up mirror', note: 'glow + up: a big change for the better', model: 'mirror' },
+  },
 
   mentorFlow: {
     intro: [

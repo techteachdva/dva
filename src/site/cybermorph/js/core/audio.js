@@ -1,17 +1,15 @@
 /**
- * Sound: synthesized effects and a quiet generative pad (no audio files to download),
+ * Sound: synthesized effects, BeepBox background songs (no audio files to download),
  * plus the browser's speech voice for every morpheme and word.
  */
 
 import { settings, onSetting } from './settings.js';
 import { morph } from '../data/morphemes.js';
+import { MUSIC } from '../data/music.js';
 
 let ctx = null;
 let sfxGain = null;
-let musicGain = null;
-let musicNodes = [];
 let musicStyle = null;
-let arpTimer = 0;
 
 export function unlockAudio() {
   if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
@@ -21,16 +19,12 @@ export function unlockAudio() {
   sfxGain = ctx.createGain();
   sfxGain.gain.value = settings.sfx;
   sfxGain.connect(ctx.destination);
-  musicGain = ctx.createGain();
-  musicGain.gain.value = settings.music * 0.35;
-  musicGain.connect(ctx.destination);
   if (musicStyle) startMusic(musicStyle, true);
 }
 
 onSetting((k, v) => {
   if (!ctx) return;
   if (k === 'sfx') sfxGain.gain.value = v;
-  if (k === 'music') musicGain.gain.value = v * 0.35;
 });
 
 function tone({ f = 440, f2 = null, type = 'sine', dur = 0.12, vol = 0.25, delay = 0, attack = 0.005 }) {
@@ -86,65 +80,47 @@ export const sfx = {
   warp: () => { tone({ f: 200, f2: 1200, type: 'sine', dur: 0.4, vol: 0.08 }); noise(0.3, 0.05, 0.1, 3000); },
 };
 
-// ── Music: a slow pad and arpeggio per place ───────────────────────
-const SCALES = {
-  hub: [220, 261.6, 329.6, 392, 440, 523.3],
-  anglo: [196, 233.1, 261.6, 293.7, 349.2, 392],
-  latin: [174.6, 220, 261.6, 293.7, 349.2, 440],
-  greek: [246.9, 293.7, 370, 440, 493.9, 587.3],
-  lingo: [261.6, 293.7, 329.6, 392, 440, 523.3],
-  rot: [110, 130.8, 146.8, 164.8, 196, 220],
-  arcade: [261.6, 311.1, 392, 466.2, 523.3, 622.3],
-};
+// ── Music: one BeepBox song per place (js/data/music.js) ──────────
+// The BeepBox player (vendor/beepbox, MIT) is loaded by index.html as window.beepbox.
+// Songs are long loops written by scripts/compose-cybermorph-music.mjs.
+
+const SONG_FOR = { title: 'hub', hub: 'hub', anglo: 'anglo', latin: 'latin', greek: 'greek', lingo: 'lingo', rot: 'rot', arcade: 'arcade' };
+let bb = null;
+let bbSong = null;
+
+function musicVolume() { return Math.max(0, Math.min(1, settings.music)) * 0.8; }
 
 export function startMusic(style, force = false) {
-  if (style === musicStyle && !force) return;
-  musicStyle = style;
-  if (!ctx) return;
-  stopMusicNodes();
-  const scale = SCALES[style] || SCALES.hub;
-  const t = ctx.currentTime;
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = 900;
-  filter.connect(musicGain);
-  [scale[0] / 2, scale[2] / 2].forEach((f) => {
-    const o = ctx.createOscillator();
-    o.type = 'sawtooth';
-    o.frequency.value = f;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.05, t + 2);
-    o.connect(g).connect(filter);
-    o.start();
-    musicNodes.push(o, g);
-  });
-  musicNodes.push(filter);
-  let i = 0;
-  const beat = style === 'arcade' ? 180 : 420;
-  arpTimer = setInterval(() => {
-    if (!ctx || settings.music <= 0) return;
-    const f = scale[(i * 3 + (i >> 2)) % scale.length] * (i % 8 < 4 ? 1 : 2);
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = 'triangle';
-    o.frequency.value = f;
-    const n = ctx.currentTime;
-    g.gain.setValueAtTime(0.0001, n);
-    g.gain.exponentialRampToValueAtTime(0.06, n + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, n + beat / 1000 * 1.6);
-    o.connect(g).connect(filter);
-    o.start(n);
-    o.stop(n + beat / 1000 * 1.7);
-    i++;
-  }, beat);
+  const id = SONG_FOR[style] || 'hub';
+  if (id === musicStyle && !force && bb && bb.playing) return;
+  musicStyle = id;
+  if (!ctx || !window.beepbox || !MUSIC[id]) return;
+  try {
+    if (!bb) bb = new window.beepbox.Synth();
+    if (bbSong !== id) {
+      bb.pause();
+      bb.setSong(MUSIC[id].hash);
+      bb.snapToStart();
+      bbSong = id;
+    }
+    bb.loopRepeatCount = -1;
+    bb.volume = musicVolume();
+    if (settings.music > 0) bb.play(); else bb.pause();
+  } catch (e) { console.warn('music unavailable', e); }
 }
 
-function stopMusicNodes() {
-  clearInterval(arpTimer);
-  musicNodes.forEach((n) => { try { n.stop && n.stop(); } catch { /* already stopped */ } try { n.disconnect(); } catch { /* ignore */ } });
-  musicNodes = [];
-}
+onSetting((k) => {
+  if (k !== 'music' || !bb) return;
+  bb.volume = musicVolume();
+  if (settings.music > 0 && !bb.playing) bb.play();
+  if (settings.music <= 0) bb.pause();
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (!bb) return;
+  if (document.visibilityState === 'hidden') bb.pause();
+  else if (settings.music > 0 && bbSong) bb.play();
+});
 
 // ── Speech ────────────────────────────────────────────────────────
 let voice = null;

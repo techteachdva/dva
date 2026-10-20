@@ -8,6 +8,8 @@
   <title>CyberMorph</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2307040f'/%3E%3Crect x='8' y='22' width='16' height='20' rx='3' fill='%2339d0ff'/%3E%3Crect x='24' y='22' width='16' height='20' fill='%23ffd23f'/%3E%3Crect x='40' y='22' width='16' height='20' rx='3' fill='%23ff4fd8'/%3E%3C/svg%3E">
+  <link rel="preload" href="fonts/lexend-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/lexend-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -32,24 +34,38 @@
           <span id="carry-count"></span>
         </div>
         <button id="btn-help" class="icon-btn" title="How to play (H)" aria-label="How to play">?</button>
-        <button id="btn-pause" class="icon-btn" title="Pause (Esc)" aria-label="Pause">⏸</button>
+        <button id="btn-pause" class="icon-btn" title="Pause (Esc)" aria-label="Pause">II</button>
       </div>
 
-      <section id="inventory" class="glass">
+      <button id="tab-inventory" class="drawer-tab drawer-tab--left" type="button" aria-expanded="false" aria-controls="inventory">MORPHEMES</button>
+      <section id="inventory" class="glass drawer drawer--left" hidden>
         <div class="inv-tabs" role="tablist">
           <button class="inv-tab active" data-tab="morphemes" role="tab">MORPHEMES</button>
           <button class="inv-tab" data-tab="clues" role="tab">CLUES</button>
-          <button class="inv-collapse" id="inv-collapse" aria-label="Collapse inventory">▾</button>
+          <button class="inv-collapse" id="inv-collapse" aria-label="Close the morphemes drawer">✕</button>
         </div>
         <div id="inv-body"></div>
       </section>
 
-      <button id="ctx-btn" class="ctx-btn" hidden></button>
-
-      <aside id="log" class="glass collapsed">
-        <button id="log-toggle" aria-expanded="false">COMPILE LOG</button>
+      <button id="tab-log" class="drawer-tab drawer-tab--right" type="button" aria-expanded="false" aria-controls="log">WORD LOG</button>
+      <aside id="log" class="glass drawer drawer--right" hidden>
+        <div class="inv-tabs"><span class="kicker">COMPILE LOG</span><button class="inv-collapse" id="log-close" aria-label="Close the word log">✕</button></div>
         <ol id="log-list"></ol>
       </aside>
+
+      <div class="cam-cluster cam-cluster--left" role="group" aria-label="Camera: rotate left and zoom in">
+        <button class="cam-btn" data-cam="rotate-left" type="button" aria-label="Rotate the camera left (Q)"><span class="cam-ico">⟲</span><span class="cam-key">Q</span></button>
+        <button class="cam-btn" data-cam="zoom-in" type="button" aria-label="Zoom in (Z)"><span class="cam-ico">＋</span><span class="cam-key">Z</span></button>
+      </div>
+      <div class="cam-cluster cam-cluster--right" role="group" aria-label="Camera: zoom out and rotate right">
+        <button class="cam-btn" data-cam="zoom-out" type="button" aria-label="Zoom out (X)"><span class="cam-ico">－</span><span class="cam-key">X</span></button>
+        <button class="cam-btn" data-cam="rotate-right" type="button" aria-label="Rotate the camera right (E)"><span class="cam-ico">⟳</span><span class="cam-key">E</span></button>
+      </div>
+
+      <div class="bottom-center">
+        <button class="view-btn" data-cam="view" type="button" aria-label="Reset the camera view (V)">VIEW <small>V</small></button>
+        <button id="ctx-btn" class="ctx-btn" hidden></button>
+      </div>
 
       <div id="toasts" aria-live="polite"></div>
     </div>
@@ -71,6 +87,7 @@
   </div>
 
   <noscript>CyberMorph needs JavaScript turned on.</noscript>
+  <script src="vendor/beepbox/beepbox_synth.min.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
