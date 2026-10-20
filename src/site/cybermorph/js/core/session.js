@@ -27,16 +27,21 @@ export const COOLDOWN = 45 * MIN;
 
 let profile = null;
 
-const loggable = (id) => MORPHEMES[id] && !['link', 'word'].includes(morph(id).type);
+let focusSet = null;
+/** Exit Ticket practice records only the ticked morphemes, so the ticket and the class report stay on today's lesson. */
+export function setFocus(ids) { focusSet = ids && ids.length ? new Set(ids) : null; }
+const loggable = (id) => MORPHEMES[id] && !['link', 'word'].includes(morph(id).type) && (!focusSet || focusSet.has(id));
 
 /** Start (or resume) this profile's session. mins = the teacher's limit, 0 for none. */
 export function beginSession(p, mins = 0) {
   profile = p;
   const now = Date.now();
   const s = p.session;
-  if (!s || s.ended || now - s.last > STALE) {
+  // Resume only the same kind of session (a reload mid-class). A different timer, an ended
+  // session or an old one starts fresh, so yesterday's untimed play can't eat today's minutes.
+  if (!s || s.ended || now - s.last > STALE || (s.mins || 0) !== mins) {
     p.session = { start: now, last: now, mins, by: {}, words: 0, rotlings: 0, ended: 0 };
-  } else if (mins && !s.mins) s.mins = mins;
+  }
   save();
   return p.session;
 }

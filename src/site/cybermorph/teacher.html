@@ -109,7 +109,11 @@ ol li { margin-bottom: 4px; }
 
   <section class="card noprint">
     <h2>2 · Make a class link</h2>
-    <p class="sub" style="margin-bottom:10px">Students open this link. It sets the session timer, focuses Hub reviews and Overclock Mode on the lessons you tick, and sends exit-ticket codes to your form.</p>
+    <p class="sub" style="margin-bottom:10px">Students open this link and click their name. In <b>Exit Ticket practice</b> they go straight to a short session on only the lessons you tick (no story, no Hub), and the exit ticket sends their code to your form.</p>
+    <div class="row" style="margin-bottom:10px">
+      <label><input type="radio" name="mode" value="ticket" checked> <b>Exit Ticket practice</b> (only the ticked lessons)</label>
+      <label><input type="radio" name="mode" value="game"> Full game (the story, with a timer)</label>
+    </div>
     <div class="row">
       <label>Session length
         <select id="mins">
@@ -118,7 +122,8 @@ ol li { margin-bottom: 4px; }
         </select>
       </label>
     </div>
-    <p style="margin:12px 0 6px"><b>Focus lessons</b> (optional: the lessons you've taught that need practice)</p>
+    <p style="margin:12px 0 6px"><b>Lessons to practise</b>: tick this week's lesson. Tick earlier lessons too to mix in review.</p>
+    <p id="needLessons" class="err" hidden>Exit Ticket practice needs at least one ticked lesson.</p>
     <div class="lessons" id="lessonPick"></div>
     <p style="margin:12px 0 6px"><b>Your Google Form's pre-filled link</b> (optional)</p>
     <input id="form" class="out" placeholder="https://docs.google.com/forms/d/e/…/viewform?usp=pp_url&entry.123456=CODE">
@@ -262,14 +267,18 @@ $('mins').value = String(load('mins', 12));
 function buildLink() {
   const base = new URL('./', location.href);
   const q = new URLSearchParams();
+  const ticket = document.querySelector('input[name="mode"]:checked').value === 'ticket';
+  if (ticket) q.set('mode', 'ticket');
+  $('needLessons').hidden = !ticket || picked.size > 0;
   if ($('mins').value !== '0') q.set('mins', $('mins').value);
   const ids = MM_LESSONS.filter((l) => picked.has(l.key)).flatMap((l) => l.ids);
   if (ids.length) q.set('set', ids.join(','));
   const form = $('form').value.trim();
   if (/^https:\/\//.test(form)) q.set('form', form);
   $('link').value = `${base.href}${q.toString() ? `?${q}` : ''}`;
-  keep('picked', [...picked]); keep('form', form); keep('mins', Number($('mins').value));
+  keep('picked', [...picked]); keep('form', form); keep('mins', Number($('mins').value)); keep('mode', ticket ? 'ticket' : 'game');
 }
+document.querySelectorAll('input[name="mode"]').forEach((r) => { r.checked = r.value === load('mode', 'ticket'); r.addEventListener('change', buildLink); });
 $('lessonPick').addEventListener('change', (e) => { if (e.target.checked) picked.add(e.target.value); else picked.delete(e.target.value); buildLink(); });
 $('form').addEventListener('input', buildLink);
 $('mins').addEventListener('change', buildLink);

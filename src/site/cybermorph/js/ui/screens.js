@@ -63,7 +63,7 @@ const progressOf = (p) => {
 };
 
 // ── Title ─────────────────────────────────────────────────────────
-export function titleScreen({ onPlay, onNew, onTimed }) {
+export function titleScreen({ onPlay, onNew, onTimed, banner = null }) {
   const list = el('div', { class: 'profiles' });
   const render = () => {
     list.innerHTML = '';
@@ -89,6 +89,7 @@ export function titleScreen({ onPlay, onNew, onTimed }) {
   const wrap = el('div', { class: 'title-wrap' },
     el('div', { class: 'logo' }, 'CYBERMORPH'),
     el('div', { class: 'tagline' }, 'BUILD WORDS · DEBUG THE ROT'),
+    banner ? el('div', { class: 'ticket-banner' }, banner, el('small', {}, 'Click your name to start. Your teacher\'s timer starts then.')) : null,
     profiles().length ? el('div', { class: 'kicker', style: { alignSelf: 'flex-start' } }, 'CONTINUE') : null,
     list,
     el('div', { class: 'row-btns', style: { justifyContent: 'center' } }, newBtn,

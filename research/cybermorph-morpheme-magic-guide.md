@@ -147,6 +147,8 @@ How to use it each week (the thresholds are my suggestions; adjust to your class
 
 ## Class sessions, exit tickets and the class report (built)
 
+**Exit Ticket mode (the default class link).** Students click their name and go straight into a focused session on only the lessons you ticked: no story, no Hub. They see today's morphemes on a lesson card, then alternate COMPILE rounds ("build the word that means…") and DEBUG rounds (split it, then real word or Rot?) built from those morphemes, until your timer ends. Then the exit ticket. Only the ticked morphemes are recorded, so the ticket and your class report stay on the lesson. If a student closes a round, the game asks whether to finish early. Words use only ticked morphemes plus everyday words and whatever that student has already learned; when that's too few (one lesson ticked, a brand-new student), it adds words with the fewest unfamiliar parts. Tick earlier lessons too for more variety. Choose "Full game" on the teacher page for the story with a timer instead.
+
 **Before the first class (once):**
 1. Make a Google Form with one Short answer question, "Paste your CyberMorph code".
 2. Form menu ⋮ → **Get pre-filled link**, type `CODE` in the answer, copy the link.

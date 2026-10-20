@@ -24,6 +24,8 @@ import { touch, dueIds } from '../core/mastery.js';
 import * as session from '../core/session.js';
 import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, collectFakes, achievement, rewardsOf } from '../data/world.js';
 import { makeWave, makeFake, taughtBy, randomWord, allWords, isKnown } from './waves.js';
+import { buildDeck, rounds } from './ticket.js';
+import { MM_LESSONS } from '../data/mm.js';
 import { zoneOf, CORRIDOR, CHASM_COLS } from '../data/layout.js';
 import { morph, MORPHEMES } from '../data/morphemes.js';
 import { build } from '../compiler/wordsum.js';
@@ -42,7 +44,11 @@ const PARAMS = new URLSearchParams(location.search);
 /** The teacher's link can set a session length (?mins=12) and a Google Form for exit-ticket codes (?form=…). */
 const SESSION_MINS = Math.max(0, Math.min(60, parseInt(PARAMS.get('mins') || '0', 10) || 0));
 const SESSION_FORM = /^https:\/\//.test(PARAMS.get('form') || '') ? PARAMS.get('form') : '';
-const PRACTICE = (PARAMS.get('set') || '').split(',').map((s) => s.trim()).filter(Boolean).map((k) => (MORPHEMES[k] ? k : Object.values(MORPHEMES).find((m) => m.cat === k)?.id)).filter(Boolean);
+const PRACTICE_RAW = (PARAMS.get('set') || '').split(',').map((s) => s.trim()).filter(Boolean).map((k) => (MORPHEMES[k] ? k : Object.values(MORPHEMES).find((m) => m.cat === k)?.id)).filter(Boolean);
+const PRACTICE = [...new Set(PRACTICE_RAW)];
+/** The teacher's Exit Ticket link (?mode=ticket&set=…): a focused practice session on only the ticked morphemes. */
+const TICKET_MODE = PARAMS.get('mode') === 'ticket' && PRACTICE.length > 0;
+const TICKET_LESSONS = MM_LESSONS.filter((l) => l.ids.some((id) => PRACTICE.includes(id))).map((l) => l.label);
 
 const ARENA = (special) => [
   '##################',
@@ -117,6 +123,7 @@ async function showTitle() {
   screens.titleScreen({
     onPlay: (p) => { store.setActive(p.id); playProfile(p); },
     onNew: () => newProfileFlow(),
+    banner: TICKET_MODE ? `EXIT TICKET PRACTICE · Today: ${TICKET_LESSONS.join(', ')}` : null,
   });
 }
 
@@ -131,7 +138,7 @@ function newProfileFlow() {
     onDone: (res) => {
       if (!res) { showTitle(); return; }
       const p = store.newProfile(res.name, res.avatar);
-      screens.welcomeScreen({ name: p.name, onContinue: () => startProfile(p, true) });
+      screens.welcomeScreen({ name: p.name, onContinue: () => (TICKET_MODE ? startTicket(p) : startProfile(p, true)) });
     },
   });
 }
@@ -139,7 +146,7 @@ function newProfileFlow() {
 /** Continue a save, unless this browser's timed session just ended (the teacher's cooldown). */
 function playProfile(p) {
   const wait = SESSION_MINS ? session.cooldownLeft(p) : 0;
-  if (!wait) { startProfile(p); return; }
+  if (!wait) { if (TICKET_MODE) startTicket(p); else startProfile(p); return; }
   screens.sessionDoneScreen({
     profile: p,
     minutes: wait,
@@ -151,6 +158,7 @@ function playProfile(p) {
 async function startProfile(p, fresh = false) {
   G.profile = p;
   session.beginSession(p, SESSION_MINS);
+  session.setFocus(null);
   G.sessionOver = false;
   G.titleSpin = false;
   unlockAudio();
@@ -737,6 +745,10 @@ function objectiveText() {
     return p.deskOpen ? 'The Lexinet is restored. Try Overclock Mode, or build Made-up Words at the Morph Compiler.' : 'The Lexinet is restored. The Secret Secretary Desk is still locked…';
   }
   if (G.place === 'timed') return 'DEBUG as many Rotlings as you can before time runs out.';
+  if (G.place === 'ticket') {
+    const t = G.ticket || { done: 0, first: 0 };
+    return `Exit Ticket practice · ${t.done} done · ${t.first} right on the first try. Today: ${TICKET_LESSONS.join(', ')}.`;
+  }
   if (G.place === 'finale') return 'Click the Rot. Split its word, then compile it back clean.';
   const d = DISTRICTS[G.place];
   if (!d) return '';
@@ -1413,6 +1425,69 @@ function openPause() {
   });
 }
 
+// ── Exit Ticket practice ──────────────────────────────────────────
+
+/**
+ * The focused session behind the teacher's Exit Ticket link: today's morphemes on a lesson
+ * card, then COMPILE and DEBUG rounds built only from them, until the timer ends. Closing a
+ * round asks whether to finish early. Then the exit ticket, as in any class session.
+ */
+async function startTicket(p) {
+  G.profile = p;
+  G.titleSpin = false;
+  unlockAudio();
+  session.beginSession(p, SESSION_MINS);
+  session.setFocus(PRACTICE);
+  G.sessionOver = false;
+  hud.showHud(true);
+  hud.renderInventory(p);
+  hud.renderLog(p);
+  resetView();
+  G.place = 'ticket';
+  await loadRoom(TIMED_MAP, 'arcade', {});
+  G.place = 'ticket';
+  hud.setPlace('EXIT TICKET PRACTICE');
+  const deck = buildDeck(PRACTICE, p.learned);
+  if (!deck.length) {
+    hud.toast('No practice words for these lessons yet, so the full game is open instead.', 'warn');
+    await startProfile(p);
+    return;
+  }
+  G.ticket = { done: 0, first: 0 };
+  refreshObjective();
+  const fresh = PRACTICE.filter((id) => !p.learned.includes(id));
+  await showLesson({ ids: (fresh.length ? fresh : PRACTICE).slice(0, 12), profile: p, title: 'TODAY\'S MORPHEMES', note: 'Read each morpheme and its meaning. Then practise until the timer ends.' });
+  store.learn(p, PRACTICE);
+  hud.renderInventory(p);
+  const next = rounds(deck);
+  while (G.place === 'ticket' && !G.sessionOver) {
+    const left = session.secondsLeft();
+    if (left !== null && left <= 0) break;
+    const r = next();
+    let solved = false;
+    let firstTry = false;
+    if (r.kind === 'compile') {
+      const res = await openCompile({ mode: 'compile', tasks: [r.task], profile: p, pool: PRACTICE, title: 'EXIT TICKET · BUILD THE WORD THAT MEANS',
+        onSolved: (_, info) => { firstTry = !!(info && info.firstTry); } });
+      solved = res.done > 0;
+    } else {
+      const res = await openDebug({ item: r.item, profile: p, mode: 'rotling', title: 'EXIT TICKET · SPLIT IT, THEN: REAL WORD OR ROT?' });
+      solved = res.solved;
+      firstTry = res.firstTry;
+    }
+    if (G.place !== 'ticket' || G.sessionOver) return;
+    if (!solved) {
+      const stop = await screens.confirmBox('Finish practice now and get your exit ticket?', 'Get my exit ticket', 'Keep practising');
+      if (stop) break;
+      continue;
+    }
+    G.ticket.done += 1;
+    if (firstTry) G.ticket.first += 1;
+    refreshObjective();
+  }
+  if (G.place === 'ticket') showExitTicket((session.secondsLeft() ?? 1) <= 0);
+}
+
 // ── Class sessions: the teacher's timer and the exit ticket ───────
 
 async function quitToTitle() {
@@ -1425,7 +1500,7 @@ async function quitToTitle() {
 }
 
 function showExitTicket(timeUp) {
-  if (!G.profile) return;
+  if (!G.profile || G.sessionOver) return;
   const ticket = session.endSession();
   G.sessionOver = true;
   achieve('session');
