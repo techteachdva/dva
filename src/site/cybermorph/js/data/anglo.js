@@ -70,6 +70,20 @@ export const ANGLO = {
           { m: 'to get the meaning of something', p: ['under', 'stand'] },
         ],
       },
+      {
+        teach: ['mid', 'hood', 'dom', 'ish', 'ward', 'some', 'ship', 'out', 'es', 'child', 'king', 'free', 'night', 'home', 'awe'],
+        say: ['Old suffixes, still busy. -hood is a time of life. -dom is a realm. -ward points a direction. -some causes a feeling.'],
+        tasks: [
+          { m: 'the time of being a child', p: ['child', 'hood'] },
+          { m: 'the land a king rules', p: ['king', 'dom'] },
+          { m: 'the state of being free', p: ['free', 'dom'] },
+          { m: 'the middle of the night', p: ['mid', 'night'] },
+          { m: 'toward home', p: ['home', 'ward'] },
+          { m: 'causing awe; amazing', p: ['awe', 'some'] },
+          { m: 'acting like a little child', p: ['child', 'ish'] },
+          { m: 'the bond between friends', p: ['friend', 'ship'] },
+        ],
+      },
     ],
     done: [
       'Good hands. The glowing firewall wants a sentence fixed. Pick the ending that fits the sentence.',

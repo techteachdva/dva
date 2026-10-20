@@ -10,7 +10,7 @@ import { sfx, unlockAudio } from '../core/audio.js';
 import { mtile } from './hud.js';
 import { openPanel, closeButton } from '../panels/host.js';
 
-export const VERSION = '1.1.0';
+export const VERSION = '1.2.0';
 
 const layer = () => $('screen-layer');
 let stack = [];
@@ -186,7 +186,7 @@ export function howToScreen() {
       el('div', {}, el('b', {}, 'USE'), 'Click a person or a machine to walk over and use it. The big button at the bottom (or SPACE) does the same.'),
       el('div', {}, el('b', {}, 'CAMERA'), 'Q and E (or the round buttons in the corners) turn the camera. Z zooms in, X zooms out. VIEW (or V) puts it back.'),
       el('div', {}, el('b', {}, 'COMPILE'), 'Turn the rings with ▲▼ (or scroll) until the pieces build the word the request means. Press COMPILE.'),
-      el('div', {}, el('b', {}, 'DEBUG'), 'Click Rotlings. Cut their word between morphemes, then decide: real word or Rot fake?'),
+      el('div', {}, el('b', {}, 'DEBUG'), 'Click Rotlings. Cut their word between morphemes, then decide: real word or Rot fake? Every run brings new Rotlings. Golden ones carry long words worth bonus bits. Three clean splits in a row start a streak.'),
       el('div', {}, el('b', {}, 'PATCH'), 'Firewall locks: turn the ending ring until the word fits the sentence.'),
       el('div', {}, el('b', {}, 'LINK'), 'Hang words on their family branch. Watch for look-alikes that are not family.')),
     el('h3', {}, 'SHAPES TELL YOU THE TYPE'),
@@ -253,9 +253,65 @@ export function reportScreen(profile) {
   const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
   body.append(el('div', { class: 'row-btns' }, print, done));
   const close = showScreen(body);
-  print.addEventListener('click', () => window.print());
+  print.addEventListener('click', () => printReport(profile));
   done.addEventListener('click', close);
   done.focus();
+}
+
+/** One printable page: Letter, 0.4in margins. */
+const PAGE_W = 7.7 * 96;
+const PAGE_H = 10.1 * 96;
+
+/**
+ * The printed report is its own plain black-on-white page, not the game screen
+ * (that one scrolls inside a fixed-height window, which a printer clips).
+ * It is measured off-screen, then scaled down until it fits on one page.
+ */
+function printReport(profile) {
+  const stars = (l) => '★'.repeat(l) + '☆'.repeat(4 - l);
+  const st = profile.stats;
+  const rate = st.tasks ? Math.round((st.firstTry / st.tasks) * 100) : 0;
+  const rooms = MAIN_ORDER.filter((d) => profile.districts[d] && profile.districts[d].cleared).length;
+  const page = el('div', { class: 'print-report measuring' },
+    el('h1', {}, `CyberMorph progress report · ${profile.name}`),
+    el('div', { class: 'pr-meta' }, new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })),
+    el('div', { class: 'pr-stats' }, `Words compiled: ${st.compiled} · First-try rate: ${rate}% · Rotlings debugged: ${st.splits} · Lexicon: ${profile.lexicon.length} words · Made-up Words: ${profile.madeUp.length} · Rooms cleared: ${rooms}/3`),
+    el('div', { class: 'pr-key' }, 'Morphemes grouped by mastery (★ out of 4). (2/5) = right on the first try 2 times out of 5. Meanings are in the game\'s Lexicon and on-screen report.'));
+  ['anglo', 'latin', 'greek', 'lingo'].forEach((o) => {
+    const ids = profile.learned.filter((id) => morph(id).origin === o);
+    if (!ids.length) return;
+    page.append(el('h2', {}, `${ORIGIN_LABEL[o]} (${ids.length})`));
+    // Grouped by mastery as flowing lists, so a whole game's morphemes fit on one page.
+    const shown = (id) => { const m = morph(id); return m.type === 'pfx' ? `${m.text}-` : m.type === 'sfx' ? `-${m.text}` : m.text; };
+    const score = (id) => { const r = profile.mastery[id]; return r ? ` (${r.ok}/${r.n})` : ''; };
+    const groups = [
+      ['Needs review', (r, g) => r && g.fading, true],
+      [`${stars(4)} mastered`, (r, g) => r && !g.fading && r.l >= 4, false],
+      [stars(3), (r, g) => r && !g.fading && r.l === 3, false],
+      [stars(2), (r, g) => r && !g.fading && r.l === 2, true],
+      [stars(1), (r, g) => r && !g.fading && r.l <= 1, true],
+      ['Not practised yet', (r) => !r, false],
+    ];
+    groups.forEach(([label, test, withScore]) => {
+      const list = ids.filter((id) => test(profile.mastery[id], glow(profile, id)));
+      if (!list.length) return;
+      page.append(el('div', { class: `pr-line${label === 'Needs review' ? ' review' : ''}` },
+        el('span', { class: 'pr-label' }, `${label} (${list.length}): `),
+        list.map((id) => `${shown(id)}${withScore ? score(id) : ''}`).join(', ')));
+    });
+  });
+  document.querySelectorAll('.print-report').forEach((n) => n.remove());
+  document.body.append(page);
+  page.style.width = `${PAGE_W}px`;
+  const h = page.scrollHeight;
+  // Fit one page; below half size it would be unreadable, so then it flows onto a second page instead.
+  const zoom = Math.max(0.5, Math.min(1, PAGE_H / h));
+  page.style.width = `${PAGE_W / zoom}px`;
+  page.style.zoom = String(zoom);
+  page.classList.remove('measuring');
+  const cleanup = () => { page.remove(); window.removeEventListener('afterprint', cleanup); };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
 }
 
 // ── Lexicon viewer (from the Lexicon Tree) ────────────────────────

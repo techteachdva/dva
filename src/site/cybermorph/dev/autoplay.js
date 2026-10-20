@@ -146,7 +146,7 @@ export async function use(ch) {
   }
 }
 
-export async function debugAll(max = 8) {
+export async function debugAll(max = 12) {
   for (let i = 0; i < max && G().rotlings.length; i++) {
     const r = G().rotlings[0];
     G().rot = 0; // keep the Rot meter from crashing the room mid-script
@@ -180,7 +180,7 @@ export async function finishRoom() {
   const last = lingo ? 1 : 2;
   if (!d.done.mentor) await use('M');
   if (!d.done.gate0) await use('G');
-  await debugAll(8);
+  await debugAll(12);
   await collectPickups();
   if (!lingo && !d.done.terminal1) await use('T');
   if (!lingo && !d.done.gate1) await use('F');

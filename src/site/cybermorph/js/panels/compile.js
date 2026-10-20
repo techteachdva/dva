@@ -15,7 +15,7 @@ import { el, $, shuffle } from '../core/util.js';
 import { openPanel, closeButton } from './host.js';
 import { createDrum } from '../compiler/drum.js';
 import { build, glossLine } from '../compiler/wordsum.js';
-import { playJoint } from '../compiler/joint.js';
+import { loopJoint } from '../compiler/joint.js';
 import { morph, MORPHEMES, TYPE_LABEL } from '../data/morphemes.js';
 import { DICTIONARY } from '../data/world.js';
 import { R, onUpdate, pickFocus } from '../engine/renderer.js';
@@ -33,6 +33,9 @@ function distractors(targetId, pool, count) {
   const same = c.filter((id) => morph(id).origin === t.origin);
   const other = c.filter((id) => morph(id).origin !== t.origin);
   c = [...same, ...other];
+  // One sibling spelling of the same meaning (tain for ten, duc for duct) makes the student read the word, not just the meaning.
+  const sib = shuffle(Object.keys(MORPHEMES).filter((id) => ok(id) && morph(id).meaning === t.meaning && morph(id).origin === t.origin));
+  if (sib.length) c = [sib[0], ...c.filter((id) => id !== sib[0])];
   if (c.length < count) {
     const extra = shuffle(Object.keys(MORPHEMES).filter((id) => ok(id) && morph(id).origin === t.origin && !c.includes(id)));
     c = [...c, ...extra];
@@ -96,6 +99,8 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
     const top = el('section', { class: 'glass panel-top' });
     const ctlLayer = el('div');
     const sumLine = el('div', { class: 'sum-line' });
+    let sumLoop = null; // the word-sum teaching loop under the rings
+    const showSum = (ids, opts) => { if (sumLoop) sumLoop.stop(); sumLoop = loopJoint(sumLine, ids, opts); };
     const feedback = el('div');
     const compileBtn = el('button', { class: 'btn btn-primary compile-btn', type: 'button' }, 'COMPILE');
     const nextBtn = el('button', { class: 'btn btn-good compile-btn', type: 'button', hidden: true }, 'NEXT ▸');
@@ -217,6 +222,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         } else ring.gloss.append(el('b', {}, o.text));
       });
       const m = effMode();
+      if (sumLoop) { sumLoop.stop(); sumLoop = null; }
       sumLine.innerHTML = '';
       if (m === 'choice') {
         const choice = sel[0].text;
@@ -234,7 +240,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
           const blank = $('patch-blank');
           if (blank) blank.textContent = res.word;
         }
-        sumLine.append(res.parts.map((p) => p.text).join(' + '), ' → ', el('span', { class: 'eq' }, res.word));
+        showSum(ids);
       } catch { sumLine.append('…'); }
     }
 
@@ -279,7 +285,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
           addLexicon(profile, res.word, ids);
           profile.stats.compiled += 1;
           fb('good', `REAL WORD ✔  ${res.word}`, glossLine(ids));
-          await playJoint(sumLine, ids);
+          showSum(ids, { solved: true });
           onSolved && onSolved(null, { ids, word: res.word, real: true });
         } else {
           sfx.click();
@@ -305,7 +311,9 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       // compile / finale / unpack: compare piece by piece.
       const ids = selectedIds();
       const target = t.p;
-      if (ids.length === target.length && ids.every((id, i) => id === target[i])) {
+      // Sibling spellings can build the same word (pose + ition, pos + ition), and that still counts.
+      const same = ids.length === target.length && (ids.every((id, i) => id === target[i]) || (m !== 'unpack' && build(ids).word === build(target).word));
+      if (same) {
         if (m === 'unpack') return succeed(ids, null, () => unpackReveal(t));
         const word = build(ids).word;
         return succeed(ids, word, () => fb('good', `COMPILED ✔  ${word}`, glossLine(ids), t.today ? `Today: ${t.today}` : null));
@@ -322,7 +330,8 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         if (id !== target[i]) {
           const have = morph(id);
           const need = morph(target[i]);
-          rows.push(`Ring ${i + 1}: ${have.text} means "${have.meaning}". This spot needs a ${TYPE_LABEL[need.type]} that means "${attempts >= 2 ? need.meaning : '…'}".`);
+          if (have.meaning === need.meaning) rows.push(`Ring ${i + 1}: ${have.text} has the right meaning, but this word uses a different spelling of it. Read the word you are building.`);
+          else rows.push(`Ring ${i + 1}: ${have.text} means "${have.meaning}". This spot needs a ${TYPE_LABEL[need.type]} that means "${attempts >= 2 ? need.meaning : '…'}".`);
         }
       });
       fb('bad', 'Compile error: the joint won\'t hold.', ...rows);
@@ -338,7 +347,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       else { profile.stats.tasks += 1; if (firstTry) profile.stats.firstTry += 1; save(); }
       if (word) { profile.stats.compiled += 1; speak(word); }
       showFeedback();
-      if (word && ids.length) await playJoint(sumLine, ids);
+      if (word && ids.length) showSum(ids, { solved: true });
       done += 1;
       onSolved && onSolved(task(), { firstTry, ids, word });
       nextBtn.hidden = false;

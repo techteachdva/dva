@@ -7,7 +7,7 @@
 import { el } from '../core/util.js';
 import { openPanel, closeButton } from './host.js';
 import { build, cutsMatch, glossLine } from '../compiler/wordsum.js';
-import { playJoint } from '../compiler/joint.js';
+import { loopJoint } from '../compiler/joint.js';
 import { morph } from '../data/morphemes.js';
 import { sfx, speak, sayMorph } from '../core/audio.js';
 import { touch } from '../core/mastery.js';
@@ -151,7 +151,7 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
         const j = el('div', { style: { marginTop: '0.5rem', textAlign: 'center' } });
         msg.append(j);
         speak(res.word);
-        await playJoint(j, item.p);
+        loopJoint(j, item.p, { solved: true });
       } else {
         sfx.good();
         speak(res.word);

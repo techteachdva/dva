@@ -52,6 +52,13 @@ export function build(ids) {
       }
     }
 
+    // Greek elision: anti + onym -> antonym, homo + onym -> homonym.
+    if (prev.elide && 'aeiou'.includes(right[0]) && segments[last] === prev.text) {
+      segments[last] = prev.text.slice(0, -1);
+      acc = acc.slice(0, -1);
+      steps.push({ kind: 'elide', at: i - 1, note: `${prev.text}- drops its last vowel before another vowel` });
+    }
+
     if (p.type === 'sfx') {
       const tail = acc[acc.length - 1];
       const tail2 = acc[acc.length - 2];
@@ -111,6 +118,7 @@ export function sumText(ids) {
     const s = res.steps.find((st) => st.at === i);
     if (!s) return p.text;
     if (s.kind === 'drop-e' || s.kind === 'merge-e') return p.text.slice(0, -1) + '(e)';
+    if (s.kind === 'elide') return `${p.text.slice(0, -1)}(${p.text.slice(-1)})`;
     if (s.kind === 'y-i') return p.text.slice(0, -1) + '(y→i)';
     if (s.kind === 'double') return p.text + ' + ' + s.letter;
     if (s.kind === 'assim') return `${p.text}(→${s.to})`;

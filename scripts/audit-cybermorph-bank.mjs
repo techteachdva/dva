@@ -9,6 +9,8 @@
  *   - every fake Rotling has one cut per seam, inside the shown word
  *   - every New Word uses only pieces taught before it
  *   - every keyword and finale word builds
+ *   - every word-bank entry builds its word; every morpheme is taught and used
+ *   - 200 sample Rotling waves per room use only taught morphemes, and every fake is fair
  * Then prints a drift report: catalog meanings that differ between the game's fork and the Garden.
  *
  * Usage:  node scripts/audit-cybermorph-bank.mjs        (exit 1 on any error)
@@ -21,6 +23,8 @@ import { DISTRICTS, MAIN_ORDER, KEY_POOL, FINALE_POOLS, DICTIONARY } from '../sr
 import { ROOM_W, ROOM_H, CORRIDOR } from '../src/site/cybermorph/js/data/layout.js';
 import { MORPHEME_CATALOG as FORK } from '../src/site/cybermorph/js/data/catalog.js';
 import { MORPHEME_CATALOG as GARDEN } from '../src/site/scripts/morphology-morpheme-catalog.js';
+import { BANK } from '../src/site/cybermorph/js/data/bank.js';
+import { makeWave, taughtBy, isKnown, allWords } from '../src/site/cybermorph/js/game/waves.js';
 
 const list = process.argv.includes('--list');
 const errors = [];
@@ -152,6 +156,51 @@ FINALE_POOLS.forEach((pool) => pool.words.forEach((ids) => {
   const r = tryBuild(ids, `finale ${pool.label}`);
   if (r) built.push(`finale ${pool.label}: ${r.segments.join('|')} → ${r.word}`);
 }));
+
+// The word bank: every entry builds exactly its word, with no duplicates.
+{
+  const seen = new Set();
+  BANK.forEach((b) => {
+    const where = `bank "${b.word}"`;
+    if (seen.has(b.word)) errors.push(`${where}: listed twice`);
+    seen.add(b.word);
+    for (const id of b.ids) if (!MORPHEMES[id]) errors.push(`${where}: unknown morpheme "${id}"`);
+    const r = tryBuild(b.ids, where);
+    if (r && r.word !== b.word) errors.push(`${where}: builds "${r.word}"`);
+    if (!b.meaning) errors.push(`${where}: needs a meaning`);
+  });
+}
+
+// Coverage: every morpheme outside the Lingo Room is taught somewhere, and used by at least one word.
+{
+  const usedIds = new Set([...BANK.flatMap((b) => b.ids), ...allWords().flatMap((w) => w.ids)]);
+  Object.values(MORPHEMES).filter((m) => m.origin !== 'lingo').forEach((m) => {
+    const free = m.type === 'base' && m.origin === 'anglo';
+    if (!free && !learned.has(m.id)) errors.push(`coverage: "${m.id}" is never taught`);
+    if (!usedIds.has(m.id)) warns.push(`coverage: "${m.id}" is in no word`);
+  });
+}
+
+// Rotling waves: sample many per room. Every word must be taught by then; every fake must be fair.
+for (const id of MAIN_ORDER) {
+  const L = taughtBy(id);
+  let fakes = 0;
+  const words = new Set();
+  for (let k = 0; k < 200; k++) {
+    makeWave({ learned: L, origin: DISTRICTS[id].origin, size: 7 }).forEach((it) => {
+      const where = `${id} wave`;
+      if (!isKnown(it.p, L)) errors.push(`${where}: ${it.p.join('+')} uses a morpheme not taught yet`);
+      const r = build(it.p);
+      words.add(it.show || r.word);
+      if (!it.fake) return;
+      fakes++;
+      if (it.show === r.word || DICTIONARY.has(it.show)) errors.push(`${where}: fake "${it.show}" is a real word`);
+      if (it.cuts.length !== it.p.length - 1 && it.fake !== 'link') errors.push(`${where}: fake "${it.show}" has ${it.cuts.length} cuts for ${it.p.length} parts`);
+      if (it.cuts.some((c) => c <= 0 || c >= it.show.length)) errors.push(`${where}: fake "${it.show}" cut outside the word`);
+    });
+  }
+  console.log(`${id}: ${allWords().filter((w) => isKnown(w.ids, L)).length} words ready for waves; 200 sample waves showed ${words.size} different Rotlings (${fakes} fakes)`);
+}
 
 // Drift: catalog rows the game uses whose meaning differs between the fork and the Garden.
 const used = new Set(Object.values(MORPHEMES).map((m) => m.cat).filter(Boolean));

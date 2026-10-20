@@ -10,6 +10,7 @@ import { LINGO } from './lingo.js';
 import { build } from '../compiler/wordsum.js';
 import { MORPHEMES } from './morphemes.js';
 import { buildHubMap } from './layout.js';
+import { BANK } from './bank.js';
 
 export const DISTRICTS = { anglo: ANGLO, latin: LATIN, greek: GREEK, lingo: LINGO };
 export const MAIN_ORDER = ['anglo', 'latin', 'greek'];
@@ -166,6 +167,7 @@ function collectWords() {
     }
   }
   FINALE_POOLS.forEach((pool) => pool.words.forEach(addIds));
+  BANK.forEach((b) => set.add(b.word));
   KEY_POOL.forEach((k) => addIds(k.p));
   // Free bases are words on their own (help, port, phone); bound ones (rupt, struct) are not.
   Object.values(MORPHEMES).filter((m) => m.type === 'base' && m.origin === 'anglo').forEach((m) => set.add(m.text));
@@ -176,8 +178,8 @@ function collectWords() {
 export const DICTIONARY = collectWords();
 
 /**
- * Words with their parts, for review Rotlings in the hub and for Overclock Mode.
- * Only real words built from morpheme ids (no Lingo phrases).
+ * Words with their parts, for Rotling waves, review Rotlings in the Hub and Overclock Mode:
+ * every authored task plus the word bank. Only real words built from morpheme ids (no Lingo phrases).
  */
 export function collectPartWords() {
   const out = [];
@@ -197,6 +199,7 @@ export function collectPartWords() {
       if (r.core) r.core.tasks.forEach((t) => push(t.p, id));
     }
   }
+  BANK.forEach((b) => push(b.ids, b.origin));
   return out;
 }
 

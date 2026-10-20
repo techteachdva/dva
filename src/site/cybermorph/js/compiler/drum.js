@@ -4,7 +4,8 @@
  * Columns read left to right (prefix · base · suffix), one piece per column,
  * the rule from Ramsden's word matrix. Each ring is a prism; every face is a
  * morpheme tile whose SHAPE shows its type, so the structure is learned by eye.
- * A ring with a single option is fixed (firewall locks hold the base still).
+ * A ring with a single option is fixed (firewall locks hold the base still). It is still drawn as a
+ * full dial, every face showing its one morpheme, so the base reads like any other ring.
  */
 
 import { THREE, R, toScreen } from '../engine/renderer.js';
@@ -39,12 +40,12 @@ export function createDrum(columns) {
     const n = opts.length;
     const fixed = n === 1;
     // Up to 8 physical faces. Longer rings are "virtual": faces swap textures as they roll out of sight.
-    const N = fixed ? 1 : n > 8 ? 8 : n >= 4 ? n : n * Math.ceil(4 / n);
+    const N = n > 8 ? 8 : n >= 4 ? n : n * Math.ceil(4 / n);
     const step = (Math.PI * 2) / N;
     const texes = opts.map((o) => { const s = specOf(o); return morphemeTexture(s.spec, { blank: !!s.blank }); });
     const maxAspect = Math.max(...texes.map((t) => t.aspect));
     const ringW = FACE_H * maxAspect * 0.86;
-    const apothem = fixed ? 0.2 : (FACE_H / 2) / Math.tan(Math.PI / N);
+    const apothem = (FACE_H / 2) / Math.tan(Math.PI / N);
     const g = new THREE.Group();
     const spin = new THREE.Group();
     g.add(spin);
@@ -52,13 +53,9 @@ export function createDrum(columns) {
     const type = col.type || typeOf(firstReal);
     const rimColor = new THREE.Color(TYPE_COLOR[type] || '#ffffff').getHex();
 
-    if (fixed) {
-      spin.add(box(ringW * 0.98, FACE_H * 1.05, 0.36, mat(0x22232e), 0, 0, 0));
-    } else {
-      const core = cyl(apothem * 0.96, ringW * 0.98, mat(0x1b1c26), 0, 0, 0, N <= 8);
-      core.rotation.z = Math.PI / 2;
-      spin.add(core);
-    }
+    const core = cyl(apothem * 0.96, ringW * 0.98, mat(0x1b1c26), 0, 0, 0, N <= 8);
+    core.rotation.z = Math.PI / 2;
+    spin.add(core);
     const pg = new THREE.PlaneGeometry(FACE_H * maxAspect * 0.86, FACE_H * 0.86);
     own.push(pg);
     const faces = [];
@@ -66,13 +63,13 @@ export function createDrum(columns) {
       const plane = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.3, toneMapped: false }));
       const pivot = new THREE.Group();
       pivot.rotation.x = f * step;
-      plane.position.z = apothem + 0.012 + (fixed ? 0.17 : 0);
+      plane.position.z = apothem + 0.012;
       pivot.add(plane);
       spin.add(pivot);
       faces.push(plane);
     }
     const rims = [];
-    if (!fixed) {
+    {
       [-1, 1].forEach((s) => {
         const tg = new THREE.TorusGeometry(apothem / Math.cos(Math.PI / N) + 0.02, 0.035, 6, Math.max(12, N * 3));
         own.push(tg);
@@ -82,10 +79,6 @@ export function createDrum(columns) {
         g.add(rim);
         rims.push(rim);
       });
-    } else {
-      const lock = box(ringW * 0.98, 0.06, 0.4, glowMat(rimColor), 0, -FACE_H * 0.55, 0);
-      g.add(lock);
-      rims.push(lock);
     }
     const mod = (a, b) => ((a % b) + b) % b;
     const ring = {

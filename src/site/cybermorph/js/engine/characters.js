@@ -124,29 +124,34 @@ export function createMentor(id) {
 
 const ROT_BODY = mat(0x2b0f3d, { emissive: 0x3d1a5c, ei: 0.4 });
 const ROT_GLOW = glowMat(0x7dff3a);
+const GOLD_BODY = mat(0x6b4a08, { emissive: 0xb07a10, ei: 0.55 });
+const GOLD_GLOW = glowMat(0xffd23f);
+const RET_GLOW = glowMat(0xff5c7a);
 
-export function createRotling(word, { boss = false, review = false } = {}) {
+/** A Rotling. Golden ones carry a long bonus word; Rot Return ones glow red. */
+export function createRotling(word, { boss = false, review = false, golden = false, ret = false } = {}) {
   const g = new THREE.Group();
   const inner = new THREE.Group();
   g.add(inner);
   const segs = Math.min(5, Math.max(2, Math.ceil(word.length / 3)));
-  const scale = boss ? 2.6 : 1.4;
+  const scale = boss ? 2.6 : golden ? 1.6 : 1.4;
   const body = [];
   for (let i = 0; i < segs; i++) {
-    const s = sphere(0.2 - i * 0.02, ROT_BODY, (i - (segs - 1) / 2) * 0.2, 0.32, Math.sin(i) * 0.05);
+    const s = sphere(0.2 - i * 0.02, golden ? GOLD_BODY : ROT_BODY, (i - (segs - 1) / 2) * 0.2, 0.32, Math.sin(i) * 0.05);
     inner.add(s);
     body.push(s);
   }
-  const eyeMat = glowMat(review ? 0xffd23f : 0x7dff3a);
+  const eyeMat = glowMat(review || golden ? 0xffd23f : ret ? 0xff5c7a : 0x7dff3a);
   const headX = ((segs - 1) / 2) * 0.2;
   inner.add(sphere(0.05, eyeMat, headX + 0.06, 0.42, 0.15), sphere(0.05, eyeMat, headX - 0.06, 0.42, 0.15));
   const orbit = new THREE.Group();
   for (let i = 0; i < 4; i++) {
-    const c = box(0.08, 0.08, 0.08, ROT_GLOW, Math.cos(i * 1.57) * 0.45, 0.4 + (i % 2) * 0.12, Math.sin(i * 1.57) * 0.45);
+    const c = box(0.08, 0.08, 0.08, golden ? GOLD_GLOW : ret ? RET_GLOW : ROT_GLOW, Math.cos(i * 1.57) * 0.45, 0.4 + (i % 2) * 0.12, Math.sin(i * 1.57) * 0.45);
     orbit.add(c);
   }
   inner.add(orbit);
-  const label = labelSprite(word, { color: review ? '#ffd23f' : '#c8ff9e', bg: 'rgba(20,6,30,0.85)', border: review ? '#ffd23f' : '#7dff3a', height: boss ? 0.24 : 0.28 });
+  const tone = review || golden ? '#ffd23f' : ret ? '#ff8aa0' : null;
+  const label = labelSprite(word, { color: tone || '#c8ff9e', bg: 'rgba(20,6,30,0.85)', border: tone || '#7dff3a', height: boss ? 0.24 : 0.28 });
   label.position.y = 0.95;
   inner.add(label);
   inner.scale.setScalar(scale);

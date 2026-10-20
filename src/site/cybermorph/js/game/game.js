@@ -20,8 +20,9 @@ import { applySettings } from '../core/settings.js';
 import { sfx, startMusic, unlockAudio, speak } from '../core/audio.js';
 import * as store from '../core/save.js';
 import { touch, dueIds } from '../core/mastery.js';
-import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, collectPartWords, collectFakes } from '../data/world.js';
-import { zoneOf, CORRIDOR } from '../data/layout.js';
+import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, collectFakes } from '../data/world.js';
+import { makeWave, makeFake, taughtBy, randomWord, allWords, isKnown } from './waves.js';
+import { zoneOf, CORRIDOR, CHASM_COLS } from '../data/layout.js';
 import { morph, MORPHEMES } from '../data/morphemes.js';
 import { build } from '../compiler/wordsum.js';
 import * as hud from '../ui/hud.js';
@@ -505,7 +506,7 @@ function updatePropLabels() {
 
 function spawnRotling(item, cell, opts = {}) {
   const word = item.show || build(item.p).word;
-  const entity = createRotling(word, opts);
+  const entity = createRotling(word, { ...opts, golden: opts.golden || !!item.golden });
   const r = { item, entity, c: cell.c, r: cell.r, pos: G.room.toWorld(cell.c, cell.r), target: null, wait: Math.random() * 2, frozen: false, ...opts };
   entity.group.position.copy(r.pos);
   entity.group.traverse((n) => { n.userData.rotling = r; });
@@ -572,17 +573,28 @@ async function debugRotling(r) {
   zoomTo(r.pos.clone(), 0.55);
   const d = DISTRICTS[G.place];
   const realNote = G.place === 'lingo' ? 'Mr. Phil\'s rule: if people use it and understand it, it\'s a real word.' : null;
-  const res = await openDebug({ item: r.item, profile: G.profile, mode: 'rotling', realNote, title: r.review ? 'REVIEW ROTLING · a morpheme you haven\'t used in a while' : null });
+  const title = r.review ? 'REVIEW ROTLING · a morpheme you haven\'t used in a while'
+    : r.item.golden ? 'GOLDEN ROTLING · a long word worth bonus bits'
+      : r.ret ? 'ROT RETURN · a harder Rotling came back' : null;
+  const res = await openDebug({ item: r.item, profile: G.profile, mode: 'rotling', realNote, title });
   r.frozen = false;
   if (G.place === 'timed') { timedResult(r, res); return; }
   if (!res.solved) {
-    if (res.mistakes) bumpBack(r);
+    if (res.mistakes) { bumpBack(r); G.streak = 0; }
     return;
   }
   removeRotling(r);
   sfx.split();
   dropPickups(r.item.p.filter((id) => morph(id).type !== 'link'), { c: r.c, r: r.r });
+  reward(r, res);
   if (r.review) { hud.toast('Review complete: morpheme restored', 'good'); return; }
+  if (r.ret && !G.rotlings.some((x) => x.ret)) {
+    G.profile.stats.bits += 40;
+    store.save();
+    hud.toast('Rot Return cleared! +40 bits', 'gold');
+    refreshObjective();
+    return;
+  }
   if (d && r.index !== undefined) {
     const prog = store.dprog(G.profile, G.place);
     const list = prog.rotlings[1] || (prog.rotlings[1] = []);
@@ -591,9 +603,28 @@ async function debugRotling(r) {
     store.save();
     if (!G.rotlings.some((x) => x.index !== undefined)) {
       hud.toast('Rotling zone clear!', 'good');
+      prog.waveCleared = true;
       if (d.id === 'lingo') prog.done.rotlings1 = true;
+      store.save();
     }
   }
+}
+
+/** Bonus bits: golden Rotlings, and a streak of clean first-try DEBUGs. */
+function reward(r, res) {
+  const st = G.profile.stats;
+  if (r.item.golden) {
+    st.bits += 50;
+    hud.toast('GOLDEN ROTLING! +50 bits', 'gold');
+  }
+  G.streak = res.firstTry ? (G.streak || 0) + 1 : 0;
+  if (G.streak >= 3) {
+    const bonus = 5 * G.streak;
+    st.bits += bonus;
+    st.bestStreak = Math.max(st.bestStreak || 0, G.streak);
+    if (!r.item.golden) hud.toast(`Clean streak ×${G.streak}! +${bonus} bits`, 'gold');
+  }
+  store.save();
 }
 
 function bumpBack(r) {
@@ -614,9 +645,8 @@ function updateRot(dt) {
   G.rot = clamp(G.rot + dt * 0.33 * live, 0, 100);
   if (G.rot > 50 && !G.rotSpawned) {
     G.rotSpawned = true;
-    const words = collectPartWords().filter((w) => w.origin === G.place);
-    const w = pick(words);
-    const free = shuffle(G.room.find('.')).find((c) => roomZone(c.c) === 1 && G.room.isWalkable(c.c, c.r));
+    const w = randomWord(new Set(G.profile.learned), G.place);
+    const free = shuffle(G.room.find('.')).find((c) => roomZone(c.c) === 1 && (G.place === 'lingo' || c.c < CHASM_COLS[0]) && G.room.isWalkable(c.c, c.r) && !G.rotlings.some((o) => o.c === c.c && o.r === c.r));
     if (w && free) {
       spawnRotling({ p: w.ids }, free);
       sfx.rot();
@@ -684,6 +714,8 @@ function objectiveText() {
   const prog = store.dprog(p, d.id);
   const done = prog.done;
   const last = d.rooms.length - 1;
+  const back = G.rotlings.filter((x) => x.ret).length;
+  if (prog.cleared && back) return `Rot Return: ${back} harder Rotling${back > 1 ? 's' : ''} came back. DEBUG them for bonus bits, or take the HUB door.`;
   if (prog.cleared) return 'Room clear! Take the HUB door back.';
   if (!done.mentor) return `Talk to ${d.mentor.name}.`;
   if (!done.gate0) return 'Click the glowing firewall to unlock it.';
@@ -796,10 +828,12 @@ function spawnReviews() {
   const due = dueIds(G.profile).filter((id) => morph(id).origin !== 'lingo');
   const focus = PRACTICE.length ? due.filter((id) => PRACTICE.includes(id)) : due;
   if (!focus.length) return;
-  const words = collectPartWords().filter((w) => w.ids.some((id) => focus.includes(id)) && w.ids.every((id) => G.profile.learned.includes(id)));
+  const learned = new Set(G.profile.learned);
+  const words = allWords().filter((w) => w.ids.some((id) => focus.includes(id)) && isKnown(w.ids, learned));
   const picks = shuffle(words).slice(0, 3);
   const spots = shuffle(G.room.find('.').filter((c) => G.room.isWalkable(c.c, c.r)));
-  picks.forEach((w, i) => { if (spots[i]) spawnRotling({ p: w.ids }, spots[i], { review: true }); });
+  // The third review may be a Rot fake, so the Hub still asks "real or Rot?".
+  picks.forEach((w, i) => { if (spots[i]) spawnRotling((i === 2 && makeFake(w)) || { p: w.ids }, spots[i], { review: true }); });
   if (picks.length) hud.toast(`${picks.length} morpheme${picks.length > 1 ? 's are' : ' is'} fading. Review Rotlings appeared in the Hub.`, 'gold');
 }
 
@@ -831,6 +865,44 @@ async function useDesk() {
 
 // ── The four Rooms ────────────────────────────────────────────────
 
+/**
+ * The Rotling hall. The Lingo Room keeps its hand-written Rotlings; the three main rooms
+ * draw a fresh random wave from the word bank (saved, so leaving and coming back keeps it).
+ * A cleared room gets a Rot Return: a few harder Rotlings worth bonus bits.
+ */
+function spawnWave(d, prog) {
+  const authored = d.rooms[1].rotlings || [];
+  if (d.id !== 'lingo' && !prog.wave && !prog.waveCleared) {
+    const killedOld = prog.rotlings[1] || [];
+    if (prog.done.terminal1 || prog.cleared || (authored.length && killedOld.length >= authored.length)) prog.waveCleared = true;
+    else {
+      const learned = new Set([...taughtBy(d.id), ...G.profile.learned]);
+      prog.wave = makeWave({ learned, origin: d.origin, size: d.id === 'anglo' ? 6 : 7 });
+      prog.rotlings[1] = [];
+    }
+    store.save();
+  }
+  const items = d.id === 'lingo' ? authored : (prog.waveCleared ? [] : prog.wave || []);
+  const killed = prog.rotlings[1] || [];
+  const fixed = G.room.find('R');
+  // Only the near side of the chasm: before the bridge, the far side can't be reached.
+  const open = shuffle(G.room.find('.').filter((c) => roomZone(c.c) === 1 && (d.id === 'lingo' || c.c < CHASM_COLS[0]) && G.room.isWalkable(c.c, c.r) && !G.room.isPort(c.c, c.r) && G.room.cells[c.r][c.c] !== '~'));
+  const freeCell = () => [...fixed, ...open].find((c) => !G.rotlings.some((o) => o.c === c.c && o.r === c.r));
+  items.forEach((item, i) => {
+    if (killed.includes(i)) return;
+    const cell = freeCell();
+    if (!cell) return;
+    const rr = spawnRotling(item, cell);
+    rr.index = i;
+  });
+  if (d.id !== 'lingo' && prog.cleared) {
+    const wave = makeWave({ learned: new Set(G.profile.learned), origin: d.origin, size: 4, fakes: 0.5, minParts: 3, golden: 0.5 });
+    let n = 0;
+    wave.forEach((item) => { const cell = freeCell(); if (cell) { spawnRotling(item, cell, { ret: true }); n++; } });
+    if (n) setTimeout(() => { hud.toast(`Rot Return! ${n} harder Rotlings crawled back into the hall.`, 'warn'); refreshObjective(); }, 900);
+  }
+}
+
 async function enterRoom(id, arrival) {
   const d = DISTRICTS[id];
   G.place = id;
@@ -842,13 +914,7 @@ async function enterRoom(id, arrival) {
   store.save();
   await loadRoom(d.map, id, { arrival, makeObject: (ch, c, r) => roomObject(d, ch, c, r) });
   if (prog.done.terminal1) G.room.formBridge(CORRIDOR, true);
-  const killed = prog.rotlings[1] || [];
-  const spots = G.room.find('R');
-  (d.rooms[1].rotlings || []).forEach((item, i) => {
-    if (killed.includes(i)) return;
-    const rr = spawnRotling(item, spots[i % spots.length]);
-    rr.index = i;
-  });
+  spawnWave(d, prog);
   hud.setPlace(d.name.toUpperCase());
   refreshObjective();
   if (!prog.introDone) {
@@ -1069,9 +1135,10 @@ function unlockMilestone(key) {
 
 async function startTimed() {
   const origins = MAIN_ORDER.filter((d) => G.profile.milestones.includes(d));
-  let words = collectPartWords().filter((w) => origins.includes(w.origin));
+  const learned = new Set(G.profile.learned);
+  let words = allWords().filter((w) => origins.includes(w.origin) && isKnown(w.ids, learned));
   if (PRACTICE.length) { const f = words.filter((w) => w.ids.some((id) => PRACTICE.includes(id))); if (f.length >= 4) words = f; }
-  const fakes = collectFakes().filter((f) => origins.includes(f.origin));
+  const fakes = [...collectFakes().filter((f) => origins.includes(f.origin)), ...shuffle(words).slice(0, 60).map((w) => makeFake(w)).filter(Boolean)];
   G.place = 'timed';
   G.timed = { t: 120, score: 0, words: 0, first: 0, attempts: 0, streak: 0, bestStreak: 0, spawn: 0, pool: words, fakes, over: false };
   await loadRoom(TIMED_MAP, 'arcade', {});
