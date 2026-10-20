@@ -525,3 +525,9 @@ Requested by Phil after playing 1.1: "way more variety in the rotlings", every m
 - **Mr. Phil is a person now:** wild curly light-brown hair, a thick full beard and moustache, dark green glasses, a button-down shirt, jeans and sneakers. His first-visit speech is Phil's own welcome ("Oh hey! Welcome to my digital classroom!…"), and later visits get one line of classroom small talk each.
 - **The room mimics the real classroom.** Teacher corner: a green-screen wall, a Chromebook charging cart with a desktop drawing a rainbow fractal, and a big green d20. The class: the Smart Board on the far wall typing the morpheme lesson on repeat (it is the room core), long desks in a triangle pointing at it, and two blue and grey 3D printers on the back wall.
 - **The d20.** Click it from anywhere: it bounces around the teacher corner, settles flat and shows its number. A natural 20 shows CRITICAL HIT, which splits into crit · ic · al  hit with meanings and fades.
+
+### Achievements and cosmetics (1.2.0)
+
+- **Five free choices in every category**, and a fifth category, **Toppers**. 74 parts in all: 14 arms & legs, 14 torsos, 14 heads, 16 faces, 16 toppers.
+- **Head shapes**, not just colours: box, Round Bot (free), Retro TV, Prism and the **Critical d20** (a natural 20 on Mr. Phil's die). Toppers include a propeller, ball cap, horned helm, laurel wreath, satellite dish, top hat, headphones, halo, crown, light bulb, sprout, grad cap and Mr. Phil's wild curls.
+- **23 achievements** (pause menu → Achievements): 6 story milestones, 12 skill goals (golden Rotling, 5 and 10 clean streaks, Rot Return, 25 first tries, Lexicon 50 and 150, 300 morphemes, 5 Made-up Words, 1,000 in Overclock, finishing a class session, inspecting 12 props), and 5 secrets that show only a hint (natural 20, natural 1, 10 rolls, hearing all of Mr. Phil's small talk, getting crashed by the Rot). Each one names the parts it unlocks. Earning one pops a toast with them.

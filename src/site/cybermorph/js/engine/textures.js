@@ -274,6 +274,41 @@ export function patternTexture(pattern, color) {
       ctx.bezierCurveTo(sx + 40, 40, sx - 40, 80, sx + 10, 128);
       ctx.stroke();
     }
+  } else if (pattern === 'plaid') {
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = dark;
+    for (let i = 0; i < 128; i += 32) { ctx.fillRect(i, 0, 14, 128); ctx.fillRect(0, i, 128, 14); }
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = light;
+    for (let i = 20; i < 128; i += 32) { ctx.fillRect(i, 0, 3, 128); ctx.fillRect(0, i, 128, 3); }
+    ctx.globalAlpha = 1;
+  } else if (pattern === 'sparkle') {
+    const r = seeded(color + pattern);
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 14; i++) {
+      const x = r() * 128;
+      const y = r() * 128;
+      const z = 3 + r() * 5;
+      ctx.beginPath(); ctx.moveTo(x, y - z); ctx.lineTo(x + z * 0.3, y); ctx.lineTo(x, y + z); ctx.lineTo(x - z * 0.3, y); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x - z, y); ctx.lineTo(x, y + z * 0.3); ctx.lineTo(x + z, y); ctx.lineTo(x, y - z * 0.3); ctx.fill();
+    }
+  } else if (pattern === 'buttons') {
+    ctx.fillStyle = dark;
+    ctx.fillRect(58, 0, 12, 128);
+    ctx.fillStyle = '#ffffff';
+    for (let y = 14; y < 128; y += 26) { ctx.beginPath(); ctx.arc(64, y, 4, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = light;
+    ctx.beginPath(); ctx.moveTo(30, 0); ctx.lineTo(64, 22); ctx.lineTo(98, 0); ctx.fill();
+  } else if (pattern === 'leaves') {
+    const r = seeded(color + pattern);
+    for (let i = 0; i < 16; i++) {
+      ctx.save();
+      ctx.translate(r() * 128, r() * 128);
+      ctx.rotate(r() * Math.PI * 2);
+      ctx.fillStyle = r() > 0.5 ? dark : light;
+      ctx.beginPath(); ctx.ellipse(0, 0, 11, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
   } else if (pattern === 'chrome') {
     const g = ctx.createLinearGradient(0, 0, 0, 128);
     g.addColorStop(0, light);
@@ -334,6 +369,42 @@ export function faceTexture(pattern, color) {
     case 'mono': eye(44, 52, 9); ctx.beginPath(); ctx.arc(86, 52, 16, 0, Math.PI * 2); ctx.stroke(); eye(86, 52, 7); ctx.beginPath(); ctx.moveTo(100, 62); ctx.lineTo(108, 96); ctx.lineWidth = 3; ctx.stroke(); ctx.lineWidth = 7; smile(); break;
     case 'glasses': ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(42, 52, 16, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(86, 52, 16, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(58, 52); ctx.lineTo(70, 52); ctx.stroke(); eye(42, 52, 5); eye(86, 52, 5); ctx.lineWidth = 7; smile(); break;
     case 'glitch': ctx.fillStyle = '#ff2a6d'; ctx.fillRect(30, 40, 18, 18); ctx.fillStyle = '#05d9e8'; ctx.fillRect(36, 44, 18, 18); ctx.fillStyle = color; ctx.fillRect(78, 42, 18, 18); ctx.fillRect(30, 84, 30, 6); ctx.fillRect(66, 80, 32, 6); break;
+    case 'sleepy':
+      ctx.beginPath(); ctx.arc(44, 50, 12, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+      ctx.beginPath(); ctx.arc(84, 50, 12, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+      ctx.font = '800 22px Lexend, sans-serif'; ctx.fillText('z', 100, 30); ctx.font = '800 14px Lexend, sans-serif'; ctx.fillText('z', 112, 18);
+      ctx.beginPath(); ctx.arc(64, 88, 7, 0, Math.PI * 2); ctx.stroke();
+      break;
+    case 'dizzy':
+      [[44, 50], [84, 50]].forEach(([x, y]) => { ctx.beginPath(); ctx.moveTo(x - 10, y - 10); ctx.lineTo(x + 10, y + 10); ctx.moveTo(x + 10, y - 10); ctx.lineTo(x - 10, y + 10); ctx.stroke(); });
+      ctx.beginPath(); ctx.moveTo(42, 90); ctx.quadraticCurveTo(53, 80, 64, 90); ctx.quadraticCurveTo(75, 100, 86, 90); ctx.stroke();
+      break;
+    case 'laser':
+      eye(44, 52, 9); eye(84, 52, 9);
+      ctx.globalAlpha = 0.7; ctx.fillRect(0, 48, 44, 8); ctx.fillRect(84, 48, 44, 8); ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.moveTo(48, 86); ctx.lineTo(80, 86); ctx.stroke();
+      break;
+    case 'wink':
+      eye(44, 52);
+      ctx.beginPath(); ctx.moveTo(74, 54); ctx.quadraticCurveTo(84, 44, 94, 54); ctx.stroke();
+      smile();
+      break;
+    case 'beard':
+      eye(44, 46, 8); eye(84, 46, 8);
+      ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(44, 46, 14, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(84, 46, 14, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(58, 46); ctx.lineTo(70, 46); ctx.stroke();
+      ctx.shadowBlur = 0; ctx.globalAlpha = 0.9;
+      ctx.beginPath(); ctx.moveTo(18, 62); ctx.quadraticCurveTo(22, 124, 64, 122); ctx.quadraticCurveTo(106, 124, 110, 62); ctx.quadraticCurveTo(64, 86, 18, 62); ctx.fill();
+      ctx.globalAlpha = 1;
+      break;
+    case 'static': {
+      ctx.shadowBlur = 0;
+      const r = seeded(pattern + color);
+      for (let i = 0; i < 260; i++) { ctx.globalAlpha = 0.25 + r() * 0.75; ctx.fillRect(Math.floor(r() * 32) * 4, Math.floor(r() * 32) * 4, 4, 4); }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#05060c'; ctx.fillRect(30, 44, 22, 14); ctx.fillRect(76, 44, 22, 14);
+      break;
+    }
     default: eye(44, 52); eye(84, 52); smile();
   }
   const t = new THREE.CanvasTexture(c);

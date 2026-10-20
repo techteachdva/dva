@@ -241,15 +241,13 @@ function numberTexture(n) {
  * bounds: { minX, maxX, minZ, maxZ } in room space. Returns { group, roll(), update(dt), rolling }.
  * onLand(n) fires once the die settles and turns its top face flat.
  */
-export function createD20(bounds, { onBounce = null, onLand = null } = {}) {
-  const group = new THREE.Group();
+/** The die itself: a green icosahedron, white edges, numbers 1–20 with opposite faces adding to 21. */
+export function d20Mesh(radius = D20_R) {
   const die = new THREE.Group();
-  group.add(die);
-  const geo = new THREE.IcosahedronGeometry(D20_R, 0);
+  const geo = new THREE.IcosahedronGeometry(radius, 0);
   const body = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0x18a83a, emissive: 0x05310f, flatShading: true }));
   const lines = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0xe8ffe8 }));
   die.add(body, lines);
-  // Face centres and normals, then numbers in opposite pairs.
   const pos = geo.attributes.position;
   const faces = [];
   for (let f = 0; f < pos.count / 3; f++) {
@@ -266,13 +264,20 @@ export function createD20(bounds, { onBounce = null, onLand = null } = {}) {
     if (opp) opp.num = 21 - next;
     next += 1;
   });
-  const planeGeo = new THREE.PlaneGeometry(0.2, 0.2);
+  const planeGeo = new THREE.PlaneGeometry(radius * 0.48, radius * 0.48);
   faces.forEach((f) => {
     const p = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ map: numberTexture(f.num), transparent: true, depthWrite: false, toneMapped: false }));
     p.position.copy(f.cen).multiplyScalar(1.01);
     p.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), f.n);
     die.add(p);
   });
+  return { die, faces };
+}
+
+export function createD20(bounds, { onBounce = null, onLand = null } = {}) {
+  const group = new THREE.Group();
+  const { die, faces } = d20Mesh();
+  group.add(die);
 
   const state = {
     p: new THREE.Vector3((bounds.minX + bounds.maxX) / 2, REST, (bounds.minZ + bounds.maxZ) / 2),

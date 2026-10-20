@@ -1,7 +1,7 @@
 import { $, el } from '../core/util.js';
 import { settings, setSetting } from '../core/settings.js';
 import { profiles, canAddProfile, deleteProfile, loadScores } from '../core/save.js';
-import { AVATAR, AVATAR_CATEGORIES, UNLOCK_LABEL, INSPIRATIONS, DISTRICTS, MAIN_ORDER } from '../data/world.js';
+import { AVATAR, AVATAR_CATEGORIES, UNLOCK_LABEL, INSPIRATIONS, DISTRICTS, MAIN_ORDER, DEFAULT_AVATAR, ACHIEVEMENTS, rewardsOf } from '../data/world.js';
 import { morph, ORIGIN_LABEL } from '../data/morphemes.js';
 import { glow } from '../core/mastery.js';
 import { R, setFocus, setDim } from '../engine/renderer.js';
@@ -76,10 +76,10 @@ export function titleScreen({ onPlay, onNew, onTimed }) {
 
 // ── Avatar creator ────────────────────────────────────────────────
 export function avatarScreen({ profile = null, unlocked = [], onDone }) {
-  const av = profile ? { ...profile.avatar } : { limbs: AVATAR.limbs[0].id, torso: AVATAR.torso[1].id, head: AVATAR.head[0].id, face: AVATAR.face[0].id };
+  const av = { ...DEFAULT_AVATAR, ...(profile ? profile.avatar : {}) };
   const bot = createMorpher(av);
-  bot.group.scale.setScalar(2.3);
-  bot.group.position.set(-1.6, -1.6, 0);
+  bot.group.scale.setScalar(2.1);
+  bot.group.position.set(-1.6, -2.0, 0);
   R.focusScene.add(bot.group);
   const cam = R.focusCam;
   const camSave = cam.position.clone();
@@ -94,16 +94,20 @@ export function avatarScreen({ profile = null, unlocked = [], onDone }) {
   const side = el('div', { class: 'avatar-side' });
   const name = el('input', { type: 'text', maxlength: '16', value: profile ? profile.name : '', placeholder: 'First name', 'aria-label': 'Your Morpher name' });
   const note = el('div', { class: 'unlock-note' });
-  side.append(el('div', { class: 'kicker' }, profile ? 'CUSTOMIZE YOUR MORPHER' : 'NEW MORPHER'), el('h2', { style: { margin: '0.3rem 0' } }, 'Build your repair bot'));
+  const all = Object.values(AVATAR).flat();
+  const open = all.filter((o) => !o.unlock || unlocked.includes(o.unlock)).length;
+  side.append(el('div', { class: 'kicker' }, profile ? 'CUSTOMIZE YOUR MORPHER' : 'NEW MORPHER'), el('h2', { style: { margin: '0.3rem 0' } }, 'Build your repair bot'),
+    el('div', { style: { color: 'var(--ink-dim)', fontSize: '1rem' } }, `${open} of ${all.length} parts unlocked. Achievements unlock the rest.`));
   if (!profile) side.append(el('label', {}, 'Name'), name);
   AVATAR_CATEGORIES.forEach(({ key, label }) => {
     const sw = el('div', { class: 'swatches' });
     const paint = () => [...sw.children].forEach((b) => b.classList.toggle('on', b.dataset.id === av[key]));
     AVATAR[key].forEach((opt) => {
       const locked = opt.unlock && !unlocked.includes(opt.unlock);
-      const b = el('button', { class: `swatch-btn${locked ? ' locked' : ''}`, type: 'button', 'data-id': opt.id, title: locked ? `${opt.name}: ${UNLOCK_LABEL[opt.unlock]}` : opt.name, 'aria-label': `${label}: ${opt.name}${locked ? ' (locked)' : ''}`, style: { background: key === 'face' ? '#05060c' : opt.color, color: opt.color } }, key === 'face' ? '☻' : '');
+      const dark = key === 'face' || key === 'top';
+      const b = el('button', { class: `swatch-btn${locked ? ' locked' : ''}`, type: 'button', 'data-id': opt.id, title: locked ? `${opt.name}: ${UNLOCK_LABEL[opt.unlock]}` : opt.name, 'aria-label': `${label}: ${opt.name}${locked ? ' (locked)' : ''}`, style: { background: dark ? '#05060c' : opt.color, color: opt.color } }, locked ? '' : key === 'face' ? '☻' : (opt.icon || ''));
       b.addEventListener('click', () => {
-        if (locked) { note.textContent = `🔒 ${opt.name}: ${UNLOCK_LABEL[opt.unlock]} to unlock.`; sfx.bad(); return; }
+        if (locked) { note.textContent = `🔒 ${opt.name}. ${UNLOCK_LABEL[opt.unlock]}`; sfx.bad(); return; }
         av[key] = opt.id;
         note.textContent = opt.name;
         sfx.click();
@@ -121,7 +125,10 @@ export function avatarScreen({ profile = null, unlocked = [], onDone }) {
     cleanup();
     onDone({ name: n, avatar: av });
   });
+  const ach = el('button', { class: 'btn btn-ghost', type: 'button', style: { marginTop: '0.6rem', width: '100%' } }, '🏆 Achievements');
+  ach.addEventListener('click', () => achievementsScreen(unlocked));
   side.append(note, go);
+  if (profile) side.append(ach);
   if (profile) {
     const cancel = el('button', { class: 'btn btn-ghost', type: 'button', style: { marginTop: '0.4rem', width: '100%' } }, 'Cancel');
     cancel.addEventListener('click', () => { cleanup(); onDone(null); });
@@ -188,7 +195,8 @@ export function howToScreen() {
       el('div', {}, el('b', {}, 'COMPILE'), 'Turn the rings with ▲▼ (or scroll) until the pieces build the word the request means. Press COMPILE.'),
       el('div', {}, el('b', {}, 'DEBUG'), 'Click Rotlings. Cut their word between morphemes, then decide: real word or Rot fake? Every run brings new Rotlings. Golden ones carry long words worth bonus bits. Three clean splits in a row start a streak.'),
       el('div', {}, el('b', {}, 'PATCH'), 'Firewall locks: turn the ending ring until the word fits the sentence.'),
-      el('div', {}, el('b', {}, 'LINK'), 'Hang words on their family branch. Watch for look-alikes that are not family.')),
+      el('div', {}, el('b', {}, 'LINK'), 'Hang words on their family branch. Watch for look-alikes that are not family.'),
+      el('div', {}, el('b', {}, 'UNLOCK'), 'Achievements unlock new Morpher parts: heads, faces, toppers and more. Some are secret, so click around. See them all in the pause menu.')),
     el('h3', {}, 'SHAPES TELL YOU THE TYPE'),
     el('div', { class: 'legend' },
       el('span', { class: 'mtile', 'data-type': 'pfx', 'data-origin': 'anglo' }, 'un'), 'prefix: pin on the right',
@@ -343,6 +351,7 @@ export function pauseScreen({ profile, onResume, onQuit, onLexicon, onAvatar, on
     b('RESUME', () => { close(); onResume(); }, 'btn btn-primary'),
     b('How to play', () => howToScreen()),
     b('Progress report', () => reportScreen(profile)),
+    b('Achievements', () => achievementsScreen(profile.milestones)),
     b('Lexicon', () => { close(); onLexicon(); }),
     b('Customize Morpher', () => { close(); onAvatar(); }),
     b('Settings', () => settingsScreen()),
@@ -472,4 +481,25 @@ export function sessionDoneScreen({ profile, minutes, onTicket, onBack }) {
   ticket.addEventListener('click', () => { close(); onTicket(); });
   back.addEventListener('click', () => { close(); onBack(); });
   ticket.focus();
+}
+
+// ── Achievements ──────────────────────────────────────────────────
+/** Every achievement, what it unlocks, and how to get it. Secrets show only a hint until earned. */
+export function achievementsScreen(earned = []) {
+  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
+  const got = ACHIEVEMENTS.filter((a) => earned.includes(a.key)).length;
+  const list = el('div', { class: 'ach-list' }, ACHIEVEMENTS.map((a) => {
+    const have = earned.includes(a.key);
+    const hidden = a.secret && !have;
+    const rewards = rewardsOf(a.key).map(({ cat, part }) => `${part.icon ? `${part.icon} ` : ''}${part.name} (${AVATAR_CATEGORIES.find((c) => c.key === cat).label.toLowerCase()})`);
+    return el('div', { class: `ach${have ? ' have' : ''}` },
+      el('div', { class: 'ach-icon' }, have ? '🏆' : hidden ? '❔' : '🔒'),
+      el('div', {},
+        el('div', { class: 'ach-name' }, hidden ? 'Secret achievement' : a.name),
+        el('div', { class: 'ach-how' }, hidden ? a.hint : a.how),
+        el('div', { class: 'ach-reward' }, hidden ? 'Unlocks: ???' : `Unlocks: ${rewards.join(', ')}`)));
+  }));
+  const close = showScreen(el('section', { class: 'sheet glass' }, el('h2', {}, `ACHIEVEMENTS · ${got} / ${ACHIEVEMENTS.length}`), list, el('div', { class: 'row-btns' }, done)));
+  done.addEventListener('click', close);
+  done.focus();
 }

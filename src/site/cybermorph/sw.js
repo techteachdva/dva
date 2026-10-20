@@ -1,5 +1,5 @@
 /* CyberMorph offline cache: after the first visit the game plays without a network. */
-const CACHE = 'cybermorph-v3';
+const CACHE = 'cybermorph-v4';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html', './styles.css', './js/main.js', './vendor/three.module.js'])).then(() => self.skipWaiting()));

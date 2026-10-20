@@ -469,3 +469,13 @@ body.panel-open #session-clock { top: auto; bottom: 16px; }
 .ticket .sayit .ans { color: var(--yellow); font-weight: 800; }
 .ticket textarea.code { width: 100%; min-height: 4.4rem; font: 600 0.95rem/1.35 ui-monospace, monospace; color: var(--ink); background: rgba(0, 0, 0, 0.35); border: 2px solid var(--cyan); border-radius: 10px; padding: 0.5rem; resize: none; word-break: break-all; user-select: all; }
 .ticket .how { color: var(--ink-dim); margin: 0.3rem 0 0.5rem; }
+
+/* Achievements. */
+.ach-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0.6rem; max-height: 62vh; overflow-y: auto; padding-right: 0.3rem; }
+.ach { display: flex; gap: 0.7rem; align-items: flex-start; padding: 0.6rem 0.8rem; border-radius: 12px; background: rgba(255, 255, 255, 0.04); border: 2px solid rgba(255, 255, 255, 0.08); opacity: 0.8; }
+.ach.have { opacity: 1; border-color: var(--yellow); background: rgba(255, 210, 63, 0.08); }
+.ach-icon { font-size: 1.6rem; line-height: 1; }
+.ach-name { font-weight: 800; font-size: 1.1rem; }
+.ach-how { color: var(--ink-dim); font-size: 1rem; }
+.ach-reward { font-size: 0.95rem; margin-top: 0.2rem; color: var(--cyan); }
+.swatch-btn { font-size: 1.1rem; line-height: 1; }

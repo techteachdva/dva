@@ -22,7 +22,7 @@ import { sfx, startMusic, unlockAudio, speak } from '../core/audio.js';
 import * as store from '../core/save.js';
 import { touch, dueIds } from '../core/mastery.js';
 import * as session from '../core/session.js';
-import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, collectFakes } from '../data/world.js';
+import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, collectFakes, achievement, rewardsOf } from '../data/world.js';
 import { makeWave, makeFake, taughtBy, randomWord, allWords, isKnown } from './waves.js';
 import { zoneOf, CORRIDOR, CHASM_COLS } from '../data/layout.js';
 import { morph, MORPHEMES } from '../data/morphemes.js';
@@ -420,6 +420,9 @@ async function use(target) {
 /** Morpheme props: click one to hear and see how its name is built. */
 function showPropInfo(o) {
   const p = o.prop;
+  const seen = G.profile.propsSeen || (G.profile.propsSeen = []);
+  if (!seen.includes(p.word)) { seen.push(p.word); store.save(); }
+  if (seen.length >= 12) achieve('curious');
   const parts = p.ids ? `${p.ids.map((id) => `${morph(id).text} (${morph(id).meaning})`).join(' + ')}` : p.note;
   hud.toast(`${p.word}: ${parts}`, 'gold');
   speak(p.word);
@@ -614,6 +617,7 @@ async function debugRotling(r) {
     G.profile.stats.bits += 40;
     store.save();
     hud.toast('Rot Return cleared! +40 bits', 'gold');
+    achieve('rotreturn');
     refreshObjective();
     return;
   }
@@ -638,6 +642,7 @@ function reward(r, res) {
   if (r.item.golden) {
     st.bits += 50;
     hud.toast('GOLDEN ROTLING! +50 bits', 'gold');
+    achieve('golden');
   }
   G.streak = res.firstTry ? (G.streak || 0) + 1 : 0;
   if (G.streak >= 3) {
@@ -646,6 +651,8 @@ function reward(r, res) {
     st.bestStreak = Math.max(st.bestStreak || 0, G.streak);
     if (!r.item.golden) hud.toast(`Clean streak ×${G.streak}! +${bonus} bits`, 'gold');
   }
+  if (G.streak >= 5) achieve('streak5');
+  if (G.streak >= 10) achieve('streak10');
   store.save();
 }
 
@@ -932,7 +939,9 @@ function dieLanded(n) {
   G.room.group.add(label);
   G.dieLabel = label;
   speak(String(n));
-  if (crit) { sfx.crit(); hud.criticalHit(); } else { sfx.pickup(); hud.toast(`d20 rolled a ${n}${n === 1 ? '. Oof. A natural 1.' : '.'}`, n >= 15 ? 'good' : 'info'); }
+  if (G.profile.stats.rolls >= 10) achieve('roll10');
+  if (n === 1) achieve('nat1');
+  if (crit) { sfx.crit(); hud.criticalHit(); setTimeout(() => achieve('crit'), 5600); } else { sfx.pickup(); hud.toast(`d20 rolled a ${n}${n === 1 ? '. Oof. A natural 1.' : '.'}`, n >= 15 ? 'good' : 'info'); }
   setTimeout(() => {
     if (G.dieLabel !== label) return;
     tween(500, (k) => { label.material.opacity = 1 - k; }, () => { G.room && G.room.group.remove(label); if (G.dieLabel === label) G.dieLabel = null; });
@@ -1119,8 +1128,10 @@ async function runMentor(d) {
     const lines = prog.done.gate0 ? [] : [...d.mentorFlow.repeat];
     lines.push(chat[prog.chat]);
     prog.chat += 1;
+    prog.chatHeard = Math.max(prog.chatHeard || 0, prog.chat);
     store.save();
     await say(sp, lines);
+    if (prog.chatHeard >= chat.length) achieve('mrphil');
   } else {
     await say(sp, d.mentorFlow.repeat);
   }
@@ -1223,9 +1234,27 @@ async function runCore(d, zone) {
   store.save();
 }
 
+/** Earn an achievement (story milestones are achievements too) and announce the parts it unlocks. */
 function unlockMilestone(key) {
-  if (store.addMilestone(G.profile, key)) hud.toast('New Morpher parts unlocked! Visit CUSTOMIZE in the Hub.', 'gold');
+  if (!G.profile || !store.addMilestone(G.profile, key)) return;
+  const a = achievement(key);
+  const parts = rewardsOf(key).map(({ part }) => `${part.icon ? `${part.icon} ` : ''}${part.name}`);
+  sfx.unlock();
+  hud.toast(`🏆 ${a ? a.name : 'Achievement'}! Unlocked: ${parts.join(', ') || 'a surprise'}. Change parts at CUSTOMIZE in the Hub.`, 'gold');
 }
+const achieve = unlockMilestone;
+
+/** Count-based achievements, checked every couple of seconds. */
+setInterval(() => {
+  const p = G.profile;
+  if (!p) return;
+  if (p.lexicon.length >= 50) achieve('lexicon50');
+  if (p.lexicon.length >= 150) achieve('lexicon150');
+  if (p.learned.length >= 300) achieve('learned300');
+  if (p.madeUp.length >= 5) achieve('madeup5');
+  if (p.stats.firstTry >= 25) achieve('firsttry25');
+  if (p.stats.crashes >= 1) achieve('crash');
+}, 2000);
 
 // ── Overclock Mode ────────────────────────────────────────────────
 
@@ -1283,6 +1312,7 @@ async function endTimed() {
   const clock = $('timed-clock');
   if (clock) clock.remove();
   const result = { score: T.score, words: T.words, accuracy: T.attempts ? Math.round((T.first / T.attempts) * 100) : 0, bestStreak: T.bestStreak };
+  if (result.score >= 1000) achieve('overclock');
   const rank = store.addScore({ name: G.profile.name, score: result.score, words: result.words, t: Date.now() });
   sfx.unlock();
   screens.timedResultScreen({
@@ -1372,6 +1402,7 @@ function showExitTicket(timeUp) {
   if (!G.profile) return;
   const ticket = session.endSession();
   G.sessionOver = true;
+  achieve('session');
   $('session-clock').hidden = true;
   sfx.unlock();
   screens.exitTicketScreen({ profile: G.profile, ticket, form: SESSION_FORM, timeUp, onDone: () => quitToTitle() });
@@ -1402,5 +1433,6 @@ G.walkToUse = (t) => walkToUse(t);
 G.walkTo = (c) => walkTo(c);
 G.enterRoom = (id) => enterRoom(id, "@");
 G.rollDie = () => rollDie();
+G.dieLanded = (n) => dieLanded(n);
 
 export { G };

@@ -80,8 +80,11 @@ export const FINALE_POOLS = [
 ];
 
 /**
- * Avatar parts. Four of each are open from the start; the rest unlock with progress.
- * pattern: solid | stripes | circuit | checker | glow | dots | camo | chrome
+ * Avatar parts. Five of each are open from the start; the rest unlock with achievements
+ * (the unlock key names one; see ACHIEVEMENTS).
+ * pattern: solid | stripes | circuit | checker | glow | dots | camo | chrome | plaid | sparkle | buttons | leaves
+ * Heads can change shape: box (default) | round | tv | prism | d20. Toppers sit on the head.
+ * icon: shown on the swatch when the part is a shape or an object rather than a colour.
  */
 export const AVATAR = {
   limbs: [
@@ -89,48 +92,84 @@ export const AVATAR = {
     { id: 'l-cyan', name: 'Cyan', color: '#28c8f0', pattern: 'solid' },
     { id: 'l-tiger', name: 'Tiger', color: '#ff9d1f', pattern: 'stripes' },
     { id: 'l-grape', name: 'Grape', color: '#8a5cff', pattern: 'dots' },
+    { id: 'l-mint', name: 'Mint', color: '#3ce0a0', pattern: 'solid' },
     { id: 'l-amber', name: 'Amber Glass', color: '#ffb000', pattern: 'glow', unlock: 'anglo' },
     { id: 'l-marble', name: 'Grey Marble', color: '#b9bcc4', pattern: 'camo', unlock: 'latin' },
     { id: 'l-holo', name: 'Holo Blue', color: '#38b6ff', pattern: 'glow', unlock: 'greek' },
     { id: 'l-gold', name: 'Desk Gold', color: '#e6b84a', pattern: 'chrome', unlock: 'desk' },
     { id: 'l-paper', name: 'Lined Paper', color: '#f4f4ef', pattern: 'stripes', unlock: 'lingo' },
     { id: 'l-rot', name: 'Rot Slayer', color: '#7dff3a', pattern: 'circuit', unlock: 'finale' },
+    { id: 'l-dice', name: 'Dice Dots', color: '#18a83a', pattern: 'dots', unlock: 'roll10' },
+    { id: 'l-rotcamo', name: 'Rot Camo', color: '#5a7a2a', pattern: 'camo', unlock: 'rotreturn' },
+    { id: 'l-neon', name: 'Overclocked', color: '#ff3df0', pattern: 'glow', unlock: 'overclock' },
   ],
   torso: [
     { id: 't-white', name: 'Lab White', color: '#e9edf2', pattern: 'solid' },
     { id: 't-red', name: 'Arcade Red', color: '#ff3b5c', pattern: 'solid' },
     { id: 't-circuit', name: 'Circuit', color: '#1fd17a', pattern: 'circuit' },
     { id: 't-check', name: 'Checker', color: '#ffd23f', pattern: 'checker' },
+    { id: 't-flannel', name: 'Flannel', color: '#c0392b', pattern: 'plaid' },
     { id: 't-amber', name: 'Amber Glass', color: '#ffb000', pattern: 'glow', unlock: 'anglo' },
     { id: 't-marble', name: 'Grey Marble', color: '#b9bcc4', pattern: 'camo', unlock: 'latin' },
     { id: 't-holo', name: 'Holo Blue', color: '#38b6ff', pattern: 'circuit', unlock: 'greek' },
     { id: 't-gold', name: 'Desk Gold', color: '#e6b84a', pattern: 'chrome', unlock: 'desk' },
     { id: 't-paper', name: 'Lined Paper', color: '#f4f4ef', pattern: 'stripes', unlock: 'lingo' },
     { id: 't-rot', name: 'Rot Slayer', color: '#7dff3a', pattern: 'glow', unlock: 'finale' },
+    { id: 't-goldrush', name: 'Gold Rush', color: '#ffc928', pattern: 'sparkle', unlock: 'golden' },
+    { id: 't-leafy', name: 'Word Forest', color: '#3ccf6a', pattern: 'leaves', unlock: 'lexicon150' },
+    { id: 't-buttondown', name: 'Mr. Phil\'s Shirt', color: '#6f9fd8', pattern: 'buttons', unlock: 'curious' },
   ],
   head: [
     { id: 'h-steel', name: 'Steel', color: '#9aa4b2', pattern: 'solid' },
     { id: 'h-pink', name: 'Neon Pink', color: '#ff4fd8', pattern: 'solid' },
     { id: 'h-navy', name: 'Navy', color: '#2c3e8f', pattern: 'dots' },
     { id: 'h-lime', name: 'Lime', color: '#a6ff4d', pattern: 'stripes' },
+    { id: 'h-round', name: 'Round Bot', color: '#9fd8ff', pattern: 'solid', shape: 'round', icon: '●' },
     { id: 'h-amber', name: 'Amber Glass', color: '#ffb000', pattern: 'glow', unlock: 'anglo' },
     { id: 'h-marble', name: 'Grey Marble', color: '#b9bcc4', pattern: 'camo', unlock: 'latin' },
     { id: 'h-holo', name: 'Holo Blue', color: '#38b6ff', pattern: 'glow', unlock: 'greek' },
     { id: 'h-gold', name: 'Desk Gold', color: '#e6b84a', pattern: 'chrome', unlock: 'desk' },
     { id: 'h-paper', name: 'Lined Paper', color: '#f4f4ef', pattern: 'stripes', unlock: 'lingo' },
     { id: 'h-rot', name: 'Rot Slayer', color: '#7dff3a', pattern: 'circuit', unlock: 'finale' },
+    { id: 'h-d20', name: 'Critical d20', color: '#18a83a', pattern: 'solid', shape: 'd20', icon: '🎲', unlock: 'crit' },
+    { id: 'h-tv', name: 'Retro TV', color: '#7a4f2a', pattern: 'solid', shape: 'tv', icon: '📺', unlock: 'firsttry25' },
+    { id: 'h-prism', name: 'Prism', color: '#b98cff', pattern: 'glow', shape: 'prism', icon: '◆', unlock: 'learned300' },
   ],
   face: [
     { id: 'f-smile', name: 'Smile', color: '#5cf2ff', pattern: 'smile' },
     { id: 'f-visor', name: 'Visor', color: '#ff4fd8', pattern: 'visor' },
     { id: 'f-pixel', name: 'Pixel', color: '#a6ff4d', pattern: 'pixel' },
     { id: 'f-cat', name: 'Cat', color: '#ffd23f', pattern: 'cat' },
+    { id: 'f-sleepy', name: 'Sleepy', color: '#b9a8ff', pattern: 'sleepy' },
     { id: 'f-shades', name: 'Shades', color: '#ffb000', pattern: 'shades', unlock: 'anglo' },
     { id: 'f-stars', name: 'Star Eyes', color: '#38b6ff', pattern: 'stars', unlock: 'latin' },
     { id: 'f-heart', name: 'Heart Eyes', color: '#ff5c8a', pattern: 'hearts', unlock: 'greek' },
     { id: 'f-mono', name: 'Monocle', color: '#e6b84a', pattern: 'mono', unlock: 'desk' },
     { id: 'f-glasses', name: 'Teacher Specs', color: '#f4f4ef', pattern: 'glasses', unlock: 'lingo' },
     { id: 'f-glitch', name: 'Glitch', color: '#7dff3a', pattern: 'glitch', unlock: 'finale' },
+    { id: 'f-oof', name: 'Oof', color: '#ff8f6b', pattern: 'dizzy', unlock: 'nat1' },
+    { id: 'f-laser', name: 'Laser Eyes', color: '#ff2a3a', pattern: 'laser', unlock: 'streak5' },
+    { id: 'f-wink', name: 'Wink', color: '#7fe0ff', pattern: 'wink', unlock: 'curious' },
+    { id: 'f-beard', name: 'Teacher Beard', color: '#c89a6a', pattern: 'beard', unlock: 'mrphil' },
+    { id: 'f-static', name: 'Static', color: '#d9dce6', pattern: 'static', unlock: 'crash' },
+  ],
+  top: [
+    { id: 'p-antenna', name: 'Antenna', icon: '📶', color: '#888899' },
+    { id: 'p-propeller', name: 'Propeller', icon: '🌀', color: '#ff3b5c' },
+    { id: 'p-cap', name: 'Ball Cap', icon: '🧢', color: '#2f6fde' },
+    { id: 'p-bow', name: 'Bow', icon: '🎀', color: '#ff5c8a' },
+    { id: 'p-none', name: 'Nothing', icon: '∅', color: '#555566' },
+    { id: 'p-horns', name: 'Horned Helm', icon: '🛡', color: '#c9b58a', unlock: 'anglo' },
+    { id: 'p-laurel', name: 'Laurel Wreath', icon: '🌿', color: '#5fbf4a', unlock: 'latin' },
+    { id: 'p-dish', name: 'Satellite Dish', icon: '🛰', color: '#dfe8ff', unlock: 'greek' },
+    { id: 'p-tophat', name: 'Top Hat', icon: '🎩', color: '#1a1a22', unlock: 'desk' },
+    { id: 'p-headphones', name: 'Headphones', icon: '🎧', color: '#2a2f38', unlock: 'lingo' },
+    { id: 'p-halo', name: 'Halo', icon: '✨', color: '#ffe680', unlock: 'finale' },
+    { id: 'p-crown', name: 'Crown', icon: '👑', color: '#e6b84a', unlock: 'streak10' },
+    { id: 'p-bulb', name: 'Bright Idea', icon: '💡', color: '#ffe066', unlock: 'madeup5' },
+    { id: 'p-sprout', name: 'Sprout', icon: '🌱', color: '#3ccf6a', unlock: 'lexicon50' },
+    { id: 'p-grad', name: 'Grad Cap', icon: '🎓', color: '#1d2b4f', unlock: 'session' },
+    { id: 'p-curls', name: 'Wild Curls', icon: '➰', color: '#a47a4f', unlock: 'mrphil' },
   ],
 };
 
@@ -139,16 +178,45 @@ export const AVATAR_CATEGORIES = [
   { key: 'torso', label: 'Torso' },
   { key: 'head', label: 'Head' },
   { key: 'face', label: 'Face' },
+  { key: 'top', label: 'Topper' },
 ];
 
-export const UNLOCK_LABEL = {
-  anglo: 'Clear the Anglo-Saxon Room',
-  latin: 'Clear the Latin Room',
-  greek: 'Clear the Greek Room',
-  desk: 'Open the Secret Secretary Desk',
-  lingo: 'Finish the Lingo Room',
-  finale: 'Defeat the Rot',
-};
+export const DEFAULT_AVATAR = { limbs: 'l-steel', torso: 't-red', head: 'h-steel', face: 'f-smile', top: 'p-antenna' };
+
+/**
+ * Achievements: story milestones, skill goals and secrets (easter eggs). Each unlocks the avatar
+ * parts whose unlock names its key. A secret shows only its hint until it is earned.
+ */
+export const ACHIEVEMENTS = [
+  { key: 'anglo', name: 'Old Code Restored', how: 'Clear the Anglo-Saxon Room' },
+  { key: 'latin', name: 'Memory Restored', how: 'Clear the Latin Room' },
+  { key: 'greek', name: 'Star Map Restored', how: 'Clear the Greek Room' },
+  { key: 'desk', name: 'Lock Picker', how: 'Open the Secret Secretary Desk' },
+  { key: 'lingo', name: 'Lingo Learner', how: 'Finish the Lingo Room' },
+  { key: 'finale', name: 'Rot Slayer', how: 'Defeat the Rot' },
+  { key: 'golden', name: 'Gold Rush', how: 'DEBUG a golden Rotling' },
+  { key: 'streak5', name: 'Clean Streak', how: 'DEBUG 5 Rotlings in a row on the first try' },
+  { key: 'streak10', name: 'Unstoppable', how: 'DEBUG 10 Rotlings in a row on the first try' },
+  { key: 'rotreturn', name: 'Rot Return', how: 'Clear a Rot Return wave in a room you already restored' },
+  { key: 'firsttry25', name: 'Sharp Eye', how: 'Get 25 tasks right on the first try' },
+  { key: 'lexicon50', name: 'Growing Tree', how: 'Grow your Lexicon to 50 words' },
+  { key: 'lexicon150', name: 'Word Forest', how: 'Grow your Lexicon to 150 words' },
+  { key: 'learned300', name: 'Morpheme Master', how: 'Learn 300 morphemes' },
+  { key: 'madeup5', name: 'Word Inventor', how: 'Save 5 Made-up Words at the Morph Compiler' },
+  { key: 'overclock', name: 'Overclocked', how: 'Score 1,000 or more in Overclock Mode' },
+  { key: 'session', name: 'Class Dismissed', how: 'Finish a class session and get your exit ticket' },
+  { key: 'curious', name: 'Curious Morpher', how: 'Inspect 12 different morpheme props in the rooms' },
+  { key: 'crit', name: 'Critical Hit', how: 'Roll a natural 20 on Mr. Phil\'s d20', secret: true, hint: 'Somewhere secret, a big green die is waiting to be rolled.' },
+  { key: 'nat1', name: 'Natural 1', how: 'Roll a natural 1 on Mr. Phil\'s d20', secret: true, hint: 'Not every roll goes your way. That is part of the fun.' },
+  { key: 'roll10', name: 'Dice Goblin', how: 'Roll Mr. Phil\'s d20 10 times', secret: true, hint: 'Some objects are worth clicking more than once.' },
+  { key: 'mrphil', name: 'Teacher\'s Pet', how: 'Hear everything Mr. Phil has to say', secret: true, hint: 'A certain teacher always has one more thing to tell you.' },
+  { key: 'crash', name: 'Rebooted', how: 'Get crashed by the Rot (it happens to everyone)', secret: true, hint: 'Sometimes losing unlocks something too.' },
+];
+
+export const UNLOCK_LABEL = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.key, a.secret ? `Secret: ${a.hint}` : a.how]));
+export const achievement = (key) => ACHIEVEMENTS.find((a) => a.key === key) || null;
+/** The avatar parts an achievement unlocks, as [{ cat, part }]. */
+export const rewardsOf = (key) => Object.entries(AVATAR).flatMap(([cat, list]) => list.filter((p) => p.unlock === key).map((part) => ({ cat, part })));
 
 /** Every real word CyberMorph knows. Built words not in here become Made-up Words. */
 function collectWords() {
