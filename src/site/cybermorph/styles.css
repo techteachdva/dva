@@ -199,6 +199,14 @@ button.mtile { cursor: pointer; }
 .sum-line .eq { color: var(--yellow); font-weight: 800; font-size: 1.55rem; }
 .sum-actions { display: flex; gap: 0.6rem; align-items: center; }
 .compile-btn { min-width: 200px; min-height: 70px; font-size: 1.35rem; letter-spacing: 0.08em; }
+.compile-btn .kc { margin-left: 0.5rem; font-size: 0.85rem; vertical-align: middle; }
+kbd.kc { display: inline-block; min-width: 1.7em; padding: 0.1em 0.45em; margin: 0 0.12em; border: 2px solid currentColor; border-bottom-width: 4px; border-radius: 7px; font: inherit; font-size: 0.9em; font-weight: 800; line-height: 1.2; text-align: center; }
+.key-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem 1.2rem; margin-top: 0.45rem; font-size: 1rem; color: var(--ink-dim); }
+.key-legend kbd.kc { color: var(--cyan); }
+.ring-btn.focus { background: var(--cyan); color: #01121a; box-shadow: 0 0 18px rgba(46, 240, 255, 0.75); }
+.ring-btn.side-key { width: 52px; height: 64px; }
+.compile-panel.spinning .ring-btn, .compile-panel.spinning .ring-gloss { opacity: 0.2; pointer-events: none; transition: opacity 0.2s; }
+.compile-panel .ring-btn, .compile-panel .ring-gloss { transition: opacity 0.3s; }
 
 .feedback { margin-top: 0.6rem; padding: 0.7rem 0.9rem; border-radius: 12px; font-size: 1.12rem; line-height: 1.45; text-align: left; }
 .feedback.good { background: rgba(80, 160, 60, 0.3); border: 2px solid var(--green); }
@@ -292,6 +300,9 @@ button.mtile { cursor: pointer; }
 .sentence .w { border-radius: 8px; padding: 0 0.2rem; border: 0; background: transparent; font: inherit; }
 .sentence .w.click:hover { background: rgba(255, 216, 74, 0.25); }
 .sentence .w.target { background: rgba(255, 216, 74, 0.3); color: var(--yellow); font-weight: 800; }
+.sentence .w.glow { color: var(--yellow); font-weight: 800; cursor: pointer; text-shadow: 0 0 10px rgba(255, 216, 74, 0.9); box-shadow: 0 0 0 2px rgba(255, 216, 74, 0.7), 0 0 18px rgba(255, 216, 74, 0.55); animation: word-glow 1.4s ease-in-out infinite; }
+@keyframes word-glow { 50% { box-shadow: 0 0 0 3px rgba(255, 216, 74, 1), 0 0 28px rgba(255, 216, 74, 0.85); } }
+@media (prefers-reduced-motion: reduce) { .sentence .w.glow { animation: none; } }
 .options { display: flex; flex-direction: column; gap: 0.6rem; width: 100%; }
 .options .btn { text-align: left; font-size: 1.15rem; }
 
@@ -568,3 +579,20 @@ body.panel-open #session-clock { top: auto; bottom: 16px; }
 .welcome p { font-size: clamp(1.05rem, 2.5vh, 1.3rem); line-height: 1.55; margin: 0 0 0.8rem; }
 .welcome .mission { border-left: 5px solid var(--cyan); padding: 0.4rem 0 0.4rem 1rem; background: rgba(0, 229, 255, 0.07); border-radius: 8px; }
 .welcome .row-btns { justify-content: center; margin-top: 0.8rem; }
+
+/* ── Minigames (js/minigames/harness.js) ─────────────────────────── */
+.minigame-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.7rem; padding: 0.8rem; }
+.mg-head { padding: 0.55rem 1.2rem; text-align: center; }
+.mg-title { display: flex; align-items: center; justify-content: center; gap: 0.8rem; margin-top: 0.25rem; }
+.mg-mean { font-size: 1.25rem; font-weight: 700; }
+.mg-wrap { position: relative; width: min(92vw, 900px, calc((100vh - 170px) * 16 / 9)); }
+.mg-stage { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; border: 3px solid var(--cyan); box-shadow: 0 0 24px rgba(46, 240, 255, 0.3); touch-action: none; cursor: crosshair; background: #0b0716; }
+.mg-time { position: absolute; left: 12px; right: 12px; bottom: 10px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); pointer-events: none; }
+.mg-time i { display: block; height: 100%; width: 100%; border-radius: 4px; background: var(--cyan); }
+.mg-time.low i { background: #ff3b5c; }
+.mg-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: min(80%, 460px); max-width: 92%; padding: 1.1rem 1.4rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.55rem; }
+.mg-card[hidden] { display: none; }
+.mg-big .mtile { font-size: 1.6rem; }
+.mg-line { font-size: 1.05rem; color: var(--ink-dim); }
+.mg-how { font-size: 1.15rem; font-weight: 700; max-width: 34rem; }
+.mg-verb { font-size: 1.4rem; font-weight: 800; color: var(--yellow); }

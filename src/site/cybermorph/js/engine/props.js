@@ -5,6 +5,7 @@
 
 import { THREE } from './renderer.js';
 import { screenTexture, labelSprite } from './textures.js';
+import { settings } from '../core/settings.js';
 
 export const STYLES = {
   hub: { bg: 0x07040f, floorA: 0x2b2352, floorB: 0x221c44, line: 0xff3df0, wall: 0x261c4a, wallTop: 0x4b3a8f, accent: 0x00e5ff, sky: 0x6b5cff, ground: 0x1a0f2e, music: 'hub' },
@@ -93,20 +94,110 @@ export function terminal(style, title = 'TERMINAL') {
   return g;
 }
 
+// A vertical flame gradient (red at the floor, gold at the top), shared by every firewall gate.
+let flameTex = null;
+function flameTexture() {
+  if (flameTex) return flameTex;
+  const c = document.createElement('canvas');
+  c.width = 4; c.height = 64;
+  const x = c.getContext('2d');
+  const grad = x.createLinearGradient(0, 64, 0, 0);
+  grad.addColorStop(0, '#ff1e00');
+  grad.addColorStop(0.5, '#ff7a00');
+  grad.addColorStop(1, '#ffe14a');
+  x.fillStyle = grad;
+  x.fillRect(0, 0, 4, 64);
+  flameTex = new THREE.CanvasTexture(c);
+  flameTex.colorSpace = THREE.SRGBColorSpace;
+  return flameTex;
+}
+
+/**
+ * A FIREWALL gate across the corridor: a full-height wall of glowing flame bars, a padlock and
+ * a FIREWALL sign. It pulses gently while sealed; setOpen(true) sinks the bars into the floor.
+ */
+const GATE_H = 1.6;
 export function gate(style) {
   const S = STYLES[style];
   const g = new THREE.Group();
-  g.add(box(0.14, 1.3, 0.14, mat(S.wallTop), 0, 0.65, -0.43), box(0.14, 1.3, 0.14, mat(S.wallTop), 0, 0.65, 0.43));
-  const barrier = new THREE.Mesh(geo.plane, new THREE.MeshBasicMaterial({ color: S.accent, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false }));
-  barrier.scale.set(0.86, 1.15, 1);
-  barrier.rotation.y = Math.PI / 2;
-  barrier.position.y = 0.6;
+  const posts = [-0.45, 0.45].map((z) => box(0.14, GATE_H + 0.1, 0.14, mat(S.wallTop), 0, (GATE_H + 0.1) / 2, z));
+  g.add(...posts, box(0.16, 0.05, 0.16, glowMat(0xff6a00), 0, GATE_H + 0.12, -0.45), box(0.16, 0.05, 0.16, glowMat(0xff6a00), 0, GATE_H + 0.12, 0.45));
+
+  // Everything that drops into the floor lives in `bars`.
   const bars = new THREE.Group();
-  for (let i = 0; i < 4; i++) bars.add(box(0.04, 0.04, 0.86, glowMat(S.accent), 0, 0.2 + i * 0.28, 0));
-  g.add(barrier, bars);
+  const barrier = new THREE.Mesh(geo.plane, new THREE.MeshBasicMaterial({ map: flameTexture(), transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false, toneMapped: false }));
+  barrier.scale.set(0.8, GATE_H, 1);
+  barrier.rotation.y = Math.PI / 2;
+  barrier.position.y = GATE_H / 2;
+  const barMat = new THREE.MeshBasicMaterial({ map: flameTexture(), toneMapped: false });
+  const flameMat = new THREE.MeshBasicMaterial({ color: 0xffd23f, toneMapped: false });
+  const tips = [];
+  for (let i = 0; i < 7; i++) {
+    const z = -0.33 + i * 0.11;
+    bars.add(box(0.05, GATE_H - 0.05, 0.045, barMat, 0, (GATE_H - 0.05) / 2, z));
+    const tip = new THREE.Mesh(geo.cone, flameMat);
+    tip.scale.set(0.07, 0.16, 0.07);
+    tip.position.set(0, GATE_H + 0.02, z);
+    bars.add(tip);
+    tips.push(tip);
+  }
+  [0.12, GATE_H * 0.5, GATE_H - 0.12].forEach((y) => bars.add(box(0.035, 0.035, 0.8, barMat, 0, y, 0)));
+
+  // The padlock, centred on the bars and readable from either side.
+  const lock = new THREE.Group();
+  const gold = mat(0xffd23f, { emissive: 0x8a5a00, ei: 0.9 });
+  lock.add(box(0.14, 0.2, 0.24, gold, 0, 0, 0), box(0.15, 0.06, 0.03, mat(0x1a0d00), 0, -0.02, 0));
+  const shackle = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.022, 6, 16, Math.PI), mat(0xd9dde6, { emissive: 0x555a66 }));
+  shackle.rotation.y = Math.PI / 2;
+  shackle.position.y = 0.1;
+  lock.add(shackle);
+  lock.position.y = GATE_H * 0.62;
+  bars.add(barrier, lock);
+  g.add(bars);
+
+  const sign = labelSprite('FIREWALL', { color: '#ffd23f', bg: 'rgba(40,6,0,0.92)', border: '#ff6a00', height: 0.3 });
+  sign.position.y = GATE_H + 0.5;
+  g.add(sign);
+
+  // Animate from the posts' render hook (they are always drawn), so the gate needs no update call.
+  let open = null;
+  let dropStart = 0;
+  const DROP_MS = 700;
+  posts[0].onBeforeRender = () => {
+    const now = performance.now();
+    if (open) {
+      if (!bars.visible) return;
+      const k = Math.min(1, (now - dropStart) / DROP_MS);
+      bars.position.y = -GATE_H * k * k;
+      sign.material.opacity = 1 - k;
+      if (k >= 1) { bars.visible = false; sign.visible = false; }
+      return;
+    }
+    if (settings.reducedMotion) return;
+    const t = now / 1000;
+    const p = 0.5 + 0.5 * Math.sin(t * 2.2);
+    barrier.material.opacity = 0.22 + p * 0.22;
+    barMat.color.setScalar(0.8 + p * 0.2);
+    tips.forEach((f, i) => { f.scale.y = 0.16 * (1 + Math.sin(t * 9 + i * 1.7) * 0.25); });
+  };
+
   g.userData.barrier = barrier;
   g.userData.bars = bars;
-  g.userData.setOpen = (open) => { barrier.visible = !open; bars.visible = !open; };
+  g.userData.setOpen = (next) => {
+    next = !!next;
+    if (next === open) return;
+    const first = open === null;
+    open = next;
+    if (!open) {
+      bars.position.y = 0;
+      bars.visible = sign.visible = true;
+      sign.material.opacity = 1;
+      return;
+    }
+    // A gate that loads already open, or with reduced motion, is simply gone.
+    if (first || settings.reducedMotion) { bars.visible = sign.visible = false; return; }
+    dropStart = performance.now();
+  };
   return g;
 }
 
@@ -401,12 +492,17 @@ export function morphProp(model, style) {
       for (let i = 0; i < 4; i++) for (let j = 0; j < 9; j++) add(box(0.07, 0.04, 0.06, glowMat(i === 3 && j > 2 && j < 7 ? acc : 0xffd36b), -0.36 + j * 0.09, 0.58, -0.13 + i * 0.09));
       break;
     }
-    case 'firewall': {
-      add(box(1.0, 0.9, 0.3, mat(0x6b4515), 0, 0.45, 0));
-      for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) add(box(0.22, 0.12, 0.02, mat(0x8a5a22), -0.33 + j * 0.22 + (i % 2) * 0.11, 0.2 + i * 0.28, 0.16));
-      const flames = [-0.3, 0, 0.3].map((x, i) => { const f = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.38 + i * 0.05, 7), glowMat([0xff6a00, 0xffb000, 0xff3b00][i])); f.position.set(x, 1.1, 0); return f; });
-      add(...flames);
-      g.userData.flicker = flames;
+    case 'desktop': {
+      // A small desk with a monitor and a keyboard on top.
+      add(box(1.0, 0.05, 0.55, mat(0x6b4515), 0, 0.55, 0));
+      [[-0.45, -0.22], [0.45, -0.22], [-0.45, 0.22], [0.45, 0.22]].forEach(([x, z]) => add(box(0.06, 0.53, 0.06, mat(0x3a2a14), x, 0.265, z)));
+      add(box(0.3, 0.2, 0.5, mat(0x3a2a14), 0.32, 0.42, 0));
+      add(box(0.16, 0.02, 0.12, mat(0x222222), 0, 0.585, -0.12), box(0.04, 0.18, 0.04, mat(0x222222), 0, 0.67, -0.14));
+      add(box(0.6, 0.38, 0.03, mat(0x222222), 0, 0.92, -0.15));
+      add(screen(0.54, 0.32, screenTexture(['desk + top'], { fg: '#ffb000', font: 30 }), 0, 0.92, -0.13));
+      add(box(0.46, 0.025, 0.14, mat(0x1b130a), -0.04, 0.585, 0.12));
+      for (let i = 0; i < 2; i++) for (let j = 0; j < 7; j++) add(box(0.05, 0.02, 0.04, glowMat(0xffd36b), -0.22 + j * 0.06, 0.6, 0.09 + i * 0.06));
+      add(box(0.06, 0.025, 0.09, mat(0x222222), 0.3, 0.585, 0.12));
       break;
     }
     case 'laptop': {

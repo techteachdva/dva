@@ -24,7 +24,7 @@ export const ANGLO = {
   ]),
   props: {
     a: { word: 'keyboard', ids: ['key', 'board'], model: 'keyboard' },
-    b: { word: 'firewall', ids: ['fire', 'wall'], model: 'firewall' },
+    b: { word: 'desktop', note: 'desk + top: a compound of two free bases', model: 'desktop' },
     c: { word: 'laptop', ids: ['lap', 'top'], model: 'laptop' },
     d: { word: 'network', ids: ['net', 'work'], model: 'network' },
     e: { word: 'rainbow', note: 'rain + bow: two Anglo-Saxon free bases', model: 'rainbow' },
@@ -41,7 +41,7 @@ export const ANGLO = {
     batches: [
       {
         teach: ['un', 'ful', 'less', 'help', 'care', 'hope', 'fear'],
-        say: ['Four bases. Three affixes. Turn the rings until the meaning fits. Then press COMPILE.'],
+        say: ['Four bases. Three affixes. Turn the rings until the meaning fits. Then press BUILD.'],
         tasks: [
           { m: 'full of care; paying attention', p: ['care', 'ful'] },
           { m: 'without help; not able to help yourself', p: ['help', 'less'] },
@@ -166,8 +166,8 @@ export const ANGLO = {
           { m: 'the state of being without care', p: ['care', 'less', 'ness'] },
         ],
         outro: [
-          'The old code hums again. Thank you, Morpher. My arcade cabinet, the Unbreakable, lights up.',
-          'Before you go. My memory holds a KEYWORD. Old Wynn keeps one third of a key.',
+          'The core is warm again. Smells like old dust. Good dust.',
+          ['special', 'One more thing. I kept a KEYWORD in the Unbreakable\'s coin box. One third of a key. Take it before I lose count of it.'],
         ],
       },
     },

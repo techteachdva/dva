@@ -147,7 +147,7 @@ export const LATIN = {
         needs: 'rotlings',
         lockedMsg: 'Rotlings are jamming this terminal. DEBUG them first.',
         teach: ['form', 'vis', 'act', 'pos', 'pose', 'posit', 'pon', 'pone', 'plic', 'ply', 'spec', 'spic', 'stru', 'dic', 'scrib', 'scribe', 'script', 'ite', 'post'],
-        say: ['TERMINAL: build the data bridge. New roots for put (pos, pose, pon) and fold (plic, ply). Note: "in" can mean "into" or "not". Same spelling, two morphemes.'],
+        say: ['TERMINAL: build the data bridge. Careful: "in" can mean "into" or "not". Same spelling, two morphemes.'],
         tasks: [
           { m: 'to put together', p: ['con', 'pose'] },
           { m: 'one placed against you', p: ['ob', 'pon', 'ent'] },
@@ -200,7 +200,7 @@ export const LATIN = {
         needs: ['link', 'newword'],
         lockedMsg: 'The core needs the Link Node and the Unknown File console finished.',
         teach: ['sense', 'soci', 'cover', 'liver', 'cred', 'aud', 'mot', 'ped', 'aqua', 'manu', 'non', 'bi', 'yn', 'ary', 'ile', 'al', 'ial', 'ance'],
-        say: ['ROOM CORE: restore the long words. Last roots in my memory: cred (believe), aud (hear), mot (move), ped (foot), manu (hand).'],
+        say: ['ROOM CORE: restore the long words. Every root you earned in this room is on these rings.'],
         tasks: [
           { m: 'the act of carrying people or things across', p: ['trans', 'port', 'ation'] },
           { m: 'not able to be believed', p: ['in', 'cred', 'ible'] },
@@ -213,9 +213,8 @@ export const LATIN = {
           { m: 'the act of looking into something closely', p: ['in2', 'spect', 'ion'] },
         ],
         outro: [
-          'Memory at 100 percent. And now I remember everything. I must tell you the truth.',
-          'I released the Rot. By accident. I forced a word together that was never meant to hold, and it exploded across the Lexinet.',
-          'That is why I trust you, Morpher. You build words that hold. Take my KEYWORD. It is the second third of a key.',
+          'The core is whole, and so am I. Mostly. A few dusty corners.',
+          ['pleased', 'You build words that hold, Morpher. That is why I trust you with this: my KEYWORD, the second third of a key.'],
         ],
       },
     },

@@ -14,6 +14,21 @@ import { touch } from '../core/mastery.js';
 import { logAttempt, logError, jointIds } from '../core/session.js';
 import { save } from '../core/save.js';
 
+/** The four calls a player can make on a Rotling, keyed 1-4. */
+export const VERDICTS = [
+  { id: 'real', label: 'REAL WORD' },
+  { id: 'misspelled', label: 'MISSPELLED' },
+  { id: 'nonword', label: 'NOT A WORD' },
+  { id: 'reversed', label: 'REVERSED' },
+];
+/** What a Rotling really is: a skipped spelling rule or a dropped linking o is a misspelling. */
+export function verdictOf(item) {
+  if (!item.fake) return 'real';
+  if (item.fake === 'order') return 'reversed';
+  if (item.fake === 'nonword') return 'nonword';
+  return 'misspelled';
+}
+
 export function openDebug({ item, profile, mode = 'rotling', title = null, realNote = null }) {
   return new Promise((resolve) => {
     const panel = openPanel({ dim: 0.55, className: 'debug-panel' });
@@ -125,23 +140,28 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
         finishButton('CONTINUE ▸');
         return;
       }
-      fb('info', 'Clean cuts. Now judge it:', 'Is this a REAL word, or a ROT fake?');
-      const real = el('button', { class: 'btn btn-good', type: 'button' }, 'REAL WORD (1)');
-      const rot = el('button', { class: 'btn btn-pink', type: 'button' }, 'ROT FAKE (2)');
-      real.addEventListener('click', () => verdict(false));
-      rot.addEventListener('click', () => verdict(true));
-      actions.append(real, rot);
-      real.focus();
+      fb('info', 'Clean cuts. Now judge it:', 'Is it a real word? Or did the Rot misspell it, flip its pieces, or make up a word nobody uses?');
+      VERDICTS.forEach((v, i) => {
+        const b = el('button', { class: `btn ${v.id === 'real' ? 'btn-good' : 'btn-pink'}`, type: 'button' }, `${v.label} (${i + 1})`);
+        b.addEventListener('click', () => verdict(v.id));
+        actions.append(b);
+        if (i === 0) b.focus();
+      });
     }
 
-    async function verdict(saysFake) {
+    async function verdict(said) {
       if (phase !== 'verdict') return;
-      const right = saysFake === !!item.fake;
-      if (!right) {
+      const want = verdictOf(item);
+      if (said !== want) {
         mistakes++;
         logVerdictError();
         sfx.bad();
-        fb('bad', 'The Rotling shoves you back.', item.fake ? `Look closer. ${item.why}` : `It's real. ${item.p.map((id) => morph(id).text).join(' + ')} → ${res.word}. ${realNote || ''}`);
+        const hint = mistakes >= 2 || want === 'real' ? null : {
+          misspelled: 'Say it slowly. The pieces make a real word, but the spelling where they join is off.',
+          reversed: 'Read the pieces in order. Is one of them on the wrong side of its base?',
+          nonword: 'Every piece is real and spelled right. But is the whole thing a word anyone uses?',
+        }[want];
+        fb('bad', 'The Rotling shoves you back.', want === 'real' ? `It's real. ${item.p.map((id) => morph(id).text).join(' + ')} → ${res.word}. ${realNote || ''}` : hint || `Look closer. ${item.why}`);
         return;
       }
       phase = 'done';
@@ -152,11 +172,14 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
       save();
       if (item.fake) {
         sfx.good();
-        fb('good', 'ROT DETECTED ✔', item.why, `Clean version: ${res.word}`);
+        const clean = item.real || item.p;
+        const word = item.real ? build(item.real).word : res.word;
+        const title = { misspelled: 'MISSPELLING CAUGHT ✔', reversed: 'FLIPPED PIECES CAUGHT ✔', nonword: 'NOT A WORD ✔' }[verdictOf(item)];
+        fb('good', title, item.why, `Clean version: ${word}`);
         const j = el('div', { style: { marginTop: '0.5rem', textAlign: 'center' } });
         msg.append(j);
-        speak(res.word);
-        loopJoint(j, item.p, { solved: true });
+        speak(word);
+        loopJoint(j, clean, { solved: true });
       } else {
         sfx.good();
         speak(res.word);
@@ -171,6 +194,7 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
       if (item.fake === 'joint') logError(jointIds(item.p), 'joint');
       else if (item.fake === 'order') logError(item.p.filter((_, i) => types[i] === 'pfx' || types[i] === 'sfx'), 'order');
       else if (item.fake === 'link') logError(item.p.filter((_, i) => types[i] === 'base'), 'link');
+      else if (item.fake === 'nonword') logError(item.real || item.p, 'meaning');
       else if (item.fake) logError(item.p, 'joint');
       else logError(res.steps.length ? jointIds(item.p) : item.p, 'real');
     }
@@ -197,8 +221,8 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
         else if (e.key === ' ') { e.preventDefault(); if (cursor > 0) toggle(cursor); }
         else if (e.key === 'Enter') { e.preventDefault(); trySplit(); }
       } else if (phase === 'verdict') {
-        if (e.key === '1') verdict(false);
-        if (e.key === '2') verdict(true);
+        const v = VERDICTS[Number(e.key) - 1];
+        if (v) verdict(v.id);
       }
     });
     cursor = 1;

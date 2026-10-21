@@ -1,0 +1,57 @@
+/* Dialogue portraits (js/ui/portraits.js). Loaded after styles.css, so these win over its #dlg-portrait glyph rules. */
+
+#dialogue { grid-template-columns: 120px 1fr auto; }
+#dlg-portrait {
+  width: 120px; height: 120px; padding: 0; overflow: hidden; position: relative;
+  border-radius: 20px; border: 3px solid var(--pt-rim, #00e5ff); font-size: 0;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35), 0 0 18px -4px var(--pt-rim, #00e5ff);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+#dlg-portrait .portrait { display: block; width: 100%; height: 100%; }
+
+#dialogue[data-speaker="wynn"] { --pt-rim: #ffb000; }
+#dialogue[data-speaker="aurelia"] { --pt-rim: #cfd6e2; }
+#dialogue[data-speaker="theo"] { --pt-rim: #38b6ff; }
+#dialogue[data-speaker="phil"] { --pt-rim: #6f9fd8; }
+#dialogue[data-speaker="system"] { --pt-rim: #00e5ff; }
+#dialogue[data-speaker="rot"] { --pt-rim: #7dff3a; }
+#dialogue[data-mood="rot"] { --pt-rim: #7dff3a; }
+#dialogue[data-mood="worried"] #dlg-portrait { box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35), 0 0 18px -2px #ff9f43; }
+#dialogue[data-speaker="system"][data-mood="special"] { --pt-rim: #ffb000; }
+#dialogue[data-speaker="aurelia"][data-mood="special"] { --pt-rim: #ff5cc8; }
+
+/* Mouth: the shut layer shows; while typing, the two layers alternate. */
+.portrait .pm-open { opacity: 0; }
+#dlg-portrait.talking .pm-open { animation: pt-flap-open 0.24s steps(1, end) infinite; }
+#dlg-portrait.talking .pm-shut { animation: pt-flap-shut 0.24s steps(1, end) infinite; }
+@keyframes pt-flap-open { 0% { opacity: 0; } 45% { opacity: 1; } }
+@keyframes pt-flap-shut { 0% { opacity: 1; } 45% { opacity: 0; } }
+
+/* A small pop when the speaker or mood changes. */
+#dlg-portrait.pop .portrait { animation: pt-pop 0.32s cubic-bezier(0.3, 1.6, 0.5, 1); transform-origin: 50% 90%; }
+@keyframes pt-pop { 0% { transform: scale(0.86) translateY(4px); } 60% { transform: scale(1.06); } 100% { transform: none; } }
+
+/* Idle touches, one per character, all tiny. */
+#dlg-portrait .pt-steam { animation: pt-steam 1.4s ease-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes pt-steam { 0% { transform: translateY(4px) scale(0.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-6px) scale(1.2); opacity: 0; } }
+#dlg-portrait .pm-special .pt-laurel { animation: pt-flicker 0.9s steps(1, end) infinite; }
+#dlg-portrait .pt-glitch { animation: pt-jitter 0.5s steps(1, end) infinite; }
+@keyframes pt-flicker { 0% { opacity: 1; } 18% { opacity: 0.25; } 26% { opacity: 1; } 58% { opacity: 0.55; } 64% { opacity: 1; } }
+@keyframes pt-jitter { 0% { transform: translateX(0); } 25% { transform: translateX(-2px); } 50% { transform: translateX(2px); } 75% { transform: translateX(0); } }
+#dlg-portrait .pt-dish { animation: pt-dish 3s ease-in-out infinite; transform-box: view-box; transform-origin: 76px 24px; }
+@keyframes pt-dish { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-12deg); } }
+#dlg-portrait .pt-stars { animation: pt-twinkle 1.6s ease-in-out infinite; }
+@keyframes pt-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+#dlg-portrait .pt-d20 { animation: pt-d20 1.2s ease-in-out infinite; }
+@keyframes pt-d20 { 0%, 100% { translate: 0 0; } 50% { translate: 0 -3px; } }
+#dlg-portrait .pt-pulse { animation: pt-pulse 0.9s ease-out infinite; transform-box: view-box; transform-origin: 50px 50px; }
+@keyframes pt-pulse { 0% { transform: scale(0.85); opacity: 1; } 100% { transform: scale(1.05); opacity: 0; } }
+
+/* Small screens: the box narrows, so the portrait does too. */
+@media (max-width: 760px) {
+  #dialogue { grid-template-columns: 84px 1fr auto; }
+  #dlg-portrait { width: 84px; height: 84px; border-radius: 16px; }
+}
+
+html.reduced-motion #dlg-portrait *, html.reduced-motion #dlg-portrait.pop .portrait { animation: none !important; }
+html.reduced-motion .portrait .pm-open { opacity: 0; }

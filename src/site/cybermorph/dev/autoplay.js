@@ -33,12 +33,16 @@ const button = (re) => $$('#panel-layer button, #screen-layer button').find((b) 
 export function clickCell(c, r) {
   const g = G();
   const s = g.toScreen(g.room.toWorld(c, r));
-  g.R.renderer.domElement.dispatchEvent(new PointerEvent('pointerdown', { clientX: s.x, clientY: s.y, bubbles: true }));
+  // A click is a press and release without moving (a moving press drags the camera).
+  const cv = g.R.renderer.domElement;
+  cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: s.x, clientY: s.y, bubbles: true, pointerId: 7 }));
+  cv.dispatchEvent(new PointerEvent('pointerup', { clientX: s.x, clientY: s.y, bubbles: true, pointerId: 7 }));
 }
 
 async function solveCompile() {
   const P = window.__cmPanel;
   for (let guard = 0; guard < 20 && $('.compile-panel'); guard++) {
+    for (let w = 0; w < 200 && !P.ready; w++) await run(40); // the spin-up
     const d = P.drum;
     for (let i = 0; i < d.rings.length; i++) {
       const ring = d.rings[i];
@@ -46,7 +50,7 @@ async function solveCompile() {
       if (ring.fixed || want === undefined) continue;
       for (let k = 0; k < 40 && ring.sel !== want; k++) { ring.up.click(); await run(40); }
     }
-    const c = button(/^COMPILE$/);
+    const c = button(/^BUILD/);
     if (c) { c.click(); await run(2600); }
     const n = button(/NEXT|DONE/);
     if (n) { n.click(); await run(500); } else return false;
@@ -54,12 +58,25 @@ async function solveCompile() {
   return true;
 }
 
+async function solveMinigame() {
+  const P = window.__cmPanel;
+  for (let k = 0; k < 40 && $('.minigame-panel'); k++) {
+    const st = P.state;
+    if (st === 'intro') button(/GO/).click();
+    else if (st === 'lost') button(/AGAIN/).click();
+    else if (st === 'play') P.autoWin();
+    else if (st === 'won') button(/COLLECT/).click();
+    await run(250);
+  }
+}
+
 async function solveDebug() {
   const P = window.__cmPanel;
   P.expected.forEach((c) => P.seamEls[c].click());
   button(/SPLIT/).click();
   await run(500);
-  const v = button(P.item.fake ? /ROT FAKE/ : /REAL WORD/);
+  const { verdictOf, VERDICTS } = await import('../js/panels/debug.js');
+  const v = button(new RegExp(`^${VERDICTS.find((x) => x.id === verdictOf(P.item)).label}`));
   if (v) { v.click(); await run(2600); }
   const done = button(/COLLECT|CONTINUE/);
   if (done) { done.click(); await run(400); }
@@ -117,6 +134,7 @@ export async function step() {
   const P = window.__cmPanel;
   if (P && $('#panel-layer').children.length) {
     if (P.kind === 'compile' && $('.compile-panel')) { await solveCompile(); return true; }
+    if (P.kind === 'minigame' && $('.minigame-panel')) { await solveMinigame(); return true; }
     if (P.kind === 'debug' && $('.debug-panel')) { await solveDebug(); return true; }
     if (P.kind === 'link') { await solveLink(); return true; }
     if (P.kind === 'newword') { await solveNewWord(); return true; }
@@ -147,8 +165,8 @@ export async function use(ch) {
 }
 
 export async function debugAll(max = 12) {
-  for (let i = 0; i < max && G().rotlings.length; i++) {
-    const r = G().rotlings[0];
+  for (let i = 0; i < max && G().rotlings.some(reachable); i++) {
+    const r = G().rotlings.find(reachable);
     G().rot = 0; // keep the Rot meter from crashing the room mid-script
     G().walkToUse({ rotling: r });
     await run(3000);
@@ -172,18 +190,42 @@ export async function port(ch) {
   await settle();
 }
 
+const reachable = (o) => {
+  const g = G();
+  const p = g.player;
+  return !!g.room.path({ c: p.c, r: p.r }, (c, r) => Math.abs(c - o.c) + Math.abs(r - o.r) === 1);
+};
+
+/** Play every level the player can reach from here: earn the nodes, build at the console, debug the dessert. */
+export async function playLevels(max = 20) {
+  const g = G();
+  for (let i = 0; i < max; i++) {
+    const dessert = g.rotlings.find((r) => r.dessert !== undefined && reachable(r));
+    if (dessert) { g.rot = 0; g.walkToUse({ rotling: dessert }); await run(3000); await settle(); continue; }
+    const node = (g.nodes || []).find(reachable);
+    if (!node) return;
+    g.walkToUse({ obj: node });
+    await run(3000);
+    await settle();
+  }
+}
+
 /** Play a whole room from wherever the player stands (one big room, zones split by firewalls). */
 export async function finishRoom() {
   const g = G();
   const d = g.profile.districts[g.place];
   const lingo = g.place === 'lingo';
   const last = lingo ? 1 : 2;
-  if (!d.done.mentor) await use('M');
+  if (!d.introDone || (!d.done.mentor && !g.nodes)) await use('M');
+  await playLevels();
   if (!d.done.gate0) await use('G');
+  await playLevels();
   await debugAll(12);
   await collectPickups();
   if (!lingo && !d.done.terminal1) await use('T');
+  await playLevels();
   if (!lingo && !d.done.gate1) await use('F');
+  await playLevels();
   if (!d.done[`link${last}`]) await use('N');
   if (!d.done[`newword${last}`]) await use('W');
   if (!d.done[`core${last}`]) await use('C');

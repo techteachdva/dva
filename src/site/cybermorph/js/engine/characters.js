@@ -271,55 +271,260 @@ export function createMorpher(avatar) {
   };
 }
 
+/**
+ * A mentor in their room. Each has an idle gesture loop, and react(kind) plays a short
+ * reaction for kind 'pleased' | 'worried' | 'special'. react() is safe to call any time;
+ * an optional world-space target (the player) lets Theo point his dish at it.
+ * Everything moves inside `rig`, so the game stays free to place and turn `group`.
+ */
 export function createMentor(id) {
+  if (id === 'phil') {
+    // Mr. Phil is a person, not a robot (see engine/classroom.js).
+    return createMrPhil();
+  }
   const g = new THREE.Group();
-  const anim = { t: 0, bob: null, spin: null };
+  const rig = new THREE.Group();
+  g.add(rig);
+  let t = 0;
+  let act = null; // { kind, t, dur, yaw }
+  let idleIn = 3 + Math.random() * 3;
+  const ease = (x) => Math.sin(Math.min(1, Math.max(0, x)) * Math.PI); // 0 → 1 → 0
+  let pose = () => {};
+
   if (id === 'wynn') {
     const rust = mat(0x6b4515);
-    g.add(box(0.7, 0.14, 0.5, mat(0x222222), 0, 0.17, 0));
-    g.add(box(0.55, 0.55, 0.42, rust, 0, 0.55, 0));
+    rig.add(box(0.7, 0.14, 0.5, mat(0x222222), 0, 0.17, 0));
+    const body = new THREE.Group();
+    body.add(box(0.55, 0.55, 0.42, rust, 0, 0.55, 0));
+    body.add(box(0.1, 0.4, 0.1, rust, -0.34, 0.6, 0), box(0.1, 0.4, 0.1, rust, 0.34, 0.6, 0));
+    rig.add(body);
+    // A stubby leg out the front: she gives her base a fond kick now and then, to keep it running.
+    const leg = new THREE.Group();
+    leg.position.set(0.17, 0.34, 0.2);
+    leg.add(box(0.08, 0.2, 0.08, mat(0x3d270e), 0, -0.1, 0), box(0.13, 0.07, 0.17, mat(0x222222), 0, -0.2, 0.04));
+    rig.add(leg);
     const head = new THREE.Group();
     head.add(box(0.6, 0.48, 0.5, mat(0x3d270e), 0, 0, 0));
-    head.add(screen(0.46, 0.34, faceTexture('smile', '#ffb000'), 0, 0, 0.255));
-    head.add(cyl(0.015, 0.25, mat(0x999999), 0.18, 0.35, 0), sphere(0.05, glowMat(0xffb000), 0.18, 0.5, 0));
+    // Her screen face, drawn to match the dialogue portrait: big round eyes, soft lids,
+    // half-moon reading glasses, rosy cheeks and a small crooked smile.
+    const drawFace = (mood) => {
+      const c = document.createElement('canvas');
+      c.width = 128; c.height = 128;
+      const x = c.getContext('2d');
+      const bg = x.createRadialGradient(64, 58, 8, 64, 64, 92);
+      bg.addColorStop(0, '#4a2a0c'); bg.addColorStop(1, '#1e1006');
+      x.fillStyle = bg; x.fillRect(0, 0, 128, 128);
+      x.lineCap = 'round'; x.lineJoin = 'round';
+      const A = '#ffb000';
+      const line = (w, col, f) => { x.lineWidth = w; x.strokeStyle = col; x.beginPath(); f(); x.stroke(); };
+      x.fillStyle = `rgba(255,122,89,${mood === 'happy' ? 0.7 : mood === 'grumpy' ? 0.3 : 0.45})`;
+      [22, 106].forEach((cx) => { x.beginPath(); x.ellipse(cx, 86, 11, 6, 0, 0, Math.PI * 2); x.fill(); });
+      const eye = (cx, lid, look = 0, pupil = 7) => {
+        x.save(); x.beginPath(); x.arc(cx, 56, 17, 0, Math.PI * 2); x.clip();
+        x.fillStyle = '#ffc861'; x.fillRect(cx - 17, 39, 34, 34);
+        x.fillStyle = '#3a1e08'; x.beginPath(); x.arc(cx + look, 58, pupil, 0, Math.PI * 2); x.fill();
+        x.fillStyle = '#fff'; x.beginPath(); x.arc(cx + look + 3, 54, 2.6, 0, Math.PI * 2); x.fill();
+        if (lid) {
+          const y = 39 + lid * 34;
+          x.fillStyle = '#2a1808'; x.fillRect(cx - 18, 36, 36, y - 36);
+          line(4, A, () => { x.moveTo(cx - 18, y); x.lineTo(cx + 18, y); });
+        }
+        x.restore();
+      };
+      if (mood === 'happy') [40, 88].forEach((cx) => line(7, '#ffc861', () => { x.moveTo(cx - 15, 60); x.quadraticCurveTo(cx, 40, cx + 15, 60); }));
+      else if (mood === 'blink') [40, 88].forEach((cx) => line(6, '#ffc861', () => { x.moveTo(cx - 14, 58); x.quadraticCurveTo(cx, 64, cx + 14, 58); }));
+      else if (mood === 'worried') { eye(40, 0, 0, 5); eye(88, 0, 0, 5); }
+      else if (mood === 'grumpy') { eye(40, 0.52, 5); eye(88, 0.46, 5); }
+      else { eye(40, 0.28); eye(88, 0.28); }
+      const brows = { smile: [[26, 30, 40, 24, 54, 28], [74, 28, 88, 24, 102, 30]], blink: [[26, 30, 40, 24, 54, 28], [74, 28, 88, 24, 102, 30]], happy: [[26, 26, 40, 18, 54, 24], [74, 24, 88, 18, 102, 26]], worried: [[26, 32, 40, 28, 54, 20], [74, 20, 88, 28, 102, 32]], grumpy: [[26, 24, 40, 30, 54, 36], [74, 26, 88, 23, 102, 26]] }[mood];
+      brows.forEach(([x0, y0, cx, cy, x1, y1]) => line(5, A, () => { x.moveTo(x0, y0); x.quadraticCurveTo(cx, cy, x1, y1); }));
+      x.lineWidth = 4; x.strokeStyle = '#d9a441'; x.fillStyle = 'rgba(255,243,214,0.14)';
+      [40, 88].forEach((cx) => { x.beginPath(); x.moveTo(cx - 19, 62); x.lineTo(cx + 19, 62); x.arc(cx, 62, 19, 0, Math.PI); x.closePath(); x.fill(); x.stroke(); });
+      line(4, '#d9a441', () => { x.moveTo(59, 63); x.quadraticCurveTo(64, 57, 69, 63); });
+      if (mood === 'happy') line(6, A, () => { x.moveTo(44, 96); x.quadraticCurveTo(64, 116, 84, 92); });
+      else if (mood === 'worried') line(5, A, () => { x.moveTo(50, 104); x.quadraticCurveTo(57, 96, 64, 104); x.quadraticCurveTo(71, 112, 78, 102); });
+      else if (mood === 'grumpy') line(6, A, () => { x.moveTo(48, 104); x.lineTo(80, 101); });
+      else line(6, A, () => { x.moveTo(48, 100); x.quadraticCurveTo(64, 108, 80, 98); x.lineTo(83, 95); });
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    };
+    const faces = Object.fromEntries(['smile', 'blink', 'happy', 'worried', 'grumpy'].map((m) => [m, drawFace(m)]));
+    const face = screen(0.46, 0.34, faces.smile, 0, 0, 0.255);
+    head.add(face);
+    // The dented antenna: two crooked segments, a red bow at the kink, and a warm tip.
+    const antenna = new THREE.Group();
+    antenna.position.set(0.18, 0.24, 0);
+    const a2 = cyl(0.015, 0.14, mat(0x999999), 0.04, 0.2, 0);
+    a2.rotation.z = -0.5;
+    const tip = sphere(0.05, glowMat(0xffb000), 0.08, 0.27, 0);
+    const bow = new THREE.Group();
+    bow.position.set(0, 0.15, 0);
+    const loop = (s) => { const l = sphere(0.04, mat(0xe8576b), s * 0.04, 0, 0); l.scale.multiply(new THREE.Vector3(1.2, 0.8, 0.5)); return l; };
+    bow.add(loop(-1), loop(1), sphere(0.02, mat(0xc43a50), 0, 0, 0));
+    antenna.add(cyl(0.015, 0.16, mat(0x999999), 0, 0.08, 0), a2, tip, bow);
+    head.add(antenna);
     head.position.y = 1.08;
-    g.add(head);
-    g.add(box(0.1, 0.4, 0.1, rust, -0.34, 0.6, 0), box(0.1, 0.4, 0.1, rust, 0.34, 0.6, 0));
-    anim.bob = head;
+    rig.add(head);
+    // Leg swing for one kick, x in 0..1: wind up, tap the base, settle.
+    const kick = (x) => (x < 0.45 ? -0.9 * Math.sin((x / 0.45) * Math.PI / 2) : x < 0.6 ? -0.9 + 1.25 * ((x - 0.45) / 0.15) : 0.35 * (1 - (x - 0.6) / 0.4));
+    let blinkAt = 3;
+    pose = (a) => {
+      head.position.set(0, 1.08 + Math.sin(t * 2) * 0.012, 0);
+      head.rotation.set(0, Math.sin(t * 0.5) * 0.1, 0);
+      antenna.rotation.z = Math.sin(t * 1.6) * 0.06;
+      leg.rotation.x = 0;
+      body.position.x = 0;
+      // A slow, calm blink every few seconds.
+      if (t > blinkAt + 0.14) blinkAt = t + 3 + Math.random() * 3;
+      let tex = t > blinkAt ? faces.blink : faces.smile;
+      if (a && a.kind === 'worried') {
+        const p = a.t / a.dur;
+        tex = faces.worried;
+        head.rotation.y = Math.sin(p * Math.PI * 2) * 0.3;
+        antenna.rotation.z = 0.5 * ease(p);
+      } else if (a && a.kind === 'special') {
+        // Comic exasperation: a slow head shake, antenna slumped, two grumbling kicks at the base.
+        const p = a.t / a.dur;
+        tex = faces.grumpy;
+        leg.rotation.x = kick((p * 2) % 1) * 0.7;
+        head.rotation.y = Math.sin(p * Math.PI * 4) * 0.12;
+        head.rotation.z = -0.08 * ease(p);
+        antenna.rotation.z = -0.4 * ease(p);
+      } else if (a) {
+        // A fond kick to the base, then a happy little bounce ('idle' kicks and nods).
+        const p = a.t / a.dur;
+        const kp = Math.min(1, p * 1.6);
+        leg.rotation.x = kick(kp);
+        if (kp > 0.55 && kp < 0.7) { body.position.x = 0.015; head.rotation.z = 0.04; }
+        if (a.kind === 'pleased') {
+          tex = faces.happy;
+          head.position.y += ease(p) * 0.08;
+          antenna.rotation.z = Math.sin(t * 9) * 0.15 * ease(p);
+        } else if (p > 0.5) {
+          head.rotation.x = 0.12 * ease((p - 0.5) * 2);
+        }
+      }
+      face.material.map = tex;
+    };
   } else if (id === 'aurelia') {
     const marble = mat(0xd3d6dc);
-    g.add(cyl(0.3, 0.6, marble, 0, 0.3, 0), box(0.5, 0.08, 0.5, mat(0xb1b4bb), 0, 0.62, 0));
+    rig.add(cyl(0.3, 0.6, marble, 0, 0.3, 0), box(0.5, 0.08, 0.5, mat(0xb1b4bb), 0, 0.62, 0));
     const bust = new THREE.Group();
     bust.add(box(0.5, 0.22, 0.25, marble, 0, 0, 0));
     bust.add(sphere(0.2, marble, 0, 0.3, 0));
-    bust.add(sphere(0.035, glowMat(0x9fc6ff), -0.07, 0.33, 0.18), sphere(0.035, glowMat(0x9fc6ff), 0.07, 0.33, 0.18));
-    const laurel = ring(0.24, glowMat(0x9dff7a), 0, 0.42, 0);
-    laurel.rotation.x = Math.PI / 2;
+    const eyeMat = new THREE.MeshLambertMaterial({ color: 0x9fc6ff, emissive: 0x9fc6ff });
+    bust.add(sphere(0.035, eyeMat, -0.07, 0.33, 0.18), sphere(0.035, eyeMat, 0.07, 0.33, 0.18));
+    // The laurel is a ring of leaves, so it can lose a few when her memory skips.
+    const laurelMat = new THREE.MeshLambertMaterial({ color: 0x9dff7a, emissive: 0x9dff7a });
+    const laurel = new THREE.Group();
+    const leaves = [];
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2;
+      const leaf = sphere(0.045, laurelMat, Math.cos(a) * 0.22, 0, Math.sin(a) * 0.22);
+      leaf.scale.multiply(new THREE.Vector3(0.55, 0.45, 1.3));
+      leaf.rotation.y = -a;
+      laurel.add(leaf);
+      leaves.push(leaf);
+    }
+    laurel.position.y = 0.42;
     bust.add(laurel);
     bust.position.y = 1.0;
-    g.add(bust);
-    anim.bob = bust;
-    anim.spin = laurel;
+    rig.add(bust);
+    const pink = new THREE.Color(0xff5cc8);
+    const blue = new THREE.Color(0x9fc6ff);
+    pose = (a) => {
+      bust.position.set(0, 1.0 + Math.sin(t * 2) * 0.015, 0);
+      bust.rotation.set(0, Math.sin(t * 0.5) * 0.12, 0);
+      laurel.rotation.y = t * 0.35;
+      laurel.scale.setScalar(1);
+      laurel.visible = true;
+      leaves.forEach((l) => { l.visible = true; });
+      laurelMat.emissiveIntensity = 0.9;
+      eyeMat.emissive.copy(blue);
+      eyeMat.emissiveIntensity = 1;
+      if (!a) return;
+      const p = a.t / a.dur;
+      if (a.kind === 'idle' || a.kind === 'pleased') {
+        // The laurel stutters and drops leaves, then relights brighter: a memory coming back.
+        const stutter = a.kind === 'idle' ? 1 : 0.55;
+        if (p < stutter) {
+          laurel.visible = Math.sin(t * 47) + Math.sin(t * 23) > -0.4;
+          leaves.forEach((l, i) => { l.visible = (i + Math.floor(t * 12)) % 4 !== 0; });
+          laurelMat.emissiveIntensity = 0.4;
+        } else {
+          const q = (p - stutter) / (1 - stutter);
+          laurelMat.emissiveIntensity = 0.9 + 2.2 * ease(q);
+          laurel.scale.setScalar(1 + 0.18 * ease(q));
+          eyeMat.emissiveIntensity = 1 + ease(q);
+          bust.position.y += 0.05 * ease(q);
+        }
+      } else if (a.kind === 'worried') {
+        bust.rotation.x = 0.28 * ease(p);
+        eyeMat.emissiveIntensity = 0.3;
+        laurelMat.emissiveIntensity = 0.35;
+      } else if (a.kind === 'special') {
+        // Glitching: the bust skips sideways, an eye flashes pink, half the laurel drops out.
+        const step = Math.floor(t * 14);
+        bust.position.x = (((step * 7919) % 5) - 2) * 0.02 * (1 - p);
+        bust.rotation.z = (((step * 104729) % 3) - 1) * 0.06 * (1 - p);
+        eyeMat.emissive.copy(step % 2 ? pink : blue);
+        leaves.forEach((l, i) => { l.visible = p > 0.85 || (i * 3 + step) % 5 > 1; });
+        laurelMat.emissiveIntensity = p > 0.85 ? 2.5 : 0.6;
+      }
+    };
   } else if (id === 'theo') {
     const navy = mat(0x22407e);
-    g.add(cyl(0.22, 0.7, navy, 0, 0.35, 0));
-    g.add(sphere(0.24, mat(0x14244e), 0, 0.82, 0));
-    g.add(sphere(0.06, glowMat(0x38b6ff), 0, 0.84, 0.22));
+    rig.add(cyl(0.22, 0.7, navy, 0, 0.35, 0));
+    rig.add(box(0.07, 0.4, 0.07, navy, -0.28, 0.55, 0), box(0.07, 0.4, 0.07, navy, 0.28, 0.55, 0));
+    const head = new THREE.Group();
+    head.position.y = 0.82;
+    head.add(sphere(0.24, mat(0x14244e), 0, 0, 0));
+    head.add(sphere(0.06, glowMat(0x38b6ff), 0, 0.02, 0.22));
+    rig.add(head);
+    // The dish swings on a yaw pivot, tilts on a pitch pivot, and turns slowly on its own axis.
+    const yaw = new THREE.Group();
+    yaw.position.y = 1.02;
+    const pitch = new THREE.Group();
     const dish = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 8, 0, Math.PI * 2, 0, Math.PI / 3), mat(0xdfe8ff, { side: THREE.DoubleSide }));
-    dish.position.y = 1.18;
-    dish.rotation.x = -0.6;
-    g.add(dish, cyl(0.02, 0.3, mat(0xaaaaaa), 0, 1.15, 0));
-    g.add(box(0.07, 0.4, 0.07, navy, -0.28, 0.55, 0), box(0.07, 0.4, 0.07, navy, 0.28, 0.55, 0));
-    anim.spin = dish;
-  } else if (id === 'phil') {
-    // Mr. Phil is a person, not a robot (see engine/classroom.js).
-    return createMrPhil();
+    dish.position.y = 0.16;
+    pitch.add(dish, cyl(0.02, 0.3, mat(0xaaaaaa), 0, 0.13, 0), sphere(0.035, glowMat(0x38b6ff), 0, 0.2, 0));
+    yaw.add(pitch);
+    rig.add(yaw);
+    pose = (a) => {
+      // Frantic idle: a quick nervous bob, and the dish sweeping the sky.
+      head.position.y = 0.82 + Math.abs(Math.sin(t * 5)) * 0.02;
+      head.rotation.set(0, Math.sin(t * 1.7) * 0.25, 0);
+      yaw.rotation.y = Math.sin(t * 0.7) * 0.7;
+      pitch.rotation.x = 0.6;
+      dish.rotation.y = t * 0.6;
+      rig.position.y = 0;
+      rig.rotation.y = 0;
+      if (!a) return;
+      const p = a.t / a.dur;
+      if (a.kind === 'pleased' || a.kind === 'special') {
+        // Swing round to point at the player, hold, and swing back.
+        const k = p < 0.25 ? p / 0.25 : p > 0.75 ? (1 - p) / 0.25 : 1;
+        const s = k * k * (3 - 2 * k);
+        yaw.rotation.y += (a.yaw - yaw.rotation.y) * s;
+        pitch.rotation.x = 0.6 + 0.6 * s;
+        head.rotation.y += (a.yaw * 0.6 - head.rotation.y) * s;
+        if (a.kind === 'special') rig.position.y = Math.abs(Math.sin(p * Math.PI * 3)) * 0.12;
+      } else if (a.kind === 'worried') {
+        pitch.rotation.x = 0.6 - 0.9 * ease(p);
+        head.rotation.y = Math.sin(t * 18) * 0.15;
+        rig.rotation.y = Math.sin(t * 25) * 0.04 * (1 - p);
+      } else if (a.kind === 'idle') {
+        // A sudden half turn of the dish: he thinks he saw something.
+        yaw.rotation.y += ease(p) * Math.PI;
+      }
+    };
   } else {
     // Fallback: a screen-head teacher avatar.
-    g.add(box(0.13, 0.42, 0.15, mat(0x2b3550), -0.1, 0.21, 0), box(0.13, 0.42, 0.15, mat(0x2b3550), 0.1, 0.21, 0));
-    g.add(box(0.46, 0.46, 0.3, mat(0x1f8a8a), 0, 0.65, 0));
-    g.add(box(0.1, 0.42, 0.11, mat(0x1f8a8a), -0.3, 0.66, 0), box(0.1, 0.42, 0.11, mat(0x1f8a8a), 0.3, 0.66, 0));
-    g.add(box(0.06, 0.24, 0.02, mat(0xe03b3b), 0, 0.68, 0.16), box(0.12, 0.08, 0.02, mat(0xffffff), 0, 0.53, 0.17));
+    rig.add(box(0.13, 0.42, 0.15, mat(0x2b3550), -0.1, 0.21, 0), box(0.13, 0.42, 0.15, mat(0x2b3550), 0.1, 0.21, 0));
+    rig.add(box(0.46, 0.46, 0.3, mat(0x1f8a8a), 0, 0.65, 0));
+    rig.add(box(0.1, 0.42, 0.11, mat(0x1f8a8a), -0.3, 0.66, 0), box(0.1, 0.42, 0.11, mat(0x1f8a8a), 0.3, 0.66, 0));
+    rig.add(box(0.06, 0.24, 0.02, mat(0xe03b3b), 0, 0.68, 0.16), box(0.12, 0.08, 0.02, mat(0xffffff), 0, 0.53, 0.17));
     const head = new THREE.Group();
     head.add(box(0.5, 0.4, 0.4, mat(0xf3f5f8), 0, 0, 0));
     head.add(screen(0.4, 0.3, faceTexture('glasses', '#2f6fde'), 0, 0, 0.205));
@@ -327,15 +532,35 @@ export function createMentor(id) {
     tag.position.set(0, 0.32, 0);
     head.add(tag);
     head.position.y = 1.1;
-    g.add(head);
-    anim.bob = head;
+    rig.add(head);
+    pose = (a) => {
+      head.position.y = 1.1 + Math.sin(t * 2) * 0.015;
+      rig.position.y = a && a.kind !== 'worried' ? ease(a.t / a.dur) * 0.1 : 0;
+    };
   }
+  const DUR = { pleased: 1.6, worried: 1.4, special: 1.8, idle: 1.4 };
   return {
     group: g,
+    react(kind, target) {
+      if (kind === 'idle' || !DUR[kind]) return;
+      let yawTo = 0;
+      if (target && target.isVector3) {
+        g.updateMatrixWorld(true);
+        const local = rig.worldToLocal(target.clone());
+        yawTo = Math.atan2(local.x, local.z);
+      }
+      act = { kind, t: 0, dur: DUR[kind], yaw: yawTo };
+    },
     update(dt) {
-      anim.t += dt;
-      if (anim.bob) anim.bob.position.y += Math.sin(anim.t * 2) * 0.0015;
-      if (anim.spin) anim.spin.rotation.z += dt * 0.8;
+      t += dt;
+      if (act) {
+        act.t += dt;
+        if (act.t >= act.dur) act = null;
+      } else if ((idleIn -= dt) <= 0) {
+        act = { kind: 'idle', t: 0, dur: DUR.idle, yaw: 0 };
+        idleIn = 7 + Math.random() * 6;
+      }
+      pose(act);
     },
   };
 }

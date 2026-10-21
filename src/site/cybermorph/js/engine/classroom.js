@@ -479,17 +479,70 @@ export function createMrPhil() {
   const tag = labelSprite('MR. PHIL', { color: '#ffffff', bg: 'rgba(31,90,46,0.92)', height: 0.16 });
   tag.position.set(0, 1.72, 0);
   g.add(tag);
+  // His pocket d20: tossed from the right hand and caught, held up showing a natural 20.
+  const { die, faces: dieFaces } = d20Mesh(0.06);
+  const show20 = new THREE.Quaternion().setFromUnitVectors(dieFaces.find((f) => f.num === 20).n, new THREE.Vector3(0, 0, 1));
+  const spin = new THREE.Quaternion();
+  const spinAxis = new THREE.Vector3(1, 0.6, 0.3).normalize();
+  die.visible = false;
+  g.add(die);
+  const ease = (x) => Math.sin(Math.min(1, Math.max(0, x)) * Math.PI);
+  const DUR = { pleased: 1.8, worried: 1.4, special: 2.2, idle: 1.3 };
+  let act = null;
+  let idleIn = 4 + Math.random() * 4;
   let t = 0;
   return {
     group: g,
+    /** kind: 'pleased' | 'worried' | 'special'. Safe to call any time. */
+    react(kind) {
+      if (kind === 'idle' || !DUR[kind]) return;
+      act = { kind, t: 0, dur: DUR[kind] };
+    },
     update(dt) {
       t += dt;
-      head.rotation.y = Math.sin(t * 0.6) * 0.18;
-      head.rotation.z = Math.sin(t * 1.1) * 0.03;
+      head.rotation.set(0, Math.sin(t * 0.6) * 0.18, Math.sin(t * 1.1) * 0.03);
       torso.scale.y = 1 + Math.sin(t * 2) * 0.008;
       arms[1].rotation.x = Math.sin(t * 1.3) * 0.12;
       arms[0].rotation.x = -Math.sin(t * 1.3) * 0.06;
+      arms[0].rotation.z = -0.08;
       curls.rotation.y = Math.sin(t * 2.2) * 0.02;
+      die.visible = false;
+      if (act) {
+        act.t += dt;
+        if (act.t >= act.dur) act = null;
+      } else if ((idleIn -= dt) <= 0) {
+        act = { kind: 'idle', t: 0, dur: DUR.idle };
+        idleIn = 8 + Math.random() * 6;
+      }
+      if (!act) return;
+      const p = act.t / act.dur;
+      if (act.kind === 'worried') {
+        // Hand to the back of the head, and a slow head shake.
+        arms[0].rotation.x = -2.5 * ease(p);
+        arms[0].rotation.z = -0.08 - 0.5 * ease(p);
+        head.rotation.y = Math.sin(p * Math.PI * 4) * 0.3;
+        head.rotation.x = 0.12 * ease(p);
+        return;
+      }
+      // Raise the hand, toss the die (twice for 'special'), catch it, show the 20.
+      const lift = Math.min(1, p * 5, (1 - p) * 6);
+      const ang = -1.1 * lift;
+      arms[1].rotation.x = ang;
+      const hand = new THREE.Vector3(0.285, 1.06 - 0.46 * Math.cos(ang), -0.46 * Math.sin(ang) + 0.06);
+      const tosses = act.kind === 'special' ? 2 : 1;
+      const air = act.kind === 'idle' ? 0.8 : 0.6;
+      const q = Math.min(1, p / air);
+      const leg = (q * tosses) % 1;
+      const high = act.kind === 'idle' ? 0.22 : act.kind === 'special' ? 0.5 : 0.4;
+      die.visible = true;
+      die.position.copy(hand).setY(hand.y + 0.06 + (q < 1 ? Math.sin(leg * Math.PI) * high : 0));
+      if (q < 1) {
+        die.quaternion.multiply(spin.setFromAxisAngle(spinAxis, dt * 14));
+      } else {
+        die.quaternion.slerp(show20, Math.min(1, dt * 12));
+        head.rotation.x = -0.1 * ease((p - air) / (1 - air));
+        if (act.kind === 'special') arms[0].rotation.x = -1.6 * ease((p - air) / (1 - air));
+      }
     },
   };
 }

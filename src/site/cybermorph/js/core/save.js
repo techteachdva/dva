@@ -6,14 +6,28 @@
 import { uid } from './util.js';
 import { KEY_POOL } from '../data/world.js';
 
-const KEY = 'cybermorph.save.v1';
+// 1.4 started everyone fresh (levels replaced the old lesson batches). The 1.3 save is kept,
+// untouched, under OLD_KEY + '.archive'; each Morpher keeps its name, look and achievements.
+const KEY = 'cybermorph.save.v2';
+const OLD_KEY = 'cybermorph.save.v1';
 const SCORES = 'cybermorph.scores.v1';
 const MAX_PROFILES = 6;
 
-let data = { version: 1, profiles: [], activeId: null };
+let data = { version: 2, profiles: [], activeId: null };
 try {
   const raw = localStorage.getItem(KEY);
   if (raw) data = { ...data, ...JSON.parse(raw) };
+  else {
+    const old = localStorage.getItem(OLD_KEY);
+    if (old) {
+      localStorage.setItem(`${OLD_KEY}.archive`, old);
+      const prev = JSON.parse(old);
+      data.profiles = (prev.profiles || []).map((p) => ({ ...blankProfile(p.name, p.avatar), id: p.id, created: p.created, milestones: [...(p.milestones || [])], migrated: true }));
+      data.activeId = prev.activeId || null;
+      localStorage.setItem(KEY, JSON.stringify(data));
+      localStorage.removeItem(OLD_KEY);
+    }
+  }
 } catch { /* storage blocked: the game still runs, it just won't remember */ }
 
 let timer = 0;
@@ -31,8 +45,8 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 export const profiles = () => data.profiles;
 export const canAddProfile = () => data.profiles.length < MAX_PROFILES;
 
-export function newProfile(name, avatar) {
-  const p = {
+function blankProfile(name, avatar) {
+  return {
     id: uid(),
     name: name || 'Morpher',
     created: Date.now(),
@@ -51,6 +65,10 @@ export function newProfile(name, avatar) {
     stats: { compiled: 0, firstTry: 0, tasks: 0, splits: 0, bits: 0, crashes: 0, playMs: 0 },
     place: { id: 'hub', room: 0 },
   };
+}
+
+export function newProfile(name, avatar) {
+  const p = blankProfile(name, avatar);
   data.profiles.push(p);
   data.activeId = p.id;
   writeNow();

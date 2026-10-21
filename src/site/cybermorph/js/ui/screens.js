@@ -10,7 +10,7 @@ import { sfx, unlockAudio } from '../core/audio.js';
 import { mtile } from './hud.js';
 import { openPanel, closeButton } from '../panels/host.js';
 
-export const VERSION = '1.2.0';
+export const VERSION = '1.4.0';
 
 const layer = () => $('screen-layer');
 let stack = [];
@@ -216,14 +216,14 @@ export function howToScreen() {
   const close = showScreen(el('section', { class: 'sheet glass howto' },
     el('h2', {}, 'HOW TO PLAY'),
     el('div', { class: 'howto-grid' },
-      el('div', {}, el('b', {}, 'MOVE'), 'Click a floor tile to walk there. W A S D or the arrow keys walk the way you face on screen, even after you turn the camera.'),
-      el('div', {}, el('b', {}, 'USE'), 'Click a person or a machine to walk over and use it. The big button at the bottom (or SPACE) does the same.'),
-      el('div', {}, el('b', {}, 'CAMERA'), 'Q and E (or the round buttons in the corners) turn the camera. Z zooms in, X zooms out. VIEW (or V) puts it back.'),
-      el('div', {}, el('b', {}, 'COMPILE'), 'Turn the rings with ▲▼ (or scroll) to pick the pieces the request means. Press COMPILE to join them and watch how the spelling changes.'),
-      el('div', {}, el('b', {}, 'DEBUG'), 'Click Rotlings. Cut their word between morphemes, then decide: real word or Rot fake? Every run brings new Rotlings. Golden ones carry long words worth bonus bits. Three clean splits in a row start a streak.'),
+      el('div', {}, el('b', {}, 'MOVE'), 'Click the floor to walk there, or hold W A S D or the arrow keys. Two keys walk diagonally.'),
+      el('div', {}, el('b', {}, 'EARN'), 'Glowing morphemes wait around each room. Walk up and win the little game to earn one. Earn them all and the BUILD console loads its dials.'),
+      el('div', {}, el('b', {}, 'CAMERA'), 'Drag to turn it. Right-drag slides it. Scroll or Z / X zooms. VIEW (V) resets.'),
+      el('div', {}, el('b', {}, 'BUILD'), 'When the dials stop, pick one with ◀ ▶ and turn it with ▲ ▼ until the pieces mean the request. Press BUILD or Enter.'),
+      el('div', {}, el('b', {}, 'DEBUG'), 'Click Rotlings. Cut their word between morphemes, then call it: real, misspelled, not a word, or reversed? Golden ones carry long words worth bonus bits. Three clean splits in a row start a streak.'),
       el('div', {}, el('b', {}, 'PATCH'), 'Firewall locks: turn the ending ring until the word fits the sentence.'),
       el('div', {}, el('b', {}, 'LINK'), 'Hang words on their family branch. Watch for look-alikes that are not family.'),
-      el('div', {}, el('b', {}, 'UNLOCK'), 'Achievements unlock new Morpher parts: heads, faces, toppers and more. Some are secret, so click around. See them all in the pause menu.')),
+      el('div', {}, el('b', {}, 'USE'), 'Click a person or a machine (or press SPACE beside it). Achievements unlock new Morpher parts; see them in the pause menu.')),
     el('div', { class: 'howto-keys' },
       el('div', {},
         el('h3', {}, 'SHAPES TELL YOU THE TYPE'),
@@ -268,7 +268,7 @@ export function reportScreen(profile, { onLexicon = null } = {}) {
       tool('🖨 Print Made-up Words', () => printMadeUp(profile))));
   const st = profile.stats;
   const rate = st.tasks ? Math.round((st.firstTry / st.tasks) * 100) : 0;
-  body.append(el('p', {}, `Words compiled: ${st.compiled} · First-try rate: ${rate}% · Rotlings debugged: ${st.splits} · Lexicon: ${profile.lexicon.length} words · Made-up Words: ${profile.madeUp.length} · Rooms cleared: ${MAIN_ORDER.filter((d) => profile.districts[d] && profile.districts[d].cleared).length}/3`));
+  body.append(el('p', {}, `Words built: ${st.compiled} · First-try rate: ${rate}% · Rotlings debugged: ${st.splits} · Lexicon: ${profile.lexicon.length} words · Made-up Words: ${profile.madeUp.length} · Rooms cleared: ${MAIN_ORDER.filter((d) => profile.districts[d] && profile.districts[d].cleared).length}/3`));
   ['anglo', 'latin', 'greek', 'lingo'].forEach((o) => {
     const ids = profile.learned.filter((id) => morph(id).origin === o);
     if (!ids.length) return;
@@ -305,7 +305,7 @@ function printReport(profile) {
   const page = el('div', { class: 'print-report measuring' },
     el('h1', {}, `CyberMorph progress report · ${profile.name}`),
     el('div', { class: 'pr-meta' }, new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })),
-    el('div', { class: 'pr-stats' }, `Words compiled: ${st.compiled} · First-try rate: ${rate}% · Rotlings debugged: ${st.splits} · Lexicon: ${profile.lexicon.length} words · Made-up Words: ${profile.madeUp.length} · Rooms cleared: ${rooms}/3`),
+    el('div', { class: 'pr-stats' }, `Words built: ${st.compiled} · First-try rate: ${rate}% · Rotlings debugged: ${st.splits} · Lexicon: ${profile.lexicon.length} words · Made-up Words: ${profile.madeUp.length} · Rooms cleared: ${rooms}/3`),
     el('div', { class: 'pr-key' }, 'Morphemes grouped by mastery (★ out of 4). (2/5) = right on the first try 2 times out of 5. Meanings are in the game\'s Lexicon and on-screen report.'));
   ['anglo', 'latin', 'greek', 'lingo'].forEach((o) => {
     const ids = profile.learned.filter((id) => morph(id).origin === o);
@@ -357,7 +357,7 @@ function printPage(page, { fit = false } = {}) {
 const today = () => new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 const partsOf = (ids) => ids.map((id) => morph(id).text).join(' + ');
 
-/** The whole Lexicon: every word compiled, A to Z, with the morphemes it is built from. */
+/** The whole Lexicon: every word built, A to Z, with the morphemes it is built from. */
 export function printLexicon(profile) {
   const words = [...profile.lexicon].sort((a, b) => a.w.localeCompare(b.w));
   const page = el('div', { class: 'print-report measuring' },
@@ -371,7 +371,7 @@ export function printLexicon(profile) {
     if (first !== letter) { letter = first; list.append(el('div', { class: 'pr-letter' }, letter)); }
     list.append(el('div', { class: 'pr-word' }, el('b', {}, w), el('span', {}, ` = ${partsOf(p)}`)));
   });
-  if (!words.length) list.append(el('p', {}, 'No words yet. Compile words to grow your Lexicon.'));
+  if (!words.length) list.append(el('p', {}, 'No words yet. Build words to grow your Lexicon.'));
   page.append(list);
   printPage(page);
 }
@@ -405,7 +405,7 @@ export function lexiconPanel(profile) {
     [...fam.entries()].sort((a, b) => b[1].length - a[1].length).forEach(([b, words]) => {
       grid.append(el('div', { class: 'lesson-item' }, mtile(b, { profile }), el('div', { class: 'meta' }, `${words.length} word${words.length > 1 ? 's' : ''}`), el('div', { class: 'mean' }, words.join(', '))));
     });
-    if (!fam.size) grid.append(el('p', {}, 'Compile words to grow the tree. Each word becomes a leaf.'));
+    if (!fam.size) grid.append(el('p', {}, 'Build words to grow the tree. Each word becomes a leaf.'));
     body.append(grid);
     body.append(el('h3', {}, 'MADE-UP WORDS'), el('p', {}, profile.madeUp.length ? profile.madeUp.map((m) => `${m.w}${m.d ? `: “${m.d}”` : ''} (${m.p.map((id) => morph(id).meaning).join(' + ')})`).join(' · ') : 'None yet. Build a legal word that isn\'t in the dictionary at the Morph Compiler, then save it.'));
     const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
@@ -477,7 +477,7 @@ export function endingScreen({ profile, onDone }) {
   const body = el('section', { class: 'sheet glass credits' },
     el('div', { class: 'kicker' }, 'THE ROT IS GONE'),
     el('h1', { class: 'logo', style: { fontSize: '3rem' } }, 'LEXINET RESTORED'),
-    el('p', { style: { fontSize: '1.15rem' } }, `${profile.name} rebuilt the Lexinet: ${profile.lexicon.length} words on the tree, ${st.compiled} compiles, ${st.splits} Rotlings debugged, ${rate}% on the first try.`),
+    el('p', { style: { fontSize: '1.15rem' } }, `${profile.name} rebuilt the Lexinet: ${profile.lexicon.length} words on the tree, ${st.compiled} words built, ${st.splits} Rotlings debugged, ${rate}% on the first try.`),
     el('p', {}, 'Every word you know is built from parts. Every part you know opens a door.'),
     el('p', { style: { color: 'var(--yellow)' } }, 'New Rot Slayer parts are unlocked in Customize.'),
     el('p', { style: { color: 'var(--ink-dim)' } }, '📸 Take a screenshot of this screen to show Mr. Phil.'));
@@ -583,9 +583,9 @@ export function welcomeScreen({ name, onContinue }) {
   const close = showScreen(el('section', { class: 'sheet glass welcome' },
     el('div', { class: 'kicker' }, `HELLO, ${String(name).toUpperCase()}`),
     el('h2', {}, 'Welcome to CyberMorph!'),
-    el('p', {}, 'You\'re going to be learning about ', el('b', {}, 'MORPHEMES'), ', the smallest unit of meaning within a word. Morphemes are like building blocks: when you put them together (', el('b', {}, 'COMPILE'), ' them), you can create a new word that means something based on its morphemes.'),
+    el('p', {}, 'You\'re going to be learning about ', el('b', {}, 'MORPHEMES'), ', the smallest unit of meaning within a word. Morphemes are like building blocks: when you put them together (', el('b', {}, 'BUILD'), ' with them), you can create a new word that means something based on its morphemes.'),
     el('p', {}, 'In other words, you can break down any word and discover its meaning just by learning about the parts that make the word! Let\'s get started with the Worky Work...'),
-    el('p', { class: 'mission' }, el('b', {}, 'Your mission: '), 'the Rot has smashed the Lexinet\'s words into pieces and filled its rooms with nonsense Rotlings. You are a Morpher, a little repair bot. Learn morphemes from each room\'s mentor, ', el('b', {}, 'COMPILE'), ' them back into real words, and ', el('b', {}, 'DEBUG'), ' Rotlings by splitting their words at the seams. Restore the Anglo-Saxon, Latin and Greek Rooms, find the secret room, and defeat the Rot!'),
+    el('p', { class: 'mission' }, el('b', {}, 'Your mission: '), 'the Rot has smashed the Lexinet\'s words into pieces and filled its rooms with nonsense Rotlings. You are a Morpher, a little repair bot. ', el('b', {}, 'EARN'), ' morphemes by winning their games, ', el('b', {}, 'BUILD'), ' them back into real words, and ', el('b', {}, 'DEBUG'), ' Rotlings by splitting their words at the seams. Restore the Anglo-Saxon, Latin and Greek Rooms, find the secret room, and defeat the Rot!'),
     el('div', { class: 'row-btns' }, go)), { x: () => go.click() });
   go.addEventListener('click', () => { close(); onContinue(); });
   setTimeout(() => go.focus(), 60);

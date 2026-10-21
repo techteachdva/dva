@@ -194,7 +194,8 @@ for (const id of MAIN_ORDER) {
       words.add(it.show || r.word);
       if (!it.fake) return;
       fakes++;
-      if (it.show === r.word || DICTIONARY.has(it.show)) errors.push(`${where}: fake "${it.show}" is a real word`);
+      // A "not a word" fake is built cleanly by design (show === its own build); it just must not be in the dictionary.
+      if ((it.fake !== 'nonword' && it.show === r.word) || DICTIONARY.has(it.show)) errors.push(`${where}: fake "${it.show}" is a real word`);
       if (it.cuts.length !== it.p.length - 1 && it.fake !== 'link') errors.push(`${where}: fake "${it.show}" has ${it.cuts.length} cuts for ${it.p.length} parts`);
       if (it.cuts.some((c) => c <= 0 || c >= it.show.length)) errors.push(`${where}: fake "${it.show}" cut outside the word`);
     });

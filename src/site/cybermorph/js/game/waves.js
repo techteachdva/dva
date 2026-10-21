@@ -14,6 +14,7 @@
 
 import { MORPHEMES, morph } from '../data/morphemes.js';
 import { build } from '../compiler/wordsum.js';
+import { NONWORDS } from '../data/nonwords.js';
 import { DISTRICTS, MAIN_ORDER, DICTIONARY, collectPartWords } from '../data/world.js';
 
 let ALL = null;
@@ -51,8 +52,23 @@ const plain = (ids) => ids.map((id) => morph(id).text).join(' + ');
 const cutsOf = (texts) => { const out = []; let p = 0; texts.slice(0, -1).forEach((t) => { p += t.length; out.push(p); }); return out; };
 const baseOf = (ids) => ids.find((id) => morph(id).type === 'base') || ids[0];
 
+/**
+ * A "not a word" fake: the same pieces with one swapped, so every piece is real and correctly
+ * joined but English has no such word (hopeful -> loudful). The list is pre-built and checked
+ * against a full English word list by scripts/build-cybermorph-nonwords.mjs (data/nonwords.js).
+ * `p` is the fake's pieces (what the player splits), `real` the word it came from.
+ */
+function nonWord(ids, realWord, learned = null) {
+  // Only made-up words whose pieces the student has met: you can't judge a piece you don't know.
+  const list = (NONWORDS[realWord] || []).filter((nw) => !learned || isKnown(nw.p, learned));
+  if (!list.length) return null;
+  const nw = list[rand(list.length)];
+  return { p: nw.p, real: ids, show: nw.show, fake: 'nonword', cuts: cutsOf(nw.p.map((id) => morph(id).text)),
+    why: `Every piece is real, but English doesn't use "${nw.show}". The real word has ${morph(ids[nw.swap]).text} there: ${plain(ids)} → ${realWord}.` };
+}
+
 /** Try to turn a real word into a Rot fake. Returns null when no fair fake can be made. */
-export function makeFake(entry, prefer = null) {
+export function makeFake(entry, prefer = null, learned = null) {
   const { ids } = entry;
   const res = build(ids);
   const kinds = [];
@@ -61,9 +77,18 @@ export function makeFake(entry, prefer = null) {
   if (linkAt > 0 && !res.steps.length) kinds.push('link');
   const types = ids.map((id) => morph(id).type);
   if (!types.includes('link') && !types.includes('word') && ids.length >= 2 && (types[types.length - 1] === 'sfx' || types[0] === 'pfx')) kinds.push('order');
-  const order = prefer && kinds.includes(prefer) ? [prefer, ...shuffle(kinds.filter((k) => k !== prefer))] : shuffle(kinds);
+  if (!types.includes('word')) kinds.push('nonword');
+  let order = prefer && kinds.includes(prefer) ? [prefer, ...shuffle(kinds.filter((k) => k !== prefer))] : shuffle(kinds);
+  // Misspellings and reversals are the lesson; "not a word" is spice, so it leads only about 30% of the time.
+  if (!prefer && rand(10) >= 3) order = [...order.filter((k) => k !== 'nonword'), ...order.filter((k) => k === 'nonword')];
   for (const kind of order) {
     let show; let cuts; let why;
+    if (kind === 'nonword') {
+      // Real pieces, built right, into a word English doesn't use: swap one piece for another of its type.
+      const nw = nonWord(ids, res.word, learned);
+      if (nw) return nw;
+      continue;
+    }
     if (kind === 'joint') {
       const texts = ids.map((id) => morph(id).text);
       show = texts.join('');
@@ -136,7 +161,7 @@ export function makeWave({ learned, origin = null, size = 6, fakes = 0.33, minPa
   const fakeAt = new Set();
   for (const i of fakeable) {
     if (fakeAt.size >= nFake) break;
-    const f = makeFake(picked[i], ['joint', 'link', 'order'][rank(picked[i])]);
+    const f = makeFake(picked[i], ['joint', 'link', 'order'][rank(picked[i])], learned);
     if (f) { fakeAt.add(i); items[i] = f; }
   }
   picked.forEach((w, i) => { if (!items[i]) items[i] = { p: w.ids }; });

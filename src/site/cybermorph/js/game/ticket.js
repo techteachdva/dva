@@ -1,6 +1,6 @@
 /**
  * Exit Ticket practice: a short, focused session on only the morphemes the teacher ticked.
- * No story, no Hub: a look at today's morphemes, then COMPILE and DEBUG rounds until the
+ * No story, no Hub: a look at today's morphemes, then BUILD and DEBUG rounds until the
  * teacher's timer ends, then the exit ticket.
  *
  * buildDeck() picks the words. Strict words use only ticked morphemes (plus everyday
@@ -20,7 +20,7 @@ const MIN_WORDS = 10;
 const shuffle = (a) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 
 let MEANINGS = null;
-/** A plain meaning for every word we know one for: the bank, then every authored COMPILE task. */
+/** A plain meaning for every word we know one for: the bank, then every authored BUILD task. */
 function meanings() {
   if (MEANINGS) return MEANINGS;
   MEANINGS = new Map(BANK.map((b) => [b.word, b.meaning]));
@@ -57,10 +57,10 @@ export function buildDeck(focusIds, learned = []) {
 }
 
 /**
- * An endless, varied stream of rounds from a deck: COMPILE when the word has a meaning to ask
+ * An endless, varied stream of rounds from a deck: BUILD when the word has a meaning to ask
  * for, DEBUG otherwise, alternating, with about a third of DEBUG rounds a Rot fake.
  */
-export function rounds(deck) {
+export function rounds(deck, learned = null) {
   let queue = [];
   let n = 0;
   return () => {
@@ -69,7 +69,7 @@ export function rounds(deck) {
     n += 1;
     const wantCompile = n % 2 === 1;
     if (wantCompile && w.meaning) return { kind: 'compile', task: { m: w.meaning, p: w.ids }, word: w.word };
-    const fake = Math.random() < 0.35 ? makeFake(w) : null;
+    const fake = Math.random() < 0.35 ? makeFake(w, null, learned) : null;
     return { kind: 'debug', item: fake || { p: w.ids }, word: w.word };
   };
 }

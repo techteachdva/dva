@@ -128,7 +128,7 @@ export const GREEK = {
         needs: 'rotlings',
         lockedMsg: 'Rotlings are jamming this terminal. DEBUG them first.',
         teach: ['demo', 'cracy', 'hydro', 'anthrop', 'path', 'phil', 'soph', 'zoo', 'cardi', 'neur', 'derm', 'hypo', 'hyper', 'morph', 'gen'],
-        say: ['TERMINAL: build the uplink bridge. New parts for the body and the mind: path (feeling), phil (love), soph (wisdom), derm (skin).'],
+        say: ['TERMINAL: build the uplink bridge out of body and mind words.'],
         tasks: [
           { m: 'feeling with someone', p: ['syn', 'path', 'gy'] },
           { m: 'the love of wisdom', p: ['phil', 'o', 'soph', 'gy'] },
@@ -178,7 +178,7 @@ export const GREEK = {
         needs: ['link', 'newword'],
         lockedMsg: 'The core needs the Link Node and the Unknown File console finished.',
         teach: ['the', 'sis', 'arch', 'crat', 'kine', 'cycl', 'hydr', 'hero', 'ize', 'ism', 'phon', 'tris', 'kai', 'deka'],
-        say: ['ROOM CORE: long words to restore the star map. Last parts: arch (ruler), kine (movement), cycl (circle), phon (sound).'],
+        say: ['ROOM CORE: long words to restore the star map. Every Greek part you earned is on these rings.'],
         tasks: [
           { m: 'a single ruler', p: ['mono', 'arch'] },
           { m: 'relating to movement', p: ['kine', 'tic'] },
@@ -189,8 +189,8 @@ export const GREEK = {
           { m: 'relating to the study and use of tools', p: ['techn', 'o', 'log', 'ic', 'al'] },
         ],
         outro: [
-          'The star map is whole! The eclipse can come. I have finally named my newest satellite: the Telegraphoscope. ...No. Still wrong.',
-          'Here, the last KEYWORD. Three keywords, three parts. Somewhere in the Hub, something wants them.',
+          'The core\'s humming! I was going to name it. I\'m leaving it alone. Growth!',
+          ['special', 'Here, the last KEYWORD. Three keywords, three parts. Something in the Hub has been waiting for all of them.'],
         ],
       },
     },

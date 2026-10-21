@@ -9,6 +9,9 @@
  * Feedback rules come from Tech Escape's terminal (van der Kleij et al., 2015): every attempt
  * gets an explanation, including correct ones; retry until right; first try is recorded quietly;
  * a wrong answer blames the machine ("the joint won't hold"), never the student.
+ *
+ * Building is slow on purpose. Every task opens with the drum's spin-up, and each ring stops
+ * at least SAFE_CLICKS turns from its answer, so no word is ever shown or one tap away.
  */
 
 import { el, $, shuffle } from '../core/util.js';
@@ -26,6 +29,20 @@ import { logAttempt, logError } from '../core/session.js';
 import { addLexicon, addMadeUp, save } from '../core/save.js';
 
 const OPEN_LOCKOUT_MS = 350;
+const SAFE_CLICKS = 3;
+const MIN_FACES = 2 * SAFE_CLICKS; // the fewest options a ring needs to stop 3 clicks from its answer
+
+/** Where a ring stops after the spin-up: at least SAFE_CLICKS from the answer both ways, else as far as it can. */
+export function safeStop(n, answer) {
+  if (answer == null || answer < 0 || n < 2) return Math.floor(Math.random() * Math.max(1, n));
+  const dist = (i) => { const d = Math.abs(i - answer) % n; return Math.min(d, n - d); };
+  const all = [...Array(n).keys()];
+  const far = all.filter((i) => dist(i) >= SAFE_CLICKS);
+  if (far.length) return far[Math.floor(Math.random() * far.length)];
+  const best = Math.max(...all.map(dist));
+  const pick = all.filter((i) => dist(i) === best);
+  return pick[Math.floor(Math.random() * pick.length)];
+}
 
 function distractors(targetId, pool, count) {
   const t = morph(targetId);
@@ -47,24 +64,38 @@ function distractors(targetId, pool, count) {
 function columnsFor(task, mode, pool) {
   if (mode === 'choice') {
     const options = task.choices.map((text) => ({ text, type: 'word', origin: 'lingo' }));
-    return [{ options, index: (task.a + 1 + Math.floor(Math.random() * (options.length - 1))) % options.length, answer: task.a }];
+    return [{ options, index: safeStop(options.length, task.a), answer: task.a }];
   }
   if (mode === 'patch') {
     const cols = task.fixed.map((id) => ({ options: [{ id }], index: 0 }));
-    const options = task.ring.map((chain) => (chain.length ? { text: chain.map((id) => morph(id).text).join('·'), type: 'sfx', origin: morph(chain[0]).origin, chain } : { blank: true, type: 'sfx', chain: [] }));
-    let index = Math.floor(Math.random() * options.length);
-    if (index === task.a) index = (index + 1) % options.length;
-    cols.push({ options, index, answer: task.a, type: 'sfx' });
+    const chainOpt = (chain) => (chain.length ? { text: chain.map((id) => morph(id).text).join('·'), type: 'sfx', origin: morph(chain[0]).origin, chain } : { blank: true, type: 'sfx', chain: [] });
+    const options = task.ring.map(chainOpt);
+    // Pad short rings with endings that make no real word on this base, so a pad is never a second right answer.
+    // Pads go after the authored options, so task.a still points at the answer.
+    const have = new Set(task.ring.map((c) => c.join('+')));
+    const pads = shuffle([...new Set(pool)].filter((id) => MORPHEMES[id] && morph(id).type === 'sfx' && !have.has(id)))
+      .filter((id) => { try { return !DICTIONARY.has(build([...task.fixed, id]).word); } catch { return false; } });
+    while (options.length < MIN_FACES && pads.length) options.push(chainOpt([pads.shift()]));
+    cols.push({ options, index: safeStop(options.length, task.a), answer: task.a, type: 'sfx' });
     return cols;
+  }
+  // A level's dials: the same faces for every request, so the earned morphemes stay put.
+  if (task.faces) {
+    return task.p.map((id, k) => {
+      const faces = task.faces[k];
+      if (faces.length === 1) return { options: [{ id: faces[0] }], index: 0 };
+      const options = faces.map((x) => ({ id: x }));
+      const answer = faces.indexOf(id);
+      return { options, index: safeStop(options.length, answer), answer };
+    });
   }
   // compile / unpack / finale: one ring per piece of the target.
   return task.p.map((id) => {
     const m = morph(id);
     if (m.type === 'link') return { options: [{ id }], index: 0 };
-    const opts = shuffle([id, ...distractors(id, pool, m.type === 'word' ? 3 : 4)]).map((x) => ({ id: x }));
-    let index = Math.floor(Math.random() * opts.length);
-    if (opts[index].id === id) index = (index + 1) % opts.length;
-    return { options: opts, index, answer: opts.findIndex((o) => o.id === id) };
+    const opts = shuffle([id, ...distractors(id, pool, MIN_FACES - 1)]).map((x) => ({ id: x }));
+    const answer = opts.findIndex((o) => o.id === id);
+    return { options: opts, index: safeStop(opts.length, answer), answer };
   });
 }
 
@@ -84,7 +115,7 @@ function freeColumns(learned) {
 
 const MODE_LABEL = {
   compile: 'REQUEST · build the word that means',
-  finale: 'FINAL COMPILE · rebuild the word clean',
+  finale: 'FINAL BUILD · rebuild the word clean',
   patch: 'FIREWALL LOCK · pick the ending that fits',
   choice: 'FIREWALL LOCK · translate the slang',
   unpack: 'UNPACK · compile the pieces it came from',
@@ -102,15 +133,15 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
     const sumLine = el('div', { class: 'sum-line' });
     let sumLoop = null; // the word-sum teaching loop under the rings
     const showSum = (ids, opts) => { if (sumLoop) sumLoop.stop(); sumLoop = loopJoint(sumLine, ids, opts); };
-    /** Before COMPILE: just the pieces, so the rings don't give away the spelling. After a miss: the word it built. */
+    /** Before BUILD: just the pieces, so the rings don't give away the spelling. After a miss: the word it built. */
     const staticSum = (ids, word = null) => {
       if (sumLoop) { sumLoop.stop(); sumLoop = null; }
       sumLine.innerHTML = '';
       sumLine.append(ids.map((id) => morph(id).text).join(' + '), ' → ',
-        word ? el('span', { class: 'eq miss' }, word) : el('span', { class: 'eq wait' }, '? press COMPILE'));
+        word ? el('span', { class: 'eq miss' }, word) : el('span', { class: 'eq wait' }, '? press BUILD'));
     };
     const feedback = el('div');
-    const compileBtn = el('button', { class: 'btn btn-primary compile-btn', type: 'button' }, 'COMPILE');
+    const compileBtn = el('button', { class: 'btn btn-primary compile-btn', type: 'button', 'aria-keyshortcuts': 'Enter' }, 'BUILD ', el('kbd', { class: 'kc' }, '⏎ Enter'));
     const nextBtn = el('button', { class: 'btn btn-good compile-btn', type: 'button', hidden: true }, 'NEXT ▸');
     const sum = el('section', { class: 'glass sum-bar' }, el('div', { class: 'sum-main' }, sumLine), el('div', { class: 'sum-actions' }, compileBtn, nextBtn));
     // Feedback lives in a tray that slides up above the bar. One click (or turning any dial) tucks it away.
@@ -139,6 +170,8 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
     let openedAt = 0;
     let cols = [];
     let unhook = null;
+    let ready = false; // false while the drum spins up
+    let quickIntro = false; // the first task gets the full spin-up, later ones the short one
     const learned = [...new Set([...profile.learned, ...pool])];
 
     const task = () => tasks[idx];
@@ -161,11 +194,16 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       nextBtn.hidden = true;
       compileBtn.hidden = false;
       compileBtn.disabled = true;
-      openedAt = performance.now();
-      setTimeout(() => { compileBtn.disabled = false; }, OPEN_LOCKOUT_MS);
+      ready = false;
+      panel.root.classList.add('spinning');
       if (drum) { R.focusScene.remove(drum.root); drum.dispose(); }
+      // A drum left behind by another panel would z-fight with this one.
+      R.focusScene.children.filter((c) => c.userData.isDrum).forEach((c) => R.focusScene.remove(c));
       cols = isFree ? freeColumns(learned) : columnsFor(task(), effMode(), learned);
-      drum = createDrum(cols);
+      const stops = cols.map((c) => c.index);
+      // The drum starts on random faces; the spin-up carries each ring to its safe stop.
+      drum = createDrum(cols.map((c) => ({ ...c, index: Math.floor(Math.random() * c.options.length) })));
+      drum.root.userData.isDrum = true;
       drum.onChange = () => {
         if (isFree) feedback.innerHTML = '';
         else if (!tray.hidden && tray.classList.contains('bad')) setTray(false);
@@ -175,6 +213,16 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       buildControls();
       renderTop();
       renderLive();
+      const mine = drum;
+      drum.intro(stops, { quick: quickIntro }).then(() => {
+        if (drum !== mine || panel.closed) return;
+        quickIntro = true;
+        ready = true;
+        panel.root.classList.remove('spinning');
+        openedAt = performance.now();
+        compileBtn.disabled = false;
+        renderLive();
+      });
     }
 
     function renderTop() {
@@ -193,7 +241,10 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       } else if (isFree) {
         top.append(el('div', { class: 'prompt', style: { fontSize: '1.05rem' } }, 'Turn any ring. Prefix · base · base · suffix · suffix. Read left to right, and don\'t skip a column. Real words go in your Lexicon; new ones become Made-up Words.'));
       }
-      top.append(el('div', { style: { fontSize: '1rem', color: 'var(--ink-dim)', marginTop: '0.4rem' } }, '▲▼ or scroll to turn a ring · ←→ pick a ring · Enter to compile'));
+      top.append(el('div', { class: 'key-legend' },
+        el('span', {}, el('kbd', { class: 'kc' }, '◀'), el('kbd', { class: 'kc' }, '▶'), ' pick a dial'),
+        el('span', {}, el('kbd', { class: 'kc' }, '▲'), el('kbd', { class: 'kc' }, '▼'), ' turn it'),
+        el('span', {}, el('kbd', { class: 'kc' }, '⏎ Enter'), ' build')));
     }
 
     function buildControls() {
@@ -207,15 +258,32 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         }
         const up = el('button', { class: 'ring-btn', type: 'button', 'aria-label': `Turn ring ${i + 1} up` }, '▲');
         const down = el('button', { class: 'ring-btn', type: 'button', 'aria-label': `Turn ring ${i + 1} down` }, '▼');
-        up.addEventListener('click', () => { drum.setFocus(i); drum.turn(i, 1); });
-        down.addEventListener('click', () => { drum.setFocus(i); drum.turn(i, -1); });
+        up.addEventListener('click', () => { if (!ready) return; drum.setFocus(i); drum.turn(i, 1); markFocus(); });
+        down.addEventListener('click', () => { if (!ready) return; drum.setFocus(i); drum.turn(i, -1); markFocus(); });
         ring.up = up;
         ring.down = down;
         ring.gloss = el('div', { class: 'ring-gloss' });
         ctlLayer.append(up, down, ring.gloss);
         [up, down].forEach((b) => { b.style.position = 'absolute'; b.style.transform = 'translate(-50%, -50%)'; });
       });
+      const prevKey = el('button', { class: 'ring-btn side-key', type: 'button', 'aria-label': 'Pick the dial to the left' }, '◀');
+      const nextKey = el('button', { class: 'ring-btn side-key', type: 'button', 'aria-label': 'Pick the dial to the right' }, '▶');
+      prevKey.addEventListener('click', () => { if (ready) { drum.moveFocus(-1); markFocus(); } });
+      nextKey.addEventListener('click', () => { if (ready) { drum.moveFocus(1); markFocus(); } });
+      [prevKey, nextKey].forEach((b) => { b.style.position = 'absolute'; b.style.transform = 'translate(-50%, -50%)'; });
+      drum.sideKeys = null;
+      if (drum.rings.filter((r) => !r.fixed).length > 1) { ctlLayer.append(prevKey, nextKey); drum.sideKeys = [prevKey, nextKey]; }
+      markFocus();
       position();
+    }
+
+    /** The focused dial's ▲▼ glow like the arrow keys that turn it. */
+    function markFocus() {
+      drum.rings.forEach((ring, i) => {
+        if (!ring.up) return;
+        ring.up.classList.toggle('focus', i === drum.focus);
+        ring.down.classList.toggle('focus', i === drum.focus);
+      });
     }
 
     function position() {
@@ -231,11 +299,23 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         ring.gloss.style.top = `${s.bottom + (ring.up ? 44 : 14)}px`;
         ring.gloss.style.maxWidth = `${Math.max(120, s.width + 30)}px`;
       });
+      if (drum.sideKeys) {
+        const first = slots[0];
+        const last = slots[slots.length - 1];
+        const midY = (first.top + first.bottom) / 2;
+        drum.sideKeys[0].style.left = `${first.x - first.width / 2 - 44}px`;
+        drum.sideKeys[0].style.top = `${midY}px`;
+        drum.sideKeys[1].style.left = `${last.x + last.width / 2 + 44}px`;
+        drum.sideKeys[1].style.top = `${midY}px`;
+      }
       // The request sits just above the dials (above the ▲ buttons), where the eye already is.
       placeTray();
       const minTop = Math.min(...slots.map((sl) => sl.top));
       const gap = drum.rings.some((r) => r.up) ? 44 : 18;
-      const y = Math.max(14, Math.round(minTop - gap - top.offsetHeight));
+      const want = Math.round(minTop - gap - top.offsetHeight);
+      // Not enough room above the dials: lower the drum rather than cover its ▲ buttons.
+      if (want < 14 && drum.lower(14 - want)) return;
+      const y = Math.max(14, want);
       if (top.dataset.y !== String(y)) { top.dataset.y = String(y); top.style.top = `${y}px`; }
     }
 
@@ -274,7 +354,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
           const blank = $('patch-blank');
           if (blank) blank.textContent = ids.map((id) => morph(id).text).join('·');
         }
-        // The free toy shows its word at once; tasks wait for COMPILE so the joint is a reveal.
+        // The free toy shows its word at once; tasks wait for BUILD so the joint is a reveal.
         if (isFree) { sumLine.append(res.parts.map((p) => p.text).join(' + '), ' → ', el('span', { class: 'eq' }, res.word)); return; }
         staticSum(ids);
       } catch { sumLine.append('…'); }
@@ -317,7 +397,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
     }
 
     async function compile() {
-      if (solved || performance.now() - openedAt < OPEN_LOCKOUT_MS) return;
+      if (!ready || solved || performance.now() - openedAt < OPEN_LOCKOUT_MS) return;
       const m = effMode();
       const t = task();
       attempts += 1;
@@ -337,7 +417,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
 
       if (isFree) {
         const sel = drum.selection();
-        if (sel[3] && sel[4] && sel[3].blank && !sel[4].blank) { sfx.bad(); return fb('bad', 'Compile error: a column was skipped.', 'Matrix rule: read left to right, one piece per column, no skipping.'); }
+        if (sel[3] && sel[4] && sel[3].blank && !sel[4].blank) { sfx.bad(); return fb('bad', 'Build error: a column was skipped.', 'Matrix rule: read left to right, one piece per column, no skipping.'); }
         const ids = selectedIds();
         if (!ids.length) return;
         const res = build(ids);
@@ -383,7 +463,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       if (same) {
         if (m === 'unpack') return succeed(ids, null, () => unpackReveal(t));
         const word = build(ids).word;
-        return succeed(ids, word, () => fb('good', `COMPILED ✔  ${word}`, glossLine(ids), t.today ? `Today: ${t.today}` : null));
+        return succeed(ids, word, () => fb('good', `BUILT ✔  ${word}`, glossLine(ids), t.today ? `Today: ${t.today}` : null));
       }
       sfx.bad();
       drum.flash(false);
@@ -391,7 +471,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       if (m !== 'unpack') {
         const word = build(ids).word;
         staticSum(ids, word);
-        if (DICTIONARY.has(word)) rows.push(`That compiles "${word}", a real word, but not the one requested.`);
+        if (DICTIONARY.has(word)) rows.push(`That builds "${word}", a real word, but not the one requested.`);
         else rows.push(`"${word}" isn't in the Lexicon.`);
       }
       ids.forEach((id, i) => {
@@ -408,7 +488,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         const need = morph(target[wrongAt]);
         rows.push(`Clue: ring ${wrongAt + 1} needs a ${TYPE_LABEL[need.type]} that starts with "${need.text[0]}".`);
       }
-      fb('bad', 'Compile error: the joint won\'t hold.', ...rows);
+      fb('bad', 'Build error: the joint won\'t hold.', ...rows);
     }
 
     async function succeed(ids, word, showFeedback) {
@@ -476,8 +556,9 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       const hits = pickFocus(e.clientX, e.clientY, [drum.root]);
       if (!hits.length) return;
       const i = drum.hitRing(hits[0].object);
-      if (i < 0 || drum.rings[i].fixed) return;
+      if (i < 0 || drum.rings[i].fixed || !ready) return;
       drum.setFocus(i);
+      markFocus();
       const slot = drum.screenSlots()[i];
       const mid = (slot.top + slot.bottom) / 2;
       drum.turn(i, e.clientY < mid ? 1 : -1);
@@ -485,10 +566,12 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
     function onWheel(e) {
       if (!drum) return;
       e.preventDefault();
+      if (!ready) return;
       const hits = pickFocus(e.clientX, e.clientY, [drum.root]);
       let i = hits.length ? drum.hitRing(hits[0].object) : drum.focus;
       if (i < 0 || drum.rings[i].fixed) i = drum.focus;
       drum.setFocus(i);
+      markFocus();
       drum.turn(i, e.deltaY < 0 ? 1 : -1);
     }
 
@@ -499,8 +582,9 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
     panel.onKey((e) => {
       if (e.key === 'Escape') { e.preventDefault(); finish(); return; }
       if (!drum) return;
-      if (e.key === 'ArrowLeft') { e.preventDefault(); drum.moveFocus(-1); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); drum.moveFocus(1); }
+      if (!ready) { if (e.key.startsWith('Arrow') || e.key === 'Enter') e.preventDefault(); return; }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); drum.moveFocus(-1); markFocus(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); drum.moveFocus(1); markFocus(); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); drum.turn(drum.focus, 1); }
       else if (e.key === 'ArrowDown') { e.preventDefault(); drum.turn(drum.focus, -1); }
       else if (e.key === 'Enter') {
@@ -515,6 +599,6 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
     unhook = onUpdate({ update: (dt) => { if (drum) drum.update(dt); position(); }, resize: () => { if (drum) drum.fitCamera(); } });
     setupTask();
     // Playtest hook (read-only view of the open panel).
-    window.__cmPanel = { kind: 'compile', get mode() { return effMode(); }, get task() { return task(); }, get drum() { return drum; }, get cols() { return cols; } };
+    window.__cmPanel = { kind: 'compile', get mode() { return effMode(); }, get task() { return task(); }, get drum() { return drum; }, get cols() { return cols; }, get ready() { return ready; } };
   });
 }

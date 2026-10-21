@@ -4,16 +4,20 @@
  * the Secret Secretary Desk and the Lingo Room.
  *
  * Each Room is one big diorama split into zones by firewalls (see data/layout.js):
- *   zone 0  the mentor's lessons                → firewall G
- *   zone 1  Rotlings, the terminal, the chasm   → firewall F
- *   zone 2  LINK, the Unknown File, the core
+ *   zone 0  the mentor and the first levels     → firewall G
+ *   zone 1  levels, Rotlings, the terminal      → firewall F
+ *   zone 2  the last levels, LINK, the Unknown File, the core
+ *
+ * A level (data/levels.js) is a meal: EARN each morpheme at its glowing node by playing its
+ * minigame (appetizer), BUILD the level's words on its dials (main course), then DEBUG Rotlings
+ * made from those words (dessert). Each zone's levels must be cleared before its firewall opens.
  * (The Lingo Room has two zones: the classroom, then the computer lab.)
  */
 
 import { $, el, shuffle, pick, wait, clamp, tween } from '../core/util.js';
-import { THREE, R, debugStep, toScreen, initRenderer, fitRoom, zoomTo, zoomReset, snapCamera, setBackground, pickWorld, groundPoint, onUpdate, webglAvailable, setFollow, rotateView, zoomStep, resetView, viewYawGoal } from '../engine/renderer.js';
+import { THREE, R, debugStep, toScreen, initRenderer, fitRoom, zoomTo, zoomReset, snapCamera, setBackground, pickWorld, groundPoint, onUpdate, webglAvailable, setFollow, rotateView, zoomStep, resetView, viewYaw, orbitBy, panBy, relaxPan } from '../engine/renderer.js';
 import { buildRoom } from '../engine/diorama.js';
-import { STYLES, terminal, gate, port, linkNode, newWordConsole, core, compilerConsole, avatarBooth, arcadeCabinet, secretaryDesk, lexiconTree, morphProp, animateProp, treeBaseZone } from '../engine/props.js';
+import { STYLES, cyl, glowMat, terminal, gate, port, linkNode, newWordConsole, core, compilerConsole, avatarBooth, arcadeCabinet, secretaryDesk, lexiconTree, morphProp, animateProp, treeBaseZone } from '../engine/props.js';
 import { labelSprite } from '../engine/textures.js';
 import { smartBoard, triangleDesks, printer3d, chromebookCart, createD20 } from '../engine/classroom.js';
 import { createMorpher, createMentor, createRotling, createPickup } from '../engine/characters.js';
@@ -39,6 +43,10 @@ import { openLink } from '../panels/link.js';
 import { openNewWord } from '../panels/newword.js';
 import { showLesson } from '../panels/lesson.js';
 import { openDesk } from '../panels/desk.js';
+import { playMinigame } from '../minigames/harness.js';
+import { LEVELS } from '../data/levels.js';
+import { INTRO, LINES, EARNED, DONE, REPEAT } from '../data/levelLines.js';
+import { FAMILIES, FAMILY_OF } from '../data/families.js';
 
 const PARAMS = new URLSearchParams(location.search);
 /** The teacher's link can set a session length (?mins=12) and a Google Form for exit-ticket codes (?form=…). */
@@ -169,10 +177,14 @@ async function startProfile(p, fresh = false) {
   const place = p.place && DISTRICTS[p.place.id] ? p.place : { id: 'hub' };
   if (place.id === 'hub') await enterHub();
   else await enterRoom(place.id, '@');
-  if (fresh) {
+  if (fresh || p.migrated) {
+    const back = p.migrated;
+    delete p.migrated;
+    store.save();
     await say('system', [
-      `This is the Hub of the Lexinet, ${p.name}. Every room starts here.`,
-      'Click the floor to walk, or use W A S D. Click a machine or a person to use it. Q and E turn the camera, Z and X zoom.',
+      back ? `Welcome back, ${p.name}. The Lexinet was rebuilt into levels, so every room starts fresh. Your Morpher kept its look and its achievements.`
+        : `This is the Hub of the Lexinet, ${p.name}. Every room starts here.`,
+      'Click the floor to walk, or hold W A S D. Drag the floor to turn the camera. Click a machine or a person to use it.',
       'Start at the amber door labeled ANGLO-SAXON. It leads to the room where the oldest English lives.',
     ]);
   }
@@ -251,12 +263,48 @@ function blocked() {
 }
 
 function bindInput() {
-  R.renderer.domElement.addEventListener('pointerdown', (e) => {
+  // A press on the world is a click (walk / use) unless it moves: then it drags the camera.
+  // Left-drag orbits, right-drag (or Shift + drag) slides the view, the wheel zooms.
+  const cv = R.renderer.domElement;
+  let drag = null;
+  cv.addEventListener('contextmenu', (e) => { if (G.room) e.preventDefault(); });
+  cv.addEventListener('pointerdown', (e) => {
     unlockAudio();
     if (blocked() || !G.room || !G.player) {
       G.lastIgnored = { busy: G.busy, panel: panelOpen(), dialogue: dialogueOpen(), screen: screens.screenOpen(), place: G.place };
       return;
     }
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false, pan: e.button === 2 || e.shiftKey };
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 8) drag.moved = true;
+    if (!drag.moved) return;
+    const dx = e.clientX - drag.lx;
+    const dy = e.clientY - drag.ly;
+    drag.lx = e.clientX;
+    drag.ly = e.clientY;
+    if (drag.pan) panBy(dx, dy); else orbitBy(dx, dy);
+  });
+  window.addEventListener('pointerup', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag;
+    drag = null;
+    if (d.moved || d.pan || e.target !== cv) return;
+    worldClick(e);
+  });
+  window.addEventListener('pointercancel', () => { drag = null; });
+  let wheelAt = 0;
+  cv.addEventListener('wheel', (e) => {
+    if (blocked() || !G.room || G.place === 'title') return;
+    e.preventDefault();
+    if (performance.now() - wheelAt < 120) return;
+    wheelAt = performance.now();
+    zoomStep(e.deltaY > 0 ? 1 : -1);
+  }, { passive: false });
+
+  function worldClick(e) {
+    if (blocked() || !G.room || !G.player) return;
     const targets = [...G.room.objects.filter((o) => o.mesh && (o.use || o.info)).map((o) => o.mesh), ...G.rotlings.map((r) => r.entity.group)];
     const hits = pickWorld(e.clientX, e.clientY, targets);
     if (hits.length) {
@@ -276,7 +324,7 @@ function bindInput() {
     const near = G.rotlings.find((r) => r.pos.distanceTo(pt) < 0.6);
     if (near) { walkToUse({ rotling: near }); return; }
     walkTo(G.room.toCell(pt), pt);
-  });
+  }
 
   window.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
@@ -306,7 +354,8 @@ function bindInput() {
     if (dir) {
       e.preventDefault();
       if (!G.keys.includes(dir)) G.keys.push(dir);
-      if (!G.player.path.length) stepDir(screenToGrid(dir));
+      G.player.path = [];
+      G.pending = null;
     }
   });
   window.addEventListener('keyup', (e) => {
@@ -332,32 +381,62 @@ function cameraTurn(dir) {
 }
 
 /**
- * Map a screen direction to a grid step for the camera's current angle, so W always
- * walks "up the screen" however the view is turned. A tiny bias settles the 45° ties.
+ * The held movement keys as a world direction, relative to the camera, so W always walks
+ * "up the screen" however the view is turned. Two keys together walk diagonally.
  */
-function screenToGrid(dir) {
-  const yaw = viewYawGoal() + 0.02;
+function heldDirection() {
+  const yaw = viewYaw();
   const f = { x: -Math.sin(yaw), z: -Math.cos(yaw) };
   const right = { x: -f.z, z: f.x };
-  const want = { up: f, down: { x: -f.x, z: -f.z }, right, left: { x: -right.x, z: -right.z } }[dir];
-  const options = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-  let best = options[0];
-  let bestDot = -Infinity;
-  for (const o of options) {
-    const d = o[0] * want.x + o[1] * want.z;
-    if (d > bestDot) { bestDot = d; best = o; }
-  }
-  return best;
+  let x = 0;
+  let z = 0;
+  G.keys.forEach((k) => {
+    if (k === 'up') { x += f.x; z += f.z; }
+    if (k === 'down') { x -= f.x; z -= f.z; }
+    if (k === 'right') { x += right.x; z += right.z; }
+    if (k === 'left') { x -= right.x; z -= right.z; }
+  });
+  const len = Math.hypot(x, z);
+  return len < 0.01 ? null : { x: x / len, z: z / len };
 }
 
-function stepDir([dc, dr]) {
+const BODY = 0.28; // the Morpher's radius, in tiles, for sliding along walls
+const freeAt = (x, z) => {
+  const cell = G.room.toCell(new THREE.Vector3(x, 0, z));
+  return G.room.isWalkable(cell.c, cell.r);
+};
+/** Can the Morpher's body stand here? Checks its centre and the four edges of its body. */
+const bodyFree = (x, z) => freeAt(x, z) && freeAt(x + BODY, z) && freeAt(x - BODY, z) && freeAt(x, z + BODY) && freeAt(x, z - BODY);
+
+/** Glide with the keys: each axis moves on its own, so walking into a wall slides along it. */
+function glide(dir, dt) {
   const p = G.player;
-  const n = { c: p.c + dc, r: p.r + dr };
-  if (G.room.isWalkable(n.c, n.r)) { p.path = [n]; G.pending = null; }
-  else {
-    const obj = objectAt(n.c, n.r);
-    if (obj && !obj.info) use({ obj });
+  const step = 4.2 * dt;
+  const nx = p.pos.x + dir.x * step;
+  const nz = p.pos.z + dir.z * step;
+  let moved = false;
+  if (bodyFree(nx, p.pos.z)) { p.pos.x = nx; moved = true; }
+  if (bodyFree(p.pos.x, nz)) { p.pos.z = nz; moved = true; }
+  // Turn smoothly toward the way we're walking.
+  const want = Math.atan2(dir.x, dir.z);
+  const g = p.entity.group;
+  let d = want - g.rotation.y;
+  d = Math.atan2(Math.sin(d), Math.cos(d));
+  g.rotation.y += d * Math.min(1, dt * 14);
+  const cell = G.room.toCell(p.pos);
+  if (cell.c !== p.c || cell.r !== p.r) {
+    p.c = cell.c;
+    p.r = cell.r;
+    sfx.step();
+    onEnterCell();
   }
+  if (!moved) {
+    // Walking straight into something usable opens it, as stepping into it always did.
+    const ahead = G.room.toCell(new THREE.Vector3(p.pos.x + dir.x * 0.7, 0, p.pos.z + dir.z * 0.7));
+    const obj = objectAt(ahead.c, ahead.r);
+    if (obj && !obj.info && adjacent(p, obj)) { G.keys = []; use({ obj }); }
+  }
+  return moved;
 }
 
 function objectAt(c, r) {
@@ -483,8 +562,10 @@ function updatePlayer(dt) {
     }
     moving = true;
   } else if (G.keys.length && !blocked()) {
-    stepDir(screenToGrid(G.keys[G.keys.length - 1]));
+    const dir = heldDirection();
+    if (dir) moving = glide(dir, dt);
   }
+  if (moving) relaxPan(dt);
   p.entity.group.position.copy(p.pos);
   p.entity.update(dt, moving);
   if (!p.path.length && G.pending && !G.busy) {
@@ -527,7 +608,7 @@ function updateContext() {
 /** Prop name tags appear when the Morpher walks close. */
 function updatePropLabels() {
   const p = G.player;
-  G.props.forEach((o) => {
+  [...G.props, ...(G.nodes || []).filter((o) => o.tag)].forEach((o) => {
     const near = Math.abs(o.c - p.c) + Math.abs(o.r - p.r) <= 3;
     o.tag.material.opacity += ((near ? 1 : 0) - o.tag.material.opacity) * 0.15;
     o.tag.visible = o.tag.material.opacity > 0.02;
@@ -620,6 +701,7 @@ async function debugRotling(r) {
   dropPickups(r.item.p.filter((id) => morph(id).type !== 'link'), { c: r.c, r: r.r });
   reward(r, res);
   if (r.review) { hud.toast('Review complete: morpheme restored', 'good'); return; }
+  if (r.dessert !== undefined) { await dessertDone(r); return; }
   if (r.ret && !G.rotlings.some((x) => x.ret)) {
     G.profile.stats.bits += 40;
     store.save();
@@ -749,7 +831,7 @@ function objectiveText() {
     const t = G.ticket || { done: 0, first: 0 };
     return `Exit Ticket practice · ${t.done} done · ${t.first} right on the first try. Today: ${TICKET_LESSONS.join(', ')}.`;
   }
-  if (G.place === 'finale') return 'Click the Rot. Split its word, then compile it back clean.';
+  if (G.place === 'finale') return 'Click the Rot. Split its word, then build it back clean.';
   const d = DISTRICTS[G.place];
   if (!d) return '';
   const prog = store.dprog(p, d.id);
@@ -758,7 +840,10 @@ function objectiveText() {
   const back = G.rotlings.filter((x) => x.ret).length;
   if (prog.cleared && back) return `Rot Return: ${back} harder Rotling${back > 1 ? 's' : ''} came back. DEBUG them for bonus bits, or take the HUB door.`;
   if (prog.cleared) return 'Room clear! Take the HUB door back.';
-  if (!done.mentor) return `Talk to ${d.mentor.name}.`;
+  if (!prog.introDone) return `Talk to ${d.mentor.name}.`;
+  const lvText = levelObjective(d);
+  if (lvText) return lvText;
+  if (!done.mentor && !levelsOf(d)) return `Talk to ${d.mentor.name}.`;
   if (!done.gate0) return 'Click the glowing firewall to unlock it.';
   const live = G.rotlings.filter((x) => x.index !== undefined).length;
   if (live) return `DEBUG the Rotlings: ${live} left. Click one to start.`;
@@ -801,7 +886,7 @@ async function enterHub(fromPort = null) {
   if (fromPort && fromPort !== 'O') await showPatchNotes();
 }
 
-/** End-of-shift patch notes: a changelog for the Lexinet built from the words the player just compiled. */
+/** End-of-shift patch notes: a changelog for the Lexinet built from the words the player just built. */
 async function showPatchNotes() {
   const p = G.profile;
   const patch = p.patch || (p.patch = { n: 0, at: 0 });
@@ -856,7 +941,7 @@ function hubObject(ch, c, r) {
   if (ch === 'D') return { mesh: secretaryDesk(), label: 'OPEN', use: () => useDesk() };
   if (ch === 'A') return { mesh: avatarBooth('hub'), label: 'CUSTOMIZE', use: () => customize() };
   if (ch === 'O') {
-    const open = G.profile.milestones.includes('anglo');
+    const open = cleared('anglo');
     const mesh = arcadeCabinet('OVERCLOCK', 0xff3df0, !open);
     return { mesh, label: open ? 'PLAY' : 'LOCKED', use: async () => { if (!open) { sfx.bad(); hud.toast('Overclock Mode unlocks when you clear the Anglo-Saxon Room.', 'warn'); return; } await startTimed(); } };
   }
@@ -893,7 +978,7 @@ function spawnReviews() {
   const picks = shuffle(words).slice(0, 3);
   const spots = shuffle(G.room.find('.').filter((c) => G.room.isWalkable(c.c, c.r)));
   // The third review may be a Rot fake, so the Hub still asks "real or Rot?".
-  picks.forEach((w, i) => { if (spots[i]) spawnRotling((i === 2 && makeFake(w)) || { p: w.ids }, spots[i], { review: true }); });
+  picks.forEach((w, i) => { if (spots[i]) spawnRotling((i === 2 && makeFake(w, null, learned)) || { p: w.ids }, spots[i], { review: true }); });
   if (picks.length) hud.toast(`${picks.length} morpheme${picks.length > 1 ? 's are' : ' is'} fading. Review Rotlings appeared in the Hub.`, 'gold');
 }
 
@@ -1030,6 +1115,8 @@ async function enterRoom(id, arrival) {
   if (d.d20) placeDie(d);
   if (prog.done.terminal1) G.room.formBridge(CORRIDOR, true);
   spawnWave(d, prog);
+  G.nodes = [];
+  spawnLevel(d);
   hud.setPlace(d.name.toUpperCase());
   refreshObjective();
   if (!prog.introDone) {
@@ -1097,6 +1184,294 @@ function roomObject(d, ch, c, r) {
   }
 }
 
+// ── Levels: earn → build → debug ──────────────────────────────────
+
+const levelsOf = (d) => LEVELS[d.id] || null;
+/** Which zone a level is played in: about 40% in the mentor's zone, 35% in the Rotling zone, the rest by the core. */
+function levelZone(i, n) {
+  const a = Math.ceil(n * 0.4);
+  const b = Math.ceil(n * 0.75);
+  return i < a ? 0 : i < b ? 1 : 2;
+}
+function curLevel(d) {
+  const L = levelsOf(d);
+  const prog = store.dprog(G.profile, d.id);
+  return L && (prog.level || 0) < L.length ? L[prog.level || 0] : null;
+}
+function zoneLevelsDone(d, z) {
+  const L = levelsOf(d);
+  if (!L) return true;
+  const at = store.dprog(G.profile, d.id).level || 0;
+  return L.every((_, i) => levelZone(i, L.length) !== z || i < at);
+}
+/** Minigame difficulty: gentle for the first two levels of a room, then normal, then hard from level 7. */
+const levelTier = (i) => (i < 2 ? 0 : i < 6 ? 1 : 2);
+function levelState(prog) {
+  if (prog.level === undefined) prog.level = 0;
+  if (!prog.lv) prog.lv = { phase: 'earn', earned: [], built: 0, faces: null, dessert: null, dessertDone: [], said: {} };
+  return prog.lv;
+}
+const lineFor = (level, key) => (LINES[level.id] && LINES[level.id][key]) || null;
+
+/** The level's objective line, or null when there is no level running here. */
+function levelObjective(d) {
+  const level = curLevel(d);
+  if (!level) return null;
+  const prog = store.dprog(G.profile, d.id);
+  const lv = levelState(prog);
+  const L = levelsOf(d);
+  const head = `Level ${prog.level + 1} of ${L.length}`;
+  const z = levelZone(prog.level, L.length);
+  const here = G.player ? roomZone(G.player.c) : 0;
+  const where = z > here ? (z === 1 ? ' Its morphemes are past the first firewall.' : ' Its morphemes are past the second firewall.') : '';
+  if (lv.phase === 'earn') {
+    const left = level.earn.length - lv.earned.length;
+    return `${head}: walk to the ${left} glowing morpheme${left > 1 ? 's' : ''} and win each one's game.${where}`;
+  }
+  if (lv.phase === 'build') return `${head}: the dials are loaded. Use the BUILD console (${lv.built}/${buildTasks(level).length} words).`;
+  const left = (lv.dessert || []).length - lv.dessertDone.length;
+  return `${head}: DEBUG the ${left} Rotling${left > 1 ? 's' : ''} made from your words.`;
+}
+
+/** Up to five requests: the main course. */
+const buildTasks = (level) => level.requests.slice(0, 5);
+
+/** Cells for this level's nodes: open floor in the level's zone, spread apart, the same every visit. */
+function nodeCells(d, i, count) {
+  const L = levelsOf(d);
+  const z = levelZone(i, L.length);
+  let seed = [...L[i].id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const busy = (c) => G.room.objects.some((o) => Math.abs(o.c - c.c) <= 1 && Math.abs(o.r - c.r) <= 1 && !o.walkable);
+  const cells = G.room.find('.').filter((c) => roomZone(c.c) === z && G.room.isWalkable(c.c, c.r) && !G.room.isPort(c.c, c.r)
+    && G.room.cells[c.r][c.c] !== '~' && c.r !== CORRIDOR && c.r > 1 && c.r < G.room.H - 2 && !(z === 1 && d.id !== 'lingo' && c.c >= CHASM_COLS[0])
+    && !busy(c));
+  if (!cells.length) return [];
+  const out = [cells[Math.floor(rnd() * cells.length)]];
+  while (out.length < count && out.length < cells.length) {
+    let best = null;
+    let bestD = -1;
+    for (const c of cells) {
+      if (out.includes(c)) continue;
+      const dmin = Math.min(...out.map((o) => Math.abs(o.c - c.c) + Math.abs(o.r - c.r))) + rnd() * 0.5;
+      if (dmin > bestD) { bestD = dmin; best = c; }
+    }
+    out.push(best);
+  }
+  return out;
+}
+
+function addLevelObject(o, mesh, cell) {
+  Object.assign(o, { c: cell.c, r: cell.r, mesh });
+  mesh.position.copy(G.room.toWorld(cell.c, cell.r));
+  mesh.traverse((n) => { n.userData.obj = o; });
+  G.room.group.add(mesh);
+  G.room.objects.push(o);
+  G.room.setBlocked(cell.c, cell.r, true);
+  G.nodes.push(o);
+  return o;
+}
+
+function removeLevelObject(o) {
+  G.room.group.remove(o.mesh);
+  const i = G.room.objects.indexOf(o);
+  if (i >= 0) G.room.objects.splice(i, 1);
+  G.room.setBlocked(o.c, o.r, false);
+  G.nodes = G.nodes.filter((x) => x !== o);
+}
+
+const NODE_COLOR = { anglo: 0xffb000, latin: 0xdfe8f5, greek: 0x38b6ff };
+
+/** Put the current level into the room: its morpheme nodes, its BUILD console, or its Rotlings. */
+function spawnLevel(d) {
+  (G.nodes || []).slice().forEach(removeLevelObject);
+  G.rotlings.filter((r) => r.dessert !== undefined).forEach(removeRotling);
+  const level = curLevel(d);
+  const prog = store.dprog(G.profile, d.id);
+  if (!level || !prog.introDone) return;
+  const lv = levelState(prog);
+  const cells = nodeCells(d, prog.level, level.earn.length + 1);
+  if (lv.phase === 'earn') {
+    level.earn.forEach((id, k) => {
+      if (lv.earned.includes(id) || !cells[k]) return;
+      const fam = FAMILIES[FAMILY_OF[id]];
+      const g = new THREE.Group();
+      g.add(cyl(0.34, 0.16, glowMat(NODE_COLOR[d.id] || 0x2ef0ff, 0.9), 0, 0.08, 0));
+      const tile = createPickup(id);
+      tile.group.scale.setScalar(1.7);
+      g.add(tile.group);
+      const tag = labelSprite(fam ? `${morph(id).text} · ${fam.name}` : morph(id).text, { color: '#ffffff', bg: 'rgba(10,6,24,0.88)', border: '#2ef0ff', height: 0.26 });
+      tag.position.y = 1.65;
+      tag.material.opacity = 0;
+      tag.visible = false;
+      g.add(tag);
+      addLevelObject({ label: 'EARN', node: id, tag, use: () => earnNode(d, id), update: (dt) => tile.update(dt) }, g, cells[k]);
+    });
+  } else if (lv.phase === 'build') {
+    const mesh = compilerConsole(d.id);
+    const tag = labelSprite('BUILD', { color: '#01121a', bg: 'rgba(46,240,255,0.95)', border: '#ffffff', height: 0.34 });
+    tag.position.y = 1.9;
+    mesh.add(tag);
+    addLevelObject({ label: 'BUILD', use: () => runBuild(d) }, mesh, cells[0]);
+  } else if (lv.phase === 'dessert') {
+    (lv.dessert || []).forEach((item, k) => {
+      if (lv.dessertDone.includes(k)) return;
+      const cell = cells[k] || cells[0];
+      if (cell) spawnRotling(item, cell, { dessert: k });
+    });
+  }
+}
+
+/** A level begins: the mentor sets it up and its morphemes light up around the room. */
+async function startLevel(d) {
+  const level = curLevel(d);
+  if (!level) return;
+  const prog = store.dprog(G.profile, d.id);
+  const lv = levelState(prog);
+  spawnLevel(d);
+  refreshObjective();
+  const open = lineFor(level, 'open');
+  if (open && !lv.said.open) { lv.said.open = true; store.save(); await say(d.mentor.id, open); }
+  hud.toast(`LEVEL ${prog.level + 1} · ${level.earn.length} morphemes to earn`, 'gold');
+}
+
+/** Talking to the mentor mid-level: where things stand, in their voice. */
+async function mentorHint(d) {
+  const level = curLevel(d);
+  const lv = levelState(store.dprog(G.profile, d.id));
+  const hint = lineFor(level, lv.phase === 'earn' ? 'open' : lv.phase) || [levelObjective(d)];
+  await say(d.mentor.id, hint);
+}
+
+/** The appetizer: win a morpheme's minigame to earn it (and any sibling spellings riding with it). */
+async function earnNode(d, id) {
+  const prog = store.dprog(G.profile, d.id);
+  const lv = levelState(prog);
+  const level = curLevel(d);
+  const o = G.nodes.find((n) => n.node === id);
+  if (!level || !o) return;
+  zoomTo(G.room.toWorld(o.c, o.r), 0.6);
+  const res = await playMinigame(id, { tier: levelTier(prog.level) });
+  if (!res.won) return;
+  const ids = [id, ...((level.with || {})[id] || [])];
+  const before = G.profile.learned.length;
+  store.learn(G.profile, ids);
+  touch(G.profile, ids, res.misses === 0);
+  session.logAttempt(ids, res.misses === 0, { word: false });
+  const after = G.profile.learned.length;
+  if (Math.floor(after / 10) > Math.floor(before / 10)) hud.miniCelebrate(`🧩 ${Math.floor(after / 10) * 10} morphemes collected!`);
+  lv.earned.push(id);
+  store.save();
+  removeLevelObject(o);
+  sfx.pickup();
+  hud.renderInventory(G.profile);
+  hud.toast(ids.length > 1 ? `+ ${morph(id).text}, with ${ids.slice(1).map((x) => morph(x).text).join(', ')}: same meaning, different spelling` : `+ ${morph(id).text} earned`, 'good');
+  if (G.mentor && G.mentor.react) G.mentor.react('pleased');
+  refreshObjective();
+  if (level.earn.every((x) => lv.earned.includes(x))) {
+    lv.phase = 'build';
+    store.save();
+    spawnLevel(d);
+    const line = lineFor(level, 'build');
+    if (line) await say(d.mentor.id, line);
+    await runBuild(d);
+    return;
+  }
+  const quips = EARNED[d.id];
+  if (quips && quips.length && lv.earned.length % 3 === 1) {
+    prog.quip = ((prog.quip || 0) + 1) % quips.length;
+    store.save();
+    await say(d.mentor.id, [quips[prog.quip]]);
+  }
+}
+
+/** The dials for a level: each dial holds its earned morphemes plus decoys up to six faces. */
+function levelFaces(d, level) {
+  const lv = levelState(store.dprog(G.profile, d.id));
+  if (lv.faces) return lv.faces;
+  const shapeIds = level.requests[0].p;
+  let k = 0;
+  lv.faces = shapeIds.map((pid) => {
+    if (morph(pid).type === 'link') return [pid];
+    const dial = level.dials[k++];
+    const t = morph(dial[0]).type;
+    const sameType = (id) => MORPHEMES[id] && morph(id).type === t && !dial.includes(id) && !dial.some((x) => morph(x).text === morph(id).text);
+    const known = shuffle(G.profile.learned.filter(sameType));
+    const pool = shuffle(poolFor(d).filter(sameType));
+    const any = shuffle(Object.keys(MORPHEMES).filter((id) => sameType(id) && morph(id).origin === d.origin));
+    const decoys = [...new Set([...known, ...pool, ...any])].slice(0, Math.max(0, 6 - dial.length));
+    return shuffle([...dial, ...decoys]);
+  });
+  store.save();
+  return lv.faces;
+}
+
+/** The main course: build the level's words on its dials. */
+async function runBuild(d) {
+  const prog = store.dprog(G.profile, d.id);
+  const lv = levelState(prog);
+  const level = curLevel(d);
+  if (!level || lv.phase !== 'build') return;
+  const o = G.nodes[0];
+  if (o) zoomTo(G.room.toWorld(o.c, o.r), 0.55);
+  const faces = levelFaces(d, level);
+  const tasks = buildTasks(level).map((t) => ({ ...t, faces }));
+  const res = await openCompile({
+    mode: 'compile', title: `LEVEL ${prog.level + 1} · BUILD THE WORD THAT MEANS`, tasks: tasks.slice(lv.built || 0), profile: G.profile, pool: poolFor(d),
+    onSolved: () => { lv.built = (lv.built || 0) + 1; store.save(); refreshObjective(); },
+  });
+  if (res.done < res.total) { refreshObjective(); return; }
+  bankCarried();
+  // Dessert: Rotlings made from this level's words, one of them a Rot fake.
+  const real = shuffle(level.requests.slice()).slice(0, 2).map((t) => ({ p: t.p }));
+  const fakeSrc = shuffle(level.requests.slice()).map((t) => makeFake({ ids: t.p }, null, new Set(G.profile.learned))).find(Boolean);
+  lv.dessert = fakeSrc ? [...real, fakeSrc] : real;
+  lv.dessertDone = [];
+  lv.phase = 'dessert';
+  store.save();
+  spawnLevel(d);
+  refreshObjective();
+  hud.toast(`Rotlings crawled out of your words! DEBUG ${lv.dessert.length} to clear the level.`, 'warn');
+}
+
+/** Dessert: a level Rotling was debugged. The last one clears the level. */
+async function dessertDone(r) {
+  const d = DISTRICTS[G.place];
+  if (!d) return;
+  const prog = store.dprog(G.profile, d.id);
+  const lv = levelState(prog);
+  if (!lv.dessertDone.includes(r.dessert)) lv.dessertDone.push(r.dessert);
+  store.save();
+  refreshObjective();
+  if (lv.dessertDone.length < (lv.dessert || []).length) return;
+  await completeLevel(d);
+}
+
+async function completeLevel(d) {
+  const prog = store.dprog(G.profile, d.id);
+  const level = curLevel(d);
+  const L = levelsOf(d);
+  sfx.unlock();
+  hud.fanfare({ name: `Level ${prog.level + 1} clear`, how: `${level.words.length} words live on these dials. Try them all in the Word Lab.`, rewards: [] });
+  if (G.mentor && G.mentor.react) G.mentor.react('pleased');
+  const clear = lineFor(level, 'clear');
+  if (clear) await say(d.mentor.id, clear);
+  const zoneBefore = levelZone(prog.level, L.length);
+  prog.level = (prog.level || 0) + 1;
+  prog.lv = null;
+  store.save();
+  if (prog.level >= L.length) {
+    prog.done.mentor = true;
+    store.save();
+    await say(d.mentor.id, DONE[d.id] || d.mentorFlow.done);
+  } else if (levelZone(prog.level, L.length) !== zoneBefore) {
+    hud.toast(zoneBefore === 0 ? 'Zone clear! The firewall will open for you now.' : 'Zone clear! On to the next firewall.', 'good');
+  }
+  spawnLevel(d);
+  refreshObjective();
+  if (curLevel(d)) await startLevel(d);
+}
+
 function poolFor(d) {
   const ids = [];
   d.mentorFlow.batches.forEach((b) => (b.teach || []).forEach((id) => ids.push(id)));
@@ -1122,9 +1497,20 @@ async function runMentor(d) {
   const sp = d.mentor.id;
   zoomTo(objPos('M', 0.8), 0.5);
   if (!prog.introDone) {
-    await say(sp, d.mentorFlow.intro);
+    await say(sp, INTRO[d.id] || d.mentorFlow.intro);
     prog.introDone = true;
     store.save();
+    if (levelsOf(d)) { await startLevel(d); return; }
+  }
+  if (levelsOf(d) && curLevel(d)) { await mentorHint(d); return; }
+  if (levelsOf(d)) {
+    // Every level is done: the mentor's closing lines, then the keyword clue or a reminder.
+    if (!prog.done.mentor) { prog.done.mentor = true; store.save(); }
+    if (prog.cleared && d.keySlot >= 0) {
+      const c = hud.clueText(G.profile, d.keySlot);
+      await say(sp, [`Your keyword clue: the ${c.slotName} shared by ${c.words.join(', ')}. ${c.length} letters.`]);
+    } else await say(sp, REPEAT[d.id] || d.mentorFlow.repeat);
+    return;
   }
   const batches = d.mentorFlow.batches;
   while (prog.batch < batches.length) {
@@ -1174,8 +1560,9 @@ async function runMentor(d) {
 async function runGate(d, gz, obj) {
   const prog = store.dprog(G.profile, d.id);
   const g = d.rooms[gz].gate;
-  const needOk = g.needs === 'mentor' ? prog.done.mentor : g.needs === 'terminal' ? prog.done.terminal1 : true;
-  if (!needOk) { sfx.bad(); hud.toast(g.lockedMsg, 'warn'); return; }
+  const needOk = g.needs === 'mentor' ? (levelsOf(d) ? zoneLevelsDone(d, 0) : prog.done.mentor) : g.needs === 'terminal' ? prog.done.terminal1 : true;
+  if (!needOk) { sfx.bad(); hud.toast(levelsOf(d) && g.needs === 'mentor' ? 'The firewall is sealed. Clear this zone\'s levels first.' : g.lockedMsg, 'warn'); return; }
+  if (levelsOf(d) && !zoneLevelsDone(d, gz)) { sfx.bad(); hud.toast('The firewall is sealed. Clear this zone\'s levels first.', 'warn'); return; }
   zoomTo(G.room.toWorld(obj.c, obj.r), 0.55);
   if (!prog[`gateSay${gz}`]) { await say(d.mentor.id === 'phil' ? 'phil' : 'system', g.say); prog[`gateSay${gz}`] = true; }
   const key = `gateTask${gz}`;
@@ -1246,6 +1633,7 @@ async function runCore(d, zone) {
   if (prog.done[`core${zone}`]) { hud.toast('The core is already restored.'); return; }
   const missing = (c.needs || []).filter((k) => !prog.done[`${k}${zone}`] && !(k === 'rotlings' && !G.rotlings.some((r) => r.index !== undefined)));
   if (missing.length) { sfx.bad(); hud.toast(c.lockedMsg, 'warn'); return; }
+  if (levelsOf(d) && !zoneLevelsDone(d, 2)) { sfx.bad(); hud.toast('The core won\'t wake until this zone\'s levels are clear.', 'warn'); return; }
   zoomTo(objPos('C', 0.6), 0.5);
   await teach(c.teach, c.tasks);
   if (!prog.coreSay) { await say(d.mentor.id === 'phil' ? 'phil' : 'system', c.say); prog.coreSay = true; }
@@ -1297,11 +1685,11 @@ setInterval(() => {
 // ── Overclock Mode ────────────────────────────────────────────────
 
 async function startTimed() {
-  const origins = MAIN_ORDER.filter((d) => G.profile.milestones.includes(d));
+  const origins = MAIN_ORDER.filter((d) => cleared(d));
   const learned = new Set(G.profile.learned);
   let words = allWords().filter((w) => origins.includes(w.origin) && isKnown(w.ids, learned));
   if (PRACTICE.length) { const f = words.filter((w) => w.ids.some((id) => PRACTICE.includes(id))); if (f.length >= 4) words = f; }
-  const fakes = [...collectFakes().filter((f) => origins.includes(f.origin)), ...shuffle(words).slice(0, 60).map((w) => makeFake(w)).filter(Boolean)];
+  const fakes = [...collectFakes().filter((f) => origins.includes(f.origin)), ...shuffle(words).slice(0, 60).map((w) => makeFake(w, null, learned)).filter(Boolean)];
   G.place = 'timed';
   G.timed = { t: 120, score: 0, words: 0, first: 0, attempts: 0, streak: 0, bestStreak: 0, spawn: 0, pool: words, fakes, over: false };
   await loadRoom(TIMED_MAP, 'arcade', {});
@@ -1388,7 +1776,7 @@ async function bossFight(r) {
   const res = await openDebug({ item: r.item, profile: G.profile, mode: 'finale', title: `BOSS · ${FINALE_POOLS[G.finale.stage].label.toUpperCase()} FORM · split ${word.toUpperCase()}` });
   if (!res.solved) return;
   const comp = await openCompile({ mode: 'finale', tasks: [{ m: `Rebuild ${word.toUpperCase()}: ${ids.map((id) => morph(id).meaning).join(' + ')}`, p: ids }], profile: G.profile, pool: G.profile.learned });
-  if (comp.done < 1) { hud.toast('The Rot re-forms. Try the compile again.', 'warn'); return; }
+  if (comp.done < 1) { hud.toast('The Rot re-forms. Try the build again.', 'warn'); return; }
   removeRotling(r);
   sfx.crash();
   G.finale.stage += 1;
@@ -1429,7 +1817,7 @@ function openPause() {
 
 /**
  * The focused session behind the teacher's Exit Ticket link: today's morphemes on a lesson
- * card, then COMPILE and DEBUG rounds built only from them, until the timer ends. Closing a
+ * card, then BUILD and DEBUG rounds built only from them, until the timer ends. Closing a
  * round asks whether to finish early. Then the exit ticket, as in any class session.
  */
 async function startTicket(p) {
@@ -1455,11 +1843,21 @@ async function startTicket(p) {
   }
   G.ticket = { done: 0, first: 0 };
   refreshObjective();
+  // The appetizer: earn up to six of today's new morphemes by playing their minigames.
+  // The rest (and anything already earned) go on one card, so building starts within a few minutes.
   const fresh = PRACTICE.filter((id) => !p.learned.includes(id));
-  await showLesson({ ids: (fresh.length ? fresh : PRACTICE).slice(0, 12), profile: p, title: 'TODAY\'S MORPHEMES', note: 'Read each morpheme and its meaning. Then practise until the timer ends.' });
+  for (const id of fresh.slice(0, 6)) {
+    if (G.place !== 'ticket' || G.sessionOver) return;
+    const res = await playMinigame(id, { tier: 1 });
+    if (!res.won) break;
+    store.learn(p, [id]);
+    hud.renderInventory(p);
+  }
+  const rest = PRACTICE.filter((id) => !p.learned.includes(id));
+  if (rest.length) await showLesson({ ids: rest.slice(0, 12), profile: p, title: 'MORE OF TODAY\'S MORPHEMES', note: 'Read each morpheme and its meaning. Then build with them until the timer ends.' });
   store.learn(p, PRACTICE);
   hud.renderInventory(p);
-  const next = rounds(deck);
+  const next = rounds(deck, new Set([...PRACTICE, ...p.learned]));
   while (G.place === 'ticket' && !G.sessionOver) {
     const left = session.secondsLeft();
     if (left !== null && left <= 0) break;
@@ -1471,7 +1869,7 @@ async function startTicket(p) {
         onSolved: (_, info) => { firstTry = !!(info && info.firstTry); } });
       solved = res.done > 0;
     } else {
-      const res = await openDebug({ item: r.item, profile: p, mode: 'rotling', title: 'EXIT TICKET · SPLIT IT, THEN: REAL WORD OR ROT?' });
+      const res = await openDebug({ item: r.item, profile: p, mode: 'rotling', title: 'EXIT TICKET · SPLIT IT, THEN CALL IT' });
       solved = res.solved;
       firstTry = res.firstTry;
     }

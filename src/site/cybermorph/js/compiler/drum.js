@@ -6,6 +6,10 @@
  * morpheme tile whose SHAPE shows its type, so the structure is learned by eye.
  * A ring with a single option is fixed (firewall locks hold the base still). It is still drawn as a
  * full dial, every face showing its one morpheme, so the base reads like any other ring.
+ *
+ * Every drum opens with a spin-up (intro): the faces pop on morpheme by morpheme, then the
+ * rings spin like a slot machine and stop one after another. The caller picks where each
+ * ring stops (compile.js keeps it at least three clicks from the answer).
  */
 
 import { THREE, R, toScreen } from '../engine/renderer.js';
@@ -14,9 +18,14 @@ import { mat, glowMat, box, cyl } from '../engine/props.js';
 import { morph } from '../data/morphemes.js';
 import { tween, ease } from '../core/util.js';
 import { sfx } from '../core/audio.js';
+import { settings } from '../core/settings.js';
 
 const FACE_H = 1.0;
 const GAP = 0.22;
+const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+// Faces turned more than ~75° from the viewer fade out, so squeezed text never shows edge-on.
+const FADE_FROM = 0.2;
+const FADE_TO = 0.6;
 
 function specOf(opt) {
   if (opt.blank) return { spec: { text: '—', type: opt.type || 'sfx', origin: 'latin' }, blank: true };
@@ -138,6 +147,7 @@ export function createDrum(columns) {
   let focusIdx = rings.findIndex((r) => !r.fixed);
   if (focusIdx < 0) focusIdx = 0;
 
+  let drop = 0;
   const fitCamera = () => {
     const cam = R.focusCam;
     const vfov = THREE.MathUtils.degToRad(cam.fov);
@@ -147,7 +157,8 @@ export function createDrum(columns) {
     const d = Math.max(byW, byH, 6);
     // Sit the drum at about 40% of the screen height, leaving room below for the arrows,
     // the meaning labels and the word-sum bar.
-    const lift = 0.2 * Math.tan(vfov / 2) * d;
+    // drop (in screen fractions) lowers the drum when the request box needs the room above it.
+    const lift = (0.2 - drop) * Math.tan(vfov / 2) * d;
     cam.position.set(0, 0.25 - lift, d);
     cam.lookAt(0, -0.05 - lift, 0);
     cam.updateProjectionMatrix();
@@ -157,9 +168,10 @@ export function createDrum(columns) {
     root, rings,
     get focus() { return focusIdx; },
     selection() { return rings.map((r) => r.col.options[r.sel]); },
+    get spinning() { return !!intro; },
     turn(i, dir) {
       const r = rings[i];
-      if (!r || r.fixed) return;
+      if (!r || r.fixed || intro) return;
       r.face += dir;
       const from = r.angle;
       const to = -r.face * r.step;
@@ -212,7 +224,46 @@ export function createDrum(columns) {
         tween(400, (k) => { root.position.x = k < 1 ? Math.sin(k * 40) * 0.08 * (1 - k) : 0; });
       }
     },
+    /**
+     * The spin-up. `stops[i]` is the option index ring i lands on (null keeps it).
+     * Resolves when the last ring stops. `quick` is the shorter version between requests.
+     */
+    intro(stops = [], { quick = false } = {}) {
+      const spinners = rings.map((r, i) => (r.fixed ? null : { r, i, stop: stops[i] ?? r.sel })).filter(Boolean);
+      if (settings.reducedMotion) {
+        spinners.forEach(({ r, stop }) => { r.face = stop; r.angle = -r.face * r.step; r.spin.rotation.x = r.angle; r.refresh(); });
+        drum.onChange && drum.onChange();
+        return Promise.resolve();
+      }
+      // Wind each ring back so the spin travels forward and lands exactly on its stop.
+      spinners.forEach((s, k) => {
+        const laps = (quick ? 1 : 2) + k;
+        const travel = s.r.n <= 12 ? laps * s.r.n + ((s.stop - s.r.sel + s.r.n) % s.r.n) : 10 + 6 * laps;
+        s.from = s.stop + Math.ceil((s.r.face - s.stop) / s.r.n) * s.r.n - travel;
+        s.to = s.from + travel;
+        s.dur = (quick ? 0.8 : 1.2) + k * (quick ? 0.2 : 0.3);
+        s.r.face = s.from;
+        s.r.angle = -s.r.face * s.r.step;
+        s.r.spin.rotation.x = s.r.angle;
+        s.r.refresh();
+      });
+      // The pop-in order: ring by ring, left to right, front face first.
+      const pops = [];
+      rings.forEach((r) => {
+        const order = r.faces.map((p, f) => f).sort((a, b) => facing(r, b) - facing(r, a));
+        order.forEach((f) => pops.push(r.faces[f]));
+      });
+      pops.forEach((p) => { p.visible = false; });
+      return new Promise((resolve) => {
+        intro = { t: 0, pops, popGap: quick ? 0.015 : 0.035, spinners, resolve, lastTick: 0 };
+      });
+    },
     update(dt) {
+      if (intro) stepIntro(dt);
+      rings.forEach((r) => r.faces.forEach((p, f) => {
+        const c = facing(r, f);
+        p.material.opacity = Math.min(1, Math.max(0, (c - FADE_FROM) / (FADE_TO - FADE_FROM)));
+      }));
       if (pLife > 0) {
         pLife -= dt * 1.1;
         for (let i = 0; i < P; i++) {
@@ -226,6 +277,15 @@ export function createDrum(columns) {
       }
     },
     fitCamera,
+    /** Move the drum down the screen by px (up to 15% of its height). Returns false once it can't. */
+    lower(px) {
+      const h = R.renderer.domElement.clientHeight || 600;
+      const next = Math.min(0.3, drop + (px + 4) / (h / 2));
+      if (next <= drop + 1e-4) return false;
+      drop = next;
+      fitCamera();
+      return true;
+    },
     hitRing(object) {
       let o = object;
       while (o) {
@@ -239,6 +299,53 @@ export function createDrum(columns) {
       own.forEach((g) => g.dispose());
     },
   };
+  /** How squarely face f of ring r looks at the viewer: 1 straight on, 0 edge-on. */
+  function facing(r, f) {
+    return Math.cos(r.spin.rotation.x + f * r.step);
+  }
+
+  let intro = null;
+  function stepIntro(dt) {
+    const it = intro;
+    it.t += dt;
+    const popDone = it.pops.length * it.popGap;
+    // 1. Faces pop on, one morpheme at a time.
+    let shown = 0;
+    it.pops.forEach((p, k) => {
+      if (it.t >= k * it.popGap) {
+        if (!p.visible) {
+          p.visible = true;
+          p.scale.y = 0.2;
+          tween(140, (q) => { p.scale.y = 0.2 + 0.8 * ease(q); });
+          if (k % 2 === 0) sfx.tick();
+        }
+        shown += 1;
+      }
+    });
+    if (shown < it.pops.length) return;
+    // 2. Every ring spins, then stops left to right.
+    const st = it.t - popDone - 0.15;
+    if (st < 0) return;
+    let running = 0;
+    it.spinners.forEach((s) => {
+      const k = Math.min(1, st / s.dur);
+      const pos = s.from + (s.to - s.from) * easeOutCubic(k);
+      const face = Math.round(pos);
+      if (face !== s.r.face) {
+        s.r.face = face;
+        s.r.refresh();
+        if (it.t - it.lastTick > 0.045) { sfx.tick(); it.lastTick = it.t; }
+      }
+      s.r.spin.rotation.x = -pos * s.r.step;
+      if (k < 1) running += 1;
+      else if (!s.landed) { s.landed = true; s.r.face = s.to; s.r.angle = -s.to * s.r.step; s.r.refresh(); sfx.click(); }
+    });
+    if (running) return;
+    intro = null;
+    drum.onChange && drum.onChange();
+    it.resolve();
+  }
+
   drum.setFocus(focusIdx);
   fitCamera();
   return drum;

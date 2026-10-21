@@ -15,9 +15,10 @@ import { runTweens, clamp, lerp } from '../core/util.js';
 export { THREE };
 
 // The storybook camera: low (about 29 degrees above the floor), facing the room's front.
-// Q/E rotate in 45-degree steps, Z/X step through ZOOMS, VIEW resets both.
+// Q/E rotate in 45-degree steps, Z/X step through ZOOMS, VIEW resets all of it.
+// Dragging the floor orbits freely (orbitBy), right-drag slides the view (panBy), the wheel zooms.
 export const DEFAULT_PITCH = 0.5;
-export const ZOOMS = [0.55, 0.68, 0.82, 1, 1.2, 1.42, 1.68];
+export const ZOOMS = [0.55, 0.68, 0.82, 1, 1.2, 1.42, 1.68, 2.0, 2.4];
 export const DEFAULT_ZOOM = 3;
 
 export const R = {
@@ -43,6 +44,7 @@ export const R = {
     focusFactor: 1,
     zoomIdx: DEFAULT_ZOOM,
     px: 0, py: 0, gx: 0, gy: 0,
+    pan: new THREE.Vector3(),
   },
   pointer: { x: 0, y: 0, inside: false },
   updates: new Set(),
@@ -147,10 +149,31 @@ export function zoomStep(dir) {
   if (!R.rig.focus) R.rig.goalDist = R.rig.baseDist * ZOOMS[R.rig.zoomIdx];
   return R.rig.zoomIdx;
 }
-/** VIEW: back to the default angle and zoom, turning the short way round. */
+/** Drag to orbit: dx turns the view, dy tilts it (in pixels). */
+export function orbitBy(dx, dy) {
+  R.rig.yawGoal -= dx * 0.008;
+  R.rig.yaw = R.rig.yawGoal - (R.rig.yawGoal - R.rig.yaw) * 0.3;
+  R.rig.pitch = clamp(R.rig.pitch + dy * 0.004, 0.32, 1.15);
+}
+/** Right-drag to slide the view across the floor, up to about half a room from the player. */
+export function panBy(dx, dy) {
+  const s = R.rig.dist / Math.max(400, window.innerHeight) * 1.6;
+  const yaw = R.rig.yaw;
+  const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+  const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+  R.rig.pan.addScaledVector(right, -dx * s).addScaledVector(fwd, dy * s);
+  R.rig.pan.clampLength(0, 9);
+}
+/** Ease the slide back toward the player (called while the player walks). */
+export function relaxPan(dt) {
+  R.rig.pan.multiplyScalar(Math.pow(0.15, dt));
+}
+/** VIEW: back to the default angle, tilt and zoom, turning the short way round. */
 export function resetView() {
   const full = Math.PI * 2;
   R.rig.yawGoal = Math.round(R.rig.yawGoal / full) * full;
+  R.rig.pitch = DEFAULT_PITCH;
+  R.rig.pan.set(0, 0, 0);
   R.rig.zoomIdx = DEFAULT_ZOOM;
   if (!R.rig.focus) R.rig.goalDist = R.rig.baseDist * ZOOMS[DEFAULT_ZOOM];
 }
@@ -171,7 +194,8 @@ export function setBackground(hex) { R.scene.background = new THREE.Color(hex); 
 function updateCamera(dt) {
   const rig = R.rig;
   const k = 1 - Math.pow(0.002, dt);
-  rig.goalTarget.copy(rig.focus || rig.follow);
+  if (rig.focus) rig.goalTarget.copy(rig.focus);
+  else rig.goalTarget.copy(rig.follow).add(rig.pan);
   rig.target.lerp(rig.goalTarget, k);
   rig.dist = lerp(rig.dist, rig.goalDist, k);
   rig.yaw = lerp(rig.yaw, rig.yawGoal, 1 - Math.pow(0.0008, dt));

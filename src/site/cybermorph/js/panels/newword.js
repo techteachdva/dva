@@ -2,7 +2,7 @@
  * UNKNOWN FILE: the Word Detective routine (Kieffer & Lesaux, 2007) on a word the
  * player has never seen, built only from pieces they know. This is the transfer
  * step that morphology programs often skip (Colenbrander et al., 2024).
- *   1. Flag the word you don't know.   2. Split it.
+ *   1. Click the glowing word.         2. Split it.
  *   3. Read what each piece means.     4. Check the meaning in the sentence.
  */
 
@@ -24,14 +24,14 @@ export function openNewWord({ item, profile, title = 'UNKNOWN FILE' }) {
     const expected = item.p.length > 1 ? (item.w === res.word ? res.cuts : (() => { let s = 0; return item.p.slice(0, -1).map((id) => { s += morph(id).text.length; return s; }); })()) : [];
 
     const stepsList = el('ol', {},
-      el('li', {}, 'Flag the word you don\'t know.'),
+      el('li', {}, 'Click the glowing word.'),
       el('li', {}, 'Split it into morphemes.'),
       el('li', {}, 'Read what each piece means.'),
       el('li', {}, 'Pick the meaning that fits the sentence.'));
     const steps = el('aside', { class: 'steps glass' }, el('div', { class: 'kicker' }, 'WORD DETECTIVE'), stepsList);
     const caseBox = el('div', { class: 'case glass' });
     panel.root.append(
-      el('section', { class: 'glass panel-top' }, el('div', { class: 'kicker' }, `${title} · a word you have never compiled`), el('div', { class: 'prompt', style: { fontSize: '1.1rem' } }, 'Every piece of it is a morpheme you already know.')),
+      el('section', { class: 'glass panel-top' }, el('div', { class: 'kicker' }, `${title} · a word you have never built`), el('div', { class: 'prompt', style: { fontSize: '1.1rem' } }, 'Every piece of it is a morpheme you already know.')),
       el('div', { class: 'detective' }, steps, caseBox),
       closeButton(() => finish(false)));
 
@@ -46,28 +46,31 @@ export function openNewWord({ item, profile, title = 'UNKNOWN FILE' }) {
     const sentence = el('div', { class: 'sentence' });
     const tokens = item.s.split(/(\s+)/);
     const targetWord = item.w.toLowerCase();
+    // Only the case word is clickable, and it glows: students may know the word but not its parts.
     tokens.forEach((tok) => {
       if (/^\s+$/.test(tok)) { sentence.append(tok); return; }
       const clean = tok.replace(/[^A-Za-z'-]/g, '').toLowerCase();
-      const b = el('button', { class: 'w click', type: 'button' }, tok);
+      if (clean !== targetWord) { sentence.append(el('span', { class: 'w' }, tok)); return; }
+      // Punctuation stays outside the glow: only the word itself lights up.
+      const [, lead, core, trail] = tok.match(/^([^A-Za-z'-]*)(.*?)([^A-Za-z'-]*)$/);
+      if (lead) sentence.append(lead);
+      const b = el('button', { class: 'w click glow', type: 'button' }, core);
       b.addEventListener('click', () => {
         if (step !== 0) return;
-        if (clean === targetWord) {
-          b.classList.add('target');
-          sfx.good();
-          speak(item.w);
-          step = 1;
-          paintSteps();
-          showSplit();
-        } else {
-          sfx.click();
-          fb('info', `You know "${clean}".`, 'Find the long word made of pieces.');
-        }
+        b.classList.remove('glow');
+        b.classList.add('target');
+        sfx.good();
+        speak(item.w);
+        step = 1;
+        paintSteps();
+        showSplit();
       });
       sentence.append(b);
+      if (trail) sentence.append(trail);
+      setTimeout(() => b.focus(), 60);
     });
     caseBox.append(sentence, msg);
-    fb('info', 'Step 1', 'Click the word in the sentence that you don\'t know yet.');
+    fb('info', 'Step 1', 'Click the glowing word to open the case.');
     paintSteps();
 
     function showSplit() {

@@ -42,6 +42,14 @@ One Morpheme Magic lesson per week, following its sample schedule:
 | **Thu** | Warm-up. Activities. Write with focus words. | 10–15 min **review mix**: older morphemes only (spaced retrieval). |
 | **Fri** | Lesson assessment. Write in response to reading. | Optional, for early finishers. Compare game numbers with the assessment. |
 
+**What a 10–15 minute session looks like (1.4 and later).** The game runs in levels. A level has three parts:
+
+1. **Earn.** About six glowing morphemes wait around the room. Each one is a 20–40 second minigame where the student *does* what the morpheme means: carries cargo across a gap for *port*, smashes a wall at its crack for *rupt*.
+2. **Build.** Those morphemes load onto two or three dials, and the student builds five requested words. The dials spin up first and always stop at least three turns away from the answer, so students can't speed-click through it.
+3. **Debug.** Two or three Rotlings made from the level's own words: real, misspelled, reversed, or not a word.
+
+One level fits one session. Exit Ticket mode opens with up to six minigames on your ticked morphemes, then goes straight to building.
+
 Rules of thumb:
 
 - **Accuracy before speed.** Overclock Mode (the 2-minute timed mode) only on morphemes at least two weeks old. A timer on a brand-new morpheme rewards guessing.
@@ -131,7 +139,7 @@ What this means in practice:
 What the game records today, per student, in the browser:
 
 - every morpheme they've met, with a mastery level (0–4 stars), first-try hits / tries, and whether it is fading (due for review);
-- words compiled, Rotlings debugged, first-try rate;
+- words built, Rotlings debugged, first-try rate;
 - a **Progress report** (pause menu) that prints on one page, morphemes grouped by mastery, with "Needs review" boxed first;
 - per class session: tries, first tries and mistakes by kind for every morpheme, packed into the exit-ticket code (see below).
 
@@ -140,14 +148,14 @@ How to use it each week (the thresholds are my suggestions; adjust to your class
 | What you see | What it likely means | What to do in class |
 |---|---|---|
 | This week's morpheme under about 70% first try for many students | Meaning not secure yet | Reteach in Wednesday's warm-up: key word, scoop, two focus words. |
-| Real words judged as "Rot fakes," or fakes accepted as real | Spelling joints aren't automatic: drop-e, double, y→i, assimilation | Mini-lesson on Morpheme Magic's "double it, change it, drop it" rules, using the exact words they missed. |
+| Real words called misspelled or "not a word," or fakes accepted as real | Spelling joints aren't automatic: drop-e, double, y→i, assimilation | Mini-lesson on Morpheme Magic's "double it, change it, drop it" rules, using the exact words they missed. |
 | Wrong spelling picked from a family (tain for ten, ible for able, ance for ence) | They know the meaning, but not which form a word takes | Sort activity: word cards into the family's columns (the wall card lists them). |
 | An older morpheme marked "needs review" for several students | Forgetting, which is normal | Put it in Thursday's review mix and in Friday's "Write" word bank. |
 | Strong game numbers, weak Friday assessment | Recognition without production | More Write tasks. The game mostly tests recognising parts, not using words. |
 
 ## Class sessions, exit tickets and the class report (built)
 
-**Exit Ticket mode (the default class link).** Students click their name and go straight into a focused session on only the lessons you ticked: no story, no Hub. They see today's morphemes on a lesson card, then alternate COMPILE rounds ("build the word that means…") and DEBUG rounds (split it, then real word or Rot?) built from those morphemes, until your timer ends. Then the exit ticket. Only the ticked morphemes are recorded, so the ticket and your class report stay on the lesson. If a student closes a round, the game asks whether to finish early. Words use only ticked morphemes plus everyday words and whatever that student has already learned; when that's too few (one lesson ticked, a brand-new student), it adds words with the fewest unfamiliar parts. Tick earlier lessons too for more variety. Choose "Full game" on the teacher page for the story with a timer instead.
+**Exit Ticket mode (the default class link).** Students click their name and go straight into a focused session on only the lessons you ticked: no story, no Hub. They see today's morphemes on a lesson card, then alternate BUILD rounds ("build the word that means…") and DEBUG rounds (split it, then real word or Rot?) built from those morphemes, until your timer ends. Then the exit ticket. Only the ticked morphemes are recorded, so the ticket and your class report stay on the lesson. If a student closes a round, the game asks whether to finish early. Words use only ticked morphemes plus everyday words and whatever that student has already learned; when that's too few (one lesson ticked, a brand-new student), it adds words with the fewest unfamiliar parts. Tick earlier lessons too for more variety. Choose "Full game" on the teacher page for the story with a timer instead.
 
 **Before the first class (once):**
 1. Make a Google Form with one Short answer question, "Paste your CyberMorph code".
