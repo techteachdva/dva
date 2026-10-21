@@ -10,7 +10,7 @@ import { sfx, unlockAudio } from '../core/audio.js';
 import { mtile } from './hud.js';
 import { openPanel, closeButton } from '../panels/host.js';
 
-export const VERSION = '1.4.0';
+export const VERSION = '1.4.1';
 
 const layer = () => $('screen-layer');
 let stack = [];

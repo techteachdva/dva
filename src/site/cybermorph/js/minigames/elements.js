@@ -69,7 +69,7 @@ const keyIn = (set, ks) => ks.some((k) => set.has(k));
 const ELEM = {
   water: { e: '💧', name: 'water', fixes: 'fire', worsens: 'ice' },
   heat: { e: '☀️', name: 'heat', fixes: 'ice', worsens: 'fire' },
-  earth: { e: '🪨', name: 'earth', fixes: 'pit' },
+  earth: { e: '⛰️', name: 'earth', fixes: 'pit' },
   air: { e: '💨', name: 'air', fixes: 'airless' },
   star: { e: '⭐', name: 'starlight', fixes: 'dark' },
 };

@@ -366,7 +366,60 @@ function rot(mood) {
   <g filter="url(#rg)">${eyes}${mouth(shut, open)}${extra}</g>`;
 }
 
-const DRAW = { wynn, aurelia, theo, phil, system, rot };
+// ── Noam Chomsky, the Hub mentor: a professor-gnome in a red pointed hat ─────────────
+function noam(mood) {
+  const rot = mood === 'rot';
+  const skin = '#efc6a2';
+  const grey = '#d3d6dc';
+  const greyD = '#9aa0aa';
+  const hat = '#c8262f';
+  let eyes = `<circle cx="40" cy="52" r="2.6" fill="${INK}"/><circle cx="60" cy="52" r="2.6" fill="${INK}"/>`;
+  let brows = `<path d="M33 43Q40 40 46 43M54 43Q60 40 67 43" stroke="${greyD}" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
+  let shut = `<path d="M43 71Q50 75 57 71" stroke="#6a3324" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+  let open = `<path d="M43 70Q50 79 57 70Z" fill="#6a3324" ${SW} stroke-width="1.6"/>`;
+  let extra = '';
+  let tip = `<path d="M58 6Q80 4 86 18Q78 14 70 16Z" fill="${hat}" ${SW} stroke-width="2"/>`;
+  if (mood === 'pleased') {
+    eyes = `<path d="M36 53Q40 48 44 53M56 53Q60 48 64 53" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+    shut = `<path d="M41 69Q50 79 59 69Z" fill="#fff" ${SW} stroke-width="1.6"/>`;
+    open = `<path d="M41 68Q50 82 59 68Z" fill="#6a3324" ${SW} stroke-width="1.6"/><path d="M43 69H57" stroke="#fff" stroke-width="2.2"/>`;
+    extra = `<circle cx="31" cy="64" r="4" fill="#ff8a7a" opacity="0.45"/><circle cx="69" cy="64" r="4" fill="#ff8a7a" opacity="0.45"/>`;
+  } else if (mood === 'worried') {
+    brows = `<path d="M33 45Q40 44 46 39M54 39Q60 44 67 45" stroke="${greyD}" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
+    eyes = `<circle cx="40" cy="52" r="3.2" fill="${INK}"/><circle cx="60" cy="52" r="3.2" fill="${INK}"/>`;
+    shut = `<path d="M43 73Q46 70 50 73T57 72" stroke="#6a3324" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+    open = `<ellipse cx="50" cy="72" rx="4.5" ry="3.6" fill="#6a3324" ${SW} stroke-width="1.6"/>`;
+    extra = `<path d="M76 46Q79 51 76 54Q73 51 76 46Z" fill="#8fd3ff" ${SW} stroke-width="1.4"/>`;
+    tip = `<path d="M58 6Q72 10 74 26Q68 18 62 16Z" fill="${hat}" ${SW} stroke-width="2"/>`;
+  } else if (mood === 'special') {
+    // Making a point: one brow up, a finger raised.
+    brows = `<path d="M33 41Q40 36 46 40M54 43Q60 42 67 43" stroke="${greyD}" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
+    shut = `<path d="M44 71Q50 73 57 70" stroke="#6a3324" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+    extra = `<path d="M84 98V74Q84 70 87 70Q90 70 90 74V98Z" fill="${skin}" ${SW} stroke-width="1.8"/>${sparkle(92, 62, 4, '#ffd23f')}`;
+  } else if (rot) {
+    brows = `<path d="M33 41L46 45M54 45L67 41" stroke="${greyD}" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
+    eyes = `<circle cx="40" cy="52" r="2" fill="${INK}"/><circle cx="60" cy="52" r="2" fill="${INK}"/>`;
+    extra = `<path d="M80 30l3 6-4 2 4 5" stroke="#7dff3a" stroke-width="2" fill="none"/>`;
+  }
+  return `${card('noam-' + mood, '#1d1020', rot ? '#3dff6a' : '#d0606a')}
+  <path d="M10 100Q12 86 30 84H70Q88 86 90 100Z" fill="#7b2d3a" ${SW}/>
+  <path d="M42 84L50 100L58 84Z" fill="#f4f1ea" ${SW} stroke-width="1.6"/><path d="M48 86H52L53 100H47Z" fill="#1f3a6e" ${SW} stroke-width="1.4"/>
+  <circle cx="60" cy="93" r="1.6" fill="#d9a441"/>
+  <ellipse cx="24" cy="56" rx="5" ry="7" fill="${skin}" ${SW} stroke-width="2"/><ellipse cx="76" cy="56" rx="5" ry="7" fill="${skin}" ${SW} stroke-width="2"/>
+  <path d="M26 50Q26 30 50 30Q74 30 74 50V60Q74 80 50 82Q26 80 26 60Z" fill="${skin}" ${SW}/>
+  <g fill="${grey}" ${SW} stroke-width="1.8"><circle cx="25" cy="44" r="7"/><circle cx="23" cy="53" r="6"/><circle cx="75" cy="44" r="7"/><circle cx="77" cy="53" r="6"/></g>
+  <path d="M18 36Q50 28 82 36L80 42Q50 35 20 42Z" fill="#a81e26" ${SW}/>
+  <path d="M22 37Q34 6 58 6Q70 16 78 36Z" fill="${hat}" ${SW}/>${tip}
+  ${extra}
+  <ellipse cx="50" cy="62" rx="6.5" ry="6" fill="#e0a084" ${SW} stroke-width="1.8"/>
+  ${mouth(shut, open)}
+  ${brows}
+  <g ${SW} stroke="#2a2a2a" stroke-width="2.6"><circle cx="40" cy="52" r="8" fill="#cfe8ff" fill-opacity="0.3"/><circle cx="60" cy="52" r="8" fill="#cfe8ff" fill-opacity="0.3"/><path d="M48 52H52M32 51L26 49M68 51L74 49" fill="none"/></g>
+  ${eyes}
+  <path d="M35 48L38 47" stroke="#fff" stroke-width="1.6" opacity="0.8" stroke-linecap="round"/><path d="M55 48L58 47" stroke="#fff" stroke-width="1.6" opacity="0.8" stroke-linecap="round"/>`;
+}
+
+const DRAW = { wynn, aurelia, theo, phil, system, rot, noam };
 
 /** The SVG for one speaker in one mood, as markup. Unknown speakers draw as LEXINET, unknown moods as neutral. */
 export function portraitSVG(speaker, mood = 'neutral') {

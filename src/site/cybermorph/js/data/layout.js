@@ -10,7 +10,7 @@
  *   H  port to the hub @  arrival        &  checkpoint inside the Rotling zone
  *   a–h  named props (morpheme objects)  o k  generic decor
  *   Lingo Room only: P Chromebook cart · Q 3D printer · Y triangle desks · x blocked tile under big furniture
- *   Hub only: L tree · D desk · A booth · O Overclock cabinet · X compiler · 1 2 3 4 ports
+ *   Hub only: L tree · D desk · A booth · O Overclock cabinet · X compiler · M Noam Chomsky · 1 2 3 4 ports
  *
  * Zones (left to right): 0 = lesson zone, 1 = Rotling zone, 2 = core zone.
  */
@@ -63,6 +63,7 @@ export function buildHubMap() {
   put(15, 3, 'D');
   put(4, 10, 'A');
   put(15, 10, 'O');
+  put(7, 9, 'M');
   [[2, 1], [17, 1], [2, 12], [17, 12]].forEach(([c, r]) => put(c, r, 'o'));
   return g.map((row) => row.join(''));
 }

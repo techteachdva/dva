@@ -596,3 +596,15 @@ body.panel-open #session-clock { top: auto; bottom: 16px; }
 .mg-line { font-size: 1.05rem; color: var(--ink-dim); }
 .mg-how { font-size: 1.15rem; font-weight: 700; max-width: 34rem; }
 .mg-verb { font-size: 1.4rem; font-weight: 800; color: var(--yellow); }
+
+/* ── Dev console (js/dev/console.js; hidden, hold 1 + 0) ─────────── */
+.dev-console { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10000; display: flex; flex-direction: column; max-height: 42vh; background: rgba(8, 6, 16, 0.96); border-top: 2px solid #7b5cff; font-family: Consolas, Monaco, monospace; font-size: 0.85rem; }
+.dev-console[hidden] { display: none; }
+.dev-console-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.35rem 0.75rem; background: rgba(123, 92, 255, 0.22); border-bottom: 1px solid rgba(123, 92, 255, 0.4); color: #e8f0ff; }
+.dev-console-hint { margin-left: auto; font-size: 0.75rem; color: #a9a3c9; }
+.dev-console-log { flex: 1; overflow-y: auto; padding: 0.4rem 0.75rem; min-height: 80px; max-height: 30vh; }
+.dev-log-line { margin: 0.1rem 0; line-height: 1.35; white-space: pre-wrap; word-break: break-word; color: #b8d4ff; }
+.dev-log-line.cmd { color: #ffd84a; }
+.dev-log-line.err { color: #ff8a8a; }
+.dev-console-input { border: none; border-top: 1px solid rgba(123, 92, 255, 0.35); background: rgba(0, 0, 0, 0.55); color: #e8f0ff; padding: 0.55rem 0.75rem; font: inherit; font-size: 0.95rem; outline: none; }
+.dev-console-input:focus { background: rgba(20, 12, 40, 0.92); }

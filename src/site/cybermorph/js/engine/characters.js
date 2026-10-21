@@ -290,21 +290,70 @@ export function createMentor(id) {
   let idleIn = 3 + Math.random() * 3;
   const ease = (x) => Math.sin(Math.min(1, Math.max(0, x)) * Math.PI); // 0 → 1 → 0
   let pose = () => {};
+  let idleDur = 1.4; // a mentor can take longer over its idle gesture
+  let idleCount = 0;
 
   if (id === 'wynn') {
-    const rust = mat(0x6b4515);
-    rig.add(box(0.7, 0.14, 0.5, mat(0x222222), 0, 0.17, 0));
+    // Old Wynn: a stout maintenance bot on treads, with a knitted shawl, a wrench she never puts
+    // down, and her screen face. Her idle is breathing, a nod, polishing her glasses and tapping
+    // the wrench in her palm; nothing sticks out of her and nothing flaps.
+    const rust = mat(0x7a4d18);
+    const dark = mat(0x2a1a0a);
+    const steel = mat(0x9a9fa8);
+    // Treads.
+    [-0.22, 0.22].forEach((x) => {
+      const tread = cyl(0.11, 0.2, mat(0x1c1c22), x, 0.11, 0);
+      tread.rotation.z = Math.PI / 2;
+      tread.scale.z *= 2.2; // helpers size meshes by scale, so adjust it, never set it
+      rig.add(tread);
+      [-0.16, 0, 0.16].forEach((z) => { const w = cyl(0.05, 0.21, steel, x, 0.11, z); w.rotation.z = Math.PI / 2; rig.add(w); });
+    });
+    rig.add(box(0.62, 0.06, 0.44, dark, 0, 0.24, 0));
     const body = new THREE.Group();
-    body.add(box(0.55, 0.55, 0.42, rust, 0, 0.55, 0));
-    body.add(box(0.1, 0.4, 0.1, rust, -0.34, 0.6, 0), box(0.1, 0.4, 0.1, rust, 0.34, 0.6, 0));
+    body.position.y = 0.27;
+    // A rounded torso with a warm chest panel.
+    const torso = cyl(0.29, 0.5, rust, 0, 0.27, 0);
+    torso.scale.z *= 0.8;
+    body.add(torso, cyl(0.3, 0.05, dark, 0, 0.03, 0), cyl(0.27, 0.05, dark, 0, 0.51, 0));
+    const panel = box(0.26, 0.17, 0.02, mat(0x1a0d03, { emissive: 0x3a1c00 }), 0, 0.26, 0.235);
+    body.add(panel);
+    const lights = [0xffb000, 0x9dff7a, 0xff6a4d].map((c, i) => sphere(0.022, glowMat(c), -0.07 + i * 0.07, 0.29, 0.25));
+    body.add(...lights);
+    body.add(box(0.18, 0.025, 0.01, glowMat(0xffb000), 0, 0.22, 0.25));
+    [[-0.22, 0.4], [0.22, 0.4], [-0.22, 0.12], [0.22, 0.12]].forEach(([x, y]) => body.add(sphere(0.018, steel, x, y, 0.17)));
+    // The shawl: a knitted ring over the shoulders, with a knot at the front.
+    const shawl = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.06, 8, 20), mat(0xc0566e));
+    shawl.rotation.x = Math.PI / 2;
+    shawl.position.y = 0.5;
+    shawl.scale.y = 0.82;
+    body.add(shawl, sphere(0.05, mat(0xa8445b), 0, 0.45, 0.22));
     rig.add(body);
-    // A stubby leg out the front: she gives her base a fond kick now and then, to keep it running.
-    const leg = new THREE.Group();
-    leg.position.set(0.17, 0.34, 0.2);
-    leg.add(box(0.08, 0.2, 0.08, mat(0x3d270e), 0, -0.1, 0), box(0.13, 0.07, 0.17, mat(0x222222), 0, -0.2, 0.04));
-    rig.add(leg);
+    // Arms hang from shoulder joints, so they swing instead of sliding.
+    const arm = (side) => {
+      const sh = new THREE.Group();
+      sh.position.set(side * 0.33, 0.73, 0);
+      sh.add(sphere(0.07, steel, 0, 0, 0));
+      const upper = cyl(0.04, 0.2, rust, 0, -0.11, 0);
+      const elbow = new THREE.Group();
+      elbow.position.y = -0.22;
+      elbow.add(sphere(0.045, steel, 0, 0, 0), cyl(0.035, 0.17, rust, 0, -0.09, 0));
+      const hand = sphere(0.055, dark, 0, -0.19, 0);
+      elbow.add(hand);
+      sh.add(upper, elbow);
+      rig.add(sh);
+      return { sh, elbow, hand };
+    };
+    const L = arm(-1);
+    const Rt = arm(1);
+    // The wrench lives in her left hand.
+    const wrench = new THREE.Group();
+    wrench.position.set(0, -0.2, 0.05);
+    wrench.add(box(0.035, 0.2, 0.025, steel, 0, -0.08, 0), cyl(0.045, 0.03, steel, 0, -0.19, 0));
+    wrench.rotation.x = Math.PI / 2.4;
+    L.elbow.add(wrench);
     const head = new THREE.Group();
     head.add(box(0.6, 0.48, 0.5, mat(0x3d270e), 0, 0, 0));
+    head.add(box(0.64, 0.06, 0.54, dark, 0, -0.25, 0));
     // Her screen face, drawn to match the dialogue portrait: big round eyes, soft lids,
     // half-moon reading glasses, rosy cheeks and a small crooked smile.
     const drawFace = (mood) => {
@@ -364,46 +413,67 @@ export function createMentor(id) {
     bow.add(loop(-1), loop(1), sphere(0.02, mat(0xc43a50), 0, 0, 0));
     antenna.add(cyl(0.015, 0.16, mat(0x999999), 0, 0.08, 0), a2, tip, bow);
     head.add(antenna);
-    head.position.y = 1.08;
+    head.position.y = 1.1;
     rig.add(head);
-    // Leg swing for one kick, x in 0..1: wind up, tap the base, settle.
-    const kick = (x) => (x < 0.45 ? -0.9 * Math.sin((x / 0.45) * Math.PI / 2) : x < 0.6 ? -0.9 + 1.25 * ((x - 0.45) / 0.15) : 0.35 * (1 - (x - 0.6) / 0.4));
+    idleDur = 2.4;
     let blinkAt = 3;
     pose = (a) => {
-      head.position.set(0, 1.08 + Math.sin(t * 2) * 0.012, 0);
-      head.rotation.set(0, Math.sin(t * 0.5) * 0.1, 0);
-      antenna.rotation.z = Math.sin(t * 1.6) * 0.06;
-      leg.rotation.x = 0;
-      body.position.x = 0;
-      // A slow, calm blink every few seconds.
+      // Breathing: the torso swells a touch, the head rides along.
+      const breath = Math.sin(t * 1.6);
+      body.scale.set(1 + breath * 0.012, 1 + breath * 0.018, 1 + breath * 0.012);
+      head.position.set(0, 1.1 + breath * 0.012, 0);
+      head.rotation.set(0, Math.sin(t * 0.45) * 0.12, Math.sin(t * 0.3) * 0.03);
+      antenna.rotation.z = Math.sin(t * 1.3) * 0.05;
+      lights.forEach((l, i) => { l.material.emissiveIntensity = 0.6 + 0.4 * Math.max(0, Math.sin(t * 2 + i * 2)); });
+      // Arms at rest, swaying a little.
+      L.sh.rotation.set(0, 0, -0.12 + Math.sin(t * 1.6) * 0.03);
+      Rt.sh.rotation.set(0, 0, 0.12 - Math.sin(t * 1.6) * 0.03);
+      L.elbow.rotation.set(-0.5, 0, 0);
+      Rt.elbow.rotation.set(-0.2, 0, 0);
+      rig.position.y = 0;
       if (t > blinkAt + 0.14) blinkAt = t + 3 + Math.random() * 3;
       let tex = t > blinkAt ? faces.blink : faces.smile;
-      if (a && a.kind === 'worried') {
-        const p = a.t / a.dur;
+      if (!a) { face.material.map = tex; return; }
+      const p = a.t / a.dur;
+      const k = ease(p);
+      if (a.kind === 'pleased') {
+        // A little hop with both arms up.
+        tex = faces.happy;
+        rig.position.y = Math.abs(Math.sin(p * Math.PI * 2)) * 0.08;
+        L.sh.rotation.z = -0.12 - 2.5 * k;
+        Rt.sh.rotation.z = 0.12 + 2.5 * k;
+        antenna.rotation.z = Math.sin(t * 9) * 0.15 * k;
+      } else if (a.kind === 'worried') {
+        // Wringing her hands, looking side to side.
         tex = faces.worried;
+        L.sh.rotation.set(-0.9 * k, 0, 0.35 * k);
+        Rt.sh.rotation.set(-0.9 * k, 0, -0.35 * k);
+        L.elbow.rotation.x = -0.5 - 0.6 * k;
+        Rt.elbow.rotation.x = -0.2 - 0.9 * k + Math.sin(t * 12) * 0.08 * k;
         head.rotation.y = Math.sin(p * Math.PI * 2) * 0.3;
-        antenna.rotation.z = 0.5 * ease(p);
-      } else if (a && a.kind === 'special') {
-        // Comic exasperation: a slow head shake, antenna slumped, two grumbling kicks at the base.
-        const p = a.t / a.dur;
+        antenna.rotation.z = 0.5 * k;
+      } else if (a.kind === 'special') {
+        // Comic exasperation: fists on hips, a slow head shake, antenna slumped.
         tex = faces.grumpy;
-        leg.rotation.x = kick((p * 2) % 1) * 0.7;
-        head.rotation.y = Math.sin(p * Math.PI * 4) * 0.12;
-        head.rotation.z = -0.08 * ease(p);
-        antenna.rotation.z = -0.4 * ease(p);
-      } else if (a) {
-        // A fond kick to the base, then a happy little bounce ('idle' kicks and nods).
-        const p = a.t / a.dur;
-        const kp = Math.min(1, p * 1.6);
-        leg.rotation.x = kick(kp);
-        if (kp > 0.55 && kp < 0.7) { body.position.x = 0.015; head.rotation.z = 0.04; }
-        if (a.kind === 'pleased') {
-          tex = faces.happy;
-          head.position.y += ease(p) * 0.08;
-          antenna.rotation.z = Math.sin(t * 9) * 0.15 * ease(p);
-        } else if (p > 0.5) {
-          head.rotation.x = 0.12 * ease((p - 0.5) * 2);
-        }
+        L.sh.rotation.z = -0.12 - 0.7 * k;
+        Rt.sh.rotation.z = 0.12 + 0.7 * k;
+        L.elbow.rotation.set(-0.5, 0, 1.6 * k);
+        Rt.elbow.rotation.set(-0.2, 0, -1.6 * k);
+        head.rotation.y = Math.sin(p * Math.PI * 4) * 0.14;
+        antenna.rotation.z = -0.4 * k;
+      } else if ((a.n || 0) % 2 === 0) {
+        // Idle: lift the right hand and polish her glasses, eyes closed.
+        Rt.sh.rotation.set(-1.9 * k, 0, 0.2 + 0.25 * k);
+        Rt.elbow.rotation.x = -0.2 - 1.2 * k + Math.sin(t * 14) * 0.12 * k;
+        head.rotation.x = 0.1 * k;
+        if (k > 0.6) tex = faces.blink;
+      } else {
+        // Idle: tap the wrench in her open palm, three times, with a nod.
+        Rt.sh.rotation.set(-0.7 * k, 0, -0.2 * k);
+        Rt.elbow.rotation.x = -0.2 - 0.9 * k;
+        L.sh.rotation.set(-0.6 * k, 0, 0.15 * k);
+        L.elbow.rotation.x = -0.5 - 0.5 * k - Math.max(0, Math.sin(p * Math.PI * 6)) * 0.35 * k;
+        head.rotation.x = 0.08 * Math.max(0, Math.sin(p * Math.PI * 6)) * k;
       }
       face.material.map = tex;
     };
@@ -557,7 +627,7 @@ export function createMentor(id) {
         act.t += dt;
         if (act.t >= act.dur) act = null;
       } else if ((idleIn -= dt) <= 0) {
-        act = { kind: 'idle', t: 0, dur: DUR.idle, yaw: 0 };
+        act = { kind: 'idle', t: 0, dur: idleDur, yaw: 0, n: idleCount++ };
         idleIn = 7 + Math.random() * 6;
       }
       pose(act);

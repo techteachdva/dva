@@ -104,7 +104,7 @@ const PAIRS = {
   in: [['👁️', 'visible', '👻', 'invisible'], ['⚡', 'active', '💤', 'inactive'], ['✔️', 'correct', '❌', 'incorrect'],
     ['🧩', 'complete', '🕳️', 'incomplete'], ['⬆️', 'direct', '↪️', 'indirect'], ['🎩', 'formal', '🧢', 'informal']],
   non: [['🛑', 'stop', '🔁', 'nonstop'], ['🧠', 'sense', '🤪', 'nonsense'], ['🐉', 'fiction', '📰', 'nonfiction'],
-    ['🌱', 'living', '🪨', 'nonliving'], ['🍯', 'sticky', '🍳', 'nonstick'], ['☠️', 'toxic', '🥦', 'nontoxic']],
+    ['🌱', 'living', '🧱', 'nonliving'], ['🍯', 'sticky', '🍳', 'nonstick'], ['☠️', 'toxic', '🥦', 'nontoxic']],
   dis: [['🔗', 'connected', '✂️', 'disconnected'], ['🐇', 'appear', '💨', 'disappear'], ['👍', 'agree', '👎', 'disagree'],
     ['❤️', 'like', '💔', 'dislike'], ['🙋', 'obey', '🙅', 'disobey'], ['🧩', 'assembled', '🔩', 'disassembled']],
 };

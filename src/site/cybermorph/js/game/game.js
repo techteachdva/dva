@@ -46,6 +46,9 @@ import { openDesk } from '../panels/desk.js';
 import { playMinigame } from '../minigames/harness.js';
 import { LEVELS } from '../data/levels.js';
 import { INTRO, LINES, EARNED, DONE, REPEAT } from '../data/levelLines.js';
+import * as HUB from '../data/hubLines.js';
+import { createNoam } from '../engine/noam.js';
+import { initDevConsole } from '../dev/console.js';
 import { FAMILIES, FAMILY_OF } from '../data/families.js';
 
 const PARAMS = new URLSearchParams(location.search);
@@ -177,16 +180,11 @@ async function startProfile(p, fresh = false) {
   const place = p.place && DISTRICTS[p.place.id] ? p.place : { id: 'hub' };
   if (place.id === 'hub') await enterHub();
   else await enterRoom(place.id, '@');
-  if (fresh || p.migrated) {
-    const back = p.migrated;
+  // A brand-new Morpher meets Noam in the Hub (hubStory). A returning one gets one line on the reset.
+  if (p.migrated) {
     delete p.migrated;
     store.save();
-    await say('system', [
-      back ? `Welcome back, ${p.name}. The Lexinet was rebuilt into levels, so every room starts fresh. Your Morpher kept its look and its achievements.`
-        : `This is the Hub of the Lexinet, ${p.name}. Every room starts here.`,
-      'Click the floor to walk, or hold W A S D. Drag the floor to turn the camera. Click a machine or a person to use it.',
-      'Start at the amber door labeled ANGLO-SAXON. It leads to the room where the oldest English lives.',
-    ]);
+    await say('system', [`Welcome back, ${p.name}. The Lexinet was rebuilt into levels, so every room starts fresh. Your Morpher kept its look and its achievements.`]);
   }
 }
 
@@ -817,7 +815,8 @@ function objectiveText() {
     const next = MAIN_ORDER.find((d) => !(p.districts[d] && p.districts[d].cleared));
     const reviews = G.rotlings.filter((r) => r.review).length;
     if (reviews) return `${reviews} review Rotling${reviews > 1 ? 's' : ''} in the Hub: DEBUG them to restore fading morphemes.`;
-    const labTip = !p.labUsed && p.learned.some((id) => MORPHEMES[id] && morph(id).type === 'base') ? ' Tip: try the WORD LAB to discover new words.' : '';
+    if (!hubState().intro) return 'Talk to Noam Chomsky, the little professor in the red hat.';
+    const labTip = !p.labUsed && hubState().lab ? ' Tip: try the WORD LAB to discover new words.' : '';
     if (next) {
       const where = { anglo: 'the amber door labeled ANGLO-SAXON', latin: 'the grey door labeled LATIN', greek: 'the blue door labeled GREEK' }[next];
       const deskHint = p.clues.some(Boolean) && !p.deskOpen ? ' Your clue cards open something on the Secret Secretary Desk.' : '';
@@ -857,7 +856,117 @@ function objectiveText() {
 // ── The Hub ───────────────────────────────────────────────────────
 
 const cleared = (id) => !!(G.profile.districts[id] && G.profile.districts[id].cleared);
-const portOpen = (id) => id === 'anglo' || cleared(MAIN_ORDER[MAIN_ORDER.indexOf(id) - 1]);
+// Aim a little below and in front of Noam, so he sits above the dialogue box.
+const NOAM_SHOT = new THREE.Vector3(0, -0.5, 0.6);
+/** Noam's story flags: intro, lab, desk, and one flag per scene already played. */
+const hubState = () => G.profile.hub || (G.profile.hub = {});
+const portOpen = (id) => (id === 'anglo' ? !!hubState().intro : cleared(MAIN_ORDER[MAIN_ORDER.indexOf(id) - 1]));
+
+/** Swap a Hub object for a fresh build of it (a door unlocking, the Word Lab waking up). */
+function rebuildHubObject(ch) {
+  const old = G.room.objects.find((o) => o.ch === ch);
+  if (!old) return null;
+  const { c, r } = old;
+  if (old.mesh) G.room.group.remove(old.mesh);
+  G.room.objects.splice(G.room.objects.indexOf(old), 1);
+  const o = hubObject(ch, c, r);
+  if (!o) return null;
+  Object.assign(o, { c, r, ch });
+  if (o.mesh) {
+    o.mesh.position.copy(G.room.toWorld(c, r));
+    G.room.group.add(o.mesh);
+    o.mesh.traverse((n) => { n.userData.obj = o; });
+  }
+  G.room.setBlocked(c, r, !o.walkable);
+  G.room.objects.push(o);
+  return o;
+}
+
+/** Point the camera at a Hub object, rebuild it (unlocked) with a click, and hold the shot. */
+async function showUnlock(ch) {
+  const o = G.room.objects.find((x) => x.ch === ch);
+  if (!o) return;
+  // Look down steeply so the Lexicon Tree in the middle of the Hub doesn't block the shot.
+  const pitch = R.rig.pitch;
+  R.rig.pitch = 1.05;
+  zoomTo(G.room.toWorld(o.c, o.r).add(new THREE.Vector3(0, 0.8, 0)), 0.55);
+  await wait(900);
+  rebuildHubObject(ch);
+  sfx.unlock();
+  await wait(1500);
+  R.rig.pitch = pitch;
+}
+
+/**
+ * Noam's scenes, each played once, when the player arrives in the Hub (lines in data/hubLines.js):
+ * the intro (which opens the Anglo-Saxon door), the Word Lab, each room's first morphemes and
+ * its clearing, and finally the Secret Secretary Desk clicking open.
+ */
+async function hubStory() {
+  const h = hubState();
+  const p = G.profile;
+  const noamObj = G.room.objects.find((o) => o.ch === 'M');
+  if (!noamObj) return;
+  const atNoam = () => zoomTo(G.room.toWorld(noamObj.c, noamObj.r).add(NOAM_SHOT), 0.42);
+  const react = (k) => G.mentor && G.mentor.react && G.mentor.react(k);
+  const scene = async (key, lines, mood = null) => {
+    if (h[key]) return false;
+    atNoam();
+    if (mood) react(mood);
+    await say('noam', lines);
+    h[key] = true;
+    store.save();
+    return true;
+  };
+  const has = (origin) => p.learned.some((id) => MORPHEMES[id] && morph(id).origin === origin);
+  G.busy = true;
+  try {
+    if (!h.intro) {
+      atNoam();
+      react('pleased');
+      await say('noam', HUB.INTRO(p.name));
+      h.intro = true;
+      store.save();
+      await showUnlock('1');
+      atNoam();
+      react('pleased');
+      await say('noam', HUB.INTRO_AFTER);
+      zoomReset();
+      await say('system', ['Click the floor to walk, or hold W A S D. Drag the floor to turn the camera. Click a person or a machine to use it.']);
+      return;
+    }
+    if (!h.lab && has('anglo')) {
+      atNoam();
+      react('pleased');
+      await say('noam', HUB.LAB.slice(0, 1));
+      h.lab = true;
+      store.save();
+      await showUnlock('X');
+      atNoam();
+      await say('noam', HUB.LAB.slice(1));
+    }
+    if (cleared('anglo')) await scene('clearedAnglo', HUB.CLEARED.anglo, 'pleased');
+    if (has('latin')) await scene('saidLatin', HUB.LATIN, 'special');
+    if (cleared('latin')) await scene('clearedLatin', HUB.CLEARED.latin, 'pleased');
+    if (has('greek')) await scene('saidGreek', HUB.GREEK, 'special');
+    if (cleared('greek') && !h.desk) {
+      await scene('clearedGreek', HUB.CLEARED.greek);
+      atNoam();
+      react('pleased');
+      await say('noam', HUB.DESK(p.name));
+      h.desk = true;
+      store.save();
+      await showUnlock('D');
+      atNoam();
+      react('worried');
+      await say('noam', HUB.DESK_AFTER);
+    }
+  } finally {
+    G.busy = false;
+    zoomReset();
+    refreshObjective();
+  }
+}
 
 async function enterHub(fromPort = null) {
   G.place = 'hub';
@@ -879,7 +988,8 @@ async function enterHub(fromPort = null) {
   spawnReviews();
   refreshObjective();
   // Broadcast the Word Lab once per session until the player has tried it.
-  if (!G.profile.labUsed && !G.labNudged && G.profile.learned.some((id) => MORPHEMES[id] && morph(id).type === 'base')) {
+  await hubStory();
+  if (!G.profile.labUsed && !G.labNudged && hubState().lab) {
     G.labNudged = true;
     setTimeout(() => hud.toast('✨ Try the WORD LAB here in the Hub: build any word you like and discover new ones!', 'gold'), 1500);
   }
@@ -938,12 +1048,38 @@ function hubObject(ch, c, r) {
     G.treeZone = zone;
     return { mesh: zone, scenery: tree, label: 'VIEW TREE', smallZone: 0.45, use: () => screens.lexiconPanel(G.profile) };
   }
-  if (ch === 'D') return { mesh: secretaryDesk(), label: 'OPEN', use: () => useDesk() };
+  if (ch === 'M') {
+    const noam = createNoam();
+    G.mentor = noam;
+    noam.group.rotation.y = -0.4; // facing the room, turned a little toward the door you arrive by
+    return { mesh: noam.group, label: 'TALK', use: async () => {
+      const o = G.room.objects.find((x) => x.ch === 'M');
+      zoomTo(G.room.toWorld(o.c, o.r).add(NOAM_SHOT), 0.42);
+      noam.react('pleased');
+      await say('noam', HUB.TALK(G.profile, cleared));
+    } };
+  }
+  if (ch === 'D') {
+    if (!hubState().desk) {
+      return { mesh: secretaryDesk(), label: 'LOCKED', use: async () => {
+        sfx.bad();
+        hud.toast('The Secret Secretary Desk is locked tight. Its letter locks won\'t even turn yet.', 'warn');
+      } };
+    }
+    return { mesh: secretaryDesk(), label: 'OPEN', use: () => useDesk() };
+  }
   if (ch === 'A') return { mesh: avatarBooth('hub'), label: 'CUSTOMIZE', use: () => customize() };
   if (ch === 'O') {
     const open = cleared('anglo');
     const mesh = arcadeCabinet('OVERCLOCK', 0xff3df0, !open);
     return { mesh, label: open ? 'PLAY' : 'LOCKED', use: async () => { if (!open) { sfx.bad(); hud.toast('Overclock Mode unlocks when you clear the Anglo-Saxon Room.', 'warn'); return; } await startTimed(); } };
+  }
+  if (ch === 'X' && !hubState().lab) {
+    // Locked until Noam "discovers" it, after the player brings back their first morphemes.
+    return { mesh: compilerConsole('hub'), label: 'LOCKED', use: async () => {
+      sfx.bad();
+      hud.toast('A dark machine. It needs morphemes to run. Bring some back from the Anglo-Saxon Room.', 'warn');
+    } };
   }
   if (ch === 'X') {
     // The WORD LAB: the free Morph Compiler, signposted so players go and play with it.
@@ -1422,7 +1558,13 @@ async function runBuild(d) {
   });
   if (res.done < res.total) { refreshObjective(); return; }
   bankCarried();
-  // Dessert: Rotlings made from this level's words, one of them a Rot fake.
+  serveDessert(d);
+}
+
+/** Dessert: Rotlings made from this level's words, one of them a Rot fake. */
+function serveDessert(d) {
+  const lv = levelState(store.dprog(G.profile, d.id));
+  const level = curLevel(d);
   const real = shuffle(level.requests.slice()).slice(0, 2).map((t) => ({ p: t.p }));
   const fakeSrc = shuffle(level.requests.slice()).map((t) => makeFake({ ids: t.p }, null, new Set(G.profile.learned))).find(Boolean);
   lv.dessert = fakeSrc ? [...real, fakeSrc] : real;
@@ -1935,3 +2077,189 @@ G.rollDie = () => rollDie();
 G.dieLanded = (n) => dieLanded(n);
 
 export { G };
+
+// ── Dev console (hidden: hold 1 + 0; see dev/console.js) ──────────────
+
+function devApi() {
+  const dp = (id) => store.dprog(G.profile, id);
+  const learnIds = (ids) => {
+    const before = G.profile.learned.length;
+    store.learn(G.profile, ids.filter((id) => MORPHEMES[id]));
+    hud.renderInventory(G.profile);
+    return G.profile.learned.length - before;
+  };
+  const levelIds = (L) => L.flatMap((l) => [...l.earn, ...Object.values(l.with || {}).flat()]);
+  const clearRoom = (id) => {
+    const d = DISTRICTS[id];
+    const p = dp(id);
+    const last = d.rooms.length - 1;
+    p.introDone = true;
+    p.level = (LEVELS[id] || []).length;
+    p.lv = null;
+    Object.assign(p.done, { mentor: true, gate0: true, terminal1: true, gate1: true, [`link${last}`]: true, [`newword${last}`]: true, [`core${last}`]: true });
+    p.cleared = true;
+    p.waveCleared = true;
+    learnIds(levelIds(LEVELS[id] || []));
+    if (d.keySlot >= 0) G.profile.clues[d.keySlot] = true;
+    store.addMilestone(G.profile, id);
+    store.save();
+  };
+  const famRows = () => Object.values(FAMILIES).flatMap((f) => (Array.isArray(f.members) ? f.members : Object.values(f.members).flat()).map((id) => [id, f.id]));
+  return {
+    G,
+    /** Make sure a Morpher is loaded: the last one played, or a new "Dev" Morpher who has met Noam. */
+    async ensure() {
+      if (G.profile && G.place !== 'title') return;
+      let p = store.active() || store.profiles().find((x) => x.name === 'Dev');
+      if (!p) {
+        if (!store.canAddProfile()) p = store.profiles()[0];
+        else { p = store.newProfile('Dev', { limbs: 'l-steel', torso: 't-red', head: 'h-steel', face: 'f-smile' }); p.hub = { intro: true }; store.save(); }
+      }
+      store.setActive(p.id);
+      screens.closeAllScreens();
+      await startProfile(p);
+    },
+    profile: () => G.profile,
+    levels: (id) => LEVELS[id] || [],
+    morph: (id) => MORPHEMES[id],
+    familyOf: (id) => FAMILY_OF[id] || 'generic',
+    enterHub: () => enterHub(),
+    enterRoom: (id) => enterRoom(id, '@'),
+    /** Play the level's opening as the game would (mentor line, nodes, toast). */
+    beginLevel: (id) => startLevel(DISTRICTS[id]),
+    prepRoom(id) { hubState().intro = true; store.save(); },
+    jumpLevel(id, i) {
+      const L = LEVELS[id];
+      if (!L) throw new Error(`${id} has no levels.`);
+      MAIN_ORDER.slice(0, MAIN_ORDER.indexOf(id)).forEach((r) => { if (!cleared(r)) clearRoom(r); });
+      const h = hubState();
+      h.intro = true;
+      h.lab = true;
+      const p = dp(id);
+      p.introDone = true;
+      p.level = i;
+      p.lv = null;
+      p.cleared = false;
+      learnIds(levelIds(L.slice(0, i)));
+      const z = levelZone(i, L.length);
+      if (z >= 1) p.done.gate0 = true;
+      if (z >= 2) { p.done.terminal1 = true; p.done.gate1 = true; p.waveCleared = true; }
+      store.save();
+    },
+    async setPhase(ph) {
+      const d = DISTRICTS[G.place];
+      if (!d || !LEVELS[d.id]) throw new Error('Go into a room with levels first (goto anglo).');
+      const level = curLevel(d);
+      if (!level) throw new Error('This room\'s levels are all done.');
+      const prog = dp(d.id);
+      const lv = levelState(prog);
+      if (ph === 'earn') { lv.phase = 'earn'; lv.earned = []; lv.built = 0; spawnLevel(d); }
+      else {
+        learnIds([...level.earn, ...Object.values(level.with || {}).flat()]);
+        lv.earned = [...level.earn];
+        if (ph === 'build') { lv.phase = 'build'; lv.built = 0; spawnLevel(d); }
+        else if (ph === 'dessert') { lv.built = buildTasks(level).length; serveDessert(d); }
+        else if (ph === 'done') { G.rotlings.filter((r) => r.dessert !== undefined).forEach(removeRotling); await completeLevel(d); }
+      }
+      store.save();
+      refreshObjective();
+    },
+    earn(args) {
+      const what = (args[0] || '').toLowerCase();
+      if (what === 'all') return learnIds(Object.keys(MORPHEMES).filter((id) => MORPHEMES[id].origin !== 'lingo'));
+      if (LEVELS[what]) return learnIds(levelIds(LEVELS[what]));
+      const bad = args.filter((id) => !MORPHEMES[id]);
+      if (bad.length) throw new Error(`Not morphemes: ${bad.join(', ')}`);
+      return learnIds(args);
+    },
+    unlock(what) {
+      const h = hubState();
+      h.intro = true;
+      h.lab = true;
+      if (what === 'all') {
+        MAIN_ORDER.forEach(clearRoom);
+        Object.assign(h, { desk: true, clearedAnglo: true, clearedLatin: true, clearedGreek: true, saidLatin: true, saidGreek: true });
+      } else MAIN_ORDER.slice(0, MAIN_ORDER.indexOf(what)).forEach((r) => { if (!cleared(r)) clearRoom(r); });
+      store.save();
+    },
+    clearRoom,
+    reset(what) {
+      const p = G.profile;
+      if (what === 'hub') p.hub = {};
+      else if (what === 'all') Object.assign(p, { hub: {}, districts: {}, learned: [], lexicon: [], log: [], clues: [false, false, false], deskOpen: false });
+      else delete p.districts[what];
+      store.save();
+      hud.renderInventory(p);
+    },
+    playMinigame: (id, tier) => playMinigame(id, { tier }),
+    gameList(which) {
+      const rows = famRows();
+      if (which === 'all') return rows.map(([id]) => id);
+      if (which && FAMILIES[which]) return rows.filter(([, f]) => f === which).map(([id]) => id);
+      if (which) return [];
+      // One per family and per variant: Suffix shop and Everyday base by sub, the rest by distinct meaning.
+      const out = [];
+      Object.values(FAMILIES).forEach((f) => {
+        if (!Array.isArray(f.members)) { Object.values(f.members).forEach((ids) => out.push(ids[0])); return; }
+        const seen = new Set();
+        f.members.forEach((id) => { const m = MORPHEMES[id].meaning; if (!seen.has(m)) { seen.add(m); out.push(id); } });
+      });
+      return out;
+    },
+    familyList() {
+      return Object.values(FAMILIES).map((f) => {
+        const n = (Array.isArray(f.members) ? f.members : Object.values(f.members).flat()).length;
+        return `  ${f.id.padEnd(10)} ${f.name.padEnd(20)} ${String(n).padStart(3)}  ${f.game}`;
+      }).join('\n');
+    },
+    async noam(scene) {
+      const h = hubState();
+      const anglo1 = levelIds((LEVELS.anglo || []).slice(0, 1));
+      if (scene === 'intro') G.profile.hub = {};
+      else if (scene === 'lab') { delete h.lab; if (!G.profile.learned.some((id) => morph(id).origin === 'anglo')) learnIds(anglo1); }
+      else if (scene === 'latin') { delete h.saidLatin; learnIds(levelIds((LEVELS.latin || []).slice(0, 1))); }
+      else if (scene === 'greek') { delete h.saidGreek; learnIds(levelIds((LEVELS.greek || []).slice(0, 1))); }
+      else if (scene === 'cleared') { delete h.clearedAnglo; delete h.clearedLatin; delete h.clearedGreek; }
+      else if (scene === 'desk') { MAIN_ORDER.forEach((r) => { if (!cleared(r)) clearRoom(r); }); delete h.desk; delete h.clearedGreek; }
+      else if (scene !== 'talk') throw new Error('noam intro, lab, latin, greek, cleared, desk or talk');
+      store.save();
+      if (scene === 'talk') {
+        if (G.place !== 'hub') await enterHub();
+        await say('noam', HUB.TALK(G.profile, cleared));
+        return;
+      }
+      await enterHub();
+    },
+    async openLab() {
+      await openCompile({ mode: 'free', profile: G.profile, title: 'WORD LAB · BUILD ANYTHING, DISCOVER NEW WORDS' });
+    },
+    async openDesk() {
+      if (G.place === 'hub' && G.room.objects.some((o) => o.ch === 'D')) { await useDesk(); return; }
+      const res = await openDesk({ profile: G.profile });
+      if (res.action === 'enter') await enterRoom('lingo', '@');
+    },
+    startFinale: () => startFinale(),
+    startTimed: () => startTimed(),
+    spawnRotling(kind) {
+      if (!G.room || !G.player) throw new Error('Walk into a room or the Hub first.');
+      const prefer = { misspelled: 'joint', reversed: 'order', nonword: 'nonword' }[kind];
+      if (kind !== 'real' && !prefer) throw new Error('rotling real, misspelled, reversed or nonword');
+      const learned = new Set(G.profile.learned);
+      const words = shuffle(allWords().filter((w) => isKnown(w.ids, learned)));
+      let item = null;
+      for (const w of words.length ? words : shuffle(allWords())) {
+        if (kind === 'real') { item = { p: w.ids }; break; }
+        const f = makeFake({ ids: w.ids }, prefer, null);
+        const kindOk = f && (kind === 'misspelled' ? ['joint', 'link'].includes(f.fake) : f.fake === prefer);
+        if (kindOk) { item = f; break; }
+      }
+      if (!item) throw new Error(`No ${kind} Rotling could be made.`);
+      const p = G.player;
+      const cell = G.room.neighbors(p.c, p.r).find((n) => G.room.isWalkable(n.c, n.r) && !G.rotlings.some((r) => r.c === n.c && r.r === n.r));
+      if (!cell) throw new Error('No free tile next to you.');
+      spawnRotling(item, cell);
+      return `${item.show || build(item.p).word} (${item.fake || 'real'})`;
+    },
+  };
+}
+initDevConsole(devApi());

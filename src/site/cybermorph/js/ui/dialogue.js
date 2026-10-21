@@ -19,6 +19,7 @@ export const SPEAKERS = {
   aurelia: { name: 'AURELIA CACHE', initial: 'A', color: '#cfd6e2' },
   theo: { name: 'THEO PARSEC', initial: 'Θ', color: '#38b6ff' },
   phil: { name: 'MR. PHIL', initial: 'P', color: '#2f6fde' },
+  noam: { name: 'NOAM CHOMSKY', initial: 'N', color: '#ff6b6b' },
   system: { name: 'LEXINET', initial: '◆', color: '#00e5ff' },
   rot: { name: 'THE ROT', initial: '☣', color: '#7dff3a' },
 };
@@ -67,6 +68,7 @@ export function say(speakerId, lines) {
       show();
     };
     const onKey = (e) => {
+      if (e.target && e.target.tagName === 'INPUT') return; // typing in the dev console
       if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); next(); }
     };
     const onClick = (e) => { e.stopPropagation(); next(); };

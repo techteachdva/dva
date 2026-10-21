@@ -81,7 +81,7 @@ const PIC = {
   run: { e: '🏃' }, stop: { e: '🛑' }, stand: { e: '🧍' }, hop: { e: '🐇' }, swim: { e: '🏊' }, fly: { e: '✈️' }, fall: { e: '🍂' },
   kick: { e: '🦵', c: 'hit with your foot' }, jump: { e: '🦘' }, walk: { e: '🚶' }, set: { e: '📍', c: 'put it down' }, hold: { e: '🤲' },
   draw: { e: '✏️' }, whelm: { e: '🌊', c: 'covered right over' },
-  help: { e: '🛟' }, play: { e: '🎮' }, sleep: { e: '😴' }, rest: { e: '🛋️' }, read: { e: '📖' }, see: { e: '👀' }, work: { e: '💼' },
+  help: { e: '🤝' }, play: { e: '🎮' }, sleep: { e: '😴' }, rest: { e: '🛋️' }, read: { e: '📖' }, see: { e: '👀' }, work: { e: '💼' },
   teach: { e: '👩‍🏫' }, learn: { e: '🎓' }, speak: { e: '🗣️' }, talk: { e: '💬' }, think: { e: '🤔' },
   dream: { e: '💭', c: 'pictures while you sleep' }, build: { e: '🏗️' }, make: { e: '🛠️' }, bake: { e: '🧁' }, sing: { e: '🎤' },
   shop: { e: '🛒' }, write: { e: '📝' }, thank: { e: '🙏' }, wish: { e: '🌠' }, tire: { e: '🥱', c: 'so weary' },
@@ -110,11 +110,115 @@ const SCENE = {
 };
 const subOf = (id, sub) => sub || Object.keys(MEMBERS).find((k) => MEMBERS[k].includes(id)) || 'nature';
 
+/**
+ * "help" gets its own scene, because help is something you do for someone: a kitten is stuck
+ * up a tree, and you stack a ladder for it, piece by piece. Tap or SPACE drops the sliding piece;
+ * it has to land on the one below. Three pieces dropped wide and the Rot wins.
+ */
+function helpCat(ctx) {
+  const { W, rnd, tier, palette } = ctx;
+  const fx = makeFx(ctx);
+  const need = [3, 4, 5][tier];
+  const tol = [42, 30, 20][tier];
+  const speed = [260, 340, 430][tier];
+  const SEG = 62;
+  const baseX = 560;
+  const ground = 480;
+  const stack = [];
+  let miss = 0;
+  let slide = { x: 120, dir: 1 };
+  let falling = null;
+  let rescue = -1;
+  const catY = ground - need * SEG - 22;
+  const meowAt = [1.5];
+  const drop = () => {
+    if (falling || rescue >= 0) return;
+    const prevX = stack.length ? stack[stack.length - 1] : baseX;
+    if (Math.abs(slide.x - prevX) <= tol) {
+      stack.push(prevX + (slide.x - prevX) * 0.3);
+      ctx.sfx.tick();
+      fx.burst(slide.x, ground - stack.length * SEG + SEG / 2, palette.glow, 12, 160);
+      if (stack.length >= need) { rescue = 0; ctx.sfx.pickup(); }
+    } else {
+      falling = { x: slide.x, y: ground - (stack.length + 1) * SEG, vy: 0 };
+      miss += 1;
+      ctx.sfx.bad();
+      if (miss >= 3) ctx.lose('rot');
+    }
+    slide = { x: rnd() < 0.5 ? 120 : W - 120, dir: rnd() < 0.5 ? 1 : -1 };
+  };
+  const ladder = (g, x, y) => {
+    g.strokeStyle = '#c98a3e'; g.lineWidth = 7; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x - 28, y); g.lineTo(x - 28, y + SEG); g.moveTo(x + 28, y); g.lineTo(x + 28, y + SEG); g.stroke();
+    g.lineWidth = 5;
+    g.beginPath(); for (let k = 1; k <= 3; k++) { g.moveTo(x - 28, y + (k * SEG) / 4); g.lineTo(x + 28, y + (k * SEG) / 4); } g.stroke();
+  };
+  return {
+    update(dt) {
+      const inp = ctx.input;
+      if (inp.taps.length || inp.pressed.has(' ') || inp.pressed.has('ArrowDown')) drop();
+      if (rescue >= 0) {
+        rescue += dt;
+        if (rescue > 1.6) { fx.burst(baseX, ground - 30, '#fff', 30); ctx.win(); }
+        return;
+      }
+      slide.x += slide.dir * speed * dt;
+      if (slide.x > W - 90 || slide.x < 90) slide.dir *= -1;
+      if (falling) { falling.vy += 1400 * dt; falling.y += falling.vy * dt; if (falling.y > ctx.H) falling = null; }
+      if (ctx.t > meowAt[0]) { meowAt[0] = ctx.t + 2.5 + rnd() * 2; }
+    },
+    draw(g) {
+      // Sky, grass, and the tree with its long branch.
+      const sky = g.createLinearGradient(0, 0, 0, ground);
+      sky.addColorStop(0, '#2b4c8c'); sky.addColorStop(1, '#7fb2e5');
+      g.fillStyle = sky; g.fillRect(0, 0, W, ground);
+      g.fillStyle = '#3f8f3a'; g.fillRect(0, ground, W, ctx.H - ground);
+      g.fillStyle = '#6b4423'; g.fillRect(720, 120, 70, ground - 120);
+      g.fillRect(560, catY + 26, 200, 18);
+      g.fillStyle = '#2f7a35';
+      [[755, 110, 110], [670, 150, 80], [830, 170, 80], [700, 70, 70], [800, 60, 70]].forEach(([x, y, r]) => { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); });
+      // The ladder so far.
+      stack.forEach((x, i) => ladder(g, x, ground - (i + 1) * SEG));
+      if (falling) ladder(g, falling.x, falling.y);
+      // The kitten: on the branch, or climbing down the finished ladder.
+      let cy = catY;
+      let cx = baseX;
+      if (rescue >= 0) { const k = Math.min(1, rescue / 1.4); cy = catY + (ground - 40 - catY) * k; cx = (stack[Math.min(stack.length - 1, Math.floor((1 - k) * stack.length))] || baseX); }
+      emoji(g, '🐱', cx, cy, 52);
+      if (rescue < 0 && ctx.t < meowAt[0] - 1.6) text(g, 'meow?', cx + 60, cy - 30, 20, '#fff');
+      if (rescue >= 0 && rescue > 1.2) emoji(g, '💛', cx + 40, cy - 40, 34);
+      // The sliding ladder piece and a guide line where it must land.
+      if (rescue < 0) {
+        const top = ground - (stack.length + 1) * SEG;
+        const prevX = stack.length ? stack[stack.length - 1] : baseX;
+        g.setLineDash([8, 8]); g.strokeStyle = 'rgba(255,255,255,0.45)'; g.lineWidth = 2;
+        g.strokeRect(prevX - 34, top, 68, SEG); g.setLineDash([]);
+        ladder(g, slide.x, top - 4);
+        rot(g, slide.x + (slide.dir > 0 ? -70 : 70), top + 20, 16, ctx.t);
+      }
+      hud(g, ctx, rescue >= 0 ? 'The kitten is climbing down!' : 'Stack the ladder: tap or SPACE when the piece is over the last one', stack.length, need);
+      // Three tries: a dot goes dark for each piece dropped wide.
+      for (let i = 0; i < 3; i++) {
+        g.beginPath(); g.arc(30 + i * 30, 520, 10, 0, 7);
+        g.fillStyle = i < miss ? '#7dff4a' : '#c98a3e'; g.fill();
+      }
+      fx.draw(g);
+    },
+  };
+}
+
 export default {
   seconds: 20,
-  howTo(m, sub) { return `Grab the picture of “${m.text}” when it comes by in ${SCENE[subOf(m.id, sub)].name}. Skip the others!`; },
-  verb(m, sub) { return `You caught “${m.text}” as it ${SCENE[subOf(m.id, sub)].verb}.`; },
+  howTo(m, sub) {
+    if (m.id === 'help') return 'Help the kitten down! Tap or press SPACE to drop each ladder piece right on top of the last one.';
+    return `Grab the picture of “${m.text}” when it comes by in ${SCENE[subOf(m.id, sub)].name}. Skip the others!`;
+  },
+  verb(m, sub) {
+    if (m.id === 'help') return 'You helped the kitten down the tree.';
+    return `You caught “${m.text}” as it ${SCENE[subOf(m.id, sub)].verb}.`;
+  },
   start(ctx) {
+    if (ctx.id === 'help') return helpCat(ctx);
     const { W, H, rnd, tier, palette, input } = ctx;
     const fx = makeFx(ctx);
     const sub = subOf(ctx.id, ctx.sub);
@@ -186,7 +290,7 @@ export default {
       } else if (sub === 'people') {
         const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#ffd59a'); bg.addColorStop(1, '#ffeacc'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
         g.fillStyle = '#4caf50'; g.fillRect(0, 470, W, H - 470);
-        g.globalAlpha = 0.5; emoji(g, '🛝', 120, 420, 90); emoji(g, '🌳', 840, 400, 120); g.globalAlpha = 1;
+        g.globalAlpha = 0.5; emoji(g, '🎠', 120, 420, 90); emoji(g, '🌳', 840, 400, 120); g.globalAlpha = 1;
       } else if (sub === 'things') {
         g.fillStyle = '#ffe6f2'; g.fillRect(0, 0, W, H);
         g.fillStyle = 'rgba(255,120,180,0.12)'; for (let x = 0; x < W; x += 60) g.fillRect(x, 0, 30, H);
