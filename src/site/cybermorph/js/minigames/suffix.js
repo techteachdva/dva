@@ -3,11 +3,16 @@
  * each with an order tag naming the job it needs (THING, DESCRIBER, HOW, PERSON, VERB, or for
  * endings MORE THAN ONE / PAST / NOW / MOST). You stamp each word with the suffix that does that
  * job. Most orders want this level's suffix; the other stamps are there so the job decides.
- * A word that slips past the press goes to the Rot.
+ * Another stamp that also builds a real word from that base is right too: no buzzer, and a
+ * lesson order still counts. A word that slips past the press goes to the Rot.
  * Each sub has its own shop (warehouse, paint shop, race track, costume shop, power lab, clock
  * shop), and some suffixes show what they do: -less empties the crate, -ful fills it, -s and
  * -es copy the item, -ed slides it into the past, -ing keeps it running, -est makes it the biggest.
  */
+
+import { BANK } from '../data/bank.js';
+import { hasMorph } from '../data/morphemes.js';
+import { build } from '../compiler/wordsum.js';
 
 // ── juice (each template keeps its own copy so it stands alone) ──
 const font = (px, w = 700) => `${w} ${px}px Lexend, sans-serif`;
@@ -137,6 +142,22 @@ const JOB = {
   est: { icon: '🏆', name: 'MOST', does: 'means the MOST' },
 };
 const jobOf = (id) => JOB[id] || JOB[SUB_OF[id]] || JOB.thing;
+// base → suffix id → the real word that stamp makes, from the shop list above.
+const BY_BASE = new Map();
+Object.entries(WORDS).forEach(([suf, list]) => list.forEach(([base, result]) => {
+  if (!BY_BASE.has(base)) BY_BASE.set(base, new Map());
+  BY_BASE.get(base).set(suf, result);
+}));
+/** The word this base and stamp really make, or null when the joint is not a real word. */
+function realStamp(base, suf) {
+  const listed = BY_BASE.get(base);
+  if (listed && listed.has(suf)) return listed.get(suf);
+  if (!hasMorph(base) || !hasMorph(suf)) return null;
+  let word = '';
+  try { word = build([base, suf]).word; } catch { return null; }
+  const hit = BANK.find((b) => b.word === word && b.ids.length === 2 && b.ids[0] === base && b.ids[1] === suf);
+  return hit ? hit.word : null;
+}
 // Simple, everyday suffixes the decoy stamps come from.
 const DECOYS = ['ness', 'ment', 'ion', 'ful', 'less', 'able', 'ous', 'ly', 'er', 'ist', 'or', 'en', 'ize', 's', 'ed', 'ing', 'est'];
 const SHOP = {
@@ -191,10 +212,15 @@ export default {
       const c = crates.filter((o) => o.state === 'ride').find((o) => Math.abs(o.x - PRESS) < WIN);
       if (!c) return;
       const s = stamps[i];
-      if (jobOf(s).name === jobOf(c.want).name) {
-        c.state = 'done'; c.t = 0; c.used = s; ctx.sfx.pickup();
+      const built = realStamp(c.base, s);
+      const jobOk = jobOf(s).name === jobOf(c.want).name;
+      if (built || jobOk) {
+        c.state = 'done'; c.t = 0; c.used = s;
+        if (built) c.result = built;
+        ctx.sfx.pickup();
         fx.burst(c.x, BELT_Y - 10, palette.glow, 26); fx.burst(c.x, BELT_Y - 10, '#fff', 10);
-        if (c.want === id) { done += 1; if (done >= need) ctx.win(); }
+        // The lesson suffix counts, and so does any other real word on one of its orders.
+        if ((c.want === id && (built || jobOk)) || (s === id && built)) { done += 1; if (done >= need) ctx.win(); }
       } else {
         c.state = 'bad'; c.t = 0; c.wrong = s; miss += 1; ctx.sfx.bad();
         fx.burst(c.x, BELT_Y, '#7dff4a', 14, 180);
@@ -244,7 +270,7 @@ export default {
         // crates
         crates.forEach((c) => {
           let x = c.x; let y = BELT_Y; let a = 1; let sc = 1;
-          const effect = c.state === 'done' && c.want === id ? id : null;
+          const effect = c.state === 'done' && c.used === id ? id : null;
           if (c.state === 'done') {
             if (effect === 'ed') { x -= c.t * 520; g.filter = 'sepia(1)'; } else if (effect === 'est') sc = 1 + c.t * 0.6;
             else if (effect === 'ing') { x += c.t * 300; y -= Math.abs(Math.sin(c.t * 18)) * 30; } else y -= c.t * 240;
