@@ -386,10 +386,13 @@ export function lexiconTree() {
   const leafMat = new THREE.MeshBasicMaterial({ color: 0x9dff7a });
   const leaves = new THREE.InstancedMesh(leafGeo, leafMat, 300);
   leaves.count = 0;
-  g.add(leaves);
+  leaves.frustumCulled = false;
+  const lamp = new THREE.PointLight(0x9dff7a, 0.4, 7, 1.6);
+  lamp.position.y = 1.7;
+  g.add(leaves, lamp);
   const m4 = new THREE.Matrix4();
   const colors = [new THREE.Color(0xffb000), new THREE.Color(0xdfe8f5), new THREE.Color(0x38b6ff), new THREE.Color(0x2f6fde), new THREE.Color(0x9dff7a)];
-  g.userData.setLeaves = (n, originsFn) => {
+  g.userData.setLeaves = (n, originsFn, glow = 0) => {
     const count = Math.min(300, n);
     for (let i = 0; i < count; i++) {
       const tip = tips[i % tips.length];
@@ -403,6 +406,7 @@ export function lexiconTree() {
     leaves.count = count;
     leaves.instanceMatrix.needsUpdate = true;
     if (leaves.instanceColor) leaves.instanceColor.needsUpdate = true;
+    lamp.intensity = 0.35 + Math.max(0, Math.min(1, glow)) * 8;
   };
   g.scale.setScalar(1.15);
   return g;

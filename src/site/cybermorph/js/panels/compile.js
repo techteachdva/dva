@@ -21,6 +21,7 @@ import { build, glossLine } from '../compiler/wordsum.js';
 import { loopJoint } from '../compiler/joint.js';
 import { morph, MORPHEMES, TYPE_LABEL } from '../data/morphemes.js';
 import { DICTIONARY } from '../data/world.js';
+import { BANK } from '../data/bank.js';
 import { R, onUpdate, pickFocus } from '../engine/renderer.js';
 import { sfx, speak, sayMorph } from '../core/audio.js';
 import { settings } from '../core/settings.js';
@@ -125,7 +126,9 @@ const MODE_LABEL = {
 /**
  * @returns Promise<{ done: number, total: number }>
  */
-export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], title = null, onSolved = null, onMadeUp = null }) {
+const BANK_MEANING = new Map(BANK.map((b) => [b.word, b.meaning]));
+
+export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], title = null, onSolved = null, onMadeUp = null, onDiscover = null }) {
   return new Promise((resolve) => {
     const panel = openPanel({ dim: 0.68, focus: true, className: 'compile-panel' });
     const top = el('section', { class: 'glass panel-top' });
@@ -400,7 +403,6 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       if (!ready || solved || performance.now() - openedAt < OPEN_LOCKOUT_MS) return;
       const m = effMode();
       const t = task();
-      attempts += 1;
       feedback.innerHTML = '';
       const fb = (cls, title, ...rows) => {
         feedback.innerHTML = '';
@@ -408,6 +410,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       };
 
       if (m === 'choice') {
+        attempts += 1;
         const pickIdx = drum.rings[0].sel;
         if (pickIdx === t.a) return succeed([], null, () => fb('good', 'TRANSLATED ✔', t.why));
         sfx.bad();
@@ -422,16 +425,26 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         if (!ids.length) return;
         const res = build(ids);
         if (DICTIONARY.has(res.word)) {
-          const fresh = !profile.lexicon.some((w) => w.w === res.word);
-          sfx.good();
-          drum.flash(true);
-          speak(res.word);
-          touch(profile, ids, true);
-          addLexicon(profile, res.word, ids);
-          profile.stats.compiled += 1;
-          fb('good', `REAL WORD ✔  ${res.word}`, glossLine(ids));
-          showSum(ids, { solved: true });
-          onSolved && onSolved(null, { ids, word: res.word, real: true, fresh });
+          const found = onDiscover && onDiscover(res.word, ids);
+          if (found) {
+            sfx.sparkle();
+            drum.flash('extra');
+            speak(`${res.word}. ${BANK_MEANING.get(res.word) || ''}`);
+            const done = found === 'done';
+            fb('spark', done ? `EXTRA CREDIT COMPLETE  ${res.word}` : `EXTRA CREDIT  ${res.word}`, BANK_MEANING.get(res.word) || glossLine(ids), done ? 'That set is finished, so those words just joined your Lexicon.' : 'It joins your Lexicon when its Extra Credit set is complete.');
+            showSum(ids, { solved: true });
+          } else {
+            const fresh = !profile.lexicon.some((w) => w.w === res.word);
+            sfx.good();
+            drum.flash(true);
+            speak(res.word);
+            touch(profile, ids, true);
+            addLexicon(profile, res.word, ids);
+            profile.stats.compiled += 1;
+            fb('good', `REAL WORD ✔  ${res.word}`, glossLine(ids));
+            showSum(ids, { solved: true });
+            onSolved && onSolved(null, { ids, word: res.word, real: true, fresh });
+          }
         } else {
           sfx.click();
           speak(res.word);
@@ -443,6 +456,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       }
 
       if (m === 'patch') {
+        attempts += 1;
         const pickIdx = drum.rings[drum.rings.length - 1].sel;
         const ids = selectedIds();
         const word = build(ids).word;
@@ -458,28 +472,47 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       // compile / finale / unpack: compare piece by piece.
       const ids = selectedIds();
       const target = t.p;
+      let word = '';
+      try { word = build(ids).word; } catch { word = ''; }
       // Sibling spellings can build the same word (pose + ition, pos + ition), and that still counts.
-      const same = ids.length === target.length && (ids.every((id, i) => id === target[i]) || (m !== 'unpack' && build(ids).word === build(target).word));
+      const same = ids.length === target.length && (ids.every((id, i) => id === target[i]) || (m !== 'unpack' && word && word === build(target).word));
       if (same) {
+        attempts += 1;
         if (m === 'unpack') return succeed(ids, null, () => unpackReveal(t));
-        const word = build(ids).word;
         return succeed(ids, word, () => fb('good', `BUILT ✔  ${word}`, glossLine(ids), t.today ? `Today: ${t.today}` : null));
       }
+      if (m !== 'unpack' && word) {
+        const extra = (t.extras || []).find((e) => e.w === word);
+        if (extra) {
+          sfx.sparkle();
+          drum.flash('extra');
+          staticSum(ids, word);
+          speak(`${word}. ${extra.m}`);
+          const found = onDiscover && onDiscover(word, ids);
+          const done = found === 'done';
+          return fb('spark', done ? `EXTRA CREDIT COMPLETE  ${word}` : `EXTRA CREDIT  ${word}`, extra.m, done ? 'That set is finished, so those words just joined your Lexicon.' : `It joins your Lexicon when this level's Extra Credit set is complete. The request is still: ${t.m}`);
+        }
+        if (DICTIONARY.has(word)) {
+          staticSum(ids, word);
+          speak(word);
+          const known = BANK_MEANING.get(word);
+          return fb('info', `"${word}" is a real word.`, known || 'It is already in the Lexicon.', `This request asks for: ${t.m}`);
+        }
+      }
+      attempts += 1;
       sfx.bad();
       drum.flash(false);
       const rows = [];
       if (m !== 'unpack') {
-        const word = build(ids).word;
         staticSum(ids, word);
-        if (DICTIONARY.has(word)) rows.push(`That builds "${word}", a real word, but not the one requested.`);
-        else rows.push(`"${word}" isn't in the Lexicon.`);
+        rows.push(`"${word}" isn't in the Lexicon.`);
       }
       ids.forEach((id, i) => {
         if (id !== target[i]) {
           const have = morph(id);
           const need = morph(target[i]);
           logError([target[i]], have.meaning === need.meaning ? 'family' : 'meaning');
-          if (have.meaning === need.meaning) rows.push(`Ring ${i + 1}: ${have.text} has the right meaning, but this word uses a different spelling of it. Read the word you are building.`);
+          if (have.meaning === need.meaning) rows.push(`Ring ${i + 1}: ${have.text} means the same thing as ${need.text}. Together, though, these pieces are not the word this request asks for.`);
           else rows.push(`Ring ${i + 1}: ${have.text} means "${have.meaning}". This spot needs a ${TYPE_LABEL[need.type]} that means "${attempts >= 2 ? need.meaning : '…'}".`);
         }
       });

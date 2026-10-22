@@ -204,7 +204,9 @@ export function createDrum(columns) {
       });
     },
     flash(good) {
-      const color = new THREE.Color(good ? 0x9dff7a : 0xff3b5c);
+      const extra = good === 'extra';
+      const color = new THREE.Color(extra ? 0x1f5a2e : good ? 0x9dff7a : 0xff3b5c);
+      pMat.color.set(extra ? 0xd4a017 : 0x9dff7a);
       rings.forEach((r) => r.rims.forEach((m) => {
         const orig = m.material;
         m.material = glowMat(color.getHex());

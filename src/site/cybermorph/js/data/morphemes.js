@@ -121,13 +121,13 @@ const LIST = [
   M('bene', 'bene', 'pfx', 'latin', 'good; well', { say: 'beh-nay', es: 'bien (well)' }),
   M('fic', 'fic', 'base', 'latin', 'to make; to do', { say: 'fish', es: 'fábrica (factory)' }),
 
-  M('ion', 'ion', 'sfx', 'latin', 'the act or result of', { say: 'shun', cat: 'sfx:-tion' }),
+  M('ion', 'ion', 'sfx', 'latin', 'the act of; the result of', { say: 'shun', cat: 'sfx:-tion' }),
   M('ation', 'ation', 'sfx', 'latin', 'the act or result of', { say: 'ay-shun', cat: 'sfx:-tion' }),
-  M('able', 'able', 'sfx', 'latin', 'can be done', { say: 'uh-bull', cat: 'sfx:-able' }),
-  M('ible', 'ible', 'sfx', 'latin', 'can be done', { say: 'ih-bull', cat: 'sfx:-able' }),
+  M('able', 'able', 'sfx', 'latin', 'able to be; can be done', { say: 'uh-bull', cat: 'sfx:-able' }),
+  M('ible', 'ible', 'sfx', 'latin', 'able to be; can be done', { say: 'ih-bull', cat: 'sfx:-able' }),
   M('ive', 'ive', 'sfx', 'latin', 'tending to; doing', { say: 'iv', cat: 'sfx:-ive' }),
   M('or', 'or', 'sfx', 'latin', 'one who; a thing that', { say: 'or', cat: 'sfx:-er' }),
-  M('ure', 'ure', 'sfx', 'latin', 'the act or result of', { say: 'yur' }),
+  M('ure', 'ure', 'sfx', 'latin', 'the act of; the result of', { say: 'yur' }),
   M('ant', 'ant', 'sfx', 'latin', 'being; one who', { cat: 'sfx:-ant' }),
   M('ial', 'ial', 'sfx', 'latin', 'relating to', { say: 'ee-ul' }),
 
@@ -157,7 +157,7 @@ const LIST = [
   M('phob', 'phob', 'base', 'greek', 'fear', { say: 'foab' }),
   M('cracy', 'cracy', 'base', 'greek', 'rule; government', { say: 'kruh-see' }),
   M('o', 'o', 'link', 'greek', 'links two Greek pieces', { say: 'oh' }),
-  M('gy', 'y', 'sfx', 'greek', 'the act or study of', { say: 'ee' }),
+  M('gy', 'y', 'sfx', 'greek', 'the study of; the act of', { say: 'ee' }),
   M('ic', 'ic', 'sfx', 'greek', 'relating to', { say: 'ick', cat: 'sfx:-ic' }),
   M('al', 'al', 'sfx', 'latin', 'relating to', { say: 'ul', cat: 'sfx:-al' }),
   M('ist', 'ist', 'sfx', 'greek', 'one who'),
@@ -229,8 +229,8 @@ const LIST = [
   // ── 1.2 additions: the full prefix / suffix / root scope ─────────
   // Anglo-Saxon
   M('mid', 'mid', 'pfx', 'anglo', 'middle', { cat: 'pfx:mid-' }),
-  M('hood', 'hood', 'sfx', 'anglo', 'the state or time of being'),
-  M('dom', 'dom', 'sfx', 'anglo', 'the state or realm of'),
+  M('hood', 'hood', 'sfx', 'anglo', 'the time of being; the state of being'),
+  M('dom', 'dom', 'sfx', 'anglo', 'the realm of; the state of'),
   M('ish', 'ish', 'sfx', 'anglo', 'somewhat; like'),
   M('ward', 'ward', 'sfx', 'anglo', 'in the direction of'),
   M('some', 'some', 'sfx', 'anglo', 'causing; full of'),
@@ -311,14 +311,14 @@ const LIST = [
   M('ate', 'ate', 'sfx', 'latin', 'to make; to act', { cat: 'sfx:-ate' }),
   M('ary', 'ary', 'sfx', 'latin', 'relating to; a place for', { cat: 'sfx:-ary' }),
   M('ory', 'ory', 'sfx', 'latin', 'a place for; relating to'),
-  M('ence', 'ence', 'sfx', 'latin', 'the state or act of', { cat: 'sfx:-ence' }),
-  M('ance', 'ance', 'sfx', 'latin', 'the state or act of'),
+  M('ence', 'ence', 'sfx', 'latin', 'the state of; the act of', { cat: 'sfx:-ence' }),
+  M('ance', 'ance', 'sfx', 'latin', 'the state of; the act of'),
   M('ent', 'ent', 'sfx', 'latin', 'being; one who'),
   M('ute', 'ute', 'sfx', 'latin', 'that which is set up'),
   M('ize', 'ize', 'sfx', 'greek', 'to make; to become'),
   M('ism', 'ism', 'sfx', 'greek', 'a belief or practice'),
   M('tic', 'tic', 'sfx', 'greek', 'relating to', { cat: 'sfx:-tic' }),
-  M('ics', 'ics', 'sfx', 'greek', 'the study or skill of', { say: 'icks' }),
+  M('ics', 'ics', 'sfx', 'greek', 'the study of; the skill of', { say: 'icks' }),
 
   // Greek combining forms common in school subjects
   M('gram', 'gram', 'base', 'greek', 'something written or drawn'),
@@ -367,6 +367,14 @@ const LIST = [
   M('wish', 'wish', 'base', 'anglo', 'to hope for'),
   M('dish', 'dish', 'base', 'anglo', 'a plate or bowl'),
 ];
+
+// A free Anglo-Saxon base is a word the student already knows. The ring leads with that
+// word, then the definition, so a request can use the word literally.
+for (const m of LIST) {
+  if (m.origin !== 'anglo' || m.type !== 'base') continue;
+  const head = m.meaning.split(';')[0].trim().toLowerCase();
+  if (head !== m.text) m.meaning = `${m.text}; ${m.meaning}`;
+}
 
 export const MORPHEMES = Object.freeze(Object.fromEntries(LIST.map((m) => [m.id, Object.freeze(m)])));
 

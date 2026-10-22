@@ -43,7 +43,7 @@ export const ANGLO = {
         teach: ['un', 'ful', 'less', 'help', 'care', 'hope', 'fear'],
         say: ['Four bases. Three affixes. Turn the rings until the meaning fits. Then press BUILD.'],
         tasks: [
-          { m: 'full of care; paying attention', p: ['care', 'ful'] },
+          { m: 'full of care; paying close attention', p: ['care', 'ful'] },
           { m: 'without help; not able to help yourself', p: ['help', 'less'] },
           { m: 'not giving any help', p: ['un', 'help', 'ful'] },
           { m: 'full of hope', p: ['hope', 'ful'] },
@@ -54,7 +54,7 @@ export const ANGLO = {
         say: ['Some parts change when they join. Watch the joint. The compiler shows you why.'],
         tasks: [
           { m: 'one who plays', p: ['play', 'er'] },
-          { m: 'moving fast on foot, right now', p: ['run', 'ing'] },
+          { m: 'run happening now; moving fast on foot now', p: ['run', 'ing'] },
           { m: 'halted, in the past', p: ['stop', 'ed'] },
           { m: 'the state of being kind', p: ['kind', 'ness'] },
           { m: 'acting like a friend', p: ['friend', 'ly'] },

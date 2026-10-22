@@ -13,6 +13,11 @@ const OLD_KEY = 'cybermorph.save.v1';
 const SCORES = 'cybermorph.scores.v1';
 const MAX_PROFILES = 6;
 
+function ensureProfile(p) {
+  if (!p.extra || typeof p.extra !== 'object' || Array.isArray(p.extra)) p.extra = {};
+  return p;
+}
+
 let data = { version: 2, profiles: [], activeId: null };
 try {
   const raw = localStorage.getItem(KEY);
@@ -29,6 +34,7 @@ try {
     }
   }
 } catch { /* storage blocked: the game still runs, it just won't remember */ }
+data.profiles.forEach(ensureProfile);
 
 let timer = 0;
 function writeNow() {
@@ -59,6 +65,7 @@ function blankProfile(name, avatar) {
     deskOpen: false,
     finale: { beaten: false },
     lexicon: [],
+    extra: {},
     madeUp: [],
     log: [],
     milestones: [],
@@ -101,6 +108,16 @@ export function learn(profile, ids) {
   let added = false;
   for (const id of ids) if (!profile.learned.includes(id)) { profile.learned.push(id); added = true; }
   if (added) save();
+}
+
+/** One Extra Credit find. The word joins the Lexicon only when its whole set is complete. */
+export function noteExtra(profile, levelId, word, ids) {
+  ensureProfile(profile);
+  const list = profile.extra[levelId] || (profile.extra[levelId] = []);
+  if (list.some((e) => e.w === word)) return false;
+  list.push({ w: word, p: ids });
+  save();
+  return true;
 }
 
 export function addLexicon(profile, word, ids) {

@@ -61,6 +61,7 @@ export function buildRoom(map, style, { makeObject, flowers = false, paint = [] 
   const cA = new THREE.Color(S.floorA);
   const cB = new THREE.Color(S.floorB);
   floorCells.forEach((t, i) => floor.setColorAt(i, (t.c + t.r) % 2 ? cA : cB));
+  floor.frustumCulled = false;
   group.add(floor);
 
   const linePts = [];
@@ -83,6 +84,8 @@ export function buildRoom(map, style, { makeObject, flowers = false, paint = [] 
     walls.setColorAt(i, pt ? new THREE.Color(pt.color) : wallColor);
   });
   const caps = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.07, 1), mat(S.wallTop, { emissive: S.line, ei: style === 'lingo' ? 0 : 0.12 }), wallCells.length);
+  walls.frustumCulled = false;
+  caps.frustumCulled = false;
   group.add(walls, caps);
 
   // The data chasm and its stream.
@@ -150,22 +153,49 @@ export function buildRoom(map, style, { makeObject, flowers = false, paint = [] 
     }
   }));
 
-  // Hub flowers along the inner edge: they appear and grow as the player progresses.
+  // Flowers fill the open floor (not the tiles touching the Lexicon Tree). Mushrooms and grass
+  // use a different stride so Extra Credit doesn't sit in the same holes.
   let flowerHeads = null;
   let flowerStems = null;
+  let shroomCaps = null;
+  let shroomStems = null;
+  let grassBlades = null;
   const flowerSpots = [];
+  const underSpots = [];
+  const nearTree = (c, r) => {
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      const rr = r + dr;
+      const cc = c + dc;
+      if (rr >= 0 && cc >= 0 && rr < H && cc < W && cells[rr][cc] === 'L') return true;
+    }
+    return false;
+  };
   if (flowers) {
     cells.forEach((row, r) => row.forEach((ch, c) => {
-      if (ch !== '.') return;
-      if (r === 1 || r === H - 2 || c === 1 || c === W - 2) flowerSpots.push({ c, r, s: ((c * 31 + r * 17) % 7) / 7 });
+      if (ch !== '.' || nearTree(c, r)) return;
+      const s = ((c * 31 + r * 17) % 7) / 7;
+      flowerSpots.push({ c, r, s });
+      if ((c + r * 3) % 4 === 1) underSpots.push({ c, r, s });
     }));
     const petal = new THREE.IcosahedronGeometry(0.17, 0);
     petal.scale(1, 0.55, 1);
-    flowerHeads = new THREE.InstancedMesh(petal, new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x553355 }), flowerSpots.length * 2);
-    flowerStems = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.015, 0.02, 1, 5), mat(0x3ccf6a, { emissive: 0x0b3a1a }), flowerSpots.length * 2);
+    flowerHeads = new THREE.InstancedMesh(petal, new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x553355 }), Math.max(1, flowerSpots.length));
+    flowerStems = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.015, 0.02, 1, 5), mat(0x3ccf6a, { emissive: 0x0b3a1a }), Math.max(1, flowerSpots.length));
     flowerHeads.count = 0;
     flowerStems.count = 0;
-    group.add(flowerHeads, flowerStems);
+    flowerHeads.frustumCulled = false;
+    flowerStems.frustumCulled = false;
+    const nUnder = Math.max(1, underSpots.length);
+    shroomCaps = new THREE.InstancedMesh(new THREE.SphereGeometry(0.16, 7, 6), new THREE.MeshLambertMaterial({ color: 0xffe2b0 }), nUnder);
+    shroomStems = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.03, 0.04, 1, 5), mat(0xfff6ea), nUnder);
+    grassBlades = new THREE.InstancedMesh(new THREE.BoxGeometry(0.045, 1, 0.045), mat(0x7dff6a), nUnder);
+    shroomCaps.count = 0;
+    shroomStems.count = 0;
+    grassBlades.count = 0;
+    shroomCaps.frustumCulled = false;
+    shroomStems.frustumCulled = false;
+    grassBlades.frustumCulled = false;
+    group.add(flowerHeads, flowerStems, shroomCaps, shroomStems, grassBlades);
   }
   const FLOWER_COLORS = [0xff7ad9, 0xffd23f, 0x7fe0ff, 0xb98cff, 0xff8f6b, 0x9dff7a].map((c) => new THREE.Color(c));
 
@@ -211,9 +241,14 @@ export function buildRoom(map, style, { makeObject, flowers = false, paint = [] 
   let flowerT = 0;
   let flowerCount = 0;
   let flowerGrowth = 0;
+  let underCount = 0;
 
   const room = {
-    W, H, group, cells, blocked, objects, marks, style, toWorld, toCell,
+    W, H, group, cells, blocked, objects, marks, style,
+    // Scene entities (the player, Rotlings, the camera) live in world space. Props parented to
+    // the room stay in map space. Hub yaw stays 0, so the two match there.
+    toWorld: (c, r, y = 0) => group.localToWorld(toWorld(c, r, y)),
+    toCell: (v) => toCell(group.worldToLocal(v.clone())),
     find: (ch) => { const out = []; cells.forEach((row, r) => row.forEach((x, c) => { if (x === ch) out.push({ c, r }); })); return out; },
     isWalkable: (c, r) => inside(c, r) && !blocked[r][c],
     setBlocked: (c, r, b) => { if (inside(c, r)) blocked[r][c] = b; },
@@ -246,9 +281,24 @@ export function buildRoom(map, style, { makeObject, flowers = false, paint = [] 
       if (document.documentElement.classList.contains('reduced-motion')) { setTiles(1.5, entry); return Promise.resolve(); }
       return tweenP(ms, (k) => setTiles(k * 1.5, entry));
     },
+    /** Turn the whole room so a doorway keeps the direction the player was walking. */
+    setYaw(yaw) { group.rotation.y = yaw || 0; },
+    /** The floor tile just inside the H door, in map space. */
+    insideDoor() {
+      let door = null;
+      cells.forEach((row, r) => row.forEach((ch, c) => { if (ch === 'H' && !door) door = { c, r }; }));
+      if (!door) return null;
+      let { c, r } = door;
+      if (c === 0) c = 1;
+      else if (c === W - 1) c = W - 2;
+      else if (r === 0) r = 1;
+      else if (r === H - 1) r = H - 2;
+      return { c, r };
+    },
     /** Outer walls on the camera's side sink so the room stays visible from any angle. */
     setCamera(cameraPos) {
-      camDir.set(cameraPos.x, cameraPos.z);
+      const local = group.worldToLocal(cameraPos.clone());
+      camDir.set(local.x, local.z);
       if (camDir.lengthSq() < 1e-6) return;
       camDir.normalize();
       wallCells.forEach((t) => { if (t.border) t.target = t.normal.dot(camDir) > 0.25 ? LOW : TALL; });
@@ -271,18 +321,18 @@ export function buildRoom(map, style, { makeObject, flowers = false, paint = [] 
     /** count = how many flowers are planted, growth 0..1 = how tall they stand. */
     setFlowers(count, growth) {
       if (!flowerHeads) return;
-      flowerCount = Math.min(flowerSpots.length * 2, count);
+      flowerCount = Math.min(flowerSpots.length, Math.max(0, count));
       flowerGrowth = growth;
       room.writeFlowers();
     },
     writeFlowers() {
       if (!flowerHeads) return;
       for (let i = 0; i < flowerCount; i++) {
-        const spot = flowerSpots[(i * 7) % flowerSpots.length];
-        const twin = i >= flowerSpots.length ? 1 : 0;
+        const step = Math.max(1, Math.floor(flowerSpots.length / Math.max(1, flowerCount)));
+        const spot = flowerSpots[(i * step) % flowerSpots.length];
         const p = toWorld(spot.c, spot.r);
-        const ox = (twin ? 0.25 : -0.2) + (spot.s - 0.5) * 0.2;
-        const oz = (twin ? -0.2 : 0.22) - (spot.s - 0.5) * 0.2;
+        const ox = (spot.s - 0.5) * 0.28;
+        const oz = ((i % 5) - 2) * 0.06;
         const h = (0.25 + spot.s * 0.3) * (0.5 + flowerGrowth * 1.0);
         const sway = Math.sin(flowerT * 1.6 + i) * 0.05;
         v.set(p.x + ox + sway * 0.5, h / 2, p.z + oz);
@@ -300,6 +350,38 @@ export function buildRoom(map, style, { makeObject, flowers = false, paint = [] 
       flowerStems.instanceMatrix.needsUpdate = true;
       if (flowerHeads.instanceColor) flowerHeads.instanceColor.needsUpdate = true;
     },
+    /** One mushroom and a tuft of grass per Extra Credit find. They stay after the set blooms. */
+    setUndergrowth(count) {
+      if (!shroomCaps) return;
+      underCount = Math.min(underSpots.length, Math.max(0, count));
+      room.writeUnder();
+    },
+    writeUnder() {
+      if (!shroomCaps) return;
+      for (let i = 0; i < underCount; i++) {
+        const spot = underSpots[i % underSpots.length];
+        const p = toWorld(spot.c, spot.r);
+        const ox = 0.2 + (spot.s - 0.5) * 0.12;
+        const oz = -0.16;
+        const h = 0.22 + spot.s * 0.12;
+        const sway = Math.sin(flowerT * 1.3 + i) * 0.02;
+        v.set(p.x + ox + sway, h / 2, p.z + oz);
+        sc.set(1, h, 1);
+        shroomStems.setMatrixAt(i, m4.compose(v, q, sc));
+        v.set(p.x + ox + sway, h + 0.035, p.z + oz);
+        sc.set(1, 0.65, 1);
+        shroomCaps.setMatrixAt(i, m4.compose(v, q, sc));
+        v.set(p.x - ox, 0.16, p.z + 0.18);
+        sc.set(1, 0.32 + spot.s * 0.1, 1);
+        grassBlades.setMatrixAt(i, m4.compose(v, q, sc));
+      }
+      shroomCaps.count = underCount;
+      shroomStems.count = underCount;
+      grassBlades.count = underCount;
+      shroomCaps.instanceMatrix.needsUpdate = true;
+      shroomStems.instanceMatrix.needsUpdate = true;
+      grassBlades.instanceMatrix.needsUpdate = true;
+    },
     update(dt) {
       if (streamTex) streamTex.offset.y -= dt * 0.6;
       let moved = false;
@@ -309,7 +391,7 @@ export function buildRoom(map, style, { makeObject, flowers = false, paint = [] 
       if (moved && build >= 1) writeWalls();
       decorList.forEach((d) => { if (d.userData.spin) d.userData.spin.rotation.y += dt * 0.5; });
       objects.forEach((o) => o.update && o.update(dt));
-      if (flowerCount) { flowerT += dt; room.writeFlowers(); }
+      if (flowerCount || underCount) { flowerT += dt; if (flowerCount) room.writeFlowers(); if (underCount) room.writeUnder(); }
     },
     dispose() {
       // Props share module-level geometries, so only free what this room made.

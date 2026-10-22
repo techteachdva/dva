@@ -67,6 +67,7 @@ export const sfx = {
   open: () => { tone({ f: 330, f2: 660, type: 'sawtooth', dur: 0.18, vol: 0.06 }); },
   close: () => { tone({ f: 660, f2: 330, type: 'sawtooth', dur: 0.15, vol: 0.05 }); },
   good: () => [523, 659, 784, 1047].forEach((f, i) => tone({ f, type: 'triangle', dur: 0.18, vol: 0.14, delay: i * 0.07 })),
+  sparkle: () => [784, 988, 1175, 1568].forEach((f, i) => tone({ f, type: 'sine', dur: 0.1, vol: 0.09, delay: i * 0.045 })),
   bad: () => { tone({ f: 160, f2: 110, type: 'sawtooth', dur: 0.25, vol: 0.12 }); tone({ f: 166, f2: 100, type: 'square', dur: 0.25, vol: 0.06 }); },
   cut: () => { noise(0.08, 0.15, 0, 2500); tone({ f: 2200, f2: 900, type: 'square', dur: 0.06, vol: 0.05 }); },
   split: () => { noise(0.25, 0.2, 0, 1200); [880, 660, 990].forEach((f, i) => tone({ f, type: 'square', dur: 0.08, vol: 0.06, delay: i * 0.05 })); },

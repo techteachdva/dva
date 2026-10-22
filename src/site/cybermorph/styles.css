@@ -212,6 +212,7 @@ kbd.kc { display: inline-block; min-width: 1.7em; padding: 0.1em 0.45em; margin:
 .feedback.good { background: rgba(80, 160, 60, 0.3); border: 2px solid var(--green); }
 .feedback.bad { background: rgba(160, 30, 60, 0.32); border: 2px solid var(--red); }
 .feedback.info { background: rgba(20, 110, 140, 0.3); border: 2px solid var(--cyan); }
+.feedback.spark { background: rgba(31, 90, 46, 0.4); border: 2px solid #1f5a2e; }
 .feedback .title { font-weight: 800; display: block; margin-bottom: 0.2rem; font-size: 1.2rem; }
 .feedback .row { display: block; margin-top: 0.25rem; }
 

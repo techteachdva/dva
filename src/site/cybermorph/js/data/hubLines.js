@@ -50,7 +50,7 @@ export const CLEARED = {
 
 export const LATIN = [
   ['special', '"Carpe Diem." It means Seize the Day, and it\'s Latin. Latin is a fascinating watershed of ideas.'],
-  ['pleased', 'Speaking of watering, it looks like the more morphemes you acquire, the more flowers spread in this room. Keep going, let\'s see how beautiful it can get in here.'],
+  ['pleased', 'Speaking of watering: the leaves are the morphemes you learn, and they glow as the canopy fills in. Each flower is a word in your Lexicon. Mushrooms and grass are Extra Credit. Keep going, let\'s see how beautiful it can get in here.'],
 ];
 
 export const GREEK = [

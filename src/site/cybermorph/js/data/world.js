@@ -11,6 +11,7 @@ import { build } from '../compiler/wordsum.js';
 import { MORPHEMES } from './morphemes.js';
 import { buildHubMap } from './layout.js';
 import { BANK } from './bank.js';
+import { LEVELS } from './levels.js';
 
 export const DISTRICTS = { anglo: ANGLO, latin: LATIN, greek: GREEK, lingo: LINGO };
 export const MAIN_ORDER = ['anglo', 'latin', 'greek'];
@@ -150,6 +151,7 @@ export const AVATAR = {
     { id: 'f-heart', name: 'Heart Eyes', color: '#ff5c8a', pattern: 'hearts', unlock: 'greek' },
     { id: 'f-mono', name: 'Monocle', color: '#e6b84a', pattern: 'mono', unlock: 'desk' },
     { id: 'f-glasses', name: 'Teacher Specs', color: '#f4f4ef', pattern: 'glasses', unlock: 'lingo' },
+    { id: 'f-philglasses', name: "Mr. Phil's Glasses", color: '#1f5a2e', pattern: 'glasses', unlock: 'extraAll' },
     { id: 'f-glitch', name: 'Glitch', color: '#7dff3a', pattern: 'glitch', unlock: 'finale' },
     { id: 'f-oof', name: 'Oof', color: '#ff8f6b', pattern: 'dizzy', unlock: 'nat1' },
     { id: 'f-laser', name: 'Laser Eyes', color: '#ff2a3a', pattern: 'laser', unlock: 'streak5' },
@@ -191,6 +193,18 @@ export const AVATAR_CATEGORIES = [
 
 export const DEFAULT_AVATAR = { limbs: 'l-steel', torso: 't-red', head: 'h-steel', face: 'f-smile', top: 'p-antenna' };
 
+const ROOM_NAME = { anglo: 'Anglo-Saxon', latin: 'Latin', greek: 'Greek' };
+/** Levels whose authored dials build a real word the request does not ask for. */
+export const EXTRA_LEVELS = MAIN_ORDER.flatMap((d) => (LEVELS[d] || []).filter((L) => L.extra && L.extra.length));
+const EXTRA_ACHIEVEMENTS = EXTRA_LEVELS.map((L) => {
+  const [district, n] = L.id.split('-');
+  return {
+    key: `extra-${L.id}`,
+    name: `${ROOM_NAME[district]} ${n} Extra Credit`,
+    how: `Find every Extra Credit word in ${ROOM_NAME[district]} level ${n}: ${L.extra.map((e) => e.w).join(', ')}`,
+  };
+});
+
 /**
  * Achievements: story milestones, skill goals and secrets (easter eggs). Each unlocks the avatar
  * parts whose unlock names its key. A secret shows only its hint until it is earned.
@@ -225,6 +239,8 @@ export const ACHIEVEMENTS = [
   { key: 'roll10', name: 'Dice Goblin', how: 'Roll Mr. Phil\'s d20 10 times', secret: true, hint: 'Some objects are worth clicking more than once.' },
   { key: 'mrphil', name: 'Teacher\'s Pet', how: 'Hear everything Mr. Phil has to say', secret: true, hint: 'A certain teacher always has one more thing to tell you.' },
   { key: 'crash', name: 'Rebooted', how: 'Get crashed by the Rot (it happens to everyone)', secret: true, hint: 'Sometimes losing unlocks something too.' },
+  ...EXTRA_ACHIEVEMENTS,
+  { key: 'extraAll', name: "Mr. Phil's Glasses", how: 'Finish Extra Credit on every level that has a set' },
 ];
 
 export const UNLOCK_LABEL = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.key, a.secret ? `Secret: ${a.hint}` : a.how]));

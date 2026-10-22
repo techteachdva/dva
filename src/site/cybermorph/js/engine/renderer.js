@@ -180,6 +180,11 @@ export function resetView() {
 /** Camera yaw (radians, 0 = looking north from the south side). */
 export const viewYaw = () => R.rig.yaw;
 export const viewYawGoal = () => R.rig.yawGoal;
+/** Face a doorway without easing: yaw 0 looks north. */
+export function setViewYaw(yaw) {
+  R.rig.yaw = yaw;
+  R.rig.yawGoal = yaw;
+}
 
 export function snapCamera() {
   R.rig.target.copy(R.rig.focus || R.rig.follow);

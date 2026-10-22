@@ -15,7 +15,7 @@
  */
 
 import { $, el, shuffle, pick, wait, clamp, tween } from '../core/util.js';
-import { THREE, R, debugStep, toScreen, initRenderer, fitRoom, zoomTo, zoomReset, snapCamera, setBackground, pickWorld, groundPoint, onUpdate, webglAvailable, setFollow, rotateView, zoomStep, resetView, viewYaw, orbitBy, panBy, relaxPan } from '../engine/renderer.js';
+import { THREE, R, debugStep, toScreen, initRenderer, fitRoom, zoomTo, zoomReset, snapCamera, setBackground, pickWorld, groundPoint, onUpdate, webglAvailable, setFollow, rotateView, zoomStep, resetView, viewYaw, setViewYaw, orbitBy, panBy, relaxPan } from '../engine/renderer.js';
 import { buildRoom } from '../engine/diorama.js';
 import { STYLES, cyl, glowMat, terminal, gate, port, linkNode, newWordConsole, core, compilerConsole, avatarBooth, arcadeCabinet, secretaryDesk, lexiconTree, morphProp, animateProp, treeBaseZone } from '../engine/props.js';
 import { labelSprite } from '../engine/textures.js';
@@ -26,7 +26,7 @@ import { sfx, startMusic, unlockAudio, speak } from '../core/audio.js';
 import * as store from '../core/save.js';
 import { touch, dueIds } from '../core/mastery.js';
 import * as session from '../core/session.js';
-import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, collectFakes, achievement, rewardsOf } from '../data/world.js';
+import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, collectFakes, achievement, rewardsOf, DICTIONARY, EXTRA_LEVELS } from '../data/world.js';
 import { makeWave, makeFake, taughtBy, randomWord, allWords, isKnown } from './waves.js';
 import { buildDeck, rounds } from './ticket.js';
 import { MM_LESSONS } from '../data/mm.js';
@@ -78,6 +78,13 @@ const TIMED_MAP = ARENA('.');
 const FINALE_MAP = ARENA('C');
 const PORT_TARGET = { 1: 'anglo', 2: 'latin', 3: 'greek' };
 const ROOM_PORT = { anglo: '1', latin: '2', greek: '3' };
+// Walking through a hub door keeps going the same way. The room turns so its door sits on the side you entered.
+const ENTRY = {
+  anglo: { roomYaw: Math.PI / 2, look: 0 },
+  latin: { roomYaw: Math.PI, look: Math.PI / 2 },
+  greek: { roomYaw: 0, look: -Math.PI / 2 },
+};
+const RETURN_LOOK = { 1: Math.PI, 2: -Math.PI / 2, 3: Math.PI / 2, 4: 0 };
 const ORIGIN_COLOR = { anglo: 0xffb000, latin: 0xdfe8f5, greek: 0x38b6ff };
 const MOVE_KEYS = { w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right' };
 
@@ -199,7 +206,7 @@ function projectorMode() {
 
 // ── Loading a room ────────────────────────────────────────────────
 
-async function loadRoom(map, style, { arrival = '@', arrivalCell = null, noPlayer = false, makeObject = null, flowers = false, paint = [] } = {}) {
+async function loadRoom(map, style, { arrival = '@', arrivalCell = null, noPlayer = false, makeObject = null, flowers = false, paint = [], roomYaw = 0, lookYaw = null, insideDoor = false } = {}) {
   const S = STYLES[style];
   $('fade').classList.add('on');
   await wait(G.room ? 220 : 120);
@@ -219,15 +226,20 @@ async function loadRoom(map, style, { arrival = '@', arrivalCell = null, noPlaye
   if (G.player) R.scene.remove(G.player.entity.group);
   setBackground(S.bg);
   const room = buildRoom(map, style, { makeObject, flowers, paint });
+  room.setYaw(roomYaw);
   G.room = room;
   R.scene.add(room.group);
   fitRoom(room.W, room.H);
   zoomReset();
-  const cell = arrivalCell || room.marks[arrival] || room.marks['@'] || { c: Math.floor(room.W / 2), r: Math.floor(room.H / 2) };
+  if (lookYaw != null) setViewYaw(lookYaw);
+  const cell = insideDoor
+    ? (room.insideDoor() || room.marks['@'])
+    : (arrivalCell || room.marks[arrival] || room.marks['@'] || { c: Math.floor(room.W / 2), r: Math.floor(room.H / 2) });
   if (!noPlayer) {
     if (!G.player) G.player = makePlayer();
     G.player.entity.setAvatar(G.profile.avatar);
     placePlayer(cell);
+    if (lookYaw != null) G.player.entity.group.rotation.y = Math.atan2(-Math.sin(lookYaw), -Math.cos(lookYaw));
     R.scene.add(G.player.entity.group);
     setFollow(G.player.pos);
   } else setFollow(new THREE.Vector3());
@@ -797,16 +809,27 @@ function refreshObjective() {
   if (!G.profile || !G.room) return;
   hud.renderInventory(G.profile);
   hud.renderLog(G.profile);
-  if (G.tree) G.tree.userData.setLeaves(G.profile.lexicon.length, leafOrigin);
-  if (G.place === 'hub') G.room.setFlowers(6 + G.profile.lexicon.length, Math.min(1, G.profile.milestones.length / 6));
+  if (G.tree) {
+    const known = G.profile.learned.filter((id) => MORPHEMES[id] && morph(id).origin !== 'lingo').length;
+    const frac = Math.min(1, known / ALL_MORPHEMES);
+    G.tree.userData.setLeaves(Math.round(frac * 300), leafOrigin, frac);
+  }
+  if (G.place === 'hub') {
+    G.room.setFlowers(G.profile.lexicon.length, 1);
+    G.room.setUndergrowth(extraFinds(G.profile));
+  }
   hud.setObjective(objectiveText());
 }
 
 function leafOrigin(i) {
-  const w = G.profile.lexicon[i];
-  if (!w) return 4;
-  const base = w.p.find((id) => MORPHEMES[id] && morph(id).type === 'base') || w.p[0];
-  return { anglo: 0, latin: 1, greek: 2, lingo: 3 }[MORPHEMES[base] ? morph(base).origin : 'lingo'] ?? 4;
+  const ids = G.profile.learned.filter((id) => MORPHEMES[id] && morph(id).origin !== 'lingo');
+  const id = ids[i % Math.max(1, ids.length)];
+  if (!id) return 4;
+  return { anglo: 0, latin: 1, greek: 2 }[morph(id).origin] ?? 4;
+}
+
+function extraFinds(p) {
+  return Object.values(p.extra || {}).reduce((n, list) => n + list.length, 0);
 }
 
 function objectiveText() {
@@ -982,7 +1005,7 @@ async function enterHub(fromPort = null) {
       if ('DOAX'.includes(fromPort)) arrivalCell = { c, r: r + 1 };
     }));
   }
-  await loadRoom(HUB_MAP, 'hub', { arrivalCell, makeObject: hubObject, flowers: true });
+  await loadRoom(HUB_MAP, 'hub', { arrivalCell, makeObject: hubObject, flowers: true, lookYaw: RETURN_LOOK[fromPort] });
   hud.setPlace('THE HUB');
   G.carried = [];
   spawnReviews();
@@ -1098,6 +1121,7 @@ function hubObject(ch, c, r) {
           mode: 'free', profile: G.profile, title: 'WORD LAB · BUILD ANYTHING, DISCOVER NEW WORDS',
           onSolved: (_, r2) => { if (r2 && r2.fresh) hud.miniCelebrate(`New word discovered: ${r2.word}!`); },
           onMadeUp: (w, def) => hud.toast(`Made-up Word saved: ${w}${def ? ` (“${def}”)` : ''}`, 'gold'),
+          onDiscover: (word, ids) => grantExtra(word, ids),
         });
         refreshObjective();
       } };
@@ -1247,7 +1271,8 @@ async function enterRoom(id, arrival) {
   G.profile.place = { id };
   const prog = store.dprog(G.profile, id);
   store.save();
-  await loadRoom(d.map, id, { arrival, paint: d.paint || [], makeObject: (ch, c, r) => roomObject(d, ch, c, r) });
+  const entry = ENTRY[id];
+  await loadRoom(d.map, id, { arrival, paint: d.paint || [], makeObject: (ch, c, r) => roomObject(d, ch, c, r), roomYaw: entry ? entry.roomYaw : 0, lookYaw: entry ? entry.look : null });
   if (d.d20) placeDie(d);
   if (prog.done.terminal1) G.room.formBridge(CORRIDOR, true);
   spawnWave(d, prog);
@@ -1535,11 +1560,28 @@ function levelFaces(d, level) {
     const known = shuffle(G.profile.learned.filter(sameType));
     const pool = shuffle(poolFor(d).filter(sameType));
     const any = shuffle(Object.keys(MORPHEMES).filter((id) => sameType(id) && morph(id).origin === d.origin));
-    const decoys = [...new Set([...known, ...pool, ...any])].slice(0, Math.max(0, 6 - dial.length));
+    const decoys = [...new Set([...known, ...pool, ...any])].filter((id) => !decoyBuilds(level, k - 1, id)).slice(0, Math.max(0, 6 - dial.length));
     return shuffle([...dial, ...decoys]);
   });
   store.save();
   return lv.faces;
+}
+
+/** A decoy face is rejected when it completes any real word with the authored faces on the other dials. */
+function decoyBuilds(level, slot, decoy) {
+  const shape = level.requests[0].p;
+  const content = [];
+  shape.forEach((id, i) => { if (morph(id).type !== 'link') content.push(i); });
+  const walk = (i, ids) => {
+    if (i === shape.length) {
+      try { return DICTIONARY.has(build(ids).word); } catch { return false; }
+    }
+    if (morph(shape[i]).type === 'link') return walk(i + 1, ids.concat(shape[i]));
+    const dialIdx = content.indexOf(i);
+    const options = dialIdx === slot ? [decoy] : level.dials[dialIdx];
+    return options.some((id) => walk(i + 1, ids.concat(id)));
+  };
+  return walk(0, []);
 }
 
 /** The main course: build the level's words on its dials. */
@@ -1551,10 +1593,11 @@ async function runBuild(d) {
   const o = G.nodes[0];
   if (o) zoomTo(G.room.toWorld(o.c, o.r), 0.55);
   const faces = levelFaces(d, level);
-  const tasks = buildTasks(level).map((t) => ({ ...t, faces }));
+  const tasks = buildTasks(level).map((t) => ({ ...t, faces, extras: level.extra || [] }));
   const res = await openCompile({
     mode: 'compile', title: `LEVEL ${prog.level + 1} · BUILD THE WORD THAT MEANS`, tasks: tasks.slice(lv.built || 0), profile: G.profile, pool: poolFor(d),
     onSolved: () => { lv.built = (lv.built || 0) + 1; store.save(); refreshObjective(); },
+    onDiscover: (word, ids) => grantExtra(word, ids),
   });
   if (res.done < res.total) { refreshObjective(); return; }
   bankCarried();
@@ -1594,7 +1637,13 @@ async function completeLevel(d) {
   const level = curLevel(d);
   const L = levelsOf(d);
   sfx.unlock();
-  hud.fanfare({ name: `Level ${prog.level + 1} clear`, how: `${level.words.length} words live on these dials. Try them all in the Word Lab.`, rewards: [] });
+  const extra = level.extra || [];
+  const found = new Set(((G.profile.extra || {})[level.id] || []).map((e) => e.w));
+  const got = extra.filter((e) => found.has(e.w)).length;
+  const how = extra.length
+    ? `${level.words.length} words live on these dials. Extra Credit: ${got} of ${extra.length} (${extra.map((e) => e.w).join(', ')}).`
+    : `${level.words.length} words live on these dials. Try them all in the Word Lab.`;
+  hud.fanfare({ name: `Level ${prog.level + 1} clear`, how, rewards: [] });
   if (G.mentor && G.mentor.react) G.mentor.react('pleased');
   const clear = lineFor(level, 'clear');
   if (clear) await say(d.mentor.id, clear);
@@ -1807,6 +1856,33 @@ function unlockMilestone(key) {
   hud.fanfare({ name: a ? a.name : 'Achievement', how: a ? a.how : '', rewards: parts.length ? [...parts, 'wear them at CUSTOMIZE in the Hub'] : [] });
 }
 const achieve = unlockMilestone;
+
+/** A real word from a level's Extra Credit list. Mushrooms mark it now; the Lexicon waits for the set. */
+function grantExtra(word, ids) {
+  const hits = EXTRA_LEVELS.filter((L) => L.extra.some((e) => e.w === word));
+  if (!hits.length) return false;
+  let finished = false;
+  let pending = false;
+  for (const level of hits) {
+    const before = new Set((G.profile.extra[level.id] || []).map((e) => e.w));
+    const wasDone = level.extra.every((e) => before.has(e.w));
+    store.noteExtra(G.profile, level.id, word, ids);
+    const have = new Set((G.profile.extra[level.id] || []).map((e) => e.w));
+    const nowDone = level.extra.every((e) => have.has(e.w));
+    if (nowDone && !wasDone) {
+      for (const e of level.extra) store.addLexicon(G.profile, e.w, e.p);
+      unlockMilestone(`extra-${level.id}`);
+      finished = true;
+    } else if (!nowDone) pending = true;
+  }
+  if (EXTRA_LEVELS.length && EXTRA_LEVELS.every((L) => {
+    const have = new Set((G.profile.extra[L.id] || []).map((e) => e.w));
+    return L.extra.every((e) => have.has(e.w));
+  })) unlockMilestone('extraAll');
+  refreshObjective();
+  if (finished || !pending) return 'done';
+  return 'extra';
+}
 const ALL_MORPHEMES = Object.values(MORPHEMES).filter((m) => m.origin !== 'lingo').length;
 
 /** Count-based achievements, checked every couple of seconds. */
@@ -1895,7 +1971,7 @@ async function endTimed() {
 async function startFinale() {
   G.place = 'finale';
   G.finale = { stage: 0, words: FINALE_POOLS.map((pool) => pick(pool.words)) };
-  await loadRoom(FINALE_MAP, 'rot', { makeObject: (ch, c, r) => {
+  await loadRoom(FINALE_MAP, 'rot', { insideDoor: true, roomYaw: Math.PI, lookYaw: Math.PI, makeObject: (ch, c, r) => {
     if (ch === 'H') return { mesh: port('rot', { label: 'RETREAT', axis: 'z', color: 0x00e5ff }), walkable: true, port: () => enterHub('4') };
     if (ch === 'C') { G.finale.cell = { c, r }; return null; }
     return null;
@@ -2231,7 +2307,7 @@ function devApi() {
       await enterHub();
     },
     async openLab() {
-      await openCompile({ mode: 'free', profile: G.profile, title: 'WORD LAB · BUILD ANYTHING, DISCOVER NEW WORDS' });
+      await openCompile({ mode: 'free', profile: G.profile, title: 'WORD LAB · BUILD ANYTHING, DISCOVER NEW WORDS', onDiscover: (word, ids) => grantExtra(word, ids) });
     },
     async openDesk() {
       if (G.place === 'hub' && G.room.objects.some((o) => o.ch === 'D')) { await useDesk(); return; }

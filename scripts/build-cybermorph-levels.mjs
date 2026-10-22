@@ -40,21 +40,33 @@ for (const d of MAIN_ORDER) {
 
 // ── Words with meanings ──
 const words = new Map();
-const addWord = (ids, meaning) => {
+const addWord = (ids, meaning, extra = false) => {
   if (!meaning || ids.length < 2 || !ids.every((id) => MORPHEMES[id])) return;
   let w;
   try { w = build(ids).word; } catch { return; }
-  if (!words.has(w)) words.set(w, { w, p: ids, m: meaning });
+  if (!words.has(w)) words.set(w, { w, p: ids, m: meaning, extra: !!extra });
+  else if (extra) words.get(w).extra = true;
 };
+// District tasks set the word order the level planner grew up with. The bank then wins the
+// meaning a student reads, and may add words the rooms never asked for.
 for (const d of MAIN_ORDER) {
   const D = DISTRICTS[d];
   D.mentorFlow.batches.forEach((b) => b.tasks.forEach((t) => addWord(t.p, t.m)));
   D.rooms.forEach((rm) => { if (rm.terminal) rm.terminal.tasks.forEach((t) => addWord(t.p, t.m)); if (rm.core) (rm.core.tasks || []).forEach((t) => addWord(t.p, t.m)); });
 }
-BANK.forEach((b) => addWord(b.ids, b.meaning));
+BANK.forEach((b) => {
+  let w;
+  try { w = build(b.ids).word; } catch { return; }
+  if (!words.has(w)) addWord(b.ids, b.meaning, b.extra);
+  else {
+    const cur = words.get(w);
+    cur.m = b.meaning;
+    if (b.extra) cur.extra = true;
+  }
+});
 
 // Morphemes never taught by a room but used in a word belong to their origin's district, after the taught ones.
-[...words.values()].forEach((x) => x.p.forEach((id) => {
+[...words.values()].filter((x) => !x.extra).forEach((x) => x.p.forEach((id) => {
   const m = MORPHEMES[id];
   if (!home.has(id) && MAIN_ORDER.includes(m.origin)) { home.set(id, m.origin); rank.set(id, counter++); }
 }));
@@ -71,7 +83,8 @@ const EVERYDAY = new Set(Object.values(FAMILIES.everyday.members).flat());
 function plan(district, earnedBefore) {
   const pool = [...home.entries()].filter(([, d]) => d === district).map(([id]) => id).sort((a, b) => rank.get(a) - rank.get(b));
   const must = (id) => !EVERYDAY.has(id);
-  const W = [...words.values()].filter((x) => districtOf(x.p) === district);
+  // Extra Credit words stay off the dial-growing pool so they cannot reshuffle a level's requests.
+  const W = [...words.values()].filter((x) => districtOf(x.p) === district && !x.extra);
   const earned = new Set(earnedBefore);
   const levels = [];
   const usedWords = new Set();
@@ -143,6 +156,34 @@ function plan(district, earnedBefore) {
   return { levels, earned, leftover: pool.filter((id) => !earned.has(id) && must(id)) };
 }
 
+/** Real words the authored dials can build that are not themselves requests. */
+function attachExtras(level) {
+  const shape = level.requests[0].p;
+  const asked = new Set();
+  for (const r of level.requests) {
+    try { asked.add(build(r.p).word); } catch { /* skip */ }
+  }
+  const extra = [];
+  for (const x of words.values()) {
+    if (asked.has(x.w) || x.p.length !== shape.length) continue;
+    const sameShape = x.p.every((id, i) => {
+      const link = type(id) === 'link';
+      const shapeLink = type(shape[i]) === 'link';
+      if (link || shapeLink) return link && shapeLink && id === shape[i];
+      return true;
+    });
+    if (!sameShape) continue;
+    let k = 0;
+    const onDials = x.p.every((id) => {
+      if (type(id) === 'link') return true;
+      return level.dials[k++].includes(id);
+    });
+    if (onDials) extra.push({ w: x.w, p: x.p, m: x.m });
+  }
+  extra.sort((a, b) => a.w.localeCompare(b.w));
+  if (extra.length) level.extra = extra;
+}
+
 const out = {};
 let earnedSoFar = new Set();
 const summary = [];
@@ -168,6 +209,8 @@ for (const d of MAIN_ORDER) {
     open[0].earn.push(id);
   }
   earnedSoFar = new Set([...earned, ...leftover]);
+  // Any real word the authored dials can build, and that this level does not ask for, is Extra Credit.
+  for (const L of levels) attachExtras(L);
   out[d] = levels.map((L, n) => ({ id: `${d}-${n + 1}`, ...L }));
   summary.push({ d, levels: levels.length, earns: levels.reduce((a, L) => a + L.earn.length, 0), leftover: leftover.length, unplaced });
 }
@@ -188,6 +231,7 @@ if (REPORT) {
  * A level: EARN each morpheme in \`earn\` with its minigame (the appetizer), BUILD the \`requests\` on
  * the dials (the main course; \`dials\` lists each dial's morphemes, linking vowels ride as fixed
  * rings), then DEBUG Rotlings made from the level's \`words\` (dessert).
+ * \`extra\` is the other real words those dials build (Extra Credit).
  */
 
 export const LEVELS = {
