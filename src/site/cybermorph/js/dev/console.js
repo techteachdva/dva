@@ -107,7 +107,7 @@ const COMMANDS = {
     run(api, [name]) {
       if (name && COMMANDS[name]) return `${COMMANDS[name].usage}\n  ${COMMANDS[name].desc}${COMMANDS[name].more ? `\n  ${COMMANDS[name].more}` : ''}`;
       const groups = {
-        Where: ['status', 'goto', 'level', 'phase'],
+        Where: ['status', 'goto', 'level', 'phase', 'garden'],
         Progress: ['earn', 'unlock', 'clear', 'reset'],
         Minigames: ['game', 'games', 'families'],
         Story: ['noam', 'lab', 'desk', 'finale', 'overclock'],
@@ -118,7 +118,7 @@ const COMMANDS = {
         out.push(`[${g}]`);
         names.forEach((n) => out.push(`  ${COMMANDS[n].usage.padEnd(30)} ${COMMANDS[n].desc}`));
       });
-      out.push('Examples: goto latin · level greek 8 · phase build · game rupt 2 · games move · unlock all');
+      out.push('Examples: goto latin · level greek 8 · phase build · garden · game rupt 2 · games move · unlock all');
       return out.join('\n');
     },
   },
@@ -160,6 +160,17 @@ const COMMANDS = {
       await api.enterRoom(r);
       await api.beginLevel(r);
       return `${r} level ${i + 1}/${L.length}: ${L[i].dials.map((x) => x.join('/')).join(' × ')}`;
+    },
+  },
+  garden: {
+    usage: 'garden [full|off]', desc: 'show the whole Hub garden, or put it back to this save',
+    more: 'full plants every leaf, flower, and mushroom and pulls the camera back to the tree. It does not change the save. off uses your real counts again.',
+    async run(api, [mode]) {
+      await api.ensure();
+      const off = mode === 'off' || mode === 'real';
+      if (!off && api.G.place !== 'hub') await api.enterHub();
+      api.previewGarden(!off);
+      return off ? 'Garden follows this save again.' : 'Full garden, camera on the tree. Nothing was saved. garden off puts it back.';
     },
   },
   phase: {

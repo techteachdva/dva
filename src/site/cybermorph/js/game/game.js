@@ -810,13 +810,21 @@ function refreshObjective() {
   hud.renderInventory(G.profile);
   hud.renderLog(G.profile);
   if (G.tree) {
-    const known = G.profile.learned.filter((id) => MORPHEMES[id] && morph(id).origin !== 'lingo').length;
-    const frac = Math.min(1, known / ALL_MORPHEMES);
-    G.tree.userData.setLeaves(Math.round(frac * 300), leafOrigin, frac);
+    if (G.gardenPreview && G.place === 'hub') G.tree.userData.setLeaves(300, (i) => i % 3, 1);
+    else {
+      const known = G.profile.learned.filter((id) => MORPHEMES[id] && morph(id).origin !== 'lingo').length;
+      const frac = Math.min(1, known / ALL_MORPHEMES);
+      G.tree.userData.setLeaves(Math.round(frac * 300), leafOrigin, frac);
+    }
   }
   if (G.place === 'hub') {
-    G.room.setFlowers(G.profile.lexicon.length, 1);
-    G.room.setUndergrowth(extraFinds(G.profile));
+    if (G.gardenPreview) {
+      G.room.setFlowers(1000, 1);
+      G.room.setUndergrowth(1000);
+    } else {
+      G.room.setFlowers(G.profile.lexicon.length, 1);
+      G.room.setUndergrowth(extraFinds(G.profile));
+    }
   }
   hud.setObjective(objectiveText());
 }
@@ -896,7 +904,7 @@ function rebuildHubObject(ch) {
   if (!o) return null;
   Object.assign(o, { c, r, ch });
   if (o.mesh) {
-    o.mesh.position.copy(G.room.toWorld(c, r));
+    o.mesh.position.copy(G.room.toLocal(c, r));
     G.room.group.add(o.mesh);
     o.mesh.traverse((n) => { n.userData.obj = o; });
   }
@@ -1424,7 +1432,7 @@ function nodeCells(d, i, count) {
 
 function addLevelObject(o, mesh, cell) {
   Object.assign(o, { c: cell.c, r: cell.r, mesh });
-  mesh.position.copy(G.room.toWorld(cell.c, cell.r));
+  mesh.position.copy(G.room.toLocal(cell.c, cell.r));
   mesh.traverse((n) => { n.userData.obj = o; });
   G.room.group.add(mesh);
   G.room.objects.push(o);
@@ -2200,6 +2208,16 @@ function devApi() {
     morph: (id) => MORPHEMES[id],
     familyOf: (id) => FAMILY_OF[id] || 'generic',
     enterHub: () => enterHub(),
+    /** Visual only. The save's leaves, flowers, and mushrooms come back with previewGarden(false). */
+    previewGarden(on) {
+      G.gardenPreview = !!on;
+      refreshObjective();
+      if (!on) { zoomReset(); resetView(); return; }
+      const tree = G.room && G.room.objects.find((o) => o.ch === 'L');
+      if (!tree) return;
+      R.rig.pitch = 1.05;
+      zoomTo(G.room.toWorld(tree.c, tree.r), 2.8);
+    },
     enterRoom: (id) => enterRoom(id, '@'),
     /** Play the level's opening as the game would (mentor line, nodes, toast). */
     beginLevel: (id) => startLevel(DISTRICTS[id]),

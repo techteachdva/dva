@@ -245,8 +245,10 @@ export function buildRoom(map, style, { makeObject, flowers = false, paint = [] 
 
   const room = {
     W, H, group, cells, blocked, objects, marks, style,
-    // Scene entities (the player, Rotlings, the camera) live in world space. Props parented to
-    // the room stay in map space. Hub yaw stays 0, so the two match there.
+    // Scene entities (the player, Rotlings, the camera) live in world space. Anything parented
+    // to the room uses toLocal: the room group may be yawed, and a world position parented
+    // onto it would be turned a second time.
+    toLocal: (c, r, y = 0) => toWorld(c, r, y),
     toWorld: (c, r, y = 0) => group.localToWorld(toWorld(c, r, y)),
     toCell: (v) => toCell(group.worldToLocal(v.clone())),
     find: (ch) => { const out = []; cells.forEach((row, r) => row.forEach((x, c) => { if (x === ch) out.push({ c, r }); })); return out; },
