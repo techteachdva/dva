@@ -62,5 +62,24 @@ export function runTweens(now) {
 
 export const prefersReducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/**
+ * Hold a continue button shut for ms so the player reads before moving on; a bar fills
+ * across it while it waits. Check readLocked(btn) before acting on a press.
+ * Playtest scripts set window.__cybermorphFast to skip the wait.
+ */
+export function readLock(btn, ms) {
+  if (window.__cybermorphFast) ms = 0;
+  clearTimeout(btn._lockT);
+  btn.classList.remove('read-lock');
+  btn._lockUntil = performance.now() + ms;
+  if (ms <= 0) { btn.removeAttribute('aria-disabled'); return; }
+  void btn.offsetWidth; // restart the fill animation
+  btn.style.setProperty('--lock-ms', `${ms}ms`);
+  btn.classList.add('read-lock');
+  btn.setAttribute('aria-disabled', 'true');
+  btn._lockT = setTimeout(() => { btn.classList.remove('read-lock'); btn.removeAttribute('aria-disabled'); }, ms);
+}
+export const readLocked = (btn) => performance.now() < (btn._lockUntil || 0);
+
 /** A tween as a promise. */
 export const tweenP = (ms, fn) => new Promise((res) => tween(ms, fn, res));

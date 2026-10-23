@@ -68,6 +68,10 @@ a { color: var(--cyan); }
 .btn-good { background: linear-gradient(180deg, #c6ffae, #4fcf2f); color: #06200a; border-color: #e3ffd8; }
 .btn-ghost { background: transparent; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Read-lock (util.js readLock): the button waits, a bar fills along its bottom, then it opens. */
+.btn.read-lock { position: relative; overflow: hidden; filter: saturate(0.35) brightness(0.75); cursor: wait; }
+.btn.read-lock::after { content: ''; position: absolute; left: 0; bottom: 0; width: 100%; height: 5px; background: currentColor; transform-origin: left; animation: read-lock var(--lock-ms, 1s) linear forwards; }
+@keyframes read-lock { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .icon-btn { width: 56px; height: 56px; border-radius: 14px; border: 2px solid var(--line); background: var(--glass); font-size: 1.3rem; font-weight: 800; }
 
 /* ── HUD ─────────────────────────────────────────────────────── */
@@ -580,6 +584,16 @@ body.panel-open #session-clock { top: auto; bottom: 16px; }
 .welcome p { font-size: clamp(1.05rem, 2.5vh, 1.3rem); line-height: 1.55; margin: 0 0 0.8rem; }
 .welcome .mission { border-left: 5px solid var(--cyan); padding: 0.4rem 0 0.4rem 1rem; background: rgba(0, 229, 255, 0.07); border-radius: 8px; }
 .welcome .row-btns { justify-content: center; margin-top: 0.8rem; }
+.warp-input { width: 100%; font: 800 1.8rem/1.2 Lexend, system-ui, sans-serif; letter-spacing: 0.18em; text-align: center; text-transform: uppercase; padding: 0.6rem; border-radius: 12px; border: 2px solid var(--cyan); background: rgba(0, 0, 0, 0.35); color: var(--ink); margin-top: 0.4rem; }
+.warp-msg { min-height: 1.6em; margin: 0.5rem 0; color: var(--yellow); font-weight: 600; }
+.warp-table .warp-code { font-weight: 800; letter-spacing: 0.1em; color: var(--yellow); }
+.warp-table tr.warp-room td { padding-top: 0.9rem; font-weight: 800; }
+.print-report .warp-table { margin-top: 8pt; font-size: 10pt; }
+.print-report .warp-table th, .print-report .warp-table td { color: #000; border-bottom: 0.5pt solid #999; padding: 2pt 6pt; }
+.print-report .warp-table tr.warp-room td { padding-top: 7pt; }
+.welcome .mission-steps {font-size: clamp(1.05rem, 2.5vh, 1.3rem); line-height: 1.55; margin: 0 0 0.9rem; padding-left: 1.6rem; }
+.welcome .mission-steps li { margin-bottom: 0.3rem; }
+.welcome .mission-steps b { color: var(--cyan); }
 
 /* ── Minigames (js/minigames/harness.js) ─────────────────────────── */
 .minigame-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.7rem; padding: 0.8rem; }

@@ -9,6 +9,7 @@
  */
 
 const G = () => window.__cybermorph;
+window.__cybermorphFast = true; // no read-lock on dialogue and the welcome screens
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 

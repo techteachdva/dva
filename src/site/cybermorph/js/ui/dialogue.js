@@ -1,6 +1,7 @@
 /**
  * Mentor speech. Lines type out quickly; a click, Space or Enter finishes the line,
- * and a second press goes on. Captions are always on; reading aloud is a setting.
+ * and a second press goes on once Next unlocks (a short read-lock, longer for longer lines).
+ * Captions are always on; reading aloud is a setting.
  *
  * A line is a string, or [mood, text] where mood is one of MOODS. The mood is set on the
  * dialogue box as data-mood, and the portrait (portraits.js) draws the speaker in that mood.
@@ -9,7 +10,7 @@
 export const MOODS = ['neutral', 'pleased', 'worried', 'special', 'rot'];
 const lineOf = (l) => (Array.isArray(l) ? { mood: l[0], text: l[1] } : { mood: 'neutral', text: l });
 
-import { $ } from '../core/util.js';
+import { $, clamp, readLock, readLocked } from '../core/util.js';
 import { speakDialogue } from '../core/audio.js';
 import { settings } from '../core/settings.js';
 import { setPortrait, setTalking } from './portraits.js';
@@ -25,6 +26,9 @@ export const SPEAKERS = {
 };
 
 let active = null;
+
+/** How long Next stays shut on a line: about 30 ms a letter, at least 1 s and at most 3 s. */
+const readMs = (s) => clamp(s.length * 30, 1000, 3000);
 
 export const dialogueOpen = () => !!active;
 
@@ -60,9 +64,11 @@ export function say(speakerId, lines) {
         if (n >= full.length) { clearInterval(typing); setTalking(port, false); }
       }, 16);
       $('dlg-next').textContent = i === lines.length - 1 ? 'OK ▸' : 'Next ▸';
+      readLock($('dlg-next'), readMs(full));
     };
     const next = () => {
       if (text.textContent.length < full.length) { clearInterval(typing); setTalking(port, false); text.textContent = full; return; }
+      if (readLocked($('dlg-next'))) return;
       i++;
       if (i >= lines.length) { finish(); return; }
       show();

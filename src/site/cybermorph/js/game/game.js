@@ -2036,7 +2036,84 @@ function openPause() {
     onLexicon: () => screens.lexiconPanel(G.profile),
     onAvatar: () => customize(),
     onEndSession: () => showExitTicket(false),
+    onWarp: G.place === 'ticket' ? null : (s) => warpTo(s),
+    // Warping mid-conversation would leave that scene waiting in the room being left.
+    warpBlocked: G.busy || dialogueOpen() || panelOpen(),
   });
+}
+
+// ── Warp codes (pause menu; the codes are in core/warp.js) ────────
+
+const levelIdsOf = (L) => L.flatMap((l) => [...l.earn, ...Object.values(l.with || {}).flat()]);
+function learnIds(ids) {
+  const before = G.profile.learned.length;
+  store.learn(G.profile, ids.filter((id) => MORPHEMES[id]));
+  hud.renderInventory(G.profile);
+  return G.profile.learned.length - before;
+}
+
+/** Mark a room cleared: every level, firewall and the core done, its morphemes and keyword clue earned. No achievement. */
+function fillRoom(id) {
+  const d = DISTRICTS[id];
+  const p = store.dprog(G.profile, id);
+  const last = d.rooms.length - 1;
+  p.introDone = true;
+  p.level = (LEVELS[id] || []).length;
+  p.lv = null;
+  Object.assign(p.done, { mentor: true, gate0: true, terminal1: true, gate1: true, [`link${last}`]: true, [`newword${last}`]: true, [`core${last}`]: true });
+  p.cleared = true;
+  p.waveCleared = true;
+  learnIds(levelIdsOf(LEVELS[id] || []));
+  if (d.keySlot >= 0) G.profile.clues[d.keySlot] = true;
+}
+
+/** Put a room at the start of level i: the earlier levels' morphemes earned, the firewalls before it open. */
+function setLevel(id, i) {
+  const L = LEVELS[id];
+  const p = store.dprog(G.profile, id);
+  p.introDone = true;
+  p.level = i;
+  p.lv = null;
+  p.cleared = false;
+  learnIds(levelIdsOf(L.slice(0, i)));
+  const z = levelZone(i, L.length);
+  if (z >= 1) p.done.gate0 = true;
+  if (z >= 2) { p.done.terminal1 = true; p.done.gate1 = true; p.waveCleared = true; }
+}
+
+/**
+ * Send the Morpher to a warp code's section. Rooms before it are cleared (no achievements),
+ * Noam's Hub scenes for them count as seen, and the target room restarts at the start or the level.
+ */
+async function warpTo(s) {
+  const p = G.profile;
+  const h = hubState();
+  const CAP = { anglo: 'Anglo', latin: 'Latin', greek: 'Greek' };
+  const main = MAIN_ORDER.includes(s.room);
+  const upTo = main ? MAIN_ORDER.indexOf(s.room) : MAIN_ORDER.length;
+  h.intro = true;
+  MAIN_ORDER.slice(0, upTo).forEach((r) => {
+    if (!cleared(r)) fillRoom(r);
+    h[`cleared${CAP[r]}`] = true;
+    if (r !== 'anglo') h[`said${CAP[r]}`] = true;
+  });
+  if (upTo > 0 || s.level > 0) h.lab = true;
+  if (main && s.room !== 'anglo') h[`said${CAP[s.room]}`] = true;
+  if (upTo === MAIN_ORDER.length) h.desk = true;
+  if (main) {
+    delete p.districts[s.room];
+    if (s.level !== null) setLevel(s.room, s.level);
+  }
+  if (s.room === 'lingo') p.deskOpen = true;
+  store.save();
+  hud.renderInventory(p);
+  screens.closeAllScreens();
+  if (s.room === 'finale') await startFinale();
+  else {
+    await enterRoom(s.room, '@');
+    if (s.level !== null) await startLevel(DISTRICTS[s.room]);
+  }
+  hud.toast(`Warped to ${s.label}`, 'gold');
 }
 
 // ── Exit Ticket practice ──────────────────────────────────────────
@@ -2166,25 +2243,9 @@ export { G };
 
 function devApi() {
   const dp = (id) => store.dprog(G.profile, id);
-  const learnIds = (ids) => {
-    const before = G.profile.learned.length;
-    store.learn(G.profile, ids.filter((id) => MORPHEMES[id]));
-    hud.renderInventory(G.profile);
-    return G.profile.learned.length - before;
-  };
-  const levelIds = (L) => L.flatMap((l) => [...l.earn, ...Object.values(l.with || {}).flat()]);
+  const levelIds = levelIdsOf;
   const clearRoom = (id) => {
-    const d = DISTRICTS[id];
-    const p = dp(id);
-    const last = d.rooms.length - 1;
-    p.introDone = true;
-    p.level = (LEVELS[id] || []).length;
-    p.lv = null;
-    Object.assign(p.done, { mentor: true, gate0: true, terminal1: true, gate1: true, [`link${last}`]: true, [`newword${last}`]: true, [`core${last}`]: true });
-    p.cleared = true;
-    p.waveCleared = true;
-    learnIds(levelIds(LEVELS[id] || []));
-    if (d.keySlot >= 0) G.profile.clues[d.keySlot] = true;
+    fillRoom(id);
     store.addMilestone(G.profile, id);
     store.save();
   };
@@ -2229,15 +2290,7 @@ function devApi() {
       const h = hubState();
       h.intro = true;
       h.lab = true;
-      const p = dp(id);
-      p.introDone = true;
-      p.level = i;
-      p.lv = null;
-      p.cleared = false;
-      learnIds(levelIds(L.slice(0, i)));
-      const z = levelZone(i, L.length);
-      if (z >= 1) p.done.gate0 = true;
-      if (z >= 2) { p.done.terminal1 = true; p.done.gate1 = true; p.waveCleared = true; }
+      setLevel(id, i);
       store.save();
     },
     async setPhase(ph) {

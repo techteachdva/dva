@@ -1,4 +1,4 @@
-import { $, el } from '../core/util.js';
+import { $, el, readLock, readLocked } from '../core/util.js';
 import { settings, setSetting } from '../core/settings.js';
 import { profiles, canAddProfile, deleteProfile, loadScores } from '../core/save.js';
 import { AVATAR, AVATAR_CATEGORIES, UNLOCK_LABEL, DISTRICTS, MAIN_ORDER, DEFAULT_AVATAR, ACHIEVEMENTS, rewardsOf } from '../data/world.js';
@@ -9,8 +9,9 @@ import { createMorpher } from '../engine/characters.js';
 import { sfx, unlockAudio } from '../core/audio.js';
 import { mtile } from './hud.js';
 import { openPanel, closeButton } from '../panels/host.js';
+import { readCode, dailyCodes } from '../core/warp.js';
 
-export const VERSION = '1.4.1';
+export const VERSION = '1.4.2';
 
 const layer = () => $('screen-layer');
 let stack = [];
@@ -420,8 +421,63 @@ export function lexiconPanel(profile) {
   });
 }
 
+// ── Warp codes (pause menu) ───────────────────────────────────────
+/**
+ * Type today's code from Mr. Phil to jump to a room or level. The teacher code lists them all.
+ * blocked: someone is mid-conversation, so a warp waits until it is over (the list still opens).
+ */
+export function warpScreen({ profile, onWarp, blocked = false }) {
+  const input = el('input', { type: 'text', class: 'warp-input', maxlength: '12', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', placeholder: 'TODAY\'S CODE', 'aria-label': 'Warp code' });
+  const msg = el('div', { class: 'warp-msg', 'aria-live': 'polite' });
+  const go = el('button', { class: 'btn btn-primary', type: 'button' }, 'WARP ▸');
+  const back = el('button', { class: 'btn', type: 'button' }, 'BACK');
+  const close = showScreen(el('section', { class: 'sheet glass', style: { width: 'min(520px, 92vw)' } },
+    el('h2', {}, 'WARP CODE'),
+    el('p', {}, 'Mr. Phil can give you a code that jumps your Morpher to a room or a level. Codes are built from morphemes and change every day.'),
+    input, msg, el('div', { class: 'row-btns' }, go, back)));
+  const submit = async () => {
+    const hit = readCode(input.value);
+    if (!hit) {
+      sfx.bad();
+      msg.textContent = input.value.trim() ? 'That code doesn\'t work today. Codes change every day, so ask Mr. Phil for today\'s.' : 'Type a code first.';
+      input.select();
+      return;
+    }
+    if (hit.teacher) { input.value = ''; msg.textContent = ''; warpCodesScreen(); return; }
+    if (blocked) { sfx.bad(); msg.textContent = 'That code works! Finish the conversation or task on screen first, then pause and warp.'; return; }
+    sfx.click();
+    const ok = await confirmBox(`${hit.code} warps ${profile.name} to ${hit.label}. Rooms before it count as cleared, and progress in that room starts from there. Warp now?`, 'Warp', 'Cancel');
+    if (!ok) { input.focus(); return; }
+    close();
+    onWarp(hit);
+  };
+  go.addEventListener('click', submit);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+  back.addEventListener('click', close);
+  setTimeout(() => input.focus(), 50);
+}
+
+/** Mr. Phil's list: every section's code for today, with its morphemes, and a print button. */
+export function warpCodesScreen() {
+  const list = dailyCodes();
+  const date = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const table = () => el('table', { class: 'report warp-table' },
+    el('tr', {}, el('th', {}, 'GOES TO'), el('th', {}, 'CODE'), el('th', {}, 'MORPHEMES')),
+    list.map((s) => el('tr', { class: s.level === null ? 'warp-room' : '' }, el('td', {}, s.label), el('td', { class: 'warp-code' }, s.code), el('td', {}, s.parts.join(' + ')))));
+  const print = el('button', { class: 'btn', type: 'button' }, '🖨 Print today\'s codes');
+  print.addEventListener('click', () => printPage(el('div', { class: 'print-report measuring' },
+    el('h1', {}, 'CyberMorph warp codes'), el('div', { class: 'pr-meta' }, `${date} · these codes work only today`), table()), { fit: true }));
+  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
+  const close = showScreen(el('section', { class: 'sheet glass' },
+    el('h2', {}, 'TODAY\'S WARP CODES'),
+    el('p', { style: { color: 'var(--ink-dim)' } }, `${date}. New codes at midnight. Room codes start the room from the beginning; level codes skip to that level.`),
+    table(), el('div', { class: 'row-btns' }, print, done)));
+  done.addEventListener('click', close);
+  done.focus();
+}
+
 // ── Pause ─────────────────────────────────────────────────────────
-export function pauseScreen({ profile, onResume, onQuit, onLexicon, onAvatar, onEndSession }) {
+export function pauseScreen({ profile, onResume, onQuit, onLexicon, onAvatar, onEndSession, onWarp, warpBlocked = false }) {
   const b = (label, fn, cls = 'btn') => { const x = el('button', { class: cls, type: 'button', style: { width: '100%' } }, label); x.addEventListener('click', () => { sfx.click(); fn(); }); return x; };
   const col = el('div', { style: { display: 'grid', gap: '0.5rem', marginTop: '0.6rem' } },
     b('Resume', () => { close(); onResume(); }, 'btn btn-primary'),
@@ -430,7 +486,8 @@ export function pauseScreen({ profile, onResume, onQuit, onLexicon, onAvatar, on
     b('Achievements', () => achievementsScreen(profile.milestones)),
     b('Customize Morpher', () => { close(); onAvatar(); }),
     b('Settings', () => settingsScreen()),
-    onEndSession ? b('Exit Ticket', () => { close(); onEndSession(); }) : null,
+    onWarp ? b('Warp Code', () => warpScreen({ profile, blocked: warpBlocked, onWarp: (s) => { close(); onWarp(s); } })) : null,
+    onEndSession ?b('Exit Ticket', () => { close(); onEndSession(); }) : null,
     b('Save and quit to title', () => { close(); onQuit(); }));
   const close = showScreen(el('section', { class: 'sheet glass', style: { width: 'min(420px, 92vw)' } }, el('h2', {}, 'PAUSED'), el('div', { style: { color: 'var(--ink-dim)' } }, `${profile.name} · saved in this browser`), col));
   col.firstChild.focus();
@@ -578,15 +635,31 @@ export function achievementsScreen(earned = []) {
 }
 
 // ── Welcome (a brand-new Morpher) ─────────────────────────────────
-export function welcomeScreen({ name, onContinue }) {
+/**
+ * Two short cards: what CyberMorph is, then the mission. Each CONTINUE is read-locked
+ * (and Escape waits for it too), so the premise can't be clicked past unread.
+ */
+const WELCOME_LOCK = [3000, 8000];
+function welcomeCard(content, ms, onGo) {
   const go = el('button', { class: 'btn btn-primary', type: 'button', style: { minWidth: '240px', minHeight: '56px' } }, 'CONTINUE ▸');
-  const close = showScreen(el('section', { class: 'sheet glass welcome' },
-    el('div', { class: 'kicker' }, `HELLO, ${String(name).toUpperCase()}`),
-    el('h2', {}, 'Welcome to CyberMorph!'),
-    el('p', {}, 'You\'re going to be learning about ', el('b', {}, 'MORPHEMES'), ', the smallest unit of meaning within a word. Morphemes are like building blocks: when you put them together (', el('b', {}, 'BUILD'), ' with them), you can create a new word that means something based on its morphemes.'),
-    el('p', {}, 'In other words, you can break down any word and discover its meaning just by learning about the parts that make the word! Let\'s get started with the Worky Work...'),
-    el('p', { class: 'mission' }, el('b', {}, 'Your mission: '), 'the Rot has smashed the Lexinet\'s words into pieces and filled its rooms with nonsense Rotlings. You are a Morpher, a little repair bot. ', el('b', {}, 'EARN'), ' morphemes by winning their games, ', el('b', {}, 'BUILD'), ' them back into real words, and ', el('b', {}, 'DEBUG'), ' Rotlings by splitting their words at the seams. Restore the Anglo-Saxon, Latin and Greek Rooms, find the secret room, and defeat the Rot!'),
-    el('div', { class: 'row-btns' }, go)), { x: () => go.click() });
-  go.addEventListener('click', () => { close(); onContinue(); });
+  const close = showScreen(el('section', { class: 'sheet glass welcome' }, content, el('div', { class: 'row-btns' }, go)), { x: () => go.click() });
+  readLock(go, ms);
+  go.addEventListener('click', () => { if (readLocked(go)) return; sfx.click(); close(); onGo(); });
   setTimeout(() => go.focus(), 60);
+}
+export function welcomeScreen({ name, onContinue }) {
+  welcomeCard([
+    el('div', { class: 'kicker' }, `HELLO, ${String(name).toUpperCase()}`),
+    el('h2', {}, 'Welcome to CyberMorph'),
+    el('p', {}, 'CyberMorph is a game about ', el('b', {}, 'MORPHEMES'), ': the small parts that words are built from. Learn the parts, and you can work out what a word means, even one you have never seen.'),
+  ], WELCOME_LOCK[0], () => welcomeCard([
+    el('div', { class: 'kicker' }, 'YOUR MISSION'),
+    el('h2', {}, 'Repair the Lexinet'),
+    el('p', {}, 'The Rot has smashed the Lexinet\'s words into pieces and filled its rooms with nonsense Rotlings. You are a ', el('b', {}, 'Morpher'), ', a little repair bot. In every room:'),
+    el('ol', { class: 'mission-steps' },
+      el('li', {}, el('b', {}, 'EARN'), ' morphemes by winning their quick games.'),
+      el('li', {}, el('b', {}, 'BUILD'), ' them back into real words on the dials.'),
+      el('li', {}, el('b', {}, 'DEBUG'), ' Rotlings by splitting their words at the seams.')),
+    el('p', { class: 'mission' }, 'Restore the Anglo-Saxon, Latin and Greek Rooms, find the secret room, and defeat the Rot.'),
+  ], WELCOME_LOCK[1], onContinue));
 }
