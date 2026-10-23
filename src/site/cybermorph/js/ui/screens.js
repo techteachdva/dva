@@ -11,7 +11,7 @@ import { mtile } from './hud.js';
 import { openPanel, closeButton } from '../panels/host.js';
 import { readCode, dailyCodes } from '../core/warp.js';
 
-export const VERSION = '1.4.2';
+export const VERSION = '1.4.3';
 
 const layer = () => $('screen-layer');
 let stack = [];

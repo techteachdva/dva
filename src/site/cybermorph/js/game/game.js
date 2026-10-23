@@ -27,7 +27,7 @@ import * as store from '../core/save.js';
 import { touch, dueIds } from '../core/mastery.js';
 import * as session from '../core/session.js';
 import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, collectFakes, achievement, rewardsOf, DICTIONARY, EXTRA_LEVELS } from '../data/world.js';
-import { makeWave, makeFake, taughtBy, randomWord, allWords, isKnown } from './waves.js';
+import { makeWave, makeFake, fakeFor, dealCalls, rollCalls, taughtBy, randomWord, allWords, isKnown } from './waves.js';
 import { buildDeck, rounds } from './ticket.js';
 import { MM_LESSONS } from '../data/mm.js';
 import { zoneOf, CORRIDOR, CHASM_COLS } from '../data/layout.js';
@@ -1616,9 +1616,9 @@ async function runBuild(d) {
 function serveDessert(d) {
   const lv = levelState(store.dprog(G.profile, d.id));
   const level = curLevel(d);
-  const real = shuffle(level.requests.slice()).slice(0, 2).map((t) => ({ p: t.p }));
-  const fakeSrc = shuffle(level.requests.slice()).map((t) => makeFake({ ids: t.p }, null, new Set(G.profile.learned))).find(Boolean);
-  lv.dessert = fakeSrc ? [...real, fakeSrc] : real;
+  // Three of the level's words, each one's call drawn from the Rotling mix (always one real, one fake).
+  const words = shuffle(level.requests.slice()).slice(0, 3).map((t) => ({ ids: t.p }));
+  lv.dessert = dealCalls(words, rollCalls(words.length), new Set(G.profile.learned));
   lv.dessertDone = [];
   lv.phase = 'dessert';
   store.save();
@@ -2389,16 +2389,13 @@ function devApi() {
     startTimed: () => startTimed(),
     spawnRotling(kind) {
       if (!G.room || !G.player) throw new Error('Walk into a room or the Hub first.');
-      const prefer = { misspelled: 'joint', reversed: 'order', nonword: 'nonword' }[kind];
-      if (kind !== 'real' && !prefer) throw new Error('rotling real, misspelled, reversed or nonword');
+      if (!['real', 'misspelled', 'reversed', 'nonword'].includes(kind)) throw new Error('rotling real, misspelled, reversed or nonword');
       const learned = new Set(G.profile.learned);
       const words = shuffle(allWords().filter((w) => isKnown(w.ids, learned)));
       let item = null;
       for (const w of words.length ? words : shuffle(allWords())) {
-        if (kind === 'real') { item = { p: w.ids }; break; }
-        const f = makeFake({ ids: w.ids }, prefer, null);
-        const kindOk = f && (kind === 'misspelled' ? ['joint', 'link'].includes(f.fake) : f.fake === prefer);
-        if (kindOk) { item = f; break; }
+        item = kind === 'real' ? { p: w.ids } : fakeFor({ ids: w.ids }, kind, null);
+        if (item) break;
       }
       if (!item) throw new Error(`No ${kind} Rotling could be made.`);
       const p = G.player;

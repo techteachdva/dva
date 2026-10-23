@@ -21,7 +21,7 @@ export const VERDICTS = [
   { id: 'nonword', label: 'NOT A WORD' },
   { id: 'reversed', label: 'REVERSED' },
 ];
-/** What a Rotling really is: a skipped spelling rule or a dropped linking o is a misspelling. */
+/** What a Rotling really is: every fake but a flipped order or a made-up word is a misspelling (see waves.js). */
 export function verdictOf(item) {
   if (!item.fake) return 'real';
   if (item.fake === 'order') return 'reversed';
@@ -157,7 +157,7 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
         logVerdictError();
         sfx.bad();
         const hint = mistakes >= 2 || want === 'real' ? null : {
-          misspelled: 'Say it slowly. The pieces make a real word, but the spelling where they join is off.',
+          misspelled: 'Say it slowly. The pieces make a real word, but a piece, or the joint between two, is spelled wrong.',
           reversed: 'Read the pieces in order. Is one of them on the wrong side of its base?',
           nonword: 'Every piece is real and spelled right. But is the whole thing a word anyone uses?',
         }[want];
@@ -195,6 +195,7 @@ export function openDebug({ item, profile, mode = 'rotling', title = null, realN
       else if (item.fake === 'order') logError(item.p.filter((_, i) => types[i] === 'pfx' || types[i] === 'sfx'), 'order');
       else if (item.fake === 'link') logError(item.p.filter((_, i) => types[i] === 'base'), 'link');
       else if (item.fake === 'nonword') logError(item.real || item.p, 'meaning');
+      else if (item.at !== undefined) logError([item.p[item.at]], 'joint');
       else if (item.fake) logError(item.p, 'joint');
       else logError(res.steps.length ? jointIds(item.p) : item.p, 'real');
     }
