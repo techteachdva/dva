@@ -11,6 +11,7 @@
  *   m  minutes played          w  words compiled         r  Rotlings debugged
  *   L  { lessonKey: [tries, firstTry, ...ERROR_KINDS counts] }   this session
  *   M  { lessonKey: [avg mastery ×10, fading count, morphemes learned] }   all time
+ *   F  [overall %, ...one % per SKILLS entry in data/finale.js, -1 if not measured]   best Final Test run, once the Rot is beaten
  *
  * No imports, so the teacher page can load it on its own.
  */

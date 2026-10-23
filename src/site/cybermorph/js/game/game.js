@@ -26,7 +26,7 @@ import { sfx, startMusic, unlockAudio, speak } from '../core/audio.js';
 import * as store from '../core/save.js';
 import { touch, dueIds } from '../core/mastery.js';
 import * as session from '../core/session.js';
-import { DISTRICTS, MAIN_ORDER, HUB_MAP, FINALE_POOLS, collectFakes, achievement, rewardsOf, DICTIONARY, EXTRA_LEVELS } from '../data/world.js';
+import { DISTRICTS, MAIN_ORDER, HUB_MAP, collectFakes, achievement, rewardsOf, DICTIONARY, EXTRA_LEVELS } from '../data/world.js';
 import { makeWave, makeFake, fakeFor, dealCalls, rollCalls, taughtBy, randomWord, allWords, isKnown } from './waves.js';
 import { buildDeck, rounds } from './ticket.js';
 import { MM_LESSONS } from '../data/mm.js';
@@ -50,6 +50,7 @@ import * as HUB from '../data/hubLines.js';
 import { createNoam } from '../engine/noam.js';
 import { initDevConsole } from '../dev/console.js';
 import { FAMILIES, FAMILY_OF } from '../data/families.js';
+import { runFight, skillPercents, overallPercent } from './finale/fight.js';
 
 const PARAMS = new URLSearchParams(location.search);
 /** The teacher's link can set a session length (?mins=12) and a Google Form for exit-ticket codes (?form=…). */
@@ -497,7 +498,7 @@ async function use(target) {
   G.busy = true;
   hud.setContext(null);
   try {
-    if (target.rotling) await (target.rotling.boss ? bossFight(target.rotling) : debugRotling(target.rotling));
+    if (target.rotling) await (target.rotling.boss ? bossFight() : debugRotling(target.rotling));
     else if (target.obj && target.obj.use) {
       const o = target.obj;
       G.player.entity.group.rotation.y = Math.atan2(o.c - G.player.c, o.r - G.player.r);
@@ -853,7 +854,7 @@ function objectiveText() {
       const deskHint = p.clues.some(Boolean) && !p.deskOpen ? ' Your clue cards open something on the Secret Secretary Desk.' : '';
       return `Enter ${DISTRICTS[next].name} through ${where}.${deskHint}${labTip}`;
     }
-    if (!p.finale.beaten) return `All three keywords are yours. ${p.deskOpen ? '' : 'Try the Secret Secretary Desk, then '}Face the Rot through the green door labeled THE ROT.`;
+    if (!p.finale.beaten) return `All three keywords are yours. ${p.deskOpen ? '' : 'Try the Secret Secretary Desk, then '}Face the Rot's final test through the green door labeled THE ROT.`;
     return p.deskOpen ? 'The Lexinet is restored. Try Overclock Mode, or build Made-up Words at the Morph Compiler.' : 'The Lexinet is restored. The Secret Secretary Desk is still locked…';
   }
   if (G.place === 'timed') return 'DEBUG as many Rotlings as you can before time runs out.';
@@ -861,7 +862,8 @@ function objectiveText() {
     const t = G.ticket || { done: 0, first: 0 };
     return `Exit Ticket practice · ${t.done} done · ${t.first} right on the first try. Today: ${TICKET_LESSONS.join(', ')}.`;
   }
-  if (G.place === 'finale') return 'Click the Rot. Split its word, then build it back clean.';
+  if (G.place === 'finale') return G.profile.finale.checkpoint ? `Click the Rot to go on from phase ${G.profile.finale.checkpoint + 1} of the final test.` : 'Click the Rot to begin the final test: three phases, nine trials.';
+  if (G.place === 'bossrush') return 'BOSS RUSH: the whole Final Test, scored, with mutations.';
   const d = DISTRICTS[G.place];
   if (!d) return '';
   const prog = store.dprog(p, d.id);
@@ -1103,7 +1105,7 @@ function hubObject(ch, c, r) {
   if (ch === 'O') {
     const open = cleared('anglo');
     const mesh = arcadeCabinet('OVERCLOCK', 0xff3df0, !open);
-    return { mesh, label: open ? 'PLAY' : 'LOCKED', use: async () => { if (!open) { sfx.bad(); hud.toast('Overclock Mode unlocks when you clear the Anglo-Saxon Room.', 'warn'); return; } await startTimed(); } };
+    return { mesh, label: open ? 'PLAY' : 'LOCKED', use: async () => { if (!open) { sfx.bad(); hud.toast('Overclock Mode unlocks when you clear the Anglo-Saxon Room.', 'warn'); return; } await useOverclock(); } };
   }
   if (ch === 'X' && !hubState().lab) {
     // Locked until Noam "discovers" it, after the player brings back their first morphemes.
@@ -1974,51 +1976,149 @@ async function endTimed() {
   });
 }
 
-// ── The finale ────────────────────────────────────────────────────
+// ── The finale: the Final Test (js/game/finale/) ──────────────────
 
-async function startFinale() {
-  G.place = 'finale';
-  G.finale = { stage: 0, words: FINALE_POOLS.map((pool) => pick(pool.words)) };
+/** The Rot's body in each phase: a shell, a swarm, its true form. */
+const ROT_FORMS = [
+  { word: 'THE ROT', scale: 1, minions: 0 },
+  { word: 'THE SWARM', scale: 0.8, minions: 6 },
+  { word: 'TRUE FORM', scale: 1.35, minions: 0 },
+];
+
+/**
+ * The arena behind the Final Test. rush: Boss Rush from the Overclock cabinet (scored, mutated).
+ * from: the dev console's { phase, beat } to start at; seed: replay a fight.
+ */
+async function startFinale({ rush = false, from = null, seed = undefined } = {}) {
+  G.place = rush ? 'bossrush' : 'finale';
+  G.finale = { rush, from, seed, boss: null, minions: [], form: 0 };
   await loadRoom(FINALE_MAP, 'rot', { insideDoor: true, roomYaw: Math.PI, lookYaw: Math.PI, makeObject: (ch, c, r) => {
-    if (ch === 'H') return { mesh: port('rot', { label: 'RETREAT', axis: 'z', color: 0x00e5ff }), walkable: true, port: () => enterHub('4') };
+    if (ch === 'H') return { mesh: port('rot', { label: 'RETREAT', axis: 'z', color: 0x00e5ff }), walkable: true, port: () => enterHub(rush ? 'O' : '4') };
     if (ch === 'C') { G.finale.cell = { c, r }; return null; }
     return null;
   } });
-  spawnBoss();
+  G.place = rush ? 'bossrush' : 'finale';
+  const fin = G.profile.finale;
+  rotForm(rush ? 0 : Math.min(2, from ? from.phase : fin.checkpoint || 0));
   refreshObjective();
-  await say('rot', ['So. The little Morpher who glues words back together.', 'I am the Rot. I am every word that never held. Split me if you can.']);
+  if (rush || from) { await bossFight(); return; }
+  if (!fin.met) {
+    fin.met = true;
+    store.save();
+    await say('rot', ['So. The little Morpher who glues words back together.', 'I am the Rot, and this is your final test. Three forms, nine trials. Every piece you learned, I will ask for.', 'Click me when you are ready.']);
+  } else await say('rot', [fin.checkpoint ? `Back again? My ${['', 'swarm', 'true form'][fin.checkpoint]} is waiting.` : 'Back again? Click me when you are ready.']);
 }
 
-function spawnBoss() {
-  const r = spawnRotling({ p: G.finale.words[G.finale.stage] }, G.finale.cell, { boss: true });
+/** Swap the Rot's body for a phase: its label, its size, and the swarm's minions. */
+function rotForm(p) {
+  const F = G.finale;
+  F.form = p;
+  if (F.boss) { R.scene.remove(F.boss.entity.group); G.rotlings = G.rotlings.filter((x) => x !== F.boss); }
+  F.minions.forEach((m) => { R.scene.remove(m.entity.group); G.rotlings = G.rotlings.filter((x) => x !== m); });
+  F.minions = [];
+  const form = ROT_FORMS[p];
+  const r = spawnRotling({ p: [], show: form.word.toLowerCase() }, F.cell, { boss: true });
   r.boss = true;
-  hud.setPlace(`THE ROT · ${FINALE_POOLS[G.finale.stage].label.toUpperCase()} FORM`, 3, G.finale.stage);
+  r.entity.group.scale.setScalar(form.scale);
+  r.base = form.scale;
+  F.boss = r;
+  const ring = G.room.neighbors(F.cell.c, F.cell.r).flatMap((n) => [n, ...G.room.neighbors(n.c, n.r)]);
+  const spots = ring.filter((n, i) => G.room.isWalkable(n.c, n.r) && !(n.c === F.cell.c && n.r === F.cell.r) && ring.findIndex((x) => x.c === n.c && x.r === n.r) === i);
+  shuffle(spots).slice(0, form.minions).forEach((cell) => {
+    const m = spawnRotling({ p: [], show: pick(['rot', 'fake', 'flip', 'typo', 'null', 'glitch']) }, cell, { boss: true });
+    m.boss = true;
+    m.entity.group.scale.setScalar(0.55);
+    F.minions.push(m);
+  });
+  hud.setPlace(F.rush ? 'BOSS RUSH' : `THE ROT · ${['SHELL', 'SWARM', 'TRUE FORM'][p]}`, 3, p);
 }
 
-async function bossFight(r) {
-  const ids = r.item.p;
-  const word = build(ids).word;
-  zoomTo(r.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 0.6);
-  const res = await openDebug({ item: r.item, profile: G.profile, mode: 'finale', title: `BOSS · ${FINALE_POOLS[G.finale.stage].label.toUpperCase()} FORM · split ${word.toUpperCase()}` });
-  if (!res.solved) return;
-  const comp = await openCompile({ mode: 'finale', tasks: [{ m: `Rebuild ${word.toUpperCase()}: ${ids.map((id) => morph(id).meaning).join(' + ')}`, p: ids }], profile: G.profile, pool: G.profile.learned });
-  if (comp.done < 1) { hud.toast('The Rot re-forms. Try the build again.', 'warn'); return; }
-  removeRotling(r);
-  sfx.crash();
-  G.finale.stage += 1;
-  if (G.finale.stage < 3) {
-    await say('rot', [G.finale.stage === 1 ? 'Clever. But Latin roots run deeper.' : 'Enough! My last form is Greek, and it is LONG.']);
-    spawnBoss();
+/** The Rot flinches at a right answer; a cleared beat knocks a chunk off it. */
+function rotHit(big) {
+  const r = G.finale && G.finale.boss;
+  if (!r) return;
+  const g = r.entity.group;
+  const base = r.base || 1;
+  tween(big ? 420 : 260, (k) => g.scale.setScalar(base * (1 + Math.sin(k * Math.PI) * (big ? 0.22 : 0.1))));
+  if (big) {
+    const fx = $('crash-fx');
+    fx.classList.remove('on');
+    void fx.offsetWidth;
+    fx.classList.add('on');
+  }
+}
+/** A miss: the Rot lands a hit on the Morpher. */
+function rotStrikes() {
+  const fx = $('crash-fx');
+  fx.classList.remove('miss');
+  void fx.offsetWidth;
+  fx.classList.add('miss');
+}
+
+async function bossFight() {
+  const F = G.finale;
+  const p = G.profile;
+  const fin = p.finale;
+  zoomTo(F.boss.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 0.75);
+  if (F.rush) startMusic('arcade');
+  const out = await runFight({
+    profile: p,
+    rush: F.rush,
+    seed: F.seed,
+    from: F.from,
+    hooks: {
+      onPhase: (ph) => { rotForm(ph); if (ph === 2) startMusic('arcade'); },
+      onHit: (big) => rotHit(big),
+      onBeat: () => { rotHit(true); if (F.boss) F.boss.base *= 0.93; },
+      onMiss: () => rotStrikes(),
+      onRewrite: (ph) => rotForm(ph),
+      onSave: () => store.save(),
+    },
+  });
+  F.from = null;
+  F.seed = undefined;
+  zoomReset();
+  if (out.retreat) {
+    startMusic('rot');
+    hud.toast(F.rush ? 'Boss Rush ended. That run was not scored.' : `You fell back. ${fin.checkpoint ? `Next time you start at phase ${fin.checkpoint + 1}.` : 'The Rot is waiting.'}`, 'warn');
     return;
   }
-  G.profile.finale.beaten = true;
-  unlockMilestone('finale');
+  // Won.
+  const pct = overallPercent(out.results);
+  const first = !fin.beaten;
+  fin.runs = (fin.runs || 0) + 1;
+  if (!F.rush) {
+    const run = { pct, skills: skillPercents(out.results), seconds: out.seconds, misses: out.misses, rewrites: out.rewrites, t: Date.now() };
+    fin.last = run;
+    if (!fin.best || pct > fin.best.pct || (pct === fin.best.pct && out.seconds < fin.best.seconds)) fin.best = run;
+    fin.beaten = true;
+  }
   store.save();
-  await say('rot', ['No… every piece… has meaning…']);
-  hud.showHud(false);
-  await new Promise((res2) => screens.endingScreen({ profile: G.profile, onDone: res2 }));
-  hud.showHud(true);
-  await enterHub('4');
+  if (F.boss) removeRotling(F.boss);
+  F.minions.forEach(removeRotling);
+  F.boss = null;
+  F.minions = [];
+  sfx.crit();
+  const rank = F.rush ? store.addBossScore({ name: p.name, score: out.score, pct, t: Date.now() }) : -1;
+  await new Promise((res) => screens.finalResultsScreen({ profile: p, out, pct, rush: F.rush, rank, onDone: res }));
+  if (!F.rush) unlockMilestone('finale');
+  if (out.misses === 0) unlockMilestone('flawless');
+  if (F.rush && out.score >= BOSS_RUSH_GOAL) unlockMilestone('bossrush');
+  if (!F.rush && first) {
+    hud.showHud(false);
+    await new Promise((res) => screens.endingScreen({ profile: p, onDone: res }));
+    hud.showHud(true);
+  }
+  await enterHub(F.rush ? 'O' : '4');
+}
+const BOSS_RUSH_GOAL = 3500;
+
+/** The Overclock cabinet: Rotling Rush always; Boss Rush once the Rot is beaten. */
+async function useOverclock() {
+  if (!G.profile.finale.beaten) { await startTimed(); return; }
+  const mode = await screens.overclockMenu();
+  if (mode === 'rotlings') await startTimed();
+  else if (mode === 'boss') await startFinale({ rush: true });
 }
 
 // ── Pause ─────────────────────────────────────────────────────────
@@ -2386,6 +2486,11 @@ function devApi() {
       if (res.action === 'enter') await enterRoom('lingo', '@');
     },
     startFinale: () => startFinale(),
+    /** The Final Test from any beat (phase and beat 0-based), with a seed to replay; every room is cleared first. */
+    async startBoss({ phase = 0, beat = 0, seed, rush = false } = {}) {
+      MAIN_ORDER.forEach((r) => { if (!cleared(r)) clearRoom(r); });
+      await startFinale({ rush, seed, from: rush ? null : { phase, beat } });
+    },
     startTimed: () => startTimed(),
     spawnRotling(kind) {
       if (!G.room || !G.player) throw new Error('Walk into a room or the Hub first.');

@@ -145,6 +145,7 @@ ol li { margin-bottom: 4px; }
 
 <script type="module">
 import { decodeReport, findCodes, ERROR_KINDS, ERROR_LABEL } from './js/core/report.js';
+import { SKILLS } from './js/data/finale.js';
 import { MM_LESSONS, mmName, mmOrder } from './js/data/mm.js';
 
 const $ = (id) => document.getElementById(id);
@@ -192,6 +193,13 @@ function inRange(s) {
 const pct = (ft, a) => (a ? Math.round((ft / a) * 100) : null);
 const tone = (p) => (p === null ? 'var(--none)' : p >= 80 ? 'var(--good)' : p >= 60 ? 'var(--mid)' : 'var(--bad)');
 
+/** The Final Test column: the best run's overall %, with each skill in the tooltip. */
+function finalCell(F) {
+  if (!F) return '<td class="cell" style="background:var(--none)" title="Has not beaten the Rot yet"></td>';
+  const why = SKILLS.map((k, i) => (F[i + 1] >= 0 ? `${k.label} ${F[i + 1]}%` : '')).filter(Boolean).join(' · ');
+  return `<td class="cell" style="background:${tone(F[0])};color:#fff" title="${esc(`Final Test best: ${F[0]}% first try. ${why}`)}">${F[0]}%</td>`;
+}
+
 function render() {
   const list = sessions.filter(inRange);
   const show = list.length > 0;
@@ -206,6 +214,8 @@ function render() {
     st.sessions += 1;
     st.mins += s.m || 0;
     if (!st.latest || s.s > st.latest.s) st.latest = s;
+    // The Final Test: each code carries the student's best run so far (overall %, then one % per skill).
+    if (s.F && (!st.F || s.s > st.Fs)) { st.F = s.F; st.Fs = s.s; }
     Object.entries(s.L || {}).forEach(([k, v]) => {
       const a = st.L[k] || (st.L[k] = v.map(() => 0));
       v.forEach((x, i) => { a[i] += x; });
@@ -243,7 +253,7 @@ function render() {
   const keys = [...lessons.keys()].sort((a, b) => mmOrder(a) - mmOrder(b));
   const short = (k) => (k === 'X' ? 'Other' : k.replace(/^S/, 'Suf ').replace(/^P/, 'Pre ').replace(/^R/, 'Root ').replace(/^G/, 'Grk '));
   const rows = [...students.values()].sort((a, b) => a.name.localeCompare(b.name));
-  $('heat').innerHTML = `<thead><tr><th>Student</th><th>Sessions</th><th>Min</th>${keys.map((k) => `<th title="${esc(mmName(k))}">${esc(short(k))}</th>`).join('')}</tr></thead><tbody>${rows.map((st) => `<tr><td>${esc(st.name)}</td><td>${st.sessions}</td><td>${st.mins}</td>${keys.map((k) => {
+  $('heat').innerHTML = `<thead><tr><th>Student</th><th>Sessions</th><th>Min</th><th title="Best Final Test run: percent right on the first try">Final test</th>${keys.map((k) => `<th title="${esc(mmName(k))}">${esc(short(k))}</th>`).join('')}</tr></thead><tbody>${rows.map((st) => `<tr><td>${esc(st.name)}</td><td>${st.sessions}</td><td>${st.mins}</td>${finalCell(st.F)}${keys.map((k) => {
     const v = st.L[k];
     if (!v || !v[0]) return '<td class="cell" style="background:var(--none)"></td>';
     const p = pct(v[1], v[0]);

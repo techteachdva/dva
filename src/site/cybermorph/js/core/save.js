@@ -138,6 +138,21 @@ export function addMadeUp(profile, word, ids, def = '') {
 export function loadScores() {
   try { return JSON.parse(localStorage.getItem(SCORES) || '[]'); } catch { return []; }
 }
+// ── Boss Rush high scores (browser only) ──────────────────────────────
+const BOSS_SCORES = 'cybermorph.bossScores.v1';
+export function loadBossScores() {
+  try { return JSON.parse(localStorage.getItem(BOSS_SCORES) || '[]'); } catch { return []; }
+}
+/** Add a Boss Rush score; returns its place in the top 10, or -1. */
+export function addBossScore(entry) {
+  const list = loadBossScores();
+  list.push(entry);
+  list.sort((a, b) => b.score - a.score);
+  list.length = Math.min(list.length, 10);
+  try { localStorage.setItem(BOSS_SCORES, JSON.stringify(list)); } catch { /* ignore */ }
+  return list.findIndex((e) => e.t === entry.t && e.name === entry.name);
+}
+
 export function addScore(entry) {
   const list = loadScores();
   list.push(entry);

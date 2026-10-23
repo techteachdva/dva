@@ -1,6 +1,7 @@
 import { $, el, readLock, readLocked } from '../core/util.js';
 import { settings, setSetting } from '../core/settings.js';
-import { profiles, canAddProfile, deleteProfile, loadScores } from '../core/save.js';
+import { profiles, canAddProfile, deleteProfile, loadScores, loadBossScores } from '../core/save.js';
+import { SKILLS } from '../data/finale.js';
 import { AVATAR, AVATAR_CATEGORIES, UNLOCK_LABEL, DISTRICTS, MAIN_ORDER, DEFAULT_AVATAR, ACHIEVEMENTS, rewardsOf } from '../data/world.js';
 import { morph, ORIGIN_LABEL } from '../data/morphemes.js';
 import { glow } from '../core/mastery.js';
@@ -11,7 +12,7 @@ import { mtile } from './hud.js';
 import { openPanel, closeButton } from '../panels/host.js';
 import { readCode, dailyCodes } from '../core/warp.js';
 
-export const VERSION = '1.4.3';
+export const VERSION = '1.5.0';
 
 const layer = () => $('screen-layer');
 let stack = [];
@@ -224,7 +225,8 @@ export function howToScreen() {
       el('div', {}, el('b', {}, 'DEBUG'), 'Click Rotlings. Cut their word between morphemes, then call it: real, misspelled, not a word, or reversed? Golden ones carry long words worth bonus bits. Three clean splits in a row start a streak.'),
       el('div', {}, el('b', {}, 'PATCH'), 'Firewall locks: turn the ending ring until the word fits the sentence.'),
       el('div', {}, el('b', {}, 'LINK'), 'Hang words on their family branch. Watch for look-alikes that are not family.'),
-      el('div', {}, el('b', {}, 'USE'), 'Click a person or a machine (or press SPACE beside it). Achievements unlock new Morpher parts; see them in the pause menu.')),
+      el('div', {}, el('b', {}, 'USE'), 'Click a person or a machine (or press SPACE beside it). Achievements unlock new Morpher parts; see them in the pause menu.'),
+      el('div', {}, el('b', {}, 'THE ROT'), 'The final test: three phases, nine trials that ask for everything you learned. A wrong first answer costs integrity; lose it all and the Rot rewrites that phase.')),
     el('div', { class: 'howto-keys' },
       el('div', {},
         el('h3', {}, 'SHAPES TELL YOU THE TYPE'),
@@ -270,6 +272,14 @@ export function reportScreen(profile, { onLexicon = null } = {}) {
   const st = profile.stats;
   const rate = st.tasks ? Math.round((st.firstTry / st.tasks) * 100) : 0;
   body.append(el('p', {}, `Words built: ${st.compiled} · First-try rate: ${rate}% · Rotlings debugged: ${st.splits} · Lexicon: ${profile.lexicon.length} words · Made-up Words: ${profile.madeUp.length} · Rooms cleared: ${MAIN_ORDER.filter((d) => profile.districts[d] && profile.districts[d].cleared).length}/3`));
+  const best = profile.finale && profile.finale.best;
+  if (best) {
+    body.append(el('h3', {}, `THE FINAL TEST · BEST RUN: ${best.pct}% FIRST TRY`),
+      el('div', { class: 'test-skills' }, SKILLS.filter((s) => best.skills[s.id] !== undefined).map((s) => el('div', { class: 'test-skill' },
+        el('div', { class: 'test-skill-name' }, el('b', {}, s.label), el('small', {}, s.note)),
+        el('div', { class: 'test-bar' }, el('i', { style: { width: `${best.skills[s.id]}%` }, class: best.skills[s.id] >= 80 ? 'hi' : best.skills[s.id] >= 60 ? 'mid' : 'lo' })),
+        el('div', { class: 'test-pct' }, `${best.skills[s.id]}%`)))));
+  }
   ['anglo', 'latin', 'greek', 'lingo'].forEach((o) => {
     const ids = profile.learned.filter((id) => morph(id).origin === o);
     if (!ids.length) return;
@@ -308,6 +318,11 @@ function printReport(profile) {
     el('div', { class: 'pr-meta' }, new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })),
     el('div', { class: 'pr-stats' }, `Words built: ${st.compiled} · First-try rate: ${rate}% · Rotlings debugged: ${st.splits} · Lexicon: ${profile.lexicon.length} words · Made-up Words: ${profile.madeUp.length} · Rooms cleared: ${rooms}/3`),
     el('div', { class: 'pr-key' }, 'Morphemes grouped by mastery (★ out of 4). (2/5) = right on the first try 2 times out of 5. Meanings are in the game\'s Lexicon and on-screen report.'));
+  const best = profile.finale && profile.finale.best;
+  if (best) {
+    page.append(el('div', { class: 'pr-line' }, el('span', { class: 'pr-label' }, `Final Test (best run, ${new Date(best.t).toLocaleDateString()}): ${best.pct}% first try. `),
+      SKILLS.filter((s) => best.skills[s.id] !== undefined).map((s) => `${s.label} ${best.skills[s.id]}%`).join(' · ')));
+  }
   ['anglo', 'latin', 'greek', 'lingo'].forEach((o) => {
     const ids = profile.learned.filter((id) => morph(id).origin === o);
     if (!ids.length) return;
@@ -524,6 +539,73 @@ export function timedResultScreen({ profile, result, rank, onAgain, onExit }) {
   again.addEventListener('click', () => { close(); onAgain(); });
   exit.addEventListener('click', () => { close(); onExit(); });
   exit.focus();
+}
+
+// ── The Final Test ────────────────────────────────────────────────
+
+/** One row per skill the fight measured: a bar of first-try %, and what it means. */
+function skillRows(results) {
+  return el('div', { class: 'test-skills' }, SKILLS.filter((s) => results[s.id]).map((s) => {
+    const r = results[s.id];
+    const pct = r.n ? Math.round((100 * r.ft) / r.n) : 0;
+    return el('div', { class: 'test-skill' },
+      el('div', { class: 'test-skill-name' }, el('b', {}, s.label), el('small', {}, s.note)),
+      el('div', { class: 'test-bar' }, el('i', { style: { width: `${pct}%` }, class: pct >= 80 ? 'hi' : pct >= 60 ? 'mid' : 'lo' })),
+      el('div', { class: 'test-pct' }, `${pct}%`, el('small', {}, ` ${r.ft}/${r.n}`)));
+  }));
+}
+const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+/** After the Rot falls: the Test Results card (and the Boss Rush score). */
+export function finalResultsScreen({ profile, out, pct, rush = false, rank = -1, onDone }) {
+  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CONTINUE ▸');
+  const grade = pct >= 90 ? 'Morphology master' : pct >= 75 ? 'Strong reader of words' : pct >= 60 ? 'Getting there' : 'The Rot will be back. Keep practising';
+  const body = el('section', { class: 'sheet glass test-results' },
+    el('div', { class: 'kicker' }, rush ? 'BOSS RUSH · FINAL SCORE' : 'THE FINAL TEST · RESULTS'),
+    rush ? el('div', { class: 'big' }, String(out.score)) : null,
+    el('h2', {}, `${profile.name}: ${pct}% right on the first try`),
+    el('div', { class: 'test-grade' }, grade),
+    skillRows(out.results),
+    el('div', { class: 'test-meta' }, `Time ${mmss(out.seconds)} · ${out.misses} integrity lost · ${out.rewrites} phase rewrite${out.rewrites === 1 ? '' : 's'}${out.mutations.some(Boolean) ? ` · mutations: ${out.mutations.filter(Boolean).join(', ')}` : ''}`),
+    rank >= 0 ? el('div', { style: { color: 'var(--yellow)', fontWeight: '800' } }, `#${rank + 1} on this browser's Boss Rush top 10!`) : null,
+    el('p', { style: { color: 'var(--ink-dim)' } }, '📸 Take a screenshot of this card to show Mr. Phil.'),
+    el('div', { class: 'row-btns', style: { justifyContent: 'center' } }, done));
+  const close = showScreen(body, { x: () => done.click() });
+  readLock(done, 2500);
+  done.addEventListener('click', () => { if (readLocked(done)) return; close(); onDone(); });
+  setTimeout(() => done.focus(), 60);
+}
+
+/** The Overclock cabinet once the Rot is beaten: the two-minute Rotling rush, or the whole fight again. */
+export function overclockMenu() {
+  return new Promise((resolve) => {
+    const rot = el('button', { class: 'btn btn-pink', type: 'button' }, 'ROTLING RUSH · 2 minutes');
+    const boss = el('button', { class: 'btn btn-primary', type: 'button' }, 'BOSS RUSH · the Final Test, scored');
+    const scores = el('button', { class: 'btn', type: 'button' }, 'Boss Rush scores');
+    const cancel = el('button', { class: 'btn btn-ghost', type: 'button' }, 'CANCEL');
+    const close = showScreen(el('section', { class: 'sheet glass', style: { width: 'min(560px, 92vw)' } },
+      el('h2', {}, 'OVERCLOCK MODE'),
+      el('p', {}, 'Rotling Rush: debug as many Rotlings as you can in two minutes.'),
+      el('p', {}, 'Boss Rush: all nine trials of the Final Test with a random mutation each phase. Fewer mistakes and a faster time score more.'),
+      el('div', { class: 'row-btns' }, rot, boss), el('div', { class: 'row-btns' }, scores, cancel)), { x: () => cancel.click() });
+    rot.addEventListener('click', () => { close(); resolve('rotlings'); });
+    boss.addEventListener('click', () => { close(); resolve('boss'); });
+    scores.addEventListener('click', () => bossScoresScreen());
+    cancel.addEventListener('click', () => { close(); resolve(null); });
+    boss.focus();
+  });
+}
+
+export function bossScoresScreen() {
+  const list = loadBossScores();
+  const done = el('button', { class: 'btn btn-primary', type: 'button' }, 'CLOSE');
+  const table = list.length ? el('table', { class: 'report' },
+    el('tr', {}, el('th', {}, '#'), el('th', {}, 'NAME'), el('th', {}, 'SCORE'), el('th', {}, 'FIRST TRY'), el('th', {}, 'DATE')),
+    list.map((s, i) => el('tr', {}, el('td', {}, i + 1), el('td', {}, s.name), el('td', {}, s.score), el('td', {}, `${s.pct}%`), el('td', {}, new Date(s.t).toLocaleDateString()))))
+    : el('p', {}, 'No Boss Rush scores in this browser yet.');
+  const close = showScreen(el('section', { class: 'sheet glass' }, el('h2', {}, 'BOSS RUSH · TOP 10 (THIS BROWSER)'), table, el('div', { class: 'row-btns' }, done)));
+  done.addEventListener('click', close);
+  done.focus();
 }
 
 // ── Ending ────────────────────────────────────────────────────────

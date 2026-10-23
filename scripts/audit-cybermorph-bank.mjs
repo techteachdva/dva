@@ -19,7 +19,8 @@
 
 import { MORPHEMES } from '../src/site/cybermorph/js/data/morphemes.js';
 import { build, sumText } from '../src/site/cybermorph/js/compiler/wordsum.js';
-import { DISTRICTS, MAIN_ORDER, KEY_POOL, FINALE_POOLS, DICTIONARY } from '../src/site/cybermorph/js/data/world.js';
+import { DISTRICTS, MAIN_ORDER, KEY_POOL, DICTIONARY } from '../src/site/cybermorph/js/data/world.js';
+import { GIANTS } from '../src/site/cybermorph/js/data/finale.js';
 import { ROOM_W, ROOM_H, CORRIDOR } from '../src/site/cybermorph/js/data/layout.js';
 import { MORPHEME_CATALOG as FORK } from '../src/site/cybermorph/js/data/catalog.js';
 import { MORPHEME_CATALOG as GARDEN } from '../src/site/scripts/morphology-morpheme-catalog.js';
@@ -152,10 +153,11 @@ KEY_POOL.forEach((k, i) => {
   if (r) built.push(`keyword ${i + 1}: ${sumText(k.p)}`);
   if (k.clue.length !== 3) errors.push(`keyword ${i + 1}: needs 3 clue lists`);
 });
-FINALE_POOLS.forEach((pool) => pool.words.forEach((ids) => {
-  const r = tryBuild(ids, `finale ${pool.label}`);
-  if (r) built.push(`finale ${pool.label}: ${r.segments.join('|')} → ${r.word}`);
-}));
+GIANTS.forEach((g) => {
+  const r = tryBuild(g.p, 'finale giant');
+  if (r) built.push(`finale giant: ${r.segments.join('|')} → ${r.word}`);
+  if (g.wrong.length !== 2 || g.wrong.includes(g.m)) errors.push(`finale giant ${g.p.join('+')}: needs 2 wrong meanings, none the answer`);
+});
 
 // The word bank: every entry builds exactly its word, with no duplicates.
 {

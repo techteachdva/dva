@@ -267,7 +267,7 @@ prefer|pre fer|to carry before; to like better
 offer|ob fer|to bring toward someone
 differ|dis fer|to be unlike
 difference|dis fer ence|the state of carrying apart; the way things are unlike
-different|dis fer ent|one who carries apart; not the same
+different|dis fer ent|carrying apart; not the same
 conference|con fer ence|the state of bringing together; a meeting to bring ideas together
 reference|re fer ence|a source you point back to
 preference|pre fer ence|what you like better
@@ -320,7 +320,7 @@ detention|de tent ion|being held after
 attention|ad tent ion|holding your mind toward
 retention|re tent ion|the act of keeping
 tenant|ten ant|one who holds a rented place
-continent|con tin ent|one who holds together; land held together
+continent|con tin ent|holding together; a large body of land held together
 continuous|con tinu ous|holding together without a break
 continuity|con tinu ity|the state of going on without a break
 visible|vis ible|able to be seen
@@ -512,8 +512,8 @@ monologue|mono logue|a talk by one; a speech by one person
 dialogue|dia logue|a talk across; a talk between people
 hyperactive|hyper act ive|too active
 hypothermia|hypo therm ia|under heat; a condition of having too little body heat
-hypodermic|hypo derm ic|relating to under skin
-economy|eco nom gy|the study of environmenting arrangement; how a household or country manages money
+hypodermic|hypo derm ic|relating to under the skin; going under the skin
+economy|eco nom gy|the rules of a household; how a household or country manages money
 economic|eco nom ic|relating to money and resources
 hydrogen|hydro gen|the gas that forms water
 antigen|anti gen|an against birth; something the body makes antibodies against
@@ -537,7 +537,7 @@ technical|techn ic al|relating to skills and tools
 psychic|psych ic|relating to the mind
 dehydrate|de hydr ate|to take water out of
 heroic|hero ic|relating to a brave person; brave like a hero
-heroism|hero ism|a belief or practice a brave person; great bravery
+heroism|hero ism|the acts of a hero; great bravery
 automobile|auto mobile|a car; a self-moving machine
 graphics|graph ics|the study of writing; pictures and designs made for screens or print
 photographic|photo graph ic|relating to photographs
@@ -551,12 +551,12 @@ microbiologist|micro bio log ist|one who studies tiny living things
 biological|bio log ic al|relating to living things
 geological|geo log ic al|relating to rocks and the earth
 ecological|eco log ic al|relating to living things and their homes
-ecologist|eco log ist|one who environments study; one who studies living things and their homes
+ecologist|eco log ist|one who studies living things and their homes
 psychological|psych o log ic al|relating to the mind
-astrology|astro log gy|the study of staring study; an old belief that stars shape lives
+astrology|astro log gy|star study; an old belief that stars shape lives
 astronomical|astro nom ic al|relating to stars; hugely large
 economical|eco nom ic al|careful with money
-economist|eco nom ist|one who environments arrangement; one who studies money and trade
+economist|eco nom ist|one who studies how a household or country manages money and trade
 economics|eco nom ics|the study of money and trade
 economize|eco nom ize|to save money
 geometric|geo metr ic|made of shapes and lines
@@ -569,8 +569,8 @@ symphonic|syn phon ic|relating to a symphony
 polyphonic|poly phon ic|made of many sounds at once
 hydrology|hydr o log gy|the study of water
 cardiogram|cardi o gram|a drawing of the heartbeat
-cardiologist|cardi o log ist|one who hearts study; a heart doctor
-neurologist|neur o log ist|one who nerves study; a nerve and brain doctor
+cardiologist|cardi o log ist|one who studies the heart; a heart doctor
+neurologist|neur o log ist|one who studies the nerves; a nerve and brain doctor
 pathologist|path o log ist|one who studies disease
 anthropologist|anthrop o log ist|one who studies humans
 philosophical|phil o soph ic al|relating to the love of wisdom

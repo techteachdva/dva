@@ -13,6 +13,7 @@
  */
 
 import { save } from './save.js';
+import { SKILLS } from '../data/finale.js';
 import { glow } from './mastery.js';
 import { encodeReport, ERROR_KINDS } from './report.js';
 import { morph, MORPHEMES } from '../data/morphemes.js';
@@ -144,6 +145,9 @@ export function ticket(p = profile) {
   const M = {};
   Object.entries(mastery).forEach(([k, m]) => { M[k] = [Math.round((m.sum / m.n) * 10), m.fading, m.n]; });
   const payload = { n: p.name, s: Math.round(s.start / 1000), m: minutesPlayed(s), w: s.words, r: s.rotlings, L: lessons, M };
+  // The Final Test's best run: overall first-try %, then one % per skill (-1 = not measured).
+  const best = p.finale && p.finale.best;
+  if (best) payload.F = [best.pct, ...SKILLS.map((k) => (best.skills[k.id] ?? -1))];
   // For the student: what they practised (by morpheme) and what to look at again.
   const practised = Object.entries(s.by).filter(([, r]) => r.a > 0).sort((a, b) => b[1].a - a[1].a);
   const shaky = Object.entries(s.by).filter(([, r]) => Object.values(r.e).reduce((x, y) => x + y, 0) > 0)

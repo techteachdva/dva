@@ -9,6 +9,7 @@
  * Feedback rules come from Tech Escape's terminal (van der Kleij et al., 2015): every attempt
  * gets an explanation, including correct ones; retry until right; first try is recorded quietly;
  * a wrong answer blames the machine ("the joint won't hold"), never the student.
+ * In the final fight a miss also costs an integrity pip (onMiss), and the fight can close it (control).
  *
  * Building is slow on purpose. Every task opens with the drum's spin-up, and each ring stops
  * at least SAFE_CLICKS turns from its answer, so no word is ever shown or one tap away.
@@ -128,7 +129,7 @@ const MODE_LABEL = {
  */
 const BANK_MEANING = new Map(BANK.map((b) => [b.word, b.meaning]));
 
-export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], title = null, onSolved = null, onMadeUp = null, onDiscover = null }) {
+export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], title = null, onSolved = null, onMadeUp = null, onDiscover = null, onMiss = null, control = null }) {
   return new Promise((resolve) => {
     const panel = openPanel({ dim: 0.68, focus: true, className: 'compile-panel' });
     const top = el('section', { class: 'glass panel-top' });
@@ -415,6 +416,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         if (pickIdx === t.a) return succeed([], null, () => fb('good', 'TRANSLATED ✔', t.why));
         sfx.bad();
         drum.flash(false);
+        onMiss && onMiss(t);
         return fb('bad', 'The lock rejects that translation.', `"${t.choices[pickIdx]}" changes the meaning. ${attempts >= 2 ? t.why : 'Read the slang word again: what does it mean?'}`);
       }
 
@@ -465,6 +467,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
         drum.flash(false);
         staticSum(ids, word);
         logError(t.ring[t.a], 'meaning');
+        onMiss && onMiss(t);
         const fit = DICTIONARY.has(word) ? `"${word}" is a real word, but it doesn't fit this sentence.` : `"${word}" isn't a word the lock knows.`;
         return fb('bad', 'The lock rejects that shape.', fit, attempts >= 2 ? `Hint: ${t.why}` : 'Read the whole sentence aloud with your word in the blank.');
       }
@@ -502,6 +505,7 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       attempts += 1;
       sfx.bad();
       drum.flash(false);
+      onMiss && onMiss(t);
       const rows = [];
       if (m !== 'unpack') {
         staticSum(ids, word);
@@ -630,6 +634,8 @@ export function openCompile({ mode = 'compile', tasks = [], profile, pool = [], 
       }
     });
     unhook = onUpdate({ update: (dt) => { if (drum) drum.update(dt); position(); }, resize: () => { if (drum) drum.fitCamera(); } });
+    // The final fight closes the compiler itself when a phase is lost.
+    if (control) control.close = finish;
     setupTask();
     // Playtest hook (read-only view of the open panel).
     window.__cmPanel = { kind: 'compile', get mode() { return effMode(); }, get task() { return task(); }, get drum() { return drum; }, get cols() { return cols; }, get ready() { return ready; } };

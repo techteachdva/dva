@@ -2,7 +2,18 @@
 
 Build: CyberMorph 1.4.2. Source of truth: `js/game/game.js` (startFinale, spawnBoss, bossFight, startTimed), `js/game/waves.js` (makeFake, makeWave), `js/data/world.js` (FINALE_POOLS), the panels in `js/panels/`. Rotling numbers come from running the real generators in Node (200 runs of every level's dessert and every room's hall wave). Not checked: how real students split their calls in the DEBUG panel; there is no telemetry for that yet.
 
-**Status: Part 2 (the Rotling mix) is implemented, not yet committed. Part 3 (the boss) is plan only.**
+**Status: Part 2 shipped in 1.4.3. Part 3 (the Final Test) is implemented, not yet committed.**
+
+Part 3 as built differs from the plan below in these places:
+- **5 integrity pips per phase, not 4.** Counting real decisions, phases run 13–22 items, and 4 pips failed a strong student too often. A Rotling, card or word can cost at most one pip for its mistakes (except a Giant Word cut).
+- **7 skills on the results card, not 6.** "Real or Rot" (the Swarm) is scored apart from Spelling (Spell Strike); they are different skills.
+- **Word Detective shows the pieces without their meanings.** Reading the pieces is the test.
+- **Forge and Detective only draw "transparent" words**, whose meaning shares a word with a piece's gloss (zoologist: zoo = animal). Opaque words (dedicate, deception) can't be read from their parts, so they don't belong in this test.
+- **Family Web decoys come from a different language** (graph for script). The first build used scrib and duct as "not family" decoys for script and duce; those are spellings of the same Latin roots, so they really are family. The audit now fails on that.
+- **Mutations:** Bleached, Haste, Mirror, Lean (one fewer pip). There's no Fog.
+- **Polish found while building:** ten broken word-bank glosses ("the study of environmenting arrangement", "one who hearts study") fixed at the source and the levels regenerated (6 lines changed).
+
+Code: `js/data/finale.js` (phases, beats, skills, giants, mutations, Rot lines), `js/game/finale/draw.js` (pure, seeded draws), `js/game/finale/beats.js` (the nine runners), `js/game/finale/fight.js` (pips, rewrites, checkpoints, scoring), `js/core/rng.js`. Audit: `scripts/audit-cybermorph-finale.mjs`. Dev: `boss <1-9> [seed n]`, `boss rush`.
 
 Part 2 as built: five offline misspelling kinds (twin, overrule, greek, seam, and a fifth, **vowel**: a hard-to-hear vowel in a root, added because six Latin and Greek levels had no misspellable word), `MIX` / `rollCalls` / `dealCalls` in `waves.js`, dessert dealt from the bag, and `scripts/audit-cybermorph-rotlings.mjs`. Measured over 200 runs: dessert 40.0 / 29.3 / 19.6 / 11.1 and halls 40.0 / 29.0 / 20.8 / 10.3 (real / misspelled / not a word / reversed).
 

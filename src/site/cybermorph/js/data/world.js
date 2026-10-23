@@ -7,6 +7,7 @@ import { ANGLO } from './anglo.js';
 import { LATIN } from './latin.js';
 import { GREEK } from './greek.js';
 import { LINGO } from './lingo.js';
+import { GIANTS } from './finale.js';
 import { build } from '../compiler/wordsum.js';
 import { MORPHEMES } from './morphemes.js';
 import { buildHubMap } from './layout.js';
@@ -41,44 +42,6 @@ export const KEY_POOL = [
 
 export const SLOT_NAMES = ['prefix', 'base', 'suffix'];
 
-/** The finale: one boss word per origin, in this order, picked at random from each pool. */
-export const FINALE_POOLS = [
-  {
-    origin: 'anglo',
-    label: 'Anglo-Saxon',
-    words: [
-      ['un', 'help', 'ful', 'ness'],
-      ['un', 'friend', 'ly', 'ness'],
-      ['care', 'less', 'ness'],
-      ['over', 'whelm', 'ing'],
-      ['mis', 'under', 'stand', 'ing'],
-      ['fear', 'less', 'ness'],
-    ],
-  },
-  {
-    origin: 'latin',
-    label: 'Latin',
-    words: [
-      ['in', 'de', 'struct', 'ible'],
-      ['re', 'con', 'struct', 'ion'],
-      ['trans', 'port', 'ation'],
-      ['contra', 'dict', 'ion'],
-      ['inter', 'rupt', 'ion'],
-    ],
-  },
-  {
-    origin: 'greek',
-    label: 'Greek',
-    words: [
-      ['tris', 'kai', 'deka', 'phob', 'ia'],
-      ['auto', 'bio', 'graph', 'gy'],
-      ['micro', 'bio', 'log', 'gy'],
-      ['techn', 'o', 'log', 'ic', 'al'],
-      ['photo', 'syn', 'the', 'sis'],
-      ['chron', 'o', 'log', 'ic', 'al'],
-    ],
-  },
-];
 
 /**
  * Avatar parts. Five of each are open from the start; the rest unlock with achievements
@@ -109,6 +72,7 @@ export const AVATAR = {
     { id: 't-white', name: 'Lab White', color: '#e9edf2', pattern: 'solid' },
     { id: 't-red', name: 'Arcade Red', color: '#ff3b5c', pattern: 'solid' },
     { id: 't-circuit', name: 'Circuit', color: '#1fd17a', pattern: 'circuit' },
+    { id: 't-rusher', name: 'Boss Rusher', color: '#ff3df0', pattern: 'circuit', unlock: 'bossrush' },
     { id: 't-check', name: 'Checker', color: '#ffd23f', pattern: 'checker' },
     { id: 't-flannel', name: 'Flannel', color: '#c0392b', pattern: 'plaid' },
     { id: 't-amber', name: 'Amber Glass', color: '#ffb000', pattern: 'glow', unlock: 'anglo' },
@@ -172,6 +136,7 @@ export const AVATAR = {
     { id: 'p-tophat', name: 'Top Hat', icon: '🎩', color: '#1a1a22', unlock: 'desk' },
     { id: 'p-headphones', name: 'Headphones', icon: '🎧', color: '#2a2f38', unlock: 'lingo' },
     { id: 'p-halo', name: 'Halo', icon: '✨', color: '#ffe680', unlock: 'finale' },
+    { id: 'p-trophy', name: 'Top Marks Trophy', icon: '🏆', color: '#ffd23f', unlock: 'flawless' },
     { id: 'p-crown', name: 'Crown', icon: '👑', color: '#e6b84a', unlock: 'streak10' },
     { id: 'p-bulb', name: 'Bright Idea', icon: '💡', color: '#ffe066', unlock: 'madeup5' },
     { id: 'p-sprout', name: 'Sprout', icon: '🌱', color: '#3ccf6a', unlock: 'lexicon50' },
@@ -216,6 +181,8 @@ export const ACHIEVEMENTS = [
   { key: 'desk', name: 'Lock Picker', how: 'Open the Secret Secretary Desk' },
   { key: 'lingo', name: 'Lingo Learner', how: 'Finish the Lingo Room' },
   { key: 'finale', name: 'Rot Slayer', how: 'Defeat the Rot' },
+  { key: 'flawless', name: 'Top Marks', how: 'Win the final test without losing a single integrity pip' },
+  { key: 'bossrush', name: 'Boss Rusher', how: 'Score 3,500 or more in Boss Rush (the Overclock cabinet, after the Rot is beaten)' },
   { key: 'golden', name: 'Gold Rush', how: 'DEBUG a golden Rotling' },
   { key: 'streak5', name: 'Clean Streak', how: 'DEBUG 5 Rotlings in a row on the first try' },
   { key: 'streak10', name: 'Unstoppable', how: 'DEBUG 10 Rotlings in a row on the first try' },
@@ -264,7 +231,7 @@ function collectWords() {
       if (r.newword) set.add(r.newword.w);
     }
   }
-  FINALE_POOLS.forEach((pool) => pool.words.forEach(addIds));
+  GIANTS.forEach((g) => addIds(g.p));
   BANK.forEach((b) => set.add(b.word));
   KEY_POOL.forEach((k) => addIds(k.p));
   // Free bases are words on their own (help, port, phone); bound ones (rupt, struct) are not.

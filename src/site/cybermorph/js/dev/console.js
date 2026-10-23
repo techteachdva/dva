@@ -110,7 +110,7 @@ const COMMANDS = {
         Where: ['status', 'goto', 'level', 'phase', 'garden'],
         Progress: ['earn', 'unlock', 'clear', 'reset'],
         Minigames: ['game', 'games', 'families'],
-        Story: ['noam', 'lab', 'desk', 'finale', 'overclock'],
+        Story: ['noam', 'lab', 'desk', 'finale', 'boss', 'overclock'],
         Testing: ['rotling', 'clearlog'],
       };
       const out = ['Commands (a leading / is fine):'];
@@ -118,7 +118,7 @@ const COMMANDS = {
         out.push(`[${g}]`);
         names.forEach((n) => out.push(`  ${COMMANDS[n].usage.padEnd(30)} ${COMMANDS[n].desc}`));
       });
-      out.push('Examples: goto latin · level greek 8 · phase build · garden · game rupt 2 · games move · unlock all');
+      out.push('Examples: goto latin · level greek 8 · phase build · garden · game rupt 2 · boss 9 · unlock all');
       return out.join('\n');
     },
   },
@@ -255,7 +255,20 @@ const COMMANDS = {
   },
   lab: { usage: 'lab', desc: 'open the Word Lab (free building) right now', async run(api) { await api.ensure(); await api.openLab(); return 'Word Lab closed.'; } },
   desk: { usage: 'desk', desc: 'open the Secret Secretary Desk right now', async run(api) { await api.ensure(); await api.openDesk(); return 'Desk closed.'; } },
-  finale: { usage: 'finale', desc: 'jump to the final fight with the Rot', async run(api) { await api.ensure(); await api.startFinale(); return 'Finale.'; } },
+  finale: { usage: 'finale', desc: 'walk into the Rot\'s arena (the Final Test)', async run(api) { await api.ensure(); await api.startFinale(); return 'Finale.'; } },
+  boss: {
+    usage: 'boss [1-9] [seed n] | boss rush', desc: 'start the Final Test at beat 1-9 (rooms cleared first)',
+    more: 'Beats: 1 Volley · 2 Twin Roots · 3 Shape Shift · 4 Swarm · 5 Spell Strike · 6 Family Web · 7 Forge · 8 Detective · 9 Giant Word. "seed 42" replays the same draws. "boss rush" starts Boss Rush.',
+    async run(api, args) {
+      await api.ensure();
+      if (args[0] === 'rush') { await api.startBoss({ rush: true }); return 'Boss Rush over.'; }
+      const at = Math.max(1, Math.min(9, parseInt(args[0], 10) || 1)) - 1;
+      const s = args.indexOf('seed');
+      const seed = s >= 0 ? (parseInt(args[s + 1], 10) >>> 0) : undefined;
+      await api.startBoss({ phase: Math.floor(at / 3), beat: at % 3, seed });
+      return `Final Test from beat ${at + 1}${seed !== undefined ? ` (seed ${seed})` : ''}.`;
+    },
+  },
   overclock: { usage: 'overclock', desc: 'start Overclock Mode (needs a cleared room)', async run(api) { await api.ensure(); await api.startTimed(); return 'Overclock.'; } },
   rotling: {
     usage: 'rotling [real|misspelled|reversed|nonword]', desc: 'spawn a Rotling of that kind next to you',

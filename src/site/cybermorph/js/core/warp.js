@@ -10,6 +10,7 @@
 import { MORPHEMES } from '../data/morphemes.js';
 import { LEVELS } from '../data/levels.js';
 import { DISTRICTS, MAIN_ORDER } from '../data/world.js';
+import { hashSeed, seeded } from './rng.js';
 
 export const TEACHER_CODE = '939393';
 const SALT = 'lexinet-warp-1';
@@ -35,21 +36,6 @@ export const SECTIONS = [
   { id: 'finale', room: 'finale', level: null, label: 'The Rot · final fight' },
 ];
 
-// FNV-1a, then mulberry32: small, fast, and the same on every Chromebook.
-function hash(s) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
-  return h >>> 0;
-}
-function rng(seed) {
-  let a = seed;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 /** The local calendar day, e.g. 2026-10-23. */
 export function dayKey(date = new Date()) {
@@ -63,7 +49,7 @@ export function dailyCodes(date = new Date()) {
   if (cache.has(day)) return cache.get(day);
   const used = new Set();
   const list = SECTIONS.map((s) => {
-    const r = rng(hash(`${SALT}|${day}|${s.id}`));
+    const r = seeded(hashSeed(`${SALT}|${day}|${s.id}`));
     for (;;) {
       const parts = [PFX, BASE, SFX].map((a) => a[Math.floor(r() * a.length)]);
       const code = parts.join('').toUpperCase();
