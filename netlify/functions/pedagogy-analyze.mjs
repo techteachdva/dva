@@ -1,4 +1,4 @@
-import { OPTIONS, POST } from "../../api/pedagogy/analyze.js";
+import { OPTIONS, POST } from "../../api/pedagogy/score.js";
 
 export default async (req) => {
   if (req.method === "OPTIONS") return OPTIONS();

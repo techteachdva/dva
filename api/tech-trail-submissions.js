@@ -16,7 +16,7 @@ import {
   parseStudentName,
   matchRosterName,
   verifyClassAccess,
-} from "./tech-trail/roster-lib.js";
+} from "./tech-trail/_roster-lib.js";
 
 const TEACHER_PASSWORD = "studentsfirst";
 const MIN_OATH_CHARS = 20;

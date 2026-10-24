@@ -6,17 +6,16 @@
 import http from "node:http";
 import { GET as getQuestions, OPTIONS as optionsQuestions } from "../api/pedagogy/questions.js";
 import { POST as postScore, OPTIONS as optionsScore } from "../api/pedagogy/score.js";
-import { POST as postAnalyze, OPTIONS as optionsAnalyze } from "../api/pedagogy/analyze.js";
 
 const port = Number(process.env.PEDAGOGY_API_PORT || 8788);
 
 const routes = new Map([
   ["GET /api/pedagogy/questions", getQuestions],
   ["POST /api/pedagogy/score", postScore],
-  ["POST /api/pedagogy/analyze", postAnalyze],
+  ["POST /api/pedagogy/analyze", postScore],
   ["OPTIONS /api/pedagogy/questions", optionsQuestions],
   ["OPTIONS /api/pedagogy/score", optionsScore],
-  ["OPTIONS /api/pedagogy/analyze", optionsAnalyze],
+  ["OPTIONS /api/pedagogy/analyze", optionsScore],
 ]);
 
 function toHeaders(nodeHeaders) {
