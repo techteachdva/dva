@@ -6,7 +6,49 @@ const state = {
   responses: {}, // qid -> 1..5
   chart: null,
   picks: {}, // spectrumKey -> suggestion index
+  questionsFromApi: null,
+  serverReport: "",
+  improvementMoves: null,
 };
+
+const DEV_API_ORIGIN = "http://127.0.0.1:8788";
+
+async function pedagogyFetch(path, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  let body = options.body;
+  if (body && typeof body !== "string") {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(body);
+  }
+  const init = { ...options, headers, body };
+  let res = await fetch(path, init).catch(() => null);
+  const localHost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  if ((!res || !res.ok) && localHost) res = await fetch(`${DEV_API_ORIGIN}${path}`, init).catch(() => null);
+  if (!res || !res.ok) {
+    const detail = res ? await res.text().catch(() => "") : "network error";
+    throw new Error(`Pedagogy API ${path} failed${res ? ` (${res.status})` : ""}. ${detail.slice(0, 160)}`);
+  }
+  return res.json();
+}
+
+function instrumentFromApi(remote) {
+  const poles = remote?.spectrum_poles || {};
+  const shorts = remote?.short_field_labels || {};
+  const labels = remote?.field_labels || {};
+  const order = Array.isArray(remote?.field_order) ? remote.field_order : [];
+  return {
+    framework: remote?.framework || "",
+    likert: scaleOften(),
+    questions: Array.isArray(remote?.questions) ? remote.questions : [],
+    spectrums: order.map((key) => ({
+      key,
+      label: labels[key] || key,
+      short: shorts[key] || key,
+      left: poles[key]?.low || "",
+      right: poles[key]?.high || "",
+    })),
+  };
+}
 
 const el = (id) => document.getElementById(id);
 
@@ -499,50 +541,6 @@ function updateRadar(scores100, growthKeys) {
   }
 }
 
-function reverseIfNeeded(v, reverse) {
-  return reverse ? 6 - v : v;
-}
-
-function likertMeanTo100(mean1to5) {
-  return 1 + (mean1to5 - 1) * (99 / 4);
-}
-
-function computeScores(responses) {
-  const sums = {};
-  const counts = {};
-
-  const add = (key, value) => {
-    sums[key] = (sums[key] ?? 0) + value;
-    counts[key] = (counts[key] ?? 0) + 1;
-  };
-
-  for (const q of state.data.questions) {
-    const raw = Number(responses[q.id] ?? 0);
-    if (!Number.isFinite(raw) || raw < 1 || raw > 5) continue;
-    const adj = reverseIfNeeded(raw, Boolean(q.reverse_scored));
-    add(q.spectrum, adj);
-    if (q.contributes_to_constructivism) add("CONSTRUCTIVISM_INDEX", adj);
-  }
-
-  const means = {};
-  const scores100 = {};
-  for (const s of state.data.spectrums) {
-    const c = counts[s.key] ?? 0;
-    const mean = c > 0 ? (sums[s.key] ?? 0) / c : 3.0;
-    means[s.key] = mean;
-    scores100[s.key] = likertMeanTo100(mean);
-  }
-
-  return { means, scores100 };
-}
-
-function rankSpectrums(scores100) {
-  const items = state.data.spectrums
-    .map((s) => ({ field: s.key, score: Number(scores100?.[s.key] ?? 50.5) }))
-    .sort((a, b) => b.score - a.score);
-  return { ranked_high: items, ranked_low: [...items].reverse() };
-}
-
 function band(score100) {
   if (score100 >= 88) return "Distinguished alignment";
   if (score100 >= 75) return "Strong alignment";
@@ -625,6 +623,8 @@ function renderSpectrumBars(scores100, growthKeys) {
 }
 
 function improvementBullets(specKey, score100) {
+  const fromServer = state.improvementMoves?.[specKey];
+  if (Array.isArray(fromServer) && fromServer.length) return fromServer.slice(0, 5);
   const s = Number(score100);
   const tier = s < 48 ? "strong" : s < 75 ? "moderate" : "refine";
   const packs = {
@@ -923,64 +923,14 @@ function escapeHtml(s) {
     .replaceAll("'", "&#39;");
 }
 
-function buildReportText(scores100, means) {
-  const lines = [];
-  lines.push("FRAMEWORK");
-  lines.push("—".repeat(44));
-  lines.push(
-    `This version has ${state.data.questions.length} behavior-anchored prompts (1–5) across six spectrums. Higher = more alignment with the right-hand pole (or constructivist index). **Traditional → Process** = composition: current-traditional (product/single-draft) vs. **process pedagogy** (drafting, revision, invention—Murray / writing-process tradition).`
-  );
-  lines.push("");
-  lines.push("RAW (mean Likert per spectrum, 1–5)");
-  lines.push("—".repeat(44));
-  for (const spec of state.data.spectrums) {
-    const v = Number(means?.[spec.key] ?? 3.0);
-    lines.push(`${spec.short}: ${v.toFixed(2)}/5`);
-  }
-  lines.push("");
-  lines.push("IMPROVEMENT MOVES (toward 100)");
-  lines.push("—".repeat(44));
-  for (const spec of state.data.spectrums) {
-    const s = Number(scores100?.[spec.key] ?? 50.5);
-    lines.push(`${spec.short} — ${s.toFixed(0)}/100`);
-    for (const b of improvementBullets(spec.key, s)) {
-      lines.push(`  • ${b}`);
-    }
-    lines.push("");
-  }
-
-  if (selectedPicksComplete()) {
-    lines.push(buildFinalFocusSection());
-    lines.push("");
-  }
-  lines.push("FIELD-BY-FIELD SNAPSHOT");
-  lines.push("—".repeat(44));
-  for (const spec of state.data.spectrums) {
-    const s = Number(scores100?.[spec.key] ?? 50.5);
-    const pos =
-      s <= 35
-        ? `Leans toward ${spec.left}.`
-        : s <= 48
-          ? `Slight lean toward ${spec.left}.`
-          : s < 62
-            ? "Sits near the middle (mix of both)."
-            : s < 75
-              ? `Slight lean toward ${spec.right}.`
-              : `Leans toward ${spec.right}.`;
-    lines.push(`${spec.label} — ${s.toFixed(1)}/100 — ${band(s)}`);
-    lines.push(pos);
-    lines.push("");
-  }
-  lines.push("NOTE");
-  lines.push("—".repeat(44));
-  lines.push(
-    "Use these as reflection signals, not grades. A ‘low’ score often reflects context (content, time, safety, class culture) and deliberate tradeoffs, not a deficit."
-  );
-  return lines.join("\n");
+function composedReport() {
+  const base = state.serverReport || "";
+  if (!selectedPicksComplete()) return base;
+  return `${base}\n\n${buildFinalFocusSection()}`;
 }
 
 function renderWelcome() {
-  setHeader("Welcome", "Ready");
+  setHeader("Welcome", state.questionsFromApi === false ? "Offline copy" : "Ready");
   el("frameworkText").textContent = state.data.framework ?? "";
   show("welcome");
   updateRadar(null);
@@ -1008,8 +958,25 @@ async function renderResults() {
   setHeader("Results", "Scoring…");
   show("results");
 
-  const { means, scores100 } = computeScores(state.responses);
-  const ranked = rankSpectrums(scores100);
+  let data;
+  try {
+    data = await pedagogyFetch("/api/pedagogy/analyze", {
+      method: "POST",
+      body: { responses: state.responses },
+    });
+  } catch (err) {
+    console.error(err);
+    setHeader("Results", "API unavailable");
+    el("reportText").textContent =
+      "Scoring runs on the pedagogy API (POST /api/pedagogy/analyze). Locally, npm start also launches that API on port 8788.\n\n" +
+      (err?.message || err);
+    return;
+  }
+
+  const scores100 = data.scores_100 || {};
+  const ranked = { ranked_high: data.ranked_high || [], ranked_low: data.ranked_low || [] };
+  state.serverReport = data.report || "";
+  state.improvementMoves = data.improvement_moves || {};
   const growthKeys = ranked.ranked_low.slice(0, 2).map((x) => x.field);
 
   updateRadar(scores100, growthKeys);
@@ -1033,10 +1000,9 @@ async function renderResults() {
       return;
     }
     el("finalizeHint").textContent = "Saved. Scroll down for your compiled report.";
-    el("reportText").textContent = buildReportText(scores100, means);
+    el("reportText").textContent = composedReport();
   };
-  // Show report skeleton immediately (without picks).
-  el("reportText").textContent = buildReportText(scores100, means);
+  el("reportText").textContent = composedReport();
   el("strengthsText").textContent = formatTop(ranked.ranked_high);
   el("growthText").textContent = formatTop(ranked.ranked_low);
   setHeader("Results", "Done");
@@ -1082,7 +1048,14 @@ function reset() {
 
 async function init() {
   setHeader("Loading…", "Please wait");
-  state.data = INSTRUMENT;
+  try {
+    state.data = instrumentFromApi(await pedagogyFetch("/api/pedagogy/questions"));
+    state.questionsFromApi = true;
+  } catch (err) {
+    console.warn(err);
+    state.data = INSTRUMENT;
+    state.questionsFromApi = false;
+  }
 
   wireKeys();
   window.addEventListener("resize", syncRadarToViewport);

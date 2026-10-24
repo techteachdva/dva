@@ -3,6 +3,24 @@
   command = "npm install && npm run build"
 
 [[redirects]]
+  from = "/api/pedagogy/score"
+  to = "/.netlify/functions/pedagogy-score"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/pedagogy/analyze"
+  to = "/.netlify/functions/pedagogy-analyze"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/pedagogy/questions"
+  to = "/.netlify/functions/pedagogy-questions"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200

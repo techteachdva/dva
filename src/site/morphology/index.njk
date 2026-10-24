@@ -101,8 +101,8 @@ contentClasses: morphology-page
           <section class="morph-help__sec">
             <h3>For teachers editing content</h3>
             <p>
-              Word trees and tiers live in <code>morphology-words-data.js</code>. Morpheme chart rows and mini-lessons live in
-              <code>morphology-morpheme-catalog.js</code>.
+              Word trees live in <code>data/morphology/words/tier1.json</code>, <code>tier2.json</code>, and <code>tier3.json</code>.
+              Morpheme chart rows live in <code>data/morphology/catalog/</code> with the same tier names. The page fetches a tier when a lesson needs it.
             </p>
           </section>
         </div>
@@ -594,7 +594,7 @@ contentClasses: morphology-page
       Click a <strong>morpheme</strong> to switch to <strong>Morpheme</strong> mode and see all linked words. Click a
       <strong>word</strong> to load it in <strong>Word</strong> mode. The
       <strong>Type</strong> column tags each entry as a Prefix, Suffix, Root, or Lexeme.
-      (Edit origins, types, and Wiktionary links in <code>morphology-morpheme-catalog.js</code>.)
+      (Edit origins, types, and Wiktionary links in <code>data/morphology/catalog/tier1.json</code>, <code>tier2.json</code>, or <code>tier3.json</code>.)
     </p>
     <div id="morph-morpheme-chart" class="morph-chart__mount" aria-live="polite"></div>
   </section>

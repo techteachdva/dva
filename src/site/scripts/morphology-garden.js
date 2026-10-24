@@ -20,8 +20,13 @@ import {
   renderMorphLessonHtml,
   renderMorphDualLessonHtml,
 } from "./morphology-lessons-data.js";
-import { MORPHOLOGY_WORD_LIST } from "./morphology-words-data.js";
-import { MORPHEME_CATALOG } from "./morphology-morpheme-catalog.js";
+import {
+  WORDS,
+  MORPHEME_CATALOG,
+  loadMorphologyManifest,
+  ensureWordsByIds,
+  ensureAllTiers,
+} from "./morphology-bank.js";
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -35,8 +40,6 @@ const MORPH_DEFAULT_LANDING_KEY = "sfx:-able";
 
 const TREE_DEPTH_STEP = 6.15;
 const TREE_LAYOUT_RADIUS0 = 13.5;
-
-const WORDS = JSON.parse(JSON.stringify(MORPHOLOGY_WORD_LIST));
 
 /** @type {Record<string, Array<{mesh: THREE.Mesh, wordId: string}>>} */
 const morphemeRegistry = {};
@@ -386,9 +389,12 @@ function buildWordGroup(word) {
 /*  visible word groups)                                                   */
 /* ----------------------------------------------------------------------- */
 
-function buildBridges(scene) {
-  const group = new THREE.Group();
-  group.name = "morph-bridges";
+function rebuildBridgeLines(group) {
+  for (const line of [...group.children]) {
+    line.geometry?.dispose();
+    line.material?.dispose();
+    group.remove(line);
+  }
   const baseMat = new THREE.LineBasicMaterial({
     color: 0xff4dd4,
     transparent: true,
@@ -411,7 +417,14 @@ function buildBridges(scene) {
       }
     }
   }
+  baseMat.dispose();
+}
+
+function buildBridges(scene) {
+  const group = new THREE.Group();
+  group.name = "morph-bridges";
   scene.add(group);
+  rebuildBridgeLines(group);
   return group;
 }
 
@@ -802,14 +815,25 @@ function installMorphTutorial(opts) {
 /*  Main                                                                   */
 /* ----------------------------------------------------------------------- */
 
-function init() {
+async function init() {
   const host = document.getElementById("morph-canvas-host");
   const detailEl = /** @type {HTMLElement | null} */ (document.getElementById("morph-detail"));
   const lessonHtmlTarget = /** @type {HTMLElement | null} */ (document.getElementById("morph-detail-body"));
   const shellEl = /** @type {HTMLElement | null} */ (document.getElementById("morphology-shell"));
   if (!host) return;
 
-  configureLessonWordLookup((id) => WORDS.find((w) => w.id === id)?.label || id);
+  let manifest;
+  try {
+    manifest = await loadMorphologyManifest();
+  } catch (err) {
+    console.error(err);
+    if (lessonHtmlTarget) {
+      lessonHtmlTarget.innerHTML = `<p class="morph-lesson__lead">The word bank could not be loaded. ${escapeHtml(err?.message || err)}</p>`;
+    }
+    return;
+  }
+
+  configureLessonWordLookup((id) => WORDS.find((w) => w.id === id)?.label || manifest.words.find((w) => w.id === id)?.label || id);
 
   /* The board is whiteboard-themed by default — add the modifier classes so existing label styles apply. */
   host.classList.add("morph-canvas-host--wb");
@@ -864,31 +888,36 @@ function init() {
     }
   }
 
-  /* ---- build all word groups + bridges (eagerly — small bank) -------- */
+  /* Meshes are built for the lemmas on screen, after that tier's JSON arrives. */
   /** @type {Record<string, THREE.Group>} */
   const wordGroups = {};
-  for (const w of WORDS) {
+  const bridges = buildBridges(scene);
+
+  function ensureWordGroup(/** @type {{ id: string } | undefined} */ w) {
+    if (!w?.id || wordGroups[w.id]) return wordGroups[w.id] || null;
     const g = buildWordGroup(w);
     setWordGroupVisible(g, false);
-    /* Park hidden groups far offscreen so any one-frame CSS-label race never paints inside the camera. */
     g.position.set(1e6, 1e6, 0);
     g.updateMatrixWorld(true);
     scene.add(g);
     wordGroups[w.id] = g;
+    return g;
   }
 
-  const bridges = buildBridges(scene);
+  function manifestIds(/** @type {string | null} */ key) {
+    if (!key) return [];
+    return manifest.morphemes.find((row) => row.key === key)?.wordIds ?? [];
+  }
 
   /* ---- mode state ---------------------------------------------------- */
   /** @type {"word" | "morpheme" | "compare"} */
   let mode = "morpheme";
-  /** @type {string | null} */ let selectedWordId = WORDS[0]?.id ?? null;
+  /** @type {string | null} */ let selectedWordId = manifest.words[0]?.id ?? null;
   /** @type {string | null} */ let selectedMorpheme = null;
-  /** @type {string | null} */ let compareA = WORDS[0]?.id ?? null;
-  /** @type {string | null} */ let compareB = WORDS[1]?.id ?? compareA;
+  /** @type {string | null} */ let compareA = manifest.words[0]?.id ?? null;
+  /** @type {string | null} */ let compareB = manifest.words[1]?.id ?? compareA;
 
-  /* If compareA = compareB make them different */
-  if (compareA === compareB && WORDS.length > 1) compareB = WORDS[1].id;
+  if (compareA === compareB && manifest.words.length > 1) compareB = manifest.words[1].id;
 
   /** Lemma ids visible right now (after layout). */
   let visibleIds = /** @type {string[]} */ ([]);
@@ -908,8 +937,8 @@ function init() {
   const helpBtn = document.getElementById("morph-help-btn");
   const helpEl = document.getElementById("morph-help");
 
-  /* ---- populate selectors (alphabetical) ----------------------------- */
-  const WORDS_ALPHA = [...WORDS].sort((a, b) =>
+  /* Selectors read the manifest, so picking a higher tier fetches that chunk later. */
+  const WORDS_ALPHA = [...manifest.words].sort((a, b) =>
     String(a.label).localeCompare(String(b.label), undefined, { sensitivity: "base", numeric: true })
   );
   function fillWordSelect(/** @type {HTMLSelectElement | null} */ sel) {
@@ -920,9 +949,9 @@ function init() {
   }
   function fillMorphSelect(/** @type {HTMLSelectElement | null} */ sel) {
     if (!sel) return;
-    const items = MORPHEME_CATALOG.map((row) => {
+    const items = manifest.morphemes.map((row) => {
       const k = row.key;
-      const count = wordIdsForMorphemeKey(k).length;
+      const count = row.wordIds?.length ?? 0;
       const text = row.morpheme ?? morphemeKeyShort(k);
       const meaning = row.meaning ?? "";
       const lbl = meaning ? `${text} — ${meaning} (${count})` : `${text} (${count})`;
@@ -946,12 +975,11 @@ function init() {
   if (compareASel && compareA) compareASel.value = compareA;
   if (compareBSel && compareB) compareBSel.value = compareB;
   if (morphSelect) {
-    /* Prefer -able for first paint (linked grid); otherwise first morpheme that hits multiple trees. */
-    const keysMulti = MORPHEME_CATALOG.map((r) => r.key).filter((k) => wordIdsForMorphemeKey(k).length >= 2);
+    const keysMulti = manifest.morphemes.filter((row) => (row.wordIds?.length ?? 0) >= 2).map((row) => row.key);
     selectedMorpheme =
-      wordIdsForMorphemeKey(MORPH_DEFAULT_LANDING_KEY).length >= 2
+      manifestIds(MORPH_DEFAULT_LANDING_KEY).length >= 2
         ? MORPH_DEFAULT_LANDING_KEY
-        : keysMulti[0] ?? MORPHEME_CATALOG[0]?.key ?? null;
+        : keysMulti[0] ?? manifest.morphemes[0]?.key ?? null;
     if (selectedMorpheme) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(selectedMorpheme)}`;
   }
 
@@ -1048,7 +1076,36 @@ function init() {
   }
 
   /* ---- visibility ---------------------------------------------------- */
-  function applyMode() {
+  function idsForCurrentMode() {
+    if (mode === "word") return selectedWordId ? [selectedWordId] : [];
+    if (mode === "morpheme") return manifestIds(selectedMorpheme);
+    const ids = [];
+    if (compareA) ids.push(compareA);
+    if (compareB && compareB !== compareA) ids.push(compareB);
+    return ids;
+  }
+
+  let applySeq = 0;
+  async function applyMode() {
+    const seq = ++applySeq;
+    const neededIds = idsForCurrentMode();
+    if (lessonHtmlTarget && neededIds.some((id) => !WORDS.some((w) => w.id === id))) {
+      lessonHtmlTarget.innerHTML = `<p class="morph-lesson__lead">Loading this tier…</p>`;
+    }
+    try {
+      await ensureWordsByIds(manifest, neededIds);
+    } catch (err) {
+      console.error(err);
+      if (seq !== applySeq) return;
+      if (lessonHtmlTarget) {
+        lessonHtmlTarget.innerHTML = `<p class="morph-lesson__lead">This tier could not be loaded. ${escapeHtml(err?.message || err)}</p>`;
+      }
+      return;
+    }
+    if (seq !== applySeq) return;
+    for (const id of neededIds) ensureWordGroup(WORDS.find((w) => w.id === id));
+    rebuildBridgeLines(bridges);
+
     /* Hide everything (groups + labels), park hidden trees offscreen so they cannot ghost-render. */
     for (const id of Object.keys(wordGroups)) {
       const g = wordGroups[id];
@@ -1071,6 +1128,7 @@ function init() {
       if (compareB && compareB !== compareA) ids.push(compareB);
       visibleIds = ids;
     }
+    visibleIds = visibleIds.filter((id) => wordGroups[id]);
 
     for (const id of visibleIds) {
       if (wordGroups[id]) setWordGroupVisible(wordGroups[id], true);
@@ -1121,7 +1179,7 @@ function init() {
     const wordBtn = t.closest?.("[data-morph-pick-word]");
     if (wordBtn instanceof HTMLElement) {
       const id = wordBtn.getAttribute("data-morph-pick-word");
-      if (id && WORDS.some((w) => w.id === id)) {
+      if (id && manifest.words.some((w) => w.id === id)) {
         selectedWordId = id;
         if (wordSelect) wordSelect.value = id;
         setMode("word");
@@ -1161,24 +1219,22 @@ function init() {
     setRowVisible(pickCompareRow, mode === "compare");
   }
 
-  function setMode(m) {
+  async function setMode(m) {
     mode = m;
-    /* Auto-fix compare conflict so we always have two distinct words */
     if (mode === "compare" && compareA && compareA === compareB) {
-      const alt = WORDS.find((w) => w.id !== compareA);
+      const alt = manifest.words.find((w) => w.id !== compareA);
       if (alt) {
         compareB = alt.id;
         if (compareBSel) compareBSel.value = compareB;
       }
     }
-    /* If morpheme has 0 visible bank words, fall back */
-    if (mode === "morpheme" && (!selectedMorpheme || wordIdsForMorphemeKey(selectedMorpheme).length === 0)) {
+    if (mode === "morpheme" && (!selectedMorpheme || manifestIds(selectedMorpheme).length === 0)) {
       const fallback =
-        MORPHEME_CATALOG.map((r) => r.key).find((k) => wordIdsForMorphemeKey(k).length >= 2) ?? MORPHEME_CATALOG[0]?.key ?? null;
+        manifest.morphemes.find((row) => (row.wordIds?.length ?? 0) >= 2)?.key ?? manifest.morphemes[0]?.key ?? null;
       selectedMorpheme = fallback;
       if (morphSelect && selectedMorpheme) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(selectedMorpheme)}`;
     }
-    applyMode();
+    await applyMode();
   }
 
   btnWord?.addEventListener("click", () => setMode("word"));
@@ -1206,8 +1262,8 @@ function init() {
   });
   compareASel?.addEventListener("change", () => {
     compareA = compareASel.value || null;
-    if (compareA && compareA === compareB && WORDS.length > 1) {
-      const alt = WORDS.find((w) => w.id !== compareA);
+    if (compareA && compareA === compareB && manifest.words.length > 1) {
+      const alt = manifest.words.find((w) => w.id !== compareA);
       if (alt) {
         compareB = alt.id;
         if (compareBSel) compareBSel.value = compareB;
@@ -1218,8 +1274,8 @@ function init() {
   });
   compareBSel?.addEventListener("change", () => {
     compareB = compareBSel.value || null;
-    if (compareB && compareA === compareB && WORDS.length > 1) {
-      const alt = WORDS.find((w) => w.id !== compareB);
+    if (compareB && compareA === compareB && manifest.words.length > 1) {
+      const alt = manifest.words.find((w) => w.id !== compareB);
       if (alt) {
         compareA = alt.id;
         if (compareASel) compareASel.value = compareA;
@@ -1314,7 +1370,7 @@ function init() {
     const m = pickMesh(ev.clientX, ev.clientY);
     if (!m) return;
     const key = m.userData.morphemeKey;
-    if (key && morphemeCatalogRow(key)) {
+    if (key && manifest.morphemes.some((row) => row.key === key)) {
       selectedMorpheme = key;
       if (morphSelect) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(key)}`;
       setMode("morpheme");
@@ -1449,18 +1505,43 @@ function init() {
   /* ---- lesson zoom -------------------------------------------------- */
   installLessonZoom(detailEl, shellEl);
 
-  /* ---- morpheme chart ----------------------------------------------- */
-  installMorphemeChart((id) => {
-    selectedWordId = id;
-    if (wordSelect) wordSelect.value = id;
-    setMode("word");
-    detailEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, (key) => {
-    selectedMorpheme = key;
-    if (morphSelect) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(key)}`;
-    setMode("morpheme");
-    detailEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  });
+  /* Chart rows stay unloaded until the section is on screen. */
+  const chartSection = document.getElementById("morph-chart-section");
+  const chartMount = document.getElementById("morph-morpheme-chart");
+  let chartPromise = null;
+  function loadMorphemeChart() {
+    if (chartPromise) return chartPromise;
+    chartPromise = (async () => {
+      if (chartMount) chartMount.textContent = "Loading morpheme tiers…";
+      await ensureAllTiers();
+      installMorphemeChart((id) => {
+        selectedWordId = id;
+        if (wordSelect) wordSelect.value = id;
+        void setMode("word");
+        detailEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, (key) => {
+        selectedMorpheme = key;
+        if (morphSelect) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(key)}`;
+        void setMode("morpheme");
+        detailEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    })().catch((err) => {
+      chartPromise = null;
+      console.error(err);
+      if (chartMount) chartMount.textContent = "The morpheme chart could not be loaded.";
+    });
+    return chartPromise;
+  }
+  if (chartMount) chartMount.textContent = "The morpheme chart loads when this section is on screen.";
+  if (chartSection && typeof IntersectionObserver !== "undefined") {
+    const chartObserver = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      chartObserver.disconnect();
+      void loadMorphemeChart();
+    });
+    chartObserver.observe(chartSection);
+  }
+  chartSection?.addEventListener("click", () => void loadMorphemeChart());
 
   /* ---- resize ------------------------------------------------------- */
   function resizeCanvasToHost() {
@@ -1480,8 +1561,12 @@ function init() {
     dockUIPanelIntoShell();
     dockDetailIntoShell();
   }
-  /* Landing view: morpheme grid (e.g. -able), not a single word like the alphabetically first lemma. */
-  setMode("morpheme");
+  /* Landing view fetches only the tiers that contain the opening morpheme. */
+  try {
+    await setMode("morpheme");
+  } catch (err) {
+    console.error(err);
+  }
 
   /* ---- animate ------------------------------------------------------ */
   function animate() {
@@ -1746,9 +1831,13 @@ function installMorphHighlightCards() {
 /*  Boot                                                                   */
 /* ----------------------------------------------------------------------- */
 
-function bootMorphologyPage() {
-  init();
+async function bootMorphologyPage() {
   installMorphHighlightCards();
+  try {
+    await init();
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 if (document.readyState === "loading") {

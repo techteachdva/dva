@@ -20,8 +20,10 @@
  * --lenient  Always exit 0 (use locally when you only want the printed report).
  */
 
-import { MORPHOLOGY_WORD_LIST } from "../src/site/scripts/morphology-words-data.js";
-import { MORPHEME_CATALOG } from "../src/site/scripts/morphology-morpheme-catalog.js";
+import { loadMorphologyWordList, loadMorphemeCatalog } from "../src/site/scripts/morphology-bank.js";
+
+const MORPHOLOGY_WORD_LIST = await loadMorphologyWordList();
+const MORPHEME_CATALOG = await loadMorphemeCatalog();
 
 const lenient = process.argv.includes("--lenient") || process.env.MORPH_AUDIT_LENIENT === "1";
 

@@ -44,7 +44,7 @@ export const AFFIX_ORIGIN_HINT = {
 };
 
 /**
- * Optional fallback — lessons read `w.deep` on each word in `morphology-words-data.js` first.
+ * Optional fallback — lessons read `w.deep` on each word in the tier JSON first.
  * @type {Record<string, { summary?: string, etymology?: EtymoPart[], formation?: string, tense?: string, embedded?: { text: string, note: string }[], spelling?: { from: string, to: string, note: string }[] }>}
  */
 export const MORPH_DEEP_NOTES = {};

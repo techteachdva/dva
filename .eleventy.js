@@ -107,6 +107,21 @@ function getAnchorAttributes(filePath, linkTitle) {
 const tagRegex = /(^|\s|\>)(#[^\s!@#$%^&*()=+\.,\[{\]};:'"?><]+)(?!([^<]*>))/g;
 
 module.exports = function (eleventyConfig) {
+  eleventyConfig.on("eleventy.before", async () => {
+    try {
+      const { optimizeGameAssets } = await import("./scripts/optimize-assets.mjs");
+      const result = await optimizeGameAssets();
+      const count = result.images.length + result.audio.length;
+      if (count || result.skipped.length) {
+        console.log(
+          `[assets] ${result.images.length} image(s), ${result.audio.length} audio file(s), ${result.skipped.length} skipped`
+        );
+      }
+    } catch (err) {
+      console.warn("[assets] optimization skipped:", err?.message || err);
+    }
+  });
+
   eleventyConfig.setLiquidOptions({
     dynamicPartials: true,
   });

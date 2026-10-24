@@ -1,0 +1,3902 @@
+[
+  {
+    "key": "sfx:-al",
+    "morpheme": "-al",
+    "origin": "Latin (via French)",
+    "meaning": "adjective-maker — \"relating to\" or \"characterized by\"",
+    "etymology": "From Latin -ālis 'belonging to'; entered English directly and through French (cultural, parental, regional).",
+    "wordSums": [
+      "nation + al → national",
+      "person + al → personal",
+      "music + al → musical"
+    ],
+    "decodingTip": "-al turns a noun into an adjective meaning 'relating to' or 'of': nation → national 'of the nation'.",
+    "teachingTip": "Show 5 noun→adjective pairs (culture/cultural, magic/magical). Students paraphrase each as 'relating to ___' to expose the morpheme's job.",
+    "inquiryPrompts": [
+      "Why doesn't every noun take -al? What blocks it?",
+      "Compare 'a personal letter' and 'a person'. What is the morphological difference doing for the meaning?"
+    ],
+    "confusedWith": [
+      "sfx:-ous",
+      "sfx:-y",
+      "sfx:-ful"
+    ],
+    "outsideExamples": [
+      "cultural",
+      "personal",
+      "regional",
+      "magical"
+    ],
+    "wiktionary": "-al",
+    "_order": 6
+  },
+  {
+    "key": "sfx:-y-noun",
+    "morpheme": "-y (abstract noun)",
+    "origin": "Greek (via scholarly English)",
+    "type": "Suffix",
+    "meaning": "abstract noun ending on Greek combining-form compounds (study of ___ , record of ___)",
+    "etymology": "In words like <em>biology, zoology, biography</em>, the final <strong>-y</strong> works with a Greek first element to name a discipline or story-type — not the everyday adjective-maker <strong>-y</strong> (<em>rainy</em>).",
+    "wordSums": [
+      "bio + graph + y → biography (written life)",
+      "zoo + log + y → zoology (study of animals)",
+      "psych + log + y → psychology (study of mind)"
+    ],
+    "decodingTip": "If the base is a Greek combining chunk (bio-, geo-, psych-) and the word names a school subject or story-type, treat the final -y as part of the abstract noun pattern — not 'full of' like rainy.",
+    "confusedWith": [
+      "sfx:-y",
+      "sfx:-logy"
+    ],
+    "outsideExamples": [
+      "biology",
+      "zoology",
+      "geography",
+      "biography"
+    ],
+    "wiktionary": "-y",
+    "_order": 8
+  },
+  {
+    "key": "sfx:-ness",
+    "morpheme": "-ness",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "abstract noun-maker — \"the state or quality of being ___\"",
+    "etymology": "Old English -nes / -nis 'state, quality'; combines freely with adjectives.",
+    "wordSums": [
+      "kind + ness → kindness",
+      "happy + ness → happi + ness → happiness (consonant + y → i)",
+      "ready + ness → readi + ness → readiness"
+    ],
+    "decodingTip": "-ness turns an adjective into an abstract noun naming the state of being that adjective: kind → kindness ('the state of being kind').",
+    "spellingNote": "Consonant + y bases change y to i: happy → happiness. Most other adjectives just add -ness with no spelling change: dark → darkness, sad → sadness.",
+    "teachingTip": "Pair adjectives and -ness nouns on a T-chart. Notice how the noun lets you talk about the quality itself, not just describe with it.",
+    "inquiryPrompts": [
+      "Why does 'happiness' have an i but 'kindness' has an e?",
+      "Could you say 'fastness' or 'quickness'? Why does one sound natural and the other not?"
+    ],
+    "confusedWith": [
+      "sfx:-ity",
+      "sfx:-ment",
+      "sfx:-tion"
+    ],
+    "outsideExamples": [
+      "kindness",
+      "darkness",
+      "readiness",
+      "happiness"
+    ],
+    "wiktionary": "-ness",
+    "_order": 9
+  },
+  {
+    "key": "sfx:-ment",
+    "morpheme": "-ment",
+    "origin": "Latin (via French)",
+    "meaning": "noun-maker on verbs — names the result, process, or product",
+    "etymology": "From Latin -mentum 'a means or result'; entered through French (jugement, ornement).",
+    "wordSums": [
+      "develop + ment → development",
+      "agree + ment → agreement",
+      "argue + ment → argu(e) + ment → argument (drop silent e — exception)"
+    ],
+    "decodingTip": "-ment lands on a verb to name the process or product of that action: develop → development, agree → agreement.",
+    "spellingNote": "Silent e usually stays before -ment (placement, statement, retirement). Argument is the famous exception — the e drops.",
+    "teachingTip": "Verb-to-noun matching cards: ten verbs, students attach -ment and use each in a sentence. Spot the argument exception.",
+    "inquiryPrompts": [
+      "Why 'argument' and not 'arguement'?",
+      "Compare 'development' (-ment) and 'developed' (-ed). Both come from develop — what makes them different?"
+    ],
+    "confusedWith": [
+      "sfx:-tion",
+      "sfx:-ness"
+    ],
+    "outsideExamples": [
+      "development",
+      "agreement",
+      "measurement",
+      "argument"
+    ],
+    "wiktionary": "-ment",
+    "_order": 10
+  },
+  {
+    "key": "sfx:-able",
+    "morpheme": "-able, -ible",
+    "origin": "Latin (via French)",
+    "meaning": "adjective-maker — \"able to be ___ed\" / \"capable of\"",
+    "etymology": "From Latin -ābilis 'able to be'; -able attaches to native English verbs, -ible to Latin verb stems (visible, audible, edible).",
+    "wordSums": [
+      "read + able → readable",
+      "love + able → lov(e) + able → lovable (drop silent e)",
+      "vis + ible → visible (Latin stem takes -ible)",
+      "notice + able → noticeable (e stays — preserves soft c)"
+    ],
+    "decodingTip": "When you see -able / -ible, ask: 'Can it be ___ed?' readable = 'can be read'. The substitution test confirms the meaning.",
+    "spellingNote": "Drop silent e before -able when the base is plain (love → lovable). KEEP e to preserve a soft c or g (notice → noticeable, change → changeable). Stems of Latin origin take -ible (visible, audible).",
+    "teachingTip": "Substitution test: replace 'X-able' with 'can be X-ed' in a sentence. If it works, the suffix is doing its job.",
+    "inquiryPrompts": [
+      "Why 'visible' (with -ible) but 'readable' (with -able)? Look up where 'vis' comes from.",
+      "Make up an unfamiliar -able word and try it in a sentence. Did it 'work'? Why or why not?"
+    ],
+    "confusedWith": [
+      "sfx:-y",
+      "sfx:-al",
+      "sfx:-ful"
+    ],
+    "outsideExamples": [
+      "flexible",
+      "possible",
+      "valuable",
+      "noticeable"
+    ],
+    "wiktionary": "-able",
+    "_order": 11
+  },
+  {
+    "key": "sfx:-less",
+    "morpheme": "-less",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "adjective-maker — \"without\"",
+    "etymology": "Old English -leas 'free from, lacking'; same root as the verb 'lose'.",
+    "wordSums": [
+      "care + less → careless",
+      "end + less → endless",
+      "use + less → useless"
+    ],
+    "decodingTip": "-less is the negative twin of -ful: -less = 'without', -ful = 'full of'. fearless ↔ fearful; careless ↔ careful.",
+    "teachingTip": "Pair-flip game: read a word with -less, students give the -ful version (and vice versa). Discuss which words have both, which only one.",
+    "inquiryPrompts": [
+      "Why does 'priceless' mean 'extremely valuable' but 'worthless' mean 'no value'? Same suffix, opposite outcomes — why?",
+      "Make pairs: hopeful / hopeless, careful / careless. Use each in a sentence — what tone does each carry?"
+    ],
+    "confusedWith": [
+      "sfx:-ful",
+      "pfx:un-",
+      "pfx:in-"
+    ],
+    "outsideExamples": [
+      "careless",
+      "endless",
+      "tasteless",
+      "priceless"
+    ],
+    "wiktionary": "-less",
+    "_order": 13
+  },
+  {
+    "key": "sfx:-ic",
+    "morpheme": "-ic",
+    "origin": "Greek / Latin",
+    "meaning": "adjective-maker — \"relating to\" or \"characterized by\"",
+    "etymology": "From Greek -ikos via Latin -icus 'relating to'; pervasive in scientific and academic vocabulary.",
+    "wordSums": [
+      "atom + ic → atomic",
+      "histor + ic → historic",
+      "magnet + ic → magnetic"
+    ],
+    "decodingTip": "-ic turns nouns into adjectives meaning 'of / relating to ___': atom → atomic, magnet → magnetic, hero → heroic.",
+    "teachingTip": "Science-class scavenger hunt: 30 seconds to list 5 -ic adjectives from any subject. Students paraphrase each as 'relating to ___'.",
+    "inquiryPrompts": [
+      "What's the difference between 'historic' (-ic) and 'historical' (-al)? Both describe history — when do we use each?",
+      "Why doesn't every noun take -ic? Try 'tablic', 'chairic'. What kinds of nouns invite this suffix?"
+    ],
+    "confusedWith": [
+      "sfx:-al",
+      "sfx:-ous",
+      "sfx:-tic"
+    ],
+    "outsideExamples": [
+      "atomic",
+      "scientific",
+      "magnetic",
+      "historic"
+    ],
+    "wiktionary": "-ic",
+    "_order": 14
+  },
+  {
+    "key": "sfx:-tic",
+    "morpheme": "-tic",
+    "origin": "Greek (via Latin)",
+    "meaning": "adjective-maker — \"relating to\" (same family as -ic, often after stems that end in t)",
+    "etymology": "From Greek -ikos (cf. -ic); in many English words the surface spelling is **-tic** after a stem-final **t** (e.g. *semantics*, *aquatic*) or in modern scientific coinages (*antibiotic*).",
+    "wordSums": [
+      "anti + bio + tic → antibiotic (against + life + relating to)",
+      "aqua + tic → aquatic (water + relating to)",
+      "magnet + ic → magnetic (same suffix family as -ic — the t belongs to magnet)"
+    ],
+    "decodingTip": "When you see **-tic** at the end of an adjective, try reading it as 'relating to ___' — same job as **-ic**, but the spelling often shows a **t** before **-ic** because of the base (optic, aquatic, semantic).",
+    "spellingNote": "Do not chop every word three letters from the end: in **magnetic**, the **t** belongs to **magnet**, not to a separate **-tic** chunk. Ask whether the letters before **-tic** form a base you recognize.",
+    "teachingTip": "Two-column sort: words where **-tic** peels cleanly (anti + bio + tic → antibiotic) vs words where **-ic** is the suffix and **t** is part of the base (magnet + ic → magnetic). Students defend each sort with a word sum.",
+    "inquiryPrompts": [
+      "Why is **antibiotic** often taught as **anti + bio + tic**, but **magnetic** as **magnet + ic**? What does the spelling of the base tell you?",
+      "Collect three **-tic** adjectives from science class. For each, write the word sum and check whether **-tic** or **-ic** is the better suffix label."
+    ],
+    "confusedWith": [
+      "sfx:-ic",
+      "sfx:-ate",
+      "sfx:-ive"
+    ],
+    "outsideExamples": [
+      "antibiotic"
+    ],
+    "wiktionary": "-ic",
+    "_order": 15
+  },
+  {
+    "key": "sfx:-ive",
+    "morpheme": "-ive",
+    "origin": "Latin (via French)",
+    "meaning": "adjective-maker — \"tending to\" or \"having the nature of\"",
+    "etymology": "From Latin -īvus 'having the quality of'; entered English through French (active, passive).",
+    "wordSums": [
+      "act + ive → active",
+      "create + ive → creat(e) + ive → creative (drop silent e)",
+      "perspect + ive → perspective"
+    ],
+    "decodingTip": "-ive marks an adjective meaning 'tending to ___' or 'having the nature of ___': active = tending to act, creative = tending to create.",
+    "spellingNote": "Drop silent e before -ive: create → creative, decide → decisive (with Latin alternation).",
+    "teachingTip": "Verb → adjective rapid-fire: read out 8 verbs (act, react, create, decide, prevent, react). Students call out the -ive adjective and use it in a sentence.",
+    "inquiryPrompts": [
+      "Why is 'destructive' destructive? Trace destruct + ive — what 'tendency' does it name?",
+      "Compare 'active' and 'action'. Same root + different suffix — what does each suffix do?"
+    ],
+    "confusedWith": [
+      "sfx:-al",
+      "sfx:-ic",
+      "sfx:-tic",
+      "sfx:-ant"
+    ],
+    "outsideExamples": [
+      "active",
+      "creative",
+      "perspective",
+      "inclusive"
+    ],
+    "wiktionary": "-ive",
+    "_order": 16
+  },
+  {
+    "key": "sfx:-ous",
+    "morpheme": "-ous, -ious",
+    "origin": "Latin (via French)",
+    "meaning": "adjective-maker — \"full of\" or \"having lots of\"",
+    "etymology": "From Latin -ōsus 'full of'; entered English through French (famous, dangerous).",
+    "wordSums": [
+      "danger + ous → dangerous",
+      "fame + ous → fam(e) + ous → famous (drop silent e)",
+      "vary + ous → vari + ous → various (consonant + y → i)"
+    ],
+    "decodingTip": "-ous = 'full of' (Latinate cousin of Anglo-Saxon -y). dangerous = full of danger; famous = full of fame.",
+    "spellingNote": "Drop silent e before -ous (fame → famous). Consonant + y → change y to i (vary → various). Keep e to preserve soft c or g (courage → courageous).",
+    "teachingTip": "Substitution test: replace 'X-ous' with 'full of X' in a sentence. If the meaning fits, the suffix is doing its 'full of' job.",
+    "inquiryPrompts": [
+      "What's the difference between 'dangery' (Anglo-Saxon -y) and 'dangerous' (Latinate -ous)? Why does English prefer -ous here?",
+      "Find a -ous word where 'full of' doesn't quite fit. What's happening?"
+    ],
+    "confusedWith": [
+      "sfx:-y",
+      "sfx:-ful",
+      "sfx:-ic"
+    ],
+    "outsideExamples": [
+      "dangerous",
+      "famous",
+      "various",
+      "generous"
+    ],
+    "wiktionary": "-ous",
+    "_order": 17
+  },
+  {
+    "key": "sfx:-ity",
+    "morpheme": "-ity, -ty",
+    "origin": "Latin (via French)",
+    "meaning": "abstract noun-maker — \"the state or quality of being ___\" (Latin twin of -ness)",
+    "etymology": "From Latin -itās via French; the Latin counterpart to native -ness.",
+    "wordSums": [
+      "active + ity → activ(e) + ity → activity (drop silent e)",
+      "real + ity → reality",
+      "sincere + ity → sincer(e) + ity → sincerity",
+      "soci + ety → society"
+    ],
+    "decodingTip": "-ity is the Latin twin of -ness: both name an abstract state. Latin-stem adjectives prefer -ity (sincerity, equality); Anglo-Saxon adjectives prefer -ness (kindness).",
+    "spellingNote": "Drop silent e before -ity (active → activity). Sometimes a vowel inserts: able → abil-ity (the spelling shift exposes the Latin verb stem).",
+    "teachingTip": "Latin / Anglo pair-up: equality / fairness, sincerity / honesty, ability / readiness. Students articulate why each language picked which suffix.",
+    "inquiryPrompts": [
+      "Why 'sincerity' (-ity) but 'kindness' (-ness)? Trace each adjective's language family.",
+      "What does it mean to have 'ability'? Build the word sum: able → abil + ity."
+    ],
+    "confusedWith": [
+      "sfx:-ness",
+      "sfx:-ment",
+      "sfx:-tion"
+    ],
+    "outsideExamples": [
+      "activity",
+      "reality",
+      "sincerity",
+      "ability"
+    ],
+    "wiktionary": "-ity",
+    "_order": 18
+  },
+  {
+    "key": "sfx:-ate",
+    "morpheme": "-ate",
+    "origin": "Latin",
+    "meaning": "verb-maker — \"to make / cause to be ___\" (also adjective: \"having ___\")",
+    "etymology": "From Latin -ātus / -āre, the past participle and infinitive endings of first-conjugation verbs.",
+    "wordSums": [
+      "active + ate → activ(e) + ate → activate (drop silent e)",
+      "demonstr + ate → demonstrate",
+      "celebrate → celebr + ate"
+    ],
+    "decodingTip": "-ate usually marks a verb meaning 'cause to be ___' or 'do the ___ action': activate = make active; demonstrate = show by example.",
+    "teachingTip": "Adjective → verb: active → activate, separate → separate (notice the same letters can be adj or verb!). Stress shifts often signal the part of speech.",
+    "inquiryPrompts": [
+      "Read 'separate' (sep-uh-RATE) as a verb and 'separate' (SEP-er-it) as an adjective. Same letters — how does stress carry the morphology?",
+      "Why 'deactivate' but 'undo'? When does English reach for de- + -ate?"
+    ],
+    "confusedWith": [
+      "sfx:-ize",
+      "sfx:-ive"
+    ],
+    "outsideExamples": [
+      "activate",
+      "demonstrate",
+      "celebrate",
+      "calculate"
+    ],
+    "wiktionary": "-ate",
+    "_order": 19
+  },
+  {
+    "key": "sfx:-ary",
+    "morpheme": "-ary",
+    "origin": "Latin (via French)",
+    "meaning": "relating to; belonging to; characterized by (often forms adjectives from nouns—and nouns like \"dictionary\" that sum through -ion first)",
+    "etymology": "From Latin -ārius 'pertaining to'; a cousin of -al in many English adjectives (primary / primary school — compare \"unitary\" from \"unit\" + -ary).",
+    "wordSums": [
+      "dict + ion + ary → dictionary (pertaining to word-sayings)",
+      "prim + ary → primary (first-ranking / belonging to the first rank)",
+      "custom + ary → customary (belonging to custom)"
+    ],
+    "decodingTip": "-ary often hooks to a stem that already carries abstract noun grammar—in school sums, showing dict + ion first makes the -ary meaning 'pertaining to that ion-noun' clearer than treating \"-ionary\" as one chunk.",
+    "teachingTip": "Contrast -ary with -al on parallel stems when possible: national (nation + al) vs mission / missionary patterns—students describe the two ending jobs in plain English.",
+    "inquiryPrompts": [
+      "Why does \"dictionary\" invite a three-piece sum (dict + ion + ary) rather than two? What job does each piece do?",
+      "Find three more -ary words and say what each one is 'related to.'"
+    ],
+    "confusedWith": [
+      "sfx:-al",
+      "sfx:-y",
+      "sfx:-tion"
+    ],
+    "outsideExamples": [
+      "dictionary",
+      "primary",
+      "customary",
+      "vocabulary"
+    ],
+    "wiktionary": "-ary",
+    "_order": 20
+  },
+  {
+    "key": "sfx:-ant",
+    "morpheme": "-ant, -ent",
+    "origin": "Latin (via French)",
+    "meaning": "noun (\"one who ___s\") or adjective (\"___ing\") — Latin participial endings",
+    "etymology": "From Latin present participle -ant- (1st conjugation) and -ent- (2nd / 3rd / 4th); both forms entered English via French.",
+    "wordSums": [
+      "assist + ant → assistant (one who assists)",
+      "differ + ent → different (the ___ing one)",
+      "import + ant → important"
+    ],
+    "decodingTip": "-ant / -ent names the doer or the action-in-progress: an assistant assists; an applicant applies; something important imports (carries weight).",
+    "spellingNote": "-ant attaches to Latin 1st-conjugation stems (assist → assistant), -ent to 2nd / 3rd (differ → different, depend → dependent). Same morpheme; spelling traces the original Latin verb.",
+    "teachingTip": "Verb → person rapid-fire: assist / assistant, apply / applicant, immigrate / immigrant. Students articulate the 'one who ___s' meaning.",
+    "inquiryPrompts": [
+      "Why 'assistant' (-ant) but 'student' (-ent)? Trace each verb's Latin family.",
+      "Is the -ant in 'pleasant' the same morpheme as the -ant in 'assistant'? Both describe — but one's a doer, one's an adjective. Discuss."
+    ],
+    "confusedWith": [
+      "sfx:-er",
+      "sfx:-ive",
+      "sfx:-ence"
+    ],
+    "outsideExamples": [
+      "assistant",
+      "different",
+      "important",
+      "applicant"
+    ],
+    "wiktionary": "-ant",
+    "_order": 21
+  },
+  {
+    "key": "sfx:-ence",
+    "morpheme": "-ence, -ance",
+    "origin": "Latin (via French)",
+    "meaning": "abstract noun — \"state, quality, or act of ___\" (the noun twin of -ant / -ent)",
+    "etymology": "From Latin -entia / -antia 'state of being'; the noun forms of -ent / -ant adjectives. Entered English through French.",
+    "wordSums": [
+      "differ + ence → difference",
+      "import + ance → importance",
+      "evid + ence → evidence"
+    ],
+    "decodingTip": "If you can say '___ant / ___ent' (different, important), you can usually say '___ance / ___ence' (difference, importance). The pair names the quality and the state of having it.",
+    "spellingNote": "-ance pairs with -ant (assistant / assistance), -ence with -ent (different / difference). Same Latin verb family decides which form.",
+    "teachingTip": "Pair chart: adjective (-ant/-ent) on the left, noun (-ance/-ence) on the right. Fill in 6 pairs (assistant / assistance, different / difference, present / presence).",
+    "inquiryPrompts": [
+      "Why 'difference' (-ence) but 'importance' (-ance)? Match each to its Latin verb conjugation.",
+      "Compare 'patient' (adjective) and 'patience' (noun). One root, two morphological roles."
+    ],
+    "confusedWith": [
+      "sfx:-ant",
+      "sfx:-ity",
+      "sfx:-ness"
+    ],
+    "outsideExamples": [
+      "difference",
+      "importance",
+      "evidence",
+      "patience"
+    ],
+    "wiktionary": "-ence",
+    "_order": 22
+  },
+  {
+    "key": "pfx:in-",
+    "morpheme": "in-, im-, il-, ir- (not)",
+    "origin": "Latin",
+    "meaning": "negation — \"not / without\" (Latin family)",
+    "etymology": "From Latin in- 'not'; assimilates to im- before p/b/m, il- before l, ir- before r — same morpheme, four shapes.",
+    "wordSums": [
+      "in + active → inactive",
+      "in + possible → im + possible → impossible",
+      "in + legal → il + legal → illegal",
+      "in + regular → ir + regular → irregular"
+    ],
+    "decodingTip": "Latin in- = 'not' (different from English un-). It changes shape to match the next letter — but it's still one morpheme.",
+    "spellingNote": "Assimilation rule: in- → im- before p/b/m; → il- before l; → ir- before r; stays in- elsewhere. The doubled letter (illegal, irregular) is the giveaway.",
+    "teachingTip": "Show four words side-by-side: inactive, impossible, illegal, irregular. Students hypothesize the spelling rule, then test it on new bases.",
+    "inquiryPrompts": [
+      "Why 'impossible' (im-) instead of 'inpossible'? Say each aloud — which is easier to pronounce?",
+      "Is 'illegal' one morpheme + base, or two morphemes + base? Build the word sum."
+    ],
+    "confusedWith": [
+      "pfx:un-",
+      "pfx:non-",
+      "pfx:dis-",
+      "pfx:in-toward"
+    ],
+    "outsideExamples": [
+      "impossible",
+      "irregular",
+      "illegal",
+      "inactive"
+    ],
+    "wiktionary": "in-",
+    "_order": 25
+  },
+  {
+    "key": "pfx:dis-",
+    "morpheme": "dis-, dif-",
+    "origin": "Latin (via French)",
+    "meaning": "\"apart\", \"not\", or \"reverse / undo\"",
+    "etymology": "From Latin dis- 'apart, away, not'; entered English directly and through French (différent, difficile).",
+    "wordSums": [
+      "dis + agree → disagree (not agree)",
+      "dis + connect → disconnect (undo the connection)",
+      "dis + tract → distract (pull apart)",
+      "dis + appear → disappear"
+    ],
+    "decodingTip": "dis- often means 'apart' (distract = pull apart), 'not' (disagree = not agree), or 'undo' (disconnect = undo a connection).",
+    "teachingTip": "Three-column chart: apart / not / undo. Two examples each. Students add a fourth example to each column.",
+    "inquiryPrompts": [
+      "Is 'disrupt' 'apart + break' or 'not + break'? Which fits how we actually use it?",
+      "Why is 'disagree' 'not + agree' but 'distract' 'pull + apart'? Same prefix, different jobs — what's going on?"
+    ],
+    "confusedWith": [
+      "pfx:un-",
+      "pfx:in-",
+      "pfx:non-",
+      "pfx:de-"
+    ],
+    "outsideExamples": [
+      "disagree",
+      "different",
+      "disrupt",
+      "disappear"
+    ],
+    "wiktionary": "dis-",
+    "_order": 26
+  },
+  {
+    "key": "pfx:non-",
+    "morpheme": "non-",
+    "origin": "Latin",
+    "meaning": "neutral negation — \"not\" with no extra flavor",
+    "etymology": "From Latin nōn 'not'; the most neutral negation prefix in English.",
+    "wordSums": [
+      "non + fiction → nonfiction (not fiction)",
+      "non + stop → nonstop",
+      "non + profit → nonprofit"
+    ],
+    "decodingTip": "non- is the cleanest 'not' — no extra flavor. nonfiction = 'not fiction'. 'unfiction' or 'infiction' would feel wrong.",
+    "teachingTip": "Compare un- / in- / non-: which would you use to negate 'fiction', 'sense', 'profit'? Most negated nouns prefer non-.",
+    "inquiryPrompts": [
+      "Why 'nonfiction' but not 'unfiction'?",
+      "When do English speakers reach for non- instead of un- or in-? Make a hypothesis and test it on five new words."
+    ],
+    "confusedWith": [
+      "pfx:un-",
+      "pfx:in-",
+      "pfx:dis-"
+    ],
+    "outsideExamples": [
+      "nonfiction",
+      "nonstop",
+      "nonprofit",
+      "nonsense"
+    ],
+    "wiktionary": "non-",
+    "_order": 27
+  },
+  {
+    "key": "pfx:in-toward",
+    "morpheme": "in-, im- (in/into)",
+    "origin": "Latin",
+    "meaning": "directional — \"in\", \"into\", or \"toward\" (NOT the negative in-)",
+    "etymology": "From Latin in 'in, into, on, toward'; spelled the same as the negative in- but a different morpheme with a different meaning.",
+    "wordSums": [
+      "in + ject → inject (throw in)",
+      "in + sert → insert (put in)",
+      "in + port → im + port → import (in → im before p)"
+    ],
+    "decodingTip": "Two prefixes share the in- spelling: 'not' (inactive) and 'in/into' (inject). Context tells you which: inject sends something IN; inactive means NOT active.",
+    "teachingTip": "Two-column sort: 12 in- words on cards. Students decide 'not' vs 'into' for each and justify with a one-line paraphrase.",
+    "inquiryPrompts": [
+      "Are 'invisible' (not + visible) and 'inject' (into + throw) the same prefix? Why or why not?",
+      "What test could you use to tell the two in-'s apart?"
+    ],
+    "confusedWith": [
+      "pfx:in-",
+      "pfx:ex-",
+      "pfx:trans-"
+    ],
+    "outsideExamples": [
+      "insert",
+      "inject",
+      "import",
+      "include"
+    ],
+    "wiktionary": "in-",
+    "_order": 28
+  },
+  {
+    "key": "pfx:mis-",
+    "morpheme": "mis-",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "\"wrongly\" or \"badly\"",
+    "etymology": "Old English mis- 'wrongly, badly'; some entries (mistake, misuse) entered through Old Norse.",
+    "wordSums": [
+      "mis + lead → mislead (lead wrongly)",
+      "mis + spell → misspell (double s preserved across the boundary)",
+      "mis + understand → misunderstand"
+    ],
+    "decodingTip": "mis- = wrongly or badly. mislead = lead wrongly; mistake = take wrongly; misjudge = judge wrongly.",
+    "spellingNote": "When the base starts with the same letter as the prefix's ending, both letters stay (misspell, misshape, misstate). Don't drop one to look 'cleaner'.",
+    "teachingTip": "Rewrite five 'mis-' words as 'verb + wrongly' (mislead = lead wrongly). Students check whether each paraphrase fits the actual meaning.",
+    "inquiryPrompts": [
+      "Is 'misfortune' 'wrong fortune' or 'bad fortune'? Both? Discuss.",
+      "Why 'misspell' with two s's, but 'misuse' with one s?"
+    ],
+    "confusedWith": [
+      "pfx:dis-",
+      "pfx:un-"
+    ],
+    "outsideExamples": [
+      "mislead",
+      "misprint",
+      "mistake",
+      "misspell"
+    ],
+    "wiktionary": "mis-",
+    "_order": 30
+  },
+  {
+    "key": "pfx:pre-",
+    "morpheme": "pre-",
+    "origin": "Latin",
+    "meaning": "\"before\" — in time or position",
+    "etymology": "From Latin prae- 'before, in front of'; widely used in academic English.",
+    "wordSums": [
+      "pre + view → preview (see beforehand)",
+      "pre + dict → predict (say before)",
+      "pre + heat → preheat (heat ahead of time)"
+    ],
+    "decodingTip": "pre- = before, in time or position. preview = see beforehand; preheat = heat ahead of time; prefix = fix before the base.",
+    "teachingTip": "Replace pre- with 'before' in five words: previewing → 'viewing before', predicting → 'saying before'. Notice how the morpheme carries the time meaning.",
+    "inquiryPrompts": [
+      "Is 'prepare' really 'pre + pare'? What does 'pare' mean? Look it up.",
+      "Why 'prefer' with pre- but 'defer' with de-? Both end in -fer."
+    ],
+    "confusedWith": [
+      "pfx:fore-"
+    ],
+    "outsideExamples": [
+      "predict",
+      "prepare",
+      "prehistoric",
+      "preview"
+    ],
+    "wiktionary": "pre-",
+    "_order": 32
+  },
+  {
+    "key": "pfx:inter-",
+    "morpheme": "inter-",
+    "origin": "Latin",
+    "meaning": "\"between\" or \"among\"",
+    "etymology": "From Latin inter 'between, among'; gives us networking words across modern English.",
+    "wordSums": [
+      "inter + act → interact (act between)",
+      "inter + rupt → interrupt (break between)",
+      "inter + sect → intersect (cut between)"
+    ],
+    "decodingTip": "inter- means 'between' or 'among'. interact = act between people; intersect = cut between two paths; intermix = mix among.",
+    "teachingTip": "Word-web on the board: inter- in the center. Students brainstorm 10 words. Then circle which 'between' is implied — between people, places, times?",
+    "inquiryPrompts": [
+      "Is 'the internet' really an 'inter- + net'? Whose 'between' does it bridge?",
+      "Compare 'interact' and 'intersect': same prefix — what changes from one to the other?"
+    ],
+    "confusedWith": [
+      "pfx:trans-"
+    ],
+    "outsideExamples": [
+      "interact",
+      "interrupt",
+      "intersect",
+      "internet"
+    ],
+    "wiktionary": "inter-",
+    "_order": 33
+  },
+  {
+    "key": "pfx:fore-",
+    "morpheme": "fore-",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "\"before\" or \"ahead\" (Anglo-Saxon counterpart to Latin pre-)",
+    "etymology": "Old English fore- 'before, in front'; the everyday counterpart to Latin pre-.",
+    "wordSums": [
+      "fore + word → foreword (a word before the book)",
+      "fore + shadow → foreshadow (hint ahead)",
+      "fore + warn → forewarn (warn ahead)"
+    ],
+    "decodingTip": "fore- is the Anglo-Saxon 'before': foreword = a 'word before' the book; forecast = throw ahead of time.",
+    "teachingTip": "Latin / Anglo pair-up: predict / foretell, preview / foresee. Same idea, two language sources. Discuss when English keeps both versions.",
+    "inquiryPrompts": [
+      "What's the difference between a 'foreword' and a 'forward'? Same letters in different order — how does each morpheme work?",
+      "Why does 'foreword' feel old-fashioned compared to 'preview'?"
+    ],
+    "confusedWith": [
+      "pfx:pre-"
+    ],
+    "outsideExamples": [
+      "foreshadow",
+      "foreword",
+      "forewarn",
+      "forecast"
+    ],
+    "wiktionary": "fore-",
+    "_order": 34
+  },
+  {
+    "key": "pfx:de-",
+    "morpheme": "de-",
+    "origin": "Latin",
+    "meaning": "\"down\", \"off\", \"away\", or \"reverse / remove\"",
+    "etymology": "From Latin de- 'down, off, away, reverse'; gives us many academic and scientific words.",
+    "wordSums": [
+      "de + frost → defrost (remove frost)",
+      "de + activate → deactivate (reverse activation)",
+      "de + flate → deflate (let air down / out)"
+    ],
+    "decodingTip": "de- often signals 'remove' or 'reverse': defrost = remove frost; deactivate = reverse activation; descend = climb down.",
+    "teachingTip": "Pair de- words with their roots: deactivate ↔ activate, defrost ↔ frost. Students explain how de- 'undoes' each one.",
+    "inquiryPrompts": [
+      "Is de- in 'destroy' still 'remove'? Trace destroy back to Latin destruere.",
+      "Why 'defrost' with de- but 'unfreeze' with un-? Two prefixes, similar jobs — when does English prefer each?"
+    ],
+    "confusedWith": [
+      "pfx:dis-",
+      "pfx:un-",
+      "pfx:sub-"
+    ],
+    "outsideExamples": [
+      "defrost",
+      "deactivate",
+      "deflate",
+      "descend"
+    ],
+    "wiktionary": "de-",
+    "_order": 35
+  },
+  {
+    "key": "pfx:trans-",
+    "morpheme": "trans-",
+    "origin": "Latin",
+    "meaning": "\"across\", \"through\", or \"beyond\"",
+    "etymology": "From Latin trans 'across, through, beyond'; one of the most generative academic prefixes.",
+    "wordSums": [
+      "trans + late → translate (carry across languages)",
+      "trans + form → transform (change across shapes)",
+      "trans + mit → transmit (send across)"
+    ],
+    "decodingTip": "trans- = across or through. translate = carry across languages; transmit = send across distance; transparent = light goes through.",
+    "teachingTip": "Show three trans- words. Ask: 'across what?' Students identify the implicit 'space' the prefix is crossing — language, time, shape, distance.",
+    "inquiryPrompts": [
+      "Is 'transgender' 'across genders'? How does the morpheme work in modern coinages?",
+      "Compare 'transport', 'transmit', 'translate': same prefix — what's the pattern across all three?"
+    ],
+    "confusedWith": [
+      "pfx:inter-",
+      "pfx:ex-"
+    ],
+    "outsideExamples": [
+      "translate",
+      "transform",
+      "transmit",
+      "transport"
+    ],
+    "wiktionary": "trans-",
+    "_order": 36
+  },
+  {
+    "key": "pfx:anti-",
+    "morpheme": "anti-",
+    "origin": "Greek",
+    "meaning": "\"against\" or \"opposite\"",
+    "etymology": "From Greek anti 'against, opposite'; common in modern coinages (antibiotic, antivirus, antibody).",
+    "wordSums": [
+      "anti + bio + tic → antibiotic (against + life + relating to — kills harmful bacteria)",
+      "anti + virus → antivirus",
+      "anti + soci + al → antisocial"
+    ],
+    "decodingTip": "anti- = against. anti- words usually name something that opposes or counteracts. antifreeze = against freezing.",
+    "teachingTip": "Modern coinage hunt: students list 5 anti- words from current life (antivirus, antibody, antiwar). Notice how anti- keeps generating new vocabulary.",
+    "inquiryPrompts": [
+      "What's the difference between 'antisocial' and 'unsocial'? Both involve 'not social' — but the tone differs. Why?",
+      "Why anti- (Greek) for medical / political words but un- (Anglo-Saxon) for everyday ones?"
+    ],
+    "confusedWith": [
+      "pfx:non-",
+      "pfx:un-"
+    ],
+    "outsideExamples": [
+      "antibiotic",
+      "antivirus",
+      "antisocial",
+      "antifreeze"
+    ],
+    "wiktionary": "anti-",
+    "_order": 37
+  },
+  {
+    "key": "pfx:con-",
+    "morpheme": "con-",
+    "origin": "Latin",
+    "meaning": "\"with\" or \"together\"",
+    "etymology": "From Latin com / con 'with, together'; assimilates to com- before b/p/m, col- before l, cor- before r.",
+    "wordSums": [
+      "con + nect → connect (tie together)",
+      "con + verge → converge (come together)",
+      "con + bine → com + bine → combine (con → com before b)",
+      "con + lect → col + lect → collect (con → col before l)"
+    ],
+    "decodingTip": "con- / com- / col- / cor- all mean 'with, together'. converge = come together; connect = tie together; combine = bring with.",
+    "spellingNote": "Assimilation: com- before b/p/m, col- before l, cor- before r, con- elsewhere. The doubled consonant (collect, correct) is a clue to the hidden con-.",
+    "teachingTip": "Show 6 words: combine, connect, collect, correct, contend, compress. Students hypothesize the assimilation rule from the spelling, then check it.",
+    "inquiryPrompts": [
+      "Why 'combine' with com- but 'connect' with con-? What rule predicts this?",
+      "How is 'collect' (col-) related to 'connect' (con-)? Same prefix, different shape — why?"
+    ],
+    "confusedWith": [
+      "pfx:in-toward",
+      "pfx:ad-"
+    ],
+    "outsideExamples": [
+      "combine",
+      "connect",
+      "converge",
+      "collect"
+    ],
+    "wiktionary": "con-",
+    "_order": 39
+  },
+  {
+    "key": "pfx:contra-",
+    "morpheme": "contra-",
+    "origin": "Latin",
+    "meaning": "\"against\"; \"opposite\"; \"contrary to\"",
+    "etymology": "From Latin contrā 'against, opposite to'; the same spine as \"contrary\" and \"contrast.\"",
+    "wordSums": [
+      "contra + dict → contradict (speak against)",
+      "contra + band → contraband (against the proclamation / law)",
+      "contra + vene → contravene (come against — violate)"
+    ],
+    "decodingTip": "contra- marks opposition—often \"against\" an expectation, law, or prior statement. In contradict, the base dict is \"say,\" so you get \"say against.\"",
+    "spellingNote": "Do not collapse contra- into con-\"with\"—con- and contra- are different morphemes with different meanings; letting students pronounce and spell the full contra- chunk keeps the logic visible.",
+    "teachingTip": "Agreement / disagreement quick-sort: list five con- words and five contra- words; students defend each placement with a one-sentence gloss.",
+    "inquiryPrompts": [
+      "How is contradict different in tone from dis-agree? Both push back—which morpheme makes the \"against\" meaning explicit?",
+      "What is being spoken \"against\" in a contradiction—a person, a claim, or both?"
+    ],
+    "confusedWith": [
+      "pfx:con-",
+      "pfx:dis-"
+    ],
+    "outsideExamples": [
+      "contradict",
+      "contrary",
+      "contrast",
+      "contravene"
+    ],
+    "wiktionary": "contra-",
+    "_order": 40
+  },
+  {
+    "key": "pfx:ad-",
+    "morpheme": "ad-",
+    "origin": "Latin",
+    "meaning": "\"to\" or \"toward\"",
+    "etymology": "From Latin ad 'to, toward'; assimilates aggressively (ac-, af-, ag-, ap-, at-, etc.) to match the next consonant.",
+    "wordSums": [
+      "ad + here → adhere",
+      "ad + tract → at + tract → attract (ad → at before t)",
+      "ad + proach → ap + proach → approach (ad → ap before p)"
+    ],
+    "decodingTip": "ad- means 'toward'. The doubled consonant in attract / appeal / aggregate is the assimilated ad- still doing its job.",
+    "spellingNote": "ad- assimilates to almost any following consonant: ac-, af-, ag-, al-, an-, ap-, ar-, as-, at-. Most doubled consonants at the start of a Latinate word are assimilated ad-.",
+    "teachingTip": "Doubled-consonant detective: write 6 words like attract, appeal, accept, aggregate. Students identify the hidden ad- and the original Latin verb.",
+    "inquiryPrompts": [
+      "Is the double t in 'attract' one morpheme or two? Build the word sum.",
+      "Why 'admit' (single d) but 'appoint' (double p)? What changed?"
+    ],
+    "confusedWith": [
+      "pfx:con-",
+      "pfx:in-toward"
+    ],
+    "outsideExamples": [
+      "adhere",
+      "attract",
+      "approach",
+      "accept"
+    ],
+    "wiktionary": "ad-",
+    "_order": 41
+  },
+  {
+    "key": "pfx:per-",
+    "morpheme": "per-",
+    "origin": "Latin",
+    "meaning": "\"through\", \"thoroughly\", or \"completely\"",
+    "etymology": "From Latin per 'through, by means of, throughout'; the same root as the preposition 'per' in 'miles per hour'.",
+    "wordSums": [
+      "per + fect → perfect (made thoroughly / completely)",
+      "per + mit → permit (let through)",
+      "per + spect + ive → perspective (look through)"
+    ],
+    "decodingTip": "per- = through / thoroughly. perfect = thoroughly made; permit = let through; persist = stand through; perspective = look through.",
+    "teachingTip": "Through-test: ask 'through what?' for each per- word. perfect = through to completion; persist = through difficulty; pervade = throughout the space.",
+    "inquiryPrompts": [
+      "Trace 'perspective' as per + spect + ive. What 'through' is the looking doing?",
+      "Compare per- (through) and trans- (across). What's the spatial difference?"
+    ],
+    "confusedWith": [
+      "pfx:trans-",
+      "pfx:pre-"
+    ],
+    "outsideExamples": [
+      "perfect",
+      "permit",
+      "persist",
+      "pervade"
+    ],
+    "wiktionary": "per-",
+    "_order": 43
+  },
+  {
+    "key": "lex:cast",
+    "morpheme": "cast",
+    "origin": "Anglo-Saxon / Latin blend (modern senses mixed)",
+    "meaning": "Tier 1 — verb: throw; noun: a molded shape or group of actors in a show; verb: assign roles or direct outward",
+    "etymology": "Old Norse kasta ‘throw’ shaped the main ‘throw’ sense; other senses (mold, actors) grew by metaphor in Middle English.",
+    "wordSums": [
+      "cast + -ing → casting",
+      "fore + cast → forecast"
+    ],
+    "decodingTip": "Ask whether cast names a throw, a mold, people in a performance, or ‘set outward’ (broadcast).",
+    "outsideExamples": [],
+    "wiktionary": "cast",
+    "_order": 45
+  },
+  {
+    "key": "lex:code",
+    "morpheme": "code",
+    "origin": "Latin through French",
+    "meaning": "Tier 2 — noun: system of laws or symbols; verb: write instructions (especially for computers); noun: secret writing",
+    "etymology": "Latin codex ‘book’ and French code shaped the ‘system of rules/symbols’ family.",
+    "wordSums": [
+      "code + -s → codes",
+      "de + code → decode"
+    ],
+    "decodingTip": "Distinguish ‘rules you follow’ (dress code) from ‘symbols machines read’ (source code).",
+    "outsideExamples": [],
+    "wiktionary": "code",
+    "_order": 48
+  },
+  {
+    "key": "lex:freeze",
+    "morpheme": "freeze",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: turn to ice; stop moving; feel very cold",
+    "etymology": "Old English frēosan ‘become ice’; related to frost and frozen.",
+    "wordSums": [
+      "freeze + -ing → freezing",
+      "un + freeze → unfreeze"
+    ],
+    "decodingTip": "Physical freeze vs. metaphorical freeze (a screen ‘freezes’ = stops updating).",
+    "outsideExamples": [],
+    "wiktionary": "freeze",
+    "_order": 49
+  },
+  {
+    "key": "lex:hope",
+    "morpheme": "hope",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun/verb: wish for something good; expectation that things can improve",
+    "etymology": "Old English hopian ‘wish, expect’; a core emotion-and-planning word.",
+    "wordSums": [
+      "hope + -ful → hopeful",
+      "hope + -less → hopeless"
+    ],
+    "decodingTip": "Same letters work as noun (a hope) or verb (I hope so).",
+    "outsideExamples": [],
+    "wiktionary": "hope",
+    "_order": 51
+  },
+  {
+    "key": "lex:main-hand",
+    "morpheme": "main",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 2 — combining use: ‘main’ as the lead or strongest part (as in mainline, mainstay); not a bound Latin root",
+    "etymology": "Old English mægen-related senses of strength and chief position feed compound uses of main-.",
+    "wordSums": [
+      "main + line → mainline",
+      "main + stay → mainstay"
+    ],
+    "decodingTip": "In compounds, main- usually means ‘chief’ or ‘largest’ rather than ‘hand’.",
+    "outsideExamples": [],
+    "wiktionary": "main",
+    "_order": 54
+  },
+  {
+    "key": "lex:move",
+    "morpheme": "move",
+    "origin": "Latin through French",
+    "meaning": "Tier 1 — verb: change place or position; set in motion; stir feelings",
+    "etymology": "Latin movēre ‘move’ via Old French mover; a high-frequency verb in classroom directions.",
+    "wordSums": [
+      "move + -ing → moving",
+      "re + move → remove"
+    ],
+    "decodingTip": "Silent e drops before vowel suffixes (moving) but returns in related forms (movement).",
+    "outsideExamples": [],
+    "wiktionary": "move",
+    "_order": 55
+  },
+  {
+    "key": "lex:nation",
+    "morpheme": "nation",
+    "origin": "Latin",
+    "meaning": "Tier 2 — noun: a country or a large community of people under one government",
+    "etymology": "Latin nātiō ‘birth, race, people’; academic social-studies vocabulary.",
+    "wordSums": [
+      "nation + al → national",
+      "nation + -s → nations"
+    ],
+    "decodingTip": "Nation often pairs with -al/-ality in civics words (national, nationality).",
+    "outsideExamples": [],
+    "wiktionary": "nation",
+    "_order": 56
+  },
+  {
+    "key": "lex:read",
+    "morpheme": "read",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: interpret written or printed words; noun: a spell of reading (same spelling, two common pronunciations)",
+    "etymology": "Old English rǣdan ‘advise, interpret, read’; present and past can sound different though spelled alike.",
+    "wordSums": [
+      "read + -ing → reading",
+      "read + -s → reads"
+    ],
+    "decodingTip": "Context tells present / past pronunciation; morphology still treats the same written base.",
+    "outsideExamples": [],
+    "wiktionary": "read",
+    "_order": 59
+  },
+  {
+    "key": "lex:sense",
+    "morpheme": "sense",
+    "origin": "Latin through French",
+    "meaning": "Tier 1–2 — noun: sight/hearing/etc. or meaning; verb: detect or understand faintly",
+    "etymology": "Latin sentīre ‘feel’ via sensus; everyday ‘make sense’ uses the meaning strand.",
+    "wordSums": [
+      "sense + -less → senseless",
+      "sense + -s → senses"
+    ],
+    "decodingTip": "Silent e signals the vowel name in sense; compare sensible for the ‘feeling’ root family.",
+    "outsideExamples": [],
+    "wiktionary": "sense",
+    "_order": 61
+  },
+  {
+    "key": "lex:stand",
+    "morpheme": "stand",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: be upright on the feet; tolerate; noun: a stall or position",
+    "etymology": "Old English standan; many compounds (understand, withstand) embed this base.",
+    "wordSums": [
+      "stand + -ing → standing",
+      "under + stand → understand"
+    ],
+    "decodingTip": "Contrast literal stand with idioms (I can’t stand it = endure).",
+    "outsideExamples": [],
+    "wiktionary": "stand",
+    "_order": 62
+  },
+  {
+    "key": "lex:under",
+    "morpheme": "under",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — preposition/adverb: below; less than; in a lower position",
+    "etymology": "Old English under; frequent in compounds (underground, underline).",
+    "wordSums": [
+      "under + line → underline",
+      "under + stand → understand"
+    ],
+    "decodingTip": "As a free morpheme it is spatial; in compounds it can mean ‘beneath’ or ‘too little’.",
+    "outsideExamples": [],
+    "wiktionary": "under",
+    "_order": 64
+  },
+  {
+    "key": "lex:view",
+    "morpheme": "view",
+    "origin": "Latin through French",
+    "meaning": "Tier 1–2 — noun: what you see; opinion; verb: look at; regard",
+    "etymology": "Latin vidēre ‘see’ through French vue; appears in interview, review.",
+    "wordSums": [
+      "view + -s → views",
+      "re + view → review"
+    ],
+    "decodingTip": "Media vocabulary (viewer, preview) extends the ‘seeing’ root.",
+    "outsideExamples": [],
+    "wiktionary": "view",
+    "_order": 66
+  },
+  {
+    "key": "lex:box",
+    "morpheme": "box",
+    "origin": "Latin / Greek via Romance (English box is early modern)",
+    "meaning": "Tier 1 — noun: container; verb: hit with the hand (sport)",
+    "etymology": "Late Latin buxis ‘boxwood box’; everyday object word for plural -es lessons.",
+    "wordSums": [
+      "box + -es → boxes"
+    ],
+    "decodingTip": "Final x takes plural -es so the plural is pronounceable.",
+    "outsideExamples": [],
+    "wiktionary": "box",
+    "_order": 68
+  },
+  {
+    "key": "lex:dish",
+    "morpheme": "dish",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: plate or bowl; food served; verb: gossip (informal)",
+    "etymology": "Old English disc ‘plate’ from Latin discus ‘disc’; common -sh + -es plural pattern.",
+    "wordSums": [
+      "dish + -es → dishes"
+    ],
+    "decodingTip": "Sibilants often take -es: dishes, wishes, brushes.",
+    "outsideExamples": [],
+    "wiktionary": "dish",
+    "_order": 69
+  },
+  {
+    "key": "lex:watch",
+    "morpheme": "watch",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: look carefully; guard; noun: small clock on the wrist",
+    "etymology": "Old English wæccan ‘be awake, keep watch’; double meaning stays in modern English.",
+    "wordSums": [
+      "watch + -es → watches",
+      "watch + -ing → watching"
+    ],
+    "decodingTip": "Same spelling for ‘observe’ and ‘timepiece’—context decides.",
+    "outsideExamples": [],
+    "wiktionary": "watch",
+    "_order": 70
+  },
+  {
+    "key": "lex:baby",
+    "morpheme": "baby",
+    "origin": "Middle English",
+    "meaning": "Tier 1 — noun: very young child; verb: treat gently (baby someone)",
+    "etymology": "From babe + -y diminutive; plural babies changes y→i before -es.",
+    "wordSums": [
+      "baby + -es → babies"
+    ],
+    "decodingTip": "Consonant + y bases take -ies in the plural spelling.",
+    "outsideExamples": [],
+    "wiktionary": "baby",
+    "_order": 71
+  },
+  {
+    "key": "lex:walk",
+    "morpheme": "walk",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: move on foot at a normal pace; noun: a stroll",
+    "etymology": "Old English wealcan ‘roll’ and related forms contributed to the modern walk.",
+    "wordSums": [
+      "walk + -ed → walked",
+      "walk + -ing → walking"
+    ],
+    "decodingTip": "Regular -ed after the voiceless k ending sounds like /t/ (walked).",
+    "outsideExamples": [],
+    "wiktionary": "walk",
+    "_order": 72
+  },
+  {
+    "key": "lex:laugh",
+    "morpheme": "laugh",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb/noun: show amusement with sound; laughter",
+    "etymology": "Old English hlæhhan; silent -gh- is a spelling anchor to teach explicitly.",
+    "wordSums": [
+      "laugh + -ed → laughed",
+      "laugh + -ing → laughing"
+    ],
+    "decodingTip": "GH is silent here; students map the vowel digraph augh to the vowel sound.",
+    "outsideExamples": [],
+    "wiktionary": "laugh",
+    "_order": 73
+  },
+  {
+    "key": "lex:want",
+    "morpheme": "want",
+    "origin": "Anglo-Saxon (Germanic) / Norse contact",
+    "meaning": "Tier 1 — verb: wish for; need; noun: lack (for want of)",
+    "etymology": "Old Norse vanta ‘lack’ influenced the sense ‘need, wish’ in Middle English.",
+    "wordSums": [
+      "want + -ed → wanted",
+      "want + -ing → wanting"
+    ],
+    "decodingTip": "Regular past wanted adds a syllable because -ed follows /t/.",
+    "outsideExamples": [],
+    "wiktionary": "want",
+    "_order": 74
+  },
+  {
+    "key": "lex:make",
+    "morpheme": "make",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: create or build; force a result (make someone laugh)",
+    "etymology": "Old English macian; silent e drops before vowel suffixes (making).",
+    "wordSums": [
+      "make + -ing → making",
+      "make + -er → maker"
+    ],
+    "decodingTip": "Watch for silent e removal before -ing/-ed (make → making).",
+    "outsideExamples": [],
+    "wiktionary": "make",
+    "_order": 75
+  },
+  {
+    "key": "lex:slow",
+    "morpheme": "slow",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — adjective: not fast; adverb: slowly (also slow as adverb in informal use)",
+    "etymology": "Old English slāw ‘slow, sluggish’; pairs with fast/quick in lessons.",
+    "wordSums": [
+      "slow + ly → slowly",
+      "slow + -s → slows"
+    ],
+    "decodingTip": "-ly turns the speed adjective into a manner adverb.",
+    "outsideExamples": [],
+    "wiktionary": "slow",
+    "_order": 76
+  },
+  {
+    "key": "lex:quiet",
+    "morpheme": "quiet",
+    "origin": "Latin through French",
+    "meaning": "Tier 1 — adjective: with little noise; calm; noun: silence",
+    "etymology": "Latin quiētus ‘at rest, calm’ via French quiet; et ends in t so -ly is quietly.",
+    "wordSums": [
+      "quiet + ly → quietly",
+      "quiet + ness → quietness"
+    ],
+    "decodingTip": "Two syllables qui-et; suffix -ly keeps the t cluster.",
+    "outsideExamples": [],
+    "wiktionary": "quiet",
+    "_order": 77
+  },
+  {
+    "key": "lex:create",
+    "morpheme": "create",
+    "origin": "Latin",
+    "meaning": "Tier 2 — verb: make something new; bring into existence",
+    "etymology": "Latin creāre ‘make, bring forth’; silent e is part of the long vowel pattern.",
+    "wordSums": [
+      "create + -or → creator",
+      "create + -ion → creation"
+    ],
+    "decodingTip": "Agent -or after create drops e and adds -or (creator).",
+    "outsideExamples": [],
+    "wiktionary": "create",
+    "_order": 78
+  },
+  {
+    "key": "lex:wise",
+    "morpheme": "wise",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1–2 — adjective: showing good judgment; noun: way of doing (in phrases)",
+    "etymology": "Old English wīs ‘learned, prudent’; comparative wiser uses silent e before -er.",
+    "wordSums": [
+      "wise + -r → wiser",
+      "wise + ly → wisely"
+    ],
+    "decodingTip": "Silent e supports the long i vowel before consonant + vowel suffixes.",
+    "outsideExamples": [],
+    "wiktionary": "wise",
+    "_order": 79
+  },
+  {
+    "key": "lex:ready",
+    "morpheme": "ready",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — adjective: prepared; willing",
+    "etymology": "From read ‘arrange’ + -y; readiness spells y→i before -ness.",
+    "wordSums": [
+      "ready + ness → readiness"
+    ],
+    "decodingTip": "ready + -ness keeps the adjective’s meaning but names the state: ‘being ready’.",
+    "outsideExamples": [],
+    "wiktionary": "ready",
+    "_order": 80
+  },
+  {
+    "key": "lex:culture",
+    "morpheme": "culture",
+    "origin": "Latin",
+    "meaning": "Tier 2 — noun: shared customs, arts, and beliefs of a group",
+    "etymology": "Latin cultūra ‘tending, cultivation’ extended to people-groups.",
+    "wordSums": [
+      "culture + al → cultural"
+    ],
+    "decodingTip": "cultural adds -al: ‘having to do with culture’.",
+    "outsideExamples": [],
+    "wiktionary": "culture",
+    "_order": 81
+  },
+  {
+    "key": "lex:person",
+    "morpheme": "person",
+    "origin": "Latin",
+    "meaning": "Tier 1 — noun: a human being; individual",
+    "etymology": "Latin persōna ‘mask, role, person’.",
+    "wordSums": [
+      "person + al → personal"
+    ],
+    "decodingTip": "personal = ‘of one person’ (compare personnel for a group).",
+    "outsideExamples": [],
+    "wiktionary": "person",
+    "_order": 82
+  },
+  {
+    "key": "lex:region",
+    "morpheme": "region",
+    "origin": "Latin",
+    "meaning": "Tier 2 — noun: a broad area of land; part of a country",
+    "etymology": "Latin regiō ‘direction, district’ from regere ‘rule’.",
+    "wordSums": [
+      "region + al → regional"
+    ],
+    "decodingTip": "regional describes something tied to a region.",
+    "outsideExamples": [],
+    "wiktionary": "region",
+    "_order": 83
+  },
+  {
+    "key": "lex:magic",
+    "morpheme": "magic",
+    "origin": "Greek via Latin / French",
+    "meaning": "Tier 1–2 — noun: tricks that look impossible; adjective: magical",
+    "etymology": "Greek magikē via Latin magica; spells and wonder stories.",
+    "wordSums": [
+      "magic + al → magical"
+    ],
+    "decodingTip": "magical is the -al adjective built on the noun magic.",
+    "outsideExamples": [],
+    "wiktionary": "magic",
+    "_order": 84
+  },
+  {
+    "key": "lex:rain",
+    "morpheme": "rain",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: water falling from clouds; verb: fall as rain",
+    "etymology": "Old English regn; common weather vocabulary.",
+    "wordSums": [
+      "rain + y → rainy"
+    ],
+    "decodingTip": "-y makes ‘full of rain’ for weather words.",
+    "outsideExamples": [],
+    "wiktionary": "rain",
+    "_order": 85
+  },
+  {
+    "key": "lex:wind",
+    "morpheme": "wind",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: moving air; verb: turn or twist (homograph)",
+    "etymology": "Old English wind; context separates noun air vs verb twist.",
+    "wordSums": [
+      "wind + y → windy"
+    ],
+    "decodingTip": "Same spelling as the verb to wind a clock—stress and context differ.",
+    "outsideExamples": [],
+    "wiktionary": "wind",
+    "_order": 86
+  },
+  {
+    "key": "lex:sun",
+    "morpheme": "sun",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: the star that lights the day",
+    "etymology": "Old English sunne; doubles n before vowel suffixes (sunny).",
+    "wordSums": [
+      "sun + y → sunny"
+    ],
+    "decodingTip": "Consonant doubling keeps the short vowel before -y.",
+    "outsideExamples": [],
+    "wiktionary": "sun",
+    "_order": 87
+  },
+  {
+    "key": "lex:kind",
+    "morpheme": "kind",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — adjective: gentle, friendly; noun: type or sort",
+    "etymology": "Old English cynde ‘natural, native’ drifted toward ‘gentle’.",
+    "wordSums": [
+      "kind + ness → kindness"
+    ],
+    "decodingTip": "kindness names the quality of being kind.",
+    "outsideExamples": [],
+    "wiktionary": "kind",
+    "_order": 88
+  },
+  {
+    "key": "lex:dark",
+    "morpheme": "dark",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — adjective: with little light; noun: darkness",
+    "etymology": "Old English deorc; pairs with light in early reading.",
+    "wordSums": [
+      "dark + ness → darkness"
+    ],
+    "decodingTip": "-ness turns the adjective into an abstract noun.",
+    "outsideExamples": [],
+    "wiktionary": "dark",
+    "_order": 89
+  },
+  {
+    "key": "lex:develop",
+    "morpheme": "develop",
+    "origin": "French / Latin hybrid in English",
+    "meaning": "Tier 2 — verb: grow or unfold; build out (ideas, photos, skills)",
+    "etymology": "Old French desveloper ‘unwrap, unfold’; common in school writing.",
+    "wordSums": [
+      "develop + ment → development"
+    ],
+    "decodingTip": "development is the noun for the process or result of developing.",
+    "outsideExamples": [],
+    "wiktionary": "develop",
+    "_order": 90
+  },
+  {
+    "key": "lex:nature",
+    "morpheme": "nature",
+    "origin": "Latin through French",
+    "meaning": "Tier 1–2 — noun: the natural world; a living thing’s built-in character",
+    "etymology": "Latin nātūra ‘birth, character’ from nāscī ‘be born’.",
+    "wordSums": [
+      "nature + al → natural"
+    ],
+    "decodingTip": "natural = ‘of nature’ or ‘as nature made it’.",
+    "outsideExamples": [
+      "nature"
+    ],
+    "wiktionary": "nature",
+    "_order": 91
+  },
+  {
+    "key": "lex:construct",
+    "morpheme": "construct",
+    "origin": "Latin",
+    "meaning": "Tier 2 — verb: build by putting parts together; noun: something built",
+    "etymology": "Latin construere ‘heap together, build’.",
+    "wordSums": [
+      "construct + ion → construction"
+    ],
+    "decodingTip": "construction names the act or product of constructing.",
+    "outsideExamples": [
+      "reconstruct"
+    ],
+    "wiktionary": "construct",
+    "_order": 92
+  },
+  {
+    "key": "lex:agree",
+    "morpheme": "agree",
+    "origin": "Old French / Latin influence",
+    "meaning": "Tier 1–2 — verb: have the same opinion; say yes",
+    "etymology": "Old French agreer ‘receive kindly’; frequent in discussion vocabulary.",
+    "wordSums": [
+      "agree + ment → agreement"
+    ],
+    "decodingTip": "Agreement is the noun for the state or document of agreeing.",
+    "outsideExamples": [],
+    "wiktionary": "agree",
+    "_order": 93
+  },
+  {
+    "key": "lex:measure",
+    "morpheme": "measure",
+    "origin": "Latin through French",
+    "meaning": "Tier 1–2 — verb: find size or amount; noun: a unit or action of measuring",
+    "etymology": "Latin mēnsūra ‘measure’.",
+    "wordSums": [
+      "measure + ment → measurement"
+    ],
+    "decodingTip": "Measurement names the result or act of measuring.",
+    "outsideExamples": [],
+    "wiktionary": "measure",
+    "_order": 94
+  },
+  {
+    "key": "lex:argue",
+    "morpheme": "argue",
+    "origin": "Latin through French",
+    "meaning": "Tier 2 — verb: give reasons for or against; dispute calmly",
+    "etymology": "Latin arguere ‘make clear, prove’; silent e drops before -ment in argument.",
+    "wordSums": [
+      "argue + ment → argument"
+    ],
+    "decodingTip": "Argument can mean ‘quarrel’ or ‘line of reasoning’—context picks.",
+    "outsideExamples": [],
+    "wiktionary": "argue",
+    "_order": 95
+  },
+  {
+    "key": "lex:flex",
+    "morpheme": "flex",
+    "origin": "Latin",
+    "meaning": "Tier 2 — bound-style base in school words: bend (as in flexible, reflex)",
+    "etymology": "Latin flexus ‘bent’ from flectere ‘bend’.",
+    "wordSums": [
+      "flex + ible → flexible"
+    ],
+    "decodingTip": "flexible = ‘able to bend’ literally or figuratively.",
+    "outsideExamples": [],
+    "wiktionary": "flexible",
+    "_order": 96
+  },
+  {
+    "key": "lex:value",
+    "morpheme": "value",
+    "origin": "Latin through French",
+    "meaning": "Tier 1–2 — noun: worth; importance; verb: estimate worth",
+    "etymology": "Latin valēre ‘be strong, be worth’.",
+    "wordSums": [
+      "value + able → valuable"
+    ],
+    "decodingTip": "Silent e links to the long vowel; it drops before vowel-initial -able.",
+    "outsideExamples": [],
+    "wiktionary": "value",
+    "_order": 97
+  },
+  {
+    "key": "lex:beauty",
+    "morpheme": "beauty",
+    "origin": "Anglo-Saxon (Germanic) with French spelling layers",
+    "meaning": "Tier 1 — noun: loveliness; a fine thing or person",
+    "etymology": "From beautiful’s family (Anglo-French beauté); y becomes i before -ful.",
+    "wordSums": [
+      "beauty + ful → beautiful"
+    ],
+    "decodingTip": "beautiful = beauty + -ful (‘full of beauty’).",
+    "outsideExamples": [],
+    "wiktionary": "beauty",
+    "_order": 98
+  },
+  {
+    "key": "lex:help",
+    "morpheme": "help",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: make easier for someone; noun: aid",
+    "etymology": "Old English helpan; extremely common classroom verb.",
+    "wordSums": [
+      "help + ful → helpful",
+      "help + less → helpless"
+    ],
+    "decodingTip": "helpful vs helpless flip the attitude with -ful / -less.",
+    "outsideExamples": [],
+    "wiktionary": "help",
+    "_order": 99
+  },
+  {
+    "key": "lex:color",
+    "morpheme": "color",
+    "origin": "Latin through French",
+    "meaning": "Tier 1 — noun: hue; verb: add color to",
+    "etymology": "Latin color; US spelling color, UK colour—same morpheme lesson.",
+    "wordSums": [
+      "color + ful → colorful"
+    ],
+    "decodingTip": "colorful can mean ‘many bright colors’ or ‘lively in style’.",
+    "outsideExamples": [],
+    "wiktionary": "color",
+    "_order": 100
+  },
+  {
+    "key": "lex:notice",
+    "morpheme": "notice",
+    "origin": "Latin through French",
+    "meaning": "Tier 1–2 — verb: observe; noun: an announcement or warning",
+    "etymology": "Latin notitia ‘knowledge’ via French notice.",
+    "wordSums": [
+      "notice + able → noticeable"
+    ],
+    "decodingTip": "Noticeable = able to be noticed.",
+    "outsideExamples": [],
+    "wiktionary": "notice",
+    "_order": 101
+  },
+  {
+    "key": "lex:end",
+    "morpheme": "end",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: stopping point; verb: finish",
+    "etymology": "Old English ende; pairs with endless for affix lessons.",
+    "wordSums": [
+      "end + less → endless"
+    ],
+    "decodingTip": "-less means ‘without’: endless = without an end.",
+    "outsideExamples": [],
+    "wiktionary": "end",
+    "_order": 102
+  },
+  {
+    "key": "lex:taste",
+    "morpheme": "taste",
+    "origin": "Old French / Latin influence",
+    "meaning": "Tier 1 — noun: flavor; verb: sample flavor",
+    "etymology": "Old French taster ‘touch, taste’; noun taste, adjective tasty, noun tasteless pattern.",
+    "wordSums": [
+      "taste + less → tasteless"
+    ],
+    "decodingTip": "tasteless can mean ‘without flavor’ or ‘rude’ in older grades.",
+    "outsideExamples": [],
+    "wiktionary": "taste",
+    "_order": 103
+  },
+  {
+    "key": "lex:real",
+    "morpheme": "real",
+    "origin": "Latin through French",
+    "meaning": "Tier 1–2 — adjective: true; actual; noun: the real thing (colloquial)",
+    "etymology": "Latin rēālis ‘actual’; pairs with reality for -ity lessons.",
+    "wordSums": [
+      "real + ity → reality"
+    ],
+    "decodingTip": "Prefer peeling -ity (three letters) on reality so the residue is real, not reali + -ty.",
+    "outsideExamples": [],
+    "wiktionary": "real",
+    "_order": 104
+  },
+  {
+    "key": "lex:price",
+    "morpheme": "price",
+    "origin": "Latin through French",
+    "meaning": "Tier 1–2 — noun: cost; verb: set a price",
+    "etymology": "Latin pretium ‘price, worth’ via Old French pris.",
+    "wordSums": [
+      "price + less → priceless"
+    ],
+    "decodingTip": "priceless often means ‘so valuable you cannot set a price’—not ‘without a price’.",
+    "outsideExamples": [],
+    "wiktionary": "price",
+    "_order": 105
+  },
+  {
+    "key": "lex:atom",
+    "morpheme": "atom",
+    "origin": "Greek",
+    "meaning": "Tier 2–3 — noun: smallest unit of a chemical element",
+    "etymology": "Greek atomos ‘uncut, indivisible’; science-class cornerstone.",
+    "wordSums": [
+      "atom + ic → atomic"
+    ],
+    "decodingTip": "-ic makes ‘relating to atoms’: atomic.",
+    "outsideExamples": [],
+    "wiktionary": "atom",
+    "_order": 106
+  },
+  {
+    "key": "lex:magnet",
+    "morpheme": "magnet",
+    "origin": "Latin / Greek via French",
+    "meaning": "Tier 2 — noun: object that pulls iron; extended to attraction",
+    "etymology": "Latin magnēs from Greek Magnētis líthos ‘stone of Magnesia’.",
+    "wordSums": [
+      "magnet + ic → magnetic"
+    ],
+    "decodingTip": "The t belongs to magnet before -ic/-tic: magnetic, magnetism.",
+    "outsideExamples": [],
+    "wiktionary": "magnet",
+    "_order": 107
+  },
+  {
+    "key": "lex:danger",
+    "morpheme": "danger",
+    "origin": "Old French / Latin",
+    "meaning": "Tier 1–2 — noun: risk of harm",
+    "etymology": "Old French danger ‘power to harm’; base for dangerous.",
+    "wordSums": [
+      "danger + ous → dangerous"
+    ],
+    "decodingTip": "-ous = ‘full of’: dangerous = full of danger.",
+    "outsideExamples": [],
+    "wiktionary": "danger",
+    "_order": 108
+  },
+  {
+    "key": "lex:fame",
+    "morpheme": "fame",
+    "origin": "Latin through French",
+    "meaning": "Tier 2 — noun: being widely known or talked about",
+    "etymology": "Latin fāma ‘report, rumor, renown’; silent e appears in famous.",
+    "wordSums": [
+      "fame + ous → famous"
+    ],
+    "decodingTip": "famous = fame + -ous (the e drops before the vowel-initial suffix).",
+    "outsideExamples": [],
+    "wiktionary": "fame",
+    "_order": 109
+  },
+  {
+    "key": "lex:vary",
+    "morpheme": "vary",
+    "origin": "Latin through French",
+    "meaning": "Tier 2 — verb: change; differ",
+    "etymology": "Latin variāre ‘vary’; adjective various shares the stem family.",
+    "wordSums": [
+      "vary + ous → various"
+    ],
+    "decodingTip": "Y → i before vowel suffixes in various, but the verb stays vary.",
+    "outsideExamples": [],
+    "wiktionary": "vary",
+    "_order": 110
+  },
+  {
+    "key": "lex:able",
+    "morpheme": "able",
+    "origin": "Latin through French",
+    "meaning": "Tier 1–2 — adjective: can do; has skill; noun use: the able (people)",
+    "etymology": "Latin habilis ‘handy, apt’; spelling shifts to abil- before -ity (ability).",
+    "wordSums": [
+      "able + ity → ability"
+    ],
+    "decodingTip": "ability builds on the able stem plus Latin -ity.",
+    "outsideExamples": [],
+    "wiktionary": "able",
+    "_order": 111
+  },
+  {
+    "key": "lex:sincere",
+    "morpheme": "sincere",
+    "origin": "Latin through French",
+    "meaning": "Tier 2 — adjective: honest; said without pretending",
+    "etymology": "Latin sincērus ‘clean, pure’; silent e shows in sincerity before -ity.",
+    "wordSums": [
+      "sincere + ity → sincerity"
+    ],
+    "decodingTip": "Y drops before -ity in some adjectives; sincere keeps e before -ity.",
+    "outsideExamples": [],
+    "wiktionary": "sincere",
+    "_order": 112
+  },
+  {
+    "key": "lex:patient",
+    "morpheme": "patient",
+    "origin": "Latin",
+    "meaning": "Tier 1–2 — adjective: calm while waiting; noun: person in a doctor’s office",
+    "etymology": "Latin patiēns ‘enduring’ from patī ‘suffer, endure’.",
+    "wordSums": [
+      "patient + ce → patience (compare silent-e patterns before -ce)"
+    ],
+    "decodingTip": "Patience is the abstract noun; the adjective patient keeps the person sense too.",
+    "outsideExamples": [],
+    "wiktionary": "patient",
+    "_order": 113
+  },
+  {
+    "key": "lex:fair",
+    "morpheme": "fair",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — adjective: just; light in color; moderate",
+    "etymology": "Old English fæger; common in playground fairness talk.",
+    "wordSums": [
+      "un + fair → unfair"
+    ],
+    "decodingTip": "un- + fair flips ‘just’ to ‘unjust’.",
+    "outsideExamples": [],
+    "wiktionary": "fair",
+    "_order": 114
+  },
+  {
+    "key": "lex:lock",
+    "morpheme": "lock",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: fasten with a key; noun: device that fastens",
+    "etymology": "Old English loc; pairs with unlock for prefix lessons.",
+    "wordSums": [
+      "un + lock → unlock"
+    ],
+    "decodingTip": "un- + lock = open what was locked.",
+    "outsideExamples": [],
+    "wiktionary": "lock",
+    "_order": 115
+  },
+  {
+    "key": "lex:custom",
+    "morpheme": "custom",
+    "origin": "Latin through French",
+    "meaning": "Tier 2 — noun: habit or tradition; adjective use in customary",
+    "etymology": "Latin consuētūdinem via Old French custume.",
+    "wordSums": [
+      "custom + ary → customary"
+    ],
+    "decodingTip": "-ary here means ‘belonging to’: customary = ‘of custom’.",
+    "outsideExamples": [],
+    "wiktionary": "custom",
+    "_order": 116
+  },
+  {
+    "key": "lex:demonstrate",
+    "morpheme": "demonstrate",
+    "origin": "Latin",
+    "meaning": "Tier 2 — verb: show clearly; give proof; protest publicly",
+    "etymology": "Latin dēmonstrāre ‘point out, show’.",
+    "wordSums": [
+      "demonstrate"
+    ],
+    "decodingTip": "Stub trees peel Latin -ate; the stem chunk is demonstr- before -ate.",
+    "outsideExamples": [],
+    "wiktionary": "demonstrate",
+    "_order": 117
+  },
+  {
+    "key": "lex:celebrate",
+    "morpheme": "celebrate",
+    "origin": "Latin",
+    "meaning": "Tier 1–2 — verb: honor with a party or ritual; praise",
+    "etymology": "Latin celebrāre ‘frequent, honor’.",
+    "wordSums": [
+      "celebrate"
+    ],
+    "decodingTip": "celebr- carries the ‘honor / fame’ idea before -ate.",
+    "outsideExamples": [],
+    "wiktionary": "celebrate",
+    "_order": 118
+  },
+  {
+    "key": "lex:calculate",
+    "morpheme": "calculate",
+    "origin": "Latin",
+    "meaning": "Tier 2 — verb: work out with numbers; plan deliberately",
+    "etymology": "Latin calculāre ‘count with pebbles (calculi)’.",
+    "wordSums": [
+      "calculate"
+    ],
+    "decodingTip": "calcul- names the little stone / math image behind calculator.",
+    "outsideExamples": [],
+    "wiktionary": "calculate",
+    "_order": 119
+  },
+  {
+    "key": "lex:write",
+    "morpheme": "write",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: form letters or words; compose",
+    "etymology": "Old English wrītan ‘scratch, draw, write’.",
+    "wordSums": [
+      "re + write → rewrite"
+    ],
+    "decodingTip": "re- + write = write again.",
+    "outsideExamples": [],
+    "wiktionary": "write",
+    "_order": 120
+  },
+  {
+    "key": "lex:build",
+    "morpheme": "build",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: construct; noun: shape of the body",
+    "etymology": "Old English byldan; doubles final consonant before vowel suffixes.",
+    "wordSums": [
+      "re + build → rebuild"
+    ],
+    "decodingTip": "re- + build = build again.",
+    "outsideExamples": [],
+    "wiktionary": "build",
+    "_order": 121
+  },
+  {
+    "key": "lex:turn",
+    "morpheme": "turn",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: spin; become; noun: a chance",
+    "etymology": "Old English turnian / trymian influenced by Latin tornare.",
+    "wordSums": [
+      "re + turn → return"
+    ],
+    "decodingTip": "re- + turn = turn back or go back.",
+    "outsideExamples": [],
+    "wiktionary": "turn",
+    "_order": 122
+  },
+  {
+    "key": "lex:clear",
+    "morpheme": "clear",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — adjective: easy to see; not blocked; verb: remove",
+    "etymology": "Old English clǣre ‘bright, clear’.",
+    "wordSums": [
+      "un + clear → unclear"
+    ],
+    "decodingTip": "un- + clear = not clear.",
+    "outsideExamples": [],
+    "wiktionary": "clear",
+    "_order": 123
+  },
+  {
+    "key": "lex:regular",
+    "morpheme": "regular",
+    "origin": "Latin",
+    "meaning": "Tier 2 — adjective: usual; even; following a rule",
+    "etymology": "Latin rēgula ‘rule’ via Old French reuler.",
+    "wordSums": [
+      "ir + regular → irregular"
+    ],
+    "decodingTip": "ir- (assimilated in-) + regular = not regular.",
+    "outsideExamples": [],
+    "wiktionary": "regular",
+    "_order": 124
+  },
+  {
+    "key": "lex:appear",
+    "morpheme": "appear",
+    "origin": "Latin through French",
+    "meaning": "Tier 1–2 — verb: come into view; seem",
+    "etymology": "Latin appārēre ‘come forth’.",
+    "wordSums": [
+      "dis + appear → disappear"
+    ],
+    "decodingTip": "dis- + appear = vanish from sight.",
+    "outsideExamples": [],
+    "wiktionary": "appear",
+    "_order": 125
+  },
+  {
+    "key": "lex:profit",
+    "morpheme": "profit",
+    "origin": "Latin through French",
+    "meaning": "Tier 2 — noun: money gained; verb: benefit",
+    "etymology": "Latin profectus ‘advance, profit’.",
+    "wordSums": [
+      "non + profit → nonprofit"
+    ],
+    "decodingTip": "nonprofit names an organization not run to earn profit.",
+    "outsideExamples": [],
+    "wiktionary": "profit",
+    "_order": 126
+  },
+  {
+    "key": "lex:legal",
+    "morpheme": "legal",
+    "origin": "Latin",
+    "meaning": "Tier 2 — adjective: allowed by law",
+    "etymology": "Latin lēgālis ‘of the law’ from lēx ‘law’.",
+    "wordSums": [
+      "il + legal → illegal"
+    ],
+    "decodingTip": "il- (in- before l) + legal = not legal.",
+    "outsideExamples": [],
+    "wiktionary": "legal",
+    "_order": 127
+  },
+  {
+    "key": "lex:fiction",
+    "morpheme": "fiction",
+    "origin": "Latin",
+    "meaning": "Tier 2 — noun: made-up story; literature genre",
+    "etymology": "Latin fictiō ‘a shaping, feigning’ from fingere ‘form, feign’.",
+    "wordSums": [
+      "non + fiction → nonfiction"
+    ],
+    "decodingTip": "nonfiction is writing that is not made-up storytelling.",
+    "outsideExamples": [
+      "fiction"
+    ],
+    "wiktionary": "fiction",
+    "_order": 128
+  },
+  {
+    "key": "lex:heat",
+    "morpheme": "heat",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: warmth; verb: make hot",
+    "etymology": "Old English hǣtu; overheat = too much heat.",
+    "wordSums": [
+      "over + heat → overheat"
+    ],
+    "decodingTip": "over- + heat = heat too much.",
+    "outsideExamples": [],
+    "wiktionary": "heat",
+    "_order": 129
+  },
+  {
+    "key": "lex:pass",
+    "morpheme": "pass",
+    "origin": "Latin through French",
+    "meaning": "Tier 1 — verb: go by; succeed; noun: narrow path",
+    "etymology": "Latin passus ‘step’ via Old French passer.",
+    "wordSums": [
+      "over + pass → overpass"
+    ],
+    "decodingTip": "overpass is a bridge that passes over a road.",
+    "outsideExamples": [],
+    "wiktionary": "pass",
+    "_order": 130
+  },
+  {
+    "key": "lex:lead",
+    "morpheme": "lead",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: guide; noun: the metal (homograph)",
+    "etymology": "Old English lǣdan; mislead = lead the wrong way.",
+    "wordSums": [
+      "mis + lead → mislead"
+    ],
+    "decodingTip": "mis- + lead = lead wrongly.",
+    "outsideExamples": [],
+    "wiktionary": "lead",
+    "_order": 131
+  },
+  {
+    "key": "lex:print",
+    "morpheme": "print",
+    "origin": "Latin through French",
+    "meaning": "Tier 1 — verb: press letters on paper; noun: a copy",
+    "etymology": "Old French preindre ‘press’.",
+    "wordSums": [
+      "mis + print → misprint"
+    ],
+    "decodingTip": "mis- + print = print wrong.",
+    "outsideExamples": [],
+    "wiktionary": "print",
+    "_order": 132
+  },
+  {
+    "key": "lex:take",
+    "morpheme": "take",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: grab; accept; need (time)",
+    "etymology": "Old English tacan; mistake = wrong take.",
+    "wordSums": [
+      "mis + take → mistake"
+    ],
+    "decodingTip": "mis- + take = take wrongly (a mistake).",
+    "outsideExamples": [],
+    "wiktionary": "take",
+    "_order": 133
+  },
+  {
+    "key": "lex:spell",
+    "morpheme": "spell",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: name letters in order; noun: short magical phrase",
+    "etymology": "Old English spellian; misspell = spell wrong.",
+    "wordSums": [
+      "mis + spell → misspell"
+    ],
+    "decodingTip": "mis- + spell = spell incorrectly.",
+    "outsideExamples": [],
+    "wiktionary": "spell",
+    "_order": 134
+  },
+  {
+    "key": "lex:marine",
+    "morpheme": "marine",
+    "origin": "Latin",
+    "meaning": "Tier 2 — adjective: of the sea; noun: sea soldier",
+    "etymology": "Latin marīnus ‘of the sea’ from mare ‘sea’.",
+    "wordSums": [
+      "sub + marine → submarine"
+    ],
+    "decodingTip": "sub- + marine = under the sea.",
+    "outsideExamples": [],
+    "wiktionary": "marine",
+    "_order": 135
+  },
+  {
+    "key": "lex:merge",
+    "morpheme": "merge",
+    "origin": "Latin",
+    "meaning": "Tier 2 — verb: blend into one; sink in",
+    "etymology": "Latin mergere ‘dip, plunge’.",
+    "wordSums": [
+      "sub + merge → submerge"
+    ],
+    "decodingTip": "sub- + merge = dip under.",
+    "outsideExamples": [],
+    "wiktionary": "merge",
+    "_order": 136
+  },
+  {
+    "key": "lex:zero",
+    "morpheme": "zero",
+    "origin": "Arabic through Italian",
+    "meaning": "Tier 1 — noun: the number 0; nothing",
+    "etymology": "Arabic ṣifr ‘empty’ via Italian zero.",
+    "wordSums": [
+      "sub + zero → subzero"
+    ],
+    "decodingTip": "sub- + zero = below zero on the scale.",
+    "outsideExamples": [],
+    "wiktionary": "zero",
+    "_order": 137
+  },
+  {
+    "key": "lex:confident",
+    "morpheme": "confident",
+    "origin": "Latin",
+    "meaning": "Tier 1–2 — adjective: sure of oneself; trusting",
+    "etymology": "Latin confīdere ‘trust firmly’.",
+    "wordSums": [
+      "over + confident → overconfident"
+    ],
+    "decodingTip": "over- + confident = too sure of oneself.",
+    "outsideExamples": [],
+    "wiktionary": "confident",
+    "_order": 138
+  },
+  {
+    "key": "lex:late",
+    "morpheme": "late",
+    "origin": "Latin",
+    "meaning": "Tier 2 — adjective: not on time; adverb: after the usual time (also bound in translate)",
+    "etymology": "Latin lātus ‘carried’ in transfer/translate family.",
+    "wordSums": [
+      "trans + late → translate"
+    ],
+    "decodingTip": "translate = trans- ‘across’ + the Latin carry stem spelled late here.",
+    "outsideExamples": [],
+    "wiktionary": "late",
+    "_order": 139
+  },
+  {
+    "key": "lex:pare",
+    "morpheme": "pare",
+    "origin": "Latin through French",
+    "meaning": "Tier 2 — verb: trim away; prepare (in school word sums with pre-)",
+    "etymology": "Latin parāre ‘make ready’; English pare (peel) and prepare share this family.",
+    "wordSums": [
+      "pre + pare → prepare"
+    ],
+    "decodingTip": "prepare = pre- ‘before’ + pare ‘make ready’.",
+    "outsideExamples": [],
+    "wiktionary": "prepare",
+    "_order": 140
+  },
+  {
+    "key": "lex:flate",
+    "morpheme": "flate",
+    "origin": "Latin",
+    "meaning": "Tier 3 — bound stem: blow, inflate (in deflate, inflate)",
+    "etymology": "Latin flāre ‘blow’; English pairs de-/in- with this stem chunk.",
+    "wordSums": [
+      "de + flate → deflate",
+      "in + flate → inflate"
+    ],
+    "decodingTip": "deflate = de- ‘reverse’ + flate ‘blow’.",
+    "outsideExamples": [],
+    "wiktionary": "deflate",
+    "_order": 141
+  },
+  {
+    "key": "lex:shadow",
+    "morpheme": "shadow",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: dark shape cast by light; verb: follow secretly",
+    "etymology": "Old English sceaduwe; foreshadow = hint at what lies ahead.",
+    "wordSums": [
+      "fore + shadow → foreshadow"
+    ],
+    "decodingTip": "fore- + shadow = a shadow thrown forward in time (a hint).",
+    "outsideExamples": [],
+    "wiktionary": "shadow",
+    "_order": 142
+  },
+  {
+    "key": "lex:word",
+    "morpheme": "word",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: unit of language; news; verb: phrase something",
+    "etymology": "Old English word; foreword = note before the main words.",
+    "wordSums": [
+      "fore + word → foreword"
+    ],
+    "decodingTip": "fore- + word = words that come before the book.",
+    "outsideExamples": [],
+    "wiktionary": "word",
+    "_order": 143
+  },
+  {
+    "key": "lex:warn",
+    "morpheme": "warn",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: tell of danger ahead of time",
+    "etymology": "Old English warnian; forewarn = warn beforehand.",
+    "wordSums": [
+      "fore + warn → forewarn"
+    ],
+    "decodingTip": "fore- + warn = warn early.",
+    "outsideExamples": [],
+    "wiktionary": "warn",
+    "_order": 144
+  },
+  {
+    "key": "lex:frost",
+    "morpheme": "frost",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: ice crystals on cold surfaces; verb: cover with sugar icing",
+    "etymology": "Old English forst; defrost = remove frost.",
+    "wordSums": [
+      "de + frost → defrost"
+    ],
+    "decodingTip": "de- + frost = take frost away.",
+    "outsideExamples": [],
+    "wiktionary": "frost",
+    "_order": 145
+  },
+  {
+    "key": "lex:virus",
+    "morpheme": "virus",
+    "origin": "Latin",
+    "meaning": "Tier 2 — noun: tiny germ; computer malware",
+    "etymology": "Latin vīrus ‘poison, slime’; antivirus = against viruses.",
+    "wordSums": [
+      "anti + virus → antivirus"
+    ],
+    "decodingTip": "anti- + virus = designed to stop viruses.",
+    "outsideExamples": [],
+    "wiktionary": "virus",
+    "_order": 146
+  },
+  {
+    "key": "lex:social",
+    "morpheme": "social",
+    "origin": "Latin",
+    "meaning": "Tier 1–2 — adjective: living or gathering in groups; friendly",
+    "etymology": "Latin sociālis ‘of allies’ from socius ‘ally’.",
+    "wordSums": [
+      "anti + social → antisocial"
+    ],
+    "decodingTip": "anti- + social = against friendly togetherness.",
+    "outsideExamples": [],
+    "wiktionary": "social",
+    "_order": 147
+  },
+  {
+    "key": "lex:term",
+    "morpheme": "term",
+    "origin": "Latin through French",
+    "meaning": "Tier 1–2 — noun: word for a period; exam period; boundary",
+    "etymology": "Latin terminus ‘end, limit’.",
+    "wordSums": [
+      "mid + term → midterm"
+    ],
+    "decodingTip": "mid- + term = middle of the term.",
+    "outsideExamples": [],
+    "wiktionary": "term",
+    "_order": 148
+  },
+  {
+    "key": "lex:day",
+    "morpheme": "day",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: a 24-hour period; daytime",
+    "etymology": "Old English dæg; midday = middle of the day.",
+    "wordSums": [
+      "mid + day → midday"
+    ],
+    "decodingTip": "mid- + day = the middle of the day.",
+    "outsideExamples": [],
+    "wiktionary": "day",
+    "_order": 149
+  },
+  {
+    "key": "lex:point",
+    "morpheme": "point",
+    "origin": "Latin through French",
+    "meaning": "Tier 1 — noun: sharp tip; moment; main idea; verb: aim at",
+    "etymology": "Latin punctum ‘prick, point’.",
+    "wordSums": [
+      "mid + point → midpoint"
+    ],
+    "decodingTip": "mid- + point = the point in the middle.",
+    "outsideExamples": [],
+    "wiktionary": "point",
+    "_order": 150
+  },
+  {
+    "key": "lex:caregiver",
+    "morpheme": "caregiver",
+    "origin": "Modern English compound",
+    "meaning": "Tier 1–2 — noun: person who cares for someone who needs help",
+    "etymology": "care + giver; a transparent compound in health and family vocabulary.",
+    "wordSums": [
+      "care + giver → caregiver"
+    ],
+    "decodingTip": "Treat as care + giver in reading even when the stub keeps one spoken chunk.",
+    "outsideExamples": [],
+    "wiktionary": "caregiver",
+    "_order": 151
+  },
+  {
+    "key": "lex:incise",
+    "morpheme": "incise",
+    "origin": "Latin",
+    "meaning": "Tier 3 — verb: cut into (same stem family as incisive, incision)",
+    "etymology": "Latin incīdere ‘cut into’.",
+    "wordSums": [
+      "incis + ive → incisive"
+    ],
+    "decodingTip": "incisive = incis- ‘cut’ + -ive ‘tending to’.",
+    "outsideExamples": [],
+    "wiktionary": "incise",
+    "_order": 152
+  },
+  {
+    "key": "lex:complicate",
+    "morpheme": "complicate",
+    "origin": "Latin",
+    "meaning": "Tier 2 — verb: make tangled or harder",
+    "etymology": "Latin complicāre ‘fold together’.",
+    "wordSums": [
+      "complicat + ed → complicated"
+    ],
+    "decodingTip": "complicated is the past participle adjective of complicate.",
+    "outsideExamples": [],
+    "wiktionary": "complicate",
+    "_order": 153
+  },
+  {
+    "key": "lex:spectate",
+    "morpheme": "spectate",
+    "origin": "Latin",
+    "meaning": "Tier 2 — verb: watch (as in spectator)",
+    "etymology": "Back-formation from Latin spectāre ‘watch’.",
+    "wordSums": [
+      "spectat + or → spectator"
+    ],
+    "decodingTip": "spectator = spectat- ‘watch’ + -or ‘one who’.",
+    "outsideExamples": [],
+    "wiktionary": "spectate",
+    "_order": 154
+  },
+  {
+    "key": "lex:zookeeper",
+    "morpheme": "zookeeper",
+    "origin": "Modern English compound",
+    "meaning": "Tier 1–2 — noun: person who cares for animals in a zoo",
+    "etymology": "zoo + keeper; same compound pattern as bookstore, firefighter.",
+    "wordSums": [
+      "zoo + keeper → zookeeper"
+    ],
+    "decodingTip": "Read as zoo + keeper even when the lesson highlights zoo-.",
+    "outsideExamples": [],
+    "wiktionary": "zookeeper",
+    "_order": 155
+  },
+  {
+    "key": "root:biodegrad",
+    "morpheme": "biodegrad",
+    "origin": "Latin / modern scientific English",
+    "meaning": "life + break down (compound stem in biodegradable)",
+    "etymology": "Greek bio- ‘life’ plus Latin degradāre ‘reduce in steps’.",
+    "wordSums": [
+      "bio + degrad + able → biodegradable"
+    ],
+    "decodingTip": "Biodegradable = able to be broken down by living processes.",
+    "confusedWith": [
+      "root:bio",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "biodegradable"
+    ],
+    "wiktionary": "biodegradable",
+    "_order": 156
+  },
+  {
+    "key": "root:theo",
+    "morpheme": "theo",
+    "origin": "Greek",
+    "meaning": "god (combining form in theology, theocracy)",
+    "etymology": "Greek theós ‘god’.",
+    "wordSums": [
+      "theo + logy → theology"
+    ],
+    "decodingTip": "Theology is literally ‘words/reasoning about the divine’.",
+    "confusedWith": [
+      "root:bio",
+      "root:psych"
+    ],
+    "outsideExamples": [
+      "theology",
+      "theocracy"
+    ],
+    "wiktionary": "theology",
+    "_order": 157
+  },
+  {
+    "key": "root:techn",
+    "morpheme": "techn",
+    "origin": "Greek",
+    "meaning": "art; skill; craft (stem in technology, technical)",
+    "etymology": "Greek tékhnē ‘art, skill’.",
+    "wordSums": [
+      "techn + ology → technology"
+    ],
+    "decodingTip": "Technology is the study or systematic use of craft/skill.",
+    "confusedWith": [
+      "root:graph",
+      "root:scrib"
+    ],
+    "outsideExamples": [
+      "technology",
+      "technical"
+    ],
+    "wiktionary": "technology",
+    "_order": 158
+  },
+  {
+    "key": "root:anthrop",
+    "morpheme": "anthrop",
+    "origin": "Greek",
+    "meaning": "human (combining form in anthropology, misanthrope)",
+    "etymology": "Greek ánthrōpos ‘human being’.",
+    "wordSums": [
+      "anthrop + ology → anthropology"
+    ],
+    "decodingTip": "Anthropology studies humans across time and cultures.",
+    "confusedWith": [
+      "root:bio",
+      "root:psych"
+    ],
+    "outsideExamples": [
+      "anthropology",
+      "philanthropy"
+    ],
+    "wiktionary": "anthropology",
+    "_order": 159
+  },
+  {
+    "key": "root:path",
+    "morpheme": "path",
+    "origin": "Greek",
+    "meaning": "suffering; feeling; disease (stem in pathology, sympathy, apathy)",
+    "etymology": "Greek páthos ‘suffering, experience’.",
+    "wordSums": [
+      "path + ology → pathology"
+    ],
+    "decodingTip": "In pathology, path- ties to disease and feeling, not sidewalk ‘path’.",
+    "confusedWith": [
+      "root:psych",
+      "root:fer"
+    ],
+    "outsideExamples": [
+      "pathology",
+      "sympathy",
+      "apathy"
+    ],
+    "wiktionary": "pathology",
+    "_order": 160
+  },
+  {
+    "key": "root:bine",
+    "morpheme": "bine",
+    "origin": "Latin",
+    "meaning": "two together (stem in combine — put two into one)",
+    "etymology": "Latin bīnī ‘two together’ related to duo ‘two’.",
+    "wordSums": [
+      "com + bine → combine"
+    ],
+    "decodingTip": "combine = com- ‘together’ + bine ‘two together’.",
+    "confusedWith": [
+      "root:uni",
+      "root:bi"
+    ],
+    "outsideExamples": [
+      "combine"
+    ],
+    "wiktionary": "combine",
+    "_order": 161
+  },
+  {
+    "key": "root:verge",
+    "morpheme": "verge",
+    "origin": "Latin",
+    "meaning": "bend, turn, incline (stem in converge, diverge)",
+    "etymology": "Latin vergere ‘turn, incline’.",
+    "wordSums": [
+      "con + verge → converge"
+    ],
+    "decodingTip": "converge = con- ‘together’ + verge ‘turn’ (turn toward one point).",
+    "confusedWith": [
+      "root:vers",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "converge",
+      "diverge"
+    ],
+    "wiktionary": "converge",
+    "_order": 162
+  },
+  {
+    "key": "root:lect",
+    "morpheme": "lect",
+    "origin": "Latin",
+    "meaning": "choose, gather, read (stem in collect, elect, lecture)",
+    "etymology": "Latin legere ‘pick, read’; lect- in compounds.",
+    "wordSums": [
+      "col + lect → collect"
+    ],
+    "decodingTip": "collect = col- ‘together’ + lect ‘gather’.",
+    "confusedWith": [
+      "root:mit",
+      "root:fer"
+    ],
+    "outsideExamples": [
+      "collect",
+      "elect",
+      "lecture"
+    ],
+    "wiktionary": "collect",
+    "_order": 163
+  },
+  {
+    "key": "root:contr",
+    "morpheme": "contr",
+    "origin": "Latin",
+    "meaning": "against; opposite (stem in contrary, contrast, contradict)",
+    "etymology": "Latin contrā ‘against’.",
+    "wordSums": [
+      "contra + ry → contrary"
+    ],
+    "decodingTip": "contrary = contra- ‘against’ + -ary (like adversary).",
+    "confusedWith": [
+      "root:anti",
+      "root:ob"
+    ],
+    "outsideExamples": [
+      "contrary",
+      "contrast"
+    ],
+    "wiktionary": "contrary",
+    "_order": 164
+  },
+  {
+    "key": "root:ven",
+    "morpheme": "ven, vene",
+    "origin": "Latin",
+    "meaning": "come (stem in convene, intervene, contravene)",
+    "etymology": "Latin venīre ‘come’.",
+    "wordSums": [
+      "contra + vene → contravene"
+    ],
+    "decodingTip": "contravene = contra- ‘against’ + vene ‘come’ (come against a rule).",
+    "confusedWith": [
+      "root:mit",
+      "root:vad"
+    ],
+    "outsideExamples": [
+      "contravene",
+      "convene",
+      "intervene"
+    ],
+    "wiktionary": "contravene",
+    "_order": 165
+  },
+  {
+    "key": "root:haer",
+    "morpheme": "here, haer",
+    "origin": "Latin",
+    "meaning": "stick; cling (stem spelled here in adhere)",
+    "etymology": "Latin haerēre ‘stick’; do not confuse with English here ‘this place’.",
+    "wordSums": [
+      "ad + here → adhere"
+    ],
+    "decodingTip": "adhere = ad- ‘to’ + here ‘stick’.",
+    "confusedWith": [
+      "root:fer",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "adhere",
+      "coherent"
+    ],
+    "wiktionary": "adhere",
+    "_order": 166
+  },
+  {
+    "key": "root:coher",
+    "morpheme": "coher",
+    "origin": "Latin",
+    "meaning": "stick together (stem in coherent, cohesion)",
+    "etymology": "Latin cohaerēre ‘stick together’.",
+    "wordSums": [
+      "co + her → coherent"
+    ],
+    "decodingTip": "coherent = co- ‘together’ + her ‘stick’ (sticking together in sense).",
+    "confusedWith": [
+      "root:haer",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "coherent",
+      "cohesion"
+    ],
+    "wiktionary": "coherent",
+    "_order": 167
+  },
+  {
+    "key": "root:cohes",
+    "morpheme": "cohes",
+    "origin": "Latin",
+    "meaning": "stick together (noun stem in cohesion)",
+    "etymology": "Latin cohaesiōnem ‘a sticking together’.",
+    "wordSums": [
+      "cohes + ion → cohesion"
+    ],
+    "decodingTip": "Cohesion names how parts stick or hold together.",
+    "confusedWith": [
+      "root:coher",
+      "root:haer"
+    ],
+    "outsideExamples": [
+      "cohesion"
+    ],
+    "wiktionary": "cohesion",
+    "_order": 168
+  },
+  {
+    "key": "root:proach",
+    "morpheme": "proach",
+    "origin": "Latin",
+    "meaning": "near (stem in approach, reproach)",
+    "etymology": "Latin prope ‘near’; approach = move near.",
+    "wordSums": [
+      "ad + proach → approach"
+    ],
+    "decodingTip": "approach = ad- ‘to’ + proach ‘near’.",
+    "confusedWith": [
+      "root:mit",
+      "root:ven"
+    ],
+    "outsideExamples": [
+      "approach",
+      "reproach"
+    ],
+    "wiktionary": "approach",
+    "_order": 169
+  },
+  {
+    "key": "root:vad",
+    "morpheme": "vad, vade",
+    "origin": "Latin",
+    "meaning": "go (stem in pervade, invade, evade)",
+    "etymology": "Latin vādere ‘go, walk’.",
+    "wordSums": [
+      "per + vade → pervade"
+    ],
+    "decodingTip": "pervade = per- ‘through’ + vade ‘go’ (go through every part).",
+    "confusedWith": [
+      "root:ven",
+      "root:it-go"
+    ],
+    "outsideExamples": [
+      "pervade",
+      "invade",
+      "evade"
+    ],
+    "wiktionary": "pervade",
+    "_order": 170
+  },
+  {
+    "key": "root:soci",
+    "morpheme": "soci",
+    "origin": "Latin",
+    "meaning": "ally; companion (stem in social, society)",
+    "etymology": "Latin socius ‘ally’.",
+    "wordSums": [
+      "social",
+      "society"
+    ],
+    "decodingTip": "social = ‘of allies / companions’.",
+    "confusedWith": [
+      "root:fer",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "social",
+      "society",
+      "associate"
+    ],
+    "wiktionary": "social",
+    "_order": 171
+  },
+  {
+    "key": "root:sect",
+    "morpheme": "sect",
+    "origin": "Latin",
+    "meaning": "cut (stem in intersect, section, bisect)",
+    "etymology": "Latin secāre ‘cut’; sect- in compounds.",
+    "wordSums": [
+      "inter + sect → intersect"
+    ],
+    "decodingTip": "intersect = inter- ‘between’ + sect ‘cut’ (lines cut across each other).",
+    "confusedWith": [
+      "root:decis",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "intersect",
+      "section",
+      "bisect"
+    ],
+    "wiktionary": "intersect",
+    "_order": 172
+  },
+  {
+    "key": "root:scend",
+    "morpheme": "scend",
+    "origin": "Latin",
+    "meaning": "climb (stem in ascend, descend, transcend)",
+    "etymology": "Latin scandere ‘climb’.",
+    "wordSums": [
+      "de + scend → descend"
+    ],
+    "decodingTip": "descend = de- ‘down’ + scend ‘climb’.",
+    "confusedWith": [
+      "root:mit",
+      "root:fer"
+    ],
+    "outsideExamples": [
+      "descend",
+      "ascend",
+      "transcend"
+    ],
+    "wiktionary": "descend",
+    "_order": 173
+  },
+  {
+    "key": "root:ject",
+    "morpheme": "ject",
+    "origin": "Latin",
+    "meaning": "throw (stem in inject, eject, project)",
+    "etymology": "Latin jacere ‘throw’; ject- in compounds.",
+    "wordSums": [
+      "in + ject → inject"
+    ],
+    "decodingTip": "inject = in + ject ‘throw in’.",
+    "confusedWith": [
+      "root:mit",
+      "root:fer"
+    ],
+    "outsideExamples": [
+      "inject",
+      "eject",
+      "project"
+    ],
+    "wiktionary": "inject",
+    "_order": 174
+  },
+  {
+    "key": "root:clude",
+    "morpheme": "clude",
+    "origin": "Latin",
+    "meaning": "shut; close (stem in include, exclude, conclude)",
+    "etymology": "Latin claudere ‘close’; clus-/clud- variants.",
+    "wordSums": [
+      "in + clude → include"
+    ],
+    "decodingTip": "include = in + clude ‘shut in / let in’.",
+    "confusedWith": [
+      "root:inclus",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "include",
+      "exclude",
+      "conclude"
+    ],
+    "wiktionary": "include",
+    "_order": 175
+  },
+  {
+    "key": "root:sert",
+    "morpheme": "sert",
+    "origin": "Latin",
+    "meaning": "join; put; place (stem in insert, assert)",
+    "etymology": "Latin serere ‘join, link’; sert- appears in compounds.",
+    "wordSums": [
+      "in + sert → insert"
+    ],
+    "decodingTip": "insert = in + sert ‘put in’.",
+    "confusedWith": [
+      "root:mit",
+      "root:fer"
+    ],
+    "outsideExamples": [
+      "insert",
+      "assert",
+      "desert"
+    ],
+    "wiktionary": "insert",
+    "_order": 176
+  },
+  {
+    "key": "root:demonstr",
+    "morpheme": "demonstr",
+    "origin": "Latin",
+    "meaning": "show, point out (verb stem before -ate, -ation)",
+    "etymology": "Latin dēmonstrāre ‘show clearly’.",
+    "wordSums": [
+      "demonstr + ate → demonstrate"
+    ],
+    "decodingTip": "Same stem family as demonstrate and demonstration.",
+    "confusedWith": [
+      "root:tract",
+      "root:dict"
+    ],
+    "outsideExamples": [
+      "demonstrate",
+      "demonstration"
+    ],
+    "wiktionary": "demonstrate",
+    "_order": 177
+  },
+  {
+    "key": "root:celebr",
+    "morpheme": "celebr",
+    "origin": "Latin",
+    "meaning": "honor, fame (stem before -ate, -ation)",
+    "etymology": "Latin celebrāre ‘honor, frequent’.",
+    "wordSums": [
+      "celebr + ate → celebrate"
+    ],
+    "decodingTip": "celebration, celebrity, and celebrate share this stem.",
+    "confusedWith": [
+      "root:fer",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "celebrate",
+      "celebration"
+    ],
+    "wiktionary": "celebrate",
+    "_order": 178
+  },
+  {
+    "key": "root:calcul",
+    "morpheme": "calcul",
+    "origin": "Latin",
+    "meaning": "small stone; count (stem in calculate, calculator)",
+    "etymology": "Latin calculus ‘pebble used in counting’.",
+    "wordSums": [
+      "calcul + ate → calculate"
+    ],
+    "decodingTip": "Calculators echo the Roman counting-stone image.",
+    "confusedWith": [
+      "root:dict",
+      "root:tract"
+    ],
+    "outsideExamples": [
+      "calculate",
+      "calculation"
+    ],
+    "wiktionary": "calculate",
+    "_order": 179
+  },
+  {
+    "key": "root:prim",
+    "morpheme": "prim",
+    "origin": "Latin",
+    "meaning": "first (stem in primary, prime, primitive)",
+    "etymology": "Latin prīmus ‘first’.",
+    "wordSums": [
+      "prim + ary → primary"
+    ],
+    "decodingTip": "Primary means ‘first in rank or order’.",
+    "confusedWith": [
+      "root:uni",
+      "root:fer"
+    ],
+    "outsideExamples": [
+      "primary",
+      "prime"
+    ],
+    "wiktionary": "primary",
+    "_order": 180
+  },
+  {
+    "key": "root:vocabul",
+    "morpheme": "vocabul, vocab",
+    "origin": "Latin",
+    "meaning": "call, name (stem in vocabulary, vocable)",
+    "etymology": "Latin vocābulum ‘name, word’ from vocāre ‘call’.",
+    "wordSums": [
+      "vocabulary"
+    ],
+    "decodingTip": "Vocabulary is literally ‘what can be named / called’ in a language.",
+    "confusedWith": [
+      "root:dict",
+      "root:scrib"
+    ],
+    "outsideExamples": [
+      "vocabulary",
+      "vocab"
+    ],
+    "wiktionary": "vocabulary",
+    "_order": 181
+  },
+  {
+    "key": "root:histor",
+    "morpheme": "histor",
+    "origin": "Greek via Latin",
+    "meaning": "story; inquiry (stem in history, historic)",
+    "etymology": "Greek histor ‘learned person, judge’ feeds Latin historia ‘narrative’.",
+    "wordSums": [
+      "histor + ic → historic",
+      "history"
+    ],
+    "decodingTip": "historic marks a moment that belongs in history; historical means ‘about history’ in general.",
+    "confusedWith": [
+      "root:dict",
+      "root:scrib"
+    ],
+    "outsideExamples": [
+      "historic",
+      "history",
+      "historian"
+    ],
+    "wiktionary": "history",
+    "_order": 182
+  },
+  {
+    "key": "root:gener",
+    "morpheme": "gener",
+    "origin": "Latin",
+    "meaning": "birth; kind; produce (stem in generate, generous, general)",
+    "etymology": "Latin genus ‘birth, kind’ and generāre ‘beget’.",
+    "wordSums": [
+      "gener + ous → generous"
+    ],
+    "decodingTip": "generous literally ties to ‘of noble birth’ historically; now ‘giving freely’.",
+    "confusedWith": [
+      "root:fer",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "generous",
+      "generate",
+      "general"
+    ],
+    "wiktionary": "generous",
+    "_order": 183
+  },
+  {
+    "key": "root:inclus",
+    "morpheme": "inclus",
+    "origin": "Latin",
+    "meaning": "shut in (stem of include, inclusive)",
+    "etymology": "Latin inclūdere ‘shut in’; inclusive names ‘including everyone’.",
+    "wordSums": [
+      "include",
+      "inclus + ive → inclusive"
+    ],
+    "decodingTip": "Compare exclude / exclusive for the opposite shut-out image.",
+    "confusedWith": [
+      "root:mit",
+      "root:fer"
+    ],
+    "outsideExamples": [
+      "inclusive",
+      "include"
+    ],
+    "wiktionary": "include",
+    "_order": 184
+  },
+  {
+    "key": "root:scient",
+    "morpheme": "scient, scientif",
+    "origin": "Latin",
+    "meaning": "knowing; knowledge (stem in science, scientific)",
+    "etymology": "Latin sciēns ‘knowing’ and scientificus ‘of knowledge’.",
+    "wordSums": [
+      "science",
+      "scient + ific → scientific"
+    ],
+    "decodingTip": "scientific keeps a Latin-style stem chunk before -ic in the modern spelling.",
+    "confusedWith": [
+      "root:spect",
+      "root:dict"
+    ],
+    "outsideExamples": [
+      "science",
+      "scientific",
+      "conscience"
+    ],
+    "wiktionary": "science",
+    "_order": 185
+  },
+  {
+    "key": "root:poss",
+    "morpheme": "poss",
+    "origin": "Latin",
+    "meaning": "be able; can (stem in possible, impossible)",
+    "etymology": "Latin posse ‘be able’; English possible keeps the poss- spine before -ible.",
+    "wordSums": [
+      "possible",
+      "impossible"
+    ],
+    "decodingTip": "im- + possible = not possible; the base chunk poss- ties to ‘can happen’.",
+    "confusedWith": [
+      "root:port",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "possible",
+      "possibility"
+    ],
+    "wiktionary": "possible",
+    "_order": 186
+  },
+  {
+    "key": "root:decis",
+    "morpheme": "decis, decid",
+    "origin": "Latin",
+    "meaning": "cut off; settle (verb stem of decide)",
+    "etymology": "Latin dēcīdere ‘cut off, decide’; stems decis-/decid- appear before -ion and -ive.",
+    "wordSums": [
+      "decide + ion → decision",
+      "decis + ion → decision"
+    ],
+    "decodingTip": "When you see -sion after d/de, think of a Latin verb stem like decide → decision.",
+    "confusedWith": [
+      "root:sect",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "decision",
+      "decisive",
+      "incisive"
+    ],
+    "wiktionary": "decide",
+    "_order": 187
+  },
+  {
+    "key": "root:ver",
+    "morpheme": "ver, verac",
+    "origin": "Latin",
+    "meaning": "true; truth",
+    "etymology": "From Latin vērus 'true'; a bound stem in courtroom and argument vocabulary.",
+    "wordSums": [
+      "ver + dict → verdict (true saying / judgment)",
+      "ver + ify → verify (make true / check for truth)"
+    ],
+    "decodingTip": "In verdict, ver- carries 'truth' and dict carries 'say' — a judgment that 'says true' about a case.",
+    "confusedWith": [
+      "root:fer",
+      "root:dict"
+    ],
+    "outsideExamples": [
+      "verdict",
+      "verify",
+      "veracity",
+      "verisimilitude"
+    ],
+    "wiktionary": "verdict",
+    "_order": 188
+  },
+  {
+    "key": "root:nect",
+    "morpheme": "nect",
+    "origin": "Latin",
+    "meaning": "bind; tie; connect",
+    "etymology": "From Latin nectere 'to bind, tie, fasten'; the same spine as connect (bind together).",
+    "wordSums": [
+      "con + nect → connect (bind together)",
+      "dis + con + nect → disconnect (undo the binding-together)"
+    ],
+    "decodingTip": "When you see nect-, ask what is being tied or bound — and which prefix steers the direction (together, apart, under).",
+    "confusedWith": [
+      "root:struct",
+      "root:ply"
+    ],
+    "outsideExamples": [
+      "connect",
+      "disconnect",
+      "interconnect",
+      "connection"
+    ],
+    "wiktionary": "connect",
+    "_order": 189
+  },
+  {
+    "key": "root:vanc",
+    "morpheme": "vance / vanc",
+    "origin": "Latin (via French)",
+    "meaning": "go before; come first",
+    "etymology": "From Latin abante / adante 'before' (compare French avant 'before'); the bound stem in advance — literally a 'going-before.'",
+    "wordSums": [
+      "ad + vance → advance (go forward / come before)"
+    ],
+    "decodingTip": "Advance = move or pay ahead; the vanc- chunk keeps the 'before / forward' idea once you peel ad- 'toward.'",
+    "confusedWith": [
+      "pfx:ad-",
+      "root:fer"
+    ],
+    "outsideExamples": [
+      "advance",
+      "advantage",
+      "advanced"
+    ],
+    "wiktionary": "advance",
+    "_order": 190
+  },
+  {
+    "key": "root:uni",
+    "morpheme": "uni",
+    "origin": "Latin",
+    "meaning": "one; single",
+    "etymology": "From Latin ūnus 'one'; appears in uniform (one shape), unite (make one), universe (turned into one whole).",
+    "wordSums": [
+      "uni + form → uniform (one shape)",
+      "uni + verse → universe (turned into one whole)"
+    ],
+    "decodingTip": "uni- is the 'one' morpheme — count how many different words use it for 'single' or 'together as one.'",
+    "confusedWith": [
+      "pfx:con-",
+      "root:form"
+    ],
+    "outsideExamples": [
+      "uniform",
+      "unite",
+      "universe",
+      "unison"
+    ],
+    "wiktionary": "uni-",
+    "_order": 193
+  },
+  {
+    "key": "root:act",
+    "morpheme": "act, ag",
+    "origin": "Latin",
+    "meaning": "do; drive; lead",
+    "etymology": "From Latin agere 'do, drive, lead' (past participle āctus). The act- form shows up after consonants; ag- before vowels.",
+    "wordSums": [
+      "act + ion → action",
+      "re + act → react",
+      "act + or → actor (one who acts)",
+      "inter + act → interact (act between)",
+      "de + act + ive + ate → deactivate"
+    ],
+    "decodingTip": "act = do or perform. action = a thing done; actor = one who does; interact = do between people; agent (ag- form) = one who drives.",
+    "teachingTip": "'act' is a free base: it stands alone AND combines. Build a matrix: prefixes (re-, inter-, de-, en-, trans-) + act + suffixes (-ion, -or, -ive, -ivity).",
+    "inquiryPrompts": [
+      "Why is 'agent' spelled with ag- but 'actor' with act-? Hint: look at what comes next.",
+      "Compare 'react' and 'interact'. Same root, different prefix — what's the difference in social meaning?"
+    ],
+    "confusedWith": [
+      "root:fact"
+    ],
+    "outsideExamples": [
+      "action",
+      "react",
+      "actor",
+      "interact",
+      "deactivate"
+    ],
+    "wiktionary": "act",
+    "_order": 194
+  },
+  {
+    "key": "root:form",
+    "morpheme": "form",
+    "origin": "Latin",
+    "meaning": "shape; form",
+    "etymology": "From Latin forma 'shape, figure, image'.",
+    "wordSums": [
+      "form + al → formal",
+      "in + form + al → informal",
+      "trans + form → transform",
+      "uni + form → uniform"
+    ],
+    "decodingTip": "form is a 'free base' — it stands alone as a word AND carries 'shape' into many academic words: information, conformity, deformity all build on it.",
+    "teachingTip": "Build a matrix with 'form' in the center: prefixes (in-, re-, trans-, uni-, de-) on the left, suffixes (-al, -ation, -less) on the right. Students generate 8 words.",
+    "inquiryPrompts": [
+      "What does 'information' have to do with form? Trace the meaning: 'shape' → 'shaping someone's ideas' → 'data'.",
+      "Are 'deform' and 'reform' opposites? Build word sums for both and see."
+    ],
+    "outsideExamples": [
+      "transform",
+      "reform",
+      "information",
+      "cruciform"
+    ],
+    "_order": 195
+  },
+  {
+    "key": "root:port",
+    "morpheme": "port",
+    "origin": "Latin",
+    "meaning": "carry",
+    "etymology": "From Latin portāre 'to carry'; the family also includes English 'port' (harbor) — a place to carry goods in and out.",
+    "wordSums": [
+      "port + able → portable (can be carried)",
+      "trans + port → transport (carry across)",
+      "im + port → import (carry in)",
+      "ex + port → export (carry out)"
+    ],
+    "decodingTip": "port = carry. Whenever you see port-, ask: 'who's carrying what?' Importing carries goods in; exporting carries them out; transport carries across.",
+    "teachingTip": "Direction matrix: in- (import), ex- (export), trans- (transport), de- (deport), re- (report), sup- (support — carry from below). Students fill in meanings.",
+    "inquiryPrompts": [
+      "What does 'reporting' have to do with carrying? Trace the metaphor.",
+      "Why is a portable charger called portable? Build the word sum."
+    ],
+    "confusedWith": [
+      "root:fer",
+      "root:duct"
+    ],
+    "outsideExamples": [
+      "portable",
+      "import",
+      "transport",
+      "report"
+    ],
+    "_order": 196
+  },
+  {
+    "key": "root:rupt",
+    "morpheme": "rupt",
+    "origin": "Latin",
+    "meaning": "break; burst",
+    "etymology": "From Latin rumpere / ruptus 'to break, burst'.",
+    "wordSums": [
+      "e + rupt → erupt (break out)",
+      "inter + rupt → interrupt (break in between)",
+      "dis + rupt → disrupt (break apart)",
+      "rupt + ure → rupture"
+    ],
+    "decodingTip": "rupt = break. Volcanoes erupt (break out); interruptions break in between speakers; eruptions are sudden breakings.",
+    "teachingTip": "Sentence-action match: 'The volcano ___ed' (erupt), 'She ___ed me' (interrupt), 'The plan was ___ed' (disrupt). Students choose the right rupt word and justify.",
+    "inquiryPrompts": [
+      "Bankrupt = bank + rupt. What 'breaks' there? (Hint: think Italian banks in the 1500s.)",
+      "How are 'erupt' and 'interrupt' related? Same root — what changes between them?"
+    ],
+    "confusedWith": [
+      "root:struct",
+      "root:scrib"
+    ],
+    "outsideExamples": [
+      "erupt",
+      "corrupt",
+      "disrupt",
+      "rupture"
+    ],
+    "_order": 197
+  },
+  {
+    "key": "root:tract",
+    "morpheme": "tract",
+    "origin": "Latin",
+    "meaning": "pull; draw",
+    "etymology": "From Latin trahere / tractus 'to pull, draw'.",
+    "wordSums": [
+      "tract + or → tractor (one that pulls)",
+      "at + tract → attract (pull toward)",
+      "dis + tract → distract (pull apart)",
+      "ex + tract → extract (pull out)"
+    ],
+    "decodingTip": "tract = pull, draw. Magnets attract (pull toward); distractions pull your attention apart; tractors pull plows; subtractions pull from below.",
+    "teachingTip": "Direction-of-pull matrix: at- (toward), dis- (apart), ex- (out), sub- (under), pro- (forward), re- (back). Students predict the meaning of each tract word from the prefix alone.",
+    "inquiryPrompts": [
+      "What is a contract literally 'pulling together'? (Hint: parties to an agreement.)",
+      "Why is a tractor called a tractor — what does it pull?"
+    ],
+    "confusedWith": [
+      "root:duct",
+      "root:port"
+    ],
+    "outsideExamples": [
+      "traction",
+      "distract",
+      "contract",
+      "extract"
+    ],
+    "_order": 198
+  },
+  {
+    "key": "root:scrib",
+    "morpheme": "scrib / script",
+    "origin": "Latin",
+    "meaning": "write; scratch",
+    "etymology": "From Latin scribere / scriptus 'to write, scratch'.",
+    "wordSums": [
+      "scrib + ble → scribble",
+      "in + scrib + e → inscribe",
+      "de + script + ion → description",
+      "manu + script → manuscript (hand + written)"
+    ],
+    "decodingTip": "scrib / script = write. Whenever you see these letters, look for the 'writing' meaning: prescription = something written before; manuscript = written by hand; subscribe = sign your name under.",
+    "spellingNote": "scrib in verb forms (describe, inscribe, subscribe), script in nouns and past forms (description, manuscript, scripture). Same morpheme — alternation traces back to Latin scribere / scriptus.",
+    "teachingTip": "Two-form matrix: scrib (verbs) vs script (nouns / past forms). Students discover the pattern by sorting 8 words.",
+    "inquiryPrompts": [
+      "Why does 'describe' become 'description' (b → p)? Look at the Latin participle scriptus.",
+      "Is a 'subscription' literally 'something written under'? Trace it through history."
+    ],
+    "confusedWith": [
+      "root:graph",
+      "root:dict"
+    ],
+    "outsideExamples": [
+      "script",
+      "scribble",
+      "manuscript",
+      "description"
+    ],
+    "_order": 199
+  },
+  {
+    "key": "root:spect",
+    "morpheme": "spect / spec / spic / spectat / suspic",
+    "origin": "Latin",
+    "meaning": "look; see",
+    "etymology": "From Latin specere / spectus 'to look at, see'.",
+    "wordSums": [
+      "spect + ator → spectator (one who looks)",
+      "in + spect → inspect (look into)",
+      "per + spect + ive → perspective (look through)",
+      "sus + pic + ious → suspicious (looking under = mistrusting)"
+    ],
+    "decodingTip": "spect / spec / spic = look, see. spectators look on; inspectors look in; perspective is a way of looking; suspicion is looking from underneath.",
+    "spellingNote": "Three forms: spect (spectator, inspect), spec (specimen, special), spic (suspicious, conspicuous). Same root — Latin verb stems alternate.",
+    "teachingTip": "'Who looks where?' chart: respect (look back), inspect (look in), prospect (look forward), retrospect (look back). Direction = prefix; looking = root.",
+    "inquiryPrompts": [
+      "Why does 'suspicious' have spic instead of spect? Look up the Latin verb forms.",
+      "Is 'respect' literally 'looking back at someone'? How does that become 'honoring them'?"
+    ],
+    "confusedWith": [
+      "root:vis",
+      "root:dict"
+    ],
+    "outsideExamples": [
+      "spectator",
+      "perspective",
+      "suspicious",
+      "inspect"
+    ],
+    "_order": 200
+  },
+  {
+    "key": "root:struct",
+    "morpheme": "struct / stru",
+    "origin": "Latin",
+    "meaning": "build; pile up",
+    "etymology": "From Latin struere / structus 'to build, pile up'.",
+    "wordSums": [
+      "struct + ure → structure",
+      "in + struct → instruct (build into someone)",
+      "con + struct → construct (build together)",
+      "de + stru + ct + ion → destruction (un-building)"
+    ],
+    "decodingTip": "struct = build. Construction builds together; instruction builds knowledge into a learner; destruction un-builds; infrastructure is the underlying buildup.",
+    "teachingTip": "Verb-of-building matrix: con- (together), de- (un-), in- (into), re- (again). Students explain how the prefix shapes the building action.",
+    "inquiryPrompts": [
+      "How is teaching the same as 'building knowledge'? Trace 'instruct' from in + struct.",
+      "Why does 'destroy' lose the t? Look at the French → English path."
+    ],
+    "confusedWith": [
+      "root:rupt",
+      "root:form"
+    ],
+    "outsideExamples": [
+      "structure",
+      "instruct",
+      "construction",
+      "destroy"
+    ],
+    "_order": 201
+  },
+  {
+    "key": "root:dict",
+    "morpheme": "dict / dic",
+    "origin": "Latin",
+    "meaning": "say; speak",
+    "etymology": "From Latin dīcere / dictus 'to say, speak'.",
+    "wordSums": [
+      "dict + ion + ary → dictionary (book of sayings)",
+      "pre + dict → predict (say before)",
+      "contra + dict → contradict (speak against)",
+      "dict + ate → dictate"
+    ],
+    "decodingTip": "dict = say, speak. Dictionaries collect sayings; predictions say what's coming; contradictions speak against; verdicts say the truth.",
+    "teachingTip": "Verbal-act matrix: pre- (before), contra- (against), e- (out), in- (in/into). Each prefix tells you what kind of saying.",
+    "inquiryPrompts": [
+      "What does a verdict 'say true' (ver + dict)? How is that a court judgment?",
+      "If 'predict' = say before, what's the difference between predicting and forecasting?"
+    ],
+    "confusedWith": [
+      "root:scrib",
+      "root:fer"
+    ],
+    "outsideExamples": [
+      "predict",
+      "dictate"
+    ],
+    "_order": 202
+  },
+  {
+    "key": "root:fer",
+    "morpheme": "fer / off",
+    "origin": "Latin",
+    "meaning": "carry; bear; bring",
+    "etymology": "From Latin ferre 'to bear, carry'; one of the most productive Latin roots in English.",
+    "wordSums": [
+      "trans + fer → transfer (carry across)",
+      "of + fer → offer (carry to)",
+      "pre + fer → prefer (carry before / in front)",
+      "re + fer → refer (carry back)"
+    ],
+    "decodingTip": "fer = carry, bear. Transfer carries something across; refer carries you back to a source; offer carries something toward someone; prefer carries one option in front.",
+    "spellingNote": "Verbs ending in -fer often double the r before suffixes: refer → referring, prefer → preferred. (CVC + stress-on-final-syllable rule.)",
+    "teachingTip": "fer matrix with prefixes: trans-, re-, pre-, of-, con-, in-. Students brainstorm 8 fer words and group them by direction.",
+    "inquiryPrompts": [
+      "What's being 'carried' in a job offer? Money? Trust? An invitation?",
+      "Why does 'refer' double the r in 'referring'? Suffix-changing rule kicks in — find it."
+    ],
+    "confusedWith": [
+      "root:port",
+      "root:duct"
+    ],
+    "outsideExamples": [
+      "transfer",
+      "offer",
+      "prefer",
+      "refer"
+    ],
+    "_order": 203
+  },
+  {
+    "key": "root:mit",
+    "morpheme": "mit / miss",
+    "origin": "Latin",
+    "meaning": "send; let go",
+    "etymology": "From Latin mittere / missus 'to send, let go'.",
+    "wordSums": [
+      "sub + mit → submit (send under)",
+      "mis + sion → mission (a sending)",
+      "trans + mit → transmit (send across)",
+      "e + mit → emit (send out)"
+    ],
+    "decodingTip": "mit / miss = send. Missiles are sent; missions are sendings; submitting sends something to authority; transmitting sends across distance.",
+    "spellingNote": "Two-shape root: mit in verbs (submit, transmit), miss in nouns and past forms (mission, dismissed, permission).",
+    "teachingTip": "Two-shape matrix: mit (verbs) vs miss (nouns and past). Students articulate when each form is used by sorting 8 words.",
+    "inquiryPrompts": [
+      "How is 'omitting' (leaving out) related to sending? What's being 'sent away'?",
+      "Compare 'permit' (verb) and 'permission' (noun). One root, two shapes — why?"
+    ],
+    "confusedWith": [
+      "root:fer",
+      "root:port"
+    ],
+    "outsideExamples": [
+      "submit",
+      "mission",
+      "emit",
+      "transmit"
+    ],
+    "_order": 204
+  },
+  {
+    "key": "root:duct",
+    "morpheme": "duct / duc / duce",
+    "origin": "Latin",
+    "meaning": "lead",
+    "etymology": "From Latin dūcere / ductus 'to lead'.",
+    "wordSums": [
+      "pro + duce → produce (lead forward)",
+      "re + duce → reduce (lead back)",
+      "duct + ion → induction",
+      "aque + duct → aqueduct (water-leader)"
+    ],
+    "decodingTip": "duct / duc / duce = lead. Leaders lead; conductors lead orchestras; ducts lead air or water through walls; aqueducts lead water across valleys.",
+    "teachingTip": "Direction-of-leadership matrix: pro- (forward), re- (back), in- (into), con- (together), de- (down). Students predict each duce / duct word's meaning.",
+    "inquiryPrompts": [
+      "Why is 'reduce' lead-back? What gets diminished when you lead something back?",
+      "How is an aqueduct related to a duke? Same root — what's leading what?"
+    ],
+    "confusedWith": [
+      "root:fer",
+      "root:tract",
+      "root:port"
+    ],
+    "outsideExamples": [
+      "produce",
+      "reduce",
+      "aqueduct",
+      "conduct"
+    ],
+    "_order": 205
+  },
+  {
+    "key": "root:fect",
+    "morpheme": "fact / fac / fect / fic / fict",
+    "origin": "Latin",
+    "meaning": "make; do",
+    "wiktionary": "facere",
+    "etymology": "From Latin facere / factus 'to make, do'; one of the most productive Latin roots in English.",
+    "wordSums": [
+      "fact + ory → factory (place that makes)",
+      "manu + fact + ure → manufacture (make by hand)",
+      "fic + tion → fiction (a making)",
+      "per + fect → perfect (made through / completed)"
+    ],
+    "decodingTip": "fact / fac / fect / fic = make, do. Factories make products; fiction is something made up; perfection is making something complete; effects are what's made by causes.",
+    "spellingNote": "Same morpheme, four shapes: fact (factory), fac (manufacture), fect (perfect), fic (fiction). The vowel shift mirrors Latin verb stems.",
+    "teachingTip": "Pattern detective: list factory, fiction, perfect, manufacture, effect, defect. Students underline the shifting root form and group by spelling.",
+    "inquiryPrompts": [
+      "A 'fact' is supposedly real, but the morpheme means 'made'. How did the meaning shift?",
+      "What's being 'made' when something is artificial?"
+    ],
+    "confusedWith": [
+      "root:struct",
+      "root:form"
+    ],
+    "outsideExamples": [
+      "factory",
+      "manufacture",
+      "fiction",
+      "perfect"
+    ],
+    "_order": 206
+  },
+  {
+    "key": "root:tain",
+    "morpheme": "ten / tain / tin",
+    "origin": "Latin",
+    "meaning": "hold; keep",
+    "wiktionary": "tenere",
+    "etymology": "From Latin tenēre 'to hold'; entered English through Old French tenir.",
+    "wordSums": [
+      "con + tain → contain (hold together)",
+      "main + tain → maintain (keep + hold)",
+      "re + tain → retain (hold back)",
+      "ten + ant → tenant (one who holds)"
+    ],
+    "decodingTip": "tain / ten = hold, keep. Containers hold contents; tenants hold a place; what you maintain you keep going; detained means held back.",
+    "teachingTip": "Word-family build: list 8 -tain words (contain, retain, maintain, sustain, detain, attain, obtain, pertain). Students give a 'who/what is held?' answer for each.",
+    "inquiryPrompts": [
+      "Is a tournament a kind of holding? Trace the etymology.",
+      "What does the IRS retain? What does a teacher detain? Build a sentence for each."
+    ],
+    "confusedWith": [
+      "root:port",
+      "root:posit"
+    ],
+    "outsideExamples": [
+      "contain",
+      "sustain",
+      "detain",
+      "retain"
+    ],
+    "_order": 207
+  },
+  {
+    "key": "root:ceive",
+    "morpheme": "cap / ceive / cept / cip / particip",
+    "origin": "Latin",
+    "meaning": "take; catch; seize",
+    "wiktionary": "capere",
+    "etymology": "From Latin capere / captus 'to take, seize'; one of the trickiest roots because it shape-shifts across borrowings.",
+    "wordSums": [
+      "re + ceive → receive (take back)",
+      "ac + cept → accept (take toward)",
+      "in + ter + cept → intercept (take between)",
+      "par + tic + ip + ate → participate (take + part)"
+    ],
+    "decodingTip": "cap / ceive / cept / cip = take, catch. Receiving takes; capturing takes by force; participating takes part; deceiving takes someone in.",
+    "spellingNote": "Four allomorphs: cap (capture), ceive (receive), cept (reception), cip (participate). The form depends on the path of borrowing — French gave us -ceive, direct Latin gave us -cept.",
+    "teachingTip": "Four-shape detective: cap, ceive, cept, cip. Students find one example of each in the catalog and trace the verb stem to Latin capere.",
+    "inquiryPrompts": [
+      "Why 'receive' (-ceive) but 'reception' (-cept)? What rule changes the shape?",
+      "Is 'captivating' 'taking captive'? Trace the metaphor."
+    ],
+    "confusedWith": [
+      "root:tract",
+      "root:fer"
+    ],
+    "outsideExamples": [
+      "accept",
+      "intercept",
+      "deceive",
+      "participate"
+    ],
+    "_order": 209
+  },
+  {
+    "key": "root:sist",
+    "morpheme": "sta / sist / stat / stit / const",
+    "origin": "Latin",
+    "meaning": "stand",
+    "wiktionary": "stare",
+    "etymology": "From Latin stāre / status 'to stand'; the root of stand, stay, and status.",
+    "wordSums": [
+      "con + sist → consist (stand together)",
+      "in + sist → insist (stand on)",
+      "sta + tion → station (a standing place)",
+      "sub + sti + tute → substitute (stand under in place)"
+    ],
+    "decodingTip": "sta / sist / stat / stit = stand. Stations are standing places; statues stand; insistence is standing firmly on a point; consistency stands together over time.",
+    "teachingTip": "'Standing where?' matrix: con- (together), in- (on), per- (through), re- (back), sub- (under). Students fit each prefix to a sist / sta / stit word.",
+    "inquiryPrompts": [
+      "What does it mean to 'stand for' something? How does that relate to 'substitute'?",
+      "Why is 'constant' from this root? What's standing firm?"
+    ],
+    "confusedWith": [
+      "root:posit",
+      "root:tain"
+    ],
+    "outsideExamples": [
+      "station",
+      "constant",
+      "substitute",
+      "insist"
+    ],
+    "_order": 210
+  },
+  {
+    "key": "root:posit",
+    "morpheme": "pos / pon / posit",
+    "origin": "Latin",
+    "meaning": "place; put",
+    "wiktionary": "ponere",
+    "etymology": "From Latin pōnere / positus 'to place, put'.",
+    "wordSums": [
+      "com + pose → compose (put together)",
+      "de + posit → deposit (put down)",
+      "op + posit + e → opposite (placed against)",
+      "pro + pose → propose (put forward)"
+    ],
+    "decodingTip": "pos / pon / posit = place, put. Compositions put pieces together; deposits put money down; positions are places; propositions put ideas forward.",
+    "teachingTip": "Verb-of-placement matrix: com- (together), de- (down), op- (against), pre- (before), re- (back), sup- (under). Students fill in 6 verbs.",
+    "inquiryPrompts": [
+      "What does a postponed event have in common with a positioned chess piece? Same root, very different uses.",
+      "Why 'opposite' (-posit) but 'oppose' (-pose)? Two related words, different shapes — why?"
+    ],
+    "confusedWith": [
+      "root:sist",
+      "root:struct"
+    ],
+    "outsideExamples": [
+      "compose",
+      "deposit",
+      "opposite",
+      "propose"
+    ],
+    "_order": 211
+  },
+  {
+    "key": "root:ply",
+    "morpheme": "plic / ply / complicat / multip / complic",
+    "origin": "Latin",
+    "meaning": "fold; bend",
+    "wiktionary": "plicare",
+    "etymology": "From Latin plicāre / plicātus 'to fold, bend'.",
+    "wordSums": [
+      "multi + ply → multiply (many folds)",
+      "com + plic + ate → complicate (fold together)",
+      "re + plic + a → replica (fold back)",
+      "ap + ply → apply (fold toward)"
+    ],
+    "decodingTip": "plic / ply = fold. Multiplying makes many folds; complications are folded-together situations; replicas are folds-back of the original; applying folds toward someone.",
+    "teachingTip": "Folding metaphor: how does ap + plic = 'fold toward' become 'apply for a job'? Students articulate the metaphor's leap.",
+    "inquiryPrompts": [
+      "Why does 'duplicate' mean 'two folds'? Trace the metaphor of doubling.",
+      "How is 'implicit' (folded in) the opposite of 'explicit' (folded out)?"
+    ],
+    "confusedWith": [
+      "root:fect",
+      "root:struct"
+    ],
+    "outsideExamples": [
+      "complicated",
+      "multiply",
+      "replica",
+      "imply"
+    ],
+    "_order": 212
+  },
+  {
+    "key": "root:bio",
+    "morpheme": "bio",
+    "origin": "Greek",
+    "type": "Combining form",
+    "meaning": "life; living things",
+    "etymology": "From Greek *bios* ‘life’. In English it shows up as a combining form in science and academic words.",
+    "wordSums": [
+      "bio + graph + y → biography (written life story)",
+      "bio + logy → biology (study of life)",
+      "bio + tic → biotic (relating to life)"
+    ],
+    "decodingTip": "When you see bio-, ask 'life of what?'. It often points to living systems (biology, biotic, biodegradable).",
+    "teachingTip": "Science anchor: put biotic on one side of the board and abiotic on the other. Students explain ‘living’ vs ‘nonliving’ and then add two more bio- words with meanings.",
+    "inquiryPrompts": [
+      "Why do we say 'biology' but 'biography'? What does -logy do vs -graphy?",
+      "Find a new bio- word outside class (biometric, biome, biography). What does it literally mean?"
+    ],
+    "confusedWith": [
+      "root:geo",
+      "root:graph",
+      "sfx:-logy"
+    ],
+    "outsideExamples": [
+      "biotic",
+      "biodegradable",
+      "biomass",
+      "biome"
+    ],
+    "wiktionary": "bio-",
+    "_order": 213
+  },
+  {
+    "key": "root:graph",
+    "morpheme": "graph / gram",
+    "origin": "Greek",
+    "meaning": "write; draw; record",
+    "etymology": "From Greek graphein 'to write, scratch, draw'; one of the most productive Greek combining forms in English.",
+    "wordSums": [
+      "photo + graph → photograph (light + write)",
+      "para + graph → paragraph (beside + write)",
+      "auto + graph → autograph (self + write)",
+      "tele + gram → telegram (far + writing)"
+    ],
+    "decodingTip": "graph / gram = write, draw, record. Anything that records or draws likely has graph: telegraph, monograph, geography ('writing about earth').",
+    "teachingTip": "Combining-form sandbox: write photo-, geo-, bio-, auto- on the board. Pair each with -graph or -gram. Discuss the resulting compounds and meanings.",
+    "inquiryPrompts": [
+      "Why is a telegram a -gram but a telegraph a -graph? What's the difference?",
+      "What does 'graphic design' have to do with writing?"
+    ],
+    "confusedWith": [
+      "root:scrib",
+      "sfx:-logy"
+    ],
+    "outsideExamples": [
+      "photograph",
+      "paragraph",
+      "diagram",
+      "telegram"
+    ],
+    "wiktionary": "-graph",
+    "_order": 214
+  },
+  {
+    "key": "root:geo",
+    "morpheme": "geo",
+    "origin": "Greek",
+    "type": "Combining form",
+    "meaning": "earth; ground",
+    "etymology": "From Greek gē or gaia 'earth, land' — the same root as geography and geometry (earth-measure).",
+    "wordSums": [
+      "geo + logy → geology (study of the earth)",
+      "geo + graph → geography (earth-writing / describing the earth)"
+    ],
+    "decodingTip": "When you see geo- at the front of a long word, try ‘earth’ or ‘ground’ before you read the rest.",
+    "teachingTip": "Quick sort: list geo- words from science class; group ‘study of earth’ (-logy) vs ‘write/draw about earth’ (-graph).",
+    "inquiryPrompts": [
+      "How is geology different from geography if both start with geo-?",
+      "What other subjects or words use geo-?"
+    ],
+    "confusedWith": [
+      "root:graph",
+      "sfx:-logy"
+    ],
+    "outsideExamples": [
+      "geology",
+      "geography"
+    ],
+    "wiktionary": "geo-",
+    "_order": 215
+  },
+  {
+    "key": "root:psych",
+    "morpheme": "psych",
+    "origin": "Greek",
+    "type": "Combining form",
+    "meaning": "mind; spirit; breath",
+    "etymology": "From Greek psukhē 'breath, life, soul, mind' — in school words it almost always points to thinking, feeling, and behavior.",
+    "wordSums": [
+      "psych + ology → psychology (study of the mind — English keeps an o before -logy)",
+      "psych + ic → psychic (of the mind / beyond ordinary senses)"
+    ],
+    "decodingTip": "psych- signals mind. Read psychology as psych + ology = ‘study of the mind.’",
+    "teachingTip": "Contrast psych- with bio- in a T-chart: what does each base add before -logy?",
+    "inquiryPrompts": [
+      "Why might English keep the <strong>o</strong> in psychology instead of *psychlogy*?",
+      "What is ‘psychology’ the study of in one plain sentence?"
+    ],
+    "confusedWith": [
+      "sfx:-logy",
+      "root:geo"
+    ],
+    "outsideExamples": [
+      "psychology",
+      "psychic"
+    ],
+    "wiktionary": "psycho-",
+    "_order": 216
+  },
+  {
+    "key": "root:zoo",
+    "morpheme": "zoo",
+    "origin": "Greek",
+    "type": "Combining form",
+    "meaning": "animal; living being",
+    "etymology": "From Greek zōion 'animal' — the same root as zoo (a park of animals) and zoology (the study of animals).",
+    "wordSums": [
+      "zoo + logy → zoology (study of animals)",
+      "zoo + n → zoo (short for zoological garden)"
+    ],
+    "decodingTip": "zoo- (or zoo before -logy) points to animals. zoology = zoo + logy, not ‘zoo’ + ‘ology’ as two random pieces.",
+    "teachingTip": "Word sum on the board: zoo + logy → zoology. Students say it in their own words: ‘study of ___.’",
+    "inquiryPrompts": [
+      "How does the meaning of zoo- in zoology connect to the place called a zoo?",
+      "Name another word that uses zoo- besides zoology."
+    ],
+    "confusedWith": [
+      "sfx:-logy",
+      "root:geo"
+    ],
+    "outsideExamples": [
+      "zoology",
+      "zookeeper"
+    ],
+    "wiktionary": "zoo-",
+    "_order": 217
+  },
+  {
+    "key": "root:etym",
+    "morpheme": "etym",
+    "origin": "Greek",
+    "type": "Combining form",
+    "meaning": "true sense; original meaning",
+    "etymology": "From Greek etumos 'true, actual' — in etymology, the study of where words came from and what they truly meant at first.",
+    "wordSums": [
+      "etym + ology → etymology (study of the true / original meaning of words)",
+      "etymo + logy → etymology (same word sum with the fuller combining stem before -logy)"
+    ],
+    "decodingTip": "Split etymology as etym + ology: first part = truth/original sense, second part = study of — so ‘study of word origins.’",
+    "teachingTip": "Have students write etym + ology → etymology, then connect to what you do when you ‘do etymology’ on the board.",
+    "inquiryPrompts": [
+      "If etym- means ‘true sense,’ what are we studying when we study etymology?",
+      "How is etymology different from ‘just guessing what a word sounds like’?"
+    ],
+    "confusedWith": [
+      "sfx:-logy",
+      "root:dict"
+    ],
+    "outsideExamples": [
+      "etymology"
+    ],
+    "wiktionary": "etymology",
+    "_order": 218
+  },
+  {
+    "key": "sfx:-logy",
+    "morpheme": "-logy, -ology",
+    "origin": "Greek",
+    "type": "Suffix",
+    "meaning": "study of; science of",
+    "etymology": "From Greek -logia, built on logos 'word, study, reason'; English spells it **-logy** or **-ology** after the combining stem (biology, psychology).",
+    "wordSums": [
+      "bio + logy → biology (study of life)",
+      "geo + logy → geology (study of earth)",
+      "psych + ology → psychology (study of the mind)",
+      "zoo + logy → zoology (study of animals)",
+      "etym + ology → etymology (study of true / original meaning of words)"
+    ],
+    "decodingTip": "Almost every *-logy* word is two morphemes: a topic stem (bio, geo, psych, zoo, etym…) plus **-logy** or **-ology** (study of). Read the stem first, then add ‘study of.’",
+    "teachingTip": "Two-column sort: stems (bio, geo, psych, zoo…) vs the stable suffix (-logy / -ology). Students explain each row in plain English.",
+    "inquiryPrompts": [
+      "Etymology means 'study of true / original meaning' — etym + ology. How does that fit what we're doing right now in this lesson?",
+      "Why isn't there a 'mathematilogy'? What governs which fields take -logy and which don't?"
+    ],
+    "confusedWith": [
+      "root:graph",
+      "root:geo",
+      "root:psych",
+      "root:zoo",
+      "root:etym"
+    ],
+    "outsideExamples": [
+      "theology",
+      "technology",
+      "anthropology",
+      "pathology"
+    ],
+    "wiktionary": "-logy",
+    "_order": 219
+  }
+]

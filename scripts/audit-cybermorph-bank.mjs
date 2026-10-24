@@ -23,9 +23,11 @@ import { DISTRICTS, MAIN_ORDER, KEY_POOL, DICTIONARY } from '../src/site/cybermo
 import { GIANTS } from '../src/site/cybermorph/js/data/finale.js';
 import { ROOM_W, ROOM_H, CORRIDOR } from '../src/site/cybermorph/js/data/layout.js';
 import { MORPHEME_CATALOG as FORK } from '../src/site/cybermorph/js/data/catalog.js';
-import { MORPHEME_CATALOG as GARDEN } from '../src/site/scripts/morphology-morpheme-catalog.js';
+import { loadMorphemeCatalog } from '../src/site/scripts/morphology-bank.js';
 import { BANK } from '../src/site/cybermorph/js/data/bank.js';
 import { makeWave, taughtBy, isKnown, allWords } from '../src/site/cybermorph/js/game/waves.js';
+
+const GARDEN = await loadMorphemeCatalog();
 
 const list = process.argv.includes('--list');
 const errors = [];

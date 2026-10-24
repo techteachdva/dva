@@ -1,5 +1,9 @@
 """
-Pedagogy Profile — teacher self-assessment with radar chart (1 = center, 100 = edge).
+Pedagogy Profile — local desktop self-assessment (radar: 1 = center, 100 = edge).
+
+The website does not import this module. Browser scoring goes through
+POST /api/pedagogy/score and POST /api/pedagogy/analyze.
+Run from the repo root: py services/pedagogy/main.py
 """
 from __future__ import annotations
 

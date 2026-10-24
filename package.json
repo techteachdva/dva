@@ -5,7 +5,8 @@
     "main": "index.js",
     "scripts": {
         "prebuild": "rimraf dist",
-        "start": "npm-run-all get-theme build:sass --parallel watch:*",
+        "start": "npm-run-all get-theme build:sass --parallel watch:* dev:api",
+        "dev:api": "node scripts/dev-api-server.mjs",
         "watch:sass": "sass --watch src/site/styles:dist/styles",
         "watch:eleventy": "cross-env ELEVENTY_ENV=dev eleventy --serve",
         "build:eleventy": "cross-env ELEVENTY_ENV=prod NODE_OPTIONS=--max-old-space-size=4096 eleventy",
@@ -13,7 +14,10 @@
         "get-theme": "node src/site/get-theme.js",
         "download-pck": "node scripts/download-pck.js",
         "inject-signaling": "node scripts/inject-signaling-url.js",
-        "build": "npm-run-all get-theme sync:classrooms build:sass download-pck download-crystalwizards download-physix restore-physix-shell validate-physix-shell inject-signaling build:eleventy",
+        "build": "npm-run-all get-theme sync:classrooms build:sass download-pck download-crystalwizards download-physix restore-physix-shell validate-physix-shell inject-signaling optimize:assets build:eleventy",
+        "optimize:assets": "node scripts/optimize-assets.mjs",
+        "build:morphology": "node scripts/split-morphology-tiers.mjs --write",
+        "pedagogy:desktop": "py services/pedagogy/main.py",
         "sync:classrooms": "node scripts/sync-diagnostic-classrooms.mjs",
         "sync:tech-trail-roster": "node scripts/sync-tech-trail-roster.mjs",
         "validate:tech-trail": "node scripts/validate-tech-trail-story.mjs",
@@ -58,7 +62,8 @@
         "html-minifier-terser": "^7.2.0",
         "node-html-parser": "^6.1.13",
         "playwright": "^1.63.0",
-        "sass": "^1.49.9"
+        "sass": "^1.49.9",
+        "sharp": "^0.35.5"
     },
     "dependencies": {
         "@11ty/eleventy-img": "^4.0.2",

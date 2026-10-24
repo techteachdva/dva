@@ -1,0 +1,597 @@
+[
+  {
+    "id": "sfx-s-es",
+    "label": "Cats",
+    "tier": "tier1",
+    "focusMorpheme": "-s / -es (regular plurals)",
+    "bracket": "[cat + -s]",
+    "note": "<strong>Exit ticket:</strong> Name one noun that takes <strong>-es</strong> after <strong>x</strong>, <strong>s</strong>, <strong>ch</strong>, or <strong>sh</strong> (like <em>boxes</em> or <em>dishes</em>).",
+    "tree": {
+      "text": "cats",
+      "gloss": "noun: more than one cat",
+      "children": [
+        {
+          "text": "cat",
+          "gloss": "free morpheme: animal",
+          "morphemeKey": "lex:cat",
+          "children": []
+        },
+        {
+          "text": "-s",
+          "gloss": "suffix: plural / third-person singular present",
+          "morphemeKey": "sfx:-s",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> English often marks “more than one” by adding a sound spelled <strong>-s</strong> or <strong>-es</strong>. Think of <strong>-es</strong> as the spelling you reach for when plain <strong>-s</strong> would feel clumsy after certain endings (like <em>boxes</em>, <em>classes</em>).",
+      "etymology": [
+        {
+          "segment": "cat",
+          "origin": "The noun you start from."
+        },
+        {
+          "segment": "-s",
+          "origin": "Inflectional ending—does a grammar job (plural or verb agreement), not a “new word family” like Latin prefixes."
+        }
+      ],
+      "tense": "Here <strong>-s</strong> marks plural nouns. The same letters can mark verb agreement (<em>She runs</em>)—sentence context tells you which job."
+    },
+    "position": [
+      0,
+      0,
+      -54
+    ],
+    "_order": 0
+  },
+  {
+    "id": "sfx-ed",
+    "label": "Jumped",
+    "tier": "tier1",
+    "focusMorpheme": "-ed (past tense / past participle)",
+    "bracket": "[jump + -ed]",
+    "note": "<strong>Exit ticket:</strong> Say the word aloud: does <strong>-ed</strong> come out as /t/, /d/, or an extra syllable /ɪd/?",
+    "tree": {
+      "text": "jumped",
+      "gloss": "verb: did a jump; past time",
+      "children": [
+        {
+          "text": "jump",
+          "gloss": "free morpheme: spring upward",
+          "morphemeKey": "lex:jump",
+          "children": []
+        },
+        {
+          "text": "-ed",
+          "gloss": "suffix: past tense / past participle",
+          "morphemeKey": "sfx:-ed",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> <strong>-ed</strong> usually signals “already happened” or “finished action,” though English also uses other past forms (<em>went, sang</em>). When it attaches to a regular verb like <em>jump</em>, you get a predictable past form.",
+      "etymology": [
+        {
+          "segment": "jump",
+          "origin": "Verb stem."
+        },
+        {
+          "segment": "-ed",
+          "origin": "Inflectional suffix—time/aspect glue on verbs."
+        }
+      ],
+      "tense": "Past tense / participle family. Compare irregular pasts for contrast (<em>jumped</em> vs <em>ran</em>)."
+    },
+    "position": [
+      1,
+      0,
+      -54
+    ],
+    "_order": 1
+  },
+  {
+    "id": "sfx-ing",
+    "label": "Running",
+    "tier": "tier1",
+    "focusMorpheme": "-ing",
+    "bracket": "[run + -ing]",
+    "note": "<strong>Exit ticket:</strong> Give a sentence using <em>running</em> as a noun (<em>Running helps…</em>) and one using it as part of a progressive verb.",
+    "tree": {
+      "text": "running",
+      "gloss": "verb/noun: the action of run; ongoing action",
+      "children": [
+        {
+          "text": "run",
+          "gloss": "verb stem: move fast",
+          "morphemeKey": "lex:run",
+          "children": []
+        },
+        {
+          "text": "-ing",
+          "gloss": "suffix: gerund/participle/progressive",
+          "morphemeKey": "sfx:-ing",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> <strong>-ing</strong> shows up in several grammar roles—ongoing action (<em>is running</em>), a noun-like activity (<em>Running is fun</em>), and adjective-like uses (<em>running water</em>). Same spelling; sentence job differs.",
+      "tense": "Ask “Is this naming an activity, marking ongoing time, or modifying a noun?”"
+    },
+    "position": [
+      2,
+      0,
+      -54
+    ],
+    "_order": 2
+  },
+  {
+    "id": "sfx-ly",
+    "label": "Quickly",
+    "tier": "tier1",
+    "focusMorpheme": "-ly",
+    "bracket": "[quick + -ly]",
+    "note": "<strong>Exit ticket:</strong> Turn <em>happy</em> into an adverb with <strong>-ly</strong>. What happens to the <strong>y</strong>?",
+    "tree": {
+      "text": "quickly",
+      "gloss": "adverb: in a quick manner",
+      "children": [
+        {
+          "text": "quick",
+          "gloss": "adjective stem: fast",
+          "morphemeKey": "lex:quick",
+          "children": []
+        },
+        {
+          "text": "-ly",
+          "gloss": "suffix: manner adverb",
+          "morphemeKey": "sfx:-ly",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> Many English adverbs are built by adding <strong>-ly</strong> to an adjective—often meaning “in a ___ way.” Watch friendly exceptions (<em>fast</em> can be adjective or adverb without <strong>-ly</strong>).",
+      "etymology": [
+        {
+          "segment": "quick",
+          "origin": "Adjective base."
+        },
+        {
+          "segment": "-ly",
+          "origin": "Turns many adjectives into manner adverbs."
+        }
+      ]
+    },
+    "position": [
+      3,
+      0,
+      -53.9
+    ],
+    "_order": 3
+  },
+  {
+    "id": "sfx-er-or",
+    "label": "Teacher",
+    "tier": "tier1",
+    "focusMorpheme": "-er / -or (agent nouns; compare with comparative -er)",
+    "bracket": "[teach + -er]",
+    "note": "<strong>Exit ticket:</strong> Name another word where <strong>-er</strong> means “a person who ___s,” and one where <strong>-or</strong> does the same job (<em>actor, elevator</em> patterns).",
+    "tree": {
+      "text": "teacher",
+      "gloss": "noun: one who teaches",
+      "children": [
+        {
+          "text": "teach",
+          "gloss": "verb stem",
+          "morphemeKey": "lex:teach",
+          "children": []
+        },
+        {
+          "text": "-er",
+          "gloss": "suffix: one who; thing that",
+          "morphemeKey": "sfx:-er",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> Here <strong>-er</strong> builds a noun for a role or doer: “someone who teaches.” Don’t confuse that with comparative <strong>-er</strong> (<em>faster</em>)—sentence context and the base word’s part of speech usually make it obvious.",
+      "etymology": [
+        {
+          "segment": "teach",
+          "origin": "Verb stem."
+        },
+        {
+          "segment": "-er",
+          "origin": "Agentive suffix—person or thing tied to an action."
+        }
+      ],
+      "formation": "Parallel pattern with <strong>-or</strong> after Latin stems (<em>actor, supervisor</em>)—same “doer” idea, different spelling history."
+    },
+    "position": [
+      4,
+      0,
+      -53.8
+    ],
+    "_order": 4
+  },
+  {
+    "id": "sfx-y",
+    "label": "Cloudy",
+    "tier": "tier1",
+    "focusMorpheme": "-y (adjective ‘full of / like’)",
+    "bracket": "[cloud + -y]",
+    "note": "<strong>Exit ticket:</strong> What does <strong>-y</strong> add to the noun <em>cloud</em> here—not plural <strong>-ies</strong>, but adjective meaning?",
+    "tree": {
+      "text": "cloudy",
+      "gloss": "adjective: full of clouds; gray sky",
+      "children": [
+        {
+          "text": "cloud",
+          "gloss": "noun stem",
+          "morphemeKey": "lex:cloud",
+          "children": []
+        },
+        {
+          "text": "-y",
+          "gloss": "suffix: having / like / characterized by",
+          "morphemeKey": "sfx:-y",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> This <strong>-y</strong> builds an adjective from a noun: “cloud-like / having clouds.” Don’t mix this up with plural spellings like <em>clouds</em>—grammar and pronunciation tell them apart.",
+      "tense": "Adjective—compare noun <em>cloud</em> vs adjective <em>cloudy</em>."
+    },
+    "position": [
+      7,
+      0,
+      -53.5
+    ],
+    "_order": 7
+  },
+  {
+    "id": "sfx-ful",
+    "label": "Careful",
+    "tier": "tier1",
+    "focusMorpheme": "-ful",
+    "bracket": "[care + -ful]",
+    "note": "<strong>Exit ticket:</strong> Pair <strong>-ful</strong> with <strong>-less</strong>: what’s the difference between <em>hopeful</em> and <em>hopeless</em>?",
+    "tree": {
+      "text": "careful",
+      "gloss": "adjective: full of care; cautious",
+      "children": [
+        {
+          "text": "care",
+          "gloss": "noun/verb stem",
+          "morphemeKey": "lex:care",
+          "children": []
+        },
+        {
+          "text": "-ful",
+          "gloss": "suffix: full of; having",
+          "morphemeKey": "sfx:-ful",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> <strong>-ful</strong> makes adjectives meaning “full of” or “having.” It clarifies tone—<em>careful</em> is “having care,” not “without care.”",
+      "etymology": [
+        {
+          "segment": "care",
+          "origin": "Core meaning: attention / concern."
+        },
+        {
+          "segment": "-ful",
+          "origin": "“Full of” — opposite vibe from <strong>-less</strong> in many pairs."
+        }
+      ]
+    },
+    "position": [
+      11,
+      0,
+      -52.9
+    ],
+    "_order": 11
+  },
+  {
+    "id": "pfx-un",
+    "label": "Unhappy",
+    "tier": "tier1",
+    "focusMorpheme": "un-",
+    "bracket": "[un- + happy]",
+    "note": "<strong>Exit ticket:</strong> Why is <em>unhappy</em> usually taught with native Germanic bases, while “not + Latin stem” often uses <strong>in- / im-</strong> instead?",
+    "tree": {
+      "text": "unhappy",
+      "gloss": "adjective: not happy",
+      "children": [
+        {
+          "text": "un-",
+          "gloss": "prefix: not; reverse",
+          "morphemeKey": "pfx:un-",
+          "children": []
+        },
+        {
+          "text": "happy",
+          "gloss": "adjective: glad",
+          "morphemeKey": "lex:happy",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> <strong>un-</strong> often negates or reverses short, everyday bases (<em>unfair, unzip</em>). It’s a different “not” family than Latinate <strong>in-</strong>, but the reading strategy is similar: strip the prefix and read the base.",
+      "etymology": [
+        {
+          "segment": "un-",
+          "origin": "Negation / reversal—listen for bases that feel like everyday English."
+        }
+      ]
+    },
+    "position": [
+      13,
+      0,
+      -52.4
+    ],
+    "_order": 13
+  },
+  {
+    "id": "pfx-re",
+    "label": "Reuse",
+    "tier": "tier1",
+    "focusMorpheme": "re-",
+    "bracket": "[re- + use]",
+    "note": "<strong>Exit ticket:</strong> When does <strong>re-</strong> mean “again,” and when does it feel more like “back” (<em>return, reflect</em>)?",
+    "tree": {
+      "text": "reuse",
+      "gloss": "verb: use again",
+      "children": [
+        {
+          "text": "re-",
+          "gloss": "prefix: again; back",
+          "morphemeKey": "pfx:re-",
+          "children": []
+        },
+        {
+          "text": "use",
+          "gloss": "verb: employ",
+          "morphemeKey": "lex:use",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> <strong>re-</strong> usually signals repetition or doing something back/again—reading science and history, you’ll see it constantly on verbs (<em>rebuild, review</em>).",
+      "etymology": [
+        {
+          "segment": "re-",
+          "origin": "Again / back—exact nuance comes from the base verb."
+        },
+        {
+          "segment": "use",
+          "origin": "Free morpheme base."
+        }
+      ]
+    },
+    "position": [
+      13.9,
+      0,
+      -52.2
+    ],
+    "_order": 14
+  },
+  {
+    "id": "pfx-over",
+    "label": "Overlook",
+    "tier": "tier1",
+    "focusMorpheme": "over-",
+    "bracket": "[over + look]",
+    "note": "<strong>Exit ticket:</strong> <em>Overlook</em> can mean “look down on from above” or “fail to notice”—how does context pick the meaning?",
+    "tree": {
+      "text": "overlook",
+      "gloss": "verb: look over; miss seeing",
+      "children": [
+        {
+          "text": "over",
+          "gloss": "prefix: above; too much",
+          "morphemeKey": "pfx:over-",
+          "children": []
+        },
+        {
+          "text": "look",
+          "gloss": "verb: see",
+          "morphemeKey": "lex:look",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> <strong>Over-</strong> can be literal “above” (<em>overhead</em>) or “too much / excess” (<em>overreact</em>). That’s why some <strong>over-</strong> words have two plausible readings until context pins them down.",
+      "tense": "Verb—pay attention to idiomatic meanings in reading class."
+    },
+    "position": [
+      18.7,
+      0,
+      -50.6
+    ],
+    "_order": 19
+  },
+  {
+    "id": "pfx-sub",
+    "label": "Subway",
+    "tier": "tier1",
+    "focusMorpheme": "sub-",
+    "bracket": "[sub- + way]",
+    "note": "<strong>Exit ticket:</strong> Where do you find another <strong>sub-</strong> word that means “under” literally (<em>submarine</em>)?",
+    "tree": {
+      "text": "subway",
+      "gloss": "noun: underground train route",
+      "children": [
+        {
+          "text": "sub-",
+          "gloss": "prefix: under; below",
+          "morphemeKey": "pfx:sub-",
+          "children": []
+        },
+        {
+          "text": "way",
+          "gloss": "noun: path",
+          "morphemeKey": "lex:way",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> <strong>Sub-</strong> usually signals “under” or “below rank” (<em>subtract, submarine</em>). In compounds like <em>subway</em>, it tightens what kind of route it is.",
+      "embedded": [
+        {
+          "text": "sub-",
+          "note": "Think physically under or hierarchically below."
+        },
+        {
+          "text": "way",
+          "note": "Head noun: path or route."
+        }
+      ]
+    },
+    "position": [
+      20.6,
+      0,
+      -49.9
+    ],
+    "_order": 21
+  },
+  {
+    "id": "pfx-mid",
+    "label": "Midnight",
+    "tier": "tier1",
+    "focusMorpheme": "mid-",
+    "bracket": "[mid- + night]",
+    "note": "<strong>Exit ticket:</strong> Why is <em>midnight</em> “the middle of the night” but clock time can disagree with astronomy?",
+    "tree": {
+      "text": "midnight",
+      "gloss": "noun: middle of the night; 12:00 a.m.",
+      "children": [
+        {
+          "text": "mid-",
+          "gloss": "prefix: middle",
+          "morphemeKey": "pfx:mid-",
+          "children": []
+        },
+        {
+          "text": "night",
+          "gloss": "noun: night time",
+          "morphemeKey": "lex:night",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> <strong>Mid-</strong> picks the middle of something (<em>midday, midterm</em>). Transparent compounds help spelling—you hear both chunks.",
+      "embedded": [
+        {
+          "text": "mid-",
+          "note": "Locates you halfway through the named span."
+        },
+        {
+          "text": "night",
+          "note": "Head noun naming the span."
+        }
+      ]
+    },
+    "position": [
+      26.9,
+      0,
+      -46.8
+    ],
+    "_order": 28
+  },
+  {
+    "id": "pfx-ex",
+    "label": "Exit",
+    "tier": "tier1",
+    "focusMorpheme": "ex-, e-, ef-",
+    "bracket": "[ex- + it]",
+    "note": "<strong>Exit ticket:</strong> Find <strong>eject</strong> or <strong>efface</strong> and explain how the prefix shortened before the stem.",
+    "tree": {
+      "text": "exit",
+      "gloss": "noun/verb: way out; leave",
+      "children": [
+        {
+          "text": "ex-",
+          "gloss": "prefix: out",
+          "morphemeKey": "pfx:ex-",
+          "children": []
+        },
+        {
+          "text": "it",
+          "gloss": "stem: go",
+          "morphemeKey": "root:it-go",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> <strong>Ex-</strong> (and shapes like <strong>e-, ef-</strong>) often marks “out” or “former” (<em>exit, exclude</em>). Pair it mentally with <strong>ad-/in-</strong> “toward/in” when you contrast words.",
+      "etymology": [
+        {
+          "segment": "ex-",
+          "origin": "Out — leaving or outside position."
+        }
+      ]
+    },
+    "position": [
+      29.5,
+      0,
+      -45.2
+    ],
+    "_order": 31
+  },
+  {
+    "id": "root-vis",
+    "label": "Television",
+    "tier": "tier1",
+    "focusMorpheme": "vis / vid (see)",
+    "bracket": "[tele + vis + -ion]",
+    "note": "<strong>Exit ticket:</strong> Split another word with <strong>vid</strong> (<em>video, evidence</em>).",
+    "tree": {
+      "text": "television",
+      "gloss": "noun: far-seeing device / medium",
+      "children": [
+        {
+          "text": "tele",
+          "gloss": "combining form: far",
+          "morphemeKey": "root:tele",
+          "children": []
+        },
+        {
+          "text": "vis",
+          "gloss": "stem: see",
+          "morphemeKey": "root:vis",
+          "children": []
+        },
+        {
+          "text": "-ion",
+          "gloss": "noun suffix",
+          "morphemeKey": "sfx:-tion",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> <strong>Vis/vid</strong> = see—evidence, video, vision. <em>Television</em> literally “far seeing,” though etymology is more layered than the classroom shortcut.",
+      "tense": "Count noun in everyday speech."
+    },
+    "position": [
+      42.1,
+      0,
+      -33.8
+    ],
+    "_order": 48
+  }
+]

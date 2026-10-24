@@ -2,6 +2,11 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "buildCommand": "npm run build",
+  "functions": {
+    "api/pedagogy/score.js": { "maxDuration": 10 },
+    "api/pedagogy/analyze.js": { "maxDuration": 10 },
+    "api/pedagogy/questions.js": { "maxDuration": 10 }
+  },
   "devCommand": "npm run start",
   "redirects": [
     { "source": "/x-k9-curtly", "destination": "/", "permanent": true },

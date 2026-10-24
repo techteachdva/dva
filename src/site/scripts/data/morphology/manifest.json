@@ -1,0 +1,5656 @@
+{
+  "version": 1,
+  "tiers": [
+    "tier1",
+    "tier2",
+    "tier3"
+  ],
+  "counts": {
+    "words": {
+      "tier1": 14,
+      "tier2": 322,
+      "tier3": 1
+    },
+    "catalog": {
+      "tier1": 29,
+      "tier2": 191,
+      "tier3": 0
+    }
+  },
+  "words": [
+    {
+      "id": "sfx-s-es",
+      "label": "Cats",
+      "tier": "tier1",
+      "focusMorpheme": "-s / -es (regular plurals)",
+      "keys": [
+        "lex:cat",
+        "sfx:-s"
+      ]
+    },
+    {
+      "id": "sfx-ed",
+      "label": "Jumped",
+      "tier": "tier1",
+      "focusMorpheme": "-ed (past tense / past participle)",
+      "keys": [
+        "lex:jump",
+        "sfx:-ed"
+      ]
+    },
+    {
+      "id": "sfx-ing",
+      "label": "Running",
+      "tier": "tier1",
+      "focusMorpheme": "-ing",
+      "keys": [
+        "lex:run",
+        "sfx:-ing"
+      ]
+    },
+    {
+      "id": "sfx-ly",
+      "label": "Quickly",
+      "tier": "tier1",
+      "focusMorpheme": "-ly",
+      "keys": [
+        "lex:quick",
+        "sfx:-ly"
+      ]
+    },
+    {
+      "id": "sfx-er-or",
+      "label": "Teacher",
+      "tier": "tier1",
+      "focusMorpheme": "-er / -or (agent nouns; compare with comparative -er)",
+      "keys": [
+        "lex:teach",
+        "sfx:-er"
+      ]
+    },
+    {
+      "id": "sfx-ion",
+      "label": "Action",
+      "tier": "tier2",
+      "focusMorpheme": "-ion / -tion (nominalization)",
+      "keys": [
+        "root:act",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "sfx-al",
+      "label": "National",
+      "tier": "tier2",
+      "focusMorpheme": "-al",
+      "keys": [
+        "lex:nation",
+        "sfx:-al"
+      ]
+    },
+    {
+      "id": "sfx-y",
+      "label": "Cloudy",
+      "tier": "tier1",
+      "focusMorpheme": "-y (adjective ‘full of / like’)",
+      "keys": [
+        "lex:cloud",
+        "sfx:-y"
+      ]
+    },
+    {
+      "id": "sfx-ness",
+      "label": "Happiness",
+      "tier": "tier2",
+      "focusMorpheme": "-ness",
+      "keys": [
+        "lex:happy",
+        "sfx:-ness"
+      ]
+    },
+    {
+      "id": "sfx-ment",
+      "label": "Movement",
+      "tier": "tier2",
+      "focusMorpheme": "-ment",
+      "keys": [
+        "lex:move",
+        "sfx:-ment"
+      ]
+    },
+    {
+      "id": "sfx-able-ible",
+      "label": "Readable",
+      "tier": "tier2",
+      "focusMorpheme": "-able / -ible",
+      "keys": [
+        "lex:read",
+        "sfx:-able"
+      ]
+    },
+    {
+      "id": "sfx-ful",
+      "label": "Careful",
+      "tier": "tier1",
+      "focusMorpheme": "-ful",
+      "keys": [
+        "lex:care",
+        "sfx:-ful"
+      ]
+    },
+    {
+      "id": "sfx-less",
+      "label": "Hopeless",
+      "tier": "tier2",
+      "focusMorpheme": "-less",
+      "keys": [
+        "lex:hope",
+        "sfx:-less"
+      ]
+    },
+    {
+      "id": "pfx-un",
+      "label": "Unhappy",
+      "tier": "tier1",
+      "focusMorpheme": "un-",
+      "keys": [
+        "pfx:un-",
+        "lex:happy"
+      ]
+    },
+    {
+      "id": "pfx-re",
+      "label": "Reuse",
+      "tier": "tier1",
+      "focusMorpheme": "re-",
+      "keys": [
+        "pfx:re-",
+        "lex:use"
+      ]
+    },
+    {
+      "id": "pfx-in-not",
+      "label": "Invisible",
+      "tier": "tier2",
+      "focusMorpheme": "in-, im-, il-, ir- (not)",
+      "keys": [
+        "pfx:in-",
+        "root:vis",
+        "sfx:-able"
+      ]
+    },
+    {
+      "id": "pfx-dis",
+      "label": "Disconnect",
+      "tier": "tier2",
+      "focusMorpheme": "dis- / dif-",
+      "keys": [
+        "pfx:dis-",
+        "pfx:con-",
+        "root:nect"
+      ]
+    },
+    {
+      "id": "pfx-non",
+      "label": "Nonsense",
+      "tier": "tier2",
+      "focusMorpheme": "non-",
+      "keys": [
+        "pfx:non-",
+        "lex:sense"
+      ]
+    },
+    {
+      "id": "pfx-in-toward",
+      "label": "Import",
+      "tier": "tier2",
+      "focusMorpheme": "in-, im- (in / on / toward)",
+      "keys": [
+        "pfx:in-toward",
+        "root:port"
+      ]
+    },
+    {
+      "id": "pfx-over",
+      "label": "Overlook",
+      "tier": "tier1",
+      "focusMorpheme": "over-",
+      "keys": [
+        "pfx:over-",
+        "lex:look"
+      ]
+    },
+    {
+      "id": "pfx-mis",
+      "label": "Misunderstand",
+      "tier": "tier2",
+      "focusMorpheme": "mis-",
+      "keys": [
+        "pfx:mis-",
+        "lex:under",
+        "lex:stand"
+      ]
+    },
+    {
+      "id": "pfx-sub",
+      "label": "Subway",
+      "tier": "tier1",
+      "focusMorpheme": "sub-",
+      "keys": [
+        "pfx:sub-",
+        "lex:way"
+      ]
+    },
+    {
+      "id": "pfx-pre",
+      "label": "Preview",
+      "tier": "tier2",
+      "focusMorpheme": "pre-",
+      "keys": [
+        "pfx:pre-",
+        "lex:view"
+      ]
+    },
+    {
+      "id": "pfx-inter",
+      "label": "International",
+      "tier": "tier2",
+      "focusMorpheme": "inter-",
+      "keys": [
+        "pfx:inter-",
+        "sfx:-al",
+        "lex:nation"
+      ]
+    },
+    {
+      "id": "pfx-fore",
+      "label": "Forecast",
+      "tier": "tier2",
+      "focusMorpheme": "fore-",
+      "keys": [
+        "pfx:fore-",
+        "lex:cast"
+      ]
+    },
+    {
+      "id": "pfx-de",
+      "label": "Decode",
+      "tier": "tier2",
+      "focusMorpheme": "de-",
+      "keys": [
+        "pfx:de-",
+        "lex:code"
+      ]
+    },
+    {
+      "id": "pfx-trans",
+      "label": "Transport",
+      "tier": "tier2",
+      "focusMorpheme": "trans-",
+      "keys": [
+        "pfx:trans-",
+        "root:port"
+      ]
+    },
+    {
+      "id": "pfx-anti",
+      "label": "Antifreeze",
+      "tier": "tier2",
+      "focusMorpheme": "anti-",
+      "keys": [
+        "pfx:anti-",
+        "lex:freeze"
+      ]
+    },
+    {
+      "id": "pfx-mid",
+      "label": "Midnight",
+      "tier": "tier1",
+      "focusMorpheme": "mid-",
+      "keys": [
+        "pfx:mid-",
+        "lex:night"
+      ]
+    },
+    {
+      "id": "pfx-con",
+      "label": "Connect",
+      "tier": "tier2",
+      "focusMorpheme": "con-",
+      "keys": [
+        "pfx:con-",
+        "root:nect"
+      ]
+    },
+    {
+      "id": "pfx-ad",
+      "label": "Advance",
+      "tier": "tier2",
+      "focusMorpheme": "ad-",
+      "keys": [
+        "pfx:ad-",
+        "root:vanc"
+      ]
+    },
+    {
+      "id": "pfx-ex",
+      "label": "Exit",
+      "tier": "tier1",
+      "focusMorpheme": "ex-, e-, ef-",
+      "keys": [
+        "pfx:ex-",
+        "root:it-go"
+      ]
+    },
+    {
+      "id": "root-form",
+      "label": "Inform",
+      "tier": "tier2",
+      "focusMorpheme": "form",
+      "keys": [
+        "pfx:in-toward",
+        "root:form"
+      ]
+    },
+    {
+      "id": "root-port",
+      "label": "Export",
+      "tier": "tier2",
+      "focusMorpheme": "port (carry)",
+      "keys": [
+        "pfx:ex-",
+        "root:port"
+      ]
+    },
+    {
+      "id": "root-rupt",
+      "label": "Interrupt",
+      "tier": "tier2",
+      "focusMorpheme": "rupt (break)",
+      "keys": [
+        "pfx:inter-",
+        "root:rupt"
+      ]
+    },
+    {
+      "id": "root-tract",
+      "label": "Attract",
+      "tier": "tier2",
+      "focusMorpheme": "tract (draw, pull)",
+      "keys": [
+        "pfx:ad-",
+        "root:tract"
+      ]
+    },
+    {
+      "id": "root-scrib",
+      "label": "Describe",
+      "tier": "tier2",
+      "focusMorpheme": "scrib / script (write)",
+      "keys": [
+        "pfx:de-",
+        "root:scrib"
+      ]
+    },
+    {
+      "id": "root-spect",
+      "label": "Inspect",
+      "tier": "tier2",
+      "focusMorpheme": "spect / spec / spic (look)",
+      "keys": [
+        "pfx:in-toward",
+        "root:spect"
+      ]
+    },
+    {
+      "id": "root-struct",
+      "label": "Construct",
+      "tier": "tier2",
+      "focusMorpheme": "struct / stru (build)",
+      "keys": [
+        "pfx:con-",
+        "root:struct"
+      ]
+    },
+    {
+      "id": "root-dict",
+      "label": "Verdict",
+      "tier": "tier3",
+      "focusMorpheme": "dict / dic (say, speak)",
+      "keys": [
+        "root:ver",
+        "root:dict"
+      ]
+    },
+    {
+      "id": "lex-dictionary",
+      "label": "Dictionary",
+      "tier": "tier2",
+      "focusMorpheme": "dict / dic (say, speak)",
+      "keys": [
+        "root:dict",
+        "sfx:-tion",
+        "sfx:-ary"
+      ]
+    },
+    {
+      "id": "lex-contradict",
+      "label": "Contradict",
+      "tier": "tier2",
+      "focusMorpheme": "dict / dic (say, speak)",
+      "keys": [
+        "pfx:contra-",
+        "root:dict"
+      ]
+    },
+    {
+      "id": "lex-uniform",
+      "label": "Uniform",
+      "tier": "tier2",
+      "focusMorpheme": "form (shape, form)",
+      "keys": [
+        "root:uni",
+        "root:form"
+      ]
+    },
+    {
+      "id": "root-fer",
+      "label": "Refer",
+      "tier": "tier2",
+      "focusMorpheme": "fer (carry, bear)",
+      "keys": [
+        "pfx:re-",
+        "root:fer"
+      ]
+    },
+    {
+      "id": "root-mit",
+      "label": "Transmit",
+      "tier": "tier2",
+      "focusMorpheme": "mit / miss (send)",
+      "keys": [
+        "pfx:trans-",
+        "root:mit"
+      ]
+    },
+    {
+      "id": "root-duct",
+      "label": "Conduct",
+      "tier": "tier2",
+      "focusMorpheme": "duct / duc / duce (lead)",
+      "keys": [
+        "pfx:con-",
+        "root:duct"
+      ]
+    },
+    {
+      "id": "root-fact",
+      "label": "Perfect",
+      "tier": "tier2",
+      "focusMorpheme": "fact / fac / fect / fic (make, do)",
+      "keys": [
+        "pfx:per-",
+        "root:fect"
+      ]
+    },
+    {
+      "id": "root-ten",
+      "label": "Maintain",
+      "tier": "tier2",
+      "focusMorpheme": "ten / tain / tin (hold)",
+      "keys": [
+        "lex:main-hand",
+        "root:tain"
+      ]
+    },
+    {
+      "id": "root-vis",
+      "label": "Television",
+      "tier": "tier1",
+      "focusMorpheme": "vis / vid (see)",
+      "keys": [
+        "root:tele",
+        "root:vis",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "root-cap",
+      "label": "Receive",
+      "tier": "tier2",
+      "focusMorpheme": "cap / ceive (take, catch)",
+      "keys": [
+        "pfx:re-",
+        "root:ceive"
+      ]
+    },
+    {
+      "id": "root-sta",
+      "label": "Assistant",
+      "tier": "tier2",
+      "focusMorpheme": "sta / sist / stat / stit (stand)",
+      "keys": [
+        "pfx:ad-",
+        "root:sist",
+        "sfx:-ant"
+      ]
+    },
+    {
+      "id": "root-pos",
+      "label": "Position",
+      "tier": "tier2",
+      "focusMorpheme": "pos / pon (place, put)",
+      "keys": [
+        "root:posit",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "root-plic",
+      "label": "Apply",
+      "tier": "tier2",
+      "focusMorpheme": "plic / ply (fold, bend)",
+      "keys": [
+        "pfx:ad-",
+        "root:ply"
+      ]
+    },
+    {
+      "id": "gcf-graph",
+      "label": "Biography",
+      "tier": "tier2",
+      "focusMorpheme": "graph / gram (write, draw)",
+      "keys": [
+        "root:bio",
+        "root:graph",
+        "sfx:-y-noun"
+      ]
+    },
+    {
+      "id": "gcf-tic",
+      "label": "Biotic",
+      "tier": "tier2",
+      "focusMorpheme": "-tic (relating to)",
+      "keys": [
+        "root:bio",
+        "sfx:-tic"
+      ]
+    },
+    {
+      "id": "gcf-logy",
+      "label": "Biology",
+      "tier": "tier2",
+      "focusMorpheme": "logy (study of)",
+      "keys": [
+        "root:bio",
+        "sfx:-logy"
+      ]
+    },
+    {
+      "id": "gcf-geology",
+      "label": "Geology",
+      "tier": "tier2",
+      "focusMorpheme": "-logy (study of)",
+      "keys": [
+        "root:geo",
+        "sfx:-logy"
+      ]
+    },
+    {
+      "id": "gcf-psychology",
+      "label": "Psychology",
+      "tier": "tier2",
+      "focusMorpheme": "-ology (study of)",
+      "keys": [
+        "root:psych",
+        "sfx:-logy"
+      ]
+    },
+    {
+      "id": "gcf-zoology",
+      "label": "Zoology",
+      "tier": "tier2",
+      "focusMorpheme": "-logy (study of)",
+      "keys": [
+        "root:zoo",
+        "sfx:-logy"
+      ]
+    },
+    {
+      "id": "gcf-etymology",
+      "label": "Etymology",
+      "tier": "tier2",
+      "focusMorpheme": "-ology (study of)",
+      "keys": [
+        "root:etym",
+        "sfx:-logy"
+      ]
+    },
+    {
+      "id": "ex-sfx-s-boxes",
+      "label": "Boxes",
+      "tier": "tier2",
+      "focusMorpheme": "-s, -es",
+      "keys": [
+        "lex:box",
+        "sfx:-s"
+      ]
+    },
+    {
+      "id": "ex-sfx-s-dishes",
+      "label": "Dishes",
+      "tier": "tier2",
+      "focusMorpheme": "-s, -es",
+      "keys": [
+        "lex:dish",
+        "sfx:-s"
+      ]
+    },
+    {
+      "id": "ex-sfx-s-watches",
+      "label": "Watches",
+      "tier": "tier2",
+      "focusMorpheme": "-s, -es",
+      "keys": [
+        "lex:watch",
+        "sfx:-s"
+      ]
+    },
+    {
+      "id": "ex-sfx-s-babies",
+      "label": "Babies",
+      "tier": "tier2",
+      "focusMorpheme": "-s, -es",
+      "keys": [
+        "lex:baby",
+        "sfx:-s"
+      ]
+    },
+    {
+      "id": "ex-sfx-ed-walked",
+      "label": "Walked",
+      "tier": "tier2",
+      "focusMorpheme": "-ed",
+      "keys": [
+        "lex:walk",
+        "sfx:-ed"
+      ]
+    },
+    {
+      "id": "ex-sfx-ed-laughed",
+      "label": "Laughed",
+      "tier": "tier2",
+      "focusMorpheme": "-ed",
+      "keys": [
+        "lex:laugh",
+        "sfx:-ed"
+      ]
+    },
+    {
+      "id": "ex-sfx-ed-wanted",
+      "label": "Wanted",
+      "tier": "tier2",
+      "focusMorpheme": "-ed",
+      "keys": [
+        "lex:want",
+        "sfx:-ed"
+      ]
+    },
+    {
+      "id": "ex-sfx-ed-stopped",
+      "label": "Stopped",
+      "tier": "tier2",
+      "focusMorpheme": "-ed",
+      "keys": [
+        "sfx:-ed"
+      ]
+    },
+    {
+      "id": "ex-sfx-ing-swimming",
+      "label": "Swimming",
+      "tier": "tier2",
+      "focusMorpheme": "-ing",
+      "keys": [
+        "sfx:-ing"
+      ]
+    },
+    {
+      "id": "ex-sfx-ing-reading",
+      "label": "Reading",
+      "tier": "tier2",
+      "focusMorpheme": "-ing",
+      "keys": [
+        "lex:read",
+        "sfx:-ing"
+      ]
+    },
+    {
+      "id": "ex-sfx-ing-making",
+      "label": "Making",
+      "tier": "tier2",
+      "focusMorpheme": "-ing",
+      "keys": [
+        "lex:make",
+        "sfx:-ing"
+      ]
+    },
+    {
+      "id": "ex-sfx-ly-carefully",
+      "label": "Carefully",
+      "tier": "tier2",
+      "focusMorpheme": "-ly",
+      "keys": [
+        "lex:care",
+        "sfx:-ful",
+        "sfx:-ly"
+      ]
+    },
+    {
+      "id": "ex-sfx-ly-slowly",
+      "label": "Slowly",
+      "tier": "tier2",
+      "focusMorpheme": "-ly",
+      "keys": [
+        "lex:slow",
+        "sfx:-ly"
+      ]
+    },
+    {
+      "id": "ex-sfx-ly-quietly",
+      "label": "Quietly",
+      "tier": "tier2",
+      "focusMorpheme": "-ly",
+      "keys": [
+        "lex:quiet",
+        "sfx:-ly"
+      ]
+    },
+    {
+      "id": "ex-sfx-ly-happily",
+      "label": "Happily",
+      "tier": "tier2",
+      "focusMorpheme": "-ly",
+      "keys": [
+        "lex:happy",
+        "sfx:-ly"
+      ]
+    },
+    {
+      "id": "ex-sfx-er-actor",
+      "label": "Actor",
+      "tier": "tier2",
+      "focusMorpheme": "-er / -or",
+      "keys": [
+        "root:act",
+        "sfx:-er"
+      ]
+    },
+    {
+      "id": "ex-sfx-er-runner",
+      "label": "Runner",
+      "tier": "tier2",
+      "focusMorpheme": "-er / -or",
+      "keys": [
+        "lex:run",
+        "sfx:-er"
+      ]
+    },
+    {
+      "id": "ex-sfx-er-creator",
+      "label": "Creator",
+      "tier": "tier2",
+      "focusMorpheme": "-er / -or",
+      "keys": [
+        "lex:create",
+        "sfx:-ate",
+        "sfx:-er"
+      ]
+    },
+    {
+      "id": "ex-sfx-er-wiser",
+      "label": "Wiser",
+      "tier": "tier2",
+      "focusMorpheme": "-er / -or",
+      "keys": [
+        "lex:wise",
+        "sfx:-er"
+      ]
+    },
+    {
+      "id": "ex-sfx-tion-decision",
+      "label": "Decision",
+      "tier": "tier2",
+      "focusMorpheme": "-ion, -tion",
+      "keys": [
+        "root:decis",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-sfx-tion-instruction",
+      "label": "Instruction",
+      "tier": "tier2",
+      "focusMorpheme": "-ion, -tion",
+      "keys": [
+        "pfx:in-",
+        "root:struct",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-sfx-tion-reaction",
+      "label": "Reaction",
+      "tier": "tier2",
+      "focusMorpheme": "-ion, -tion",
+      "keys": [
+        "pfx:re-",
+        "root:act",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-sfx-tion-construction",
+      "label": "Construction",
+      "tier": "tier2",
+      "focusMorpheme": "-ion, -tion",
+      "keys": [
+        "pfx:con-",
+        "root:struct",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-sfx-al-cultural",
+      "label": "Cultural",
+      "tier": "tier2",
+      "focusMorpheme": "-al",
+      "keys": [
+        "lex:culture",
+        "sfx:-al"
+      ]
+    },
+    {
+      "id": "ex-sfx-al-personal",
+      "label": "Personal",
+      "tier": "tier2",
+      "focusMorpheme": "-al",
+      "keys": [
+        "lex:person",
+        "sfx:-al"
+      ]
+    },
+    {
+      "id": "ex-sfx-al-regional",
+      "label": "Regional",
+      "tier": "tier2",
+      "focusMorpheme": "-al",
+      "keys": [
+        "lex:region",
+        "sfx:-al"
+      ]
+    },
+    {
+      "id": "ex-sfx-al-magical",
+      "label": "Magical",
+      "tier": "tier2",
+      "focusMorpheme": "-al",
+      "keys": [
+        "lex:magic",
+        "sfx:-al"
+      ]
+    },
+    {
+      "id": "ex-sfx-y-muddy",
+      "label": "Muddy",
+      "tier": "tier2",
+      "focusMorpheme": "-y",
+      "keys": [
+        "sfx:-y"
+      ]
+    },
+    {
+      "id": "ex-sfx-y-rainy",
+      "label": "Rainy",
+      "tier": "tier2",
+      "focusMorpheme": "-y",
+      "keys": [
+        "lex:rain",
+        "sfx:-y"
+      ]
+    },
+    {
+      "id": "ex-sfx-y-windy",
+      "label": "Windy",
+      "tier": "tier2",
+      "focusMorpheme": "-y",
+      "keys": [
+        "lex:wind",
+        "sfx:-y"
+      ]
+    },
+    {
+      "id": "ex-sfx-y-sunny",
+      "label": "Sunny",
+      "tier": "tier2",
+      "focusMorpheme": "-y",
+      "keys": [
+        "lex:sun",
+        "sfx:-y"
+      ]
+    },
+    {
+      "id": "ex-sfx-y-noun-geography",
+      "label": "Geography",
+      "tier": "tier2",
+      "focusMorpheme": "-y (abstract noun)",
+      "keys": []
+    },
+    {
+      "id": "ex-sfx-ness-kindness",
+      "label": "Kindness",
+      "tier": "tier2",
+      "focusMorpheme": "-ness",
+      "keys": [
+        "lex:kind",
+        "sfx:-ness"
+      ]
+    },
+    {
+      "id": "ex-sfx-ness-darkness",
+      "label": "Darkness",
+      "tier": "tier2",
+      "focusMorpheme": "-ness",
+      "keys": [
+        "lex:dark",
+        "sfx:-ness"
+      ]
+    },
+    {
+      "id": "ex-sfx-ness-readiness",
+      "label": "Readiness",
+      "tier": "tier2",
+      "focusMorpheme": "-ness",
+      "keys": [
+        "lex:ready",
+        "sfx:-ness"
+      ]
+    },
+    {
+      "id": "ex-sfx-ment-development",
+      "label": "Development",
+      "tier": "tier2",
+      "focusMorpheme": "-ment",
+      "keys": [
+        "lex:develop",
+        "sfx:-ment"
+      ]
+    },
+    {
+      "id": "ex-sfx-ment-agreement",
+      "label": "Agreement",
+      "tier": "tier2",
+      "focusMorpheme": "-ment",
+      "keys": [
+        "lex:agree",
+        "sfx:-ment"
+      ]
+    },
+    {
+      "id": "ex-sfx-ment-measurement",
+      "label": "Measurement",
+      "tier": "tier2",
+      "focusMorpheme": "-ment",
+      "keys": [
+        "lex:measure",
+        "sfx:-ment"
+      ]
+    },
+    {
+      "id": "ex-sfx-ment-argument",
+      "label": "Argument",
+      "tier": "tier2",
+      "focusMorpheme": "-ment",
+      "keys": [
+        "lex:argue",
+        "sfx:-ment"
+      ]
+    },
+    {
+      "id": "ex-sfx-able-flexible",
+      "label": "Flexible",
+      "tier": "tier2",
+      "focusMorpheme": "-able, -ible",
+      "keys": [
+        "lex:flex",
+        "sfx:-able"
+      ]
+    },
+    {
+      "id": "ex-sfx-able-possible",
+      "label": "Possible",
+      "tier": "tier2",
+      "focusMorpheme": "-able, -ible",
+      "keys": [
+        "root:poss",
+        "sfx:-able"
+      ]
+    },
+    {
+      "id": "ex-sfx-able-valuable",
+      "label": "Valuable",
+      "tier": "tier2",
+      "focusMorpheme": "-able, -ible",
+      "keys": [
+        "lex:value",
+        "sfx:-able"
+      ]
+    },
+    {
+      "id": "ex-sfx-able-noticeable",
+      "label": "Noticeable",
+      "tier": "tier2",
+      "focusMorpheme": "-able, -ible",
+      "keys": [
+        "lex:notice",
+        "sfx:-able"
+      ]
+    },
+    {
+      "id": "ex-sfx-ful-hopeful",
+      "label": "Hopeful",
+      "tier": "tier2",
+      "focusMorpheme": "-ful",
+      "keys": [
+        "lex:hope",
+        "sfx:-ful"
+      ]
+    },
+    {
+      "id": "ex-sfx-ful-helpful",
+      "label": "Helpful",
+      "tier": "tier2",
+      "focusMorpheme": "-ful",
+      "keys": [
+        "lex:help",
+        "sfx:-ful"
+      ]
+    },
+    {
+      "id": "ex-sfx-ful-colorful",
+      "label": "Colorful",
+      "tier": "tier2",
+      "focusMorpheme": "-ful",
+      "keys": [
+        "lex:color",
+        "sfx:-ful"
+      ]
+    },
+    {
+      "id": "ex-sfx-ful-beautiful",
+      "label": "Beautiful",
+      "tier": "tier2",
+      "focusMorpheme": "-ful",
+      "keys": [
+        "lex:beauty",
+        "sfx:-ful"
+      ]
+    },
+    {
+      "id": "ex-sfx-less-careless",
+      "label": "Careless",
+      "tier": "tier2",
+      "focusMorpheme": "-less",
+      "keys": [
+        "lex:care",
+        "sfx:-less"
+      ]
+    },
+    {
+      "id": "ex-sfx-less-endless",
+      "label": "Endless",
+      "tier": "tier2",
+      "focusMorpheme": "-less",
+      "keys": [
+        "lex:end",
+        "sfx:-less"
+      ]
+    },
+    {
+      "id": "ex-sfx-less-tasteless",
+      "label": "Tasteless",
+      "tier": "tier2",
+      "focusMorpheme": "-less",
+      "keys": [
+        "lex:taste",
+        "sfx:-less"
+      ]
+    },
+    {
+      "id": "ex-sfx-less-priceless",
+      "label": "Priceless",
+      "tier": "tier2",
+      "focusMorpheme": "-less",
+      "keys": [
+        "lex:price",
+        "sfx:-less"
+      ]
+    },
+    {
+      "id": "ex-sfx-ic-atomic",
+      "label": "Atomic",
+      "tier": "tier2",
+      "focusMorpheme": "-ic",
+      "keys": [
+        "lex:atom",
+        "sfx:-ic"
+      ]
+    },
+    {
+      "id": "ex-sfx-ic-scientific",
+      "label": "Scientific",
+      "tier": "tier2",
+      "focusMorpheme": "-ic",
+      "keys": [
+        "root:scient",
+        "sfx:-ic"
+      ]
+    },
+    {
+      "id": "ex-sfx-ic-magnetic",
+      "label": "Magnetic",
+      "tier": "tier2",
+      "focusMorpheme": "-ic",
+      "keys": [
+        "lex:magnet",
+        "sfx:-ic"
+      ]
+    },
+    {
+      "id": "ex-sfx-ic-historic",
+      "label": "Historic",
+      "tier": "tier2",
+      "focusMorpheme": "-ic",
+      "keys": [
+        "root:histor",
+        "sfx:-ic"
+      ]
+    },
+    {
+      "id": "ex-sfx-tic-antibiotic",
+      "label": "Antibiotic",
+      "tier": "tier2",
+      "focusMorpheme": "-tic",
+      "keys": [
+        "pfx:anti-",
+        "root:bio",
+        "sfx:-tic"
+      ]
+    },
+    {
+      "id": "ex-sfx-ive-active",
+      "label": "Active",
+      "tier": "tier2",
+      "focusMorpheme": "-ive",
+      "keys": [
+        "root:act",
+        "sfx:-ive"
+      ]
+    },
+    {
+      "id": "ex-sfx-ive-creative",
+      "label": "Creative",
+      "tier": "tier2",
+      "focusMorpheme": "-ive",
+      "keys": [
+        "lex:create",
+        "sfx:-ate",
+        "sfx:-ive"
+      ]
+    },
+    {
+      "id": "ex-sfx-ive-perspective",
+      "label": "Perspective",
+      "tier": "tier2",
+      "focusMorpheme": "-ive",
+      "keys": [
+        "pfx:per-",
+        "root:spect",
+        "sfx:-ive"
+      ]
+    },
+    {
+      "id": "ex-sfx-ive-inclusive",
+      "label": "Inclusive",
+      "tier": "tier2",
+      "focusMorpheme": "-ive",
+      "keys": [
+        "root:inclus",
+        "sfx:-ive"
+      ]
+    },
+    {
+      "id": "ex-sfx-ous-dangerous",
+      "label": "Dangerous",
+      "tier": "tier2",
+      "focusMorpheme": "-ous, -ious",
+      "keys": [
+        "lex:danger",
+        "sfx:-ous"
+      ]
+    },
+    {
+      "id": "ex-sfx-ous-famous",
+      "label": "Famous",
+      "tier": "tier2",
+      "focusMorpheme": "-ous, -ious",
+      "keys": [
+        "lex:fame",
+        "sfx:-ous"
+      ]
+    },
+    {
+      "id": "ex-sfx-ous-various",
+      "label": "Various",
+      "tier": "tier2",
+      "focusMorpheme": "-ous, -ious",
+      "keys": [
+        "lex:vary",
+        "sfx:-ous"
+      ]
+    },
+    {
+      "id": "ex-sfx-ous-generous",
+      "label": "Generous",
+      "tier": "tier2",
+      "focusMorpheme": "-ous, -ious",
+      "keys": [
+        "root:gener",
+        "sfx:-ous"
+      ]
+    },
+    {
+      "id": "ex-sfx-ity-activity",
+      "label": "Activity",
+      "tier": "tier2",
+      "focusMorpheme": "-ity, -ty",
+      "keys": [
+        "root:act",
+        "sfx:-ive",
+        "sfx:-ity"
+      ]
+    },
+    {
+      "id": "ex-sfx-ity-reality",
+      "label": "Reality",
+      "tier": "tier2",
+      "focusMorpheme": "-ity, -ty",
+      "keys": [
+        "lex:real",
+        "sfx:-ity"
+      ]
+    },
+    {
+      "id": "ex-sfx-ity-sincerity",
+      "label": "Sincerity",
+      "tier": "tier2",
+      "focusMorpheme": "-ity, -ty",
+      "keys": [
+        "lex:sincere",
+        "sfx:-ity"
+      ]
+    },
+    {
+      "id": "ex-sfx-ity-ability",
+      "label": "Ability",
+      "tier": "tier2",
+      "focusMorpheme": "-ity, -ty",
+      "keys": [
+        "lex:able",
+        "sfx:-ity"
+      ]
+    },
+    {
+      "id": "ex-sfx-ate-activate",
+      "label": "Activate",
+      "tier": "tier2",
+      "focusMorpheme": "-ate",
+      "keys": [
+        "root:act",
+        "sfx:-ive",
+        "sfx:-ate"
+      ]
+    },
+    {
+      "id": "ex-sfx-ate-demonstrate",
+      "label": "Demonstrate",
+      "tier": "tier2",
+      "focusMorpheme": "-ate",
+      "keys": [
+        "lex:demonstrate",
+        "sfx:-ate"
+      ]
+    },
+    {
+      "id": "ex-sfx-ate-celebrate",
+      "label": "Celebrate",
+      "tier": "tier2",
+      "focusMorpheme": "-ate",
+      "keys": [
+        "lex:celebrate",
+        "sfx:-ate"
+      ]
+    },
+    {
+      "id": "ex-sfx-ate-calculate",
+      "label": "Calculate",
+      "tier": "tier2",
+      "focusMorpheme": "-ate",
+      "keys": [
+        "lex:calculate",
+        "sfx:-ate"
+      ]
+    },
+    {
+      "id": "ex-sfx-ary-primary",
+      "label": "Primary",
+      "tier": "tier2",
+      "focusMorpheme": "-ary",
+      "keys": [
+        "root:prim",
+        "sfx:-ary"
+      ]
+    },
+    {
+      "id": "ex-sfx-ary-customary",
+      "label": "Customary",
+      "tier": "tier2",
+      "focusMorpheme": "-ary",
+      "keys": [
+        "lex:custom",
+        "sfx:-ary"
+      ]
+    },
+    {
+      "id": "ex-sfx-ary-vocabulary",
+      "label": "Vocabulary",
+      "tier": "tier2",
+      "focusMorpheme": "-ary",
+      "keys": [
+        "root:vocabul",
+        "sfx:-ary"
+      ]
+    },
+    {
+      "id": "ex-sfx-ant-different",
+      "label": "Different",
+      "tier": "tier2",
+      "focusMorpheme": "-ant, -ent",
+      "keys": [
+        "pfx:dis-",
+        "root:fer",
+        "sfx:-ant"
+      ]
+    },
+    {
+      "id": "ex-sfx-ant-important",
+      "label": "Important",
+      "tier": "tier2",
+      "focusMorpheme": "-ant, -ent",
+      "keys": [
+        "pfx:in-",
+        "root:port",
+        "sfx:-ant"
+      ]
+    },
+    {
+      "id": "ex-sfx-ant-applicant",
+      "label": "Applicant",
+      "tier": "tier2",
+      "focusMorpheme": "-ant, -ent",
+      "keys": [
+        "pfx:ad-",
+        "root:ply",
+        "sfx:-ant"
+      ]
+    },
+    {
+      "id": "ex-sfx-ence-difference",
+      "label": "Difference",
+      "tier": "tier2",
+      "focusMorpheme": "-ence, -ance",
+      "keys": [
+        "pfx:dis-",
+        "root:fer",
+        "sfx:-ence"
+      ]
+    },
+    {
+      "id": "ex-sfx-ence-importance",
+      "label": "Importance",
+      "tier": "tier2",
+      "focusMorpheme": "-ence, -ance",
+      "keys": [
+        "pfx:in-",
+        "root:port",
+        "sfx:-ence"
+      ]
+    },
+    {
+      "id": "ex-sfx-ence-evidence",
+      "label": "Evidence",
+      "tier": "tier2",
+      "focusMorpheme": "-ence, -ance",
+      "keys": [
+        "pfx:ex-",
+        "root:vis",
+        "sfx:-ence"
+      ]
+    },
+    {
+      "id": "ex-sfx-ence-patience",
+      "label": "Patience",
+      "tier": "tier2",
+      "focusMorpheme": "-ence, -ance",
+      "keys": [
+        "lex:patient",
+        "sfx:-ant",
+        "sfx:-ence"
+      ]
+    },
+    {
+      "id": "ex-pfx-un-unfair",
+      "label": "Unfair",
+      "tier": "tier2",
+      "focusMorpheme": "un-",
+      "keys": [
+        "pfx:un-",
+        "lex:fair"
+      ]
+    },
+    {
+      "id": "ex-pfx-un-unlock",
+      "label": "Unlock",
+      "tier": "tier2",
+      "focusMorpheme": "un-",
+      "keys": [
+        "pfx:un-",
+        "lex:lock"
+      ]
+    },
+    {
+      "id": "ex-pfx-un-unclear",
+      "label": "Unclear",
+      "tier": "tier2",
+      "focusMorpheme": "un-",
+      "keys": [
+        "pfx:un-",
+        "lex:clear"
+      ]
+    },
+    {
+      "id": "ex-pfx-un-unhappiness",
+      "label": "Unhappiness",
+      "tier": "tier2",
+      "focusMorpheme": "un-",
+      "keys": [
+        "pfx:un-",
+        "lex:happy",
+        "sfx:-ness"
+      ]
+    },
+    {
+      "id": "ex-pfx-re-rewrite",
+      "label": "Rewrite",
+      "tier": "tier2",
+      "focusMorpheme": "re-",
+      "keys": [
+        "pfx:re-",
+        "lex:write"
+      ]
+    },
+    {
+      "id": "ex-pfx-re-rebuild",
+      "label": "Rebuild",
+      "tier": "tier2",
+      "focusMorpheme": "re-",
+      "keys": [
+        "pfx:re-",
+        "lex:build"
+      ]
+    },
+    {
+      "id": "ex-pfx-re-return",
+      "label": "Return",
+      "tier": "tier2",
+      "focusMorpheme": "re-",
+      "keys": [
+        "pfx:re-",
+        "lex:turn"
+      ]
+    },
+    {
+      "id": "ex-pfx-re-review",
+      "label": "Review",
+      "tier": "tier2",
+      "focusMorpheme": "re-",
+      "keys": [
+        "pfx:re-",
+        "lex:view"
+      ]
+    },
+    {
+      "id": "ex-pfx-in-impossible",
+      "label": "Impossible",
+      "tier": "tier2",
+      "focusMorpheme": "in-, im-, il-, ir- (not)",
+      "keys": [
+        "pfx:in-",
+        "root:poss",
+        "sfx:-able"
+      ]
+    },
+    {
+      "id": "ex-pfx-in-irregular",
+      "label": "Irregular",
+      "tier": "tier2",
+      "focusMorpheme": "in-, im-, il-, ir- (not)",
+      "keys": [
+        "pfx:in-",
+        "lex:regular"
+      ]
+    },
+    {
+      "id": "ex-pfx-in-illegal",
+      "label": "Illegal",
+      "tier": "tier2",
+      "focusMorpheme": "in-, im-, il-, ir- (not)",
+      "keys": [
+        "pfx:in-",
+        "lex:legal"
+      ]
+    },
+    {
+      "id": "ex-pfx-in-inactive",
+      "label": "Inactive",
+      "tier": "tier2",
+      "focusMorpheme": "in-, im-, il-, ir- (not)",
+      "keys": [
+        "pfx:in-",
+        "root:act",
+        "sfx:-ive"
+      ]
+    },
+    {
+      "id": "ex-pfx-dis-disagree",
+      "label": "Disagree",
+      "tier": "tier2",
+      "focusMorpheme": "dis-, dif-",
+      "keys": [
+        "pfx:dis-",
+        "lex:agree"
+      ]
+    },
+    {
+      "id": "ex-pfx-dis-disrupt",
+      "label": "Disrupt",
+      "tier": "tier2",
+      "focusMorpheme": "dis-, dif-",
+      "keys": [
+        "pfx:dis-",
+        "root:rupt"
+      ]
+    },
+    {
+      "id": "ex-pfx-dis-disappear",
+      "label": "Disappear",
+      "tier": "tier2",
+      "focusMorpheme": "dis-, dif-",
+      "keys": [
+        "pfx:dis-",
+        "lex:appear"
+      ]
+    },
+    {
+      "id": "ex-pfx-non-nonfiction",
+      "label": "Nonfiction",
+      "tier": "tier2",
+      "focusMorpheme": "non-",
+      "keys": [
+        "pfx:non-",
+        "lex:fiction"
+      ]
+    },
+    {
+      "id": "ex-pfx-non-nonstop",
+      "label": "Nonstop",
+      "tier": "tier2",
+      "focusMorpheme": "non-",
+      "keys": [
+        "pfx:non-"
+      ]
+    },
+    {
+      "id": "ex-pfx-non-nonprofit",
+      "label": "Nonprofit",
+      "tier": "tier2",
+      "focusMorpheme": "non-",
+      "keys": [
+        "pfx:non-",
+        "lex:profit"
+      ]
+    },
+    {
+      "id": "ex-pfx-in-toward-insert",
+      "label": "Insert",
+      "tier": "tier2",
+      "focusMorpheme": "in-, im- (in/into)",
+      "keys": [
+        "pfx:in-toward",
+        "root:sert"
+      ]
+    },
+    {
+      "id": "ex-pfx-in-toward-inject",
+      "label": "Inject",
+      "tier": "tier2",
+      "focusMorpheme": "in-, im- (in/into)",
+      "keys": [
+        "pfx:in-toward",
+        "root:ject"
+      ]
+    },
+    {
+      "id": "ex-pfx-in-toward-include",
+      "label": "Include",
+      "tier": "tier2",
+      "focusMorpheme": "in-, im- (in/into)",
+      "keys": [
+        "pfx:in-toward",
+        "root:clude"
+      ]
+    },
+    {
+      "id": "ex-pfx-over-overheat",
+      "label": "Overheat",
+      "tier": "tier2",
+      "focusMorpheme": "over-",
+      "keys": [
+        "pfx:over-",
+        "lex:heat"
+      ]
+    },
+    {
+      "id": "ex-pfx-over-overreact",
+      "label": "Overreact",
+      "tier": "tier2",
+      "focusMorpheme": "over-",
+      "keys": [
+        "pfx:over-",
+        "pfx:re-",
+        "root:act"
+      ]
+    },
+    {
+      "id": "ex-pfx-over-overconfident",
+      "label": "Overconfident",
+      "tier": "tier2",
+      "focusMorpheme": "over-",
+      "keys": [
+        "pfx:over-",
+        "lex:confident",
+        "sfx:-ant"
+      ]
+    },
+    {
+      "id": "ex-pfx-over-overpass",
+      "label": "Overpass",
+      "tier": "tier2",
+      "focusMorpheme": "over-",
+      "keys": [
+        "pfx:over-",
+        "lex:pass"
+      ]
+    },
+    {
+      "id": "ex-pfx-mis-mislead",
+      "label": "Mislead",
+      "tier": "tier2",
+      "focusMorpheme": "mis-",
+      "keys": [
+        "pfx:mis-",
+        "lex:lead"
+      ]
+    },
+    {
+      "id": "ex-pfx-mis-misprint",
+      "label": "Misprint",
+      "tier": "tier2",
+      "focusMorpheme": "mis-",
+      "keys": [
+        "pfx:mis-",
+        "lex:print"
+      ]
+    },
+    {
+      "id": "ex-pfx-mis-mistake",
+      "label": "Mistake",
+      "tier": "tier2",
+      "focusMorpheme": "mis-",
+      "keys": [
+        "pfx:mis-",
+        "lex:take"
+      ]
+    },
+    {
+      "id": "ex-pfx-mis-misspell",
+      "label": "Misspell",
+      "tier": "tier2",
+      "focusMorpheme": "mis-",
+      "keys": [
+        "pfx:mis-",
+        "lex:spell"
+      ]
+    },
+    {
+      "id": "ex-pfx-sub-submarine",
+      "label": "Submarine",
+      "tier": "tier2",
+      "focusMorpheme": "sub-",
+      "keys": [
+        "pfx:sub-",
+        "lex:marine"
+      ]
+    },
+    {
+      "id": "ex-pfx-sub-submerge",
+      "label": "Submerge",
+      "tier": "tier2",
+      "focusMorpheme": "sub-",
+      "keys": [
+        "pfx:sub-",
+        "lex:merge"
+      ]
+    },
+    {
+      "id": "ex-pfx-sub-subzero",
+      "label": "Subzero",
+      "tier": "tier2",
+      "focusMorpheme": "sub-",
+      "keys": [
+        "pfx:sub-",
+        "lex:zero"
+      ]
+    },
+    {
+      "id": "ex-pfx-pre-predict",
+      "label": "Predict",
+      "tier": "tier2",
+      "focusMorpheme": "pre-",
+      "keys": [
+        "pfx:pre-",
+        "root:dict"
+      ]
+    },
+    {
+      "id": "ex-pfx-pre-prepare",
+      "label": "Prepare",
+      "tier": "tier2",
+      "focusMorpheme": "pre-",
+      "keys": [
+        "pfx:pre-",
+        "lex:pare"
+      ]
+    },
+    {
+      "id": "ex-pfx-pre-prehistoric",
+      "label": "Prehistoric",
+      "tier": "tier2",
+      "focusMorpheme": "pre-",
+      "keys": [
+        "pfx:pre-",
+        "root:histor",
+        "sfx:-ic"
+      ]
+    },
+    {
+      "id": "ex-pfx-inter-interact",
+      "label": "Interact",
+      "tier": "tier2",
+      "focusMorpheme": "inter-",
+      "keys": [
+        "pfx:inter-",
+        "root:act"
+      ]
+    },
+    {
+      "id": "ex-pfx-inter-intersect",
+      "label": "Intersect",
+      "tier": "tier2",
+      "focusMorpheme": "inter-",
+      "keys": [
+        "pfx:inter-",
+        "root:sect"
+      ]
+    },
+    {
+      "id": "ex-pfx-inter-internet",
+      "label": "Internet",
+      "tier": "tier2",
+      "focusMorpheme": "inter-",
+      "keys": [
+        "pfx:inter-"
+      ]
+    },
+    {
+      "id": "ex-pfx-fore-foreshadow",
+      "label": "Foreshadow",
+      "tier": "tier2",
+      "focusMorpheme": "fore-",
+      "keys": [
+        "pfx:fore-",
+        "lex:shadow"
+      ]
+    },
+    {
+      "id": "ex-pfx-fore-foreword",
+      "label": "Foreword",
+      "tier": "tier2",
+      "focusMorpheme": "fore-",
+      "keys": [
+        "pfx:fore-",
+        "lex:word"
+      ]
+    },
+    {
+      "id": "ex-pfx-fore-forewarn",
+      "label": "Forewarn",
+      "tier": "tier2",
+      "focusMorpheme": "fore-",
+      "keys": [
+        "pfx:fore-",
+        "lex:warn"
+      ]
+    },
+    {
+      "id": "ex-pfx-de-defrost",
+      "label": "Defrost",
+      "tier": "tier2",
+      "focusMorpheme": "de-",
+      "keys": [
+        "pfx:de-",
+        "lex:frost"
+      ]
+    },
+    {
+      "id": "ex-pfx-de-deactivate",
+      "label": "Deactivate",
+      "tier": "tier2",
+      "focusMorpheme": "de-",
+      "keys": [
+        "pfx:de-",
+        "root:act",
+        "sfx:-ive",
+        "sfx:-ate"
+      ]
+    },
+    {
+      "id": "ex-pfx-de-deflate",
+      "label": "Deflate",
+      "tier": "tier2",
+      "focusMorpheme": "de-",
+      "keys": [
+        "pfx:de-",
+        "lex:flate"
+      ]
+    },
+    {
+      "id": "ex-pfx-de-descend",
+      "label": "Descend",
+      "tier": "tier2",
+      "focusMorpheme": "de-",
+      "keys": [
+        "pfx:de-",
+        "root:scend"
+      ]
+    },
+    {
+      "id": "ex-pfx-trans-translate",
+      "label": "Translate",
+      "tier": "tier2",
+      "focusMorpheme": "trans-",
+      "keys": [
+        "pfx:trans-",
+        "lex:late"
+      ]
+    },
+    {
+      "id": "ex-pfx-trans-transform",
+      "label": "Transform",
+      "tier": "tier2",
+      "focusMorpheme": "trans-",
+      "keys": [
+        "pfx:trans-",
+        "root:form"
+      ]
+    },
+    {
+      "id": "ex-pfx-anti-antivirus",
+      "label": "Antivirus",
+      "tier": "tier2",
+      "focusMorpheme": "anti-",
+      "keys": [
+        "pfx:anti-",
+        "lex:virus"
+      ]
+    },
+    {
+      "id": "ex-pfx-anti-antisocial",
+      "label": "Antisocial",
+      "tier": "tier2",
+      "focusMorpheme": "anti-",
+      "keys": [
+        "pfx:anti-",
+        "lex:social"
+      ]
+    },
+    {
+      "id": "ex-pfx-mid-midterm",
+      "label": "Midterm",
+      "tier": "tier2",
+      "focusMorpheme": "mid-",
+      "keys": [
+        "pfx:mid-",
+        "lex:term"
+      ]
+    },
+    {
+      "id": "ex-pfx-mid-midday",
+      "label": "Midday",
+      "tier": "tier2",
+      "focusMorpheme": "mid-",
+      "keys": [
+        "pfx:mid-",
+        "lex:day"
+      ]
+    },
+    {
+      "id": "ex-pfx-mid-midpoint",
+      "label": "Midpoint",
+      "tier": "tier2",
+      "focusMorpheme": "mid-",
+      "keys": [
+        "pfx:mid-",
+        "lex:point"
+      ]
+    },
+    {
+      "id": "ex-pfx-con-combine",
+      "label": "Combine",
+      "tier": "tier2",
+      "focusMorpheme": "con-",
+      "keys": [
+        "pfx:con-",
+        "root:bine"
+      ]
+    },
+    {
+      "id": "ex-pfx-con-converge",
+      "label": "Converge",
+      "tier": "tier2",
+      "focusMorpheme": "con-",
+      "keys": [
+        "pfx:con-",
+        "root:verge"
+      ]
+    },
+    {
+      "id": "ex-pfx-con-collect",
+      "label": "Collect",
+      "tier": "tier2",
+      "focusMorpheme": "con-",
+      "keys": [
+        "pfx:con-",
+        "root:lect"
+      ]
+    },
+    {
+      "id": "ex-pfx-contra-contrary",
+      "label": "Contrary",
+      "tier": "tier2",
+      "focusMorpheme": "contra-",
+      "keys": [
+        "root:contr",
+        "sfx:-ary"
+      ]
+    },
+    {
+      "id": "ex-pfx-contra-contrast",
+      "label": "Contrast",
+      "tier": "tier2",
+      "focusMorpheme": "contra-",
+      "keys": []
+    },
+    {
+      "id": "ex-pfx-contra-contravene",
+      "label": "Contravene",
+      "tier": "tier2",
+      "focusMorpheme": "contra-",
+      "keys": [
+        "pfx:contra-",
+        "root:ven"
+      ]
+    },
+    {
+      "id": "ex-pfx-ad-adhere",
+      "label": "Adhere",
+      "tier": "tier2",
+      "focusMorpheme": "ad-",
+      "keys": [
+        "pfx:ad-",
+        "root:haer"
+      ]
+    },
+    {
+      "id": "ex-pfx-ad-approach",
+      "label": "Approach",
+      "tier": "tier2",
+      "focusMorpheme": "ad-",
+      "keys": [
+        "pfx:ad-",
+        "root:proach"
+      ]
+    },
+    {
+      "id": "ex-pfx-ad-accept",
+      "label": "Accept",
+      "tier": "tier2",
+      "focusMorpheme": "ad-",
+      "keys": [
+        "pfx:ad-",
+        "root:ceive"
+      ]
+    },
+    {
+      "id": "ex-pfx-ex-eject",
+      "label": "Eject",
+      "tier": "tier2",
+      "focusMorpheme": "ex-, e-, ef-",
+      "keys": [
+        "pfx:ex-",
+        "root:ject"
+      ]
+    },
+    {
+      "id": "ex-pfx-ex-exclude",
+      "label": "Exclude",
+      "tier": "tier2",
+      "focusMorpheme": "ex-, e-, ef-",
+      "keys": [
+        "pfx:ex-",
+        "root:clude"
+      ]
+    },
+    {
+      "id": "ex-pfx-per-permit",
+      "label": "Permit",
+      "tier": "tier2",
+      "focusMorpheme": "per-",
+      "keys": [
+        "pfx:per-",
+        "root:mit"
+      ]
+    },
+    {
+      "id": "ex-pfx-per-persist",
+      "label": "Persist",
+      "tier": "tier2",
+      "focusMorpheme": "per-",
+      "keys": [
+        "pfx:per-",
+        "root:sist"
+      ]
+    },
+    {
+      "id": "ex-pfx-per-pervade",
+      "label": "Pervade",
+      "tier": "tier2",
+      "focusMorpheme": "per-",
+      "keys": [
+        "pfx:per-",
+        "root:vad"
+      ]
+    },
+    {
+      "id": "ex-lex-care-caregiver",
+      "label": "Caregiver",
+      "tier": "tier2",
+      "focusMorpheme": "care",
+      "keys": [
+        "lex:caregiver"
+      ]
+    },
+    {
+      "id": "ex-lex-nature-nature",
+      "label": "Nature",
+      "tier": "tier2",
+      "focusMorpheme": "nature",
+      "keys": [
+        "lex:nature"
+      ]
+    },
+    {
+      "id": "ex-lex-construct-reconstruct",
+      "label": "Reconstruct",
+      "tier": "tier2",
+      "focusMorpheme": "construct",
+      "keys": [
+        "pfx:re-",
+        "lex:construct"
+      ]
+    },
+    {
+      "id": "ex-lex-fiction-fiction",
+      "label": "Fiction",
+      "tier": "tier2",
+      "focusMorpheme": "fiction",
+      "keys": [
+        "lex:fiction"
+      ]
+    },
+    {
+      "id": "ex-root-biodegrad-biodegradable",
+      "label": "Biodegradable",
+      "tier": "tier2",
+      "focusMorpheme": "biodegrad",
+      "keys": [
+        "root:biodegrad",
+        "sfx:-able"
+      ]
+    },
+    {
+      "id": "ex-root-theo-theology",
+      "label": "Theology",
+      "tier": "tier2",
+      "focusMorpheme": "theo",
+      "keys": [
+        "root:theo",
+        "sfx:-logy"
+      ]
+    },
+    {
+      "id": "ex-root-theo-theocracy",
+      "label": "Theocracy",
+      "tier": "tier2",
+      "focusMorpheme": "theo",
+      "keys": []
+    },
+    {
+      "id": "ex-root-techn-technology",
+      "label": "Technology",
+      "tier": "tier2",
+      "focusMorpheme": "techn",
+      "keys": [
+        "root:techn",
+        "sfx:-logy"
+      ]
+    },
+    {
+      "id": "ex-root-techn-technical",
+      "label": "Technical",
+      "tier": "tier2",
+      "focusMorpheme": "techn",
+      "keys": [
+        "root:techn",
+        "sfx:-ic",
+        "sfx:-al"
+      ]
+    },
+    {
+      "id": "ex-root-anthrop-anthropology",
+      "label": "Anthropology",
+      "tier": "tier2",
+      "focusMorpheme": "anthrop",
+      "keys": [
+        "root:anthrop",
+        "sfx:-logy"
+      ]
+    },
+    {
+      "id": "ex-root-anthrop-philanthropy",
+      "label": "Philanthropy",
+      "tier": "tier2",
+      "focusMorpheme": "anthrop",
+      "keys": []
+    },
+    {
+      "id": "ex-root-path-pathology",
+      "label": "Pathology",
+      "tier": "tier2",
+      "focusMorpheme": "path",
+      "keys": [
+        "root:path",
+        "sfx:-logy"
+      ]
+    },
+    {
+      "id": "ex-root-path-sympathy",
+      "label": "Sympathy",
+      "tier": "tier2",
+      "focusMorpheme": "path",
+      "keys": []
+    },
+    {
+      "id": "ex-root-path-apathy",
+      "label": "Apathy",
+      "tier": "tier2",
+      "focusMorpheme": "path",
+      "keys": []
+    },
+    {
+      "id": "ex-root-verge-diverge",
+      "label": "Diverge",
+      "tier": "tier2",
+      "focusMorpheme": "verge",
+      "keys": []
+    },
+    {
+      "id": "ex-root-lect-elect",
+      "label": "Elect",
+      "tier": "tier2",
+      "focusMorpheme": "lect",
+      "keys": [
+        "pfx:ex-",
+        "root:lect"
+      ]
+    },
+    {
+      "id": "ex-root-lect-lecture",
+      "label": "Lecture",
+      "tier": "tier2",
+      "focusMorpheme": "lect",
+      "keys": []
+    },
+    {
+      "id": "ex-root-ven-convene",
+      "label": "Convene",
+      "tier": "tier2",
+      "focusMorpheme": "ven, vene",
+      "keys": [
+        "pfx:con-",
+        "root:ven"
+      ]
+    },
+    {
+      "id": "ex-root-ven-intervene",
+      "label": "Intervene",
+      "tier": "tier2",
+      "focusMorpheme": "ven, vene",
+      "keys": [
+        "pfx:inter-",
+        "root:ven"
+      ]
+    },
+    {
+      "id": "ex-root-haer-coherent",
+      "label": "Coherent",
+      "tier": "tier2",
+      "focusMorpheme": "here, haer",
+      "keys": [
+        "root:coher",
+        "sfx:-ant"
+      ]
+    },
+    {
+      "id": "ex-root-coher-cohesion",
+      "label": "Cohesion",
+      "tier": "tier2",
+      "focusMorpheme": "coher",
+      "keys": [
+        "root:cohes",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-proach-reproach",
+      "label": "Reproach",
+      "tier": "tier2",
+      "focusMorpheme": "proach",
+      "keys": [
+        "pfx:re-",
+        "root:proach"
+      ]
+    },
+    {
+      "id": "ex-root-vad-invade",
+      "label": "Invade",
+      "tier": "tier2",
+      "focusMorpheme": "vad, vade",
+      "keys": [
+        "pfx:in-",
+        "root:vad"
+      ]
+    },
+    {
+      "id": "ex-root-vad-evade",
+      "label": "Evade",
+      "tier": "tier2",
+      "focusMorpheme": "vad, vade",
+      "keys": [
+        "pfx:ex-",
+        "root:vad"
+      ]
+    },
+    {
+      "id": "ex-root-soci-social",
+      "label": "Social",
+      "tier": "tier2",
+      "focusMorpheme": "soci",
+      "keys": [
+        "lex:social"
+      ]
+    },
+    {
+      "id": "ex-root-soci-society",
+      "label": "Society",
+      "tier": "tier2",
+      "focusMorpheme": "soci",
+      "keys": [
+        "root:soci",
+        "sfx:-ity"
+      ]
+    },
+    {
+      "id": "ex-root-soci-associate",
+      "label": "Associate",
+      "tier": "tier2",
+      "focusMorpheme": "soci",
+      "keys": [
+        "pfx:ad-",
+        "root:soci",
+        "sfx:-ate"
+      ]
+    },
+    {
+      "id": "ex-root-sect-section",
+      "label": "Section",
+      "tier": "tier2",
+      "focusMorpheme": "sect",
+      "keys": [
+        "root:sect",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-sect-bisect",
+      "label": "Bisect",
+      "tier": "tier2",
+      "focusMorpheme": "sect",
+      "keys": []
+    },
+    {
+      "id": "ex-root-scend-ascend",
+      "label": "Ascend",
+      "tier": "tier2",
+      "focusMorpheme": "scend",
+      "keys": []
+    },
+    {
+      "id": "ex-root-scend-transcend",
+      "label": "Transcend",
+      "tier": "tier2",
+      "focusMorpheme": "scend",
+      "keys": []
+    },
+    {
+      "id": "ex-root-ject-project",
+      "label": "Project",
+      "tier": "tier2",
+      "focusMorpheme": "ject",
+      "keys": []
+    },
+    {
+      "id": "ex-root-clude-conclude",
+      "label": "Conclude",
+      "tier": "tier2",
+      "focusMorpheme": "clude",
+      "keys": [
+        "pfx:con-",
+        "root:clude"
+      ]
+    },
+    {
+      "id": "ex-root-sert-assert",
+      "label": "Assert",
+      "tier": "tier2",
+      "focusMorpheme": "sert",
+      "keys": [
+        "pfx:ad-",
+        "root:sert"
+      ]
+    },
+    {
+      "id": "ex-root-sert-desert",
+      "label": "Desert",
+      "tier": "tier2",
+      "focusMorpheme": "sert",
+      "keys": [
+        "pfx:de-",
+        "root:sert"
+      ]
+    },
+    {
+      "id": "ex-root-demonstr-demonstration",
+      "label": "Demonstration",
+      "tier": "tier2",
+      "focusMorpheme": "demonstr",
+      "keys": [
+        "root:demonstr",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-celebr-celebration",
+      "label": "Celebration",
+      "tier": "tier2",
+      "focusMorpheme": "celebr",
+      "keys": [
+        "root:celebr",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-calcul-calculation",
+      "label": "Calculation",
+      "tier": "tier2",
+      "focusMorpheme": "calcul",
+      "keys": [
+        "root:calcul",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-prim-prime",
+      "label": "Prime",
+      "tier": "tier2",
+      "focusMorpheme": "prim",
+      "keys": []
+    },
+    {
+      "id": "ex-root-vocabul-vocab",
+      "label": "Vocab",
+      "tier": "tier2",
+      "focusMorpheme": "vocabul, vocab",
+      "keys": [
+        "root:vocabul"
+      ]
+    },
+    {
+      "id": "ex-root-histor-history",
+      "label": "History",
+      "tier": "tier2",
+      "focusMorpheme": "histor",
+      "keys": [
+        "root:histor",
+        "sfx:-y"
+      ]
+    },
+    {
+      "id": "ex-root-histor-historian",
+      "label": "Historian",
+      "tier": "tier2",
+      "focusMorpheme": "histor",
+      "keys": []
+    },
+    {
+      "id": "ex-root-gener-generate",
+      "label": "Generate",
+      "tier": "tier2",
+      "focusMorpheme": "gener",
+      "keys": [
+        "root:gener",
+        "sfx:-ate"
+      ]
+    },
+    {
+      "id": "ex-root-gener-general",
+      "label": "General",
+      "tier": "tier2",
+      "focusMorpheme": "gener",
+      "keys": [
+        "root:gener",
+        "sfx:-al"
+      ]
+    },
+    {
+      "id": "ex-root-scient-science",
+      "label": "Science",
+      "tier": "tier2",
+      "focusMorpheme": "scient, scientif",
+      "keys": [
+        "root:scient",
+        "sfx:-ant",
+        "sfx:-ence"
+      ]
+    },
+    {
+      "id": "ex-root-scient-conscience",
+      "label": "Conscience",
+      "tier": "tier2",
+      "focusMorpheme": "scient, scientif",
+      "keys": [
+        "pfx:con-",
+        "root:scient",
+        "sfx:-ant",
+        "sfx:-ence"
+      ]
+    },
+    {
+      "id": "ex-root-poss-possibility",
+      "label": "Possibility",
+      "tier": "tier2",
+      "focusMorpheme": "poss",
+      "keys": [
+        "root:poss",
+        "sfx:-ity"
+      ]
+    },
+    {
+      "id": "ex-root-decis-decisive",
+      "label": "Decisive",
+      "tier": "tier2",
+      "focusMorpheme": "decis, decid",
+      "keys": [
+        "root:decis",
+        "sfx:-ive"
+      ]
+    },
+    {
+      "id": "ex-root-decis-incisive",
+      "label": "Incisive",
+      "tier": "tier2",
+      "focusMorpheme": "decis, decid",
+      "keys": [
+        "lex:incise",
+        "sfx:-ive"
+      ]
+    },
+    {
+      "id": "ex-root-ver-verify",
+      "label": "Verify",
+      "tier": "tier2",
+      "focusMorpheme": "ver, verac",
+      "keys": []
+    },
+    {
+      "id": "ex-root-ver-veracity",
+      "label": "Veracity",
+      "tier": "tier2",
+      "focusMorpheme": "ver, verac",
+      "keys": [
+        "root:ver",
+        "sfx:-ity"
+      ]
+    },
+    {
+      "id": "ex-root-ver-verisimilitude",
+      "label": "Verisimilitude",
+      "tier": "tier2",
+      "focusMorpheme": "ver, verac",
+      "keys": []
+    },
+    {
+      "id": "ex-root-nect-interconnect",
+      "label": "Interconnect",
+      "tier": "tier2",
+      "focusMorpheme": "nect",
+      "keys": [
+        "pfx:inter-",
+        "pfx:con-",
+        "root:nect"
+      ]
+    },
+    {
+      "id": "ex-root-nect-connection",
+      "label": "Connection",
+      "tier": "tier2",
+      "focusMorpheme": "nect",
+      "keys": [
+        "pfx:con-",
+        "root:nect",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-vanc-advantage",
+      "label": "Advantage",
+      "tier": "tier2",
+      "focusMorpheme": "vance / vanc",
+      "keys": []
+    },
+    {
+      "id": "ex-root-vanc-advanced",
+      "label": "Advanced",
+      "tier": "tier2",
+      "focusMorpheme": "vance / vanc",
+      "keys": [
+        "pfx:ad-",
+        "root:vanc",
+        "sfx:-ed"
+      ]
+    },
+    {
+      "id": "ex-root-it-go-transit",
+      "label": "Transit",
+      "tier": "tier2",
+      "focusMorpheme": "it / iss / initi",
+      "keys": []
+    },
+    {
+      "id": "ex-root-it-go-circuit",
+      "label": "Circuit",
+      "tier": "tier2",
+      "focusMorpheme": "it / iss / initi",
+      "keys": []
+    },
+    {
+      "id": "ex-root-it-go-initial",
+      "label": "Initial",
+      "tier": "tier2",
+      "focusMorpheme": "it / iss / initi",
+      "keys": [
+        "root:it-go",
+        "sfx:-al"
+      ]
+    },
+    {
+      "id": "ex-root-tele-telephone",
+      "label": "Telephone",
+      "tier": "tier2",
+      "focusMorpheme": "tele-",
+      "keys": []
+    },
+    {
+      "id": "ex-root-tele-telescope",
+      "label": "Telescope",
+      "tier": "tier2",
+      "focusMorpheme": "tele-",
+      "keys": []
+    },
+    {
+      "id": "ex-root-tele-teleport",
+      "label": "Teleport",
+      "tier": "tier2",
+      "focusMorpheme": "tele-",
+      "keys": []
+    },
+    {
+      "id": "ex-root-uni-unite",
+      "label": "Unite",
+      "tier": "tier2",
+      "focusMorpheme": "uni",
+      "keys": []
+    },
+    {
+      "id": "ex-root-uni-universe",
+      "label": "Universe",
+      "tier": "tier2",
+      "focusMorpheme": "uni",
+      "keys": []
+    },
+    {
+      "id": "ex-root-uni-unison",
+      "label": "Unison",
+      "tier": "tier2",
+      "focusMorpheme": "uni",
+      "keys": []
+    },
+    {
+      "id": "ex-root-act-react",
+      "label": "React",
+      "tier": "tier2",
+      "focusMorpheme": "act, ag",
+      "keys": [
+        "pfx:re-",
+        "root:act"
+      ]
+    },
+    {
+      "id": "ex-root-form-reform",
+      "label": "Reform",
+      "tier": "tier2",
+      "focusMorpheme": "form",
+      "keys": [
+        "pfx:re-",
+        "root:form"
+      ]
+    },
+    {
+      "id": "ex-root-form-information",
+      "label": "Information",
+      "tier": "tier2",
+      "focusMorpheme": "form",
+      "keys": [
+        "pfx:in-",
+        "root:form",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-form-cruciform",
+      "label": "Cruciform",
+      "tier": "tier2",
+      "focusMorpheme": "form",
+      "keys": []
+    },
+    {
+      "id": "ex-root-port-portable",
+      "label": "Portable",
+      "tier": "tier2",
+      "focusMorpheme": "port",
+      "keys": [
+        "root:port",
+        "sfx:-able"
+      ]
+    },
+    {
+      "id": "ex-root-port-report",
+      "label": "Report",
+      "tier": "tier2",
+      "focusMorpheme": "port",
+      "keys": [
+        "pfx:re-",
+        "root:port"
+      ]
+    },
+    {
+      "id": "ex-root-rupt-erupt",
+      "label": "Erupt",
+      "tier": "tier2",
+      "focusMorpheme": "rupt",
+      "keys": [
+        "pfx:ex-",
+        "root:rupt"
+      ]
+    },
+    {
+      "id": "ex-root-rupt-corrupt",
+      "label": "Corrupt",
+      "tier": "tier2",
+      "focusMorpheme": "rupt",
+      "keys": [
+        "pfx:con-",
+        "root:rupt"
+      ]
+    },
+    {
+      "id": "ex-root-rupt-rupture",
+      "label": "Rupture",
+      "tier": "tier2",
+      "focusMorpheme": "rupt",
+      "keys": []
+    },
+    {
+      "id": "ex-root-tract-traction",
+      "label": "Traction",
+      "tier": "tier2",
+      "focusMorpheme": "tract",
+      "keys": [
+        "root:tract",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-tract-distract",
+      "label": "Distract",
+      "tier": "tier2",
+      "focusMorpheme": "tract",
+      "keys": [
+        "pfx:dis-",
+        "root:tract"
+      ]
+    },
+    {
+      "id": "ex-root-tract-contract",
+      "label": "Contract",
+      "tier": "tier2",
+      "focusMorpheme": "tract",
+      "keys": [
+        "pfx:con-",
+        "root:tract"
+      ]
+    },
+    {
+      "id": "ex-root-tract-extract",
+      "label": "Extract",
+      "tier": "tier2",
+      "focusMorpheme": "tract",
+      "keys": [
+        "pfx:ex-",
+        "root:tract"
+      ]
+    },
+    {
+      "id": "ex-root-scrib-script",
+      "label": "Script",
+      "tier": "tier2",
+      "focusMorpheme": "scrib / script",
+      "keys": [
+        "root:scrib"
+      ]
+    },
+    {
+      "id": "ex-root-scrib-scribble",
+      "label": "Scribble",
+      "tier": "tier2",
+      "focusMorpheme": "scrib / script",
+      "keys": []
+    },
+    {
+      "id": "ex-root-scrib-manuscript",
+      "label": "Manuscript",
+      "tier": "tier2",
+      "focusMorpheme": "scrib / script",
+      "keys": []
+    },
+    {
+      "id": "ex-root-scrib-description",
+      "label": "Description",
+      "tier": "tier2",
+      "focusMorpheme": "scrib / script",
+      "keys": [
+        "pfx:de-",
+        "root:scrib",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-spect-spectator",
+      "label": "Spectator",
+      "tier": "tier2",
+      "focusMorpheme": "spect / spec / spic / spectat / suspic",
+      "keys": [
+        "lex:spectate",
+        "sfx:-ate",
+        "sfx:-er"
+      ]
+    },
+    {
+      "id": "ex-root-spect-suspicious",
+      "label": "Suspicious",
+      "tier": "tier2",
+      "focusMorpheme": "spect / spec / spic / spectat / suspic",
+      "keys": [
+        "root:spect",
+        "sfx:-ous"
+      ]
+    },
+    {
+      "id": "ex-root-struct-structure",
+      "label": "Structure",
+      "tier": "tier2",
+      "focusMorpheme": "struct / stru",
+      "keys": []
+    },
+    {
+      "id": "ex-root-struct-instruct",
+      "label": "Instruct",
+      "tier": "tier2",
+      "focusMorpheme": "struct / stru",
+      "keys": [
+        "pfx:in-",
+        "root:struct"
+      ]
+    },
+    {
+      "id": "ex-root-struct-destroy",
+      "label": "Destroy",
+      "tier": "tier2",
+      "focusMorpheme": "struct / stru",
+      "keys": []
+    },
+    {
+      "id": "ex-root-dict-dictate",
+      "label": "Dictate",
+      "tier": "tier2",
+      "focusMorpheme": "dict / dic",
+      "keys": [
+        "root:dict",
+        "sfx:-ate"
+      ]
+    },
+    {
+      "id": "ex-root-fer-transfer",
+      "label": "Transfer",
+      "tier": "tier2",
+      "focusMorpheme": "fer / off",
+      "keys": [
+        "pfx:trans-",
+        "root:fer"
+      ]
+    },
+    {
+      "id": "ex-root-fer-offer",
+      "label": "Offer",
+      "tier": "tier2",
+      "focusMorpheme": "fer / off",
+      "keys": [
+        "root:fer",
+        "sfx:-er"
+      ]
+    },
+    {
+      "id": "ex-root-fer-prefer",
+      "label": "Prefer",
+      "tier": "tier2",
+      "focusMorpheme": "fer / off",
+      "keys": [
+        "pfx:pre-",
+        "root:fer"
+      ]
+    },
+    {
+      "id": "ex-root-mit-submit",
+      "label": "Submit",
+      "tier": "tier2",
+      "focusMorpheme": "mit / miss",
+      "keys": [
+        "pfx:sub-",
+        "root:mit"
+      ]
+    },
+    {
+      "id": "ex-root-mit-mission",
+      "label": "Mission",
+      "tier": "tier2",
+      "focusMorpheme": "mit / miss",
+      "keys": [
+        "root:mit",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-mit-emit",
+      "label": "Emit",
+      "tier": "tier2",
+      "focusMorpheme": "mit / miss",
+      "keys": [
+        "pfx:ex-",
+        "root:mit"
+      ]
+    },
+    {
+      "id": "ex-root-duct-produce",
+      "label": "Produce",
+      "tier": "tier2",
+      "focusMorpheme": "duct / duc / duce",
+      "keys": []
+    },
+    {
+      "id": "ex-root-duct-reduce",
+      "label": "Reduce",
+      "tier": "tier2",
+      "focusMorpheme": "duct / duc / duce",
+      "keys": [
+        "pfx:re-",
+        "root:duct"
+      ]
+    },
+    {
+      "id": "ex-root-duct-aqueduct",
+      "label": "Aqueduct",
+      "tier": "tier2",
+      "focusMorpheme": "duct / duc / duce",
+      "keys": []
+    },
+    {
+      "id": "ex-root-fect-factory",
+      "label": "Factory",
+      "tier": "tier2",
+      "focusMorpheme": "fact / fac / fect / fic / fict",
+      "keys": [
+        "root:fect",
+        "sfx:-er",
+        "sfx:-y"
+      ]
+    },
+    {
+      "id": "ex-root-fect-manufacture",
+      "label": "Manufacture",
+      "tier": "tier2",
+      "focusMorpheme": "fact / fac / fect / fic / fict",
+      "keys": []
+    },
+    {
+      "id": "ex-root-tain-contain",
+      "label": "Contain",
+      "tier": "tier2",
+      "focusMorpheme": "ten / tain / tin",
+      "keys": [
+        "pfx:con-",
+        "root:tain"
+      ]
+    },
+    {
+      "id": "ex-root-tain-sustain",
+      "label": "Sustain",
+      "tier": "tier2",
+      "focusMorpheme": "ten / tain / tin",
+      "keys": []
+    },
+    {
+      "id": "ex-root-tain-detain",
+      "label": "Detain",
+      "tier": "tier2",
+      "focusMorpheme": "ten / tain / tin",
+      "keys": [
+        "pfx:de-",
+        "root:tain"
+      ]
+    },
+    {
+      "id": "ex-root-tain-retain",
+      "label": "Retain",
+      "tier": "tier2",
+      "focusMorpheme": "ten / tain / tin",
+      "keys": [
+        "pfx:re-",
+        "root:tain"
+      ]
+    },
+    {
+      "id": "ex-root-vis-video",
+      "label": "Video",
+      "tier": "tier2",
+      "focusMorpheme": "vis / vid",
+      "keys": []
+    },
+    {
+      "id": "ex-root-vis-revise",
+      "label": "Revise",
+      "tier": "tier2",
+      "focusMorpheme": "vis / vid",
+      "keys": []
+    },
+    {
+      "id": "ex-root-vis-vision",
+      "label": "Vision",
+      "tier": "tier2",
+      "focusMorpheme": "vis / vid",
+      "keys": [
+        "root:vis",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-ceive-intercept",
+      "label": "Intercept",
+      "tier": "tier2",
+      "focusMorpheme": "cap / ceive / cept / cip / particip",
+      "keys": [
+        "pfx:inter-",
+        "root:ceive"
+      ]
+    },
+    {
+      "id": "ex-root-ceive-deceive",
+      "label": "Deceive",
+      "tier": "tier2",
+      "focusMorpheme": "cap / ceive / cept / cip / particip",
+      "keys": [
+        "pfx:de-",
+        "root:ceive"
+      ]
+    },
+    {
+      "id": "ex-root-ceive-participate",
+      "label": "Participate",
+      "tier": "tier2",
+      "focusMorpheme": "cap / ceive / cept / cip / particip",
+      "keys": [
+        "root:ceive",
+        "sfx:-ate"
+      ]
+    },
+    {
+      "id": "ex-root-sist-station",
+      "label": "Station",
+      "tier": "tier2",
+      "focusMorpheme": "sta / sist / stat / stit / const",
+      "keys": [
+        "root:sist",
+        "sfx:-tion"
+      ]
+    },
+    {
+      "id": "ex-root-sist-constant",
+      "label": "Constant",
+      "tier": "tier2",
+      "focusMorpheme": "sta / sist / stat / stit / const",
+      "keys": [
+        "root:sist",
+        "sfx:-ant"
+      ]
+    },
+    {
+      "id": "ex-root-sist-substitute",
+      "label": "Substitute",
+      "tier": "tier2",
+      "focusMorpheme": "sta / sist / stat / stit / const",
+      "keys": []
+    },
+    {
+      "id": "ex-root-sist-insist",
+      "label": "Insist",
+      "tier": "tier2",
+      "focusMorpheme": "sta / sist / stat / stit / const",
+      "keys": [
+        "pfx:in-",
+        "root:sist"
+      ]
+    },
+    {
+      "id": "ex-root-posit-compose",
+      "label": "Compose",
+      "tier": "tier2",
+      "focusMorpheme": "pos / pon / posit",
+      "keys": []
+    },
+    {
+      "id": "ex-root-posit-deposit",
+      "label": "Deposit",
+      "tier": "tier2",
+      "focusMorpheme": "pos / pon / posit",
+      "keys": [
+        "pfx:de-",
+        "root:posit"
+      ]
+    },
+    {
+      "id": "ex-root-posit-opposite",
+      "label": "Opposite",
+      "tier": "tier2",
+      "focusMorpheme": "pos / pon / posit",
+      "keys": []
+    },
+    {
+      "id": "ex-root-posit-propose",
+      "label": "Propose",
+      "tier": "tier2",
+      "focusMorpheme": "pos / pon / posit",
+      "keys": []
+    },
+    {
+      "id": "ex-root-ply-complicated",
+      "label": "Complicated",
+      "tier": "tier2",
+      "focusMorpheme": "plic / ply / complicat / multip / complic",
+      "keys": [
+        "lex:complicate",
+        "sfx:-ate",
+        "sfx:-ed"
+      ]
+    },
+    {
+      "id": "ex-root-ply-multiply",
+      "label": "Multiply",
+      "tier": "tier2",
+      "focusMorpheme": "plic / ply / complicat / multip / complic",
+      "keys": [
+        "root:ply",
+        "sfx:-ly"
+      ]
+    },
+    {
+      "id": "ex-root-ply-replica",
+      "label": "Replica",
+      "tier": "tier2",
+      "focusMorpheme": "plic / ply / complicat / multip / complic",
+      "keys": []
+    },
+    {
+      "id": "ex-root-ply-imply",
+      "label": "Imply",
+      "tier": "tier2",
+      "focusMorpheme": "plic / ply / complicat / multip / complic",
+      "keys": [
+        "pfx:in-",
+        "root:ply"
+      ]
+    },
+    {
+      "id": "ex-root-bio-biomass",
+      "label": "Biomass",
+      "tier": "tier2",
+      "focusMorpheme": "bio",
+      "keys": []
+    },
+    {
+      "id": "ex-root-bio-biome",
+      "label": "Biome",
+      "tier": "tier2",
+      "focusMorpheme": "bio",
+      "keys": []
+    },
+    {
+      "id": "ex-root-graph-photograph",
+      "label": "Photograph",
+      "tier": "tier2",
+      "focusMorpheme": "graph / gram",
+      "keys": []
+    },
+    {
+      "id": "ex-root-graph-paragraph",
+      "label": "Paragraph",
+      "tier": "tier2",
+      "focusMorpheme": "graph / gram",
+      "keys": []
+    },
+    {
+      "id": "ex-root-graph-diagram",
+      "label": "Diagram",
+      "tier": "tier2",
+      "focusMorpheme": "graph / gram",
+      "keys": []
+    },
+    {
+      "id": "ex-root-graph-telegram",
+      "label": "Telegram",
+      "tier": "tier2",
+      "focusMorpheme": "graph / gram",
+      "keys": []
+    },
+    {
+      "id": "ex-root-psych-psychic",
+      "label": "Psychic",
+      "tier": "tier2",
+      "focusMorpheme": "psych",
+      "keys": [
+        "root:psych",
+        "sfx:-ic"
+      ]
+    },
+    {
+      "id": "ex-root-zoo-zookeeper",
+      "label": "Zookeeper",
+      "tier": "tier2",
+      "focusMorpheme": "zoo",
+      "keys": [
+        "lex:zookeeper"
+      ]
+    }
+  ],
+  "morphemes": [
+    {
+      "key": "sfx:-s",
+      "morpheme": "-s, -es",
+      "meaning": "plural nouns; 3rd-person singular present verbs",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-s-es",
+        "ex-sfx-s-boxes",
+        "ex-sfx-s-dishes",
+        "ex-sfx-s-watches",
+        "ex-sfx-s-babies"
+      ]
+    },
+    {
+      "key": "sfx:-ed",
+      "morpheme": "-ed",
+      "meaning": "past tense / past participle on regular ('weak') verbs",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-ed",
+        "ex-sfx-ed-walked",
+        "ex-sfx-ed-laughed",
+        "ex-sfx-ed-wanted",
+        "ex-sfx-ed-stopped",
+        "ex-root-vanc-advanced",
+        "ex-root-ply-complicated"
+      ]
+    },
+    {
+      "key": "sfx:-ing",
+      "morpheme": "-ing",
+      "meaning": "ongoing action; activity noun (gerund); participle adjective",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-ing",
+        "ex-sfx-ing-swimming",
+        "ex-sfx-ing-reading",
+        "ex-sfx-ing-making"
+      ]
+    },
+    {
+      "key": "sfx:-ly",
+      "morpheme": "-ly",
+      "meaning": "forms many adverbs (\"in a ___ way\"); occasionally adjectives",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-ly",
+        "ex-sfx-ly-carefully",
+        "ex-sfx-ly-slowly",
+        "ex-sfx-ly-quietly",
+        "ex-sfx-ly-happily",
+        "ex-root-ply-multiply"
+      ]
+    },
+    {
+      "key": "sfx:-er",
+      "morpheme": "-er / -or",
+      "meaning": "person/thing that does an action (agent); also \"more\" on short adjectives (comparative)",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-er-or",
+        "ex-sfx-er-actor",
+        "ex-sfx-er-runner",
+        "ex-sfx-er-creator",
+        "ex-sfx-er-wiser",
+        "ex-root-spect-spectator",
+        "ex-root-fer-offer",
+        "ex-root-fect-factory"
+      ]
+    },
+    {
+      "key": "sfx:-tion",
+      "morpheme": "-ion, -tion",
+      "meaning": "noun-maker on verbs — names the act, process, or result",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-ion",
+        "lex-dictionary",
+        "root-vis",
+        "root-pos",
+        "ex-sfx-tion-decision",
+        "ex-sfx-tion-instruction",
+        "ex-sfx-tion-reaction",
+        "ex-sfx-tion-construction",
+        "ex-root-coher-cohesion",
+        "ex-root-sect-section",
+        "ex-root-demonstr-demonstration",
+        "ex-root-celebr-celebration",
+        "ex-root-calcul-calculation",
+        "ex-root-nect-connection",
+        "ex-root-form-information",
+        "ex-root-tract-traction",
+        "ex-root-scrib-description",
+        "ex-root-mit-mission",
+        "ex-root-vis-vision",
+        "ex-root-sist-station"
+      ]
+    },
+    {
+      "key": "sfx:-al",
+      "morpheme": "-al",
+      "meaning": "adjective-maker — \"relating to\" or \"characterized by\"",
+      "tier": "tier2",
+      "wordIds": [
+        "sfx-al",
+        "pfx-inter",
+        "ex-sfx-al-cultural",
+        "ex-sfx-al-personal",
+        "ex-sfx-al-regional",
+        "ex-sfx-al-magical",
+        "ex-root-techn-technical",
+        "ex-root-gener-general",
+        "ex-root-it-go-initial"
+      ]
+    },
+    {
+      "key": "sfx:-y",
+      "morpheme": "-y",
+      "meaning": "adjective-maker — \"full of / like / characterized by\"",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-y",
+        "ex-sfx-y-muddy",
+        "ex-sfx-y-rainy",
+        "ex-sfx-y-windy",
+        "ex-sfx-y-sunny",
+        "ex-root-histor-history",
+        "ex-root-fect-factory"
+      ]
+    },
+    {
+      "key": "sfx:-y-noun",
+      "morpheme": "-y (abstract noun)",
+      "meaning": "abstract noun ending on Greek combining-form compounds (study of ___ , record of ___)",
+      "tier": "tier2",
+      "wordIds": [
+        "gcf-graph"
+      ]
+    },
+    {
+      "key": "sfx:-ness",
+      "morpheme": "-ness",
+      "meaning": "abstract noun-maker — \"the state or quality of being ___\"",
+      "tier": "tier2",
+      "wordIds": [
+        "sfx-ness",
+        "ex-sfx-ness-kindness",
+        "ex-sfx-ness-darkness",
+        "ex-sfx-ness-readiness",
+        "ex-pfx-un-unhappiness"
+      ]
+    },
+    {
+      "key": "sfx:-ment",
+      "morpheme": "-ment",
+      "meaning": "noun-maker on verbs — names the result, process, or product",
+      "tier": "tier2",
+      "wordIds": [
+        "sfx-ment",
+        "ex-sfx-ment-development",
+        "ex-sfx-ment-agreement",
+        "ex-sfx-ment-measurement",
+        "ex-sfx-ment-argument"
+      ]
+    },
+    {
+      "key": "sfx:-able",
+      "morpheme": "-able, -ible",
+      "meaning": "adjective-maker — \"able to be ___ed\" / \"capable of\"",
+      "tier": "tier2",
+      "wordIds": [
+        "sfx-able-ible",
+        "pfx-in-not",
+        "ex-sfx-able-flexible",
+        "ex-sfx-able-possible",
+        "ex-sfx-able-valuable",
+        "ex-sfx-able-noticeable",
+        "ex-pfx-in-impossible",
+        "ex-root-biodegrad-biodegradable",
+        "ex-root-port-portable"
+      ]
+    },
+    {
+      "key": "sfx:-ful",
+      "morpheme": "-ful",
+      "meaning": "adjective-maker — \"full of\" or \"having\"",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-ful",
+        "ex-sfx-ly-carefully",
+        "ex-sfx-ful-hopeful",
+        "ex-sfx-ful-helpful",
+        "ex-sfx-ful-colorful",
+        "ex-sfx-ful-beautiful"
+      ]
+    },
+    {
+      "key": "sfx:-less",
+      "morpheme": "-less",
+      "meaning": "adjective-maker — \"without\"",
+      "tier": "tier2",
+      "wordIds": [
+        "sfx-less",
+        "ex-sfx-less-careless",
+        "ex-sfx-less-endless",
+        "ex-sfx-less-tasteless",
+        "ex-sfx-less-priceless"
+      ]
+    },
+    {
+      "key": "sfx:-ic",
+      "morpheme": "-ic",
+      "meaning": "adjective-maker — \"relating to\" or \"characterized by\"",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ic-atomic",
+        "ex-sfx-ic-scientific",
+        "ex-sfx-ic-magnetic",
+        "ex-sfx-ic-historic",
+        "ex-pfx-pre-prehistoric",
+        "ex-root-techn-technical",
+        "ex-root-psych-psychic"
+      ]
+    },
+    {
+      "key": "sfx:-tic",
+      "morpheme": "-tic",
+      "meaning": "adjective-maker — \"relating to\" (same family as -ic, often after stems that end in t)",
+      "tier": "tier2",
+      "wordIds": [
+        "gcf-tic",
+        "ex-sfx-tic-antibiotic"
+      ]
+    },
+    {
+      "key": "sfx:-ive",
+      "morpheme": "-ive",
+      "meaning": "adjective-maker — \"tending to\" or \"having the nature of\"",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ive-active",
+        "ex-sfx-ive-creative",
+        "ex-sfx-ive-perspective",
+        "ex-sfx-ive-inclusive",
+        "ex-sfx-ity-activity",
+        "ex-sfx-ate-activate",
+        "ex-pfx-in-inactive",
+        "ex-pfx-de-deactivate",
+        "ex-root-decis-decisive",
+        "ex-root-decis-incisive"
+      ]
+    },
+    {
+      "key": "sfx:-ous",
+      "morpheme": "-ous, -ious",
+      "meaning": "adjective-maker — \"full of\" or \"having lots of\"",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ous-dangerous",
+        "ex-sfx-ous-famous",
+        "ex-sfx-ous-various",
+        "ex-sfx-ous-generous",
+        "ex-root-spect-suspicious"
+      ]
+    },
+    {
+      "key": "sfx:-ity",
+      "morpheme": "-ity, -ty",
+      "meaning": "abstract noun-maker — \"the state or quality of being ___\" (Latin twin of -ness)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ity-activity",
+        "ex-sfx-ity-reality",
+        "ex-sfx-ity-sincerity",
+        "ex-sfx-ity-ability",
+        "ex-root-soci-society",
+        "ex-root-poss-possibility",
+        "ex-root-ver-veracity"
+      ]
+    },
+    {
+      "key": "sfx:-ate",
+      "morpheme": "-ate",
+      "meaning": "verb-maker — \"to make / cause to be ___\" (also adjective: \"having ___\")",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-er-creator",
+        "ex-sfx-ive-creative",
+        "ex-sfx-ate-activate",
+        "ex-sfx-ate-demonstrate",
+        "ex-sfx-ate-celebrate",
+        "ex-sfx-ate-calculate",
+        "ex-pfx-de-deactivate",
+        "ex-root-soci-associate",
+        "ex-root-gener-generate",
+        "ex-root-spect-spectator",
+        "ex-root-dict-dictate",
+        "ex-root-ceive-participate",
+        "ex-root-ply-complicated"
+      ]
+    },
+    {
+      "key": "sfx:-ary",
+      "morpheme": "-ary",
+      "meaning": "relating to; belonging to; characterized by (often forms adjectives from nouns—and nouns like \"dictionary\" that sum through -ion first)",
+      "tier": "tier2",
+      "wordIds": [
+        "lex-dictionary",
+        "ex-sfx-ary-primary",
+        "ex-sfx-ary-customary",
+        "ex-sfx-ary-vocabulary",
+        "ex-pfx-contra-contrary"
+      ]
+    },
+    {
+      "key": "sfx:-ant",
+      "morpheme": "-ant, -ent",
+      "meaning": "noun (\"one who ___s\") or adjective (\"___ing\") — Latin participial endings",
+      "tier": "tier2",
+      "wordIds": [
+        "root-sta",
+        "ex-sfx-ant-different",
+        "ex-sfx-ant-important",
+        "ex-sfx-ant-applicant",
+        "ex-sfx-ence-patience",
+        "ex-pfx-over-overconfident",
+        "ex-root-haer-coherent",
+        "ex-root-scient-science",
+        "ex-root-scient-conscience",
+        "ex-root-sist-constant"
+      ]
+    },
+    {
+      "key": "sfx:-ence",
+      "morpheme": "-ence, -ance",
+      "meaning": "abstract noun — \"state, quality, or act of ___\" (the noun twin of -ant / -ent)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ence-difference",
+        "ex-sfx-ence-importance",
+        "ex-sfx-ence-evidence",
+        "ex-sfx-ence-patience",
+        "ex-root-scient-science",
+        "ex-root-scient-conscience"
+      ]
+    },
+    {
+      "key": "pfx:un-",
+      "morpheme": "un-",
+      "meaning": "\"not\" (on adjectives) or \"reverse the action\" (on verbs)",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-un",
+        "ex-pfx-un-unfair",
+        "ex-pfx-un-unlock",
+        "ex-pfx-un-unclear",
+        "ex-pfx-un-unhappiness"
+      ]
+    },
+    {
+      "key": "pfx:re-",
+      "morpheme": "re-",
+      "meaning": "\"again\" or \"back\"",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-re",
+        "root-fer",
+        "root-cap",
+        "ex-sfx-tion-reaction",
+        "ex-pfx-re-rewrite",
+        "ex-pfx-re-rebuild",
+        "ex-pfx-re-return",
+        "ex-pfx-re-review",
+        "ex-pfx-over-overreact",
+        "ex-lex-construct-reconstruct",
+        "ex-root-proach-reproach",
+        "ex-root-act-react",
+        "ex-root-form-reform",
+        "ex-root-port-report",
+        "ex-root-duct-reduce",
+        "ex-root-tain-retain"
+      ]
+    },
+    {
+      "key": "pfx:in-",
+      "morpheme": "in-, im-, il-, ir- (not)",
+      "meaning": "negation — \"not / without\" (Latin family)",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-in-not",
+        "ex-sfx-tion-instruction",
+        "ex-sfx-ant-important",
+        "ex-sfx-ence-importance",
+        "ex-pfx-in-impossible",
+        "ex-pfx-in-irregular",
+        "ex-pfx-in-illegal",
+        "ex-pfx-in-inactive",
+        "ex-root-vad-invade",
+        "ex-root-form-information",
+        "ex-root-struct-instruct",
+        "ex-root-sist-insist",
+        "ex-root-ply-imply"
+      ]
+    },
+    {
+      "key": "pfx:dis-",
+      "morpheme": "dis-, dif-",
+      "meaning": "\"apart\", \"not\", or \"reverse / undo\"",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-dis",
+        "ex-sfx-ant-different",
+        "ex-sfx-ence-difference",
+        "ex-pfx-dis-disagree",
+        "ex-pfx-dis-disrupt",
+        "ex-pfx-dis-disappear",
+        "ex-root-tract-distract"
+      ]
+    },
+    {
+      "key": "pfx:non-",
+      "morpheme": "non-",
+      "meaning": "neutral negation — \"not\" with no extra flavor",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-non",
+        "ex-pfx-non-nonfiction",
+        "ex-pfx-non-nonstop",
+        "ex-pfx-non-nonprofit"
+      ]
+    },
+    {
+      "key": "pfx:in-toward",
+      "morpheme": "in-, im- (in/into)",
+      "meaning": "directional — \"in\", \"into\", or \"toward\" (NOT the negative in-)",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-in-toward",
+        "root-form",
+        "root-spect",
+        "ex-pfx-in-toward-insert",
+        "ex-pfx-in-toward-inject",
+        "ex-pfx-in-toward-include"
+      ]
+    },
+    {
+      "key": "pfx:over-",
+      "morpheme": "over-",
+      "meaning": "\"too much\", \"above\", or \"across\"",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-over",
+        "ex-pfx-over-overheat",
+        "ex-pfx-over-overreact",
+        "ex-pfx-over-overconfident",
+        "ex-pfx-over-overpass"
+      ]
+    },
+    {
+      "key": "pfx:mis-",
+      "morpheme": "mis-",
+      "meaning": "\"wrongly\" or \"badly\"",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-mis",
+        "ex-pfx-mis-mislead",
+        "ex-pfx-mis-misprint",
+        "ex-pfx-mis-mistake",
+        "ex-pfx-mis-misspell"
+      ]
+    },
+    {
+      "key": "pfx:sub-",
+      "morpheme": "sub-",
+      "meaning": "\"under\" or \"below\" (literal or figurative)",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-sub",
+        "ex-pfx-sub-submarine",
+        "ex-pfx-sub-submerge",
+        "ex-pfx-sub-subzero",
+        "ex-root-mit-submit"
+      ]
+    },
+    {
+      "key": "pfx:pre-",
+      "morpheme": "pre-",
+      "meaning": "\"before\" — in time or position",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-pre",
+        "ex-pfx-pre-predict",
+        "ex-pfx-pre-prepare",
+        "ex-pfx-pre-prehistoric",
+        "ex-root-fer-prefer"
+      ]
+    },
+    {
+      "key": "pfx:inter-",
+      "morpheme": "inter-",
+      "meaning": "\"between\" or \"among\"",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-inter",
+        "root-rupt",
+        "ex-pfx-inter-interact",
+        "ex-pfx-inter-intersect",
+        "ex-pfx-inter-internet",
+        "ex-root-ven-intervene",
+        "ex-root-nect-interconnect",
+        "ex-root-ceive-intercept"
+      ]
+    },
+    {
+      "key": "pfx:fore-",
+      "morpheme": "fore-",
+      "meaning": "\"before\" or \"ahead\" (Anglo-Saxon counterpart to Latin pre-)",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-fore",
+        "ex-pfx-fore-foreshadow",
+        "ex-pfx-fore-foreword",
+        "ex-pfx-fore-forewarn"
+      ]
+    },
+    {
+      "key": "pfx:de-",
+      "morpheme": "de-",
+      "meaning": "\"down\", \"off\", \"away\", or \"reverse / remove\"",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-de",
+        "root-scrib",
+        "ex-pfx-de-defrost",
+        "ex-pfx-de-deactivate",
+        "ex-pfx-de-deflate",
+        "ex-pfx-de-descend",
+        "ex-root-sert-desert",
+        "ex-root-scrib-description",
+        "ex-root-tain-detain",
+        "ex-root-ceive-deceive",
+        "ex-root-posit-deposit"
+      ]
+    },
+    {
+      "key": "pfx:trans-",
+      "morpheme": "trans-",
+      "meaning": "\"across\", \"through\", or \"beyond\"",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-trans",
+        "root-mit",
+        "ex-pfx-trans-translate",
+        "ex-pfx-trans-transform",
+        "ex-root-fer-transfer"
+      ]
+    },
+    {
+      "key": "pfx:anti-",
+      "morpheme": "anti-",
+      "meaning": "\"against\" or \"opposite\"",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-anti",
+        "ex-sfx-tic-antibiotic",
+        "ex-pfx-anti-antivirus",
+        "ex-pfx-anti-antisocial"
+      ]
+    },
+    {
+      "key": "pfx:mid-",
+      "morpheme": "mid-",
+      "meaning": "\"middle\"",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-mid",
+        "ex-pfx-mid-midterm",
+        "ex-pfx-mid-midday",
+        "ex-pfx-mid-midpoint"
+      ]
+    },
+    {
+      "key": "pfx:con-",
+      "morpheme": "con-",
+      "meaning": "\"with\" or \"together\"",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-dis",
+        "pfx-con",
+        "root-struct",
+        "root-duct",
+        "ex-sfx-tion-construction",
+        "ex-pfx-con-combine",
+        "ex-pfx-con-converge",
+        "ex-pfx-con-collect",
+        "ex-root-ven-convene",
+        "ex-root-clude-conclude",
+        "ex-root-scient-conscience",
+        "ex-root-nect-interconnect",
+        "ex-root-nect-connection",
+        "ex-root-rupt-corrupt",
+        "ex-root-tract-contract",
+        "ex-root-tain-contain"
+      ]
+    },
+    {
+      "key": "pfx:contra-",
+      "morpheme": "contra-",
+      "meaning": "\"against\"; \"opposite\"; \"contrary to\"",
+      "tier": "tier2",
+      "wordIds": [
+        "lex-contradict",
+        "ex-pfx-contra-contravene"
+      ]
+    },
+    {
+      "key": "pfx:ad-",
+      "morpheme": "ad-",
+      "meaning": "\"to\" or \"toward\"",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-ad",
+        "root-tract",
+        "root-sta",
+        "root-plic",
+        "ex-sfx-ant-applicant",
+        "ex-pfx-ad-adhere",
+        "ex-pfx-ad-approach",
+        "ex-pfx-ad-accept",
+        "ex-root-soci-associate",
+        "ex-root-sert-assert",
+        "ex-root-vanc-advanced"
+      ]
+    },
+    {
+      "key": "pfx:ex-",
+      "morpheme": "ex-, e-, ef-",
+      "meaning": "\"out\", \"away\", or \"former\"",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-ex",
+        "root-port",
+        "ex-sfx-ence-evidence",
+        "ex-pfx-ex-eject",
+        "ex-pfx-ex-exclude",
+        "ex-root-lect-elect",
+        "ex-root-vad-evade",
+        "ex-root-rupt-erupt",
+        "ex-root-tract-extract",
+        "ex-root-mit-emit"
+      ]
+    },
+    {
+      "key": "pfx:per-",
+      "morpheme": "per-",
+      "meaning": "\"through\", \"thoroughly\", or \"completely\"",
+      "tier": "tier2",
+      "wordIds": [
+        "root-fact",
+        "ex-sfx-ive-perspective",
+        "ex-pfx-per-permit",
+        "ex-pfx-per-persist",
+        "ex-pfx-per-pervade"
+      ]
+    },
+    {
+      "key": "lex:care",
+      "morpheme": "care",
+      "meaning": "attention; concern; careful thinking about something",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-ful",
+        "ex-sfx-ly-carefully",
+        "ex-sfx-less-careless"
+      ]
+    },
+    {
+      "key": "lex:cast",
+      "morpheme": "cast",
+      "meaning": "Tier 1 — verb: throw; noun: a molded shape or group of actors in a show; verb: assign roles or direct outward",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-fore"
+      ]
+    },
+    {
+      "key": "lex:cat",
+      "morpheme": "cat",
+      "meaning": "Tier 1 — noun: small domestic feline; common concrete animal in early reading",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-s-es"
+      ]
+    },
+    {
+      "key": "lex:cloud",
+      "morpheme": "cloud",
+      "meaning": "Tier 1 — noun: visible mass of water vapor in the sky; extended to digital storage",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-y"
+      ]
+    },
+    {
+      "key": "lex:code",
+      "morpheme": "code",
+      "meaning": "Tier 2 — noun: system of laws or symbols; verb: write instructions (especially for computers); noun: secret writing",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-de"
+      ]
+    },
+    {
+      "key": "lex:freeze",
+      "morpheme": "freeze",
+      "meaning": "Tier 1 — verb: turn to ice; stop moving; feel very cold",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-anti"
+      ]
+    },
+    {
+      "key": "lex:happy",
+      "morpheme": "happy",
+      "meaning": "Tier 1 — adjective: glad, pleased, feeling good",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-ness",
+        "pfx-un",
+        "ex-sfx-ly-happily",
+        "ex-pfx-un-unhappiness"
+      ]
+    },
+    {
+      "key": "lex:hope",
+      "morpheme": "hope",
+      "meaning": "Tier 1 — noun/verb: wish for something good; expectation that things can improve",
+      "tier": "tier2",
+      "wordIds": [
+        "sfx-less",
+        "ex-sfx-ful-hopeful"
+      ]
+    },
+    {
+      "key": "lex:jump",
+      "morpheme": "jump",
+      "meaning": "Tier 1 — verb: spring upward or forward suddenly; noun: an act of jumping",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-ed"
+      ]
+    },
+    {
+      "key": "lex:look",
+      "morpheme": "look",
+      "meaning": "Tier 1 — verb: use the eyes to see; seem; noun: appearance or searching glance",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-over"
+      ]
+    },
+    {
+      "key": "lex:main-hand",
+      "morpheme": "main",
+      "meaning": "Tier 2 — combining use: ‘main’ as the lead or strongest part (as in mainline, mainstay); not a bound Latin root",
+      "tier": "tier2",
+      "wordIds": [
+        "root-ten"
+      ]
+    },
+    {
+      "key": "lex:move",
+      "morpheme": "move",
+      "meaning": "Tier 1 — verb: change place or position; set in motion; stir feelings",
+      "tier": "tier2",
+      "wordIds": [
+        "sfx-ment"
+      ]
+    },
+    {
+      "key": "lex:nation",
+      "morpheme": "nation",
+      "meaning": "Tier 2 — noun: a country or a large community of people under one government",
+      "tier": "tier2",
+      "wordIds": [
+        "sfx-al",
+        "pfx-inter"
+      ]
+    },
+    {
+      "key": "lex:night",
+      "morpheme": "night",
+      "meaning": "Tier 1 — noun: the dark part of the day when people sleep",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-mid"
+      ]
+    },
+    {
+      "key": "lex:quick",
+      "morpheme": "quick",
+      "meaning": "Tier 1 — adjective: fast; prompt",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-ly"
+      ]
+    },
+    {
+      "key": "lex:read",
+      "morpheme": "read",
+      "meaning": "Tier 1 — verb: interpret written or printed words; noun: a spell of reading (same spelling, two common pronunciations)",
+      "tier": "tier2",
+      "wordIds": [
+        "sfx-able-ible",
+        "ex-sfx-ing-reading"
+      ]
+    },
+    {
+      "key": "lex:run",
+      "morpheme": "run",
+      "meaning": "Tier 1 — verb: move fast on foot; flow; operate (a machine)",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-ing",
+        "ex-sfx-er-runner"
+      ]
+    },
+    {
+      "key": "lex:sense",
+      "morpheme": "sense",
+      "meaning": "Tier 1–2 — noun: sight/hearing/etc. or meaning; verb: detect or understand faintly",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-non"
+      ]
+    },
+    {
+      "key": "lex:stand",
+      "morpheme": "stand",
+      "meaning": "Tier 1 — verb: be upright on the feet; tolerate; noun: a stall or position",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-mis"
+      ]
+    },
+    {
+      "key": "lex:teach",
+      "morpheme": "teach",
+      "meaning": "Tier 1 — verb: show how; help someone learn",
+      "tier": "tier1",
+      "wordIds": [
+        "sfx-er-or"
+      ]
+    },
+    {
+      "key": "lex:under",
+      "morpheme": "under",
+      "meaning": "Tier 1 — preposition/adverb: below; less than; in a lower position",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-mis"
+      ]
+    },
+    {
+      "key": "lex:use",
+      "morpheme": "use",
+      "meaning": "Tier 1 — verb: put to purpose; noun: the act of using or a helpful habit",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-re"
+      ]
+    },
+    {
+      "key": "lex:view",
+      "morpheme": "view",
+      "meaning": "Tier 1–2 — noun: what you see; opinion; verb: look at; regard",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-pre",
+        "ex-pfx-re-review"
+      ]
+    },
+    {
+      "key": "lex:way",
+      "morpheme": "way",
+      "meaning": "Tier 1 — noun: path; manner; method",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-sub"
+      ]
+    },
+    {
+      "key": "lex:box",
+      "morpheme": "box",
+      "meaning": "Tier 1 — noun: container; verb: hit with the hand (sport)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-s-boxes"
+      ]
+    },
+    {
+      "key": "lex:dish",
+      "morpheme": "dish",
+      "meaning": "Tier 1 — noun: plate or bowl; food served; verb: gossip (informal)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-s-dishes"
+      ]
+    },
+    {
+      "key": "lex:watch",
+      "morpheme": "watch",
+      "meaning": "Tier 1 — verb: look carefully; guard; noun: small clock on the wrist",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-s-watches"
+      ]
+    },
+    {
+      "key": "lex:baby",
+      "morpheme": "baby",
+      "meaning": "Tier 1 — noun: very young child; verb: treat gently (baby someone)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-s-babies"
+      ]
+    },
+    {
+      "key": "lex:walk",
+      "morpheme": "walk",
+      "meaning": "Tier 1 — verb: move on foot at a normal pace; noun: a stroll",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ed-walked"
+      ]
+    },
+    {
+      "key": "lex:laugh",
+      "morpheme": "laugh",
+      "meaning": "Tier 1 — verb/noun: show amusement with sound; laughter",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ed-laughed"
+      ]
+    },
+    {
+      "key": "lex:want",
+      "morpheme": "want",
+      "meaning": "Tier 1 — verb: wish for; need; noun: lack (for want of)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ed-wanted"
+      ]
+    },
+    {
+      "key": "lex:make",
+      "morpheme": "make",
+      "meaning": "Tier 1 — verb: create or build; force a result (make someone laugh)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ing-making"
+      ]
+    },
+    {
+      "key": "lex:slow",
+      "morpheme": "slow",
+      "meaning": "Tier 1 — adjective: not fast; adverb: slowly (also slow as adverb in informal use)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ly-slowly"
+      ]
+    },
+    {
+      "key": "lex:quiet",
+      "morpheme": "quiet",
+      "meaning": "Tier 1 — adjective: with little noise; calm; noun: silence",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ly-quietly"
+      ]
+    },
+    {
+      "key": "lex:create",
+      "morpheme": "create",
+      "meaning": "Tier 2 — verb: make something new; bring into existence",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-er-creator",
+        "ex-sfx-ive-creative"
+      ]
+    },
+    {
+      "key": "lex:wise",
+      "morpheme": "wise",
+      "meaning": "Tier 1–2 — adjective: showing good judgment; noun: way of doing (in phrases)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-er-wiser"
+      ]
+    },
+    {
+      "key": "lex:ready",
+      "morpheme": "ready",
+      "meaning": "Tier 1 — adjective: prepared; willing",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ness-readiness"
+      ]
+    },
+    {
+      "key": "lex:culture",
+      "morpheme": "culture",
+      "meaning": "Tier 2 — noun: shared customs, arts, and beliefs of a group",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-al-cultural"
+      ]
+    },
+    {
+      "key": "lex:person",
+      "morpheme": "person",
+      "meaning": "Tier 1 — noun: a human being; individual",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-al-personal"
+      ]
+    },
+    {
+      "key": "lex:region",
+      "morpheme": "region",
+      "meaning": "Tier 2 — noun: a broad area of land; part of a country",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-al-regional"
+      ]
+    },
+    {
+      "key": "lex:magic",
+      "morpheme": "magic",
+      "meaning": "Tier 1–2 — noun: tricks that look impossible; adjective: magical",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-al-magical"
+      ]
+    },
+    {
+      "key": "lex:rain",
+      "morpheme": "rain",
+      "meaning": "Tier 1 — noun: water falling from clouds; verb: fall as rain",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-y-rainy"
+      ]
+    },
+    {
+      "key": "lex:wind",
+      "morpheme": "wind",
+      "meaning": "Tier 1 — noun: moving air; verb: turn or twist (homograph)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-y-windy"
+      ]
+    },
+    {
+      "key": "lex:sun",
+      "morpheme": "sun",
+      "meaning": "Tier 1 — noun: the star that lights the day",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-y-sunny"
+      ]
+    },
+    {
+      "key": "lex:kind",
+      "morpheme": "kind",
+      "meaning": "Tier 1 — adjective: gentle, friendly; noun: type or sort",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ness-kindness"
+      ]
+    },
+    {
+      "key": "lex:dark",
+      "morpheme": "dark",
+      "meaning": "Tier 1 — adjective: with little light; noun: darkness",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ness-darkness"
+      ]
+    },
+    {
+      "key": "lex:develop",
+      "morpheme": "develop",
+      "meaning": "Tier 2 — verb: grow or unfold; build out (ideas, photos, skills)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ment-development"
+      ]
+    },
+    {
+      "key": "lex:nature",
+      "morpheme": "nature",
+      "meaning": "Tier 1–2 — noun: the natural world; a living thing’s built-in character",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-lex-nature-nature"
+      ]
+    },
+    {
+      "key": "lex:construct",
+      "morpheme": "construct",
+      "meaning": "Tier 2 — verb: build by putting parts together; noun: something built",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-lex-construct-reconstruct"
+      ]
+    },
+    {
+      "key": "lex:agree",
+      "morpheme": "agree",
+      "meaning": "Tier 1–2 — verb: have the same opinion; say yes",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ment-agreement",
+        "ex-pfx-dis-disagree"
+      ]
+    },
+    {
+      "key": "lex:measure",
+      "morpheme": "measure",
+      "meaning": "Tier 1–2 — verb: find size or amount; noun: a unit or action of measuring",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ment-measurement"
+      ]
+    },
+    {
+      "key": "lex:argue",
+      "morpheme": "argue",
+      "meaning": "Tier 2 — verb: give reasons for or against; dispute calmly",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ment-argument"
+      ]
+    },
+    {
+      "key": "lex:flex",
+      "morpheme": "flex",
+      "meaning": "Tier 2 — bound-style base in school words: bend (as in flexible, reflex)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-able-flexible"
+      ]
+    },
+    {
+      "key": "lex:value",
+      "morpheme": "value",
+      "meaning": "Tier 1–2 — noun: worth; importance; verb: estimate worth",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-able-valuable"
+      ]
+    },
+    {
+      "key": "lex:beauty",
+      "morpheme": "beauty",
+      "meaning": "Tier 1 — noun: loveliness; a fine thing or person",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ful-beautiful"
+      ]
+    },
+    {
+      "key": "lex:help",
+      "morpheme": "help",
+      "meaning": "Tier 1 — verb: make easier for someone; noun: aid",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ful-helpful"
+      ]
+    },
+    {
+      "key": "lex:color",
+      "morpheme": "color",
+      "meaning": "Tier 1 — noun: hue; verb: add color to",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ful-colorful"
+      ]
+    },
+    {
+      "key": "lex:notice",
+      "morpheme": "notice",
+      "meaning": "Tier 1–2 — verb: observe; noun: an announcement or warning",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-able-noticeable"
+      ]
+    },
+    {
+      "key": "lex:end",
+      "morpheme": "end",
+      "meaning": "Tier 1 — noun: stopping point; verb: finish",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-less-endless"
+      ]
+    },
+    {
+      "key": "lex:taste",
+      "morpheme": "taste",
+      "meaning": "Tier 1 — noun: flavor; verb: sample flavor",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-less-tasteless"
+      ]
+    },
+    {
+      "key": "lex:real",
+      "morpheme": "real",
+      "meaning": "Tier 1–2 — adjective: true; actual; noun: the real thing (colloquial)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ity-reality"
+      ]
+    },
+    {
+      "key": "lex:price",
+      "morpheme": "price",
+      "meaning": "Tier 1–2 — noun: cost; verb: set a price",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-less-priceless"
+      ]
+    },
+    {
+      "key": "lex:atom",
+      "morpheme": "atom",
+      "meaning": "Tier 2–3 — noun: smallest unit of a chemical element",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ic-atomic"
+      ]
+    },
+    {
+      "key": "lex:magnet",
+      "morpheme": "magnet",
+      "meaning": "Tier 2 — noun: object that pulls iron; extended to attraction",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ic-magnetic"
+      ]
+    },
+    {
+      "key": "lex:danger",
+      "morpheme": "danger",
+      "meaning": "Tier 1–2 — noun: risk of harm",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ous-dangerous"
+      ]
+    },
+    {
+      "key": "lex:fame",
+      "morpheme": "fame",
+      "meaning": "Tier 2 — noun: being widely known or talked about",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ous-famous"
+      ]
+    },
+    {
+      "key": "lex:vary",
+      "morpheme": "vary",
+      "meaning": "Tier 2 — verb: change; differ",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ous-various"
+      ]
+    },
+    {
+      "key": "lex:able",
+      "morpheme": "able",
+      "meaning": "Tier 1–2 — adjective: can do; has skill; noun use: the able (people)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ity-ability"
+      ]
+    },
+    {
+      "key": "lex:sincere",
+      "morpheme": "sincere",
+      "meaning": "Tier 2 — adjective: honest; said without pretending",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ity-sincerity"
+      ]
+    },
+    {
+      "key": "lex:patient",
+      "morpheme": "patient",
+      "meaning": "Tier 1–2 — adjective: calm while waiting; noun: person in a doctor’s office",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ence-patience"
+      ]
+    },
+    {
+      "key": "lex:fair",
+      "morpheme": "fair",
+      "meaning": "Tier 1 — adjective: just; light in color; moderate",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-un-unfair"
+      ]
+    },
+    {
+      "key": "lex:lock",
+      "morpheme": "lock",
+      "meaning": "Tier 1 — verb: fasten with a key; noun: device that fastens",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-un-unlock"
+      ]
+    },
+    {
+      "key": "lex:custom",
+      "morpheme": "custom",
+      "meaning": "Tier 2 — noun: habit or tradition; adjective use in customary",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ary-customary"
+      ]
+    },
+    {
+      "key": "lex:demonstrate",
+      "morpheme": "demonstrate",
+      "meaning": "Tier 2 — verb: show clearly; give proof; protest publicly",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ate-demonstrate"
+      ]
+    },
+    {
+      "key": "lex:celebrate",
+      "morpheme": "celebrate",
+      "meaning": "Tier 1–2 — verb: honor with a party or ritual; praise",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ate-celebrate"
+      ]
+    },
+    {
+      "key": "lex:calculate",
+      "morpheme": "calculate",
+      "meaning": "Tier 2 — verb: work out with numbers; plan deliberately",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ate-calculate"
+      ]
+    },
+    {
+      "key": "lex:write",
+      "morpheme": "write",
+      "meaning": "Tier 1 — verb: form letters or words; compose",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-re-rewrite"
+      ]
+    },
+    {
+      "key": "lex:build",
+      "morpheme": "build",
+      "meaning": "Tier 1 — verb: construct; noun: shape of the body",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-re-rebuild"
+      ]
+    },
+    {
+      "key": "lex:turn",
+      "morpheme": "turn",
+      "meaning": "Tier 1 — verb: spin; become; noun: a chance",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-re-return"
+      ]
+    },
+    {
+      "key": "lex:clear",
+      "morpheme": "clear",
+      "meaning": "Tier 1 — adjective: easy to see; not blocked; verb: remove",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-un-unclear"
+      ]
+    },
+    {
+      "key": "lex:regular",
+      "morpheme": "regular",
+      "meaning": "Tier 2 — adjective: usual; even; following a rule",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-in-irregular"
+      ]
+    },
+    {
+      "key": "lex:appear",
+      "morpheme": "appear",
+      "meaning": "Tier 1–2 — verb: come into view; seem",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-dis-disappear"
+      ]
+    },
+    {
+      "key": "lex:profit",
+      "morpheme": "profit",
+      "meaning": "Tier 2 — noun: money gained; verb: benefit",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-non-nonprofit"
+      ]
+    },
+    {
+      "key": "lex:legal",
+      "morpheme": "legal",
+      "meaning": "Tier 2 — adjective: allowed by law",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-in-illegal"
+      ]
+    },
+    {
+      "key": "lex:fiction",
+      "morpheme": "fiction",
+      "meaning": "Tier 2 — noun: made-up story; literature genre",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-non-nonfiction",
+        "ex-lex-fiction-fiction"
+      ]
+    },
+    {
+      "key": "lex:heat",
+      "morpheme": "heat",
+      "meaning": "Tier 1 — noun: warmth; verb: make hot",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-over-overheat"
+      ]
+    },
+    {
+      "key": "lex:pass",
+      "morpheme": "pass",
+      "meaning": "Tier 1 — verb: go by; succeed; noun: narrow path",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-over-overpass"
+      ]
+    },
+    {
+      "key": "lex:lead",
+      "morpheme": "lead",
+      "meaning": "Tier 1 — verb: guide; noun: the metal (homograph)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-mis-mislead"
+      ]
+    },
+    {
+      "key": "lex:print",
+      "morpheme": "print",
+      "meaning": "Tier 1 — verb: press letters on paper; noun: a copy",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-mis-misprint"
+      ]
+    },
+    {
+      "key": "lex:take",
+      "morpheme": "take",
+      "meaning": "Tier 1 — verb: grab; accept; need (time)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-mis-mistake"
+      ]
+    },
+    {
+      "key": "lex:spell",
+      "morpheme": "spell",
+      "meaning": "Tier 1 — verb: name letters in order; noun: short magical phrase",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-mis-misspell"
+      ]
+    },
+    {
+      "key": "lex:marine",
+      "morpheme": "marine",
+      "meaning": "Tier 2 — adjective: of the sea; noun: sea soldier",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-sub-submarine"
+      ]
+    },
+    {
+      "key": "lex:merge",
+      "morpheme": "merge",
+      "meaning": "Tier 2 — verb: blend into one; sink in",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-sub-submerge"
+      ]
+    },
+    {
+      "key": "lex:zero",
+      "morpheme": "zero",
+      "meaning": "Tier 1 — noun: the number 0; nothing",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-sub-subzero"
+      ]
+    },
+    {
+      "key": "lex:confident",
+      "morpheme": "confident",
+      "meaning": "Tier 1–2 — adjective: sure of oneself; trusting",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-over-overconfident"
+      ]
+    },
+    {
+      "key": "lex:late",
+      "morpheme": "late",
+      "meaning": "Tier 2 — adjective: not on time; adverb: after the usual time (also bound in translate)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-trans-translate"
+      ]
+    },
+    {
+      "key": "lex:pare",
+      "morpheme": "pare",
+      "meaning": "Tier 2 — verb: trim away; prepare (in school word sums with pre-)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-pre-prepare"
+      ]
+    },
+    {
+      "key": "lex:flate",
+      "morpheme": "flate",
+      "meaning": "Tier 3 — bound stem: blow, inflate (in deflate, inflate)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-de-deflate"
+      ]
+    },
+    {
+      "key": "lex:shadow",
+      "morpheme": "shadow",
+      "meaning": "Tier 1 — noun: dark shape cast by light; verb: follow secretly",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-fore-foreshadow"
+      ]
+    },
+    {
+      "key": "lex:word",
+      "morpheme": "word",
+      "meaning": "Tier 1 — noun: unit of language; news; verb: phrase something",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-fore-foreword"
+      ]
+    },
+    {
+      "key": "lex:warn",
+      "morpheme": "warn",
+      "meaning": "Tier 1 — verb: tell of danger ahead of time",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-fore-forewarn"
+      ]
+    },
+    {
+      "key": "lex:frost",
+      "morpheme": "frost",
+      "meaning": "Tier 1 — noun: ice crystals on cold surfaces; verb: cover with sugar icing",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-de-defrost"
+      ]
+    },
+    {
+      "key": "lex:virus",
+      "morpheme": "virus",
+      "meaning": "Tier 2 — noun: tiny germ; computer malware",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-anti-antivirus"
+      ]
+    },
+    {
+      "key": "lex:social",
+      "morpheme": "social",
+      "meaning": "Tier 1–2 — adjective: living or gathering in groups; friendly",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-anti-antisocial",
+        "ex-root-soci-social"
+      ]
+    },
+    {
+      "key": "lex:term",
+      "morpheme": "term",
+      "meaning": "Tier 1–2 — noun: word for a period; exam period; boundary",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-mid-midterm"
+      ]
+    },
+    {
+      "key": "lex:day",
+      "morpheme": "day",
+      "meaning": "Tier 1 — noun: a 24-hour period; daytime",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-mid-midday"
+      ]
+    },
+    {
+      "key": "lex:point",
+      "morpheme": "point",
+      "meaning": "Tier 1 — noun: sharp tip; moment; main idea; verb: aim at",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-mid-midpoint"
+      ]
+    },
+    {
+      "key": "lex:caregiver",
+      "morpheme": "caregiver",
+      "meaning": "Tier 1–2 — noun: person who cares for someone who needs help",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-lex-care-caregiver"
+      ]
+    },
+    {
+      "key": "lex:incise",
+      "morpheme": "incise",
+      "meaning": "Tier 3 — verb: cut into (same stem family as incisive, incision)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-decis-incisive"
+      ]
+    },
+    {
+      "key": "lex:complicate",
+      "morpheme": "complicate",
+      "meaning": "Tier 2 — verb: make tangled or harder",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-ply-complicated"
+      ]
+    },
+    {
+      "key": "lex:spectate",
+      "morpheme": "spectate",
+      "meaning": "Tier 2 — verb: watch (as in spectator)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-spect-spectator"
+      ]
+    },
+    {
+      "key": "lex:zookeeper",
+      "morpheme": "zookeeper",
+      "meaning": "Tier 1–2 — noun: person who cares for animals in a zoo",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-zoo-zookeeper"
+      ]
+    },
+    {
+      "key": "root:biodegrad",
+      "morpheme": "biodegrad",
+      "meaning": "life + break down (compound stem in biodegradable)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-biodegrad-biodegradable"
+      ]
+    },
+    {
+      "key": "root:theo",
+      "morpheme": "theo",
+      "meaning": "god (combining form in theology, theocracy)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-theo-theology"
+      ]
+    },
+    {
+      "key": "root:techn",
+      "morpheme": "techn",
+      "meaning": "art; skill; craft (stem in technology, technical)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-techn-technology",
+        "ex-root-techn-technical"
+      ]
+    },
+    {
+      "key": "root:anthrop",
+      "morpheme": "anthrop",
+      "meaning": "human (combining form in anthropology, misanthrope)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-anthrop-anthropology"
+      ]
+    },
+    {
+      "key": "root:path",
+      "morpheme": "path",
+      "meaning": "suffering; feeling; disease (stem in pathology, sympathy, apathy)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-path-pathology"
+      ]
+    },
+    {
+      "key": "root:bine",
+      "morpheme": "bine",
+      "meaning": "two together (stem in combine — put two into one)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-con-combine"
+      ]
+    },
+    {
+      "key": "root:verge",
+      "morpheme": "verge",
+      "meaning": "bend, turn, incline (stem in converge, diverge)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-con-converge"
+      ]
+    },
+    {
+      "key": "root:lect",
+      "morpheme": "lect",
+      "meaning": "choose, gather, read (stem in collect, elect, lecture)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-con-collect",
+        "ex-root-lect-elect"
+      ]
+    },
+    {
+      "key": "root:contr",
+      "morpheme": "contr",
+      "meaning": "against; opposite (stem in contrary, contrast, contradict)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-contra-contrary"
+      ]
+    },
+    {
+      "key": "root:ven",
+      "morpheme": "ven, vene",
+      "meaning": "come (stem in convene, intervene, contravene)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-contra-contravene",
+        "ex-root-ven-convene",
+        "ex-root-ven-intervene"
+      ]
+    },
+    {
+      "key": "root:haer",
+      "morpheme": "here, haer",
+      "meaning": "stick; cling (stem spelled here in adhere)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-ad-adhere"
+      ]
+    },
+    {
+      "key": "root:coher",
+      "morpheme": "coher",
+      "meaning": "stick together (stem in coherent, cohesion)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-haer-coherent"
+      ]
+    },
+    {
+      "key": "root:cohes",
+      "morpheme": "cohes",
+      "meaning": "stick together (noun stem in cohesion)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-coher-cohesion"
+      ]
+    },
+    {
+      "key": "root:proach",
+      "morpheme": "proach",
+      "meaning": "near (stem in approach, reproach)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-ad-approach",
+        "ex-root-proach-reproach"
+      ]
+    },
+    {
+      "key": "root:vad",
+      "morpheme": "vad, vade",
+      "meaning": "go (stem in pervade, invade, evade)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-per-pervade",
+        "ex-root-vad-invade",
+        "ex-root-vad-evade"
+      ]
+    },
+    {
+      "key": "root:soci",
+      "morpheme": "soci",
+      "meaning": "ally; companion (stem in social, society)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-soci-society",
+        "ex-root-soci-associate"
+      ]
+    },
+    {
+      "key": "root:sect",
+      "morpheme": "sect",
+      "meaning": "cut (stem in intersect, section, bisect)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-inter-intersect",
+        "ex-root-sect-section"
+      ]
+    },
+    {
+      "key": "root:scend",
+      "morpheme": "scend",
+      "meaning": "climb (stem in ascend, descend, transcend)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-de-descend"
+      ]
+    },
+    {
+      "key": "root:ject",
+      "morpheme": "ject",
+      "meaning": "throw (stem in inject, eject, project)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-in-toward-inject",
+        "ex-pfx-ex-eject"
+      ]
+    },
+    {
+      "key": "root:clude",
+      "morpheme": "clude",
+      "meaning": "shut; close (stem in include, exclude, conclude)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-in-toward-include",
+        "ex-pfx-ex-exclude",
+        "ex-root-clude-conclude"
+      ]
+    },
+    {
+      "key": "root:sert",
+      "morpheme": "sert",
+      "meaning": "join; put; place (stem in insert, assert)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-pfx-in-toward-insert",
+        "ex-root-sert-assert",
+        "ex-root-sert-desert"
+      ]
+    },
+    {
+      "key": "root:demonstr",
+      "morpheme": "demonstr",
+      "meaning": "show, point out (verb stem before -ate, -ation)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-demonstr-demonstration"
+      ]
+    },
+    {
+      "key": "root:celebr",
+      "morpheme": "celebr",
+      "meaning": "honor, fame (stem before -ate, -ation)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-celebr-celebration"
+      ]
+    },
+    {
+      "key": "root:calcul",
+      "morpheme": "calcul",
+      "meaning": "small stone; count (stem in calculate, calculator)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-root-calcul-calculation"
+      ]
+    },
+    {
+      "key": "root:prim",
+      "morpheme": "prim",
+      "meaning": "first (stem in primary, prime, primitive)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ary-primary"
+      ]
+    },
+    {
+      "key": "root:vocabul",
+      "morpheme": "vocabul, vocab",
+      "meaning": "call, name (stem in vocabulary, vocable)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ary-vocabulary",
+        "ex-root-vocabul-vocab"
+      ]
+    },
+    {
+      "key": "root:histor",
+      "morpheme": "histor",
+      "meaning": "story; inquiry (stem in history, historic)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ic-historic",
+        "ex-pfx-pre-prehistoric",
+        "ex-root-histor-history"
+      ]
+    },
+    {
+      "key": "root:gener",
+      "morpheme": "gener",
+      "meaning": "birth; kind; produce (stem in generate, generous, general)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ous-generous",
+        "ex-root-gener-generate",
+        "ex-root-gener-general"
+      ]
+    },
+    {
+      "key": "root:inclus",
+      "morpheme": "inclus",
+      "meaning": "shut in (stem of include, inclusive)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ive-inclusive"
+      ]
+    },
+    {
+      "key": "root:scient",
+      "morpheme": "scient, scientif",
+      "meaning": "knowing; knowledge (stem in science, scientific)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-ic-scientific",
+        "ex-root-scient-science",
+        "ex-root-scient-conscience"
+      ]
+    },
+    {
+      "key": "root:poss",
+      "morpheme": "poss",
+      "meaning": "be able; can (stem in possible, impossible)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-able-possible",
+        "ex-pfx-in-impossible",
+        "ex-root-poss-possibility"
+      ]
+    },
+    {
+      "key": "root:decis",
+      "morpheme": "decis, decid",
+      "meaning": "cut off; settle (verb stem of decide)",
+      "tier": "tier2",
+      "wordIds": [
+        "ex-sfx-tion-decision",
+        "ex-root-decis-decisive"
+      ]
+    },
+    {
+      "key": "root:ver",
+      "morpheme": "ver, verac",
+      "meaning": "true; truth",
+      "tier": "tier2",
+      "wordIds": [
+        "root-dict",
+        "ex-root-ver-veracity"
+      ]
+    },
+    {
+      "key": "root:nect",
+      "morpheme": "nect",
+      "meaning": "bind; tie; connect",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-dis",
+        "pfx-con",
+        "ex-root-nect-interconnect",
+        "ex-root-nect-connection"
+      ]
+    },
+    {
+      "key": "root:vanc",
+      "morpheme": "vance / vanc",
+      "meaning": "go before; come first",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-ad",
+        "ex-root-vanc-advanced"
+      ]
+    },
+    {
+      "key": "root:it-go",
+      "morpheme": "it / iss / initi",
+      "meaning": "go",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-ex",
+        "ex-root-it-go-initial"
+      ]
+    },
+    {
+      "key": "root:tele",
+      "morpheme": "tele-",
+      "meaning": "far; at a distance",
+      "tier": "tier1",
+      "wordIds": [
+        "root-vis"
+      ]
+    },
+    {
+      "key": "root:uni",
+      "morpheme": "uni",
+      "meaning": "one; single",
+      "tier": "tier2",
+      "wordIds": [
+        "lex-uniform"
+      ]
+    },
+    {
+      "key": "root:act",
+      "morpheme": "act, ag",
+      "meaning": "do; drive; lead",
+      "tier": "tier2",
+      "wordIds": [
+        "sfx-ion",
+        "ex-sfx-er-actor",
+        "ex-sfx-tion-reaction",
+        "ex-sfx-ive-active",
+        "ex-sfx-ity-activity",
+        "ex-sfx-ate-activate",
+        "ex-pfx-in-inactive",
+        "ex-pfx-over-overreact",
+        "ex-pfx-inter-interact",
+        "ex-pfx-de-deactivate",
+        "ex-root-act-react"
+      ]
+    },
+    {
+      "key": "root:form",
+      "morpheme": "form",
+      "meaning": "shape; form",
+      "tier": "tier2",
+      "wordIds": [
+        "root-form",
+        "lex-uniform",
+        "ex-pfx-trans-transform",
+        "ex-root-form-reform",
+        "ex-root-form-information"
+      ]
+    },
+    {
+      "key": "root:port",
+      "morpheme": "port",
+      "meaning": "carry",
+      "tier": "tier2",
+      "wordIds": [
+        "pfx-in-toward",
+        "pfx-trans",
+        "root-port",
+        "ex-sfx-ant-important",
+        "ex-sfx-ence-importance",
+        "ex-root-port-portable",
+        "ex-root-port-report"
+      ]
+    },
+    {
+      "key": "root:rupt",
+      "morpheme": "rupt",
+      "meaning": "break; burst",
+      "tier": "tier2",
+      "wordIds": [
+        "root-rupt",
+        "ex-pfx-dis-disrupt",
+        "ex-root-rupt-erupt",
+        "ex-root-rupt-corrupt"
+      ]
+    },
+    {
+      "key": "root:tract",
+      "morpheme": "tract",
+      "meaning": "pull; draw",
+      "tier": "tier2",
+      "wordIds": [
+        "root-tract",
+        "ex-root-tract-traction",
+        "ex-root-tract-distract",
+        "ex-root-tract-contract",
+        "ex-root-tract-extract"
+      ]
+    },
+    {
+      "key": "root:scrib",
+      "morpheme": "scrib / script",
+      "meaning": "write; scratch",
+      "tier": "tier2",
+      "wordIds": [
+        "root-scrib",
+        "ex-root-scrib-script",
+        "ex-root-scrib-description"
+      ]
+    },
+    {
+      "key": "root:spect",
+      "morpheme": "spect / spec / spic / spectat / suspic",
+      "meaning": "look; see",
+      "tier": "tier2",
+      "wordIds": [
+        "root-spect",
+        "ex-sfx-ive-perspective",
+        "ex-root-spect-suspicious"
+      ]
+    },
+    {
+      "key": "root:struct",
+      "morpheme": "struct / stru",
+      "meaning": "build; pile up",
+      "tier": "tier2",
+      "wordIds": [
+        "root-struct",
+        "ex-sfx-tion-instruction",
+        "ex-sfx-tion-construction",
+        "ex-root-struct-instruct"
+      ]
+    },
+    {
+      "key": "root:dict",
+      "morpheme": "dict / dic",
+      "meaning": "say; speak",
+      "tier": "tier2",
+      "wordIds": [
+        "root-dict",
+        "lex-dictionary",
+        "lex-contradict",
+        "ex-pfx-pre-predict",
+        "ex-root-dict-dictate"
+      ]
+    },
+    {
+      "key": "root:fer",
+      "morpheme": "fer / off",
+      "meaning": "carry; bear; bring",
+      "tier": "tier2",
+      "wordIds": [
+        "root-fer",
+        "ex-sfx-ant-different",
+        "ex-sfx-ence-difference",
+        "ex-root-fer-transfer",
+        "ex-root-fer-offer",
+        "ex-root-fer-prefer"
+      ]
+    },
+    {
+      "key": "root:mit",
+      "morpheme": "mit / miss",
+      "meaning": "send; let go",
+      "tier": "tier2",
+      "wordIds": [
+        "root-mit",
+        "ex-pfx-per-permit",
+        "ex-root-mit-submit",
+        "ex-root-mit-mission",
+        "ex-root-mit-emit"
+      ]
+    },
+    {
+      "key": "root:duct",
+      "morpheme": "duct / duc / duce",
+      "meaning": "lead",
+      "tier": "tier2",
+      "wordIds": [
+        "root-duct",
+        "ex-root-duct-reduce"
+      ]
+    },
+    {
+      "key": "root:fect",
+      "morpheme": "fact / fac / fect / fic / fict",
+      "meaning": "make; do",
+      "tier": "tier2",
+      "wordIds": [
+        "root-fact",
+        "ex-root-fect-factory"
+      ]
+    },
+    {
+      "key": "root:tain",
+      "morpheme": "ten / tain / tin",
+      "meaning": "hold; keep",
+      "tier": "tier2",
+      "wordIds": [
+        "root-ten",
+        "ex-root-tain-contain",
+        "ex-root-tain-detain",
+        "ex-root-tain-retain"
+      ]
+    },
+    {
+      "key": "root:vis",
+      "morpheme": "vis / vid",
+      "meaning": "see",
+      "tier": "tier1",
+      "wordIds": [
+        "pfx-in-not",
+        "root-vis",
+        "ex-sfx-ence-evidence",
+        "ex-root-vis-vision"
+      ]
+    },
+    {
+      "key": "root:ceive",
+      "morpheme": "cap / ceive / cept / cip / particip",
+      "meaning": "take; catch; seize",
+      "tier": "tier2",
+      "wordIds": [
+        "root-cap",
+        "ex-pfx-ad-accept",
+        "ex-root-ceive-intercept",
+        "ex-root-ceive-deceive",
+        "ex-root-ceive-participate"
+      ]
+    },
+    {
+      "key": "root:sist",
+      "morpheme": "sta / sist / stat / stit / const",
+      "meaning": "stand",
+      "tier": "tier2",
+      "wordIds": [
+        "root-sta",
+        "ex-pfx-per-persist",
+        "ex-root-sist-station",
+        "ex-root-sist-constant",
+        "ex-root-sist-insist"
+      ]
+    },
+    {
+      "key": "root:posit",
+      "morpheme": "pos / pon / posit",
+      "meaning": "place; put",
+      "tier": "tier2",
+      "wordIds": [
+        "root-pos",
+        "ex-root-posit-deposit"
+      ]
+    },
+    {
+      "key": "root:ply",
+      "morpheme": "plic / ply / complicat / multip / complic",
+      "meaning": "fold; bend",
+      "tier": "tier2",
+      "wordIds": [
+        "root-plic",
+        "ex-sfx-ant-applicant",
+        "ex-root-ply-multiply",
+        "ex-root-ply-imply"
+      ]
+    },
+    {
+      "key": "root:bio",
+      "morpheme": "bio",
+      "meaning": "life; living things",
+      "tier": "tier2",
+      "wordIds": [
+        "gcf-graph",
+        "gcf-tic",
+        "gcf-logy",
+        "ex-sfx-tic-antibiotic"
+      ]
+    },
+    {
+      "key": "root:graph",
+      "morpheme": "graph / gram",
+      "meaning": "write; draw; record",
+      "tier": "tier2",
+      "wordIds": [
+        "gcf-graph"
+      ]
+    },
+    {
+      "key": "root:geo",
+      "morpheme": "geo",
+      "meaning": "earth; ground",
+      "tier": "tier2",
+      "wordIds": [
+        "gcf-geology"
+      ]
+    },
+    {
+      "key": "root:psych",
+      "morpheme": "psych",
+      "meaning": "mind; spirit; breath",
+      "tier": "tier2",
+      "wordIds": [
+        "gcf-psychology",
+        "ex-root-psych-psychic"
+      ]
+    },
+    {
+      "key": "root:zoo",
+      "morpheme": "zoo",
+      "meaning": "animal; living being",
+      "tier": "tier2",
+      "wordIds": [
+        "gcf-zoology"
+      ]
+    },
+    {
+      "key": "root:etym",
+      "morpheme": "etym",
+      "meaning": "true sense; original meaning",
+      "tier": "tier2",
+      "wordIds": [
+        "gcf-etymology"
+      ]
+    },
+    {
+      "key": "sfx:-logy",
+      "morpheme": "-logy, -ology",
+      "meaning": "study of; science of",
+      "tier": "tier2",
+      "wordIds": [
+        "gcf-logy",
+        "gcf-geology",
+        "gcf-psychology",
+        "gcf-zoology",
+        "gcf-etymology",
+        "ex-root-theo-theology",
+        "ex-root-techn-technology",
+        "ex-root-anthrop-anthropology",
+        "ex-root-path-pathology"
+      ]
+    }
+  ]
+}

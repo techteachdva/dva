@@ -1,0 +1,678 @@
+[
+  {
+    "key": "sfx:-s",
+    "morpheme": "-s, -es",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "plural nouns; 3rd-person singular present verbs",
+    "etymology": "Inherited from Old English plural -as / -es; the same family that gave German its -en plurals.",
+    "wordSums": [
+      "cat + s → cats",
+      "box + es → boxes",
+      "baby + es → babi + es → babies (consonant + y → i before -es)",
+      "she + run + s → she runs (verb agreement with one subject)"
+    ],
+    "decodingTip": "Add -es when the base ends in s, x, z, ch, or sh — the extra e gives you a syllable to pronounce. After consonant + y, change y to i and add -es.",
+    "spellingNote": "One morpheme, three sounds: /s/ after voiceless (cats), /z/ after voiced (dogs), /ɪz/ after sibilants (boxes). The spelling stays predictable; the sound rides on the previous letter.",
+    "teachingTip": "Sort 12 mixed plurals on the board: students decide -s vs -es and explain why. The pronunciation pattern emerges from the spelling rule.",
+    "inquiryPrompts": [
+      "Why does box need -es but cat takes only -s? Try saying both pronunciations — which sounds more natural?",
+      "Is the -s in 'she runs' the same morpheme as the -s in 'two cats'? How do you know?"
+    ],
+    "outsideExamples": [
+      "boxes",
+      "dishes",
+      "watches",
+      "babies"
+    ],
+    "wiktionary": "-s",
+    "_order": 0
+  },
+  {
+    "key": "sfx:-ed",
+    "morpheme": "-ed",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "past tense / past participle on regular ('weak') verbs",
+    "etymology": "From Old English -ode / -ede, used on weak verbs since before the year 1000.",
+    "wordSums": [
+      "walk + ed → walked",
+      "want + ed → wanted",
+      "stop + p + ed → stopped (CVC: double the final consonant)",
+      "hope + ed → hop(e) + ed → hoped (drop silent e)"
+    ],
+    "decodingTip": "Whenever you see -ed at the end of a verb, the action already happened. The spelling stays -ed even though the sound shifts: /t/ in walked, /d/ in played, /ɪd/ in wanted.",
+    "spellingNote": "Three suffix-changing rules: doubling on stressed CVC bases (stop → stopped), drop-e on silent-e bases (hope → hoped), y→i on consonant + y (cry → cried).",
+    "teachingTip": "Read three -ed verbs aloud and have students hold up 1, 2, or 3 fingers for /t/, /d/, or /ɪd/. The morpheme is consistent; the sound rides on what came before.",
+    "inquiryPrompts": [
+      "Why do we double the p in stopped but not the k in walked?",
+      "If '-ed' is one morpheme, why does it sound different in 'jumped' vs 'wanted'?",
+      "Find a verb where -ed sounds like /d/ — what's true about its final letter?"
+    ],
+    "outsideExamples": [
+      "walked",
+      "laughed",
+      "wanted",
+      "stopped"
+    ],
+    "wiktionary": "-ed",
+    "_order": 1
+  },
+  {
+    "key": "sfx:-ing",
+    "morpheme": "-ing",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "ongoing action; activity noun (gerund); participle adjective",
+    "etymology": "Old English -ing, originally a noun-forming suffix; took over the present participle role from earlier -ende around 1200.",
+    "wordSums": [
+      "read + ing → reading",
+      "swim + m + ing → swimming (CVC: double the final consonant)",
+      "make + ing → mak(e) + ing → making (drop silent e)"
+    ],
+    "decodingTip": "An -ing word can do three jobs: verb (She is running), noun (Running is hard), or adjective (running shoes). Look at the sentence to decide its job.",
+    "spellingNote": "Same suffix-changing rules as -ed: double final consonant on CVC bases (stop → stopping), drop silent e (hope → hoping). y stays put: cry → crying.",
+    "teachingTip": "Project three sentences using the same -ing word in different jobs. Students label each as verb / noun / adjective. The shape stays; the syntax changes.",
+    "inquiryPrompts": [
+      "When does 'running' act like a noun? When does it act like a verb? Use the same word in three different sentences.",
+      "Why do we write swimming with two m's but reading with just one d?"
+    ],
+    "outsideExamples": [
+      "swimming",
+      "reading",
+      "running",
+      "making"
+    ],
+    "wiktionary": "-ing",
+    "_order": 2
+  },
+  {
+    "key": "sfx:-ly",
+    "morpheme": "-ly",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "forms many adverbs (\"in a ___ way\"); occasionally adjectives",
+    "etymology": "From Old English -lic 'having the form of', shortened to -ly; the same root as German -lich.",
+    "wordSums": [
+      "quick + ly → quickly",
+      "happy + ly → happi + ly → happily (consonant + y → i)",
+      "true + ly → tru(e) + ly → truly (drop silent e — exception)"
+    ],
+    "decodingTip": "-ly usually turns an adjective into an adverb meaning 'in a ___ way' (quick → quickly). It can also turn a noun into an adjective (friend → friendly, day → daily) — context tells you which.",
+    "spellingNote": "Consonant + y → change y to i first (happy → happily). Silent e usually stays (sincere → sincerely) except in a few words: truly, duly, wholly.",
+    "teachingTip": "Write a sentence with a missing word: 'She spoke ___.' Offer quick / quickly. Students explain why only quickly fits — the slot demands an adverb.",
+    "inquiryPrompts": [
+      "Why is 'friendly' an adjective, not an adverb?",
+      "What changes when you swap an adjective for its -ly form in a sentence?"
+    ],
+    "outsideExamples": [
+      "carefully",
+      "slowly",
+      "quietly",
+      "happily"
+    ],
+    "wiktionary": "-ly",
+    "_order": 3
+  },
+  {
+    "key": "sfx:-er",
+    "morpheme": "-er / -or",
+    "origin": "Mixed (Germanic + Latin/French)",
+    "meaning": "person/thing that does an action (agent); also \"more\" on short adjectives (comparative)",
+    "etymology": "Two senses, two histories: agent -er is Old English -ere; comparative -er is also Old English. Latin -or (actor, creator) entered through Norman French.",
+    "wordSums": [
+      "teach + er → teacher (one who teaches)",
+      "wise + er → wis(e) + er → wiser (more wise — drop silent e)",
+      "run + n + er → runner (CVC: double the consonant)",
+      "act + or → actor (Latin verb takes -or)"
+    ],
+    "decodingTip": "On a verb, -er names the doer: teach → teacher. On a short adjective, -er means 'more': wise → wiser. The grammar of the base tells you which job.",
+    "spellingNote": "Drop silent e (bake → baker), double CVC consonants (run → runner). -or attaches to many Latin-origin verbs (act, create, edit) where -er would feel wrong.",
+    "teachingTip": "Build a T-chart: 'doer' on one side, 'more ___' on the other. Toss out 10 -er words. Students sort and justify with a paraphrase.",
+    "inquiryPrompts": [
+      "Is 'faster' the same morpheme as 'runner'? How do you know?",
+      "Why creator with -or but teacher with -er? Trace the language each verb came from."
+    ],
+    "outsideExamples": [
+      "actor",
+      "runner",
+      "creator",
+      "wiser"
+    ],
+    "wiktionary": "-er",
+    "_order": 4
+  },
+  {
+    "key": "sfx:-tion",
+    "morpheme": "-ion, -tion",
+    "origin": "Latin (via French)",
+    "meaning": "noun-maker on verbs — names the act, process, or result",
+    "etymology": "From Latin -tiō / -tiōnem, a noun-forming suffix on verbs; entered English through Norman French (action, vision).",
+    "wordSums": [
+      "act + ion → action",
+      "inform + ation → information",
+      "decide + sion → deci(de) + sion → decision (Latin verb stem alternation)",
+      "construct + ion → construction"
+    ],
+    "decodingTip": "When -tion lands on a verb-shape, it names the act, process, or result of doing it: inform → information ('the act / result of informing').",
+    "spellingNote": "Spelled -ation after a clear vowel-final stem (information), -tion after most stems (action), -sion after stems ending in d / s / se (decision, conclusion, confusion).",
+    "teachingTip": "Pair-up game: give students a verb (decide, react, construct), they write the -tion noun, then a sentence using both forms.",
+    "inquiryPrompts": [
+      "Why is it 'decision' (-sion) but 'action' (-tion)? Look at the Latin verb stems.",
+      "What changes about a sentence when you swap 'inform' for 'information'?"
+    ],
+    "confusedWith": [
+      "sfx:-ment",
+      "sfx:-ness",
+      "sfx:-al"
+    ],
+    "outsideExamples": [
+      "decision",
+      "instruction",
+      "reaction",
+      "construction"
+    ],
+    "wiktionary": "-tion",
+    "_order": 5
+  },
+  {
+    "key": "sfx:-y",
+    "morpheme": "-y",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "adjective-maker — \"full of / like / characterized by\"",
+    "etymology": "Old English -ig 'having, characterized by'; same source as German -ig.",
+    "wordSums": [
+      "mud + y → mud + d + y → muddy (CVC: double the consonant)",
+      "rain + y → rainy",
+      "fun + y → fun + n + y → funny"
+    ],
+    "decodingTip": "-y is the everyday way to say 'full of' or 'like ___': sun + y → sunny ('full of sun'); cloud + y → cloudy ('full of clouds').",
+    "spellingNote": "Short-vowel CVC bases double the final consonant: mud → muddy, fun → funny. Silent e usually drops: shine → shiny.",
+    "teachingTip": "30-second brainstorm: list nouns that take -y to make adjectives. Then sort by which doubled the consonant.",
+    "inquiryPrompts": [
+      "What's the difference between 'rainy' (-y) and 'rain's' (apostrophe + s)? Different morphemes — how can you tell them apart?",
+      "Why do we double the d in muddy?"
+    ],
+    "confusedWith": [
+      "sfx:-ous",
+      "sfx:-al",
+      "sfx:-ful"
+    ],
+    "outsideExamples": [
+      "muddy",
+      "rainy",
+      "windy",
+      "sunny"
+    ],
+    "wiktionary": "-y",
+    "_order": 7
+  },
+  {
+    "key": "sfx:-ful",
+    "morpheme": "-ful",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "adjective-maker — \"full of\" or \"having\"",
+    "etymology": "Old English -full 'full', shortened to -ful in compounds; the same word as the adjective full.",
+    "wordSums": [
+      "hope + ful → hopeful",
+      "help + ful → helpful",
+      "beauty + ful → beauti + ful → beautiful (consonant + y → i)"
+    ],
+    "decodingTip": "-ful means 'full of' or 'having': careful = 'full of care', helpful = 'full of help'.",
+    "spellingNote": "Always one l in -ful, never two — even though the word 'full' has two. Cup + ful = cupful, not cupfull.",
+    "teachingTip": "Rewrite each '-ful' word as 'full of ___' and check the meaning still fits. This makes the suffix's contribution visible.",
+    "inquiryPrompts": [
+      "What's the difference between 'careful' and 'care-free'? How do the suffixes flip the meaning?",
+      "Could 'thoughtful' have been 'thoughty'? Why might English have chosen -ful?"
+    ],
+    "confusedWith": [
+      "sfx:-less",
+      "sfx:-y",
+      "sfx:-al"
+    ],
+    "outsideExamples": [
+      "hopeful",
+      "helpful",
+      "colorful",
+      "beautiful"
+    ],
+    "wiktionary": "-ful",
+    "_order": 12
+  },
+  {
+    "key": "pfx:un-",
+    "morpheme": "un-",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "\"not\" (on adjectives) or \"reverse the action\" (on verbs)",
+    "etymology": "Old English un- 'not'; one of English's most productive everyday prefixes.",
+    "wordSums": [
+      "un + happy → unhappy (not happy)",
+      "un + lock → unlock (reverse the action of locking)",
+      "un + lock + able → unlockable",
+      "un + happy + ness → unhappiness"
+    ],
+    "decodingTip": "un- has two flavors: 'not' on adjectives (unhappy = not happy) and 'reverse the action' on verbs (unlock = the opposite of lock).",
+    "teachingTip": "Sort un- words on the board into 'not + adjective' and 'reverse + verb'. Students notice the same prefix doing two different jobs.",
+    "inquiryPrompts": [
+      "Is 'unhappy' the same kind of un- as 'unlock'? Why or why not?",
+      "Is 'unhappiness' one morpheme or three? Build the word sum and label each piece."
+    ],
+    "confusedWith": [
+      "pfx:in-",
+      "pfx:non-",
+      "pfx:dis-",
+      "sfx:-less"
+    ],
+    "outsideExamples": [
+      "unfair",
+      "unlock",
+      "unclear",
+      "unhappiness"
+    ],
+    "wiktionary": "un-",
+    "_order": 23
+  },
+  {
+    "key": "pfx:re-",
+    "morpheme": "re-",
+    "origin": "Latin",
+    "meaning": "\"again\" or \"back\"",
+    "etymology": "From Latin re- 'back, again'; one of English's most productive academic prefixes.",
+    "wordSums": [
+      "re + write → rewrite (write again)",
+      "re + view → review (view again — look back over)",
+      "re + view + ed → reviewed",
+      "re + turn → return (turn back)"
+    ],
+    "decodingTip": "re- usually means 'again' (rewrite = write again) or 'back' (return = turn back). When in doubt, try 'again' first.",
+    "teachingTip": "Word-family fishing: name a verb (build), students call out re- words (rebuild) and explain whether 're-' means 'again' or 'back'.",
+    "inquiryPrompts": [
+      "Is 'review' = 're + view' meaning 'see again'? Does that fit how we use the word?",
+      "Find a re- word where 'again' doesn't quite fit. What's happening there?"
+    ],
+    "outsideExamples": [
+      "rewrite",
+      "rebuild",
+      "return",
+      "review"
+    ],
+    "wiktionary": "re-",
+    "_order": 24
+  },
+  {
+    "key": "pfx:over-",
+    "morpheme": "over-",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "\"too much\", \"above\", or \"across\"",
+    "etymology": "Old English ofer 'above, beyond, too much'; the same word as the adverb 'over'.",
+    "wordSums": [
+      "over + heat → overheat",
+      "over + react → overreact",
+      "over + confident → overconfident"
+    ],
+    "decodingTip": "over- usually means 'too much' (overeat) or 'above / across' (overpass). Listen for the tone — over- often signals criticism: she overreacts.",
+    "teachingTip": "List 8 over- words. Students rate each as positive, neutral, or negative tone. Most over- words skew critical — discuss why.",
+    "inquiryPrompts": [
+      "Is 'overheat' 'heat too much' or 'heat above'? Could be both — does it matter?",
+      "Why does 'overconfident' sound like a flaw?"
+    ],
+    "confusedWith": [
+      "pfx:sub-",
+      "pfx:mid-",
+      "pfx:fore-"
+    ],
+    "outsideExamples": [
+      "overheat",
+      "overreact",
+      "overconfident",
+      "overpass"
+    ],
+    "wiktionary": "over-",
+    "_order": 29
+  },
+  {
+    "key": "pfx:sub-",
+    "morpheme": "sub-",
+    "origin": "Latin",
+    "meaning": "\"under\" or \"below\" (literal or figurative)",
+    "etymology": "From Latin sub 'under, below'; common in academic and scientific words.",
+    "wordSums": [
+      "sub + marine → submarine (under + sea)",
+      "sub + merge → submerge (push under)",
+      "sub + zero → subzero (below zero)"
+    ],
+    "decodingTip": "sub- means 'under' physically (submarine) or 'less than' figuratively (subzero, substandard).",
+    "teachingTip": "Two columns — physical 'under' vs figurative 'less than'. Students sort 8 sub- words and explain each placement.",
+    "inquiryPrompts": [
+      "Is sub- in 'subway' literal (the train is below ground) or figurative? Both?",
+      "Why 'submerge' with sub- but 'immerse' with im-? Different prefixes, similar idea — compare the imagery."
+    ],
+    "confusedWith": [
+      "pfx:over-",
+      "pfx:de-"
+    ],
+    "outsideExamples": [
+      "submarine",
+      "submerge",
+      "subzero",
+      "subway"
+    ],
+    "wiktionary": "sub-",
+    "_order": 31
+  },
+  {
+    "key": "pfx:mid-",
+    "morpheme": "mid-",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "\"middle\"",
+    "etymology": "Old English mid- 'middle'; the same source as the noun 'middle'.",
+    "wordSums": [
+      "mid + term → midterm (middle of the term)",
+      "mid + day → midday (middle of the day)",
+      "mid + point → midpoint"
+    ],
+    "decodingTip": "mid- = middle. midterm = middle of the term; midnight = middle of the night; midwest = middle west of the country.",
+    "teachingTip": "Spatial vs temporal: midpoint (space), midnight (time), midwest (region). Students sort 6 mid- words by the kind of 'middle' they name.",
+    "inquiryPrompts": [
+      "Why 'midnight' but 'middle of the night'? When do we use the morpheme vs the full phrase?"
+    ],
+    "outsideExamples": [
+      "midterm",
+      "midday",
+      "midpoint",
+      "midnight"
+    ],
+    "wiktionary": "mid-",
+    "_order": 38
+  },
+  {
+    "key": "pfx:ex-",
+    "morpheme": "ex-, e-, ef-",
+    "origin": "Latin",
+    "meaning": "\"out\", \"away\", or \"former\"",
+    "etymology": "From Latin ex 'out, away from'; the same root as the word 'exit'.",
+    "wordSums": [
+      "ex + port → export (carry out)",
+      "ex + ject → e + ject → eject (ex → e before some consonants)",
+      "ex + clude → exclude (shut out)"
+    ],
+    "decodingTip": "ex- = out. export = carry out; eject = throw out; exclude = shut out. Pairs nicely with in-: import / export, include / exclude.",
+    "teachingTip": "Pair-up: include / exclude, import / export, internal / external. Students explain how the in / ex pair organizes the meaning.",
+    "inquiryPrompts": [
+      "Is the ex- in 'ex-president' the same prefix as the ex- in 'export'? When did 'former' become a meaning?",
+      "Eject vs exit: both have ex- — what's the verb stem doing in each?"
+    ],
+    "confusedWith": [
+      "pfx:in-toward",
+      "pfx:de-"
+    ],
+    "outsideExamples": [
+      "export",
+      "eject",
+      "exclude",
+      "exit"
+    ],
+    "wiktionary": "ex-",
+    "_order": 42
+  },
+  {
+    "key": "lex:care",
+    "morpheme": "care",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "attention; concern; careful thinking about something",
+    "etymology": "From Old English *caru* ‘care, sorrow, concern’. In modern English it often names attention (take care) or concern (care about).",
+    "wordSums": [
+      "care + ful → careful (having care)",
+      "care + ful + ly → carefully",
+      "care + less → careless (without care)"
+    ],
+    "decodingTip": "When care is a base, the suffix usually flips the attitude: -ful = 'having care', -less = 'without care'. Ask: what kind of care does the word describe?",
+    "teachingTip": "Quick contrast sort: careful / careless. Students define each without using the word itself, then connect them back to the base meaning of care.",
+    "inquiryPrompts": [
+      "Is 'careful' always positive? Compare: careful scientist vs careful liar. How does context steer the tone?",
+      "What does 'carelessly' add beyond 'careless'? Write two sentences and compare."
+    ],
+    "outsideExamples": [
+      "caregiver"
+    ],
+    "wiktionary": "care",
+    "_order": 44
+  },
+  {
+    "key": "lex:cat",
+    "morpheme": "cat",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: small domestic feline; common concrete animal in early reading",
+    "etymology": "Old English cæt, cognate with other Germanic words for the same animal.",
+    "wordSums": [
+      "cat + -s → cats"
+    ],
+    "decodingTip": "Tier-1 concrete noun; plural -s is regular after a short vowel + consonant.",
+    "outsideExamples": [],
+    "wiktionary": "cat",
+    "_order": 46
+  },
+  {
+    "key": "lex:cloud",
+    "morpheme": "cloud",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: visible mass of water vapor in the sky; extended to digital storage",
+    "etymology": "Old English clūd once meant ‘rock, hill’ as well as ‘mass of vapor’; the weather sense won out.",
+    "wordSums": [
+      "cloud + -y → cloudy",
+      "cloud + -s → clouds"
+    ],
+    "decodingTip": "Picture vapor billows; later metaphors (cloud storage) keep the ‘pile above you’ image.",
+    "outsideExamples": [],
+    "wiktionary": "cloud",
+    "_order": 47
+  },
+  {
+    "key": "lex:happy",
+    "morpheme": "happy",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — adjective: glad, pleased, feeling good",
+    "etymology": "From hap ‘luck, chance’ + -y: ‘lucky’ drifted toward ‘glad’ in modern English.",
+    "wordSums": [
+      "happy + ness → happiness",
+      "un + happy → unhappy"
+    ],
+    "decodingTip": "Y drops before vowel-initial suffixes (-ness, -ly) but the base stays happy.",
+    "outsideExamples": [],
+    "wiktionary": "happy",
+    "_order": 50
+  },
+  {
+    "key": "lex:jump",
+    "morpheme": "jump",
+    "origin": "Middle English / possibly Scandinavian influence",
+    "meaning": "Tier 1 — verb: spring upward or forward suddenly; noun: an act of jumping",
+    "etymology": "Middle English jumpen; a vivid movement word common in playground and sports talk.",
+    "wordSums": [
+      "jump + -ed → jumped",
+      "jump + -ing → jumping"
+    ],
+    "decodingTip": "Regular past with -ed; stress the single syllable base before -ing.",
+    "outsideExamples": [],
+    "wiktionary": "jump",
+    "_order": 52
+  },
+  {
+    "key": "lex:look",
+    "morpheme": "look",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: use the eyes to see; seem; noun: appearance or searching glance",
+    "etymology": "Old English lōcian ‘examine with the eyes’; related to the modern verb look.",
+    "wordSums": [
+      "look + -ed → looked",
+      "look + -ing → looking"
+    ],
+    "decodingTip": "Many phrasal verbs (look up, look after) keep the same base look.",
+    "outsideExamples": [],
+    "wiktionary": "look",
+    "_order": 53
+  },
+  {
+    "key": "lex:night",
+    "morpheme": "night",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: the dark part of the day when people sleep",
+    "etymology": "Old English niht; gh spelling is historic but the vowel sound is familiar.",
+    "wordSums": [
+      "night + -s → nights",
+      "night + ly → nightly"
+    ],
+    "decodingTip": "Silent gh is a spelling fossil—read by pattern with light, fight in later grades.",
+    "outsideExamples": [],
+    "wiktionary": "night",
+    "_order": 57
+  },
+  {
+    "key": "lex:quick",
+    "morpheme": "quick",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — adjective: fast; prompt",
+    "etymology": "Old English cwic ‘alive, lively’ narrowed toward ‘fast’ in modern use.",
+    "wordSums": [
+      "quick + ly → quickly",
+      "quick + ness → quickness"
+    ],
+    "decodingTip": "-ly makes the manner adverb; compare slow / slowly for a speed pair.",
+    "outsideExamples": [],
+    "wiktionary": "quick",
+    "_order": 58
+  },
+  {
+    "key": "lex:run",
+    "morpheme": "run",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: move fast on foot; flow; operate (a machine)",
+    "etymology": "Old English rinnan/yrnan; irregular past ran shows Germanic vowel change.",
+    "wordSums": [
+      "run + -ing → running",
+      "run + -s → runs"
+    ],
+    "decodingTip": "Doubling the n before vowel suffixes is regular for short vowel + final consonant.",
+    "outsideExamples": [],
+    "wiktionary": "run",
+    "_order": 60
+  },
+  {
+    "key": "lex:teach",
+    "morpheme": "teach",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — verb: show how; help someone learn",
+    "etymology": "Old English tǣcan ‘show, teach’; related to token (something that shows).",
+    "wordSums": [
+      "teach + -er → teacher",
+      "teach + -es → teaches"
+    ],
+    "decodingTip": "Irregular past taught; the base teach is still regular for -er/-ing.",
+    "outsideExamples": [],
+    "wiktionary": "teach",
+    "_order": 63
+  },
+  {
+    "key": "lex:use",
+    "morpheme": "use",
+    "origin": "Latin through French",
+    "meaning": "Tier 1 — verb: put to purpose; noun: the act of using or a helpful habit",
+    "etymology": "Latin ūtī ‘use’ via Old French user; silent e marks the /juːz/ noun/verb pattern.",
+    "wordSums": [
+      "use + -ful → useful",
+      "use + -ing → using"
+    ],
+    "decodingTip": "Drop silent e before vowel suffixes; students often double-check use vs. used pronunciation.",
+    "outsideExamples": [],
+    "wiktionary": "use",
+    "_order": 65
+  },
+  {
+    "key": "lex:way",
+    "morpheme": "way",
+    "origin": "Anglo-Saxon (Germanic)",
+    "meaning": "Tier 1 — noun: path; manner; method",
+    "etymology": "Old English weg ‘road, path’; extremely common in idioms (by the way, anyway).",
+    "wordSums": [
+      "way + -s → ways",
+      "sub + way → subway"
+    ],
+    "decodingTip": "Abstract ‘manner’ (in a friendly way) grows from the concrete path sense.",
+    "outsideExamples": [],
+    "wiktionary": "way",
+    "_order": 67
+  },
+  {
+    "key": "root:it-go",
+    "morpheme": "it / iss / initi",
+    "origin": "Latin",
+    "meaning": "go",
+    "etymology": "From Latin īre / itum 'to go'; appears in exit (go out), itinerary (route of going), issue (go out / come forth).",
+    "wordSums": [
+      "ex + it → exit (go out)",
+      "trans + it → transit (go across)"
+    ],
+    "decodingTip": "it- is a compact Latin 'go' stem — pair it with prefixes that name direction: ex- (out), trans- (across).",
+    "confusedWith": [
+      "root:mit",
+      "root:fer"
+    ],
+    "outsideExamples": [
+      "exit",
+      "transit",
+      "circuit",
+      "initial"
+    ],
+    "wiktionary": "exit",
+    "_order": 191
+  },
+  {
+    "key": "root:tele",
+    "morpheme": "tele-",
+    "origin": "Greek",
+    "meaning": "far; at a distance",
+    "etymology": "From Greek tēle 'far off'; the same spine as telephone ('far sound') and television ('far sight').",
+    "wordSums": [
+      "tele + vis + ion → television (far seeing)",
+      "tele + phone → telephone (far sound)"
+    ],
+    "decodingTip": "tele- almost always signals distance across space or media — ask what is being sent or sensed from far away.",
+    "confusedWith": [
+      "root:vis",
+      "root:mit"
+    ],
+    "outsideExamples": [
+      "television",
+      "telephone",
+      "telescope",
+      "teleport"
+    ],
+    "wiktionary": "tele-",
+    "_order": 192
+  },
+  {
+    "key": "root:vis",
+    "morpheme": "vis / vid",
+    "origin": "Latin",
+    "meaning": "see",
+    "etymology": "From Latin vidēre / visus 'to see'; the same family as visual.",
+    "wordSums": [
+      "vis + ion → vision",
+      "vis + ible → visible",
+      "tele + vis + ion → television (far + see + noun)",
+      "e + vid + ence → evidence (out + seeing = visible proof)"
+    ],
+    "decodingTip": "vis / vid = see. Visions are seen; videos play moving sights; evidence is what you can see and verify; supervisors see from above.",
+    "teachingTip": "Greek tele- + Latin vis- = television. Show 5 mixed-origin words (television, automobile, microscope). Discuss why English happily mixes language sources.",
+    "inquiryPrompts": [
+      "Is 'supervise' 'see from above'? Trace super + vise.",
+      "How are 'video' and 'visit' related? Both contain vid / vis — what's the connection?"
+    ],
+    "confusedWith": [
+      "root:spect"
+    ],
+    "outsideExamples": [
+      "video",
+      "evidence",
+      "revise",
+      "vision"
+    ],
+    "_order": 208
+  }
+]

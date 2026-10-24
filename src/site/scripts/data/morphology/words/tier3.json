@@ -1,0 +1,38 @@
+[
+  {
+    "id": "root-dict",
+    "label": "Verdict",
+    "tier": "tier3",
+    "focusMorpheme": "dict / dic (say, speak)",
+    "bracket": "[ver + dict]",
+    "note": "<strong>Exit ticket:</strong> Connect <em>dictionary</em> and <em>predict</em> to “say.”",
+    "tree": {
+      "text": "verdict",
+      "gloss": "noun: spoken judgment",
+      "children": [
+        {
+          "text": "ver",
+          "gloss": "stem: truth",
+          "morphemeKey": "root:ver",
+          "children": []
+        },
+        {
+          "text": "dict",
+          "gloss": "stem: say",
+          "morphemeKey": "root:dict",
+          "children": []
+        }
+      ]
+    },
+    "deep": {
+      "summary": "<strong>What you learn:</strong> <strong>Dict</strong> carries “say/tell”—dictionary (sayings of words), verdict (true saying). Pair with prefixes to steer meaning (<em>predict = say beforehand</em>).",
+      "tense": "Legal/civic contexts often—tier lifts because of register."
+    },
+    "position": [
+      35.9,
+      0,
+      -40.3
+    ],
+    "_order": 39
+  }
+]
