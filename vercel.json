@@ -24,7 +24,8 @@
     { "source": "/api/tech-trail/submissions", "destination": "/api/tech-trail-submissions" },
     { "source": "/api/tech-trail/roster", "destination": "/api/tech-trail-submissions" },
     { "source": "/api/pedagogy/analyze", "destination": "/api/pedagogy/score" },
-    { "source": "/physix/", "destination": "/physix/physix.html" }
+    { "source": "/physix/", "destination": "/physix/physix.html" },
+    { "source": "/feleco/", "destination": "/feleco/Feleco.html" }
   ],
   "headers": [
     {
