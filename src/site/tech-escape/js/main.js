@@ -45,7 +45,7 @@ import { debug, DEBUG_CODE } from './meta/debug.js';
 import { computeRunScore } from './meta/score.js';
 import { highscoresUi } from './meta/highscores-ui.js?v=3.26';
 import { BootSequence, bootShouldRush } from './ui/boot.js?v=3.21';
-import { ScopeOpening } from './ui/opening.js?v=3.30';
+import { ScopeOpening, scopeBurst, spellPhrase, handoffScope, digitize } from './ui/opening.js?v=3.31';
 import { startPauseScope } from './ui/pause-rise.js?v=3.3';
 import { createShatter, drawShatter } from './ui/death-shatter.js?v=3.27';
 import { captions } from './ui/captions.js?v=3.25';
@@ -156,10 +156,6 @@ class Game {
     this._bindUi();
     this._bindDebug();
     await this._bootSequence();
-    ui.showScreen(null);
-
-    sessionUi.noteReveal();
-    await sessionUi.enterLobby();
     this._startLoop();
   }
 
@@ -312,24 +308,46 @@ class Game {
       fill: document.getElementById('load-fill'),
       skip: document.getElementById('boot-skip'),
     });
-    boot.setOnSkip(() => opening.skip());
-    boot.setOnLine(() => opening.blip());
+    let logPhase = true;
+    boot.setOnSkip(() => {
+      if (logPhase) boot.skip();
+      else opening.skip();
+    });
+    boot.setOnLine(() => { if (!logPhase) opening.blip(); });
     boot.arm();
 
     const stampsPromise = this._bootStamps();
+    const load = document.getElementById('screen-load');
     try {
-      await opening.play();
-      opening.beginLog();
+      load?.classList.add('is-logging');
       const stamps = await stampsPromise;
-      if (!reduceMotion) await boot.holdCursor(fast ? 500 : 1100);
+      if (!reduceMotion) await boot.holdCursor(fast ? 280 : 500);
       const pace = reduceMotion
         ? { cps: 80, minSeconds: 3.2, maxSeconds: 8, dwellScale: 0.16 }
         : fast
           ? { cps: 96, minSeconds: 1.1, maxSeconds: 4.5, dwellScale: 0.08 }
           : { cps: 16, minSeconds: 0, maxSeconds: 40, dwellScale: 0.45 };
       await boot.run(this._bootStages(stamps), pace);
-    } finally {
+      logPhase = false;
+      load?.classList.remove('is-logging');
+      if (!reduceMotion) await opening.playShapes();
+    } catch (err) {
+      console.error('[Tech Escape] boot failed', err);
+    }
+
+    const veil = document.getElementById('scope-stage');
+    if (!reduceMotion && opening.canvas && veil) {
+      await handoffScope(opening.canvas, veil, async () => {
+        opening.stop();
+        ui.showScreen(null);
+        sessionUi.noteReveal();
+        await sessionUi.enterLobby();
+      });
+    } else {
       opening.stop();
+      ui.showScreen(null);
+      sessionUi.noteReveal();
+      await sessionUi.enterLobby();
     }
   }
 
@@ -1874,8 +1892,8 @@ class Game {
     this.quiz.setThreat(false, frozen);
     debug.syncMinigameButtons();
     audio.terminalOpen();
-
-    this.quiz.start(index, questions, {
+    const startQuiz = () => {
+      this.quiz.start(index, questions, {
       onAnswer: (right, q, picked) => {
         w.questionsAsked++;
         if (right) {
@@ -1911,6 +1929,15 @@ class Game {
         ui.toast('You backed away from the Chromebook.', 'warn');
       },
     });
+    };
+    const veil = document.getElementById('scope-stage');
+    if (settings.get('reduceMotion')) startQuiz();
+    else {
+      scopeBurst(veil, {
+        reduceFlashing: !!settings.get('reduceFlashing'),
+        muted: !!settings.get('muted'),
+      }).then(() => digitize(veil, 900)).then(startQuiz);
+    }
   }
 
   _openDecrypt(index, correct, total) {
@@ -2132,33 +2159,43 @@ class Game {
       stats: w.player.stats,
     }) || null;
 
-    ui.showVictory({
-      stats: [
-        { label: 'RUN SCORE', value: scoreResult.score, tone: 'good' },
-        { label: 'ESCAPE TIME', value: time, tone: 'good' },
-        { label: 'FLOOR', value: w.level?.codename || 'LEVEL' },
-        { label: 'QUESTIONS RIGHT', value: `${w.questionsRight}/${w.questionsAsked}` },
-        { label: 'ACCURACY', value: `${acc}%`, tone: acc >= 80 ? 'good' : '' },
-        { label: 'SNACKS EATEN', value: w.player.stats.cheetosEaten },
-        { label: 'HITS TAKEN', value: w.player.stats.damageTaken, tone: w.player.stats.damageTaken === 0 ? 'good' : 'bad' },
-        { label: 'DIFFICULTY', value: w.diff.label },
-      ],
-      report: [
-        `<strong>${w.level?.name || 'The lab'}:</strong> ${w.level?.flavor || ''}`,
-        `<strong>Design process:</strong> you worked a real DEFINE - PREPARE - TRY - REFLECT cycle to get out.`,
-        `<strong>Code pieces decrypted:</strong> ${found} of ${CODE_PARTS}, using ${w.decryptAttempts} card flips.`,
-        `<strong>Accuracy:</strong> ${acc}% on ${w.questionsAsked} questions across all four terminals.`,
-        delta?.unlocked?.length
-          ? `<strong>Unlocked:</strong> ${delta.unlocked.map((i) => getLevel(i).name).join(', ')}`
-          : '',
-        acc >= 80
-          ? '<strong>Next challenge:</strong> try SYSTEM CRASH difficulty, or beat your escape time.'
-          : '<strong>Next challenge:</strong> read each explanation before you hit CONTINUE, then run it again.',
-      ].filter(Boolean),
-    });
-
-    sessionUi.renderLevelSelect();
-    highscoresUi.presentEndScreen(scoreResult);
+    const veil = document.getElementById('scope-stage');
+    const reduce = !!settings.get('reduceMotion');
+    const showCard = () => {
+      ui.showVictory({
+        stats: [
+          { label: 'RUN SCORE', value: scoreResult.score, tone: 'good' },
+          { label: 'ESCAPE TIME', value: time, tone: 'good' },
+          { label: 'FLOOR', value: w.level?.codename || 'LEVEL' },
+          { label: 'QUESTIONS RIGHT', value: `${w.questionsRight}/${w.questionsAsked}` },
+          { label: 'ACCURACY', value: `${acc}%`, tone: acc >= 80 ? 'good' : '' },
+          { label: 'SNACKS EATEN', value: w.player.stats.cheetosEaten },
+          { label: 'HITS TAKEN', value: w.player.stats.damageTaken, tone: w.player.stats.damageTaken === 0 ? 'good' : 'bad' },
+          { label: 'DIFFICULTY', value: w.diff.label },
+        ],
+        report: [
+          `<strong>${w.level?.name || 'The lab'}:</strong> ${w.level?.flavor || ''}`,
+          `<strong>Design process:</strong> you worked a real DEFINE - PREPARE - TRY - REFLECT cycle to get out.`,
+          `<strong>Code pieces decrypted:</strong> ${found} of ${CODE_PARTS}, using ${w.decryptAttempts} card flips.`,
+          `<strong>Accuracy:</strong> ${acc}% on ${w.questionsAsked} questions across all four terminals.`,
+          delta?.unlocked?.length
+            ? `<strong>Unlocked:</strong> ${delta.unlocked.map((i) => getLevel(i).name).join(', ')}`
+            : '',
+          acc >= 80
+            ? '<strong>Next challenge:</strong> try SYSTEM CRASH difficulty, or beat your escape time.'
+            : '<strong>Next challenge:</strong> read each explanation before you hit CONTINUE, then run it again.',
+        ].filter(Boolean),
+      });
+      sessionUi.renderLevelSelect();
+      highscoresUi.presentEndScreen(scoreResult);
+    };
+    if (reduce || !veil) showCard();
+    else {
+      spellPhrase(veil, 'You Escaped\nThe Tech Lab', { keep: true }).then(() => {
+        showCard();
+        return digitize(veil, 1600);
+      });
+    }
   }
 
   _gameOver() {

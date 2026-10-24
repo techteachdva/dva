@@ -186,7 +186,7 @@ class ScopeTone {
 export class ScopeOpening {
   constructor(opts) {
     this.canvas = opts.canvas || null;
-    this.ctx = this.canvas ? this.canvas.getContext('2d', { alpha: false }) : null;
+    this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
     this.reduceMotion = !!opts.reduceMotion;
     this.reduceFlashing = !!opts.reduceFlashing;
     this.fast = !!opts.fast;
@@ -255,6 +255,47 @@ export class ScopeOpening {
     const dur = this._durations();
     let total = 0;
     for (let i = 0; i < PHASES.length; i++) total += dur[PHASES[i]] || 0;
+    const t0 = performance.now();
+    await new Promise((resolve) => {
+      const frame = (now) => {
+        if (this.skipped || this.stopped) {
+          resolve();
+          return;
+        }
+        const elapsed = now - t0;
+        try {
+          this._tick(elapsed, dur);
+        } catch (err) {
+          console.error('[Tech Escape] opening failed', err);
+          resolve();
+          return;
+        }
+        if (elapsed >= total) {
+          resolve();
+          return;
+        }
+        this._raf = requestAnimationFrame(frame);
+      };
+      this._raf = requestAnimationFrame(frame);
+    });
+  }
+
+  /** Shape morph only: dot, line, then the polygons. The menu comes after. */
+  async playShapes() {
+    if (!this.ctx || this.reduceMotion) return;
+    this.stopped = false;
+    this.skipped = false;
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    if (this.skipped) return;
+    this._resize();
+    window.addEventListener('resize', this._onResize);
+    this._tone.start();
+    const full = this._durations();
+    const dur = {
+      scope: this.fast ? 1700 : full.scope,
+      scopeHold: this.fast ? 380 : full.scopeHold,
+    };
+    let total = dur.scope + dur.scopeHold;
     const t0 = performance.now();
     await new Promise((resolve) => {
       const frame = (now) => {
@@ -858,6 +899,175 @@ export class ScopeOpening {
       if (p.kind !== 1) continue;
       ctx.fillRect(p.x, p.y, size, size);
     }
+  }
+}
+
+function stageSize(canvas) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  canvas.width = Math.max(1, Math.floor(w * dpr));
+  canvas.height = Math.max(1, Math.floor(h * dpr));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+
+/** Short scope morph used when a Chromebook powers on. */
+export async function scopeBurst(canvas, opts = {}) {
+  if (!canvas || opts.reduceMotion) return;
+  canvas.classList.add('is-on');
+  const opening = new ScopeOpening({
+    canvas,
+    reduceMotion: false,
+    reduceFlashing: !!opts.reduceFlashing,
+    fast: true,
+    muted: !!opts.muted,
+    low: !!opts.low,
+  });
+  await opening.playShapes();
+  opening.stop();
+}
+
+/** Copy the live scope, reveal the screen under it, then eat the picture in bits. */
+export async function handoffScope(source, veil, reveal) {
+  if (!veil || !source) {
+    await reveal?.();
+    return;
+  }
+  veil.classList.add('is-on');
+  const { ctx, w, h } = stageSize(veil);
+  ctx.drawImage(source, 0, 0, w, h);
+  await reveal?.();
+  await eraseBits(veil, ctx, w, h, 1600);
+}
+
+export async function digitize(canvas, ms = 1400) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  if (!canvas.width) {
+    const sized = stageSize(canvas);
+    sized.ctx.fillStyle = '#020604';
+    sized.ctx.fillRect(0, 0, sized.w, sized.h);
+  }
+  canvas.classList.add('is-on');
+  await eraseBits(canvas, ctx, w, h, ms);
+}
+
+async function eraseBits(canvas, ctx, w, h, ms) {
+  const t0 = performance.now();
+  await new Promise((resolve) => {
+    const frame = (now) => {
+      const u = Math.min(1, (now - t0) / ms);
+      const bits = 28 + Math.floor(u * 90);
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'destination-out';
+      const scale = canvas.width / Math.max(1, w);
+      for (let i = 0; i < bits; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        ctx.fillRect(x, y, (4 + Math.random() * 36) * scale, (1 + Math.random() * 3) * scale);
+      }
+      const scan = u * canvas.height;
+      ctx.fillRect(0, scan - 10 * scale, canvas.width, 18 * scale);
+      ctx.restore();
+      if (u >= 1) {
+        resolve();
+        return;
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+  canvas.classList.remove('is-on');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+/** Beam gathers into the given words. Newlines break lines. */
+export async function spellPhrase(canvas, text, opts = {}) {
+  if (!canvas) return;
+  if (opts.reduceMotion) return;
+  canvas.classList.add('is-on');
+  const { ctx, w, h } = stageSize(canvas);
+  const lines = String(text).split('\n');
+  const sw = Math.round(Math.min(w * 0.92, 1280));
+  const sh = Math.round(Math.min(h * 0.5, 360));
+  const sample = document.createElement('canvas');
+  sample.width = sw;
+  sample.height = sh;
+  const g = sample.getContext('2d', { willReadFrequently: true });
+  g.clearRect(0, 0, sw, sh);
+  g.fillStyle = '#fff';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  const size = Math.round(Math.min(sw / 14, sh / (lines.length + 0.6)));
+  g.font = `700 ${size}px ui-monospace, Cascadia Mono, Consolas, monospace`;
+  lines.forEach((line, i) => {
+    const y = sh * (i + 1) / (lines.length + 1);
+    g.fillText(line, sw / 2, y);
+  });
+  const data = g.getImageData(0, 0, sw, sh).data;
+  const pts = [];
+  const step = 3;
+  for (let y = 0; y < sh; y += step) {
+    for (let x = 0; x < sw; x += step) {
+      if (data[(y * sw + x) * 4 + 3] > 40) pts.push({ x, y });
+    }
+  }
+  const scale = Math.min((w * 0.86) / sw, (h * 0.5) / sh);
+  const ox = (w - sw * scale) / 2;
+  const oy = (h - sh * scale) / 2;
+  const targets = pts.map((p) => ({
+    sx: w * 0.5 + Math.sin(p.x * 0.08) * w * 0.28,
+    sy: h * 0.48 + Math.sin(p.y * 0.05) * h * 0.12,
+    tx: ox + p.x * scale,
+    ty: oy + p.y * scale,
+    delay: p.x / sw,
+  }));
+  const dur = 2800;
+  const hold = opts.hold ?? 1100;
+  const t0 = performance.now();
+  await new Promise((resolve) => {
+    const frame = (now) => {
+      const elapsed = now - t0;
+      const u = Math.min(1, elapsed / dur);
+      ctx.fillStyle = '#020604';
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(80, 255, 150, 0.12)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let y = 40; y < h; y += 28) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+      }
+      ctx.stroke();
+      ctx.fillStyle = '#f4fff8';
+      for (let i = 0; i < targets.length; i++) {
+        const p = targets[i];
+        const lu = Math.max(0, Math.min(1, (u - p.delay * 0.45) / 0.55));
+        const e = lu * lu * (3 - 2 * lu);
+        const x = p.sx + (p.tx - p.sx) * e;
+        const y = p.sy + (p.ty - p.sy) * e;
+        ctx.globalAlpha = 0.35 + e * 0.65;
+        ctx.fillRect(x, y, 2.2, 2.2);
+      }
+      ctx.globalAlpha = 1;
+      if (elapsed >= dur + hold) {
+        resolve();
+        return;
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+  if (!opts.keep) {
+    canvas.classList.remove('is-on');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 }
 

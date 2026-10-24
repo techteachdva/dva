@@ -3129,6 +3129,17 @@ body.reduce-fx #scanlines { display: none; }
   pointer-events: none;
   background: #020604;
 }
+.scope-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: none;
+  background: transparent;
+}
+.scope-stage.is-on { display: block; }
 
 .crt-veil {
   position: absolute;
