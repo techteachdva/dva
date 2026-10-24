@@ -11,7 +11,8 @@
 	<script>(function(){if(typeof window==='undefined'||!window.AudioContext)return;window.__godotAudioContexts=[];var O=window.AudioContext||window.webkitAudioContext;function P(opts){var c=arguments.length?new O(opts):new O();window.__godotAudioContexts.push(c);return c}P.prototype=O.prototype;window.AudioContext=window.webkitAudioContext=P;window.__resumeAllAudioContexts=function(){var a=window.__godotAudioContexts||[];for(var i=0;i<a.length;i++)try{if(a[i]&&typeof a[i].resume==='function'&&a[i].state==='suspended')a[i].resume()}catch(e){}}})();</script>
 	<style>
 		body { margin: 0; background: #0a0a12; touch-action: manipulation; overflow: hidden; }
-		#canvas { display: block; width: 100%; height: 100%; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+		html, body { height: 100%; }
+		#canvas { display: block; width: 100% !important; height: 100% !important; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 		#gd-loading { position: fixed; inset: 0; background: #242424; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: system-ui, -apple-system, sans-serif; }
 		#gd-loading.hidden { display: none !important; }
 		#gd-loading .spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.2); border-top-color: #7b9cff; border-radius: 50%; animation: gd-spin 0.9s linear infinite; }
@@ -30,39 +31,20 @@
 		<button type="button" id="gd-play-btn">Play</button>
 	</div>
 	<canvas id="canvas" tabindex="0"></canvas>
-	<script src="physix.js"></script>
 	<script>
 (function () {
 	try {
-		var cap = 1.25;
-		var real = window.devicePixelRatio || 1;
-		if (real > cap) {
-			Object.defineProperty(window, 'devicePixelRatio', { configurable: true, get: function () { return cap; } });
-		}
+		Object.defineProperty(window, 'devicePixelRatio', { configurable: true, get: function () { return 1; } });
 	} catch (e) {}
 	var path = location.pathname;
 	var basePath = path ? (location.origin + path.substring(0, path.lastIndexOf('/') + 1)) : '';
-	var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"physix","experimentalVK":false,"fileSizes":{"physix.pck":16859096,"physix.wasm":1509558,"physix.side.wasm":41114606},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"physix.service.worker.js"};
-	if (basePath) {
-		var name = (config.executable || 'physix').split('/').pop();
-		config.executable = basePath + name;
-		config.mainPack = basePath + name + '.pck';
-		if (config.fileSizes) {
-			config.fileSizes[config.executable + '.wasm'] = config.fileSizes[name + '.wasm'] || config.fileSizes['physix.wasm'] || 0;
-			config.fileSizes[config.mainPack] = config.fileSizes[name + '.pck'] || config.fileSizes['physix.pck'] || 0;
-			var side = config.fileSizes[name + '.side.wasm'] || config.fileSizes['physix.side.wasm'];
-			if (side) {
-				config.fileSizes[config.executable + '.side.wasm'] = side;
-			}
-		}
-	}
-	var engine = new Engine(config);
 	var loading = document.getElementById('gd-loading');
 	var progressBar = document.getElementById('gd-progress-bar');
 	var loadingText = document.getElementById('gd-loading-text');
 	var playBtn = document.getElementById('gd-play-btn');
 	var audioPumpTimer = null;
 	var loadAllowed = false;
+	var engine = null;
 
 	function isSafariLike() {
 		var ua = navigator.userAgent;
@@ -75,19 +57,9 @@
 		return isIOS || isMacSafari;
 	}
 
-	function detectThreadedBuild(cb) {
-		var scriptEl = document.querySelector('script[src*="physix.js"]');
-		if (!scriptEl || !scriptEl.src) {
-			cb(false);
-			return;
-		}
-		fetch(scriptEl.src)
-			.then(function (r) { return r.text(); })
-			.then(function (text) {
-				cb(text.indexOf('multi-threaded') !== -1);
-			})
-			.catch(function () { cb(false); });
-	}
+	var useThreads = !isSafariLike();
+	var loaderSrc = useThreads ? 'physix.js' : 'safe/physix.js';
+	var executableName = useThreads ? 'physix' : 'safe/physix';
 
 	function showBlocked(msg) {
 		loadAllowed = false;
@@ -102,21 +74,38 @@
 		}
 	}
 
-	function checkEnvironment(requiresThreads, done) {
-		var missing = Engine.getMissingFeatures({ threads: requiresThreads });
+	function checkEnvironment(done) {
+		var missing = Engine.getMissingFeatures({ threads: useThreads });
 		if (missing.length > 0) {
 			showBlocked('Physix cannot run here: ' + missing.join('; ') + '.');
-			return;
-		}
-		if (requiresThreads && isSafariLike()) {
-			showBlocked(
-				'Safari cannot run this Physix build (threading). Use Chrome or Firefox, or update the site after a new export.'
-			);
 			return;
 		}
 		loadAllowed = true;
 		playBtn.disabled = false;
 		done();
+	}
+
+	function bootEngine() {
+		var config = {
+			args: [],
+			canvasResizePolicy: 1,
+			emscriptenPoolSize: useThreads ? 8 : 4,
+			ensureCrossOriginIsolationHeaders: true,
+			executable: basePath + executableName,
+			experimentalVK: false,
+			fileSizes: {},
+			focusCanvas: true,
+			gdextensionLibs: [],
+			godotPoolSize: useThreads ? 4 : 4,
+			serviceWorker: 'physix.service.worker.js',
+			mainPack: basePath + 'physix.pck'
+		};
+		engine = new Engine(config);
+		checkEnvironment(function () {
+			if (loadingText) {
+				loadingText.textContent = 'Click to play';
+			}
+		});
 	}
 
 	function wireRuntimeErrors() {
@@ -135,15 +124,15 @@
 	wireRuntimeErrors();
 	playBtn.disabled = true;
 	if (loadingText) {
-		loadingText.textContent = 'Checking browser...';
+		loadingText.textContent = useThreads ? 'Loading engine...' : 'Loading Safari engine...';
 	}
-	detectThreadedBuild(function (requiresThreads) {
-		checkEnvironment(requiresThreads, function () {
-			if (loadingText) {
-				loadingText.textContent = 'Click to play';
-			}
-		});
-	});
+	var loader = document.createElement('script');
+	loader.src = loaderSrc;
+	loader.onload = bootEngine;
+	loader.onerror = function () {
+		showBlocked('Physix could not load its engine. Refresh and try again.');
+	};
+	document.body.appendChild(loader);
 
 	function pumpAudioResume() {
 		try {

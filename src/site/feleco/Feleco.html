@@ -1,220 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
-		<title>Feleco</title>
-		<style>
-html, body, #canvas {
-	margin: 0;
-	padding: 0;
-	border: 0;
-}
-
-body {
-	color: white;
-	background-color: black;
-	overflow: hidden;
-	touch-action: none;
-}
-
-#canvas {
-	display: block;
-}
-
-#canvas:focus {
-	outline: none;
-}
-
-#status, #status-splash, #status-progress {
-	position: absolute;
-	left: 0;
-	right: 0;
-}
-
-#status, #status-splash {
-	top: 0;
-	bottom: 0;
-}
-
-#status {
-	background-color: #242424;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	visibility: hidden;
-}
-
-#status-splash {
-	max-height: 100%;
-	max-width: 100%;
-	margin: auto;
-}
-
-#status-splash.show-image--false {
-	display: none;
-}
-
-#status-splash.fullsize--true {
-	height: 100%;
-	width: 100%;
-	object-fit: contain;
-}
-
-#status-splash.use-filter--false {
-	image-rendering: pixelated;
-}
-
-#status-progress, #status-notice {
-	display: none;
-}
-
-#status-progress {
-	bottom: 10%;
-	width: 50%;
-	margin: 0 auto;
-}
-
-#status-notice {
-	background-color: #5b3943;
-	border-radius: 0.5rem;
-	border: 1px solid #9b3943;
-	color: #e0e0e0;
-	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
-	line-height: 1.3;
-	margin: 0 2rem;
-	overflow: hidden;
-	padding: 1rem;
-	text-align: center;
-	z-index: 1;
-}
-		</style>
-		<link id="-gd-engine-icon" rel="icon" type="image/png" href="Feleco.icon.png" />
-<link rel="apple-touch-icon" href="Feleco.apple-touch-icon.png"/>
-
-	</head>
-	<body>
-		<canvas id="canvas">
-			Your browser does not support the canvas tag.
-		</canvas>
-
-		<noscript>
-			Your browser does not support JavaScript.
-		</noscript>
-
-		<div id="status">
-			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="Feleco.png" alt="">
-			<progress id="status-progress"></progress>
-			<div id="status-notice"></div>
-		</div>
-
-		<script src="Feleco.js"></script>
-		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"Feleco","experimentalVK":false,"fileSizes":{"Feleco.pck":455408,"Feleco.wasm":37686550},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
-const GODOT_THREADS_ENABLED = false;
-const engine = new Engine(GODOT_CONFIG);
-
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+	<title>Feleco</title>
+	<link id="-gd-engine-icon" rel="icon" type="image/png" href="Feleco.icon.png" />
+	<link rel="apple-touch-icon" href="Feleco.apple-touch-icon.png" />
+	<style>
+		html, body { margin: 0; height: 100%; background: #111; overflow: hidden; }
+		#canvas { display: block; width: 100% !important; height: 100% !important; touch-action: none; }
+		#gd-loading { position: fixed; inset: 0; background: #1a2418; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2; font-family: system-ui, sans-serif; }
+		#gd-loading.hidden { display: none !important; }
+		#gd-loading .text { color: #d7e6c8; font-size: 18px; margin-top: 16px; text-align: center; max-width: 28rem; padding: 0 1rem; }
+		#gd-loading .bar-wrap { width: 240px; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; margin-top: 16px; overflow: hidden; }
+		#gd-loading .bar { height: 100%; width: 0%; background: #8fbf6a; }
+		#gd-play-btn { margin-top: 20px; padding: 12px 32px; font-size: 18px; background: #8fbf6a; color: #14200f; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+	</style>
+</head>
+<body>
+	<div id="gd-loading">
+		<div class="text" id="gd-loading-text">Loading Feleco...</div>
+		<div class="bar-wrap"><div class="bar" id="gd-progress-bar"></div></div>
+		<button type="button" id="gd-play-btn" disabled>Play</button>
+	</div>
+	<canvas id="canvas" tabindex="0">Your browser does not support the canvas tag.</canvas>
+	<script>
 (function () {
-	const statusOverlay = document.getElementById('status');
-	const statusProgress = document.getElementById('status-progress');
-	const statusNotice = document.getElementById('status-notice');
+	try {
+		Object.defineProperty(window, 'devicePixelRatio', { configurable: true, get: function () { return 1; } });
+	} catch (e) {}
 
-	let initializing = true;
-	let statusMode = '';
+	var path = location.pathname;
+	var basePath = path ? (location.origin + path.substring(0, path.lastIndexOf('/') + 1)) : '';
+	var loading = document.getElementById('gd-loading');
+	var progressBar = document.getElementById('gd-progress-bar');
+	var loadingText = document.getElementById('gd-loading-text');
+	var playBtn = document.getElementById('gd-play-btn');
+	var engine = null;
 
-	function setStatusMode(mode) {
-		if (statusMode === mode || !initializing) {
-			return;
-		}
-		if (mode === 'hidden') {
-			statusOverlay.remove();
-			initializing = false;
-			return;
-		}
-		statusOverlay.style.visibility = 'visible';
-		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
-		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
-		statusMode = mode;
+	function isSafariLike() {
+		var ua = navigator.userAgent;
+		var isIOS = /iPad|iPhone|iPod/.test(ua) ||
+			(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+		var isMacSafari = /Macintosh/.test(ua) &&
+			/Version\/[\d.]+/.test(ua) &&
+			/Safari\//.test(ua) &&
+			!/Chrom(e|ium)|Edg\//.test(ua);
+		return isIOS || isMacSafari;
 	}
 
-	function setStatusNotice(text) {
-		while (statusNotice.lastChild) {
-			statusNotice.removeChild(statusNotice.lastChild);
+	var useThreads = !isSafariLike();
+	var loaderSrc = useThreads ? 'Feleco.js' : 'safe/Feleco.js';
+	var executableName = useThreads ? 'Feleco' : 'safe/Feleco';
+
+	function showBlocked(msg) {
+		playBtn.disabled = true;
+		playBtn.style.display = 'none';
+		loadingText.textContent = msg;
+	}
+
+	function bootEngine() {
+		var missing = Engine.getMissingFeatures({ threads: useThreads });
+		if (missing.length > 0) {
+			showBlocked('Feleco cannot run here: ' + missing.join('; ') + '.');
+			return;
 		}
-		const lines = text.split('\n');
-		lines.forEach((line) => {
-			statusNotice.appendChild(document.createTextNode(line));
-			statusNotice.appendChild(document.createElement('br'));
+		engine = new Engine({
+			args: [],
+			canvasResizePolicy: 1,
+			emscriptenPoolSize: useThreads ? 8 : 4,
+			ensureCrossOriginIsolationHeaders: true,
+			executable: basePath + executableName,
+			experimentalVK: false,
+			fileSizes: {},
+			focusCanvas: true,
+			gdextensionLibs: [],
+			godotPoolSize: 4,
+			mainPack: basePath + 'Feleco.pck'
+		});
+		playBtn.disabled = false;
+		loadingText.textContent = 'Click to play';
+	}
+
+	function startGame() {
+		playBtn.style.display = 'none';
+		loadingText.textContent = 'Loading Feleco...';
+		engine.startGame({
+			onProgress: function (cur, tot) {
+				if (tot > 0 && progressBar) {
+					progressBar.style.width = (100 * cur / tot) + '%';
+				}
+			}
+		}).then(function () {
+			loading.classList.add('hidden');
+		}).catch(function (err) {
+			loadingText.textContent = err && err.message ? err.message : 'Failed to load. Refresh to try again.';
+			playBtn.style.display = 'block';
+			playBtn.disabled = false;
+			console.error(err);
 		});
 	}
 
-	function displayFailureNotice(err) {
-		console.error(err);
-		if (err instanceof Error) {
-			setStatusNotice(err.message);
-		} else if (typeof err === 'string') {
-			setStatusNotice(err);
-		} else {
-			setStatusNotice('An unknown error occurred.');
-		}
-		setStatusMode('notice');
-		initializing = false;
-	}
-
-	const missing = Engine.getMissingFeatures({
-		threads: GODOT_THREADS_ENABLED,
-	});
-
-	if (missing.length !== 0) {
-		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
-			let serviceWorkerRegistrationPromise;
-			try {
-				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
-			} catch (err) {
-				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
-			}
-			// There's a chance that installing the service worker would fix the issue
-			Promise.race([
-				serviceWorkerRegistrationPromise.then((registration) => {
-					if (registration != null) {
-						return Promise.reject(new Error('Service worker already exists.'));
-					}
-					return registration;
-				}).then(() => engine.installServiceWorker()),
-				// For some reason, `getRegistration()` can stall
-				new Promise((resolve) => {
-					setTimeout(() => resolve(), 2000);
-				}),
-			]).then(() => {
-				// Reload if there was no error.
-				window.location.reload();
-			}).catch((err) => {
-				console.error('Error while registering service worker:', err);
-			});
-		} else {
-			// Display the message as usual
-			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
-			displayFailureNotice(missingMsg + missing.join('\n'));
-		}
-	} else {
-		setStatusMode('progress');
-		engine.startGame({
-			'onProgress': function (current, total) {
-				if (current > 0 && total > 0) {
-					statusProgress.value = current;
-					statusProgress.max = total;
-				} else {
-					statusProgress.removeAttribute('value');
-					statusProgress.removeAttribute('max');
-				}
-			},
-		}).then(() => {
-			setStatusMode('hidden');
-		}, displayFailureNotice);
-	}
-}());
-		</script>
-	</body>
+	playBtn.addEventListener('click', startGame);
+	var loader = document.createElement('script');
+	loader.src = loaderSrc;
+	loader.onload = bootEngine;
+	loader.onerror = function () {
+		showBlocked('Feleco could not load its engine. Refresh and try again.');
+	};
+	document.body.appendChild(loader);
+})();
+	</script>
+</body>
 </html>
-

@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1792869277|8743521';
+const CACHE_VERSION = '1792876653|15148099';
 /** @type {string} */
 const CACHE_PREFIX = 'Physix-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
@@ -17,7 +17,7 @@ const ENSURE_CROSSORIGIN_ISOLATION_HEADERS = true;
 const CACHED_FILES = ["physix.html","physix.js","physix.offline.html","physix.icon.png","physix.apple-touch-icon.png","physix.audio.worklet.js","physix.audio.position.worklet.js"];
 // Files that we might not want the user to preload, and will only be cached on first load.
 /** @type {string[]} */
-const CACHEABLE_FILES = ["physix.wasm","physix.pck","physix.side.wasm"];
+const CACHEABLE_FILES = ["physix.wasm","physix.pck"];
 const FULL_CACHE = CACHED_FILES.concat(CACHEABLE_FILES);
 
 self.addEventListener('install', (event) => {
@@ -159,9 +159,7 @@ self.addEventListener('message', (event) => {
 		} else if (msg === 'clear') {
 			caches.delete(CACHE_NAME);
 		} else if (msg === 'update') {
-			// Godot asks for an update as soon as the engine is up. Navigating
-			// now unloads the running build and the web export aborts.
-			self.skipWaiting().then(() => self.clients.claim());
+			self.skipWaiting().then(() => self.clients.claim()).then(() => self.clients.matchAll()).then((all) => all.forEach((c) => c.navigate(c.url)));
 		}
 	});
 });

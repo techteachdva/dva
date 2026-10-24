@@ -28,44 +28,45 @@ Or run from `dva` repo root:
 
 ## Safari (macOS / iOS)
 
-Safari often crashes **multi-threaded** Godot 4.6 web builds (`Blocking on the main thread`, then `Out of bounds memory access` from pthreads). Physix uses **`thread_support=false`** in the Web export preset so the same binaries work in Safari and Chrome.
+Safari often crashes **multi-threaded** Godot 4.6 web builds (`Blocking on the main thread`, then `Out of bounds memory access` from pthreads). The site serves two exports:
 
-After changing the preset, **re-export Web**, upload a **new** GitHub release (e.g. `v1.1`), point Vercel env URLs at that tag, and `git push` the updated `physix.shell.html`. Until then, Safari users see a clear shell message instead of a silent crash.
+- **Chrome, Edge, Firefox:** `Web Release` with `thread_support=true` and `extensions_support=false` (`physix.wasm` + `physix.js` in the site root).
+- **Safari and iOS:** `Web Safe` with both flags off (`safe/physix.wasm` + `safe/physix.js`). The shell picks this build. One shared `physix.pck`.
+
+`physix.shell.html` stretches a 1280×720 canvas across the window. Do not turn Extensions Support back on; that was the 5 MB linker script and the 39 MB `physix.side.wasm`.
 
 The `WEBGL_polygon_mode` warning in Safari is harmless.
 
 ## Godot 4.6 file sizes (normal)
 
-With **extensions_support** (and **thread_support** off for Physix), Godot 4.6 often produces:
+With **extensions_support off**, Godot 4.6 produces one engine wasm, not a side module:
 
 | File | Typical size |
 |------|----------------|
-| `physix.wasm` | **~1–2 MB** (loader stub) |
-| `physix.side.wasm` | **~35–40 MB** (main engine) |
-| `physix.pck` | **~50–65 MB** |
+| `physix.wasm` | **~35 MB** (threaded engine) |
+| `safe/physix.wasm` | **~36 MB** (Safari engine) |
+| `physix.pck` | **~16 MB** on the Web Release preset |
+| `physix.js` | **~0.3 MB** |
 
-A **1 MB `physix.wasm` is correct** if `physix.side.wasm` is large. Vercel must download **both** from the release. A missing or tiny `physix.side.wasm` breaks the game/audio.
+There is no `physix.side.wasm`. A 1 MB `physix.wasm` is the old GDExtension stub and will not run this shell.
 
 ```powershell
-# After Godot Web export (extensions on):
-.\scripts\upload-physix-release.ps1 -ExportDir "C:\Users\phili\OneDrive\Desktop\Physix\exports"
-# or: -ExportDir "C:\Users\phili\OneDrive\Desktop\dva\src\site\physix\_godot_export"
+# After exporting Web Release and Web Safe from Godot:
+.\scripts\upload-physix-release.ps1 -ExportDir "D:\coding-projects\dva\src\site\physix\_godot_export"
 ```
 
 Requires [GitHub CLI](https://cli.github.com/) (`gh auth login`). Retries uploads; more reliable than the browser.
 
 ## GitHub Release (required for Vercel)
 
-Upload **all six** files from the **same** Web export to [releases](https://github.com/techteachdva/dva/releases) (e.g. tag `v1.0`):
+Upload one tag (the build default is `v1.3-web`) with:
 
-- `physix.pck`, `physix.wasm`, `physix.side.wasm`
-- `physix.js`, `physix.audio.worklet.js`, `physix.audio.position.worklet.js`
+- `physix.pck`, `physix.wasm`, `physix.js`, `physix.audio.worklet.js`, `physix.audio.position.worklet.js`
+- `physix.safe.wasm`, `physix.safe.js`, `physix.safe.audio.worklet.js`, `physix.safe.audio.position.worklet.js`
 
-Vercel downloads these at build time so `physix.js` always matches `physix.wasm`. Mixing an old `physix.js` from git with new wasm on the release causes `LinkError: emscripten_webgl_create_context`. Missing `physix.side.wasm` causes silent audio.
+`physix.js` must come from the same export as `physix.wasm`. The safe files come from the Web Safe export. Do not upload `physix.side.wasm`.
 
-**Sanity check:** `physix.js` must reference `.side.wasm`, and **`physix.side.wasm` on the release must be ~35–40 MB**. Do not replace `physix.wasm` with a huge monolithic file from an older Godot export mental model.
-
-**Export preset (Physix project):** `variant/extensions_support=true`, `variant/thread_support=false` (Safari-safe), `ensure_cross_origin_isolation_headers=true`. Crystal Wizards still uses threads; Physix does not.
+**Export presets:** Web Release is `extensions_support=false`, `thread_support=true`. Web Safe is both false. Canvas resize policy is Project (1280×720), stretched by the shell.
 
 ## Vercel environment variables
 
@@ -73,9 +74,13 @@ In **Vercel → Project → Settings → Environment Variables**, set **full HTT
 
 | Name | Example value |
 |------|----------------|
-| `PHYSIX_PCK_URL` | `https://github.com/techteachdva/dva/releases/download/v1.0/physix.pck` |
-| `PHYSIX_WASM_URL` | `https://github.com/techteachdva/dva/releases/download/v1.0/physix.wasm` |
-| `PHYSIX_SIDE_WASM_URL` | **Required** for web audio — same release tag, `physix.side.wasm` (from the same export as `physix.wasm`) |
+| `PHYSIX_PCK_URL` | `https://github.com/techteachdva/dva/releases/download/v1.3-web/physix.pck` |
+| `PHYSIX_WASM_URL` | `https://github.com/techteachdva/dva/releases/download/v1.3-web/physix.wasm` |
+| `PHYSIX_JS_URL` | `https://github.com/techteachdva/dva/releases/download/v1.3-web/physix.js` |
+| `PHYSIX_SAFE_WASM_URL` | `https://github.com/techteachdva/dva/releases/download/v1.3-web/physix.safe.wasm` |
+| `PHYSIX_SAFE_JS_URL` | `https://github.com/techteachdva/dva/releases/download/v1.3-web/physix.safe.js` |
+
+Leave them unset to use the `v1.3-web` defaults in `scripts/download-physix.js`. Delete any old `PHYSIX_SIDE_WASM_URL`.
 
 Apply to **Production**, **Preview**, and **Development** if you deploy from all of them.
 

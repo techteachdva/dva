@@ -24,8 +24,8 @@ if (html.includes('$GODOT')) {
   failed = true;
 }
 
-if (!html.includes('src="physix.js"')) {
-  console.error('physix.html must load <script src="physix.js"></script>');
+if (!html.includes('physix.js') || !html.includes('safe/physix.js')) {
+  console.error('physix.html must be able to load physix.js and safe/physix.js');
   failed = true;
 }
 

@@ -7,7 +7,9 @@
  *   PHYSIX_PCK_URL, PHYSIX_WASM_URL, PHYSIX_SIDE_WASM_URL
  *   PHYSIX_JS_URL, PHYSIX_AUDIO_WORKLET_URL, PHYSIX_AUDIO_POSITION_WORKLET_URL
  *
- * Defaults: https://github.com/techteachdva/dva/releases/download/v1.0/...
+ * Defaults: https://github.com/techteachdva/dva/releases/download/v1.3-web/...
+ * Chrome/Edge/Firefox: monolithic threaded wasm (no .side.wasm).
+ * Safari/iOS: safe/physix.* single-thread build. One shared physix.pck.
  */
 
 const fs = require('fs');
@@ -17,15 +19,19 @@ const http = require('http');
 const { URL } = require('url');
 
 const OUT_DIR = path.join(__dirname, '..', 'src', 'site', 'physix');
+const SAFE_DIR = path.join(OUT_DIR, 'safe');
 
-const DEFAULT_RELEASE = 'https://github.com/techteachdva/dva/releases/download/v1.0';
+const DEFAULT_RELEASE = 'https://github.com/techteachdva/dva/releases/download/v1.3-web';
 const DEFAULTS = {
   pck: `${DEFAULT_RELEASE}/physix.pck`,
   wasm: `${DEFAULT_RELEASE}/physix.wasm`,
-  side: `${DEFAULT_RELEASE}/physix.side.wasm`,
   js: `${DEFAULT_RELEASE}/physix.js`,
   audioWorklet: `${DEFAULT_RELEASE}/physix.audio.worklet.js`,
   audioPositionWorklet: `${DEFAULT_RELEASE}/physix.audio.position.worklet.js`,
+  safeWasm: `${DEFAULT_RELEASE}/physix.safe.wasm`,
+  safeJs: `${DEFAULT_RELEASE}/physix.safe.js`,
+  safeAudioWorklet: `${DEFAULT_RELEASE}/physix.safe.audio.worklet.js`,
+  safeAudioPositionWorklet: `${DEFAULT_RELEASE}/physix.safe.audio.position.worklet.js`,
 };
 
 const BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '[::1]']);
@@ -146,7 +152,9 @@ async function fetchAsset(url, destPath, label, minBytes = 1000) {
   if (buf.length < minBytes) {
     throw new Error(`File too small (${buf.length} bytes). Likely 404 or LFS pointer.`);
   }
-  fs.writeFileSync(destPath, buf);
+  const tmpPath = `${destPath}.download`;
+  fs.writeFileSync(tmpPath, buf);
+  fs.renameSync(tmpPath, destPath);
   console.log(`Wrote ${path.basename(destPath)} (${formatSize(buf.length)}).`);
   return buf.length;
 }
@@ -157,34 +165,22 @@ function validateWasmJsPair(wasmBytes) {
     throw new Error('Missing physix.js after download');
   }
   const js = fs.readFileSync(jsPath, 'utf8');
-  const jsExpectsSide = js.includes('.side.wasm');
-  const sidePath = path.join(OUT_DIR, 'physix.side.wasm');
-  const sideBytes = fs.existsSync(sidePath) ? fs.statSync(sidePath).size : 0;
-
-  // Godot 4.6 + extensions: main physix.wasm is often ~1–2 MB; engine bulk is physix.side.wasm (~35–40 MB).
-  if (jsExpectsSide) {
-    if (sideBytes < 10 * 1024 * 1024) {
-      throw new Error(
-        'physix.js loads .side.wasm but release physix.side.wasm is missing or too small.\n' +
-          'Upload physix.side.wasm from the same Godot export (expect ~35–40 MB).'
-      );
-    }
-    if (wasmBytes > 20 * 1024 * 1024 && sideBytes < 1024 * 1024) {
-      throw new Error(
-        'physix.wasm looks like a monolithic build but physix.js expects physix.side.wasm — re-export and upload both from the same run.'
-      );
-    }
-    console.log(
-      `Extensions layout OK: physix.wasm ${formatSize(wasmBytes)}, physix.side.wasm ${formatSize(sideBytes)}.`
-    );
-    return;
-  }
-
-  if (wasmBytes < 5 * 1024 * 1024) {
+  const safeWasm = path.join(SAFE_DIR, 'physix.wasm');
+  const safeBytes = fs.existsSync(safeWasm) ? fs.statSync(safeWasm).size : 0;
+  if (wasmBytes < 8 * 1024 * 1024) {
     throw new Error(
-      `physix.wasm is ${formatSize(wasmBytes)} and physix.js does not reference .side.wasm — enable extensions_support and re-export.`
+      `physix.wasm is ${formatSize(wasmBytes)}. Expected the threaded engine (~35 MB), not a GDExtension side-module stub.`
     );
   }
+  if (!js.includes('isPthread')) {
+    throw new Error('physix.js is not the threaded Godot export. Re-export Web Release with thread support on.');
+  }
+  if (safeBytes < 8 * 1024 * 1024) {
+    throw new Error(`safe/physix.wasm is missing or too small (${formatSize(safeBytes)}).`);
+  }
+  console.log(
+    `Threaded engine ${formatSize(wasmBytes)}, Safari engine ${formatSize(safeBytes)}. No side wasm.`
+  );
 }
 
 (async () => {
@@ -203,7 +199,6 @@ function validateWasmJsPair(wasmBytes) {
   const urls = {
     pck: resolveAssetUrl(process.env.PHYSIX_PCK_URL, DEFAULTS.pck, 'PHYSIX_PCK_URL'),
     wasm: resolveAssetUrl(process.env.PHYSIX_WASM_URL, DEFAULTS.wasm, 'PHYSIX_WASM_URL'),
-    side: resolveAssetUrl(process.env.PHYSIX_SIDE_WASM_URL, DEFAULTS.side, 'PHYSIX_SIDE_WASM_URL'),
     js: resolveAssetUrl(process.env.PHYSIX_JS_URL, DEFAULTS.js, 'PHYSIX_JS_URL'),
     audioWorklet: resolveAssetUrl(
       process.env.PHYSIX_AUDIO_WORKLET_URL,
@@ -214,6 +209,18 @@ function validateWasmJsPair(wasmBytes) {
       process.env.PHYSIX_AUDIO_POSITION_WORKLET_URL,
       DEFAULTS.audioPositionWorklet,
       'PHYSIX_AUDIO_POSITION_WORKLET_URL'
+    ),
+    safeWasm: resolveAssetUrl(process.env.PHYSIX_SAFE_WASM_URL, DEFAULTS.safeWasm, 'PHYSIX_SAFE_WASM_URL'),
+    safeJs: resolveAssetUrl(process.env.PHYSIX_SAFE_JS_URL, DEFAULTS.safeJs, 'PHYSIX_SAFE_JS_URL'),
+    safeAudioWorklet: resolveAssetUrl(
+      process.env.PHYSIX_SAFE_AUDIO_WORKLET_URL,
+      DEFAULTS.safeAudioWorklet,
+      'PHYSIX_SAFE_AUDIO_WORKLET_URL'
+    ),
+    safeAudioPositionWorklet: resolveAssetUrl(
+      process.env.PHYSIX_SAFE_AUDIO_POSITION_WORKLET_URL,
+      DEFAULTS.safeAudioPositionWorklet,
+      'PHYSIX_SAFE_AUDIO_POSITION_WORKLET_URL'
     ),
   };
 
@@ -242,7 +249,7 @@ function validateWasmJsPair(wasmBytes) {
     } catch (err) {
       console.error(`download-physix ${asset.file}:`, err.message);
       console.error(
-        `Upload ${asset.file} from the same Godot Web export to the GitHub release (v1.0).`
+        `Upload ${asset.file} from the same Godot Web export to the GitHub release (v1.3-web).`
       );
       failed = true;
     }
@@ -262,17 +269,32 @@ function validateWasmJsPair(wasmBytes) {
     failed = true;
   }
 
-  const jsExpectsSide =
-    fs.existsSync(path.join(OUT_DIR, 'physix.js')) &&
-    fs.readFileSync(path.join(OUT_DIR, 'physix.js'), 'utf8').includes('.side.wasm');
-
-  if (!failed && jsExpectsSide) {
+  if (!fs.existsSync(SAFE_DIR)) {
+    fs.mkdirSync(SAFE_DIR, { recursive: true });
+  }
+  const safeAssets = [
+    { url: urls.safeJs, file: 'physix.js', label: 'Safari loader JS', minBytes: 50000 },
+    { url: urls.safeWasm, file: 'physix.wasm', label: 'Safari wasm', minBytes: 8 * 1024 * 1024 },
+    { url: urls.safeAudioWorklet, file: 'physix.audio.worklet.js', label: 'Safari audio worklet', minBytes: 200 },
+    {
+      url: urls.safeAudioPositionWorklet,
+      file: 'physix.audio.position.worklet.js',
+      label: 'Safari audio position worklet',
+      minBytes: 200,
+    },
+  ];
+  for (const asset of safeAssets) {
     try {
-      await fetchAsset(urls.side, path.join(OUT_DIR, 'physix.side.wasm'), 'side wasm');
+      await fetchAsset(asset.url, path.join(SAFE_DIR, asset.file), asset.label, asset.minBytes);
     } catch (err) {
-      console.error('download-physix side wasm:', err.message);
+      console.error(`download-physix safe/${asset.file}:`, err.message);
       failed = true;
     }
+  }
+  const staleSide = path.join(OUT_DIR, 'physix.side.wasm');
+  if (fs.existsSync(staleSide)) {
+    fs.unlinkSync(staleSide);
+    console.log('Removed stale physix.side.wasm');
   }
 
   if (!failed) {
