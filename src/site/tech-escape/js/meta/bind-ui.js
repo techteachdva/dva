@@ -4,7 +4,7 @@
 
 import { BIND_DEFAULTS, BIND_LABELS, bindDisplay, normalizeBinds, validateBinds } from './binds.js?v=3.25';
 import { settings } from './settings.js?v=3.21';
-import { input } from '../input.js?v=3.25';
+import { input } from '../input.js?v=3.28';
 import { audio } from '../audio.js';
 import { renderControlsKeyboard } from '../ui/keyboard-card.js?v=3.25';
 

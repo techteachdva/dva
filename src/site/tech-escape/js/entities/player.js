@@ -7,7 +7,7 @@ import * as THREE from '../../vendor/three.module.js';
 import { PLAYER, FLASHLIGHT, TABLE } from '../config.js';
 import { clamp, damp } from '../util.js';
 import { audio } from '../audio.js';
-import { input } from '../input.js';
+import { input } from '../input.js?v=3.28';
 
 const PITCH_LIMIT = Math.PI / 2 - 0.06;
 // Crawling restricts how far you can crane your neck, which is claustrophobic

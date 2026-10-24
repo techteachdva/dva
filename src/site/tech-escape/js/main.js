@@ -14,7 +14,7 @@ import {
   resolveQuality,
 } from './config.js';
 import { clamp, makeRng, formatTime, guessDeviceIp } from './util.js';
-import { input, touchUi } from './input.js?v=3.25';
+import { input, touchUi } from './input.js?v=3.28';
 import { audio } from './audio.js?v=3.10';
 import { ui } from './ui.js?v=3.26';
 import { Maze } from './world/maze.js?v=3.27';
@@ -24,7 +24,7 @@ import { TableSurfacePlanner } from './world/table-surface.js';
 import { buildScatterProps } from './world/scatter.js';
 import { pickPosterCells } from './world/map-poster.js';
 import { Lighting } from './world/lighting.js?v=3.10';
-import { Player } from './entities/player.js?v=3.15';
+import { Player } from './entities/player.js?v=3.28';
 import { EnemyManager } from './entities/enemies.js?v=3.25';
 import { PickupField } from './entities/pickups.js?v=3.25';
 import { ThrowField } from './entities/throwables.js?v=3.25';
@@ -39,8 +39,8 @@ import { drawForTerminal, idsOf } from './meta/quizpool.js?v=3.9.1';
 import { saveStore } from './meta/save.js?v=3.9.1';
 import { settings, flashGuard } from './meta/settings.js?v=3.21';
 import { getLevel, layoutFor, runProfile } from './meta/levels.js';
-import { sessionUi } from './meta/session-ui.js?v=3.26';
-import { bindUi } from './meta/bind-ui.js?v=3.25';
+import { sessionUi } from './meta/session-ui.js?v=3.28';
+import { bindUi } from './meta/bind-ui.js?v=3.28';
 import { debug, DEBUG_CODE } from './meta/debug.js';
 import { computeRunScore } from './meta/score.js';
 import { highscoresUi } from './meta/highscores-ui.js?v=3.26';

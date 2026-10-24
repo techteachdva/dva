@@ -6,7 +6,7 @@
 import { settings } from './settings.js?v=3.21';
 import { saveStore } from './save.js';
 import { LEVELS, LEVEL_COUNT } from './levels.js';
-import { input } from '../input.js';
+import { input } from '../input.js?v=3.28';
 import { audio } from '../audio.js';
 import { ui } from '../ui.js?v=3.26';
 import { tutorial } from '../ui/tutorial.js?v=3.26';
