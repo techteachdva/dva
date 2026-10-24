@@ -11,7 +11,8 @@
     { "source": "/dragon-trail", "destination": "/dragon-trail/", "permanent": true },
     { "source": "/somnia", "destination": "/somnia/", "permanent": true },
     { "source": "/ainmos", "destination": "/ainmos/", "permanent": true },
-    { "source": "/physix", "destination": "/physix/", "permanent": true }
+    { "source": "/physix", "destination": "/physix/", "permanent": true },
+    { "source": "/feleco", "destination": "/feleco/", "permanent": true }
   ],
   "rewrites": [
     { "source": "/api/somnia-saves", "destination": "/api/somnia-highscores?somniaApi=saves" },
@@ -28,6 +29,13 @@
   "headers": [
     {
       "source": "/crystalwizards/(.*)",
+      "headers": [
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
+      ]
+    },
+    {
+      "source": "/feleco/(.*)",
       "headers": [
         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
         { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }

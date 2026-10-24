@@ -13,4 +13,5 @@ Students will explore the art and science of creating board games. They will lea
 - [[Purple Worm Escape|Purple Worm Escape]]
 - [[Crystal Wizards|Crystal Wizards]]
 - [[Physix|Physix]]
+- [[Feleco|Feleco]]
 - [[Technology|Technology]]

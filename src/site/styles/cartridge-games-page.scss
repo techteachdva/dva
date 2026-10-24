@@ -811,6 +811,39 @@ main.content.arcade-page > header .header-tags { display: none; }
   50% { left: 64%; top: 36%; transform: rotate(360deg); }
 }
 
+/* Feleco */
+.cart--feleco .cart__label {
+  background:
+    radial-gradient(circle at 30% 40%, rgba(80, 160, 70, 0.45) 0 8px, transparent 9px),
+    radial-gradient(circle at 62% 55%, rgba(200, 70, 60, 0.55) 0 6px, transparent 7px),
+    radial-gradient(circle at 48% 28%, rgba(230, 190, 70, 0.5) 0 5px, transparent 6px),
+    linear-gradient(180deg, #14301c 0%, #0c1c12 55%, #07140c 100%);
+}
+.cart--feleco .cart__title {
+  color: #e7f6df;
+  background: rgba(12, 40, 22, 0.88);
+  border: 1px solid rgba(150, 210, 120, 0.45);
+}
+.cart--feleco .cart__tag {
+  color: #d5ecc8;
+}
+.cart--feleco .cart__art::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 78px;
+  height: 46px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 50%, #f2f2f2 0 7px, transparent 8px),
+    radial-gradient(circle at 55% 40%, #c0392b 0 6px, transparent 7px),
+    radial-gradient(circle at 72% 62%, #e0b84a 0 5px, transparent 6px),
+    radial-gradient(ellipse at 50% 70%, #2f7d32 0%, #16381c 70%);
+  box-shadow: 0 8px 0 #0d2414;
+}
+
 /* Global Tech Gauntlet */
 .cart--gauntlet .cart__shell { --shell: rgba(255, 90, 60, 0.55); --shell-dark: rgba(120, 0, 20, 0.85); border-color: rgba(255, 215, 0, 0.8); }
 .cart--gauntlet .cart__label { background: linear-gradient(135deg, #8b0000 0%, #c41e3a 45%, #ffd700 100%); }

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feleco</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(90, 160, 70, 0.18), transparent 28%),
+        radial-gradient(circle at 80% 30%, rgba(190, 60, 50, 0.16), transparent 24%),
+        #07140c;
+      color: #e7f6df;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    main { max-width: 760px; margin: 0 auto; padding: 48px 24px 72px; }
+    a { color: #d5ecc8; }
+    h1 { font-size: 4rem; letter-spacing: 0.08em; margin: 0 0 8px; }
+    .lede { font-size: 1.25rem; line-height: 1.45; max-width: 38rem; }
+    .modes, .facts { display: grid; gap: 12px; margin: 28px 0; }
+    .modes { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    article, .play {
+      background: rgba(8, 28, 16, 0.82);
+      border: 1px solid rgba(150, 210, 120, 0.35);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    h2 { margin: 0 0 8px; font-size: 1.15rem; }
+    p { margin: 0; line-height: 1.45; }
+    ul { margin: 8px 0 0; padding-left: 1.1rem; }
+    .play a.button[hidden] { display: none; }
+    .play a.button {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      background: #2f7d32;
+      color: #f4fff0;
+      text-decoration: none;
+      font-family: system-ui, sans-serif;
+    }
+    .fine { margin-top: 28px; color: #b7cbb0; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="fine"><a href="/games/">Games Mr. Phil has made</a></p>
+    <h1>FELECO</h1>
+    <p class="lede">Bet on the species that will own the field. Seasons turn. A population that outgrows its food crashes, and no species is promised the win.</p>
+    <section class="modes">
+      <article>
+        <h2>Campaign</h2>
+        <p>Pledge to one species and survive ten eras. The danger steps up when you do.</p>
+      </article>
+      <article>
+        <h2>Challenge</h2>
+        <p>A set field and a clock. Pick the species you think will still be standing.</p>
+      </article>
+      <article>
+        <h2>Sandbox</h2>
+        <p>Scatter the world yourself, then watch the grass, the rot, and the hunters.</p>
+      </article>
+    </section>
+    <section class="facts">
+      <article>
+        <h2>On the field</h2>
+        <ul>
+          <li>Sheep and rabbits eat the tall grass. Wolves hunt the sheep.</li>
+          <li>Falcons dive from above. Boars root for mushrooms and charge in a group.</li>
+          <li>Humans build shelters. Three of them will hunt a wolf. Different settlements fight.</li>
+          <li>Worms eat rot. Mushroom spores only take root where something has died.</li>
+        </ul>
+      </article>
+      <article>
+        <h2>While it runs</h2>
+        <p>Right-drag orbits the field. Scroll zooms. WASD moves. Q and E rise and sink. The top-down button looks straight down.</p>
+      </article>
+    </section>
+    <section class="play" id="play">
+      <h2>Play</h2>
+      <p id="play-status">Checking for the web build.</p>
+      <a class="button" id="play-link" href="Feleco.html" hidden>Open the field</a>
+    </section>
+    <p class="fine">Spring grows the grass. Winter cuts it down and makes everyone hungrier. Rain, a predator call, and a meteor are spent from winnings, not from a free menu.</p>
+  </main>
+  <script>
+    fetch("Feleco.html", { method: "HEAD" }).then(function (res) {
+      var status = document.getElementById("play-status");
+      var link = document.getElementById("play-link");
+      if (res.ok) {
+        status.textContent = "The field is ready.";
+        link.hidden = false;
+      } else {
+        status.textContent = "The cabinet is on the rack. Export Feleco’s Web preset and the field opens on this page.";
+      }
+    }).catch(function () {
+      document.getElementById("play-status").textContent = "The cabinet is on the rack. Export Feleco’s Web preset and the field opens on this page.";
+      document.getElementById("play-link").hidden = true;
+    });
+  </script>
+</body>
+</html>
