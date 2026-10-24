@@ -159,7 +159,9 @@ self.addEventListener('message', (event) => {
 		} else if (msg === 'clear') {
 			caches.delete(CACHE_NAME);
 		} else if (msg === 'update') {
-			self.skipWaiting().then(() => self.clients.claim()).then(() => self.clients.matchAll()).then((all) => all.forEach((c) => c.navigate(c.url)));
+			// Godot asks for an update as soon as the engine is up. Navigating
+			// now unloads the running build and the web export aborts.
+			self.skipWaiting().then(() => self.clients.claim());
 		}
 	});
 });

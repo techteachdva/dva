@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1779228908|89533978';
+const CACHE_VERSION = '1792869277|8743521';
 /** @type {string} */
 const CACHE_PREFIX = 'Physix-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
@@ -159,7 +159,9 @@ self.addEventListener('message', (event) => {
 		} else if (msg === 'clear') {
 			caches.delete(CACHE_NAME);
 		} else if (msg === 'update') {
-			self.skipWaiting().then(() => self.clients.claim()).then(() => self.clients.matchAll()).then((all) => all.forEach((c) => c.navigate(c.url)));
+			// Godot asks for an update as soon as the engine is up. Navigating
+			// now unloads the running build and the web export aborts.
+			self.skipWaiting().then(() => self.clients.claim());
 		}
 	});
 });
