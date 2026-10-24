@@ -1,7 +1,5 @@
 [gd_scene format=3 uid="uid://bwml4j1ipqknp"]
 
-[ext_resource type="PackedScene" path="res://scenes/obstacles/checkpoint.tscn" id="4_12ah6"]
-[ext_resource type="Script" uid="uid://y4fsh0buhxrb" path="res://scripts/obstacles/checkpoint.gd" id="4_pkmxk"]
 [ext_resource type="Script" uid="uid://dtomn7mp2jh8n" path="res://scripts/game_level.gd" id="GameLevel"]
 [ext_resource type="Script" uid="uid://br4lujuxnkmgw" path="res://scripts/hud.gd" id="HUDScript"]
 [ext_resource type="Script" uid="uid://b5gnsxeeciugt" path="res://scripts/level_generator.gd" id="LevelGen"]
@@ -9,9 +7,9 @@
 
 [node name="Level_1_5" type="Node3D" unique_id=1762112545]
 script = ExtResource("GameLevel")
-level_name = "Broadway 1-5"
+level_name = "S-Curve 1-5"
 level_number = 5
-par_time = 42.6
+par_time = 17.7
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2069206213]
 
@@ -58,7 +56,7 @@ text = "00:00.00"
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 18
-text = "❤  x3"
+text = "x3"
 
 [node name="CoinsLabel" type="Label" parent="HUD/TopBar" unique_id=839308531]
 layout_mode = 2
@@ -143,7 +141,7 @@ anchor_top = 0.22
 anchor_right = 0.5
 anchor_bottom = 0.32
 theme_override_font_sizes/font_size = 52
-text = "☆☆☆"
+text = "---"
 horizontal_alignment = 1
 
 [node name="TimeLabel" type="Label" parent="HUD/CompletePanel" unique_id=98700084]

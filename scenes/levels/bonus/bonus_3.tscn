@@ -8,5 +8,5 @@ level_number = 0
 track_length = 180.0
 coin_count = 40
 boost_count = 4
-par_time = 16.0
-level_name = "Gravity Vault"
+par_time = 15.8
+level_name = "Bonus: Grav-6"

@@ -6,10 +6,10 @@
 [ext_resource type="Script" path="res://scripts/hud.gd" id="HUDScript"]
 [node name="Level_2_2" type="Node3D"]
 script = ExtResource("GameLevel")
-level_name = "Roller 2-2"
+level_name = "Ice Line 2-2"
 world_number = 2
 level_number = 2
-par_time = 40.3
+par_time = 17.0
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
@@ -42,7 +42,7 @@ text = "00:00.00"
 theme_override_font_sizes/font_size = 18
 [node name="LivesLabel" type="Label" parent="HUD/TopBar"]
 size_flags_horizontal = 3
-text = "❤  x3"
+text = "x3"
 theme_override_font_sizes/font_size = 18
 [node name="CoinsLabel" type="Label" parent="HUD/TopBar"]
 size_flags_horizontal = 3
@@ -99,7 +99,7 @@ theme_override_font_sizes/font_size = 34
 [node name="StarsLabel" type="Label" parent="HUD/CompletePanel"]
 anchor_left = 0.5
 anchor_top = 0.22
-text = "☆☆☆"
+text = "---"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 52
 [node name="TimeLabel" type="Label" parent="HUD/CompletePanel"]

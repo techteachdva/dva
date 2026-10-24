@@ -15,9 +15,30 @@ var _current_level: Node = null
 
 func _ready() -> void:
 	instance = self
+	_apply_web_runtime()
 	_apply_boot_settings()
 	# Start at the main menu
 	_load_main_menu()
+
+func _apply_web_runtime() -> void:
+	if not OS.has_feature("web"):
+		return
+	var viewport := get_viewport()
+	viewport.scaling_3d_scale = 0.75
+	viewport.msaa_3d = Viewport.MSAA_DISABLED
+	viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+
+func _strip_web_cost(root: Node) -> void:
+	if not OS.has_feature("web"):
+		return
+	if root is DirectionalLight3D:
+		(root as DirectionalLight3D).shadow_enabled = false
+	elif root is OmniLight3D:
+		(root as OmniLight3D).shadow_enabled = false
+	elif root is SpotLight3D:
+		(root as SpotLight3D).shadow_enabled = false
+	for child: Node in root.get_children():
+		_strip_web_cost(child)
 
 func _process(_delta: float) -> void:
 	if fps_label.visible:
@@ -43,7 +64,7 @@ func load_level(world_num: int, level_num: int) -> void:
 		push_error("Main: failed to load level scene: %s" % path)
 		return
 	_current_level = packed.instantiate()
-	world.add_child(_current_level)
+	_mount_scene(_current_level)
 	GameManager.current_world = world_num
 	GameManager.current_level = level_num
 
@@ -55,7 +76,7 @@ func load_bonus_level(world_num: int) -> void:
 		push_error("Main: failed to load bonus scene: %s" % path)
 		return
 	_current_level = packed.instantiate()
-	world.add_child(_current_level)
+	_mount_scene(_current_level)
 	GameManager.current_world = world_num
 	GameManager.current_level = 0
 
@@ -67,7 +88,7 @@ func load_secret_level(world_num: int, level_num: int) -> void:
 		push_error("Main: failed to load secret scene: %s" % path)
 		return
 	_current_level = packed.instantiate()
-	world.add_child(_current_level)
+	_mount_scene(_current_level)
 	GameManager.current_world = world_num
 	GameManager.current_level = level_num
 
@@ -75,7 +96,7 @@ func load_world_map() -> void:
 	_unload_current()
 	var packed: PackedScene = load("res://scenes/world_map.tscn")
 	_current_level = packed.instantiate()
-	world.add_child(_current_level)
+	_mount_scene(_current_level)
 
 func load_main_menu() -> void:
 	_load_main_menu()
@@ -84,30 +105,40 @@ func load_level_editor() -> void:
 	_unload_current()
 	var packed: PackedScene = load("res://scenes/level_editor.tscn")
 	_current_level = packed.instantiate()
-	world.add_child(_current_level)
+	_mount_scene(_current_level)
 
 func load_editor_test_runner() -> void:
 	_unload_current()
 	var packed: PackedScene = load("res://scenes/editor_test_runner.tscn")
 	_current_level = packed.instantiate()
-	world.add_child(_current_level)
+	_mount_scene(_current_level)
 
 func load_custom_level_loader() -> void:
 	_unload_current()
 	var packed: PackedScene = load("res://scenes/custom_level_loader.tscn")
 	_current_level = packed.instantiate()
-	world.add_child(_current_level)
+	_mount_scene(_current_level)
 
 func _load_main_menu() -> void:
 	_unload_current()
 	var packed: PackedScene = load("res://scenes/main_menu.tscn")
 	_current_level = packed.instantiate()
-	world.add_child(_current_level)
+	_mount_scene(_current_level)
+
+func _mount_scene(scene: Node) -> void:
+	_strip_web_cost(scene)
+	if scene is Control or scene is Node2D:
+		gui.add_child(scene)
+	else:
+		world.add_child(scene)
 
 func _unload_current() -> void:
 	if _current_level != null and is_instance_valid(_current_level):
 		_current_level.queue_free()
 		_current_level = null
-	# Clean up any leftover runtime nodes
 	for child: Node in world.get_children():
+		child.queue_free()
+	for child: Node in gui.get_children():
+		if child == fps_label:
+			continue
 		child.queue_free()

@@ -8,5 +8,5 @@ level_number = 0
 track_length = 180.0
 coin_count = 36
 boost_count = 6
-par_time = 18.0
-level_name = "The Ultimate Hex"
+par_time = 24.5
+level_name = "Bonus: The Ultimate Hex"
