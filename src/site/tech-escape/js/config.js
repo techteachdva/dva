@@ -366,9 +366,12 @@ export const DIFFICULTY = {
     scoreScale: 0.75,
     mice: 2,
     viruses: 0,
-    enemySpeedScale: 0.62,
+    // 5.35 * 0.50 = 2.68, well under the 4.1 walk. You can leave.
+    enemySpeedScale: 0.5,
+    attackCooldownScale: 1.7,
+    introGrace: 22,
     batteryDrainScale: 0.5,
-    damageScale: 0.45,
+    damageScale: 0.35,
     startHealth: 6,
     cheetos: 12,
     batteries: 12,
@@ -385,10 +388,13 @@ export const DIFFICULTY = {
     scoreScale: 0.9,
     mice: 3,
     viruses: 1,
-    enemySpeedScale: 0.84,
+    // 5.35 * 0.60 = 3.21, slower than a walk.
+    enemySpeedScale: 0.6,
+    attackCooldownScale: 1.5,
+    introGrace: 18,
     batteryDrainScale: 0.7,
-    damageScale: 1,
-    startHealth: 4,
+    damageScale: 0.45,
+    startHealth: 5,
     cheetos: 9,
     batteries: 10,
     sodas: 5,
@@ -404,9 +410,15 @@ export const DIFFICULTY = {
     scoreScale: 1,
     mice: 3,
     viruses: 1,
-    enemySpeedScale: 0.88,
+    // 5.35 * 0.72 = 3.85, just under the 4.1 walk. Standing still is a
+    // mistake you can walk away from. Sprint and hiding stay the panic tools.
+    // The old 0.88 scale (4.71) was faster than walking, so contact was the
+    // default and three mice deleted a health bar in a few seconds.
+    enemySpeedScale: 0.72,
+    attackCooldownScale: 1.35,
+    introGrace: 14,
     batteryDrainScale: 0.72,
-    damageScale: 0.82,
+    damageScale: 0.55,
     startHealth: 5,
     cheetos: 8,
     batteries: 10,
@@ -430,6 +442,8 @@ export const DIFFICULTY = {
     mice: 6,
     viruses: 3,
     enemySpeedScale: 1.16,
+    attackCooldownScale: 1,
+    introGrace: 0,
     batteryDrainScale: 1.4,
     damageScale: 1,
     startHealth: 3,
@@ -450,6 +464,8 @@ export const DIFFICULTY = {
     mice: 0,
     viruses: 0,
     enemySpeedScale: 1,
+    attackCooldownScale: 1,
+    introGrace: 0,
     batteryDrainScale: 0.85,
     damageScale: 0,
     startHealth: 4,
@@ -471,12 +487,72 @@ export const MOBILE = {
   autoQuality: 'low',
 };
 
-/** Renderer presets so old Chromebooks can still hold 60fps. */
+/**
+ * Renderer presets.
+ *
+ * Low / medium are the Chromebook path: Lambert materials, no shadow maps,
+ * a resolution cap, and a flashlight cookie that is compiled once at the
+ * start of the run. Ultra is the desktop path. It is the only preset that
+ * turns on a spotlight shadow and filmic tone mapping, and both are set
+ * before the first compiled frame so they never hitch mid-hallway.
+ */
 export const QUALITY = {
-  low: { scale: 0.68, maxDpr: 1, fogDensity: 0.062, extraLights: 3, antialias: false },
-  medium: { scale: 0.85, maxDpr: 1.25, fogDensity: 0.055, extraLights: 5, antialias: false },
-  high: { scale: 1, maxDpr: 1.5, fogDensity: 0.048, extraLights: 7, antialias: true },
+  low: {
+    scale: 0.62, maxDpr: 1, fogDensity: 0.05, extraLights: 3,
+    antialias: false, cookie: true, shadows: false, toneMapping: 'none', anisotropy: 1,
+  },
+  medium: {
+    scale: 0.8, maxDpr: 1.15, fogDensity: 0.03, extraLights: 5,
+    antialias: false, cookie: true, shadows: false, toneMapping: 'none', anisotropy: 4,
+  },
+  high: {
+    scale: 1, maxDpr: 1.5, fogDensity: 0.034, extraLights: 8,
+    antialias: true, cookie: true, shadows: false, toneMapping: 'none', anisotropy: 8,
+  },
+  ultra: {
+    scale: 1, maxDpr: 2, fogDensity: 0.026, extraLights: 12,
+    antialias: true, cookie: true, shadows: true, shadowMapSize: 1024,
+    toneMapping: 'aces', anisotropy: 16,
+  },
 };
+
+/**
+ * Device caps layered on a preset. A Chromebook keeps the richer textures and
+ * the flashlight cookie, and gives up the fill-rate killers (retina DPR,
+ * MSAA, shadow maps). Ultra on a Chromebook still looks like the best Lambert
+ * frame we can afford, not a desktop shadow pass.
+ *
+ * @param {string} key
+ * @param {{ software?: boolean, cros?: boolean }} [env]
+ */
+export function resolveQuality(key, env = {}) {
+  const name = QUALITY[key] ? key : 'medium';
+  const q = { ...QUALITY[name], key: name };
+  let cros = !!env.cros;
+  if (env.cros === undefined && typeof navigator !== 'undefined') {
+    cros = /CrOS/i.test(navigator.userAgent || '');
+  }
+  if (env.software) {
+    q.key = 'low';
+    Object.assign(q, QUALITY.low, { key: 'low', cookie: false, extraLights: 2 });
+    return q;
+  }
+  if (!cros) return q;
+  q.shadows = false;
+  q.antialias = false;
+  q.toneMapping = 'none';
+  if (name === 'ultra') {
+    q.maxDpr = Math.min(q.maxDpr, 1.25);
+    q.scale = Math.min(q.scale, 0.9);
+    q.extraLights = Math.min(q.extraLights, 6);
+    q.anisotropy = 4;
+  } else {
+    q.maxDpr = 1;
+    q.scale = Math.min(q.scale, name === 'low' ? 0.58 : 0.75);
+    q.anisotropy = name === 'low' ? 1 : 2;
+  }
+  return q;
+}
 
 /**
  * World colours.

@@ -1,5 +1,37 @@
 # Tech Escape — Changelog
 
+## 2.6.0 — The First Night Update (2026-10-23)
+
+### HUD and viruses
+- The HUD is a top objective chip, code slots, and one bottom dock for health, stamina, flashlight, and stance.
+- Viruses are particle globes: a swarm that holds a sphere, breathes, and flies apart when the flashlight burns it.
+
+### Pause menu
+- The pause card is four pages: Play, Comfort, Picture, Controls. Resume stays on the card. Mix, grain, and axis speeds sit behind a disclosure instead of filling the screen.
+
+### Teaching
+- The rules are on the first screen, on the lobby, and as a one-line lesson inside the lab. The lesson clears when you do the thing (walk, crouch, flashlight, Chromebook). The old manual no longer pops over the lobby.
+- Pause can skip the lesson. It does not come back on this computer.
+
+### Floor arrows
+- Red floor arrows stay dark while you are still searching.
+- If you linger in one pocket of the maze, the nearby arrows wake and point along the path to the nearest locked Chromebook.
+- Following them, or ignoring them, puts them back to sleep. They are a hint, not a GPS.
+- They no longer light the whole maze or rebuild a path every frame.
+
+### Difficulty
+- **After Hours** mice are slower than a walk (3.85 vs 4.1). Standing still is a mistake you can leave. Sprint and desks are the panic tools.
+- Field Trip is actually easier than After Hours. It used to hit harder.
+- One hunter bites at a time. They keep a step of space instead of sitting in the camera.
+- Beginner, Field Trip, and After Hours get a quiet opening before anything hunts. System Crash does not, and its mice still outrun a walk.
+
+### Graphics and Chromebooks
+- Richer floor, wall, and ceiling textures, and a soft flashlight cookie, on every preset including Chromebook Medium.
+- Shaders, including the flashlight, compile before you have control, so the first press of F is not a long stall.
+- A graphics-chip stall pauses the lab and restores meshes instead of leaving you in a broken frame.
+- Movement substeps and a snap-back if a body is left inside a wall. A long frame is not a step.
+- **Ultra** (desktop): filmic tone mapping, higher resolution, more lights, and a flashlight shadow. Chromebooks keep Ultra's textures and drop the shadow pass.
+
 ## 2.5.0 — The Map & Enemies Update (2026-08-17)
 
 ### Navigation

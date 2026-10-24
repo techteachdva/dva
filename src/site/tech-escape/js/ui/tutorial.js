@@ -6,7 +6,7 @@
 import { bindDisplay, normalizeBinds } from '../meta/binds.js';
 import { settings } from '../meta/settings.js';
 import { audio } from '../audio.js';
-import { ui } from '../ui.js';
+import { ui } from '../ui.js?v=3.8';
 
 const $ = (id) => document.getElementById(id);
 
@@ -68,6 +68,7 @@ function buildPages() {
           <li><strong>Cheetos:</strong> eat for snack energy, or throw — mice munch and pop (3 per bag).</li>
           <li><strong>Disc:</strong> rare; aim at a virus to delete it permanently.</li>
           <li><strong>Flow:</strong> clear 4 terminals → decrypt fragments → print key → use key on EXIT door.</li>
+          <li><strong>Lost?</strong> Stay in one area. Red floor arrows wake up and point to the nearest locked Chromebook, then go dark once you follow them.</li>
         </ul>
         <p class="tutorial-tip">Wrong quiz answers and loud actions wake the lab. Crawl under desks for loot and cover.</p>`,
     },
@@ -148,8 +149,7 @@ export const tutorial = {
   },
 
   maybeShowOnLobby() {
-    if (settings.get('seenTutorial')) return;
-    if (!settings.get('seenFirstRun')) return;
-    setTimeout(() => this.open('screen-title'), 420);
+    // The lesson plays inside the lab. Popping this manual over the lobby
+    // was the screen people closed without reading, then walked in lost.
   },
 };

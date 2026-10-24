@@ -3,9 +3,10 @@
  */
 
 import * as THREE from '../../vendor/three.module.js';
-import { BUG, CELL, THROWN } from '../config.js';
-import { clamp } from '../util.js';
+import { BUG, CELL, THROWN, PLAYER } from '../config.js';
+import { clamp, separateFrom } from '../util.js';
 import { audio } from '../audio.js';
+import { easeFactor } from '../meta/ease.js';
 
 const STATE = { PATROL: 0, HUNT: 1, FEED: 2 };
 
@@ -98,7 +99,8 @@ export class CircuitBug {
   }
 
   _senses(player, diff) {
-    if (!player.alive || player.hidden && diff.hiddenEvade) return false;
+    if (!player.alive || player.introCalm) return false;
+    if (player.hidden && diff.hiddenEvade) return false;
     const dx = player.pos.x - this.pos.x;
     const dz = player.pos.z - this.pos.z;
     const dist = Math.hypot(dx, dz);
@@ -157,7 +159,7 @@ export class CircuitBug {
     const dz = tz - this.pos.z;
     const dist = Math.hypot(dx, dz) || 1;
     const speed = (this.state === STATE.HUNT ? BUG.chaseSpeed : BUG.patrolSpeed)
-      * this.speedScale * rest * diff.speedScale;
+      * this.speedScale * rest * easeFactor(diff, this) * (diff.enemySpeedScale || 1);
     this.heading += clamp(Math.atan2(dx, dz) - this.heading, -BUG.turnRate * dt, BUG.turnRate * dt);
     this.pos.x += (-Math.sin(this.heading)) * speed * dt;
     this.pos.z += (-Math.cos(this.heading)) * speed * dt;
@@ -165,6 +167,11 @@ export class CircuitBug {
 
     if (this.obstacles) {
       this.obstacles.collide(this.pos, BUG.radius, 0, 0.5);
+    }
+    if (this.state === STATE.HUNT && player.alive && !player.hidden && !player.introCalm) {
+      if (separateFrom(this.pos, player.pos, PLAYER.radius + BUG.radius + 0.12)) {
+        this.maze.collide(this.pos, BUG.radius);
+      }
     }
 
     if (this.state === STATE.PATROL && this.patrolTarget
@@ -185,7 +192,7 @@ export class CircuitBug {
 
     if (this.state === STATE.HUNT && dist < BUG.attackRange && this.attackCooldown <= 0
       && !player.hidden) {
-      this.attackCooldown = BUG.attackCooldown;
+      this.attackCooldown = BUG.attackCooldown * (diff.attackCooldownScale || 1);
       return { hit: BUG.damage, from: this.pos.clone() };
     }
     return null;

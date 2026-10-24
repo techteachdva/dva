@@ -230,6 +230,13 @@ Targeting integrated graphics on a Chromebook:
   62 draw calls median / 163 worst, ~11k triangles, and a simulation cost of
   0.1 ms median and 0.2 ms p95 per frame - leaving essentially the whole 16.6 ms
   frame budget to the GPU.
-- Quality presets (Low / Medium / High) scale render resolution, fog density, and
-  the size of the light pool. Low is the recommended setting for older Chromebooks.
+- Quality presets (Low / Medium / High / Ultra) scale render resolution, fog,
+  and the light pool. Medium is the Chromebook default: richer textures and a
+  flashlight cookie, no shadow map. Ultra adds filmic tone mapping and a
+  flashlight shadow for desktop GPUs. Chromebooks cap resolution and skip shadows
+  even if Ultra is selected.
+- Floor arrows are a soft hint. They stay off until the player lingers in one
+  area, then point along the maze path to the nearest locked Chromebook.
+- The flashlight shader is compiled during the "waking the lab" beat, before
+  the player can toggle it. A lost WebGL context pauses and restores the lab.
 ```

@@ -3,7 +3,7 @@
  */
 
 import { audio } from '../audio.js';
-import { ui } from '../ui.js';
+import { ui } from '../ui.js?v=3.8';
 import { formatTime } from '../util.js';
 import { saveStore } from './save.js';
 import {

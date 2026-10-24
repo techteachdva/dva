@@ -30,9 +30,10 @@
 
 import { QUIZ } from '../config.js';
 import { audio } from '../audio.js';
-import { TERMINALS } from '../data/questions.js';
+import { TERMINALS } from '../data/questions.js?v=3.9.1';
 import { settings } from '../meta/settings.js';
 import { debug } from '../meta/debug.js';
+import { primersFor } from '../data/glossary.js';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
@@ -51,7 +52,7 @@ const SLOT_SHAPES = ['triangle', 'diamond', 'circle', 'square', 'pentagon'];
  * trackpad, where the player has just tapped to interact with the terminal, this
  * double-submit is not an edge case - it is the common path.
  */
-const OPEN_LOCKOUT_MS = 350;
+const OPEN_LOCKOUT_MS = 450;
 
 /** Time the explanation is on screen before the options come back. */
 const RETRY_DELAY_MS = 1200;
@@ -70,6 +71,7 @@ export class Quiz {
       mode: $('quiz-mode-chip'),
       standard: $('quiz-standard'),
       question: $('quiz-question'),
+      primer: $('quiz-primer'),
       answers: $('quiz-answers'),
       submit: $('quiz-submit'),
       next: $('quiz-next'),
@@ -175,6 +177,31 @@ export class Quiz {
       `FRAGMENT ${this.index + 1} OF ${this.questions.length}`;
   }
 
+  _showPrimer(q) {
+    const host = this.el.primer;
+    if (!host) return;
+    const blob = [q.text, q.primer, ...(q.options || []).map((opt) => opt.text)].join('\n');
+    const items = primersFor(blob, q.primer);
+    host.replaceChildren();
+    if (!items.length) {
+      host.classList.add('hidden');
+      return;
+    }
+    host.classList.remove('hidden');
+    const label = document.createElement('p');
+    label.className = 'quiz-primer-label';
+    label.textContent = 'READ THIS FIRST';
+    host.appendChild(label);
+    for (const item of items) {
+      const row = document.createElement('p');
+      row.className = 'quiz-primer-row';
+      const term = document.createElement('strong');
+      term.textContent = item.term;
+      row.append(term, document.createTextNode(` — ${item.def}`));
+      host.appendChild(row);
+    }
+  }
+
   _render() {
     const q = this._current();
     this.revealed = false;
@@ -187,6 +214,9 @@ export class Quiz {
     this.el.standard.textContent = q.std || q.standard || '';
     this.el.standard.classList.toggle('hidden', !(q.std || q.standard));
     this.el.question.textContent = q.text;
+    this._showPrimer(q);
+    this._textLocked = false;
+    this._stopType?.();
 
     // Telling them how many to pick is the difference between assessing tech
     // knowledge and assessing familiarity with checkbox conventions
@@ -196,8 +226,18 @@ export class Quiz {
     this.el.mode.classList.toggle('is-multi', !!q.multi);
 
     this._renderOptions(q);
+    this._gateAnswers(true);
     this._resetFeedback();
     this._lockoutConfirm();
+    window.setTimeout(() => {
+      if (this._current() === q && !this.revealed) this._gateAnswers(false);
+    }, OPEN_LOCKOUT_MS);
+  }
+
+  _gateAnswers(locked) {
+    this._textLocked = locked;
+    [...this.el.answers.children].forEach((btn) => { btn.disabled = locked; });
+    if (locked) this.el.submit.disabled = true;
   }
 
   _renderOptions(q) {
@@ -254,12 +294,12 @@ export class Quiz {
     clearTimeout(this._lockTimer);
     this._lockTimer = setTimeout(() => {
       // Still disabled if nothing is chosen; this only lifts the opening lockout
-      this.el.submit.disabled = this.picked.size === 0;
+      this.el.submit.disabled = this._textLocked || this.picked.size === 0;
     }, OPEN_LOCKOUT_MS);
   }
 
   _pick(i, btn) {
-    if (this.revealed || this.locked) return;
+    if (this.revealed || this.locked || this._textLocked) return;
     const q = this._current();
     audio.uiClick();
 
@@ -385,9 +425,15 @@ export class Quiz {
   }
 
   _showExplanation(q, prefix) {
-    this.el.explain.textContent = `${prefix}${q.why || ''}`.trim();
+    const text = `${prefix}${q.why || ''}`.trim();
     this.el.feedback.classList.remove('hidden');
-    this._announce(`${this.el.verdict.textContent}. ${this.el.explain.textContent}`);
+    this.el.explain.textContent = text;
+    this.el.next.disabled = true;
+    this._explainAt = performance.now();
+    window.setTimeout(() => {
+      this.el.next.disabled = false;
+    }, OPEN_LOCKOUT_MS);
+    this._announce(`${this.el.verdict.textContent}. ${text}`);
   }
 
   /** Politely, so it never interrupts what the student is already hearing. */
@@ -397,7 +443,9 @@ export class Quiz {
   }
 
   _next() {
-    if (!this.revealed) return;
+    if (!this.revealed || this.el.next.disabled) return;
+    const dwell = this._explainAt ? performance.now() - this._explainAt : 0;
+    this.hooks.onRead?.(dwell, this.answeredFirstTry);
     audio.uiClick();
     this.index++;
     if (this.index >= this.questions.length) {

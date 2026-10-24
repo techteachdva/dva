@@ -6,6 +6,7 @@ import * as THREE from '../../vendor/three.module.js';
 import { PHISHER, CELL } from '../config.js';
 import { clamp } from '../util.js';
 import { audio } from '../audio.js';
+import { easeFactor } from '../meta/ease.js';
 
 let sharedGeo = null;
 
@@ -62,6 +63,7 @@ export class Phisher {
   }
 
   _sees(player, diff) {
+    if (player.introCalm) return false;
     if (!player.alive || (player.hidden && diff.hiddenEvade)) return false;
     const dx = player.pos.x - this.pos.x;
     const dz = player.pos.z - this.pos.z;
@@ -82,7 +84,7 @@ export class Phisher {
       const targetAng = Math.atan2(dx, dz);
       this.heading += clamp(targetAng - this.heading, -5 * dt, 5 * dt);
       if (dist > 3) {
-        const sp = PHISHER.chaseSpeed * this.speedScale * diff.speedScale;
+        const sp = PHISHER.chaseSpeed * this.speedScale * easeFactor(diff, this) * (diff.enemySpeedScale || 1);
         this.pos.x += (-Math.sin(this.heading)) * sp * dt;
         this.pos.z += (-Math.cos(this.heading)) * sp * dt;
         this.maze.collide(this.pos, PHISHER.radius);

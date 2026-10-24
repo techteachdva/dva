@@ -16,8 +16,8 @@
 // Namespace import on purpose. The question bank is owned by another author and
 // is still growing: a named import of an export it does not have yet is a fatal
 // module error, while a missing property on a namespace is just undefined.
-import * as bank from '../data/questions.js';
-import * as selBank from '../data/twoTruths.js';
+import * as bank from '../data/questions.js?v=3.9.1';
+import * as selBank from '../data/twoTruths.js?v=3.7';
 import { LEVEL_COUNT } from './levels.js';
 
 const TERMINALS = Array.isArray(bank.TERMINALS) ? bank.TERMINALS : [];

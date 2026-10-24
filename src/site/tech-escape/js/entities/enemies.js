@@ -2,7 +2,7 @@
  * Owns every hunter in the lab and the pressure curve.
  */
 
-import { EvilMouse, disposeMouseGeometry } from './mouse.js';
+import { EvilMouse, disposeMouseGeometry } from './mouse.js?v=3.9';
 import { GhostVirus, disposeVirusGeometry } from './virus.js';
 import { CircuitBug, disposeBugGeometry } from './bug.js';
 import { Phisher, disposePhisherGeometry } from './phisher.js';
@@ -29,6 +29,7 @@ export class EnemyManager {
     this.swarming = false;
     this.frozen = false;
     this.globalAlertTimer = 0;
+    this.introGrace = diff.introGrace || 0;
 
     this._flow = null;
     this._flowTimer = 0;
@@ -179,6 +180,8 @@ export class EnemyManager {
 
     if (this.globalAlertTimer > 0) this.globalAlertTimer -= adt;
     const alertActive = this.globalAlertTimer > 0;
+    if (this.introGrace > 0) this.introGrace = Math.max(0, this.introGrace - adt);
+    player.introCalm = this.introGrace > 0;
 
     let damage = 0;
     let batteryDrain = 0;
@@ -194,11 +197,13 @@ export class EnemyManager {
     let stole = null;
 
     const noteHit = (ev, pos) => {
-      if (!ev?.hit || !pos) return;
+      if (!ev?.hit || !pos || this.frozen || player.introCalm) return;
       const d = Math.hypot(player.pos.x - pos.x, player.pos.z - pos.z);
       if (d < attackDist) {
         attackDist = d;
         attackFrom = pos;
+        damage = ev.hit;
+        batteryDrain = ev.batteryDrain || 0;
       }
     };
 
@@ -210,10 +215,7 @@ export class EnemyManager {
         continue;
       }
       const ev = m.update(adt, player, this._flow, this.mice, this.diff, lures, alertActive);
-      if (ev?.hit && !this.frozen) {
-        damage += ev.hit;
-        noteHit(ev, ev.from);
-      }
+      if (ev?.hit) noteHit(ev, ev.from);
       if (m.hunting) hunters++;
       if (m.feeding) feeding++;
       nearest = Math.min(nearest, Math.hypot(player.pos.x - m.pos.x, player.pos.z - m.pos.z));
@@ -227,11 +229,7 @@ export class EnemyManager {
         continue;
       }
       const ev = v.update(adt, player, this.diff, alertActive);
-      if (ev?.hit && !this.frozen) {
-        damage += ev.hit;
-        batteryDrain += ev.batteryDrain || 0;
-        noteHit(ev, ev.from);
-      }
+      if (ev?.hit) noteHit(ev, ev.from);
       if (ev?.glitched) glitched++;
       if (ev?.burning || v.burning) {
         burning = true;
@@ -249,10 +247,7 @@ export class EnemyManager {
         continue;
       }
       const ev = b.update(adt, player, this._flow, this.diff, lures);
-      if (ev?.hit && !this.frozen) {
-        damage += ev.hit;
-        noteHit(ev, ev.from);
-      }
+      if (ev?.hit) noteHit(ev, ev.from);
       if (b.hunting) hunters++;
       nearest = Math.min(nearest, Math.hypot(player.pos.x - b.pos.x, player.pos.z - b.pos.z));
     }
@@ -279,10 +274,7 @@ export class EnemyManager {
         continue;
       }
       const ev = c.update(adt, player, this._flow, this.diff, alertActive);
-      if (ev?.hit && !this.frozen) {
-        damage += ev.hit;
-        noteHit(ev, ev.from);
-      }
+      if (ev?.hit) noteHit(ev, ev.from);
       if (c.hunting) hunters++;
       nearest = Math.min(nearest, Math.hypot(player.pos.x - c.pos.x, player.pos.z - c.pos.z));
     }

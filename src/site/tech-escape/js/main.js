@@ -10,12 +10,13 @@
 import * as THREE from '../vendor/three.module.js';
 
 import {
-  CELL, QUALITY, DIFFICULTY, COLORS, PLAYER, PICKUP, QUIZ, DECRYPT, PRINTER, CODE_PARTS, NOTIFY, MOBILE,
+  CELL, DIFFICULTY, COLORS, PLAYER, PICKUP, QUIZ, DECRYPT, PRINTER, CODE_PARTS, NOTIFY, MOBILE,
+  resolveQuality,
 } from './config.js';
 import { clamp, makeRng, formatTime, guessDeviceIp } from './util.js';
 import { input, touchUi } from './input.js';
-import { audio } from './audio.js';
-import { ui } from './ui.js';
+import { audio } from './audio.js?v=3.5';
+import { ui } from './ui.js?v=3.8';
 import { Maze } from './world/maze.js';
 import { Lab } from './world/lab.js';
 import { planLabFurniture, placeLootSpot } from './world/layout.js';
@@ -24,29 +25,48 @@ import { buildScatterProps } from './world/scatter.js';
 import { pickPosterCells } from './world/map-poster.js';
 import { Lighting } from './world/lighting.js';
 import { Player } from './entities/player.js';
-import { EnemyManager } from './entities/enemies.js';
+import { EnemyManager } from './entities/enemies.js?v=3.9';
 import { PickupField } from './entities/pickups.js';
 import { ThrowField } from './entities/throwables.js';
 import { Inventory } from './entities/inventory.js';
 import { disposeModels } from './entities/models.js';
-import { Quiz } from './minigames/quiz.js';
+import { Quiz } from './minigames/quiz.js?v=3.9.1';
 import { Decrypt } from './minigames/memory.js';
-import { TwoTruths } from './minigames/twoTruths.js';
-import { TERMINALS, QUESTION_COUNT } from './data/questions.js';
-import { drawTwoTruths, TWO_TRUTHS_COUNT } from './data/twoTruths.js';
-import { drawForTerminal, idsOf } from './meta/quizpool.js';
-import { saveStore } from './meta/save.js';
+import { TwoTruths } from './minigames/twoTruths.js?v=3.7';
+import { TERMINALS, QUESTION_COUNT } from './data/questions.js?v=3.9.1';
+import { drawTwoTruths, TWO_TRUTHS_COUNT } from './data/twoTruths.js?v=3.7';
+import { drawForTerminal, idsOf } from './meta/quizpool.js?v=3.9.1';
+import { saveStore } from './meta/save.js?v=3.9.1';
 import { settings, flashGuard } from './meta/settings.js';
 import { getLevel, layoutFor, runProfile } from './meta/levels.js';
-import { sessionUi } from './meta/session-ui.js';
+import { sessionUi } from './meta/session-ui.js?v=3.8';
 import { bindUi } from './meta/bind-ui.js';
 import { debug, DEBUG_CODE } from './meta/debug.js';
 import { computeRunScore } from './meta/score.js';
-import { highscoresUi } from './meta/highscores-ui.js';
-import { BootSequence } from './ui/boot.js';
+import { highscoresUi } from './meta/highscores-ui.js?v=3.8';
+import { BootSequence, bootShouldRush } from './ui/boot.js?v=3.0';
+import { ScopeOpening } from './ui/opening.js?v=3.6';
+import { startPauseScope } from './ui/pause-rise.js?v=3.3';
 import { captions } from './ui/captions.js';
-import { tutorial } from './ui/tutorial.js';
+import { tutorial } from './ui/tutorial.js?v=3.8';
+import { coach } from './ui/coach.js?v=3.8';
 import { threatSector, threatPan } from './threat-direction.js';
+
+function agentLabel() {
+  const ua = navigator.userAgent || '';
+  let browser = 'BROWSER';
+  const chrome = ua.match(/Chrome\/(\d+)/);
+  const firefox = ua.match(/Firefox\/(\d+)/);
+  if (/Edg\//.test(ua)) browser = 'EDGE';
+  else if (chrome) browser = `CHROME ${chrome[1]}`;
+  else if (firefox) browser = `FIREFOX ${firefox[1]}`;
+  else if (/Safari\//.test(ua)) browser = 'SAFARI';
+  if (/CrOS/i.test(ua)) return `${browser} CROS`;
+  if (/Windows/i.test(ua)) return `${browser} WIN`;
+  if (/Mac OS/i.test(ua)) return `${browser} MAC`;
+  if (/Android/i.test(ua)) return `${browser} ANDROID`;
+  return browser;
+}
 
 const MODE = {
   LOADING: 'loading',
@@ -69,6 +89,16 @@ const FRAGMENT_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 class Game {
   constructor() {
     this.mode = MODE.LOADING;
+    this._halting = null;
+    this._halt = 1;
+    this._pauseTimers = [];
+    this._stopPauseScope = null;
+    this._dying = false;
+    this._death = null;
+    this._phoneRinging = false;
+    this._phoneItem = null;
+    this._phoneWait = 0;
+    this._phoneBuzz = 0;
     this.levelIndex = 0;
     this._invUiRev = -1;
     this.settings = {
@@ -115,6 +145,7 @@ class Game {
     bindUi.init();
     highscoresUi.init();
     tutorial.init();
+    coach.init();
     this.notify.bindDismiss();
     settings.onChange((k) => {
       if (k === 'binds') input.applyBinds(settings.get('binds'));
@@ -126,6 +157,7 @@ class Game {
     await this._bootSequence();
     ui.showScreen(null);
 
+    sessionUi.noteReveal();
     await sessionUi.enterLobby();
     this._startLoop();
   }
@@ -135,10 +167,11 @@ class Game {
     try {
       renderer = new THREE.WebGLRenderer({
         canvas,
-        antialias: QUALITY[this.settings.quality].antialias,
-        powerPreference: 'high-performance',
+        antialias: false,
+        powerPreference: 'default',
         alpha: false,
         stencil: false,
+        failIfMajorPerformanceCaveat: false,
       });
     } catch (err) {
       ui.fatalError(
@@ -164,6 +197,20 @@ class Game {
     this._rendererName = dbg
       ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)).slice(0, 42)
       : 'WebGL';
+    this._softwareRenderer = /swiftshader|llvmpipe|softpipe|basic render/i.test(this._rendererName);
+    if (this._softwareRenderer) this.settings.quality = 'low';
+
+    canvas.addEventListener('webglcontextlost', (ev) => {
+      ev.preventDefault();
+      this._contextLost = true;
+      document.getElementById('gfx-stall')?.classList.remove('hidden');
+      if (this.mode === MODE.PLAYING) this.pause();
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      this._contextLost = false;
+      document.getElementById('gfx-stall')?.classList.add('hidden');
+      this._recoverGraphics();
+    });
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(74, 1, 0.08, 140);
@@ -174,10 +221,65 @@ class Game {
     return true;
   }
 
+  _qualityNow() {
+    const key = input.touchMode ? MOBILE.autoQuality : (this.settings.quality || 'medium');
+    return resolveQuality(key, { software: !!this._softwareRenderer });
+  }
+
+  _applyTone(q) {
+    if (!this.renderer) return;
+    if (q.toneMapping === 'aces') {
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = 1.08;
+    } else {
+      this.renderer.toneMapping = THREE.NoToneMapping;
+      this.renderer.toneMappingExposure = 1;
+    }
+    this.renderer.shadowMap.enabled = !!q.shadows;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  }
+
+  /** Compile the lab, including the flashlight, before the player can press F. */
+  async _prewarm(lighting, player) {
+    const el = document.getElementById('gfx-warm');
+    el?.classList.remove('hidden');
+    const prev = lighting.flashlight.intensity;
+    lighting.flashlight.intensity = 36;
+    this.camera.position.copy(player.pos);
+    this.camera.rotation.set(player.pitch || 0, player.yaw || 0, 0, 'YXZ');
+    try {
+      this.renderer.compile(this.scene, this.camera);
+      for (let i = 0; i < 2; i++) {
+        this.renderer.render(this.scene, this.camera);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+    } catch (err) {
+      console.warn('Shader prewarm failed', err);
+    }
+    lighting.flashlight.intensity = prev;
+    lighting._flashLevel = 0;
+    el?.classList.add('hidden');
+  }
+
+  _recoverGraphics() {
+    if (!this.renderer) return;
+    this._resize();
+    this.scene.traverse((obj) => {
+      if (obj.isInstancedMesh && obj.instanceMatrix) obj.instanceMatrix.needsUpdate = true;
+      const mats = obj.material ? [].concat(obj.material) : [];
+      for (const m of mats) {
+        if (m.map) m.map.needsUpdate = true;
+        m.needsUpdate = true;
+      }
+    });
+    try { this.renderer.compile(this.scene, this.camera); } catch { /* restored next frame */ }
+    if (this.world?.player) this.world.player._rememberSafe();
+    ui.toast('Graphics came back. Click RESUME if the lab paused.', 'warn', 4200);
+  }
+
   _resize() {
     if (!this.renderer) return;
-    const qKey = input.touchMode ? MOBILE.autoQuality : this.settings.quality;
-    const q = QUALITY[qKey] || QUALITY.medium;
+    const q = this._qualityNow();
     const w = window.innerWidth;
     const h = window.innerHeight;
     const dpr = Math.min(window.devicePixelRatio || 1, q.maxDpr) * q.scale;
@@ -188,58 +290,81 @@ class Game {
   }
 
   /**
-   * The startup log. Five lines, each one reporting the result of work that
-   * genuinely just happened, and the last one printing the code format the player
-   * is about to spend the run collecting - so reading it is worth doing.
-   *
-   * Pacing, skipping and the 10 second ceiling all live in BootSequence.
+   * Oscilloscope, then the terminal log, then the lobby.
+   * The WebGL renderer is already up. This sequence only draws the canvas
+   * layer and reports what that renderer, and the machine, actually are.
    */
   async _bootSequence() {
+    const forceFull = new URLSearchParams(location.search).get('opening') === 'full';
+    const reduceMotion = !!settings.get('reduceMotion');
+    const fast = forceFull ? false : bootShouldRush();
+    const opening = new ScopeOpening({
+      canvas: document.getElementById('opening-scope'),
+      reduceMotion,
+      reduceFlashing: !!settings.get('reduceFlashing'),
+      fast,
+      muted: !!settings.get('muted'),
+      low: !!this._softwareRenderer,
+    });
     const boot = new BootSequence({
       log: document.getElementById('boot-log'),
       fill: document.getElementById('load-fill'),
       skip: document.getElementById('boot-skip'),
     });
+    boot.setOnSkip(() => opening.skip());
+    boot.setOnLine(() => opening.blip());
+    boot.arm();
 
-    await boot.run([
-      {
-        text: 'NIGHT SHIFT MONITOR ONLINE',
-        run: () => this._rendererName.slice(0, 18).toUpperCase(),
-      },
-      {
-        text: 'RETICULATING SPLINES',
-        run: () => 'OK',
-      },
-      {
-        text: 'DOOR LOCKS ENGAGED, LIGHTS OFF',
-        run: () => 'CONFIRMED',
-      },
-      {
-        text: 'QUANTIMIZING THE INFINITE',
-        run: () => '∞',
-      },
-      {
-        text: 'CHROMEBOOKS AWAKE',
-        run: () => `${TERMINALS.length} OF ${TERMINALS.length}`,
-      },
-      {
-        text: 'DOWNLOADING YOUR UNIQUE BRAINSTEM ID',
-        run: async () => guessDeviceIp(),
-      },
-      {
-        text: 'PROMPT BANK',
-        run: () => `${QUESTION_COUNT} READY`,
-      },
-      {
-        text: 'SEL TEXT BANK',
-        run: () => `${TWO_TRUTHS_COUNT} READY`,
-      },
-      {
-        // The one line that is worth reading twice
-        text: 'EXIT CODE NEEDS',
-        run: () => `${CODE_PARTS} FRAGMENTS`,
-      },
-    ]);
+    const stampsPromise = this._bootStamps();
+    try {
+      await opening.play();
+      opening.beginLog();
+      const stamps = await stampsPromise;
+      if (!reduceMotion) await boot.holdCursor(fast ? 500 : 1100);
+      const pace = reduceMotion
+        ? { cps: 80, minSeconds: 3.2, maxSeconds: 8, dwellScale: 0.16 }
+        : fast
+          ? { cps: 96, minSeconds: 1.1, maxSeconds: 4.5, dwellScale: 0.08 }
+          : { cps: 32, minSeconds: 0, maxSeconds: 26, dwellScale: 0.2 };
+      await boot.run(this._bootStages(stamps), pace);
+    } finally {
+      opening.stop();
+    }
+  }
+
+  async _bootStamps() {
+    let ip = 'REDACTED';
+    try {
+      ip = await guessDeviceIp(1000);
+    } catch { /* offline or blocked */ }
+    const mem = navigator.deviceMemory;
+    const cores = navigator.hardwareConcurrency || 0;
+    return {
+      display: `${window.innerWidth}x${window.innerHeight} @${(window.devicePixelRatio || 1).toFixed(2)}X`,
+      gpu: String(this._rendererName || 'WEBGL').slice(0, 32).toUpperCase(),
+      agent: agentLabel(),
+      machine: `${cores || 'N/A'} CORES / ${mem ? `${mem} GB` : 'CLASSIFIED'}`,
+      terminals: `${TERMINALS.length} OF ${TERMINALS.length}`,
+      ip: String(ip || 'REDACTED').slice(0, 24),
+      banks: `${QUESTION_COUNT} PROMPTS / ${TWO_TRUTHS_COUNT} SEL`,
+      parts: `${CODE_PARTS} FRAGMENTS`,
+    };
+  }
+
+  _bootStages(stamps) {
+    const s = stamps;
+    return [
+      { text: 'DISPLAY', run: () => s.display },
+      { text: 'GPU', run: () => s.gpu },
+      { text: 'AGENT', run: () => s.agent },
+      { text: 'MACHINE', run: () => s.machine },
+      { text: 'RETICULATING SPLINES', run: () => 'OK' },
+      { text: 'QUANTIMIZING THE INFINITE', run: () => '∞' },
+      { text: 'CHROMEBOOKS AWAKE', run: () => s.terminals },
+      { text: 'BRAINSTEM ID', run: () => s.ip },
+      { text: 'PROMPT BANKS', run: () => s.banks },
+      { text: 'EXIT CODE NEEDS', run: () => s.parts },
+    ];
   }
 
   // ============================================================== settings
@@ -271,8 +396,7 @@ class Game {
       const base = (this.settings.brightness / 100) * (this.world.level?.brightnessScale || 1);
       this.world.lighting.setBrightness(base * debug.brightnessMultiplier());
       this.world.player.reduceFx = this.settings.reduceFx;
-      const qKey = input.touchMode ? MOBILE.autoQuality : this.settings.quality;
-      this.scene.fog.density = QUALITY[qKey]?.fogDensity ?? QUALITY.medium.fogDensity;
+      this.scene.fog.density = this._qualityNow().fogDensity;
       this._applyDebugPerks();
     }
     this._resize();
@@ -282,6 +406,10 @@ class Game {
   _bindUi() {
     const on = (id, ev, fn) => document.getElementById(id)?.addEventListener(ev, fn);
 
+    on('pocket-phone', 'click', () => {
+      if (this._phoneRinging) this._raisePhone();
+    });
+
     on('btn-start', 'click', () => {
       audio.init();
       audio.uiClick();
@@ -290,10 +418,13 @@ class Game {
 
     on('btn-settings', 'click', () => {
       audio.uiClick();
+      this._clearHaltVisual();
+      document.getElementById('screen-pause')?.classList.add('is-menu');
       this._returnScreen = 'screen-title';
       ui.showScreen('screen-pause');
       document.getElementById('btn-quit').classList.add('hidden');
       document.querySelector('#screen-pause .panel-title').textContent = 'SETTINGS';
+      sessionUi.showPauseTab('comfort');
     });
 
     on('btn-standards', 'click', () => {
@@ -345,12 +476,19 @@ class Game {
     // Global keys
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Escape') {
-        if (this.mode === MODE.PLAYING) {
+        if (this._halting) {
+          e.preventDefault();
+          if (performance.now() - (this._haltAt || 0) > 450) this._finishPauseNow();
+        } else if (this.mode === MODE.PLAYING) {
           e.preventDefault();
           this.pause();
         } else if (this.mode === MODE.PAUSED && this._returnScreen !== 'screen-title') {
           e.preventDefault();
           this.resume();
+        } else if (this.mode === MODE.OVER) {
+          e.preventDefault();
+          if (this._death && !this._death.shown) this._death.t = 99;
+          else ui.finishOverReadout();
         } else if (this.mode === MODE.PRINTER) {
           e.preventDefault();
           this._closePrinter();
@@ -381,18 +519,29 @@ class Game {
     // Losing pointer lock mid-game means the player alt-tabbed or hit Esc (desktop only)
     input.onPointerLockChange = (locked) => {
       if (input.touchMode) return;
-      if (!locked && this.mode === MODE.PLAYING && !this.expectUnlock) this.pause();
+      if (!locked && this.mode === MODE.PLAYING && !this.expectUnlock && !this._phoneRinging) this.pause();
       this.expectUnlock = false;
     };
 
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden && this.mode === MODE.PLAYING) this.pause();
+      if (document.hidden && this.mode === MODE.PLAYING) this.pause({ instant: true });
     });
   }
 
   // ============================================================ world build
 
-  startRun() {
+  async startRun() {
+    if (this._starting) return;
+    this._clearDeath();
+    this._starting = true;
+    try {
+      await this._startRunBody();
+    } finally {
+      this._starting = false;
+    }
+  }
+
+  async _startRunBody() {
     this._teardownWorld();
 
     const level = getLevel(this.levelIndex);
@@ -519,9 +668,28 @@ class Game {
     const player = new Player(maze, lab, startCell, diff);
     player.reduceFx = this.settings.reduceFx;
     player.yaw = this._bestStartYaw(maze, startCell);
-    lab.updateEmergencyArrows(player.pos);
+    lab.updateEmergencyArrows(player.pos, 0);
 
-    const lighting = new Lighting(this.scene, this.camera, QUALITY[this.settings.quality]);
+    const qRun = this._qualityNow();
+    this._applyTone(qRun);
+    if (qRun.shadows) {
+      lab.group.traverse((obj) => {
+        if (obj.isMesh) {
+          obj.castShadow = true;
+          obj.receiveShadow = true;
+        }
+      });
+    }
+    const maxAniso = this.renderer.capabilities.getMaxAnisotropy?.() || 1;
+    lab.group.traverse((obj) => {
+      const mats = obj.material ? [].concat(obj.material) : [];
+      for (const mat of mats) {
+        if (!mat.map) continue;
+        mat.map.anisotropy = Math.min(qRun.anisotropy || 1, maxAniso);
+      }
+    });
+
+    const lighting = new Lighting(this.scene, this.camera, qRun);
     lighting.setBrightness(
       (this.settings.brightness / 100) * (level.brightnessScale || 1) * debug.brightnessMultiplier(),
     );
@@ -531,7 +699,7 @@ class Game {
 
     this.scene.fog = new THREE.FogExp2(
       COLORS.fog,
-      QUALITY[this.settings.quality].fogDensity * (level.fogScale || 1),
+      qRun.fogDensity * (level.fogScale || 1),
     );
 
     const enemies = new EnemyManager(this.scene, maze, rng, diff, lab.obstacles);
@@ -585,6 +753,10 @@ class Game {
 
     audio.init();
     audio.startAmbience();
+    await this._prewarm(lighting, player);
+    coach.beginRun();
+    this._coachX = player.pos.x;
+    this._coachZ = player.pos.z;
 
     this.mode = MODE.PLAYING;
     input.setEnabled(true);
@@ -642,26 +814,131 @@ class Game {
 
   // =============================================================== flow control
 
-  pause() {
+  pause(opts = {}) {
+    if (this._phoneRinging || this._phoneLift) return;
     if (this.mode !== MODE.PLAYING) return;
+    document.getElementById('scene')?.classList.remove('is-halting');
+    document.getElementById('halt-veil')?.classList.remove('is-on');
+    this._openPauseMenu({ whoosh: !opts.instant });
+  }
+
+  _openPauseMenu({ whoosh }) {
     this.mode = MODE.PAUSED;
     this._returnScreen = null;
     input.setEnabled(false);
     this.expectUnlock = true;
     input.releaseLock();
-    document.getElementById('btn-quit').classList.remove('hidden');
-    document.querySelector('#screen-pause .panel-title').textContent = 'PAUSED';
+    document.getElementById('btn-quit')?.classList.remove('hidden');
+    const title = document.querySelector('#screen-pause .panel-title');
+    if (title) title.textContent = 'PAUSED';
+    sessionUi.showPauseTab('play');
+    const screen = document.getElementById('screen-pause');
+    screen?.classList.remove('is-rising', 'is-risen', 'is-flicker');
+    screen?.classList.add('is-menu');
+    screen?.removeAttribute('aria-hidden');
     ui.showScreen('screen-pause');
     ui.setHudVisible(false);
     input.showTouchUi(false);
     debug.syncPanel();
-    audio.menuWhoosh();
     audio.setTension(0);
     audio.setMuffled(false);
+    if (whoosh) {
+      audio.init();
+      audio.menuWhoosh();
+    }
+    document.getElementById('btn-resume')?.focus();
+  }
+
+  _beginPauseRise() {
+    if (this._halting !== 'slow') return;
+    this._halting = 'rise';
+    this.mode = MODE.PAUSED;
+    this._returnScreen = null;
+    input.setEnabled(false);
+    this.expectUnlock = true;
+    input.releaseLock();
+    document.getElementById('btn-quit')?.classList.remove('hidden');
+    const title = document.querySelector('#screen-pause .panel-title');
+    if (title) title.textContent = 'PAUSED';
+    sessionUi.showPauseTab('play');
+    const screen = document.getElementById('screen-pause');
+    if (!screen) {
+      this._openPauseMenu({ whoosh: true });
+      return;
+    }
+    screen.classList.remove('is-menu', 'is-risen', 'is-flicker');
+    screen.classList.add('is-rising');
+    screen.setAttribute('aria-hidden', 'true');
+    ui.showScreen('screen-pause');
+    ui.setHudVisible(false);
+    input.showTouchUi(false);
+    debug.syncPanel();
+    audio.setTension(0);
+    audio.setMuffled(false);
+    this._stopPauseScope?.();
+    this._stopPauseScope = startPauseScope(document.getElementById('pause-scope'), {
+      reduceFlashing: !!settings.get('reduceFlashing'),
+    });
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => screen.classList.add('is-risen'));
+    });
+    this._pauseTimers.push(window.setTimeout(() => this._flickPauseScope(), 2800));
+    this._pauseTimers.push(window.setTimeout(() => this._revealPauseMenu(), 5200));
+  }
+
+  _flickPauseScope() {
+    if (this._halting !== 'rise') return;
+    const screen = document.getElementById('screen-pause');
+    if (!settings.get('reduceFlashing')) screen?.classList.add('is-flicker');
+    audio.init();
+    audio.bootChirp();
+  }
+
+  _revealPauseMenu() {
+    if (this._halting !== 'rise' && this.mode !== MODE.PAUSED) return;
+    const screen = document.getElementById('screen-pause');
+    screen?.classList.add('is-menu', 'is-risen');
+    screen?.classList.remove('is-flicker');
+    screen?.removeAttribute('aria-hidden');
+    this._halting = null;
+    this._stopPauseScope?.();
+    this._stopPauseScope = null;
+    document.getElementById('btn-resume')?.focus();
+  }
+
+  _finishPauseNow() {
+    this._clearPauseTimers();
+    this._stopPauseScope?.();
+    this._stopPauseScope = null;
+    this._halting = null;
+    this._halt = 1;
+    document.getElementById('scene')?.classList.add('is-halting');
+    document.getElementById('halt-veil')?.classList.add('is-on');
+    this._openPauseMenu({ whoosh: false });
+  }
+
+  _clearHaltVisual() {
+    this._clearPauseTimers();
+    this._stopPauseScope?.();
+    this._stopPauseScope = null;
+    this._halting = null;
+    this._halt = 1;
+    document.getElementById('scene')?.classList.remove('is-halting');
+    document.getElementById('scene')?.style.removeProperty('filter');
+    document.getElementById('halt-veil')?.classList.remove('is-on');
+    const screen = document.getElementById('screen-pause');
+    screen?.classList.remove('is-rising', 'is-risen', 'is-flicker', 'is-menu');
+    screen?.removeAttribute('aria-hidden');
+  }
+
+  _clearPauseTimers() {
+    for (const id of this._pauseTimers) window.clearTimeout(id);
+    this._pauseTimers = [];
   }
 
   resume() {
     if (this.mode !== MODE.PAUSED) return;
+    this._clearHaltVisual();
     this.mode = MODE.PLAYING;
     ui.hideAllScreens();
     ui.setHudVisible(true);
@@ -673,6 +950,8 @@ class Game {
   }
 
   quitToTitle() {
+    this._clearDeath();
+    this._clearHaltVisual();
     this._teardownWorld();
     audio.stopAmbience();
     audio.stopTitleMusic();
@@ -698,8 +977,12 @@ class Game {
   _startLoop() {
     const frame = (now) => {
       requestAnimationFrame(frame);
-      const dt = Math.min(0.05, (now - this.clock.last) / 1000 || 0);
+      const raw = (now - this.clock.last) / 1000;
       this.clock.last = now;
+      if (this._contextLost) return;
+      // A stall longer than a quarter second is a compile or a wake, not a step.
+      // Integrating it used to shove the body through a wall on slow machines.
+      const dt = !Number.isFinite(raw) || raw < 0 || raw > 0.25 ? 0 : Math.min(0.05, raw);
       this._tick(dt);
     };
     requestAnimationFrame(frame);
@@ -757,7 +1040,16 @@ class Game {
     const frozen = this._enemiesFrozen();
 
     if (worldRunning) {
-      const scale = this._minigameTimeScale();
+      let scale = this._minigameTimeScale();
+      if (this._halting === 'slow') {
+        this._halt = Math.max(0, this._halt - dt * 0.62);
+        scale *= Math.max(0.06, this._halt * this._halt);
+        if (this._halt <= 0.02) this._beginPauseRise();
+      }
+      if (this._phoneRinging || this._phoneLift) {
+        scale *= 0.4;
+        if (this._phoneRinging) this._tickPhone(dt);
+      }
       const wdt = dt * scale;
       w.runTime += wdt;
 
@@ -823,7 +1115,15 @@ class Game {
       w.lab.updateMapPosters(w.player.pos);
       w.lighting.setFlashlight(w.player.flashlightOn);
       w.lighting.reduceFlashing = settings.get('reduceFlashing');
-      w.lab.updateEmergencyArrows(w.player.pos);
+      const arrows = w.lab.updateEmergencyArrows(w.player.pos, wdt);
+      if (arrows?.revealed) coach.arrowsWoke();
+      const moved = Math.hypot(
+        w.player.pos.x - (this._coachX ?? w.player.pos.x),
+        w.player.pos.z - (this._coachZ ?? w.player.pos.z),
+      );
+      this._coachX = w.player.pos.x;
+      this._coachZ = w.player.pos.z;
+      if (controlsActive) coach.update(w, wdt, moved);
       w.lab.updateTerminalHighlights(w.player);
       w.lighting.update(
         dt,
@@ -837,6 +1137,7 @@ class Game {
     }
 
     input.clearEdges();
+    if (this._dying) this._stepDeath(dt);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -925,7 +1226,7 @@ class Game {
       w.player.stats.micePopped += ev.popped;
       w.progress?.notePop();
       ui.toast(
-        ev.popped === 1 ? 'One mouse popped!' : `${ev.popped} mice popped!`,
+        ev.popped === 1 ? 'Mouse down. A thrown bag ends one.' : `${ev.popped} mice down. The bags ended them.`,
         'good', 2200,
       );
     }
@@ -1287,18 +1588,84 @@ class Game {
     }
 
     this._notifyTimer = (this._notifyTimer ?? this._scheduleNotifyTimer()) - dt;
-    if (this._notifyTimer <= 0) this._openNotify();
+    if (this._notifyTimer <= 0) this._armPhone();
   }
 
-  _openNotify() {
+  _armPhone() {
     const w = this.world;
-    if (!w || this.notify.open) return;
-
+    if (!w || this.notify.open || this._phoneRinging) return;
     const exclude = w.progress?.excludeIds?.() || null;
     const item = drawTwoTruths(w.rng, exclude);
     if (!item) return;
-
     w.progress?.noteServed?.([item.id]);
+    this._phoneItem = item;
+    this._phoneRinging = true;
+    this._phoneWait = 0;
+    this._phoneBuzz = 0.85;
+    audio.init();
+    audio.phonePing(0);
+    captions.say('Phone', { type: 'ui' });
+    const phone = document.getElementById('pocket-phone');
+    phone?.classList.add('is-ringing');
+    phone?.classList.remove('hidden', 'is-raised');
+    this.expectUnlock = true;
+    input.releaseLock();
+  }
+
+  _tickPhone(dt) {
+    this._phoneWait += dt;
+    this._phoneBuzz -= dt;
+    if (this._phoneBuzz > 0) return;
+    const urgency = Math.min(1, this._phoneWait / 14);
+    const gap = settings.get('reduceFlashing') ? 1.35 : (1.15 - urgency * 0.7);
+    this._phoneBuzz = gap;
+    audio.phonePing(settings.get('reduceFlashing') ? Math.min(0.45, urgency) : urgency);
+  }
+
+  _raisePhone() {
+    if (!this._phoneRinging || !this._phoneItem) return;
+    const phone = document.getElementById('pocket-phone');
+    if (!phone || phone.classList.contains('is-raised')) return;
+    const rect = phone.getBoundingClientRect();
+    const dx = (window.innerWidth / 2) - (rect.left + rect.width / 2);
+    const dy = (window.innerHeight / 2) - (rect.top + rect.height / 2);
+    phone.style.setProperty('--tx', `${dx}px`);
+    phone.style.setProperty('--ty', `${dy}px`);
+    phone.classList.remove('is-ringing');
+    phone.classList.add('is-raised');
+    this._phoneRinging = false;
+    this._phoneLift = true;
+    const item = this._phoneItem;
+    if (settings.get('reduceMotion')) {
+      this._phoneLift = false;
+      phone.classList.add('hidden');
+      phone.classList.remove('is-raised');
+      this._openNotify(item);
+      return;
+    }
+    let done = false;
+    const finish = (ev) => {
+      if (done) return;
+      if (ev && ev.propertyName && ev.propertyName !== 'transform') return;
+      done = true;
+      phone.removeEventListener('transitionend', finish);
+      this._phoneLift = false;
+      phone.classList.add('hidden');
+      phone.classList.remove('is-raised');
+      phone.style.removeProperty('--tx');
+      phone.style.removeProperty('--ty');
+      this._openNotify(item);
+    };
+    phone.addEventListener('transitionend', finish);
+    window.setTimeout(() => finish(), 900);
+  }
+
+  _openNotify(ready) {
+    const w = this.world;
+    if (!w || this.notify.open) return;
+    const item = ready || this._phoneItem;
+    if (!item) return;
+    this._phoneItem = null;
 
     this.mode = MODE.NOTIFY;
     this.expectUnlock = true;
@@ -1306,6 +1673,7 @@ class Game {
     input.setEnabled(false);
     ui.setHudVisible(false);
     ui.showScreen('screen-notify');
+    document.getElementById('screen-notify')?.classList.add('is-from-hand');
     debug.syncMinigameButtons();
 
     this.notify.start(item, {
@@ -1365,6 +1733,9 @@ class Game {
         if (right) {
           w.questionsRight++;
           w.questionsFirstTry++;
+          w.player.addBattery(34);
+          for (const m of w.enemies.mice) m.calm = 8;
+          ui.toast('First try. Beam refilled. The mice lose you.', 'good', 2600);
         } else this._makeNoise(QUIZ.wrongAnswerNoise);
 
         const meta = w.progress?.recordAnswer?.(q, right, picked, index);
@@ -1457,6 +1828,9 @@ class Game {
   /** Returns from a menu or minigame to gameplay, restoring mouse capture. */
   _exitMinigameToPlaying() {
     this.mode = MODE.PLAYING;
+    this._phoneRinging = false;
+    const phone = document.getElementById('pocket-phone');
+    phone?.classList.remove('is-ringing', 'is-raised');
     ui.hideAllScreens();
     ui.setHudVisible(true);
     input.setEnabled(true);
@@ -1639,24 +2013,31 @@ class Game {
     highscoresUi.presentEndScreen(scoreResult);
   }
 
-  _gameOver(ev) {
+  _gameOver() {
+    if (this._dying) return;
     const w = this.world;
+    if (!w) return;
+    this._dying = true;
+    this._phoneRinging = false;
+    this._phoneLift = false;
+    document.getElementById('pocket-phone')?.classList.remove('is-ringing', 'is-raised');
     this.mode = MODE.OVER;
     audio.jumpscare();
     setTimeout(() => audio.defeat(), 400);
     audio.stopAmbience();
     audio.setMuffled(false);
-
     this.expectUnlock = true;
     input.releaseLock();
     input.setEnabled(false);
     ui.setHudVisible(false);
     ui.clearToasts();
+    input.showTouchUi(false);
+    w.player.flashlightOn = false;
+    w.lighting?.setFlashlight(false);
 
     const found = w.earned.filter(Boolean).length;
-    const asked = w.questionsAsked || 1;
-    const acc = Math.round((w.questionsRight / asked) * 100);
-
+    const asked = w.questionsAsked || 0;
+    const acc = asked ? Math.round((w.questionsRight / asked) * 100) : 0;
     const tips = [
       'Tables are safety. Duck under one and the mice lose you completely.',
       'The flashlight pushes viruses away but pulls mice toward you. Choose per hallway.',
@@ -1664,7 +2045,6 @@ class Game {
       'Grab every battery you see, even at full charge you will want the next one.',
       'You only need 2 of 3 questions right at a terminal. Read the explanations.',
     ];
-
     const delta = w.progress?.finishRun?.({
       escaped: false,
       seconds: w.runTime,
@@ -1673,31 +2053,132 @@ class Game {
       difficulty: this.settings.difficulty,
       stats: w.player.stats,
     }) || null;
-
     const scoreResult = computeRunScore(w, false);
-
     const progLines = [];
     if (delta?.mastered) progLines.push(`+${delta.mastered} mastered in Study Guide`);
     if (delta?.revealed) progLines.push(`+${delta.revealed} answers revealed`);
     if (delta?.micePopped) progLines.push(`${delta.micePopped} mice popped`);
+    const flavor = found >= CODE_PARTS
+      ? 'You had the whole code. The printer was right there. The dark got there first.'
+      : 'The lab goes quiet. Somewhere, four Chromebooks are still glowing, still waiting.';
+    const tip = tips[Math.floor(Math.random() * tips.length)];
+    const pad = (label, value) => {
+      const head = `> ${label} `;
+      const tail = ` ${value}`;
+      const width = 42;
+      const dots = Math.max(2, width - head.length - tail.length);
+      return head.length + tail.length >= width ? `${head}${tail}` : head + '.'.repeat(dots) + tail;
+    };
+    const readout = [
+      'SYSTEM FAILURE',
+      '',
+      flavor,
+      '',
+      pad('RUN SCORE', String(scoreResult.score)),
+      pad('CODE PIECES', `${found}/${CODE_PARTS}`),
+      pad('FLOOR', w.level?.codename || 'LEVEL'),
+      pad('SURVIVED', formatTime(w.runTime)),
+      pad('QUESTIONS', asked ? `${w.questionsRight}/${asked}` : '0/0'),
+      pad('ACCURACY', `${acc}%`),
+      ...(progLines.length ? ['', progLines.join('  ·  ')] : []),
+      '',
+      `TIP  ${tip}`,
+    ];
 
-    ui.showGameOver({
-      title: 'SYSTEM FAILURE',
-      flavor: found >= CODE_PARTS
-        ? 'You had the whole code. The printer was right there. The dark got there first.'
-        : 'The lab goes quiet. Somewhere, four Chromebooks are still glowing, still waiting.',
-      stats: [
-        { label: 'RUN SCORE', value: scoreResult.score },
-        { label: 'CODE PIECES', value: `${found}/${CODE_PARTS}`, tone: found >= CODE_PARTS ? 'good' : 'bad' },
-        { label: 'FLOOR', value: w.level?.codename || 'LEVEL' },
-        { label: 'SURVIVED', value: formatTime(w.runTime) },
-        { label: 'QUESTIONS RIGHT', value: `${w.questionsRight}/${w.questionsAsked}` },
-        { label: 'ACCURACY', value: `${acc}%` },
-        ...(progLines.length ? [{ label: 'THIS RUN', value: progLines.join(' · '), tone: 'good' }] : []),
-      ],
-      tip: `TIP: ${tips[Math.floor(Math.random() * tips.length)]}`,
-    });
-    highscoresUi.presentEndScreen(scoreResult);
+    this._death = {
+      t: 0,
+      y0: w.player.pos.y,
+      pitch0: w.player.pitch,
+      floorY: w.player.onTable ? 1.02 : 0.22,
+      shown: false,
+      payload: {
+        title: 'SYSTEM FAILURE',
+        flavor,
+        stats: [
+          { label: 'RUN SCORE', value: scoreResult.score },
+          { label: 'CODE PIECES', value: `${found}/${CODE_PARTS}`, tone: found >= CODE_PARTS ? 'good' : 'bad' },
+          { label: 'FLOOR', value: w.level?.codename || 'LEVEL' },
+          { label: 'SURVIVED', value: formatTime(w.runTime) },
+          { label: 'QUESTIONS RIGHT', value: `${w.questionsRight}/${w.questionsAsked}` },
+          { label: 'ACCURACY', value: `${acc}%` },
+          ...(progLines.length ? [{ label: 'THIS RUN', value: progLines.join(' · '), tone: 'good' }] : []),
+        ],
+        tip: `TIP: ${tip}`,
+        readout,
+        scoreResult,
+      },
+    };
+  }
+
+  _stepDeath(dt) {
+    const d = this._death;
+    const w = this.world;
+    if (!d || d.shown || !w) return;
+    d.t += dt;
+    const reduce = !!settings.get('reduceMotion');
+    const noFlash = reduce || !!settings.get('reduceFlashing');
+    const fall = reduce ? 0.28 : 1.7;
+    const u = Math.min(1, d.t / fall);
+    const grav = u * u;
+    const p = w.player;
+    p.pos.y = d.y0 + (d.floorY - d.y0) * grav;
+    p.pitch = d.pitch0 + (-1.22 - d.pitch0) * grav;
+    p.syncCamera(this.camera);
+    this.camera.rotation.z = grav * 0.48;
+
+    const veil = document.getElementById('death-veil');
+    const after = d.t - fall;
+    if (veil) {
+      veil.classList.remove('is-blink');
+      if (reduce) {
+        if (after > 0) {
+          veil.classList.add('is-black');
+          veil.style.opacity = '1';
+        }
+      } else if (!noFlash && after > 0 && after < 1.15) {
+        const pulses = [0.08, 0.42, 0.78];
+        let on = false;
+        for (let i = 0; i < pulses.length; i++) {
+          if (after > pulses[i] && after < pulses[i] + 0.1) on = true;
+        }
+        veil.style.opacity = on ? '1' : '0';
+        veil.classList.toggle('is-blink', on);
+      } else if (after > 1.15) {
+        veil.classList.add('is-black');
+        veil.classList.remove('is-blink');
+        veil.style.opacity = String(Math.min(1, (after - 1.15) / 0.8));
+      } else {
+        veil.style.opacity = '0';
+      }
+    }
+
+    const revealAt = reduce ? fall + 0.4 : fall + 2.15;
+    if (d.t >= revealAt) this._presentDeath();
+  }
+
+  _presentDeath() {
+    const d = this._death;
+    if (!d || d.shown) return;
+    d.shown = true;
+    const veil = document.getElementById('death-veil');
+    if (veil) {
+      veil.classList.remove('is-blink');
+      veil.classList.add('is-black');
+      veil.style.opacity = '1';
+    }
+    ui.showGameOver(d.payload);
+    highscoresUi.presentEndScreen(d.payload.scoreResult);
+  }
+
+  _clearDeath() {
+    this._dying = false;
+    this._death = null;
+    ui.finishOverReadout();
+    const veil = document.getElementById('death-veil');
+    if (veil) {
+      veil.classList.remove('is-blink', 'is-black');
+      veil.style.opacity = '0';
+    }
   }
 
   // ============================================================== playtest debug

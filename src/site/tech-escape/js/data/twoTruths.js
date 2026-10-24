@@ -675,7 +675,27 @@ const TWO_TRUTHS_DATA = [
   },
 ];
 
-export const TWO_TRUTHS = TWO_TRUTHS_DATA;
+function grade8Tag(item) {
+  const b = `${item.preview} ${item.statements.join(' ')} ${item.why}`.toLowerCase();
+  if (/copyright|plagiar|permission|credit the|their (photo|art|drawing|work)|stole/.test(b)) {
+    return 'ITEM 8.2.2.1 - Intellectual property | ISTE 1.2c Digital Citizen';
+  }
+  if (/password|phish|scam|private|stranger|personal info|account|screenshot/.test(b)) {
+    return 'ITEM 8.2.2.3 - Privacy and security | ISTE 1.2d Digital Citizen';
+  }
+  if (/delet|forever|posted|profile|story|comment/.test(b)) {
+    return 'ITEM 8.2.1.1 - Digital footprint | ISTE 1.2a Digital Citizen';
+  }
+  if (item.topic === 'Digital Citizenship') {
+    return 'ITEM 8.2.1.2 - Impact of technology | ISTE 1.2a Digital Citizen';
+  }
+  return 'ITEM 8.2.1.3 - Exchanging ideas online | ISTE 1.2b Digital Citizen';
+}
+
+export const TWO_TRUTHS = TWO_TRUTHS_DATA.map((item) => ({
+  ...item,
+  std: item.std || grade8Tag(item),
+}));
 
 const BY_ID = new Map(TWO_TRUTHS.map((item) => [item.id, item]));
 

@@ -11,6 +11,7 @@
 import * as THREE from '../../vendor/three.module.js';
 import { FLASHLIGHT, COLORS } from '../config.js';
 import { clamp, lerp } from '../util.js';
+import { makeFlashlightCookie } from './level-themes.js';
 
 export class Lighting {
   constructor(scene, camera, quality) {
@@ -18,13 +19,19 @@ export class Lighting {
     this.camera = camera;
     this.brightness = 1;
 
-    // Just enough ambient light to make out shapes; the lab is meant to be dark
-    this.ambient = new THREE.AmbientLight(0x2a3f5c, 0.5);
+    // Enough fill to read the floor and wall panels with the flashlight off.
+    // The beam is still the bright thing. The old 0.5 ambient left the lab as
+    // a black screen until the light came on, which is how a first night
+    // feels broken rather than dark.
+    this.ambient = new THREE.AmbientLight(0x9eb6dc, 0.85);
     scene.add(this.ambient);
 
-    // Faint top-down fill separates floor from ceiling
-    this.hemi = new THREE.HemisphereLight(0x18283c, 0x05070b, 0.35);
+    this.hemi = new THREE.HemisphereLight(0xc5daf0, 0x3a3024, 0.62);
     scene.add(this.hemi);
+
+    this.fill = new THREE.DirectionalLight(0xe7f1ff, 0.72);
+    this.fill.position.set(6, 12, 4);
+    scene.add(this.fill);
 
     this.flashlight = new THREE.SpotLight(
       FLASHLIGHT.color,
@@ -40,6 +47,23 @@ export class Lighting {
     camera.add(this.flashlight);
     camera.add(this.flashTarget);
     this.flashlight.target = this.flashTarget;
+    // The cookie is attached for the whole run, never toggled, so turning the
+    // beam on does not change the shader and stall a Chromebook.
+    this._cookie = null;
+    if (quality.cookie !== false) {
+      this._cookie = makeFlashlightCookie();
+      this.flashlight.map = this._cookie;
+    }
+    if (quality.shadows) {
+      const mapSize = quality.shadowMapSize || 1024;
+      this.flashlight.castShadow = true;
+      this.flashlight.shadow.mapSize.set(mapSize, mapSize);
+      this.flashlight.shadow.camera.near = 0.4;
+      this.flashlight.shadow.camera.far = 18;
+      this.flashlight.shadow.bias = -0.0006;
+      this.flashlight.shadow.normalBias = 0.045;
+      this.flashlight.shadow.radius = 2;
+    }
 
     // Small always-on glow at the player so you can see your own feet
     this.playerGlow = new THREE.PointLight(0x9fc4e8, 0.9, 5.5, 2);
@@ -63,8 +87,9 @@ export class Lighting {
 
   setBrightness(mult) {
     this.brightness = mult;
-    this.ambient.intensity = 0.5 * mult;
-    this.hemi.intensity = 0.35 * mult;
+    this.ambient.intensity = 0.85 * mult;
+    this.hemi.intensity = 0.62 * mult;
+    this.fill.intensity = 0.72 * mult;
     this.playerGlow.intensity = 0.9 * mult;
   }
 
@@ -164,10 +189,13 @@ export class Lighting {
   dispose() {
     this.scene.remove(this.ambient);
     this.scene.remove(this.hemi);
+    this.scene.remove(this.fill);
     this.camera.remove(this.flashlight);
     this.camera.remove(this.flashTarget);
     this.camera.remove(this.playerGlow);
     for (const l of this.pool) this.scene.remove(l);
     this.pool.length = 0;
+    this._cookie?.dispose();
+    this._cookie = null;
   }
 }

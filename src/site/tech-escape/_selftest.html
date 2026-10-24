@@ -16,7 +16,8 @@ import { Player } from './js/entities/player.js';
 import { GhostVirus as Virus } from './js/entities/virus.js';
 import { EvilMouse } from './js/entities/mouse.js';
 import { input } from './js/input.js';
-import { CELL, GRID, DIFFICULTY, QUALITY, TABLE, PLAYER, VIRUS } from './js/config.js';
+import { CELL, GRID, DIFFICULTY, QUALITY, TABLE, PLAYER, VIRUS, MOUSE } from './js/config.js';
+import { stepArrowHint, initialArrowHint } from './js/world/arrow-hint.js';
 import * as THREE from './vendor/three.module.js';
 
 const lines = [];
@@ -97,7 +98,7 @@ try {
   let rankN = 0;
 
   QUESTION_POOLS.forEach((pool, pi) => {
-    ok(`pool ${pi} has 32`, pool.length === 32, `len=${pool.length}`);
+    ok(`pool ${pi} has at least 32`, pool.length >= 32, `len=${pool.length}`);
     pool.forEach((q, qi) => {
       totalQ++;
       const id = `T${pi + 1}Q${qi + 1}`;
@@ -490,10 +491,33 @@ try {
     return d && d.startHealth > 0 && d.decryptScans > 0 && d.label
       && (d.noEnemies || d.mice > 0);
   }));
-  ok('quality presets complete', ['low', 'medium', 'high'].every((k) => {
+  ok('quality presets complete', ['low', 'medium', 'high', 'ultra'].every((k) => {
     const q = QUALITY[k];
     return q && q.scale > 0 && q.extraLights > 0;
   }));
+  ok('ultra is the only shadow preset', QUALITY.ultra.shadows === true && QUALITY.medium.shadows === false);
+  ok('after hours mice are slower than a walk',
+    MOUSE.chaseSpeed * DIFFICULTY.normal.enemySpeedScale < PLAYER.walkSpeed);
+  ok('field trip is easier than after hours',
+    DIFFICULTY.chill.enemySpeedScale < DIFFICULTY.normal.enemySpeedScale
+    && DIFFICULTY.chill.damageScale < DIFFICULTY.normal.damageScale);
+  ok('system crash still outruns a walk',
+    MOUSE.chaseSpeed * DIFFICULTY.nightmare.enemySpeedScale > PLAYER.walkSpeed);
+
+  let hint = initialArrowHint(0, 0);
+  hint = stepArrowHint(hint, 10, 0, 0, 0, 12, 4);
+  ok('arrows stay dark during a short search', !hint.active);
+  hint = stepArrowHint(hint, 12, 0, 0, 0, 12, 4);
+  ok('arrows wake after lingering in one area', hint.active && hint.justRevealed);
+  hint = stepArrowHint(hint, 0.2, 4, 0, 1, 7, 4);
+  ok('following the arrows puts them back to sleep', !hint.active);
+  let wandered = initialArrowHint(0, 0);
+  wandered = stepArrowHint(wandered, 15, 0, 0, 0, 12, 4);
+  wandered = stepArrowHint(wandered, 0.1, 30, 0, 6, 12, 4);
+  ok('leaving the area resets the linger', !wandered.active && wandered.time === 0);
+  let lastOne = initialArrowHint(0, 0);
+  lastOne = stepArrowHint(lastOne, 11, 0, 0, 0, 8, 1);
+  ok('one terminal left wakes arrows sooner', lastOne.active);
 
 } catch (err) {
   lines.push(`FAIL exception :: ${err && err.stack ? err.stack : err}`);

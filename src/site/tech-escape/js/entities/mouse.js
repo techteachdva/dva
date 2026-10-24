@@ -8,9 +8,10 @@
  */
 
 import * as THREE from '../../vendor/three.module.js';
-import { MOUSE, CELL, COLORS, THROWN } from '../config.js';
-import { angleDelta, clamp } from '../util.js';
+import { MOUSE, CELL, COLORS, THROWN, PLAYER } from '../config.js';
+import { angleDelta, clamp, separateFrom } from '../util.js';
 import { audio } from '../audio.js';
+import { easeFactor } from '../meta/ease.js';
 import { makeEntityGlyph } from './models.js';
 
 // FEED and FLEE both exist because of the cheetos bag: one is the distraction
@@ -22,10 +23,15 @@ let sharedGeo = null;
 function getGeometry() {
   if (sharedGeo) return sharedGeo;
   sharedGeo = {
-    body: new THREE.SphereGeometry(0.3, 10, 7),
-    eye: new THREE.SphereGeometry(0.055, 6, 5),
-    tail: new THREE.BoxGeometry(0.045, 0.045, 0.5),
-    button: new THREE.BoxGeometry(0.1, 0.02, 0.16),
+    body: new THREE.SphereGeometry(0.26, 12, 8),
+    plate: new THREE.SphereGeometry(0.2, 10, 6),
+    sensor: new THREE.SphereGeometry(0.055, 8, 6),
+    pupil: new THREE.SphereGeometry(0.02, 6, 4),
+    leg: new THREE.BoxGeometry(0.028, 0.2, 0.028),
+    claw: new THREE.ConeGeometry(0.018, 0.055, 4),
+    cable: new THREE.CylinderGeometry(0.015, 0.015, 0.18, 5),
+    slit: new THREE.BoxGeometry(0.13, 0.014, 0.028),
+    tooth: new THREE.ConeGeometry(0.014, 0.05, 4),
   };
   return sharedGeo;
 }
@@ -80,42 +86,80 @@ export class EvilMouse {
   _buildMesh() {
     const g = getGeometry();
     const group = new THREE.Group();
+    this._mats = [];
+    const mat = (m) => { this._mats.push(m); return m; };
 
-    // Squashed pale body, like a school mouse that has seen things
-    const body = new THREE.Mesh(
-      g.body,
-      new THREE.MeshLambertMaterial({ color: 0xd8dde6 }),
-    );
-    body.scale.set(1, 0.72, 1.35);
+    // A low black shell, not a toy. The red seam is a cracked button housing.
+    const bodyMat = mat(new THREE.MeshLambertMaterial({ color: 0x6a2832 }));
+    const body = new THREE.Mesh(g.body, bodyMat);
+    body.scale.set(1.15, 0.95, 1.65);
+    body.position.y = 0.12;
     group.add(body);
-    this._bodyMat = body.material;
+    this._bodyMat = bodyMat;
 
-    const buttons = new THREE.Mesh(g.button, new THREE.MeshBasicMaterial({ color: 0x8a1220 }));
-    buttons.position.set(0, 0.21, -0.16);
-    group.add(buttons);
-    this._buttonMat = buttons.material;
+    const plate = new THREE.Mesh(g.plate, mat(new THREE.MeshLambertMaterial({ color: 0x2c1219 })));
+    plate.scale.set(0.92, 0.38, 1.22);
+    plate.position.set(0, 0.12, -0.02);
+    group.add(plate);
 
-    const eyeMat = new THREE.MeshBasicMaterial({ color: COLORS.mouse });
-    this._eyeMat = eyeMat;
-    const eyeL = new THREE.Mesh(g.eye, eyeMat);
-    eyeL.position.set(-0.11, 0.08, -0.34);
-    group.add(eyeL);
-    const eyeR = new THREE.Mesh(g.eye, eyeMat);
-    eyeR.position.set(0.11, 0.08, -0.34);
-    group.add(eyeR);
+    const slit = new THREE.Mesh(g.slit, mat(new THREE.MeshBasicMaterial({ color: 0x8a1424 })));
+    slit.position.set(0, 0.17, -0.08);
+    group.add(slit);
 
-    // The tail is the USB cable
-    const tail = new THREE.Mesh(g.tail, new THREE.MeshLambertMaterial({ color: 0x2a2f38 }));
-    tail.position.set(0, 0.02, 0.42);
-    group.add(tail);
-    this._tail = tail;
-    this._tailMat = tail.material;
+    const toothMat = mat(new THREE.MeshLambertMaterial({ color: 0xe4ddd4 }));
+    for (const x of [-0.045, 0.045]) {
+      const tooth = new THREE.Mesh(g.tooth, toothMat);
+      tooth.position.set(x, 0.08, -0.5);
+      tooth.rotation.x = Math.PI * 0.62;
+      tooth.scale.setScalar(1.7);
+      group.add(tooth);
+    }
 
-    // White outlined triangle pinned above the body. Enemies are the one thing
-    // a player must never mistake for loot, so they get a shape of their own
-    // that survives greyscale, distance, and a dead flashlight.
+    // One optical sensor, not a pair of cartoon eyes.
+    const sensorMat = mat(new THREE.MeshBasicMaterial({ color: 0xff1a33 }));
+    const sensor = new THREE.Mesh(g.sensor, sensorMat);
+    sensor.position.set(0, 0.1, -0.5);
+    sensor.scale.setScalar(2.1);
+    group.add(sensor);
+    this._sensorMat = sensorMat;
+    const pupil = new THREE.Mesh(g.pupil, mat(new THREE.MeshBasicMaterial({ color: 0x140004 })));
+    pupil.position.set(0, 0.1, -0.58);
+    group.add(pupil);
+
+    const legMat = mat(new THREE.MeshLambertMaterial({ color: 0x4a1820 }));
+    const clawMat = mat(new THREE.MeshLambertMaterial({ color: 0x6e1822 }));
+    this._legs = [];
+    for (const side of [-1, 1]) {
+      [-0.18, 0.0, 0.18].forEach((z, i) => {
+        const pivot = new THREE.Group();
+        pivot.position.set(side * 0.32, 0.02, z);
+        pivot.userData.phase = i + (side < 0 ? 0 : 0.6);
+        const leg = new THREE.Mesh(g.leg, legMat);
+        leg.position.y = -0.09;
+        leg.rotation.z = side * 0.42;
+        pivot.add(leg);
+        const claw = new THREE.Mesh(g.claw, clawMat);
+        claw.position.set(side * 0.05, -0.19, 0.01);
+        claw.rotation.x = Math.PI * 0.85;
+        claw.rotation.z = side * -0.5;
+        pivot.add(claw);
+        group.add(pivot);
+        this._legs.push(pivot);
+      });
+    }
+
+    const cableMat = mat(new THREE.MeshBasicMaterial({ color: 0xc45a68 }));
+    this._cables = [];
+    for (let i = 0; i < 4; i++) {
+      const seg = new THREE.Mesh(g.cable, cableMat);
+      seg.position.set((i % 2 === 0 ? -1 : 1) * 0.02, 0.03, 0.46 + i * 0.15);
+      seg.rotation.x = 1.15;
+      group.add(seg);
+      this._cables.push(seg);
+    }
+
     this._glyph = makeEntityGlyph('triangle', 0.62);
-    this._glyph.position.y = 0.78;
+    this._glyph.position.y = 0.7;
     group.add(this._glyph);
 
     group.position.copy(this.pos);
@@ -176,7 +220,7 @@ export class EvilMouse {
 
   /** Distance-and-sight test plus hearing plus the flashlight lure. */
   _senses(player, diff, alertActive = false) {
-    if (!player.alive) return false;
+    if (!player.alive || player.introCalm) return false;
     if (alertActive && !player.hidden) return true;
     if (diff.hiddenEvade && player.hidden) return false;
 
@@ -236,7 +280,15 @@ export class EvilMouse {
       }
     }
 
-    const detected = !distracted && this._senses(player, diff, alertActive);
+    if (this.calm > 0) {
+      this.calm -= dt;
+      if (this.state === STATE.HUNT || this.state === STATE.SEARCH) {
+        this.state = STATE.PATROL;
+        this.wasHunting = false;
+      }
+    }
+
+    const detected = this.calm > 0 ? false : (!distracted && this._senses(player, diff, alertActive));
 
     if (detected) {
       if (this.state !== STATE.HUNT) {
@@ -356,7 +408,7 @@ export class EvilMouse {
     if (this.state === STATE.HUNT) baseSpeed = MOUSE.chaseSpeed;
     else if (this.state === STATE.FLEE) baseSpeed = MOUSE.chaseSpeed * 1.1;
     else if (this.state === STATE.FEED) baseSpeed = MOUSE.chaseSpeed * 0.92;
-    const speed = baseSpeed * diff.enemySpeedScale * this.speedScale * restFactor;
+    const speed = baseSpeed * diff.enemySpeedScale * easeFactor(diff, this) * this.speedScale * restFactor;
 
     if (aimX !== null) {
       let dx = aimX - this.pos.x;
@@ -391,6 +443,11 @@ export class EvilMouse {
     if (this.obstacles) {
       this.obstacles.collide(this.pos, MOUSE.radius, 0, MOUSE_BODY_TOP);
     }
+    if (this.state === STATE.HUNT && player.alive && !player.hidden && !player.introCalm) {
+      if (separateFrom(this.pos, player.pos, PLAYER.radius + MOUSE.radius + 0.14)) {
+        this.maze.collide(this.pos, MOUSE.radius);
+      }
+    }
 
     // ------------------------------------------------------------- facing
     if (Math.hypot(this.vel.x, this.vel.z) > 0.15) {
@@ -403,18 +460,24 @@ export class EvilMouse {
     }
 
     // ------------------------------------------------------------- visuals
-    this.mesh.position.set(this.pos.x, 0.3, this.pos.z);
+    this.mesh.position.set(this.pos.x, 0.28, this.pos.z);
     this.mesh.rotation.y = this.heading;
-    // Body squash while scurrying reads as tiny frantic legs; a feeding mouse
-    // bobs its head into the bag instead
-    const scurry = this.feeding
-      ? Math.sin(performance.now() * 0.026) * 0.09
-      : Math.sin(performance.now() * 0.02) * (this.resting ? 0.01 : 0.05);
-    this.mesh.scale.set(1, 1 + scurry, 1 - scurry * 0.5);
-    this._tail.rotation.x = Math.sin(performance.now() * 0.006) * 0.3;
-
     const hot = this.state === STATE.HUNT;
-    this._eyeMat.color.setHex(hot ? 0xff2233 : 0xa8323f);
+    const t = performance.now() * 0.001;
+    const rate = this.feeding ? 18 : hot ? 14 : this.resting ? 2.2 : 7;
+    if (this._legs) {
+      for (const pivot of this._legs) {
+        pivot.rotation.x = Math.sin(t * rate + pivot.userData.phase) * (hot ? 0.75 : 0.34);
+      }
+    }
+    if (this._cables) {
+      this._cables.forEach((seg, i) => {
+        seg.rotation.z = Math.sin(t * 3.4 + i) * 0.45;
+        seg.rotation.x = 1.15 + Math.sin(t * 2.1 + i * 0.8) * 0.22;
+      });
+    }
+    if (this._sensorMat) this._sensorMat.color.setHex(hot ? 0xfff2f4 : 0xff1a33);
+    if (this._bodyMat) this._bodyMat.color.setHex(hot ? 0x9a3040 : 0x6a2832);
     this.glow.pos.copy(this.pos);
     this.glow.intensity = hot ? 2.6 : 1.3;
 
@@ -456,7 +519,7 @@ export class EvilMouse {
       // A mouse eating cheetos, or running from an explosion, is not biting you
       && !distracted
     ) {
-      this.attackCooldown = MOUSE.attackCooldown;
+      this.attackCooldown = MOUSE.attackCooldown * (diff.attackCooldownScale || 1);
       return {
         hit: MOUSE.damage,
         from: { x: this.pos.x, z: this.pos.z, y: 0.25 },
@@ -467,10 +530,7 @@ export class EvilMouse {
 
   dispose(scene) {
     scene.remove(this.mesh);
-    this._bodyMat.dispose();
-    this._eyeMat.dispose();
-    this._tailMat.dispose();
-    this._buttonMat.dispose();
+    for (const m of this._mats || []) m.dispose();
     this.glow.active = false;
   }
 }

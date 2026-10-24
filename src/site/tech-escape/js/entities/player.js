@@ -23,7 +23,10 @@ export class Player {
 
     const c = maze.cellCenter(startCell[0], startCell[1]);
     this.pos = new THREE.Vector3(c.x, PLAYER.eyeHeight, c.z);
+    this._safeX = c.x;
+    this._safeZ = c.z;
     this.vel = new THREE.Vector3();
+    this.introCalm = false;
     this.yaw = 0;
     this.pitch = 0;
 
@@ -238,6 +241,8 @@ export class Player {
       this._eyeY = this._tableEyeY();
       this.pos.x = this._vaultTo.x;
       this.pos.z = this._vaultTo.z;
+      this.maze.collide(this.pos, PLAYER.radius);
+      this._rememberSafe();
     }
   }
 
@@ -475,11 +480,23 @@ export class Player {
 
     const beforeX = this.pos.x;
     const beforeZ = this.pos.z;
-    this.pos.x += this.vel.x * dt;
-    this.pos.z += this.vel.z * dt;
-    // Walls first, then furniture. The body span is what lets a crouched player
-    // slide under a tabletop that a standing player cannot pass.
-    this.maze.collide(this.pos, PLAYER.radius);
+    if (!this.maze.isWorldSolid(this.pos.x, this.pos.z)) {
+      this._safeX = this.pos.x;
+      this._safeZ = this.pos.z;
+    }
+    // Substep so a long frame cannot tunnel a whole wall cell. A Chromebook
+    // shader stall used to hand the loop a huge timestep; the cap in the game
+    // loop is the first guard, this is the second.
+    const travel = Math.hypot(this.vel.x * dt, this.vel.z * dt);
+    const steps = Math.min(8, Math.max(1, Math.ceil(travel / 0.22)));
+    const sdt = dt / steps;
+    for (let i = 0; i < steps; i++) {
+      this.pos.x += this.vel.x * sdt;
+      this.pos.z += this.vel.z * sdt;
+      this.maze.collide(this.pos, PLAYER.radius);
+    }
+    // Walls first, then furniture, then walls again. Furniture used to be
+    // allowed to shove the body into a solid cell and leave it there.
     const bodyY0 = this.onTable ? TABLE_SURFACE_Y : 0;
     const bodyTop = bodyY0 + (this.crouching ? PLAYER.crouchHeight : PLAYER.standHeight);
     let collideOpts = this._obstacleOpts(bodyY0, bodyTop);
@@ -487,9 +504,12 @@ export class Player {
       collideOpts = { skipTags: ['table-top', 'table-leg'] };
     }
     this.obstacles.collide(this.pos, PLAYER.radius, bodyY0, bodyTop, collideOpts);
+    this.maze.collide(this.pos, PLAYER.radius);
     if (!this.onTable && !this.crouching && !this._vaulting) {
       this._ejectFromTableInterior();
+      this.maze.collide(this.pos, PLAYER.radius);
     }
+    this._rememberSafe();
 
     const moved = Math.hypot(this.pos.x - beforeX, this.pos.z - beforeZ);
     this.stats.distance += moved;
@@ -566,6 +586,27 @@ export class Player {
           audio.lowBattery();
         }
       }
+    }
+  }
+
+  /**
+   * If resolution still left the body inside a wall, snap back to the last
+   * open spot. A bad frame must not become a permanent noclip.
+   */
+  _rememberSafe() {
+    if (!this.maze.isWorldSolid(this.pos.x, this.pos.z)) {
+      this._safeX = this.pos.x;
+      this._safeZ = this.pos.z;
+      return;
+    }
+    // Only pull back from a wall we just entered. A far "safe" point would
+    // teleport the body across the lab (and through a desk).
+    const dist = Math.hypot(this.pos.x - this._safeX, this.pos.z - this._safeZ);
+    if (dist < 1.6 && !this.maze.isWorldSolid(this._safeX, this._safeZ)) {
+      this.pos.x = this._safeX;
+      this.pos.z = this._safeZ;
+      this.vel.x = 0;
+      this.vel.z = 0;
     }
   }
 

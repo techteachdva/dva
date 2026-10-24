@@ -19,20 +19,74 @@
 
 import * as THREE from '../../vendor/three.module.js';
 import { VIRUS, COLORS, CELL } from '../config.js';
-import { clamp } from '../util.js';
+import { clamp, separateFrom } from '../util.js';
 import { audio } from '../audio.js';
-import { makeEntityGlyph } from './models.js';
+import { easeFactor } from '../meta/ease.js';
 
-let sharedGeo = null;
+let dodecaGeo = null;
+function getDodecaGeometry() {
+  if (!dodecaGeo) dodecaGeo = new THREE.DodecahedronGeometry(0.22, 0);
+  return dodecaGeo;
+}
 
-function getGeometry() {
-  if (sharedGeo) return sharedGeo;
-  sharedGeo = {
-    shell: new THREE.IcosahedronGeometry(0.55, 0),
-    core: new THREE.OctahedronGeometry(0.24, 0),
-    spike: new THREE.ConeGeometry(0.07, 0.26, 4),
-  };
-  return sharedGeo;
+const SWARM_COUNT = 84;
+const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+
+let moteMap = null;
+function getMoteMap() {
+  if (moteMap) return moteMap;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 30);
+  grd.addColorStop(0, 'rgba(255,255,255,1)');
+  grd.addColorStop(0.35, 'rgba(255,255,255,0.55)');
+  grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 64, 64);
+  moteMap = new THREE.CanvasTexture(c);
+  moteMap.colorSpace = THREE.SRGBColorSpace;
+  return moteMap;
+}
+
+/**
+ * A virus is a particle globe, not a solid mesh. Each mote sits on a sphere
+ * and is pushed around by a slow sine, the same idea as a TSL turbulence
+ * field, done here on the CPU so a Chromebook never compiles a custom shader
+ * the first time a virus appears.
+ */
+function makeSwarm() {
+  const base = new Float32Array(SWARM_COUNT * 3);
+  const positions = new Float32Array(SWARM_COUNT * 3);
+  const colors = new Float32Array(SWARM_COUNT * 3);
+  const phase = new Float32Array(SWARM_COUNT);
+  const speed = new Float32Array(SWARM_COUNT);
+  const color = new THREE.Color();
+
+  for (let i = 0; i < SWARM_COUNT; i++) {
+    const y = 1 - (i / (SWARM_COUNT - 1)) * 2;
+    const ring = Math.sqrt(Math.max(0, 1 - y * y));
+    const angle = GOLDEN * i;
+    const shell = i < 10 ? 0.18 : 0.55;
+    base[i * 3] = Math.cos(angle) * ring * shell;
+    base[i * 3 + 1] = y * shell;
+    base[i * 3 + 2] = Math.sin(angle) * ring * shell;
+    phase[i] = Math.random() * Math.PI * 2;
+    speed[i] = 0.65 + (i % 7) * 0.06;
+    if (i < 10) color.setHex(0xe7d4ff);
+    else if (i % 5 === 0) color.setHex(0x6fd4ff);
+    else color.setHex(0xb07cff);
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  const posAttr = new THREE.BufferAttribute(positions, 3);
+  posAttr.setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute('position', posAttr);
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return { geo, base, positions, phase, speed, posAttr };
 }
 
 export class GhostVirus {
@@ -77,50 +131,75 @@ export class GhostVirus {
   }
 
   _buildMesh() {
-    const g = getGeometry();
     const group = new THREE.Group();
-
-    // Translucent shell so it reads as a ghost, not a solid enemy
-    this._shellMat = new THREE.MeshBasicMaterial({
-      color: COLORS.virus,
+    const swarm = makeSwarm();
+    this._swarm = swarm;
+    this._swarmTime = this.rng.range(0, Math.PI * 2);
+    this._pointMat = new THREE.PointsMaterial({
+      size: 0.22,
+      map: getMoteMap(),
+      vertexColors: true,
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.78,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    });
+    this._points = new THREE.Points(swarm.geo, this._pointMat);
+    this._points.frustumCulled = false;
+    this._points.renderOrder = 0;
+    group.add(this._points);
+
+    // Dodecahedron sits at the swarm origin. The old flat hex was parked
+    // above the globe, so the marker and the particles did not share a center.
+    const geo = getDodecaGeometry();
+    this._coreMat = new THREE.MeshBasicMaterial({
+      color: 0x1a1030,
+      transparent: true,
+      opacity: 0.82,
+    });
+    this._edgeMat = new THREE.MeshBasicMaterial({
+      color: 0xf7f1ff,
       wireframe: true,
     });
-    const shell = new THREE.Mesh(g.shell, this._shellMat);
-    group.add(shell);
-    this._shell = shell;
-
-    this._coreMat = new THREE.MeshBasicMaterial({ color: 0xd9b3ff });
-    const core = new THREE.Mesh(g.core, this._coreMat);
-    group.add(core);
-    this._core = core;
-
-    // Spikes make the silhouette read as "virus" at a glance
-    this._spikeMat = new THREE.MeshBasicMaterial({
-      color: COLORS.virus,
-      transparent: true,
-      opacity: 0.55,
-    });
-    const dirs = [
-      [0, 1, 0], [0, -1, 0], [1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1],
-    ];
-    for (const [x, y, z] of dirs) {
-      const s = new THREE.Mesh(g.spike, this._spikeMat);
-      s.position.set(x * 0.6, y * 0.6, z * 0.6);
-      s.lookAt(x * 2, y * 2, z * 2);
-      s.rotateX(Math.PI / 2);
-      group.add(s);
-    }
-
-    // Hexagon marker: the virus half of the shape language. A player who cannot
-    // tell purple from red still always knows which enemy they are looking at.
-    this._glyph = makeEntityGlyph('hex', 0.7);
-    this._glyph.position.y = 0.95;
-    group.add(this._glyph);
+    this._core = new THREE.Mesh(geo, this._coreMat);
+    this._edges = new THREE.Mesh(geo, this._edgeMat);
+    this._core.renderOrder = 2;
+    this._edges.renderOrder = 3;
+    group.add(this._core);
+    group.add(this._edges);
 
     group.position.copy(this.pos);
+    this._stepSwarm(0, 0, false, false);
     return group;
+  }
+
+  /**
+   * Reform the globe. `spread` 1 is the held sphere; burning and the glitch
+   * stutter push the motes outward the way the sample's globe uniform does.
+   */
+  _stepSwarm(spread, turb, hot) {
+    const swarm = this._swarm;
+    if (!swarm) return;
+    const t = this._swarmTime;
+    const { base, positions, phase, speed } = swarm;
+    for (let i = 0; i < SWARM_COUNT; i++) {
+      const ph = phase[i];
+      const sp = speed[i];
+      const bx = base[i * 3];
+      const by = base[i * 3 + 1];
+      const bz = base[i * 3 + 2];
+      const breathe = 1 + Math.sin(t * sp + ph) * 0.06;
+      positions[i * 3] = bx * spread * breathe
+        + Math.sin(t * (sp + 0.6) + ph) * turb;
+      positions[i * 3 + 1] = by * spread * breathe
+        + Math.cos(t * (sp + 0.37) + ph * 1.7) * turb * 0.8;
+      positions[i * 3 + 2] = bz * spread * breathe
+        + Math.sin(t * (sp + 0.22) + ph * 2.1) * turb;
+    }
+    swarm.posAttr.needsUpdate = true;
+    if (hot) this._pointMat.color.setHex(0xffe8ff);
+    else this._pointMat.color.setHex(0xffffff);
   }
 
   /** Struck by an anti-virus disc. Gone for the rest of the run. */
@@ -221,8 +300,9 @@ export class GhostVirus {
         this.pos.z + (Math.random() - 0.5) * j,
       );
       this.mesh.scale.setScalar(0.6 + Math.random() * 0.9);
-      this._shellMat.opacity = Math.random() * 0.9;
-      this._coreMat.color.setHex(Math.random() < 0.5 ? 0xff4d5e : 0x35e0ff);
+      this._swarmTime += dt * 8;
+      this._stepSwarm(1.6 + Math.random() * 0.8, 0.35, true);
+      this._pointMat.opacity = 0.4 + Math.random() * 0.6;
       this.glow.pos.copy(this.pos);
       this.glow.intensity = 4 + Math.random() * 9;
       if (this.stutterTimer <= 0) {
@@ -243,7 +323,9 @@ export class GhostVirus {
     // Viruses sense through walls. On normal difficulties hiding ends the chase;
     // on nightmare they hunt through tabletops.
     let detected = false;
-    if (diff.hiddenEvade && player.hidden && !diff.virusIgnoresHide) {
+    if (player.introCalm) {
+      detected = false;
+    } else if (diff.hiddenEvade && player.hidden && !diff.virusIgnoresHide) {
       this.hunting = false;
       this.wasHunting = false;
       if (!this.wanderTarget
@@ -318,7 +400,7 @@ export class GhostVirus {
     // Drifting through solid walls is much slower, so walls still matter
     const inWall = this.maze.isWorldSolid(this.pos.x, this.pos.z);
     const wallScale = inWall ? VIRUS.inWallSpeedScale : 1;
-    const speed = base * diff.enemySpeedScale * this.speedScale * wallScale;
+    const speed = base * diff.enemySpeedScale * easeFactor(diff, this) * this.speedScale * wallScale;
 
     // Ease toward the desired velocity so the float stays dreamy
     const targetVX = dirX * speed + repelX;
@@ -329,6 +411,7 @@ export class GhostVirus {
 
     this.pos.x += this.vel.x * dt;
     this.pos.z += this.vel.z * dt;
+    if (detected && !player.introCalm) separateFrom(this.pos, player.pos, 1.05);
 
     // Stay inside the building even though interior walls mean nothing
     const limit = (this.maze.size / 2 - 0.6) * CELL;
@@ -353,44 +436,29 @@ export class GhostVirus {
       this.mesh.position.copy(this.pos);
     }
 
-    this.mesh.rotation.y += dt * (this.burning ? 7 : detected ? 2.2 : 0.9);
-    this.mesh.rotation.x += dt * (this.burning ? 3 : 0.6);
-    this._core.rotation.y -= dt * 3.4;
-    this._core.rotation.z += dt * 1.7;
+    this._swarmTime += dt * (this.burning ? 4.5 : detected ? 1.6 : 0.8);
+    const spread = this.burning
+      ? 1 + charge * 0.45
+      : this.dazedTimer > 0 ? 0.72 : detected ? 1.04 : 0.96;
+    const turb = this.burning ? 0.04 + charge * 0.1 : this.dazedTimer > 0 ? 0.1 : 0.035;
+    this._stepSwarm(spread, turb, this.burning && charge > 0.45);
+    this._pointMat.size = this.burning ? 0.26 : detected ? 0.2 : 0.16;
+    this._pointMat.opacity = (this.burning ? 0.95 : detected ? 0.9 : 0.72) * (inWall ? 0.4 : 1);
 
-    // The marker is parented to a tumbling body, so undo that rotation and keep
-    // it upright and square to the player
-    if (this._glyph) {
-      this._glyph.quaternion.copy(this.mesh.quaternion).invert();
-      this._glyph.rotateY(Math.atan2(
-        player.pos.x - this.pos.x, player.pos.z - this.pos.z,
-      ));
-      this._glyph.position.set(0, 0.95, 0).applyQuaternion(
-        this.mesh.quaternion.clone().invert(),
-      );
+    if (this._core) {
+      this._core.rotation.y += dt * 0.55;
+      this._core.rotation.x += dt * 0.22;
+      this._edges.rotation.copy(this._core.rotation);
     }
 
-    // Angrier and brighter when hunting; dimmed while inside a wall
     const pulse = 0.8 + Math.sin(this._bobPhase * 3) * 0.2;
     if (this.burning) {
-      // Fast flicker plus a shift toward hot white as the charge builds
-      const flick = 0.35 + Math.random() * 0.55;
-      this._shellMat.opacity = flick;
-      this._spikeMat.opacity = flick * 0.9;
-      this._coreMat.color.setHex(charge > 0.66 ? 0xffffff : 0xffd0ff);
-      this.mesh.scale.setScalar(1 - charge * 0.18);
+      this.mesh.scale.setScalar(1 + charge * 0.12);
     } else if (this.dazedTimer > 0) {
-      // Dazed: dim and unstable, clearly still alive and re-forming
-      const wob = 0.14 + Math.random() * 0.1;
-      this._shellMat.opacity = wob;
-      this._spikeMat.opacity = wob;
-      this._coreMat.color.setHex(0x8f7bd6);
-      this.mesh.scale.setScalar(0.85);
+      this.mesh.scale.setScalar(0.82);
+      this._pointMat.opacity *= 0.55;
     } else {
-      this._shellMat.opacity = (detected ? 0.42 : 0.26) * (inWall ? 0.45 : 1);
-      this._spikeMat.opacity = (detected ? 0.7 : 0.5) * (inWall ? 0.4 : 1);
-      this._coreMat.color.setHex(detected ? 0xffd0ff : 0xd9b3ff);
-      this.mesh.scale.setScalar(detected ? 1.1 : 1);
+      this.mesh.scale.setScalar(detected ? 1.06 : 1);
     }
 
     this.glow.pos.copy(this.pos);
@@ -433,9 +501,10 @@ export class GhostVirus {
       dist < VIRUS.attackRange
       && this.attackCooldown <= 0
       && player.alive
+      && !player.introCalm
       && (!player.hidden || diff.virusIgnoresHide)
     ) {
-      this.attackCooldown = VIRUS.attackCooldown;
+      this.attackCooldown = VIRUS.attackCooldown * (diff.attackCooldownScale || 1);
       return {
         hit: VIRUS.damage,
         batteryDrain: VIRUS.batteryDrainOnHit,
@@ -447,15 +516,15 @@ export class GhostVirus {
 
   dispose(scene) {
     scene.remove(this.mesh);
-    this._shellMat.dispose();
-    this._coreMat.dispose();
-    this._spikeMat.dispose();
+    this._pointMat?.dispose();
+    this._coreMat?.dispose();
+    this._edgeMat?.dispose();
+    this._swarm?.geo.dispose();
     this.glow.active = false;
   }
 }
 
 export function disposeVirusGeometry() {
-  if (!sharedGeo) return;
-  for (const k in sharedGeo) sharedGeo[k].dispose();
-  sharedGeo = null;
+  dodecaGeo?.dispose();
+  dodecaGeo = null;
 }

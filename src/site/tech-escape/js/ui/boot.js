@@ -34,7 +34,19 @@ import { settings } from '../meta/settings.js';
 
 /** Blink at 1Hz. Anything faster is a flash source and a distraction. */
 const CURSOR_HZ = 1;
-const MAX_VISIBLE_LINES = 8;
+const MAX_VISIBLE_LINES = 12;
+
+/** Same-day return or a remembered skip. The scope uses this to shorten, not to vanish. */
+export function bootShouldRush() {
+  if (settings.get('skipBoot')) return true;
+  try {
+    const t = Number(localStorage.getItem('techEscape.lastPlayed') || 0);
+    if (!t) return false;
+    return (Date.now() - t) / 3600000 < BOOT.fastWindowHours;
+  } catch {
+    return false;
+  }
+}
 
 export class BootSequence {
   constructor(els) {
@@ -45,6 +57,9 @@ export class BootSequence {
     this.skipped = false;
     this._done = false;
     this._cursorOn = true;
+    this._armed = false;
+    this._onSkip = null;
+    this._onLine = null;
 
     this._onKey = (e) => {
       if (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter') {
@@ -55,27 +70,50 @@ export class BootSequence {
     this.skipBtn?.addEventListener('click', () => this.skip());
   }
 
-  /**
-   * @param {Array<{text:string, run?:Function}>} stages each may return a string
-   *   that is stamped onto the end of its line
-   * @returns {Promise<void>}
-   */
-  async run(stages) {
-    const fast = settings.get('skipBoot') || this._recentlyPlayed();
-    const cps = fast ? BOOT.fastCharsPerSecond : BOOT.charsPerSecond;
-    const minTotal = (fast ? BOOT.fastMinSeconds : BOOT.minSeconds) * 1000;
-    const reduceMotion = settings.get('reduceMotion');
-    const started = performance.now();
-
+  /** Space and the skip button work during the oscilloscope, before the log types. */
+  arm() {
+    if (this._armed) return;
+    this._armed = true;
     window.addEventListener('keydown', this._onKey, true);
-    // WCAG 2.2.2: under reduced motion the escape hatch is offered immediately,
-    // because a player who asked for less movement should not have to wait
-    // through it to find the way out
+    const reduceMotion = settings.get('reduceMotion');
     this._skipTimer = setTimeout(
       () => this._showSkip(),
       reduceMotion ? 0 : BOOT.skipHintAfter * 1000,
     );
     this._startCursor(reduceMotion);
+  }
+
+  setOnSkip(fn) { this._onSkip = fn; }
+
+  setOnLine(fn) { this._onLine = fn; }
+
+  /** Block cursor alone, so the prompt is readable before the first line. */
+  async holdCursor(ms) {
+    this.arm();
+    if (this.skipped || ms <= 0) return;
+    this.lines = [];
+    this._cursorOn = true;
+    this._paint();
+    await this._wait(ms);
+  }
+
+  /**
+   * @param {Array<{text:string, run?:Function}>} stages each may return a string
+   *   that is stamped onto the end of its line
+   * @param {object} [pace] optional cps / dwellScale / minSeconds / maxSeconds
+   *   so the log can be brisk after the oscilloscope without changing the
+   *   default reading pace for a caller that only wants the typewriter.
+   */
+  async run(stages, pace = null) {
+    const fast = settings.get('skipBoot') || this._recentlyPlayed();
+    const cps = pace?.cps ?? (fast ? BOOT.fastCharsPerSecond : BOOT.charsPerSecond);
+    const minTotal = (pace?.minSeconds ?? (fast ? BOOT.fastMinSeconds : BOOT.minSeconds)) * 1000;
+    const maxMs = (pace?.maxSeconds ?? BOOT.maxSeconds) * 1000;
+    const dwellScale = pace?.dwellScale ?? (fast ? 0.12 : 0.22);
+    const reduceMotion = settings.get('reduceMotion');
+    const started = performance.now();
+
+    this.arm();
 
     for (let i = 0; i < stages.length; i++) {
       if (this.skipped) break;
@@ -96,6 +134,7 @@ export class BootSequence {
       const text = this._compose(stage.text, stamp);
       if (reduceMotion) this._pushLine(text);
       else await this._typeLine(text, cps);
+      if (!this.skipped && !reduceMotion) this._onLine?.();
 
       this._setProgress((i + 1) / stages.length);
 
@@ -103,16 +142,22 @@ export class BootSequence {
       // Elapsed budget check every line, so the hard cap holds even if a stage
       // took longer than expected
       const elapsed = performance.now() - started;
-      const remaining = BOOT.maxSeconds * 1000 - elapsed;
+      const remaining = maxMs - elapsed;
       if (remaining <= 0) break;
-      const beat = Math.min(this._dwellFor(text, fast), remaining);
+      const beat = Math.min(this._dwellFor(text, dwellScale), remaining);
       if (beat > 0) await this._wait(beat);
     }
 
     // Flush anything left if they skipped or the cap hit
     if (this.lines.length < stages.length) {
       for (let i = this.lines.length; i < stages.length; i++) {
-        this._pushLine(this._compose(stages[i].text, 'OK'));
+        let stamp = 'OK';
+        try {
+          stamp = (await stages[i].run?.()) || 'OK';
+        } catch {
+          stamp = 'FAIL';
+        }
+        this._pushLine(this._compose(stages[i].text, stamp));
       }
       this._setProgress(1);
     }
@@ -123,7 +168,7 @@ export class BootSequence {
       const elapsed = performance.now() - started;
       const hold = Math.min(
         Math.max(minTotal - elapsed, BOOT.finalHold * 1000),
-        Math.max(0, BOOT.maxSeconds * 1000 - elapsed),
+        Math.max(0, maxMs - elapsed),
       );
       if (hold > 0) await this._wait(hold);
     }
@@ -137,25 +182,22 @@ export class BootSequence {
    * other, so this is the beat before the NEXT line starts typing, not the only
    * time this line is visible.
    */
-  _dwellFor(text, fast) {
+  _dwellFor(text, dwellScale) {
     const words = text.trim().split(/\s+/).length;
     const dwell = Math.max(BOOT.linePause, (words / 2.5) * 1000);
     // Scaled down hard, because the accumulated log keeps every line readable and
-    // the full per-line dwell would blow the 10 second ceiling
-    return dwell * (fast ? 0.12 : 0.22);
+    // the full per-line dwell would blow the ceiling
+    return dwell * dwellScale;
   }
 
-  /**
-   * `> CHROMEBOOKS AWAKE ........... 4 OF 4`
-   *
-   * Padded to a fixed 44 characters rather than the 55 character maximum: five
-   * lines at 55 characters would be 9.7 seconds of typing on its own, which
-   * leaves nothing for the dwell and blows the ceiling.
-   */
+  /** `> GPU .............. ANGLE (NVIDIA ...)` */
   _compose(label, stamp) {
     const head = `> ${label} `;
-    const tail = ` ${stamp}`;
-    const dots = Math.max(1, 44 - head.length - tail.length);
+    const clean = String(stamp || 'OK').replace(/\s+/g, ' ').slice(0, 34);
+    const tail = ` ${clean}`;
+    const width = 48;
+    if (head.length + tail.length >= width) return `${head}${tail}`;
+    const dots = Math.max(2, width - head.length - tail.length);
     return head + '.'.repeat(dots) + tail;
   }
 
@@ -215,8 +257,9 @@ export class BootSequence {
   skip() {
     if (this._done || this.skipped) return;
     this.skipped = true;
-    // Remembered, so replays go straight to the title
+    // Remembered, so the next launch compresses the scope instead of replaying it
     settings.set('skipBoot', true);
+    this._onSkip?.();
   }
 
   _finish() {

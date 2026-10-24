@@ -14,7 +14,7 @@
  * mid-rewrite, so this module never assumes a signature or an export exists.
  */
 
-import * as bank from '../data/questions.js';
+import * as bank from '../data/questions.js?v=3.9.1';
 
 /** Which authored difficulty each game difficulty aims at. */
 const LEVEL_TARGET = {
@@ -47,7 +47,7 @@ export function drawForTerminal(terminalIndex, count, rng, opts = {}) {
   }
   if (pool.length <= count) return pool.slice(0, count);
 
-  return weightByLevel(pool, opts.difficulty, rng).slice(0, count);
+  return weightByLevel(pool, opts.difficulty, rng, opts).slice(0, count);
 }
 
 function safeDraw(draw, terminalIndex, count, rng, exclude) {
@@ -85,20 +85,34 @@ function dedupe(list) {
  * that two runs on the same difficulty are not the same three questions. When
  * no question carries a `level`, the incoming (already shuffled) order is kept.
  */
-function weightByLevel(pool, difficulty, rng) {
-  const target = LEVEL_TARGET[difficulty];
+function weightByLevel(pool, difficulty, rng, opts = {}) {
+  const preset = LEVEL_TARGET[difficulty];
+  const target = Number.isFinite(opts.levelTarget) ? opts.levelTarget : preset;
+  const strandEase = opts.strandEase || null;
   const tagged = pool.some((q) => Number.isFinite(q.level));
   if (!target || !tagged) return pool;
 
   const jitter = () => (rng && typeof rng === 'function' ? rng() : Math.random());
   return pool
     .map((q) => {
-      // Untagged questions sit at the midpoint so they stay eligible everywhere
       const lvl = Number.isFinite(q.level) ? q.level : 2;
-      return { q, score: Math.abs(lvl - target) + jitter() * 0.85 };
+      let aim = target;
+      if (strandEase) {
+        const key = strandKey(q);
+        const bias = strandEase[key] || 0;
+        aim = Math.max(1, Math.min(3, target + bias));
+      }
+      return { q, score: Math.abs(lvl - aim) + jitter() * 0.85 };
     })
     .sort((a, b) => a.score - b.score)
     .map((e) => e.q);
+}
+
+function strandKey(q) {
+  const std = String(q?.std || q?.standard || '');
+  const item = std.match(/ITEM\s+[\d.]+/);
+  if (item) return item[0];
+  return String(q?.id || '').split('-')[0] || 'general';
 }
 
 /** Ids from a drawn set, for handing back to the progress store. */

@@ -8,8 +8,9 @@ import { saveStore } from './save.js';
 import { LEVELS, LEVEL_COUNT } from './levels.js';
 import { input } from '../input.js';
 import { audio } from '../audio.js';
-import { ui } from '../ui.js';
+import { ui } from '../ui.js?v=3.8';
 import { tutorial } from '../ui/tutorial.js';
+import { revealTerminal } from '../ui/opening.js?v=3.0';
 
 const $ = (id) => document.getElementById(id);
 
@@ -25,6 +26,18 @@ function sliderFromSens(v) {
 export const sessionUi = {
   game: null,
   _returnFromGuide: 'screen-title',
+  _armReveal: false,
+
+  /** The next lobby screen prints in as the terminal GUI. One shot. */
+  noteReveal() {
+    this._armReveal = true;
+  },
+
+  _prepareReveal(id) {
+    if (!this._armReveal) return;
+    this._armReveal = false;
+    revealTerminal(document.getElementById(id));
+  },
 
   bind(game) {
     this.game = game;
@@ -33,12 +46,39 @@ export const sessionUi = {
     this._bindGuide();
     this._bindTitleExtras();
     this._bindSettingsPanel();
+    this._bindPauseTabs();
+  },
+
+  /** One page of the pause card. `play` is the in-run default; title Settings opens Comfort. */
+  showPauseTab(id) {
+    const root = document.getElementById('screen-pause');
+    if (!root) return;
+    const name = id || 'play';
+    for (const tab of root.querySelectorAll('[data-pause-tab]')) {
+      tab.setAttribute('aria-selected', tab.dataset.pauseTab === name ? 'true' : 'false');
+    }
+    for (const panel of root.querySelectorAll('[data-pause-panel]')) {
+      panel.hidden = panel.dataset.pausePanel !== name;
+    }
+  },
+
+  _bindPauseTabs() {
+    const root = document.getElementById('screen-pause');
+    if (!root) return;
+    root.querySelector('.pause-tabs')?.addEventListener('click', (e) => {
+      const tab = e.target.closest('[data-pause-tab]');
+      if (!tab) return;
+      audio.uiClick();
+      this.showPauseTab(tab.dataset.pauseTab);
+    });
+    this.showPauseTab('play');
   },
 
   /** After boot sequence: first-run → profile → title. */
   async enterLobby() {
     if (!settings.get('seenFirstRun')) {
       this._syncFirstRunForm();
+      this._prepareReveal('screen-firstrun');
       ui.showScreen('screen-firstrun');
       return;
     }
@@ -54,26 +94,23 @@ export const sessionUi = {
         return;
       }
     }
-    if (saveStore.listProfiles().length === 0) {
-      ui.showScreen('screen-profile');
-      this.renderProfileList();
-      return;
-    }
-    ui.showScreen('screen-profile');
     this.renderProfileList();
+    this._prepareReveal('screen-profile');
+    ui.showScreen('screen-profile');
   },
 
   _showTitle() {
     const g = this.game;
     g.mode = 'title';
     const p = saveStore.active;
+    this.renderTitleGreeting();
+    this.renderLevelSelect();
+    this._syncSettingsForm();
+    this._prepareReveal('screen-title');
     ui.showScreen('screen-title');
     ui.setPerfNote(
       `${p ? `${p.name} — ` : ''}${LEVEL_COUNT} floors — renderer: ${g._rendererName}`,
     );
-    this.renderTitleGreeting();
-    this.renderLevelSelect();
-    this._syncSettingsForm();
     audio.init();
     audio.stopAmbience();
     audio.startTitleMusic();

@@ -3,9 +3,10 @@
  */
 
 import * as THREE from '../../vendor/three.module.js';
-import { CYBERBULLY } from '../config.js';
-import { clamp } from '../util.js';
+import { CYBERBULLY, PLAYER } from '../config.js';
+import { clamp, separateFrom } from '../util.js';
 import { audio } from '../audio.js';
+import { easeFactor } from '../meta/ease.js';
 
 let sharedGeo = null;
 
@@ -82,7 +83,7 @@ export class Cyberbully {
   }
 
   _sees(player, diff, alertActive) {
-    if (!player.alive) return false;
+    if (!player.alive || player.introCalm) return false;
     if (alertActive && !player.hidden) return true;
     if (diff.hiddenEvade && player.hidden) return false;
     const dx = player.pos.x - this.pos.x;
@@ -123,12 +124,17 @@ export class Cyberbully {
     const dz = tz - this.pos.z;
     const dist = Math.hypot(dx, dz) || 1;
     const speed = (seen ? CYBERBULLY.chaseSpeed : CYBERBULLY.patrolSpeed)
-      * this.speedScale * diff.speedScale;
+      * this.speedScale * easeFactor(diff, this) * (diff.enemySpeedScale || 1);
     this.heading += clamp(Math.atan2(dx, dz) - this.heading, -CYBERBULLY.turnRate * dt, CYBERBULLY.turnRate * dt);
     this.pos.x += (-Math.sin(this.heading)) * speed * dt;
     this.pos.z += (-Math.cos(this.heading)) * speed * dt;
     this.maze.collide(this.pos, CYBERBULLY.radius);
     if (this.obstacles) this.obstacles.collide(this.pos, CYBERBULLY.radius, 0, 1.2);
+    if (seen && !player.hidden && !player.introCalm) {
+      if (separateFrom(this.pos, player.pos, PLAYER.radius + CYBERBULLY.radius + 0.16)) {
+        this.maze.collide(this.pos, CYBERBULLY.radius);
+      }
+    }
 
     if (this.patrolTarget && Math.hypot(this.pos.x - this.patrolTarget.x, this.pos.z - this.patrolTarget.z) < 0.6) {
       this.patrolTarget = null;
@@ -140,7 +146,7 @@ export class Cyberbully {
     this.wasHunting = seen;
 
     if (seen && dist < CYBERBULLY.attackRange && this.attackCooldown <= 0 && !player.hidden) {
-      this.attackCooldown = CYBERBULLY.attackCooldown;
+      this.attackCooldown = CYBERBULLY.attackCooldown * (diff.attackCooldownScale || 1);
       audio.nearMiss();
       return { hit: CYBERBULLY.damage, from: this.pos.clone() };
     }

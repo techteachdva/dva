@@ -763,6 +763,20 @@ class AudioEngine {
     this._tone({ freq: 600, freqEnd: 900, dur: 0.12, type: 'triangle', vol: 0.05 });
   }
 
+  /** Monitor power-on: a rising tone, then the click of the trace locking. */
+  bootChirp() {
+    this._tone({ freq: 98, freqEnd: 392, dur: 0.26, type: 'sine', vol: 0.07 });
+    this._tone({ freq: 196, freqEnd: 588, dur: 0.2, type: 'triangle', vol: 0.035, delay: 0.05 });
+    this._noise({ dur: 0.05, vol: 0.04, filter: 2200, filterEnd: 700, q: 0.8, delay: 0.22 });
+  }
+
+  phonePing(level = 0) {
+    const k = Math.max(0, Math.min(1, level));
+    const vol = 0.035 + k * 0.14;
+    this._tone({ freq: 740, freqEnd: 1180, dur: 0.09, type: 'sine', vol });
+    this._tone({ freq: 988, freqEnd: 1480, dur: 0.11, type: 'triangle', vol: vol * 0.7, delay: 0.1 });
+  }
+
   stashSparkle() {
     this._tone({ freq: 1200, freqEnd: 1800, dur: 0.14, type: 'sine', vol: 0.08 });
     this._tone({ freq: 1600, freqEnd: 2200, dur: 0.12, type: 'triangle', vol: 0.06, delay: 0.06 });

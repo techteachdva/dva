@@ -11,8 +11,9 @@ import { CELL, WALL_H, TABLE, COLORS } from '../config.js';
 import { Obstacles } from './obstacles.js';
 import {
   themeForLevel, makeThemedFloorTexture, makeThemedWallTexture,
-  makeThemedArrowTexture, buildLevelDressing,
+  makeThemedCeilingTexture, makeThemedArrowTexture, buildLevelDressing,
 } from './level-themes.js';
+import { ARROW_HINT, initialArrowHint, stepArrowHint } from './arrow-hint.js';
 import { buildMapPosters } from './map-poster.js';
 
 const _m = new THREE.Matrix4();
@@ -200,7 +201,11 @@ export class Lab {
     this.mapPosters = [];
 
     this.emergencyArrows = null;
-    this._emergencyGlows = [];
+    this._arrowGlowPool = [];
+    this._arrowHint = null;
+    this._arrowCell = '';
+    this._arrowFlow = null;
+    this._arrowTarget = -1;
 
     this._disposables = [];
 
@@ -224,14 +229,16 @@ export class Lab {
     this.group.add(floor);
     this._disposables.push(floor.geometry, floor.material, floorTex);
 
+    const ceilTex = makeThemedCeilingTexture(this.theme);
+    ceilTex.repeat.set(this.maze.size / 2, this.maze.size / 2);
     const ceil = new THREE.Mesh(
       new THREE.PlaneGeometry(span, span),
-      new THREE.MeshLambertMaterial({ color: this.theme.ceiling }),
+      new THREE.MeshLambertMaterial({ color: 0xffffff, map: ceilTex }),
     );
     ceil.rotation.x = Math.PI / 2;
     ceil.position.y = WALL_H;
     this.group.add(ceil);
-    this._disposables.push(ceil.geometry, ceil.material);
+    this._disposables.push(ceil.geometry, ceil.material, ceilTex);
   }
 
   _buildWalls() {
@@ -334,50 +341,32 @@ export class Lab {
     segments.forEach((seg, i) => {
       _v.set(seg.px, arrowY, seg.pz);
       _q.identity();
+      _s.set(0.001, 0.001, 0.001);
       _m.compose(_v, _q, _s);
       mesh.setMatrixAt(i, _m);
-
-      if (i % 2 === 0) {
-        const glow = {
-          pos: new THREE.Vector3(seg.px, arrowY + 0.06, seg.pz),
-          color: this.theme.emergencyColor,
-          intensity: 10.5,
-          distance: 7.8,
-          active: true,
-        };
-        this.glowSources.push(glow);
-        this._emergencyGlows.push(glow);
-      }
     });
+    _s.set(1, 1, 1);
 
     mesh.instanceMatrix.needsUpdate = true;
+    mesh.visible = false;
     this.group.add(mesh);
     this._disposables.push(geo, mat, arrowTex);
-    this.emergencyArrows = { mesh, segments, arrowY };
-  }
 
-  /** Nearest unsolved Chromebook by maze walk distance from a cell. */
-  _nearestUnsolvedLaptop(fromCell, unsolved = null, flows = null) {
-    const list = unsolved ?? this.laptops.filter((lp) => !lp.solved);
-    if (!list.length) return null;
-
-    let best = null;
-    let bestD = Infinity;
-    for (const lp of list) {
-      let d;
-      if (flows?.has(lp.index)) {
-        d = this.maze.flowDistance(flows.get(lp.index), fromCell[0], fromCell[1]);
-      } else {
-        const flow = this.maze.buildFlow(lp.cell[0], lp.cell[1]);
-        d = this.maze.flowDistance(flow, fromCell[0], fromCell[1]);
-        this.maze.invalidateFlow();
-      }
-      if (d >= 0 && d < bestD) {
-        bestD = d;
-        best = lp;
-      }
+    // Four soft pools, not a light on every chevron. A glow per arrow stole
+    // the lab's entire light budget and uploaded a new matrix every frame.
+    this._arrowGlowPool = [];
+    for (let i = 0; i < 4; i++) {
+      const glow = {
+        pos: new THREE.Vector3(),
+        color: this.theme.emergencyColor,
+        intensity: 0,
+        distance: 3.4,
+        active: false,
+      };
+      this.glowSources.push(glow);
+      this._arrowGlowPool.push(glow);
     }
-    return best;
+    this.emergencyArrows = { mesh, mat, segments, arrowY };
   }
 
   /** Direction on the XZ floor plane from (x0,z0) toward (x1,z1). */
@@ -385,64 +374,147 @@ export class Lab {
     return Math.atan2(x1 - x0, z1 - z0);
   }
 
+  /** Nearest locked Chromebook by maze distance. One flow, cached on the target. */
+  _flowToNearestLaptop(fromCell) {
+    const unsolved = this.laptops.filter((lp) => !lp.solved);
+    if (!unsolved.length) return { flow: null, dist: -1, unsolved: 0, index: -1 };
+    let best = null;
+    let bestFlow = null;
+    let bestD = Infinity;
+    for (const lp of unsolved) {
+      const flow = this.maze.buildFlow(lp.cell[0], lp.cell[1]);
+      const d = this.maze.flowDistance(flow, fromCell[0], fromCell[1]);
+      if (d >= 0 && d < bestD) {
+        bestD = d;
+        best = lp;
+        bestFlow = flow;
+      }
+    }
+    return {
+      flow: bestFlow,
+      dist: best ? bestD : -1,
+      unsolved: unsolved.length,
+      index: best ? best.index : -1,
+    };
+  }
+
   /**
-   * Each arrow hugs the wall–floor line and points along the maze path toward
-   * the one unsolved terminal nearest to that arrow (not the player).
+   * Floor arrows are a soft hint. They stay hidden until the player lingers
+   * in one pocket of the maze, then the nearby ones point along the path to
+   * the nearest locked Chromebook and fade back out once that path is followed.
+   *
+   * @returns {{ revealed: boolean }}
    */
-  updateEmergencyArrows(_playerPos) {
+  updateEmergencyArrows(playerPos, dt = 0) {
+    const arrows = this.emergencyArrows;
+    if (!arrows || !playerPos) return { revealed: false };
+
+    const [cx, cy] = this.maze.worldToCell(playerPos.x, playerPos.z);
+    if (!this._arrowHint) this._arrowHint = initialArrowHint(playerPos.x, playerPos.z);
+
+    const cellDist = Math.hypot(
+      (playerPos.x - this._arrowHint.anchorX) / CELL,
+      (playerPos.z - this._arrowHint.anchorZ) / CELL,
+    );
+
+    let solvedKey = '';
+    let unsolved = 0;
+    for (const lp of this.laptops) {
+      solvedKey += lp.solved ? '1' : '0';
+      if (!lp.solved) unsolved++;
+    }
+    if (solvedKey !== this._arrowSolvedKey) {
+      this._arrowSolvedKey = solvedKey;
+      this._arrowFlow = null;
+      this._arrowTarget = -1;
+      this._arrowCell = '';
+    }
+
+    // One breadth-first search per solved-set, not per frame. Distance after
+    // that is a lookup. Exploring before the linger threshold does no search.
+    let flowDist = -1;
+    const warming = !this._arrowHint.active && this._arrowHint.time > ARROW_HINT.lingerLast - 1;
+    if ((this._arrowHint.active || warming) && unsolved > 0) {
+      if (!this._arrowFlow) {
+        const path = this._flowToNearestLaptop([cx, cy]);
+        this._arrowFlow = path.flow;
+        this._arrowTarget = path.index;
+      }
+      if (this._arrowFlow) flowDist = this.maze.flowDistance(this._arrowFlow, cx, cy);
+    }
+    this._arrowHint = stepArrowHint(
+      this._arrowHint, dt, playerPos.x, playerPos.z, cellDist, flowDist, unsolved,
+    );
+
+    const hint = this._arrowHint;
+    const revealed = !!hint.justRevealed;
+    if (!hint.active) {
+      if (arrows.mesh.visible) arrows.mesh.visible = false;
+      for (const g of this._arrowGlowPool) g.active = false;
+      return { revealed };
+    }
+
+    arrows.mesh.visible = true;
+    arrows.mat.opacity = 0.22 + 0.7 * hint.fade;
+    const cellKey = `${cx},${cy}`;
+    if (cellKey !== this._arrowCell && this._arrowFlow) {
+      this._arrowCell = cellKey;
+      this._placeArrowHints(this._arrowFlow, cx, cy);
+    }
+    for (const g of this._arrowGlowPool) {
+      if (g.active) g.intensity = 1.15 + hint.fade * 1.3;
+    }
+    return { revealed };
+  }
+
+  /** Show only the arrows in the player's pocket, aimed along the cached path. */
+  _placeArrowHints(flow, pcx, pcy) {
     const arrows = this.emergencyArrows;
     if (!arrows) return;
-
-    const unsolved = this.laptops.filter((lp) => !lp.solved);
-    if (!unsolved.length) {
-      arrows.mesh.visible = false;
-      for (const g of this._emergencyGlows) g.active = false;
-      return;
-    }
-
-    const lastTerminal = unsolved.length === 1;
-    arrows.mesh.visible = true;
-    for (const g of this._emergencyGlows) {
-      g.active = true;
-      g.intensity = lastTerminal ? 14 : 10.5;
-      g.distance = lastTerminal ? 10.5 : 7.8;
-    }
-
-    const flows = new Map();
-    for (const lp of unsolved) {
-      flows.set(lp.index, this.maze.buildFlow(lp.cell[0], lp.cell[1]));
-    }
-
-    const targetByCell = new Map();
+    const r2 = ARROW_HINT.showRadiusCells * ARROW_HINT.showRadiusCells;
     const { mesh, segments, arrowY } = arrows;
-    const y = arrowY ?? 0.102;
-
-    segments.forEach((seg, i) => {
-      const cellKey = `${seg.cx},${seg.cy}`;
-      let target = targetByCell.get(cellKey);
-      if (!target) {
-        target = this._nearestUnsolvedLaptop([seg.cx, seg.cy], unsolved, flows);
-        targetByCell.set(cellKey, target);
+    const near = [];
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i];
+      const dx = seg.cx - pcx;
+      const dy = seg.cy - pcy;
+      const d2 = dx * dx + dy * dy;
+      _v.set(seg.px, arrowY, seg.pz);
+      if (d2 > r2) {
+        _s.set(0.001, 0.001, 0.001);
+        _q.identity();
+      } else {
+        let angle = 0;
+        const step = this.maze.flowStep(flow, seg.cx, seg.cy);
+        if (step) {
+          angle = this._floorAngle(
+            seg.px, seg.pz,
+            this.maze.cellToWorldX(step[0]),
+            this.maze.cellToWorldZ(step[1]),
+          );
+        }
+        _q.setFromAxisAngle(_axisY, angle);
+        _s.set(1, 1, 1);
+        near.push({ d2, seg });
       }
-      if (!target) return;
-
-      const flow = flows.get(target.index);
-      let angle = this._floorAngle(seg.px, seg.pz, target.x, target.z);
-      const step = flow ? this.maze.flowStep(flow, seg.cx, seg.cy) : null;
-      if (step) {
-        const sx = this.maze.cellToWorldX(step[0]);
-        const sz = this.maze.cellToWorldZ(step[1]);
-        angle = this._floorAngle(seg.px, seg.pz, sx, sz);
-      }
-
-      _v.set(seg.px, y, seg.pz);
-      _q.setFromAxisAngle(_axisY, angle);
       _m.compose(_v, _q, _s);
       mesh.setMatrixAt(i, _m);
-    });
-
+    }
+    _s.set(1, 1, 1);
     mesh.instanceMatrix.needsUpdate = true;
-    this.maze.invalidateFlow();
+
+    near.sort((a, b) => a.d2 - b.d2);
+    for (let i = 0; i < this._arrowGlowPool.length; i++) {
+      const g = this._arrowGlowPool[i];
+      const pick = near[i];
+      if (!pick) {
+        g.active = false;
+        continue;
+      }
+      g.active = true;
+      g.pos.set(pick.seg.px, arrowY + 0.08, pick.seg.pz);
+      g.distance = 3.6;
+    }
   }
 
   // ------------------------------------------------------------------- tables

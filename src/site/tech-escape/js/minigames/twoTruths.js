@@ -9,6 +9,7 @@
 import { audio } from '../audio.js';
 import { settings } from '../meta/settings.js';
 import { debug } from '../meta/debug.js';
+import { primersFor } from '../data/glossary.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -21,6 +22,8 @@ export class TwoTruths {
       sender: $('notify-sender'),
       time: $('notify-time'),
       preview: $('notify-preview'),
+      standard: $('notify-std'),
+      primer: $('notify-primer'),
       choices: $('notify-choices'),
       feedback: $('notify-feedback'),
       explain: $('notify-explain'),
@@ -69,6 +72,26 @@ export class TwoTruths {
     }
   };
 
+  _showPrimer(it) {
+    const host = this.el.primer;
+    if (!host) return;
+    const blob = [it.preview, ...(it.statements || []), it.why].join('\n');
+    const items = primersFor(blob);
+    host.replaceChildren();
+    if (!items.length) {
+      host.classList.add('hidden');
+      return;
+    }
+    host.classList.remove('hidden');
+    for (const item of items) {
+      const row = document.createElement('p');
+      const term = document.createElement('strong');
+      term.textContent = item.term;
+      row.append(term, document.createTextNode(` — ${item.def}`));
+      host.appendChild(row);
+    }
+  }
+
   _render() {
     const it = this.item;
     const now = new Date();
@@ -82,6 +105,8 @@ export class TwoTruths {
     if (this.el.preview) {
       this.el.preview.textContent = `${it.preview} Which one is the LIE? Tap it.`;
     }
+    if (this.el.standard) this.el.standard.textContent = it.std || '';
+    this._showPrimer(it);
     if (this.el.feedback) {
       this.el.feedback.textContent = '';
       this.el.feedback.className = 'notify-feedback';

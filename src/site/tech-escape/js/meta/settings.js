@@ -65,6 +65,9 @@ export const DEFAULTS = {
   skipBoot: false,          // remembered once they skip the loading screen
   seenFirstRun: false,
   seenTutorial: false,
+  /** In-lab lesson. Stays on until the player finishes or skips it. */
+  coachDone: false,
+  quality: 'medium',
 
   // --- audio mix (0–100 sliders; music default ~1/6 of hot master track) -----
   volumeMaster: 90,

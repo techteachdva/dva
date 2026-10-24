@@ -77,55 +77,139 @@ export function themeForLevel(level) {
   return LEVEL_THEMES[level?.id] || LEVEL_THEMES.lab;
 }
 
+function paintNoise(g, n, alpha, size) {
+  for (let i = 0; i < n; i++) {
+    const v = 18 + Math.random() * 40;
+    g.fillStyle = `rgba(${v},${v + 6},${v + 16},${alpha})`;
+    const s = Math.random() < 0.08 ? 3 : 1;
+    g.fillRect(Math.random() * size, Math.random() * size, s, s);
+  }
+}
+
 export function makeThemedFloorTexture(theme) {
+  const size = 512;
   const c = document.createElement('canvas');
-  c.width = c.height = 256;
+  c.width = c.height = size;
   const g = c.getContext('2d');
   g.fillStyle = theme.floorBase;
-  g.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 1600; i++) {
-    const v = 20 + Math.random() * 30;
-    g.fillStyle = `rgba(${v},${v + 4},${v + 14},0.45)`;
-    g.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+  g.fillRect(0, 0, size, size);
+
+  const tile = 64;
+  for (let y = 0; y < size; y += tile) {
+    for (let x = 0; x < size; x += tile) {
+      const shift = ((x / tile + y / tile) % 2) ? 10 : 0;
+      g.fillStyle = `rgba(255,255,255,${0.025 + shift / 400})`;
+      g.fillRect(x + 2, y + 2, tile - 4, tile - 4);
+      // Worn center of each tile, darker grout sits in the gap.
+      g.fillStyle = 'rgba(0,0,0,0.18)';
+      g.fillRect(x, y, tile, 2);
+      g.fillRect(x, y, 2, tile);
+    }
   }
+  paintNoise(g, 2800, 0.35, size);
+
+  // A scuffed traffic lane so the floor reads as a room people walk, not a swatch.
   g.strokeStyle = theme.floorAccent;
-  g.globalAlpha = 0.35;
+  g.globalAlpha = 0.28;
+  g.lineWidth = 10;
+  g.beginPath();
+  g.moveTo(0, size * 0.5);
+  g.lineTo(size, size * 0.5);
+  g.stroke();
+  g.globalAlpha = 0.45;
   g.lineWidth = 2;
-  for (let y = 0; y <= 256; y += 64) {
-    for (let x = 0; x <= 256; x += 64) g.strokeRect(x, y, 64, 64);
-  }
+  g.strokeRect(8, 8, size - 16, size - 16);
   g.globalAlpha = 1;
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+export function makeThemedWallTexture(theme) {
+  const size = 512;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.fillStyle = theme.wallBase;
+  g.fillRect(0, 0, size, size);
+
+  // Vertical panels, a dirty baseboard, and a darker course line. The lab
+  // should read as built, even under one Lambert light.
+  const panel = 64;
+  for (let x = 0; x <= size; x += panel) {
+    g.fillStyle = theme.wallCourse;
+    g.fillRect(x, 0, 3, size);
+    g.fillStyle = 'rgba(255,255,255,0.04)';
+    g.fillRect(x + 6, 18, panel - 14, size - 70);
+  }
+  g.fillStyle = 'rgba(0,0,0,0.45)';
+  g.fillRect(0, size - 52, size, 52);
+  g.fillStyle = theme.emergencyArrow;
+  g.globalAlpha = 0.55;
+  g.fillRect(0, size - 56, size, 4);
+  g.globalAlpha = 1;
+  paintNoise(g, 900, 0.28, size);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+export function makeThemedCeilingTexture(theme) {
+  const size = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  const hex = theme.ceiling ?? 0x0c1018;
+  const r = (hex >> 16) & 255;
+  const gv = (hex >> 8) & 255;
+  const b = hex & 255;
+  g.fillStyle = `rgb(${r},${gv},${b})`;
+  g.fillRect(0, 0, size, size);
+  g.strokeStyle = 'rgba(255,255,255,0.06)';
+  g.lineWidth = 2;
+  for (let y = 0; y <= size; y += 64) {
+    for (let x = 0; x <= size; x += 64) g.strokeRect(x + 4, y + 4, 56, 56);
+  }
+  g.fillStyle = 'rgba(180,210,255,0.08)';
+  g.fillRect(80, 80, 96, 16);
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
-export function makeThemedWallTexture(theme) {
+/** Soft round cookie so the flashlight is a beam, not a hard math cone. */
+export function makeFlashlightCookie() {
+  const size = 256;
   const c = document.createElement('canvas');
-  c.width = c.height = 256;
+  c.width = c.height = size;
   const g = c.getContext('2d');
-  g.fillStyle = theme.wallBase;
-  g.fillRect(0, 0, 256, 256);
-  g.strokeStyle = theme.wallCourse;
+  g.fillStyle = '#000';
+  g.fillRect(0, 0, size, size);
+  const grd = g.createRadialGradient(128, 128, 8, 128, 128, 122);
+  grd.addColorStop(0, 'rgba(255,255,255,1)');
+  grd.addColorStop(0.28, 'rgba(236,244,255,0.92)');
+  grd.addColorStop(0.62, 'rgba(170,196,230,0.35)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, size, size);
+  g.strokeStyle = 'rgba(0,0,0,0.45)';
   g.lineWidth = 2;
-  for (let y = 0; y <= 256; y += 32) {
-    g.beginPath(); g.moveTo(0, y); g.lineTo(256, y); g.stroke();
-  }
-  for (let row = 0; row < 8; row++) {
-    const off = row % 2 ? 32 : 0;
-    for (let x = off; x <= 256; x += 64) {
-      g.beginPath(); g.moveTo(x, row * 32); g.lineTo(x, row * 32 + 32); g.stroke();
-    }
-  }
-  for (let i = 0; i < 700; i++) {
-    const v = 28 + Math.random() * 22;
-    g.fillStyle = `rgba(${v},${v + 3},${v + 10},0.35)`;
-    g.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+  for (let i = 0; i < 5; i++) {
+    g.beginPath();
+    g.moveTo(Math.random() * size, 0);
+    g.lineTo(Math.random() * size, size);
+    g.stroke();
   }
   const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.magFilter = THREE.LinearFilter;
   return tex;
 }
 

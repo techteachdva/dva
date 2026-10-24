@@ -10,6 +10,26 @@ export const damp = (current, target, smoothing, dt) =>
 
 export const TAU = Math.PI * 2;
 
+/**
+ * Push `pos` out to at least `minDist` from `other` on the floor plane.
+ * Returns true when a correction happened. Used so a hunter can bite without
+ * sitting inside the camera.
+ */
+export function separateFrom(pos, other, minDist) {
+  let dx = pos.x - other.x;
+  let dz = pos.z - other.z;
+  const d = Math.hypot(dx, dz);
+  if (d >= minDist) return false;
+  if (d < 1e-5) {
+    pos.x += minDist;
+    return true;
+  }
+  const push = (minDist - d) / d;
+  pos.x += dx * push;
+  pos.z += dz * push;
+  return true;
+}
+
 /** Shortest signed angle from a to b. */
 export function angleDelta(a, b) {
   let d = (b - a) % TAU;

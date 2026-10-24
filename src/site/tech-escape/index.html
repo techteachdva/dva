@@ -7,14 +7,21 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#05070d" />
-<meta name="description" content="Tech Escape 2.5 - The Map &amp; Enemies Update. Navigate maze map posters, face new threats each floor, and escape the haunted Tech Lab." />
-<title>Tech Escape 2.5</title>
-<link rel="stylesheet" href="styles.css" />
+<meta name="description" content="Tech Escape 3. A phosphor boot, then the lab." />
+<title>Tech Escape 3</title>
+<link rel="stylesheet" href="styles.css?v=3.7" />
 </head>
 <body>
 
 <div id="app">
   <canvas id="scene"></canvas>
+  <div id="halt-veil" aria-hidden="true"></div>
+  <div id="death-veil" aria-hidden="true"></div>
+
+  <div id="gfx-warm" class="gfx-banner hidden" role="status">Waking the lab graphics…</div>
+  <div id="gfx-stall" class="gfx-banner hidden" role="alert">
+    The graphics chip stalled. Restoring the lab…
+  </div>
 
   <div id="fx-bloom" aria-hidden="true"></div>
 
@@ -37,7 +44,7 @@
 
     <div id="hud-top">
       <div id="objective">
-        <span id="objective-label">OBJECTIVE</span>
+        <span id="objective-label">DIRECTIVE</span>
         <span id="objective-text">Find a glowing Chromebook</span>
       </div>
       <div id="code-pieces" aria-label="Code pieces collected">
@@ -58,7 +65,7 @@
 
     <div id="hud-bottom">
       <div id="health-row" aria-label="Health">
-        <div class="bar-label">SNACK ENERGY</div>
+        <div class="bar-label">VITALS</div>
         <div id="health-bags"></div>
       </div>
       <div class="meter" id="stamina-meter">
@@ -69,7 +76,7 @@
         <div class="bar-track"><div class="bar-fill" id="stamina-fill"></div></div>
       </div>
       <div class="meter" id="battery-meter">
-        <div class="bar-label"><span id="battery-label">FLASHLIGHT</span> <span class="hint-key">F</span></div>
+        <div class="bar-label"><span id="battery-label">BEAM</span> <span class="hint-key">F</span></div>
         <div class="bar-track"><div class="bar-fill" id="battery-fill"></div></div>
       </div>
       <div class="meter" id="stance-meter">
@@ -102,12 +109,26 @@
       <div class="glitch-bar"></div>
     </div>
 
+    <div id="coach-card" class="coach-card hidden">
+      <p class="coach-kicker">FIRST NIGHT</p>
+      <p id="coach-text"></p>
+    </div>
+
     <div id="toast-stack"></div>
 
     <div id="danger-warning" class="hidden">
-      <span>! SOMETHING IS CLOSE !</span>
+      <span>HOSTILE IN THE LAB</span>
     </div>
   </div>
+
+  <button id="pocket-phone" class="pocket-phone hidden" type="button" aria-label="Phone">
+    <span class="pocket-glass" aria-hidden="true">
+      <span class="pocket-notch"></span>
+      <span class="pocket-led"></span>
+      <span class="pocket-glyph">message</span>
+    </span>
+    <span class="pocket-bar" aria-hidden="true"></span>
+  </button>
 
   <!-- ===================== First run: comfort + content notice =====================
        Shown BEFORE any gameplay, once per device. Both safety toggles are here
@@ -115,20 +136,27 @@
        needs them before the first dark corridor, not after it. If the operating
        system already reports a reduced-motion preference, both arrive pre-set.
        ============================================================================ -->
-  <div id="screen-firstrun" class="screen hidden">
+  <div id="screen-firstrun" class="screen crt-lobby hidden">
     <div class="screen-inner narrow scrollable">
-      <h2 class="panel-title">BEFORE YOU GO IN</h2>
+      <h2 class="panel-title" data-term-row>BEFORE YOU GO IN</h2>
 
-      <div class="notice-card">
-        <h3 class="notice-h">What this game contains</h3>
+      <div class="notice-card" data-term-row>
+        <h3 class="notice-h">How the night works</h3>
+        <ol class="rules-list">
+          <li>Find <strong>4 glowing Chromebooks</strong>. Press <strong>E</strong> and answer.</li>
+          <li>Match the pairs to reveal a code piece. Then print a key and open the exit.</li>
+          <li>Press <strong>C</strong> and crawl under a taped desk to hide. Hunters cannot follow.</li>
+          <li>Press <strong>F</strong> for the flashlight. It burns viruses and attracts mice.</li>
+          <li>If you linger, <strong>red floor arrows</strong> wake up and point to the nearest Chromebook.</li>
+        </ol>
         <p class="story">
-          Dark environments, chase sequences, and sudden loud sounds.
-          <strong>No blood or gore.</strong> You can change any of the settings
-          below at any time from the pause menu.
+          Dark corridors, chase sequences, and sudden sounds. <strong>No blood or gore.</strong>
+          The first minute in the lab repeats this, one line at a time. After Hours is the
+          recommended difficulty: you can walk away from a mouse.
         </p>
       </div>
 
-      <div class="settings">
+      <div class="settings" data-term-row>
         <label class="setting checkbox">
           <input type="checkbox" id="fr-motion" />
           <span>
@@ -160,7 +188,7 @@
         </label>
       </div>
 
-      <button id="btn-firstrun-done" class="big-btn">I AM READY</button>
+      <button id="btn-firstrun-done" class="big-btn" data-term-row>I AM READY</button>
     </div>
   </div>
 
@@ -169,17 +197,17 @@
        browser's storage, so a class can share a cart of Chromebooks and still
        each keep their own Study Guide.
        ========================================================== -->
-  <div id="screen-profile" class="screen hidden">
+  <div id="screen-profile" class="screen crt-lobby hidden">
     <div class="screen-inner narrow scrollable">
-      <h2 class="panel-title">WHO IS PLAYING?</h2>
-      <p class="story">
+      <h2 class="panel-title" data-term-row>WHO IS PLAYING?</h2>
+      <p class="story" data-term-row>
         Pick your name to keep your Study Guide and your best times. This stays on
         this computer only &mdash; nothing is sent anywhere.
       </p>
 
-      <div id="profile-list" class="profile-list"></div>
+      <div id="profile-list" class="profile-list" data-term-row></div>
 
-      <div class="profile-new">
+      <div class="profile-new" data-term-row>
         <label class="setting">
           <span>New name</span>
           <input type="text" id="profile-name" maxlength="18" autocomplete="off"
@@ -188,7 +216,7 @@
         <button id="btn-profile-create" class="cb-btn">CREATE</button>
       </div>
 
-      <div class="title-foot">
+      <div class="title-foot" data-term-row>
         <button class="link-btn" id="btn-profile-guest">Play without saving</button>
       </div>
     </div>
@@ -233,14 +261,14 @@
   </div>
 
   <!-- ===================== Title screen ===================== -->
-  <div id="screen-title" class="screen screen--title">
+  <div id="screen-title" class="screen screen--title crt-lobby hidden">
     <div id="title-backdrop" class="title-backdrop" aria-hidden="true"></div>
     <div class="screen-inner title-lobby">
-      <header class="title-hero">
+      <header class="title-hero" data-term-row>
         <div class="logo logo--lobby">
           <div class="logo-sub">DVA Media Arts &amp; Tech presents</div>
           <h1 class="logo-title" data-text="TECH ESCAPE">TECH ESCAPE</h1>
-          <p class="logo-ver">2.5</p>
+          <p class="logo-ver">3</p>
           <p class="logo-tag">The lab is closed. Something else is logged in.</p>
         </div>
         <div class="title-greeting">
@@ -250,38 +278,40 @@
       </header>
 
       <div class="title-card">
-        <p class="title-mission">
-          Clear <strong>4 Chromebooks</strong>, crack the code, print the key, and escape the
-          <strong>skittering</strong> dark.
-        </p>
+        <ol class="title-steps" data-term-row>
+          <li><span>1</span> Find 4 Chromebooks and answer</li>
+          <li><span>2</span> Match the pairs, print the key, open the exit</li>
+          <li><span>3</span> Crouch under taped desks to hide</li>
+          <li><span>4</span> Flashlight burns viruses and calls mice</li>
+        </ol>
 
-        <div class="title-block">
+        <div class="title-block" data-term-row>
           <h2 class="title-block-label">Floor</h2>
           <div id="level-select" class="level-pick" role="radiogroup" aria-label="Floor"></div>
         </div>
 
-        <div class="title-block">
+        <div class="title-block" data-term-row>
           <h2 class="title-block-label">Difficulty</h2>
           <div class="diff-pick" role="radiogroup" aria-label="Difficulty">
             <button type="button" class="diff-btn diff-pick-btn" data-diff="beginner"
-                    title="Very forgiving: slow mice, extra supplies, enemies pause at terminals.">
+                    title="Mice are slow. A long quiet opening. Extra snacks.">
               <span class="diff-name">BEGINNER</span>
-              <span class="diff-hint">Slow &amp; forgiving</span>
+              <span class="diff-hint">Learn the lab</span>
             </button>
             <button type="button" class="diff-btn diff-pick-btn" data-diff="chill"
-                    title="Slower enemies and more warning before they chase.">
+                    title="You can walk away from a mouse. Hiding works.">
               <span class="diff-name">FIELD TRIP</span>
-              <span class="diff-hint">Easier hunt</span>
+              <span class="diff-hint">A gentle hunt</span>
             </button>
             <button type="button" class="diff-btn diff-pick-btn is-selected" data-diff="normal"
-                    title="The intended haunt. Enemies pause while you work at a terminal.">
+                    title="Recommended. Mice are slower than a walk. Sprint and desks are the panic tools.">
               <span class="diff-name">AFTER HOURS</span>
-              <span class="diff-hint">Standard haunt</span>
+              <span class="diff-hint">Recommended</span>
             </button>
             <button type="button" class="diff-btn diff-pick-btn" data-diff="nightmare"
-                    title="Faster hunters, less light, no pauses at terminals.">
+                    title="Hunters outrun a walk. No quiet opening. Terminals do not pause them.">
               <span class="diff-name">SYSTEM CRASH</span>
-              <span class="diff-hint">No mercy</span>
+              <span class="diff-hint">They outrun you</span>
             </button>
             <button type="button" class="diff-btn diff-pick-btn" data-diff="questions"
                     title="No mice or viruses — terminals and escape only.">
@@ -298,17 +328,17 @@
           </label>
         </div>
 
-        <button id="btn-start" class="big-btn title-cta" type="button">ENTER THE LAB</button>
+        <button id="btn-start" class="big-btn title-cta" type="button" data-term-row>ENTER THE LAB</button>
       </div>
 
-      <nav class="title-nav" aria-label="Lobby links">
+      <nav class="title-nav" aria-label="Lobby links" data-term-row>
         <button class="link-btn" type="button" id="btn-high-scores">High Scores</button>
         <button class="link-btn" type="button" id="btn-how-to-play">How to Play</button>
         <button class="link-btn" type="button" id="btn-settings">Settings</button>
         <button class="link-btn" type="button" id="btn-guide">Study Guide</button>
         <button class="link-btn" type="button" id="btn-standards">What will I learn?</button>
       </nav>
-      <p class="audio-credits title-credits">
+      <p class="audio-credits title-credits" data-term-row>
         Music: &quot;Controlled Chaos&quot; Kevin MacLeod (incompetech.com).
         Licensed under
         <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
@@ -318,22 +348,62 @@
   </div>
 
   <!-- ===================== Pause / settings ===================== -->
-  <div id="screen-pause" class="screen hidden">
-    <div class="screen-inner narrow scrollable">
-      <h2 class="panel-title">PAUSED</h2>
-      <!--
-        Pressing Esc in Chrome releases Pointer Lock and that CANNOT be
-        intercepted, so the mouse is already free by the time this appears. The
-        resume button is therefore the loudest thing on the panel: a player who
-        cannot see how to get back into the game is a player whose session ends
-        here, and this is the single most common way browser first-person games
-        strand someone who does not play games.
-      -->
-      <p class="resume-note" id="pause-reason">Your mouse is free. Click <strong>RESUME</strong> to go back in.</p>
+  <div id="screen-pause" class="screen hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+    <div class="pause-shell">
+      <canvas id="pause-scope" class="pause-scope" aria-hidden="true"></canvas>
+      <div class="pause-face">
+      <header class="pause-head">
+        <h2 id="pause-title" class="panel-title">PAUSED</h2>
+        <!--
+          Pressing Esc in Chrome releases Pointer Lock and that CANNOT be
+          intercepted, so the mouse is already free by the time this appears.
+          Resume stays outside the tabs so it is the first thing on the card.
+        -->
+        <p class="resume-note" id="pause-reason">Your mouse is free. Click <strong>RESUME</strong> to go back in.</p>
+        <div class="pause-actions">
+          <button id="btn-resume" class="big-btn" type="button">RESUME</button>
+          <button id="btn-quit" class="link-btn" type="button">Quit to title</button>
+          <button id="btn-skip-coach" class="link-btn hidden" type="button">Skip the lesson</button>
+        </div>
+      </header>
 
-      <div class="pause-buttons">
-        <button id="btn-resume" class="big-btn">RESUME</button>
+      <div class="pause-tabs" role="tablist" aria-label="Settings">
+        <button type="button" role="tab" data-pause-tab="play" aria-selected="true">Play</button>
+        <button type="button" role="tab" data-pause-tab="comfort" aria-selected="false">Comfort</button>
+        <button type="button" role="tab" data-pause-tab="picture" aria-selected="false">Picture</button>
+        <button type="button" role="tab" data-pause-tab="controls" aria-selected="false">Controls</button>
       </div>
+
+      <div class="pause-body">
+      <section class="pause-panel" data-pause-panel="play">
+        <h3 class="pause-h">DIFFICULTY</h3>
+        <p class="setting-note pause-lead">Change it any time. The run keeps going.</p>
+        <div class="difficulty-select compact" id="pause-difficulty" role="radiogroup" aria-label="Difficulty">
+          <button class="diff-btn" data-diff="beginner" type="button">
+            <span class="diff-name">BEGINNER</span>
+            <span class="diff-desc">Learn the lab</span>
+          </button>
+          <button class="diff-btn" data-diff="chill" type="button">
+            <span class="diff-name">FIELD TRIP</span>
+            <span class="diff-desc">A gentle hunt</span>
+          </button>
+          <button class="diff-btn" data-diff="normal" type="button">
+            <span class="diff-name">AFTER HOURS</span>
+            <span class="diff-desc">Recommended</span>
+          </button>
+          <button class="diff-btn" data-diff="nightmare" type="button">
+            <span class="diff-name">SYSTEM CRASH</span>
+            <span class="diff-desc">They outrun you</span>
+          </button>
+          <button class="diff-btn" data-diff="questions" type="button">
+            <span class="diff-name">QUESTIONS ONLY</span>
+            <span class="diff-desc">No enemies</span>
+          </button>
+        </div>
+        <button type="button" id="btn-open-tutorial" class="cb-btn pause-guide">HOW TO PLAY</button>
+      </section>
+
+      <section class="pause-panel" data-pause-panel="comfort" hidden>
 
       <h3 class="pause-h">COMFORT</h3>
       <div class="settings">
@@ -367,49 +437,6 @@
           <output id="out-caption-scale"></output>
         </label>
       </div>
-
-      <h3 class="pause-h">LOOKING AROUND</h3>
-      <div class="settings">
-        <label class="setting">
-          <span>Look speed <span class="setting-note" id="device-note"></span></span>
-          <input type="range" id="set-sens" min="25" max="300" step="5" />
-          <output id="out-sens"></output>
-        </label>
-        <label class="setting">
-          <span>Left / right speed</span>
-          <input type="range" id="set-sens-x" min="25" max="200" step="5" />
-          <output id="out-sens-x"></output>
-        </label>
-        <label class="setting">
-          <span>Up / down speed</span>
-          <input type="range" id="set-sens-y" min="25" max="200" step="5" />
-          <output id="out-sens-y"></output>
-        </label>
-        <label class="setting checkbox">
-          <input type="checkbox" id="set-invert-x" />
-          <span>Invert left / right</span>
-        </label>
-        <label class="setting checkbox">
-          <input type="checkbox" id="set-invert-y" />
-          <span>Invert up / down</span>
-        </label>
-        <label class="setting">
-          <span>Camera</span>
-          <select id="set-camera">
-            <option value="mouse">Mouse look (default)</option>
-            <option value="keyboard">Keyboard only &mdash; arrow keys turn and look</option>
-          </select>
-        </label>
-        <label class="setting">
-          <span>Crosshair</span>
-          <select id="set-crosshair">
-            <option value="dot">Dot (recommended)</option>
-            <option value="full">Full crosshair</option>
-            <option value="off">Off</option>
-          </select>
-        </label>
-      </div>
-
       <h3 class="pause-h">READING</h3>
       <div class="settings">
         <label class="setting">
@@ -431,15 +458,18 @@
             <span class="setting-note">Black and white only; shapes carry the meaning.</span></span>
         </label>
       </div>
+      </section>
 
-      <h3 class="pause-h">PICTURE &amp; SOUND</h3>
+      <section class="pause-panel" data-pause-panel="picture" hidden>
+      <h3 class="pause-h">PICTURE</h3>
       <div class="settings">
         <label class="setting">
-          <span>Graphics quality</span>
+          <span>Graphics</span>
           <select id="set-quality">
-            <option value="low">Low (fastest &mdash; older Chromebooks)</option>
-            <option value="medium">Medium</option>
+            <option value="low">Low — oldest Chromebooks</option>
+            <option value="medium">Medium — Chromebooks</option>
             <option value="high">High</option>
+            <option value="ultra">Ultra — desktop</option>
           </select>
         </label>
         <label class="setting">
@@ -448,85 +478,104 @@
           <output id="out-bright"></output>
         </label>
         <label class="setting">
-          <span>Film grain</span>
-          <input type="range" id="set-fx-grain" min="0" max="100" step="10" />
-          <output id="out-fx-grain"></output>
-        </label>
-        <label class="setting">
-          <span>Glitch effects</span>
-          <input type="range" id="set-fx-glitch" min="0" max="100" step="10" />
-          <output id="out-fx-glitch"></output>
-        </label>
-        <label class="setting">
           <span>Master volume</span>
           <input type="range" id="set-vol-master" min="0" max="100" step="5" />
           <output id="out-vol-master"></output>
-        </label>
-        <label class="setting">
-          <span>Music</span>
-          <input type="range" id="set-vol-music" min="0" max="100" step="5" />
-          <output id="out-vol-music"></output>
-        </label>
-        <label class="setting">
-          <span>Sound effects</span>
-          <input type="range" id="set-vol-sfx" min="0" max="100" step="5" />
-          <output id="out-vol-sfx"></output>
-        </label>
-        <label class="setting">
-          <span>Binaural beat</span>
-          <input type="range" id="set-vol-binaural" min="0" max="100" step="5" />
-          <output id="out-vol-binaural"></output>
         </label>
         <label class="setting checkbox">
           <input type="checkbox" id="set-mute" />
           <span>Mute all sound</span>
         </label>
-        <p class="audio-credits">
-          Music: &quot;Controlled Chaos&quot; Kevin MacLeod (incompetech.com).
-          Licensed under
-          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
-        </p>
       </div>
+      <details class="pause-more">
+        <summary>Mix and effects</summary>
+        <div class="settings">
+          <label class="setting">
+            <span>Music</span>
+            <input type="range" id="set-vol-music" min="0" max="100" step="5" />
+            <output id="out-vol-music"></output>
+          </label>
+          <label class="setting">
+            <span>Sound effects</span>
+            <input type="range" id="set-vol-sfx" min="0" max="100" step="5" />
+            <output id="out-vol-sfx"></output>
+          </label>
+          <label class="setting">
+            <span>Binaural beat</span>
+            <input type="range" id="set-vol-binaural" min="0" max="100" step="5" />
+            <output id="out-vol-binaural"></output>
+          </label>
+          <label class="setting">
+            <span>Film grain</span>
+            <input type="range" id="set-fx-grain" min="0" max="100" step="10" />
+            <output id="out-fx-grain"></output>
+          </label>
+          <label class="setting">
+            <span>Glitch effects</span>
+            <input type="range" id="set-fx-glitch" min="0" max="100" step="10" />
+            <output id="out-fx-glitch"></output>
+          </label>
+        </div>
+      </details>
+      <p class="audio-credits">
+        Music: &quot;Controlled Chaos&quot; Kevin MacLeod (incompetech.com).
+        Licensed under
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
+      </p>
+      </section>
 
-      <h3 class="pause-h">DIFFICULTY</h3>
-      <!-- Changeable mid-run, with no penalty and no reset. A student who is
-           stuck should be able to keep playing, not have to start again. -->
-      <div class="difficulty-select compact" id="pause-difficulty" role="radiogroup"
-           aria-label="Difficulty">
-        <button class="diff-btn" data-diff="beginner">
-          <span class="diff-name">BEGINNER</span>
-          <span class="diff-desc">Slow, forgiving, extra supplies.</span>
-        </button>
-        <button class="diff-btn" data-diff="chill">
-          <span class="diff-name">FIELD TRIP</span>
-          <span class="diff-desc">Slower enemies, more warning.</span>
-        </button>
-        <button class="diff-btn" data-diff="normal">
-          <span class="diff-name">AFTER HOURS</span>
-          <span class="diff-desc">The intended haunt.</span>
-        </button>
-        <button class="diff-btn" data-diff="nightmare">
-          <span class="diff-name">SYSTEM CRASH</span>
-          <span class="diff-desc">No pauses, no mercy.</span>
-        </button>
-        <button class="diff-btn" data-diff="questions">
-          <span class="diff-name">QUESTIONS ONLY</span>
-          <span class="diff-desc">Terminals only — no hunters.</span>
-        </button>
+      <section class="pause-panel" data-pause-panel="controls" hidden>
+      <h3 class="pause-h">LOOK</h3>
+      <div class="settings">
+        <label class="setting">
+          <span>Look speed <span class="setting-note" id="device-note"></span></span>
+          <input type="range" id="set-sens" min="25" max="300" step="5" />
+          <output id="out-sens"></output>
+        </label>
+        <label class="setting">
+          <span>Camera</span>
+          <select id="set-camera">
+            <option value="mouse">Mouse look (default)</option>
+            <option value="keyboard">Keyboard only &mdash; arrow keys turn and look</option>
+          </select>
+        </label>
+        <label class="setting">
+          <span>Crosshair</span>
+          <select id="set-crosshair">
+            <option value="dot">Dot (recommended)</option>
+            <option value="full">Full crosshair</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
       </div>
+      <details class="pause-more">
+        <summary>Axis speeds and invert</summary>
+        <div class="settings">
+          <label class="setting">
+            <span>Left / right speed</span>
+            <input type="range" id="set-sens-x" min="25" max="200" step="5" />
+            <output id="out-sens-x"></output>
+          </label>
+          <label class="setting">
+            <span>Up / down speed</span>
+            <input type="range" id="set-sens-y" min="25" max="200" step="5" />
+            <output id="out-sens-y"></output>
+          </label>
+          <label class="setting checkbox">
+            <input type="checkbox" id="set-invert-x" />
+            <span>Invert left / right</span>
+          </label>
+          <label class="setting checkbox">
+            <input type="checkbox" id="set-invert-y" />
+            <span>Invert up / down</span>
+          </label>
+        </div>
+      </details>
 
       <h3 class="pause-h">KEYBINDS</h3>
       <p class="setting-note bind-note">Click a row, then press the key you want. Esc cancels.</p>
       <div id="bind-list" class="bind-list"></div>
       <button type="button" id="btn-bind-reset" class="link-btn">Reset controls to default</button>
-
-      <h3 class="pause-h">HOW TO PLAY</h3>
-      <p class="setting-note">Three-page guide: movement, items, and how to survive the lab.</p>
-      <button type="button" id="btn-open-tutorial" class="cb-btn">OPEN CONTROLS GUIDE</button>
-
-      <div class="pause-buttons">
-        <button id="btn-quit" class="link-btn">Quit to title</button>
-      </div>
 
       <div id="debug-unlock" class="debug-unlock">
         <label class="setting">
@@ -566,6 +615,9 @@
       </div>
 
       <p class="tiny">Settings save automatically on this device.</p>
+      </section>
+      </div>
+      </div>
     </div>
   </div>
 
@@ -637,6 +689,7 @@
 
       <div class="quiz-body">
         <span id="quiz-mode-chip" class="quiz-mode-chip">SELECT ONE</span>
+        <div id="quiz-primer" class="quiz-primer hidden"></div>
         <h2 id="quiz-question" class="quiz-question"></h2>
         <div id="quiz-answers" class="quiz-answers" role="radiogroup"></div>
 
@@ -677,6 +730,8 @@
       </header>
       <div class="notify-thread">
         <p id="notify-preview" class="notify-preview"></p>
+        <p id="notify-std" class="notify-std"></p>
+        <div id="notify-primer" class="notify-primer hidden"></div>
         <div id="notify-choices" class="notify-choices"></div>
         <p id="notify-feedback" class="notify-feedback"></p>
         <p id="notify-explain" class="notify-explain"></p>
@@ -726,11 +781,13 @@
   </div>
 
   <!-- ===================== Game over ===================== -->
-  <div id="screen-over" class="screen hidden">
-    <div class="screen-inner">
-      <h1 id="over-title" class="over-title">SYSTEM FAILURE</h1>
-      <p id="over-flavor" class="over-flavor"></p>
-      <div id="over-stats" class="stats-grid"></div>
+  <div id="screen-over" class="screen screen-over hidden">
+    <div class="screen-inner over-terminal">
+      <pre id="over-readout" class="over-readout" aria-hidden="true"></pre>
+      <h1 id="over-title" class="over-title sr-only">SYSTEM FAILURE</h1>
+      <p id="over-flavor" class="over-flavor sr-only"></p>
+      <div id="over-stats" class="stats-grid sr-only"></div>
+      <div id="over-rest" class="over-rest">
       <section id="hs-end-panel" class="hs-panel hidden" aria-labelledby="hs-end-title">
         <h3 id="hs-end-title" class="hs-title">POST YOUR SCORE</h3>
         <p class="hs-score-line">Run score: <strong id="hs-score-value">0</strong></p>
@@ -755,7 +812,8 @@
         <button id="btn-retry" class="big-btn">TRY AGAIN</button>
         <button id="btn-over-title" class="link-btn">Back to title</button>
       </div>
-      <p id="over-tip" class="over-tip"></p>
+      <p id="over-tip" class="over-tip sr-only"></p>
+      </div>
     </div>
   </div>
 
@@ -806,23 +864,18 @@
     </div>
   </div>
 
-  <!-- ===================== Loading ===================== -->
-  <div id="screen-load" class="screen">
-    <div class="screen-inner narrow">
-      <!--
-        Every line here reports something that actually happened during load, so
-        the wait is instrumental rather than decorative: the last line prints the
-        code format the player is about to go looking for.
-      -->
-      <div class="boot-log" id="boot-log" role="status" aria-live="polite"></div>
-      <div class="bar-track">
-        <!-- Determinate and tied to real stage completion; never faked -->
-        <div class="bar-fill" id="load-fill"></div>
-      </div>
-      <button id="boot-skip" class="boot-skip hidden" type="button">
-        Press Space to skip
-      </button>
+  <!-- ===================== Loading: oscilloscope, then the terminal ===================== -->
+  <div id="screen-load" class="screen screen-load">
+    <canvas id="opening-scope" aria-hidden="true"></canvas>
+    <div class="crt-veil" aria-hidden="true"></div>
+    <p class="sr-only">Tech Escape 3 is starting.</p>
+    <div class="boot-log" id="boot-log" role="status" aria-live="polite"></div>
+    <div class="bar-track" aria-hidden="true">
+      <div class="bar-fill" id="load-fill" style="width:0%"></div>
     </div>
+    <button id="boot-skip" class="boot-skip hidden" type="button">
+      Press Space to skip
+    </button>
   </div>
 
   <!-- ===================== Fatal error (no WebGL etc.) ===================== -->
@@ -858,7 +911,7 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=3.9.1"></script>
 <noscript>
   <p style="color:#e6edf7;font-family:system-ui,sans-serif;padding:2rem">
     Tech Escape needs JavaScript enabled to run.

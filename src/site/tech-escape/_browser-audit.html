@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>audit running</title></head>
+<body style="margin:0;background:#05070d;color:#d7f6ff;font:13px/1.45 ui-monospace,monospace">
+<pre id="log">audit starting…</pre>
+<script type="module">
+import * as THREE from './vendor/three.module.js';
+import { makeRng } from './js/util.js';
+import { Maze } from './js/world/maze.js';
+import { Lab } from './js/world/lab.js';
+import { Lighting } from './js/world/lighting.js';
+import { Obstacles } from './js/world/obstacles.js';
+import { Player } from './js/entities/player.js';
+import { EvilMouse } from './js/entities/mouse.js';
+import { EnemyManager } from './js/entities/enemies.js';
+import { input } from './js/input.js';
+import {
+  CELL, DIFFICULTY, QUALITY, PLAYER, MOUSE, resolveQuality,
+} from './js/config.js';
+import { stepArrowHint, initialArrowHint } from './js/world/arrow-hint.js';
+
+const lines = [];
+let fails = 0;
+const say = (s) => {
+  lines.push(s);
+  const el = document.getElementById('log');
+  el.textContent = lines.join('\n');
+};
+const ok = (name, cond, extra = '') => {
+  if (!cond) fails++;
+  say(`${cond ? 'PASS' : 'FAIL'} ${name}${extra ? ` :: ${extra}` : ''}`);
+};
+
+window.addEventListener('error', (e) => {
+  fails++;
+  say(`FAIL uncaught :: ${e.message}`);
+});
+
+function runway(maze) {
+  for (const [x, y] of maze.openCells()) {
+    let clear = true;
+    for (let i = 1; i <= 5; i++) if (!maze.isOpen(x, y - i)) clear = false;
+    if (clear && maze.isOpen(x, y + 1)) return [x, y];
+  }
+  return maze.openCells()[Math.floor(maze.openCells().length / 2)];
+}
+
+function stubLab(maze) {
+  return {
+    obstacles: new Obstacles(maze),
+    tables: [],
+    tableAt: () => null,
+    tableNear: () => null,
+  };
+}
+
+/** Player walks away; returns how the gap to one hunting mouse changed. */
+function chaseGap(diff, seed) {
+  const rng = makeRng(seed);
+  const maze = new Maze(rng, { size: 15, loopChance: 0.45, rooms: 4, roomMin: 3, roomMax: 5 });
+  const cell = runway(maze);
+  const lab = stubLab(maze);
+  const player = new Player(maze, lab, cell, diff);
+  player.introCalm = false;
+  player.yaw = 0;
+  const behind = [cell[0], cell[1] + 1];
+  const mouse = new EvilMouse(maze, behind, rng, 0, lab.obstacles);
+  const back = maze.cellCenter(behind[0], behind[1]);
+  mouse.pos.set(back.x, 0, back.z);
+  input.held.forward = true;
+  input.held.back = input.held.left = input.held.right = false;
+  const startGap = Math.hypot(mouse.pos.x - player.pos.x, mouse.pos.z - player.pos.z);
+  const dt = 1 / 60;
+  for (let i = 0; i < 180; i++) {
+    player.update(dt, true);
+    const [px, py] = maze.worldToCell(player.pos.x, player.pos.z);
+    const flow = maze.buildFlow(px, py);
+    mouse.update(dt, player, flow, [mouse], diff, null, false);
+  }
+  input.held.forward = false;
+  const endGap = Math.hypot(mouse.pos.x - player.pos.x, mouse.pos.z - player.pos.z);
+  return { startGap, endGap, delta: endGap - startGap };
+}
+
+/** Standing still in contact. Returns health lost and hits that landed. */
+function standStill(diff, seconds, grace) {
+  const rng = makeRng(99);
+  const maze = new Maze(rng, { size: 11, loopChance: 0.5, rooms: 2, roomMin: 3, roomMax: 4 });
+  const cell = maze.openCells()[0];
+  const lab = stubLab(maze);
+  const scene = new THREE.Scene();
+  const player = new Player(maze, lab, cell, diff);
+  player.introCalm = false;
+  const enemies = new EnemyManager(scene, maze, rng, { ...diff, mice: 3, viruses: 0, introGrace: grace ? diff.introGrace : 0 }, lab.obstacles);
+  enemies.spawnInitial(cell);
+  for (const m of enemies.mice) {
+    m.pos.set(player.pos.x + 0.2, 0, player.pos.z + 0.2);
+    m.attackCooldown = 0;
+  }
+  input.held.forward = false;
+  const hp0 = player.health;
+  const dt = 1 / 60;
+  let hits = 0;
+  const frames = Math.round(seconds * 60);
+  for (let i = 0; i < frames; i++) {
+    player.update(dt, true);
+    const ev = enemies.update(dt, player);
+    if (ev.damage > 0 && player.takeDamage(ev.damage * diff.damageScale)) hits++;
+  }
+  return { lost: hp0 - player.health, hits, hp0 };
+}
+
+function luminance(canvas) {
+  const w = 96;
+  const h = 54;
+  const c2 = document.createElement('canvas');
+  c2.width = w;
+  c2.height = h;
+  const g = c2.getContext('2d', { willReadFrequently: true });
+  g.drawImage(canvas, 0, 0, w, h);
+  const d = g.getImageData(0, 0, w, h).data;
+  let sum = 0;
+  let lit = 0;
+  const n = w * h;
+  for (let i = 0; i < d.length; i += 4) {
+    const y = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+    sum += y;
+    if (y > 18) lit++;
+  }
+  return { mean: sum / n, litFrac: lit / n };
+}
+
+try {
+  say('— balance —');
+  const walk = PLAYER.walkSpeed;
+  ok('beginner chase under a walk', MOUSE.chaseSpeed * DIFFICULTY.beginner.enemySpeedScale < walk);
+  ok('field trip chase under a walk', MOUSE.chaseSpeed * DIFFICULTY.chill.enemySpeedScale < walk);
+  ok('after hours chase under a walk', MOUSE.chaseSpeed * DIFFICULTY.normal.enemySpeedScale < walk);
+  ok('system crash chase over a walk', MOUSE.chaseSpeed * DIFFICULTY.nightmare.enemySpeedScale > walk);
+  ok('system crash chase under a sprint', MOUSE.chaseSpeed * DIFFICULTY.nightmare.enemySpeedScale < PLAYER.sprintSpeed);
+  ok('field trip is slower and softer than after hours',
+    DIFFICULTY.chill.enemySpeedScale < DIFFICULTY.normal.enemySpeedScale
+    && DIFFICULTY.chill.damageScale < DIFFICULTY.normal.damageScale);
+  ok('after hours opens with a quiet stretch', DIFFICULTY.normal.introGrace >= 10);
+  ok('system crash has no quiet opening', DIFFICULTY.nightmare.introGrace === 0);
+
+  const normalChase = chaseGap(DIFFICULTY.normal, 11);
+  ok('walking away from an after hours mouse opens the gap',
+    normalChase.delta > 0.4,
+    `gap ${normalChase.startGap.toFixed(2)} → ${normalChase.endGap.toFixed(2)}`);
+
+  const crashChase = chaseGap(DIFFICULTY.nightmare, 11);
+  ok('a system crash mouse closes the gap on a walk',
+    crashChase.delta < -0.3,
+    `gap ${crashChase.startGap.toFixed(2)} → ${crashChase.endGap.toFixed(2)}`);
+
+  const grace = standStill(DIFFICULTY.normal, 3, true);
+  ok('after hours contact during the opening deals no damage', grace.lost === 0 && grace.hits === 0,
+    `lost ${grace.lost} hits ${grace.hits}`);
+
+  const stood = standStill(DIFFICULTY.normal, 8, false);
+  ok('standing in after hours mice hurts without deleting the bar',
+    stood.lost > 0 && stood.lost < stood.hp0,
+    `lost ${stood.lost.toFixed(2)} of ${stood.hp0} across ${stood.hits} bites`);
+  ok('three mice do not land three bites in one breath',
+    stood.hits <= 6,
+    `${stood.hits} bites in 8s`);
+
+  const crashStood = standStill(DIFFICULTY.nightmare, 8, false);
+  ok('system crash standing still is harsher than after hours',
+    crashStood.lost > stood.lost,
+    `crash lost ${crashStood.lost.toFixed(2)} vs after hours ${stood.lost.toFixed(2)}`);
+
+  let hint = initialArrowHint(0, 0);
+  hint = stepArrowHint(hint, 10, 0, 0, 0, 14, 4);
+  ok('arrows stay dark for a short search', !hint.active);
+  hint = stepArrowHint(hint, 12, 0, 0, 0, 14, 4);
+  ok('arrows wake after a linger', hint.active);
+  hint = stepArrowHint(hint, 0.2, 1, 0, 1, 8, 4);
+  ok('following arrows puts them back to sleep', !hint.active);
+
+  say('— graphics —');
+  const canvas = document.createElement('canvas');
+  canvas.width = 960;
+  canvas.height = 540;
+  document.body.appendChild(canvas);
+  const renderer = new THREE.WebGLRenderer({
+    canvas, antialias: false, preserveDrawingBuffer: true, powerPreference: 'default',
+  });
+  renderer.setPixelRatio(1);
+  renderer.setSize(960, 540, false);
+  const gl = renderer.getContext();
+  const gpu = gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info')?.UNMASKED_RENDERER_WEBGL || 0x1F01);
+  say(`NOTE gpu ${gpu}`);
+
+  const rng = makeRng(42);
+  let maze = new Maze(rng, { size: 15, loopChance: 0.35, rooms: 3, roomMin: 3, roomMax: 5 });
+  const scene = new THREE.Scene();
+  const lab = new Lab(scene, maze, rng, { id: 'lab' });
+  const open = maze.openCells();
+  const laptops = maze.spreadCells(4, [], 4);
+  lab.buildLaptops(laptops);
+  const tables = open.filter((c) => !laptops.some((l) => l[0] === c[0] && l[1] === c[1])).slice(0, 8);
+  lab.buildTables(tables);
+  const q = resolveQuality('medium', { cros: false });
+  ok('medium quality has no shadows', q.shadows === false && q.cookie === true);
+  const crosUltra = resolveQuality('ultra', { cros: true });
+  ok('chromebook ultra drops the shadow pass', crosUltra.shadows === false && crosUltra.maxDpr <= 1.25);
+  const desktopUltra = resolveQuality('ultra', { cros: false });
+  ok('desktop ultra keeps shadows and filmic tone', desktopUltra.shadows === true && desktopUltra.toneMapping === 'aces');
+
+  const camera = new THREE.PerspectiveCamera(74, 960 / 540, 0.08, 80);
+  scene.add(camera);
+  const lighting = new Lighting(scene, camera, q);
+  lighting.setBrightness(1.3);
+  const eye = maze.cellCenter(open[0][0], open[0][1]);
+  camera.position.set(eye.x, 1.62, eye.z);
+  camera.rotation.set(0.08, 0, 0, 'YXZ');
+  scene.fog = new THREE.FogExp2(0x04060b, q.fogDensity);
+
+  renderer.compile(scene, camera);
+  lighting.flashlight.intensity = 0;
+  renderer.render(scene, camera);
+  const dark = luminance(canvas);
+  ok('unlit lab is a picture, not a black frame', dark.mean > 6 && dark.litFrac > 0.04,
+    `mean ${dark.mean.toFixed(1)} lit ${(dark.litFrac * 100).toFixed(0)}%`);
+  ok('unlit lab stays dark enough to need a flashlight', dark.mean < 70,
+    `mean ${dark.mean.toFixed(1)}`);
+
+  lighting.flashlight.intensity = 68;
+  lighting.setFlashlight(true);
+  renderer.render(scene, camera);
+  const lit = luminance(canvas);
+  ok('flashlight brightens the frame', lit.mean > dark.mean + 1.5,
+    `dark ${dark.mean.toFixed(1)} → lit ${lit.mean.toFixed(1)}`);
+  ok('flashlight cookie is bound before the first toggle', !!lighting.flashlight.map);
+
+  const calls = renderer.info.render.calls;
+  const tris = renderer.info.render.triangles;
+  ok('medium frame stays inside a chromebook draw budget', calls < 170 && tris < 80000,
+    `${calls} draws, ${tris} tris`);
+
+  ok('floor arrows start hidden', lab.emergencyArrows && lab.emergencyArrows.mesh.visible === false);
+  const home = laptops[0];
+  let wander = maze.cellCenter(home[0], home[1]);
+  for (const [x, y] of maze.openCells()) {
+    const d = Math.abs(x - home[0]) + Math.abs(y - home[1]);
+    if (d >= 2 && d <= 5) {
+      wander = maze.cellCenter(x, y);
+      break;
+    }
+  }
+  let revealed = false;
+  for (let i = 0; i < 50; i++) {
+    const r = lab.updateEmergencyArrows(wander, 0.5);
+    if (r.revealed || lab.emergencyArrows.mesh.visible) revealed = true;
+  }
+  const hintState = lab._arrowHint;
+  ok('lingering in the built lab wakes the floor arrows', revealed,
+    hintState
+      ? `time ${hintState.time.toFixed(1)} active ${hintState.active} cell ${maze.worldToCell(wander.x, wander.z).join(',')}`
+      : 'no hint state');
+
+  renderer.dispose();
+
+  const ultraCanvas = document.createElement('canvas');
+  ultraCanvas.width = 640;
+  ultraCanvas.height = 360;
+  let ultraOk = false;
+  let ultraErr = '';
+  try {
+    const ur = new THREE.WebGLRenderer({ canvas: ultraCanvas, antialias: true, preserveDrawingBuffer: true });
+    ur.toneMapping = THREE.ACESFilmicToneMapping;
+    ur.shadowMap.enabled = true;
+    ur.setSize(640, 360, false);
+    const us = new THREE.Scene();
+    const ulab = new Lab(us, maze, rng, { id: 'lab' });
+    ulab.group.traverse((obj) => {
+      if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = true; }
+    });
+    const ucam = new THREE.PerspectiveCamera(74, 640 / 360, 0.08, 80);
+    ucam.position.copy(camera.position);
+    us.add(ucam);
+    const ul = new Lighting(us, ucam, desktopUltra);
+    ul.flashlight.intensity = 40;
+    ur.compile(us, ucam);
+    ur.render(us, ucam);
+    const sample = luminance(ultraCanvas);
+    ultraOk = sample.mean > 4 && ur.shadowMap.enabled;
+    ultraErr = `mean ${sample.mean.toFixed(1)}`;
+    ur.dispose();
+  } catch (err) {
+    ultraErr = String(err && err.message || err);
+  }
+  ok('ultra frame renders with shadows and filmic tone', ultraOk, ultraErr);
+
+  say('— gui —');
+  const html = await (await fetch('./index.html')).text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const text = doc.body.textContent || '';
+  ok('first screen teaches crouch, flashlight, use, and arrows',
+    /Press C/.test(text) && /Press F/.test(text) && /Press E/.test(text) && /floor arrows/i.test(text));
+  ok('lobby states the four steps', doc.querySelectorAll('.title-steps li').length === 4);
+  ok('after hours is marked recommended', /AFTER HOURS[\s\S]{0,80}Recommended/.test(html));
+  const quality = [...doc.querySelectorAll('#set-quality option')].map((o) => o.value);
+  ok('graphics menu has low, medium, high, and ultra',
+    ['low', 'medium', 'high', 'ultra'].every((k) => quality.includes(k)),
+    quality.join(','));
+  ok('in-lab lesson card exists', !!doc.getElementById('coach-card') && !!doc.getElementById('coach-text'));
+  ok('pause can skip the lesson', !!doc.getElementById('btn-skip-coach'));
+  ok('graphics stall and prewarm banners exist',
+    !!doc.getElementById('gfx-warm') && !!doc.getElementById('gfx-stall'));
+  ok('objective and health HUD exist',
+    !!doc.getElementById('objective-text') && !!doc.getElementById('health-bags'));
+
+  const css = await (await fetch('./styles.css')).text();
+  ok('lesson card is positioned in the view, not under the page',
+    /\.coach-card\s*\{[^}]*top:\s*92px/.test(css));
+  ok('hidden screens actually hide', /\.hidden\s*\{\s*display:\s*none\s*!important/.test(css));
+} catch (err) {
+  fails++;
+  say(`FAIL exception :: ${err && err.stack ? err.stack : err}`);
+}
+
+say('');
+say(`FAILURES: ${fails}`);
+document.title = fails === 0 ? 'AUDIT PASS' : `AUDIT FAILURES ${fails}`;
+</script>
+</body>
+</html>

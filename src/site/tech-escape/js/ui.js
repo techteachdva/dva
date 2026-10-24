@@ -64,6 +64,10 @@ export const ui = {
 
   setHudVisible(on) {
     this.el.hud.classList.toggle('hidden', !on);
+    const phone = document.getElementById('pocket-phone');
+    if (phone && !phone.classList.contains('is-raised')) {
+      phone.classList.toggle('hidden', !on);
+    }
     // Stance styling lives on <body>, so it has to be cleared with the HUD or a
     // crouched vignette would bleed onto the title and results screens
     if (!on) {
@@ -139,7 +143,7 @@ export const ui = {
     el.classList.toggle('is-burning', burning && on);
     const label = this.el['battery-label'];
     if (label) {
-      const want = burning && on ? 'BURNING VIRUS' : 'FLASHLIGHT';
+      const want = burning && on ? 'BURNING' : 'BEAM';
       if (label.dataset.state !== want) {
         label.dataset.state = want;
         label.textContent = want;
@@ -346,12 +350,62 @@ export const ui = {
       </div>`).join('');
   },
 
-  showGameOver({ title, flavor, stats, tip }) {
+  showGameOver({ title, flavor, stats, tip, readout }) {
     this.el['over-title'].textContent = title;
     this.el['over-flavor'].textContent = flavor;
     this.el['over-stats'].innerHTML = this._statsHtml(stats);
     this.el['over-tip'].textContent = tip || '';
+    const screen = document.getElementById('screen-over');
+    screen?.classList.remove('is-live');
     this.showScreen('screen-over');
+    const pre = document.getElementById('over-readout');
+    const lines = readout || [];
+    if (!pre) return;
+    if (settings.get('reduceMotion')) {
+      pre.textContent = lines.join('\n');
+      screen?.classList.add('is-live');
+      return;
+    }
+    this._typeOver(pre, lines, () => screen?.classList.add('is-live'));
+  },
+
+  finishOverReadout() {
+    if (!this._overToken) return;
+    this._overToken.skip = true;
+  },
+
+  _typeOver(el, lines, done) {
+    const token = { skip: false };
+    this._overToken = token;
+    el.textContent = '';
+    const step = () => {
+      if (token.skip) {
+        el.textContent = lines.join('\n');
+        this._overToken = null;
+        done?.();
+        return;
+      }
+    };
+    (async () => {
+      let text = '';
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        for (let c = 0; c < line.length; c++) {
+          if (token.skip) { step(); return; }
+          text += line[c];
+          el.textContent = text;
+          await new Promise((r) => setTimeout(r, 20));
+        }
+        text += '\n';
+        el.textContent = text;
+        if (token.skip) { step(); return; }
+        await new Promise((r) => setTimeout(r, line.trim() ? 170 : 70));
+      }
+      if (this._overToken === token) {
+        this._overToken = null;
+        done?.();
+      }
+    })();
   },
 
   showVictory({ flavor, stats, report }) {

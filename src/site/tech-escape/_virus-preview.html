@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>virus preview</title></head>
+<body style="margin:0;background:#05070d">
+<canvas id="c"></canvas>
+<script type="module">
+import * as THREE from './vendor/three.module.js';
+import { makeRng } from './js/util.js';
+import { Maze } from './js/world/maze.js';
+import { GhostVirus } from './js/entities/virus.js?v=6';
+import { DIFFICULTY } from './js/config.js';
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05070d);
+scene.fog = new THREE.FogExp2(0x05070d, 0.02);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.05, 40);
+camera.position.set(0, 1.7, 3.2);
+const amb = new THREE.AmbientLight(0x88aacc, 0.4);
+scene.add(amb);
+
+const rng = makeRng(3);
+const maze = new Maze(rng, { size: 11, loopChance: 0.4, rooms: 2, roomMin: 3, roomMax: 4 });
+const cell = maze.openCells()[4];
+const virus = new GhostVirus(maze, cell, rng, 0);
+virus.pos.set(0, 1.55, 0);
+scene.add(virus.mesh);
+const player = {
+  pos: new THREE.Vector3(0, 1.6, 3),
+  alive: true, hidden: false, introCalm: false, onTable: false, yaw: 0,
+  noise: 0,
+  isLightingUp: () => window.burn === true,
+};
+window.burn = false;
+const diff = DIFFICULTY.normal;
+let t = 0;
+function frame(now) {
+  const dt = 1 / 60;
+  t += dt;
+  window.burn = false;
+  virus.update(dt, player, diff, false);
+  virus.pos.set(0, 1.55 + Math.sin(t) * 0.05, 0);
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
