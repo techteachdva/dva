@@ -7,7 +7,7 @@
  *   PHYSIX_PCK_URL, PHYSIX_WASM_URL, PHYSIX_SIDE_WASM_URL
  *   PHYSIX_JS_URL, PHYSIX_AUDIO_WORKLET_URL, PHYSIX_AUDIO_POSITION_WORKLET_URL
  *
- * Defaults: https://github.com/techteachdva/dva/releases/download/v1.3-web/...
+ * Defaults: https://github.com/techteachdva/dva/releases/download/v1.0/...
  * Chrome/Edge/Firefox: monolithic threaded wasm (no .side.wasm).
  * Safari/iOS: safe/physix.* single-thread build. One shared physix.pck.
  */
@@ -21,7 +21,7 @@ const { URL } = require('url');
 const OUT_DIR = path.join(__dirname, '..', 'src', 'site', 'physix');
 const SAFE_DIR = path.join(OUT_DIR, 'safe');
 
-const DEFAULT_RELEASE = 'https://github.com/techteachdva/dva/releases/download/v1.3-web';
+const DEFAULT_RELEASE = 'https://github.com/techteachdva/dva/releases/download/v1.0';
 const DEFAULTS = {
   pck: `${DEFAULT_RELEASE}/physix.pck`,
   wasm: `${DEFAULT_RELEASE}/physix.wasm`,
@@ -249,7 +249,7 @@ function validateWasmJsPair(wasmBytes) {
     } catch (err) {
       console.error(`download-physix ${asset.file}:`, err.message);
       console.error(
-        `Upload ${asset.file} from the same Godot Web export to the GitHub release (v1.3-web).`
+        `Upload ${asset.file} from the same Godot Web export to the GitHub release (v1.0).`
       );
       failed = true;
     }
@@ -262,11 +262,34 @@ function validateWasmJsPair(wasmBytes) {
     failed = true;
   }
 
+  const wasmPath = path.join(OUT_DIR, 'physix.wasm');
+  const engineMin = 8 * 1024 * 1024;
+  let replacedStubWasm = false;
   try {
-    wasmBytes = await fetchAsset(urls.wasm, path.join(OUT_DIR, 'physix.wasm'), 'wasm');
+    wasmBytes = await fetchAsset(urls.wasm, wasmPath, 'wasm', 1000);
+    if (wasmBytes < engineMin && urls.wasm !== DEFAULTS.wasm) {
+      console.warn(
+        `PHYSIX_WASM_URL returned ${formatSize(wasmBytes)}, the old loader stub. ` +
+          `Downloading the threaded engine from ${DEFAULTS.wasm}`
+      );
+      wasmBytes = await fetchAsset(DEFAULTS.wasm, wasmPath, 'wasm', engineMin);
+      replacedStubWasm = true;
+    }
   } catch (err) {
     console.error('download-physix wasm:', err.message);
     failed = true;
+  }
+
+  if (!failed && replacedStubWasm && urls.pck !== DEFAULTS.pck) {
+    try {
+      console.warn(
+        'PHYSIX_PCK_URL does not match that engine. Downloading physix.pck from the same release.'
+      );
+      await fetchAsset(DEFAULTS.pck, path.join(OUT_DIR, 'physix.pck'), 'pack');
+    } catch (err) {
+      console.error('download-physix pck:', err.message);
+      failed = true;
+    }
   }
 
   if (!fs.existsSync(SAFE_DIR)) {

@@ -59,7 +59,7 @@ Requires [GitHub CLI](https://cli.github.com/) (`gh auth login`). Retries upload
 
 ## GitHub Release (required for Vercel)
 
-Upload one tag (the build default is `v1.3-web`) with:
+Upload one tag (the build default is `v1.0`) with:
 
 - `physix.pck`, `physix.wasm`, `physix.js`, `physix.audio.worklet.js`, `physix.audio.position.worklet.js`
 - `physix.safe.wasm`, `physix.safe.js`, `physix.safe.audio.worklet.js`, `physix.safe.audio.position.worklet.js`
@@ -74,13 +74,13 @@ In **Vercel → Project → Settings → Environment Variables**, set **full HTT
 
 | Name | Example value |
 |------|----------------|
-| `PHYSIX_PCK_URL` | `https://github.com/techteachdva/dva/releases/download/v1.3-web/physix.pck` |
-| `PHYSIX_WASM_URL` | `https://github.com/techteachdva/dva/releases/download/v1.3-web/physix.wasm` |
-| `PHYSIX_JS_URL` | `https://github.com/techteachdva/dva/releases/download/v1.3-web/physix.js` |
-| `PHYSIX_SAFE_WASM_URL` | `https://github.com/techteachdva/dva/releases/download/v1.3-web/physix.safe.wasm` |
-| `PHYSIX_SAFE_JS_URL` | `https://github.com/techteachdva/dva/releases/download/v1.3-web/physix.safe.js` |
+| `PHYSIX_PCK_URL` | `https://github.com/techteachdva/dva/releases/download/v1.0/physix.pck` |
+| `PHYSIX_WASM_URL` | `https://github.com/techteachdva/dva/releases/download/v1.0/physix.wasm` |
+| `PHYSIX_JS_URL` | `https://github.com/techteachdva/dva/releases/download/v1.0/physix.js` |
+| `PHYSIX_SAFE_WASM_URL` | `https://github.com/techteachdva/dva/releases/download/v1.0/physix.safe.wasm` |
+| `PHYSIX_SAFE_JS_URL` | `https://github.com/techteachdva/dva/releases/download/v1.0/physix.safe.js` |
 
-Leave them unset to use the `v1.3-web` defaults in `scripts/download-physix.js`. Delete any old `PHYSIX_SIDE_WASM_URL`.
+Leave them unset to use the `v1.0` defaults in `scripts/download-physix.js`. Delete any old `PHYSIX_SIDE_WASM_URL`.
 
 Apply to **Production**, **Preview**, and **Development** if you deploy from all of them.
 
