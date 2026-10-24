@@ -15,6 +15,7 @@ import {
 } from './level-themes.js';
 import { ARROW_HINT, initialArrowHint, stepArrowHint } from './arrow-hint.js';
 import { buildMapPosters } from './map-poster.js';
+import { installWallPosters } from './wall-posters.js?v=3.18';
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
@@ -159,16 +160,20 @@ export function drawScreenTexture(canvas, opts) {
     g.fillText(`TERMINAL 0${index + 1}`, W / 2, H * 0.2);
 
     g.fillStyle = accent;
-    g.font = `bold ${Math.round(H * 0.34)}px ui-monospace, monospace`;
-    g.fillText('? ? ?', W / 2, H * 0.5);
+    g.font = `bold ${Math.round(H * 0.22)}px ui-monospace, monospace`;
+    g.fillText('LOCKED', W / 2, H * 0.42);
 
-    g.fillStyle = 'rgba(255,200,87,0.9)';
-    g.font = `bold ${Math.round(H * 0.115)}px ui-monospace, monospace`;
-    g.fillText('ENTER / E TO LOG IN', W / 2, H * 0.79);
+    g.fillStyle = 'rgba(180,230,245,0.8)';
+    g.font = `${Math.round(H * 0.1)}px ui-monospace, monospace`;
+    g.fillText('E  /  ENTER', W / 2, H * 0.66);
 
-    // Scanlines for CRT-ish menace
-    g.fillStyle = 'rgba(0,0,0,0.18)';
-    for (let y = 0; y < H; y += 4) g.fillRect(0, y, W, 2);
+    const pipY = H * 0.84;
+    for (let i = 0; i < 3; i++) {
+      const px = W * 0.38 + i * 28;
+      g.strokeStyle = accent;
+      g.lineWidth = 2;
+      g.strokeRect(px, pipY, 16, 10);
+    }
   }
 }
 
@@ -211,6 +216,7 @@ export class Lab {
 
     this._buildFloorAndCeiling();
     this._buildWalls();
+    installWallPosters(this);
     buildLevelDressing(scene, this.group, maze, rng, this.theme, this._disposables);
   }
 
@@ -807,11 +813,11 @@ export class Lab {
       const glow = {
         pos: new THREE.Vector3(x, DESK_Y + 0.34, z),
         color: 0x5ab8ff,
-        intensity: 8.5,
-        distance: 11,
+        intensity: 2.2,
+        distance: 6.5,
         active: true,
-        baseIntensity: 8.5,
-        baseDistance: 11,
+        baseIntensity: 2.2,
+        baseDistance: 6.5,
         baseColor: 0x5ab8ff,
       };
       this.glowSources.push(glow);
@@ -840,10 +846,10 @@ export class Lab {
     lp.texture.needsUpdate = true;
     lp.glow.color = 0x3dff9a;
     lp.glow.baseColor = 0x3dff9a;
-    lp.glow.intensity = 4.8;
-    lp.glow.baseIntensity = 4.8;
-    lp.glow.distance = 9;
-    lp.glow.baseDistance = 9;
+    lp.glow.intensity = 1.4;
+    lp.glow.baseIntensity = 1.4;
+    lp.glow.distance = 5;
+    lp.glow.baseDistance = 5;
   }
 
   /**

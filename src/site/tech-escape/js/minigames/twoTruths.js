@@ -7,9 +7,10 @@
  */
 
 import { audio } from '../audio.js';
-import { settings } from '../meta/settings.js';
+import { settings } from '../meta/settings.js?v=3.21';
 import { debug } from '../meta/debug.js';
 import { primersFor } from '../data/glossary.js';
+import { typeInto } from '../ui/typegate.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -86,9 +87,11 @@ export class TwoTruths {
     for (const item of items) {
       const row = document.createElement('p');
       const term = document.createElement('strong');
-      term.textContent = item.term;
-      row.append(term, document.createTextNode(` — ${item.def}`));
+      const def = document.createElement('span');
+      row.append(term, document.createTextNode(' — '), def);
       host.appendChild(row);
+      typeInto(term, item.term, { cps: 20 });
+      typeInto(def, item.def, { cps: 16 });
     }
   }
 
@@ -103,7 +106,12 @@ export class TwoTruths {
     if (this.el.sender) this.el.sender.textContent = it.sender;
     if (this.el.time) this.el.time.textContent = `${h12}:${mm} ${am}`;
     if (this.el.preview) {
-      this.el.preview.textContent = `${it.preview} Which one is the LIE? Tap it.`;
+      this._stopPreview?.();
+      this._stopPreview = typeInto(
+        this.el.preview,
+        `${it.preview} Which one is the LIE? Tap it.`,
+        { cps: 20 },
+      );
     }
     if (this.el.standard) this.el.standard.textContent = it.std || '';
     this._showPrimer(it);
@@ -122,7 +130,10 @@ export class TwoTruths {
       btn.type = 'button';
       btn.className = 'notify-choice';
       btn.dataset.index = String(i);
-      btn.innerHTML = `<span class="notify-bubble">${text}</span>`;
+      const bubble = document.createElement('span');
+      bubble.className = 'notify-bubble';
+      btn.appendChild(bubble);
+      typeInto(bubble, text, { cps: 20 });
       btn.addEventListener('click', () => {
         if (debug.enabled && debug.skipMinigames) this.debugSkip();
         else this._pick(i);
@@ -153,12 +164,12 @@ export class TwoTruths {
     });
 
     if (this.el.feedback) {
-      this.el.feedback.textContent = right
-        ? 'You spotted the lie.'
-        : 'That one sounded believable — but it is the lie.';
       this.el.feedback.className = `notify-feedback ${right ? 'is-good' : 'is-bad'}`;
+      typeInto(this.el.feedback, right
+        ? 'You spotted the lie.'
+        : 'That one sounded believable — but it is the lie.', { cps: 20 });
     }
-    if (this.el.explain) this.el.explain.textContent = it.why;
+    if (this.el.explain) typeInto(this.el.explain, it.why, { cps: 16 });
 
     audio.uiClick();
     this.hooks?.onAnswer?.(right, it, [chosen]);

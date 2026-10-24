@@ -41,7 +41,20 @@ function finish(c) {
 
 const hex = (n) => `#${n.toString(16).padStart(6, '0')}`;
 
-/** Front-of-bag label: flame, big word, zigzag. Reads at a couple of pixels. */
+function makeBatteryLabel() {
+  const c = canvas(128, 64);
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffe566';
+  g.fillRect(0, 0, 128, 64);
+  g.fillStyle = '#1a1a14';
+  g.fillRect(0, 0, 10, 64);
+  g.fillRect(118, 0, 10, 64);
+  g.font = 'bold 28px ui-monospace, Consolas, monospace';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText('+  CELL', 64, 34);
+  return finish(c);
+}
 function makeCheetosLabel() {
   const c = canvas(192, 160);
   const g = c.getContext('2d');
@@ -114,12 +127,12 @@ function makeSodaLabel() {
 
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.font = 'bold 42px Verdana, Tahoma, sans-serif';
+  g.font = 'bold 54px Verdana, Tahoma, sans-serif';
   g.lineWidth = 6;
   g.strokeStyle = '#5c0022';
-  g.strokeText('SODA', 128, 64);
+  g.strokeText('V67', 128, 64);
   g.fillStyle = '#ffffff';
-  g.fillText('SODA', 128, 64);
+  g.fillText('V67', 128, 64);
 
   // Bubbles
   g.fillStyle = 'rgba(255,255,255,0.75)';
@@ -184,6 +197,12 @@ function makeAntivirusLabel() {
   g.strokeStyle = 'rgba(191,233,255,0.6)';
   g.lineWidth = 4;
   g.stroke();
+
+  g.fillStyle = '#e8fbff';
+  g.font = 'bold 26px Verdana, Tahoma, sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText('NORGIN', 128, 40);
   return finish(c);
 }
 
@@ -239,9 +258,13 @@ export function getModelGeometry() {
     bagEndCap: new THREE.SphereGeometry(0.12, 8, 6),
     bagBulge: new THREE.SphereGeometry(0.09, 8, 6),
     bagLabel: new THREE.PlaneGeometry(0.28, 0.22),
-    battery: new THREE.CylinderGeometry(0.075, 0.075, 0.3, 10),
-    batteryCap: new THREE.CylinderGeometry(0.04, 0.04, 0.05, 10),
+    battery: new THREE.CylinderGeometry(0.07, 0.07, 0.3, 12),
+    batteryBand: new THREE.CylinderGeometry(0.078, 0.078, 0.14, 12),
+    batteryNub: new THREE.CylinderGeometry(0.022, 0.028, 0.04, 10),
+    batteryNeg: new THREE.CylinderGeometry(0.062, 0.062, 0.028, 12),
+    bagSeam: new THREE.BoxGeometry(0.018, 0.52, 0.03),
     canBody: new THREE.CylinderGeometry(0.088, 0.088, 0.25, 12, 1, true),
+    canCore: new THREE.CylinderGeometry(0.084, 0.084, 0.24, 12),
     canLid: new THREE.CylinderGeometry(0.09, 0.088, 0.022, 12),
     canTab: new THREE.BoxGeometry(0.05, 0.008, 0.022),
     canRing: new THREE.TorusGeometry(0.028, 0.006, 6, 12),
@@ -261,6 +284,7 @@ function getTextures() {
     cheetos: makeCheetosLabel(),
     soda: makeSodaLabel(),
     antivirus: makeAntivirusLabel(),
+    battery: makeBatteryLabel(),
     triangle: makeGlyphTexture('triangle'),
     hex: makeGlyphTexture('hex'),
     circle: makeGlyphTexture('circle'),
@@ -304,16 +328,8 @@ export function makeCheetosBag() {
     'bag', () => new THREE.MeshBasicMaterial({ color: COLORS.cheeto }),
   );
   const body = new THREE.Mesh(g.bagBody, bodyMat);
-  body.scale.set(1.08, 1.42, 0.78);
+  body.scale.set(1.05, 1.35, 0.72);
   group.add(body);
-
-  const bulgeMat = sharedMat('bagBulge', () => new THREE.MeshBasicMaterial({ color: 0xc8480c }));
-  for (const [bx, by, bz] of [[-0.1, 0.06, 0.1], [0.11, -0.04, 0.11], [-0.06, -0.12, 0.09]]) {
-    const bulge = new THREE.Mesh(g.bagBulge, bulgeMat);
-    bulge.position.set(bx, by, bz);
-    bulge.scale.set(1.1, 1.35, 0.85);
-    group.add(bulge);
-  }
 
   const capMat = sharedMat('bagCap', () => new THREE.MeshBasicMaterial({ color: 0x8a2804 }));
   for (const y of [0.255, -0.255]) {
@@ -326,24 +342,46 @@ export function makeCheetosBag() {
   const label = new THREE.Mesh(g.bagLabel, sharedMat(
     'bagLabel', () => new THREE.MeshBasicMaterial({ map: t.cheetos, side: THREE.DoubleSide }),
   ));
-  label.position.z = 0.135;
+  label.position.z = 0.15;
+  label.scale.set(1.15, 1.2, 1);
   group.add(label);
+  const back = label.clone();
+  back.position.z = -0.15;
+  back.rotation.y = Math.PI;
+  group.add(back);
+
+  const seamMat = sharedMat('bagSeam', () => new THREE.MeshBasicMaterial({ color: 0xfff1c2 }));
+  for (const x of [-0.2, 0.2]) {
+    const seam = new THREE.Mesh(g.bagSeam, seamMat);
+    seam.position.set(x, 0, 0);
+    group.add(seam);
+  }
   return group;
 }
 
-/** The quality bar the others are measured against. Left alone on purpose. */
+/** A cell you can name from across the room: dark sleeve, yellow band, brass nub. */
 export function makeBattery() {
   const g = getModelGeometry();
+  const t = getTextures();
   const group = new THREE.Group();
-  const body = new THREE.Mesh(g.battery, sharedMat(
-    'battery', () => new THREE.MeshBasicMaterial({ color: COLORS.battery }),
+  const sleeve = new THREE.Mesh(g.battery, sharedMat(
+    'batterySleeve', () => new THREE.MeshBasicMaterial({ color: 0x24242c }),
   ));
-  group.add(body);
-  const cap = new THREE.Mesh(g.batteryCap, sharedMat(
-    'batteryCap', () => new THREE.MeshBasicMaterial({ color: 0xc9c9d2 }),
+  group.add(sleeve);
+  const band = new THREE.Mesh(g.batteryBand, sharedMat(
+    'batteryBand', () => new THREE.MeshBasicMaterial({ map: t.battery }),
   ));
-  cap.position.y = 0.17;
-  group.add(cap);
+  group.add(band);
+  const nub = new THREE.Mesh(g.batteryNub, sharedMat(
+    'batteryNub', () => new THREE.MeshBasicMaterial({ color: 0xe2b84a }),
+  ));
+  nub.position.y = 0.168;
+  group.add(nub);
+  const neg = new THREE.Mesh(g.batteryNeg, sharedMat(
+    'batteryNeg', () => new THREE.MeshBasicMaterial({ color: 0x9aa0ac }),
+  ));
+  neg.position.y = -0.155;
+  group.add(neg);
   return group;
 }
 
@@ -352,9 +390,6 @@ export function makeSodaCan() {
   const g = getModelGeometry();
   const t = getTextures();
   const group = new THREE.Group();
-
-  // A cylinder's UVs wrap the long way round, so the wordmark stays upright and
-  // legible from every angle without a second mesh
   const body = new THREE.Mesh(g.canBody, sharedMat(
     'can', () => new THREE.MeshBasicMaterial({ map: t.soda, side: THREE.DoubleSide }),
   ));
@@ -388,27 +423,18 @@ export function makeAntivirusDisc() {
   const g = getModelGeometry();
   const t = getTextures();
   const group = new THREE.Group();
-
-  const edge = new THREE.Mesh(g.disc, sharedMat(
-    'discEdge', () => new THREE.MeshBasicMaterial({ color: 0x8fa6bd }),
-  ));
-  group.add(edge);
-
-  const faceMat = sharedMat('discFace', () => new THREE.MeshBasicMaterial({ map: t.antivirus }));
-  for (const y of [0.008, -0.008]) {
+  const faceMat = sharedMat('discFace', () => new THREE.MeshBasicMaterial({ map: t.antivirus, side: THREE.DoubleSide }));
+  for (const y of [0.006, -0.006]) {
     const face = new THREE.Mesh(g.discFace, faceMat);
     face.position.y = y;
     face.rotation.x = y > 0 ? -Math.PI / 2 : Math.PI / 2;
     group.add(face);
   }
-
-  const rimMat = sharedMat('discRim', () => new THREE.MeshBasicMaterial({ color: 0xbfe9ff }));
-  for (const y of [0.009, -0.009]) {
-    const rim = new THREE.Mesh(g.discRim, rimMat);
-    rim.position.y = y;
-    rim.rotation.x = Math.PI / 2;
-    group.add(rim);
-  }
+  const rim = new THREE.Mesh(g.discRim, sharedMat(
+    'discRim', () => new THREE.MeshBasicMaterial({ color: 0xbfe9ff }),
+  ));
+  rim.rotation.x = Math.PI / 2;
+  group.add(rim);
   return group;
 }
 

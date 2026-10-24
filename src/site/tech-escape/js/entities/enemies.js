@@ -2,7 +2,7 @@
  * Owns every hunter in the lab and the pressure curve.
  */
 
-import { EvilMouse, disposeMouseGeometry } from './mouse.js?v=3.9';
+import { EvilMouse, disposeMouseGeometry } from './mouse.js?v=3.25';
 import { GhostVirus, disposeVirusGeometry } from './virus.js';
 import { CircuitBug, disposeBugGeometry } from './bug.js';
 import { Phisher, disposePhisherGeometry } from './phisher.js';

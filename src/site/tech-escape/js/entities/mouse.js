@@ -12,7 +12,7 @@ import { MOUSE, CELL, COLORS, THROWN, PLAYER } from '../config.js';
 import { angleDelta, clamp, separateFrom } from '../util.js';
 import { audio } from '../audio.js';
 import { easeFactor } from '../meta/ease.js';
-import { makeEntityGlyph } from './models.js';
+import { makeEntityGlyph } from './models.js?v=3.25';
 
 // FEED and FLEE both exist because of the cheetos bag: one is the distraction
 // the player paid for, the other is what the survivors do afterwards.

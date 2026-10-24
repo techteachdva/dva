@@ -8,7 +8,7 @@
 import * as THREE from '../../vendor/three.module.js';
 import { PICKUP, PLAYER, COLORS, TABLE } from '../config.js';
 import { audio } from '../audio.js';
-import { makeModel, REST_Y } from './models.js';
+import { makeModel, REST_Y } from './models.js?v=3.25';
 
 /** Per-kind glow so loot reads at range without lighting the whole room. */
 const GLOW = {
@@ -21,8 +21,8 @@ const GLOW = {
 const LABELS = {
   cheetos: 'Pick up hot cheetos',
   battery: 'Pick up battery',
-  soda: 'Pick up soda',
-  antivirus: 'Pick up anti-virus disc',
+  soda: 'Pick up V67 soda',
+  antivirus: 'Pick up Norgin anti-virus',
 };
 
 const TABLE_SURFACE_Y = TABLE.topY + TABLE.topThickness / 2;
@@ -131,12 +131,12 @@ export class PickupField {
     let full = 0;
 
     if (item.kind === 'battery') {
-      if (player.battery >= 99.5) {
+      if (!inventory || !inventory.add('battery', 1)) {
         return { taken, batteries: 0, full: 1 };
       }
-      player.addBattery(PLAYER.batteryPickup);
       audio.pickupBattery();
       batteries = 1;
+      taken.push('battery');
     } else {
       if (!inventory || !inventory.add(item.kind, 1)) {
         return { taken, batteries: 0, full: 1 };

@@ -36,16 +36,22 @@ export class Maze {
 
   _generate() {
     const N = this.size;
-    // Start fully solid
     this.grid = Array.from({ length: N }, () => new Uint8Array(N).fill(SOLID));
 
-    // Carve a perfect maze over the odd-indexed cells
+    const odds = [];
+    for (let y = 1; y < N - 1; y += 2) {
+      for (let x = 1; x < N - 1; x += 2) odds.push([x, y]);
+    }
+    const start = this.rng.pick(odds);
     const visited = Array.from({ length: N }, () => new Uint8Array(N));
-    const stack = [[1, 1]];
-    this.grid[1][1] = OPEN;
-    visited[1][1] = 1;
+    const stack = [[start[0], start[1]]];
+    this.grid[start[1]][start[0]] = OPEN;
+    visited[start[1]][start[0]] = 1;
 
     const DIRS = [[0, -2], [2, 0], [0, 2], [-2, 0]];
+    // One roll for the whole floor: high keeps long halls, low turns often.
+    const straight = this.rng.range(0.18, 0.84);
+    let last = null;
 
     while (stack.length) {
       const [cx, cy] = stack[stack.length - 1];
@@ -59,18 +65,29 @@ export class Maze {
       }
       if (!options.length) {
         stack.pop();
+        last = null;
         continue;
       }
-      const [nx, ny, dx, dy] = this.rng.pick(options);
+      let pick = null;
+      if (last && this.rng.chance(straight)) {
+        pick = options.find((o) => o[2] === last[0] && o[3] === last[1]) || null;
+      }
+      if (!pick) pick = this.rng.pick(options);
+      const [nx, ny, dx, dy] = pick;
       this.grid[cy + dy / 2][cx + dx / 2] = OPEN;
       this.grid[ny][nx] = OPEN;
       visited[ny][nx] = 1;
+      last = [dx, dy];
       stack.push([nx, ny]);
     }
 
-    this._addLoops(this.layout.loopChance);
+    const loop = Math.min(0.62, Math.max(0.06, this.layout.loopChance * this.rng.range(0.7, 1.3)));
+    this._addLoops(loop);
     this._carveRooms(this.layout.rooms);
+    this._gallery();
+    this._courtyard();
     if (this.layout.trimStubs !== false) this._trimStubs();
+    this._sealBorder();
   }
 
   /** Removes interior wall segments to create loops and wider spaces. */
@@ -127,6 +144,51 @@ export class Maze {
           + (this.grid[y][x + 1] === SOLID ? 1 : 0);
         if (n === 0 && this.rng.chance(0.6)) this.grid[y][x] = OPEN;
       }
+    }
+  }
+
+  /** One long sightline, so a floor is not only a tangle of equal corridors. */
+  _gallery() {
+    const N = this.size;
+    const span = this.rng.int(5, Math.max(6, Math.floor(N * 0.5)));
+    if (this.rng.chance(0.5)) {
+      const y = this.rng.int(2, N - 3);
+      const x0 = this.rng.int(1, Math.max(2, N - 1 - span));
+      for (let x = x0; x < x0 + span && x < N - 1; x++) this.grid[y][x] = OPEN;
+    } else {
+      const x = this.rng.int(2, N - 3);
+      const y0 = this.rng.int(1, Math.max(2, N - 1 - span));
+      for (let y = y0; y < y0 + span && y < N - 1; y++) this.grid[y][x] = OPEN;
+    }
+  }
+
+  /** One open room with a solid core, so the big space is not an empty box. */
+  _courtyard() {
+    const N = this.size;
+    const w = this.rng.int(5, Math.min(7, N - 4));
+    const h = this.rng.int(5, Math.min(7, N - 4));
+    if (w < 5 || h < 5 || w + 3 >= N || h + 3 >= N) return;
+    const x0 = this.rng.int(2, N - 2 - w);
+    const y0 = this.rng.int(2, N - 2 - h);
+    for (let y = y0; y < y0 + h; y++) {
+      for (let x = x0; x < x0 + w; x++) this.grid[y][x] = OPEN;
+    }
+    const iw = w >= 6 ? 2 : 1;
+    const ih = h >= 6 ? 2 : 1;
+    const ix = x0 + ((w - iw) >> 1);
+    const iy = y0 + ((h - ih) >> 1);
+    for (let y = iy; y < iy + ih; y++) {
+      for (let x = ix; x < ix + iw; x++) this.grid[y][x] = SOLID;
+    }
+  }
+
+  _sealBorder() {
+    const N = this.size;
+    for (let i = 0; i < N; i++) {
+      this.grid[0][i] = SOLID;
+      this.grid[N - 1][i] = SOLID;
+      this.grid[i][0] = SOLID;
+      this.grid[i][N - 1] = SOLID;
     }
   }
 

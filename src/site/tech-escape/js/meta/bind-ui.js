@@ -2,10 +2,11 @@
  * Pause-menu control rebinding UI.
  */
 
-import { BIND_DEFAULTS, BIND_LABELS, bindDisplay, normalizeBinds, validateBinds } from './binds.js';
-import { settings } from './settings.js';
-import { input } from '../input.js';
+import { BIND_DEFAULTS, BIND_LABELS, bindDisplay, normalizeBinds, validateBinds } from './binds.js?v=3.25';
+import { settings } from './settings.js?v=3.21';
+import { input } from '../input.js?v=3.25';
 import { audio } from '../audio.js';
+import { renderControlsKeyboard } from '../ui/keyboard-card.js?v=3.25';
 
 const $ = (id) => document.getElementById(id);
 
@@ -58,9 +59,11 @@ export const bindUi = {
   },
 
   render() {
+    const board = $('controls-keyboard');
     const host = $('bind-list');
     if (!host) return;
     const binds = normalizeBinds(settings.get('binds'));
+    if (board) board.innerHTML = renderControlsKeyboard(binds);
     host.innerHTML = Object.keys(BIND_DEFAULTS).map((action) => {
       const listening = this._listening === action;
       return `

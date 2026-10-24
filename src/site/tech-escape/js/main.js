@@ -14,42 +14,43 @@ import {
   resolveQuality,
 } from './config.js';
 import { clamp, makeRng, formatTime, guessDeviceIp } from './util.js';
-import { input, touchUi } from './input.js';
-import { audio } from './audio.js?v=3.5';
-import { ui } from './ui.js?v=3.8';
-import { Maze } from './world/maze.js';
-import { Lab } from './world/lab.js';
+import { input, touchUi } from './input.js?v=3.25';
+import { audio } from './audio.js?v=3.10';
+import { ui } from './ui.js?v=3.26';
+import { Maze } from './world/maze.js?v=3.27';
+import { Lab } from './world/lab.js?v=3.18';
 import { planLabFurniture, placeLootSpot } from './world/layout.js';
 import { TableSurfacePlanner } from './world/table-surface.js';
 import { buildScatterProps } from './world/scatter.js';
 import { pickPosterCells } from './world/map-poster.js';
-import { Lighting } from './world/lighting.js';
-import { Player } from './entities/player.js';
-import { EnemyManager } from './entities/enemies.js?v=3.9';
-import { PickupField } from './entities/pickups.js';
-import { ThrowField } from './entities/throwables.js';
+import { Lighting } from './world/lighting.js?v=3.10';
+import { Player } from './entities/player.js?v=3.15';
+import { EnemyManager } from './entities/enemies.js?v=3.25';
+import { PickupField } from './entities/pickups.js?v=3.25';
+import { ThrowField } from './entities/throwables.js?v=3.25';
 import { Inventory } from './entities/inventory.js';
-import { disposeModels } from './entities/models.js';
-import { Quiz } from './minigames/quiz.js?v=3.9.1';
+import { disposeModels } from './entities/models.js?v=3.25';
+import { Quiz } from './minigames/quiz.js?v=3.21';
 import { Decrypt } from './minigames/memory.js';
-import { TwoTruths } from './minigames/twoTruths.js?v=3.7';
+import { TwoTruths } from './minigames/twoTruths.js?v=3.21';
 import { TERMINALS, QUESTION_COUNT } from './data/questions.js?v=3.9.1';
 import { drawTwoTruths, TWO_TRUTHS_COUNT } from './data/twoTruths.js?v=3.7';
 import { drawForTerminal, idsOf } from './meta/quizpool.js?v=3.9.1';
 import { saveStore } from './meta/save.js?v=3.9.1';
-import { settings, flashGuard } from './meta/settings.js';
+import { settings, flashGuard } from './meta/settings.js?v=3.21';
 import { getLevel, layoutFor, runProfile } from './meta/levels.js';
-import { sessionUi } from './meta/session-ui.js?v=3.8';
-import { bindUi } from './meta/bind-ui.js';
+import { sessionUi } from './meta/session-ui.js?v=3.26';
+import { bindUi } from './meta/bind-ui.js?v=3.25';
 import { debug, DEBUG_CODE } from './meta/debug.js';
 import { computeRunScore } from './meta/score.js';
-import { highscoresUi } from './meta/highscores-ui.js?v=3.8';
-import { BootSequence, bootShouldRush } from './ui/boot.js?v=3.0';
-import { ScopeOpening } from './ui/opening.js?v=3.6';
+import { highscoresUi } from './meta/highscores-ui.js?v=3.26';
+import { BootSequence, bootShouldRush } from './ui/boot.js?v=3.21';
+import { ScopeOpening } from './ui/opening.js?v=3.12';
 import { startPauseScope } from './ui/pause-rise.js?v=3.3';
-import { captions } from './ui/captions.js';
-import { tutorial } from './ui/tutorial.js?v=3.8';
-import { coach } from './ui/coach.js?v=3.8';
+import { createShatter, drawShatter } from './ui/death-shatter.js?v=3.27';
+import { captions } from './ui/captions.js?v=3.25';
+import { tutorial } from './ui/tutorial.js?v=3.26';
+import { coach } from './ui/coach.js?v=3.26';
 import { threatSector, threatPan } from './threat-direction.js';
 
 function agentLabel() {
@@ -325,7 +326,7 @@ class Game {
         ? { cps: 80, minSeconds: 3.2, maxSeconds: 8, dwellScale: 0.16 }
         : fast
           ? { cps: 96, minSeconds: 1.1, maxSeconds: 4.5, dwellScale: 0.08 }
-          : { cps: 32, minSeconds: 0, maxSeconds: 26, dwellScale: 0.2 };
+          : { cps: 16, minSeconds: 0, maxSeconds: 40, dwellScale: 0.45 };
       await boot.run(this._bootStages(stamps), pace);
     } finally {
       opening.stop();
@@ -511,20 +512,17 @@ class Game {
       }
     });
 
-    // Clicking the canvas re-grabs the mouse
-    document.getElementById('scene').addEventListener('click', () => {
-      if (this.mode === MODE.PLAYING && !input.locked && !input.touchMode) input.requestLock();
+    document.getElementById('scene').addEventListener('pointerdown', () => {
+      if (this.mode !== MODE.PLAYING) return;
+      const canvas = document.getElementById('scene');
+      canvas.tabIndex = 0;
+      canvas.focus({ preventScroll: true });
     });
 
-    // Losing pointer lock mid-game means the player alt-tabbed or hit Esc (desktop only)
-    input.onPointerLockChange = (locked) => {
-      if (input.touchMode) return;
-      if (!locked && this.mode === MODE.PLAYING && !this.expectUnlock && !this._phoneRinging) this.pause();
-      this.expectUnlock = false;
-    };
+    input.onPointerLockChange = () => {};
 
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden && this.mode === MODE.PLAYING) this.pause({ instant: true });
+      if (document.hidden && this.mode === MODE.PLAYING && input.locked) this.pause({ instant: true });
     });
   }
 
@@ -542,6 +540,8 @@ class Game {
   }
 
   async _startRunBody() {
+    this._sawFlash = false;
+    this._flashBusy = false;
     this._teardownWorld();
 
     const level = getLevel(this.levelIndex);
@@ -761,6 +761,11 @@ class Game {
     this.mode = MODE.PLAYING;
     input.setEnabled(true);
     input.clearEdges();
+    const playCanvas = document.getElementById('scene');
+    if (playCanvas) {
+      playCanvas.tabIndex = 0;
+      playCanvas.focus({ preventScroll: true });
+    }
     if (input.touchMode) {
       touchUi.requestFullscreen();
       ui.toast('Drag the right side to look. Stick moves. Tap FULL for fullscreen.', 'warn', 5200);
@@ -769,7 +774,7 @@ class Game {
         if (hint) hint.classList.add('hidden');
       }, 9000);
     } else {
-      input.requestLock();
+      ui.toast('Click the lab. WASD walks. Move the mouse to look.', 'warn', 4200);
     }
 
     ui.toast(`${level.name} — four terminals, four code pieces. Do not get cornered.`, 'warn', 4200);
@@ -945,7 +950,8 @@ class Game {
     input.setEnabled(true);
     input.clearEdges();
     input.showTouchUi(true);
-    if (!input.touchMode) input.requestLock();
+    const canvas = document.getElementById('scene');
+    if (canvas) canvas.focus({ preventScroll: true });
     this._applyDebugPerks();
   }
 
@@ -1065,6 +1071,7 @@ class Game {
       }
 
       if (controlsActive) w.player.applyLook();
+      w.player.allowStaminaRegen = this._sodasSpent(w);
       w.player.update(wdt, controlsActive);
 
       const lures = w.throws?.lures || null;
@@ -1096,13 +1103,12 @@ class Game {
         this.quiz.setThreat(ev.nearest < 4.5 && !frozen, frozen);
       }
 
-      if (settings.get('soundCaptions') && ev.hunters > 0 && ev.nearest < 18) {
-        const p = w.player;
-        const hunter = w.enemies.mice.find((m) => !m.dead && m.hunting)
-          || w.enemies.viruses.find((v) => !v.dead && v.hunting);
-        if (hunter) {
-          captions.fromWorld('Footsteps', hunter.pos, p, { type: 'enemy' });
-        }
+      if (settings.get('soundCaptions')) {
+        const heard = this._nearestSteps(w);
+        if (heard && heard.dist < 18) captions.steps(heard.pos, w.player);
+        else captions.hideSteps();
+      } else {
+        captions.hideSteps();
       }
 
       captions.update(dt);
@@ -1138,7 +1144,28 @@ class Game {
 
     input.clearEdges();
     if (this._dying) this._stepDeath(dt);
+    if (w) ui.tickInventory(dt);
     this.renderer.render(this.scene, this.camera);
+    if (this._death?.freezeNext) this._freezeDeathFrame();
+  }
+
+  _nearestSteps(w) {
+    const p = w.player;
+    let best = null;
+    let dist = Infinity;
+    const lists = [w.enemies?.mice, w.enemies?.viruses];
+    for (const list of lists) {
+      if (!list) continue;
+      for (const enemy of list) {
+        if (!enemy || enemy.dead || !enemy.hunting || !enemy.pos) continue;
+        const d = Math.hypot(enemy.pos.x - p.pos.x, enemy.pos.z - p.pos.z);
+        if (d < dist) {
+          dist = d;
+          best = enemy;
+        }
+      }
+    }
+    return best ? { pos: best.pos, dist } : null;
   }
 
   _collectGlows() {
@@ -1171,6 +1198,7 @@ class Game {
         ui.setHealth(w.player.health);
         if (ev.batteryDrain) {
           w.player.battery = clamp(w.player.battery - ev.batteryDrain, 0, PLAYER.batteryMax);
+          if (w.player.battery <= 0) w.player.cellDead = true;
           ui.toast('A virus chewed through your battery!', 'bad', 2000);
         } else {
           ui.toast('The mice got a bite in! Find hot cheetos.', 'bad', 2000);
@@ -1248,9 +1276,18 @@ class Game {
     if (got.taken?.length) {
       audio.stashSparkle();
       for (const kind of got.taken) {
-        if (kind === 'cheetos') ui.toast('Hot cheetos picked up. R to eat, E to throw.', 'good', 2200);
-        else if (kind === 'soda') ui.toast('Soda can picked up. Q to select, R to drink.', 'good', 2000);
-        else if (kind === 'antivirus') ui.toast('Anti-virus disc! Aim at a virus and press E.', 'good', 2800);
+        if (kind === 'cheetos') ui.toast('Hot cheetos. C to eat, E to throw.', 'good', 2200);
+        else if (kind === 'soda') ui.toast('V67 soda. V to drink.', 'good', 2000);
+        else if (kind === 'battery') {
+          ui.toast(
+            w.player.cellDead
+              ? 'Battery pocketed. Press B to change the cell.'
+              : 'Battery pocketed. B loads it when the beam dies.',
+            'good',
+            2200,
+          );
+        }
+        else if (kind === 'antivirus') ui.toast('Norgin anti-virus. Press N to shoot a virus.', 'good', 2800);
       }
       ui.updateInventoryBar(w.inventory);
       this._invUiRev = w.inventory.revision;
@@ -1290,30 +1327,28 @@ class Game {
       if (info) ui.toast(info.label, '', 900);
     }
 
-    if (input.pressed('eatCheetos') || mf?.eat) {
-      if (inv.selected === 'soda' && inv.has('soda')) {
-        if (inv.remove('soda') && w.player.drinkSoda()) {
-          ui.updateInventoryBar(inv);
-          ui.toast('Soda boost! Stamina refilled.', 'good');
-        }
-      } else if (inv.has('cheetos')) {
-        if (w.player.health >= w.player.maxHealth) {
-          ui.toast('Snack bar full — throw a bag to lure mice.', 'warn');
-        } else if (inv.remove('cheetos') && w.player.heal(PICKUP.cheetosHeal)) {
-          ui.setHealth(w.player.health);
-          ui.updateInventoryBar(inv);
-          ui.toast('Hot cheetos! Snack energy restored.', 'good');
-        }
-      } else if (inv.has('soda') && inv.remove('soda') && w.player.drinkSoda()) {
-        ui.updateInventoryBar(inv);
-        ui.toast('Soda boost! Stamina refilled.', 'good');
-      } else {
-        ui.toast('No hot cheetos to eat.', 'warn', 1200);
-      }
+    if (input.pressed('reloadBattery') && !this._using) {
+      if (w.player.cellDead && inv.has('battery')) this._beginBatteryReload();
+      else if (!inv.has('battery')) ui.toast('No spare battery.', 'warn', 1200);
+      else ui.toast('That cell still has charge.', 'warn', 1200);
+    }
+
+    if (input.pressed('eatCheetos') && !this._using) {
+      if (w.player.health < w.player.maxHealth && inv.has('cheetos')) this._beginHeal();
+      else if (!inv.has('cheetos')) ui.toast('No hot cheetos.', 'warn', 1200);
+      else ui.toast('Health is already full.', 'warn', 1200);
+    }
+
+    if (input.pressed('drinkSoda') && !this._using) {
+      if (inv.has('soda')) this._beginDrink();
+      else ui.toast('No V67 soda.', 'warn', 1200);
     }
 
     if (input.pressed('throw') || (mf?.primary && !this._mousePrimaryUsed)) {
-      this._throwAimedItem();
+      this._throwCheetos();
+    }
+    if (input.pressed('shootAntivirus')) {
+      this._shootNorgin();
     }
   }
 
@@ -1356,34 +1391,100 @@ class Game {
     return { kind: null, msg: 'Nothing to throw.' };
   }
 
-  _throwAimedItem() {
+  _throwCheetos() {
+    this._launchItem('cheetos', 'No hot cheetos to throw.', 'Bag thrown. Mice will smell it.');
+  }
+
+  _shootNorgin() {
+    this._launchItem('antivirus', 'No Norgin anti-virus.', 'Norgin fired.');
+  }
+
+  _launchItem(kind, emptyMsg, doneMsg) {
     const w = this.world;
-    const inv = w.inventory;
-    const pick = this._resolveThrowKind(w);
-    if (!pick.kind) {
+    const inv = w?.inventory;
+    if (!inv || !inv.has(kind)) {
       audio.deny();
-      if (pick.msg) ui.toast(pick.msg, 'warn', 2200);
+      ui.toast(emptyMsg, 'warn', 1400);
       return;
     }
-    if (!inv.remove(pick.kind)) {
+    if (!inv.remove(kind)) {
       audio.deny();
       return;
     }
     const dir = w.player.forward();
-    const thrown = w.throws.throwItem(pick.kind, w.player.eyePos, dir);
+    const thrown = w.throws.throwItem(kind, w.player.eyePos, dir);
     if (!thrown) {
-      inv.add(pick.kind, 1);
+      inv.add(kind, 1);
       audio.deny();
       return;
     }
     w.player.stats.itemsThrown++;
     ui.updateInventoryBar(inv);
-    ui.toast(
-      pick.kind === 'cheetos'
-        ? 'Bag thrown — mice will smell it.'
-        : 'Disc thrown at the virus!',
-      'good', 1600,
-    );
+    ui.toast(doneMsg, 'good', 1600);
+  }
+
+  _beginBatteryReload() {
+    const w = this.world;
+    if (!w || this._reloading || !w.player.cellDead) return;
+    if (!w.inventory.remove('battery')) return;
+    this._reloading = true;
+    this._using = true;
+    ui.setUsePrompt('');
+    ui.updateInventoryBar(w.inventory);
+    this._invUiRev = w.inventory.revision;
+    ui.playBatteryReload(settings.get('reduceMotion'), () => {
+      const player = this.world?.player;
+      this._reloading = false;
+      this._using = false;
+      if (!player) return;
+      player.battery = PLAYER.batteryMax;
+      player.cellDead = false;
+      player.flashlightOn = true;
+      audio.flashlightClick();
+      ui.toast('Cell seated. The beam is back.', 'good', 1600);
+    });
+  }
+
+  _beginHeal() {
+    const w = this.world;
+    if (!w || this._using) return;
+    if (w.player.health >= w.player.maxHealth) return;
+    if (!w.inventory.remove('cheetos')) return;
+    this._using = true;
+    ui.setUsePrompt('');
+    ui.updateInventoryBar(w.inventory);
+    this._invUiRev = w.inventory.revision;
+    ui.playItemUse('cheetos', settings.get('reduceMotion'), () => {
+      const player = this.world?.player;
+      this._using = false;
+      if (!player) return;
+      player.heal(1);
+      ui.setHealth(player.health);
+      ui.toast('One bag. One point of health back.', 'good', 1400);
+    });
+  }
+
+  _beginDrink() {
+    const w = this.world;
+    if (!w || this._using) return;
+    if (!w.inventory.remove('soda')) return;
+    this._using = true;
+    ui.setUsePrompt('');
+    ui.updateInventoryBar(w.inventory);
+    this._invUiRev = w.inventory.revision;
+    ui.playItemUse('soda', settings.get('reduceMotion'), () => {
+      const player = this.world?.player;
+      this._using = false;
+      if (!player) return;
+      player.drinkSoda();
+      ui.toast('Can empty. Stamina is full.', 'good', 1400);
+    });
+  }
+
+  /** Stamina only recovers once no soda is left on the floor or in the pocket. */
+  _sodasSpent(w) {
+    const onFloor = w.pickups?.items?.some((it) => it.kind === 'soda' && !it.taken);
+    return !onFloor && w.inventory.count('soda') === 0;
   }
 
   _updateTension(ev, dt) {
@@ -1424,6 +1525,20 @@ class Game {
       ui.updateInventoryBar(w.inventory);
       this._invUiRev = w.inventory.revision;
     }
+    const canReload = p.cellDead && w.inventory.has('battery') && !this._using;
+    const canHeal = p.health < p.maxHealth && w.inventory.has('cheetos') && !this._using;
+    const canDrink = p.stamina <= 0 && w.inventory.has('soda') && !this._using;
+    const prompts = [];
+    if (canReload) prompts.push('CHANGE BATTERY: B');
+    if (canHeal) prompts.push('EAT HOT CHEETOS: C');
+    if (canDrink) prompts.push('DRINK V67 SODA: V');
+    if (w.inventory.has('antivirus') && this._aimingAtVirus(w)) prompts.push('SHOOT NORGIN: N');
+    ui.setUsePrompt(prompts.join('   '));
+    if (p.cellDead && !w.inventory.has('battery') && !this._toldDry) {
+      this._toldDry = true;
+      ui.toast('The beam is dry. Find a battery.', 'warn', 1800);
+    }
+    if (!p.cellDead) this._toldDry = false;
 
     // Announce hiding the first time it happens so the mechanic lands
     if (p.hidden && !this._wasHidden) {
@@ -1558,7 +1673,7 @@ class Game {
       else if (p.tableNearby()) {
         ui.showHint(p.crouching
           ? 'Crawl under the glowing desk — loot waits underneath'
-          : 'Space to climb up, C to crawl under and grab loot');
+          : 'Space to climb up, Z to crawl under and grab loot');
       } else ui.showHint(null);
     } else {
       ui.showHint(null);
@@ -1573,7 +1688,31 @@ class Game {
       else audio.deny();
     }
 
-    if (input.pressed('light') || mf?.light) p.toggleFlashlight();
+    if (input.pressed('light') && !this._flashBusy) {
+      if (p.flashlightOn) {
+        p.toggleFlashlight();
+        ui.playFlashDraw('off');
+      } else if (p.battery <= 0) {
+        audio.deny();
+        ui.toast('The beam is dry. Find a battery.', 'warn', 1600);
+      } else {
+        const first = !this._sawFlash;
+        this._sawFlash = true;
+        const reduce = settings.get('reduceMotion');
+        if (reduce) {
+          p.flashlightOn = true;
+          audio.flashlightClick();
+        } else {
+          this._flashBusy = true;
+          ui.playFlashDraw(first ? 'intro' : 'on', () => {
+            this._flashBusy = false;
+            if (!p.alive || this.mode !== MODE.PLAYING) return;
+            p.flashlightOn = true;
+            audio.flashlightClick();
+          });
+        }
+      }
+    }
   }
 
   /** Count down to the next SEL notification ping. */
@@ -1836,7 +1975,8 @@ class Game {
     input.setEnabled(true);
     input.clearEdges();
     input.showTouchUi(true);
-    if (!input.touchMode) input.requestLock();
+    const canvas = document.getElementById('scene');
+    if (canvas) canvas.focus({ preventScroll: true });
   }
 
   /** Loud events pull nearby hunters toward the player. */
@@ -2114,9 +2254,13 @@ class Game {
     const d = this._death;
     const w = this.world;
     if (!d || d.shown || !w) return;
+    if (d.shatter) {
+      const canvas = document.getElementById('death-shatter');
+      if (canvas && drawShatter(d.shatter, canvas, dt)) this._presentDeath();
+      return;
+    }
     d.t += dt;
     const reduce = !!settings.get('reduceMotion');
-    const noFlash = reduce || !!settings.get('reduceFlashing');
     const fall = reduce ? 0.28 : 1.7;
     const u = Math.min(1, d.t / fall);
     const grav = u * u;
@@ -2125,41 +2269,81 @@ class Game {
     p.pitch = d.pitch0 + (-1.22 - d.pitch0) * grav;
     p.syncCamera(this.camera);
     this.camera.rotation.z = grav * 0.48;
-
-    const veil = document.getElementById('death-veil');
-    const after = d.t - fall;
-    if (veil) {
-      veil.classList.remove('is-blink');
-      if (reduce) {
-        if (after > 0) {
-          veil.classList.add('is-black');
-          veil.style.opacity = '1';
-        }
-      } else if (!noFlash && after > 0 && after < 1.15) {
-        const pulses = [0.08, 0.42, 0.78];
-        let on = false;
-        for (let i = 0; i < pulses.length; i++) {
-          if (after > pulses[i] && after < pulses[i] + 0.1) on = true;
-        }
-        veil.style.opacity = on ? '1' : '0';
-        veil.classList.toggle('is-blink', on);
-      } else if (after > 1.15) {
-        veil.classList.add('is-black');
-        veil.classList.remove('is-blink');
-        veil.style.opacity = String(Math.min(1, (after - 1.15) / 0.8));
-      } else {
-        veil.style.opacity = '0';
-      }
+    const scene = document.getElementById('scene');
+    if (!reduce && u > 0.2) scene?.classList.add('is-dying');
+    if (reduce) {
+      if (d.t >= fall + 0.35) this._presentDeath();
+      return;
     }
+    if (u >= 0.88) d.freezeNext = true;
+  }
 
-    const revealAt = reduce ? fall + 0.4 : fall + 2.15;
-    if (d.t >= revealAt) this._presentDeath();
+  _freezeDeathFrame() {
+    const d = this._death;
+    if (!d || d.shatter) return;
+    d.freezeNext = false;
+    document.getElementById('scene')?.classList.remove('is-dying');
+    const dest = document.getElementById('death-shatter');
+    if (!dest) {
+      this._presentDeath();
+      return;
+    }
+    const rect = dest.parentElement?.getBoundingClientRect();
+    dest.width = Math.max(2, Math.floor(rect?.width || 640));
+    dest.height = Math.max(2, Math.floor(rect?.height || 360));
+    dest.classList.add('is-on');
+    let snap = null;
+    try { snap = this._blurredStill(); } catch { snap = null; }
+    if (!snap) snap = this._plainStill();
+    d.shatter = createShatter(snap, 10, 6);
+    drawShatter(d.shatter, dest, 0.016);
+  }
+
+  _blurredStill() {
+    const w = 320;
+    const h = 180;
+    const rt = new THREE.WebGLRenderTarget(w, h);
+    this.renderer.setRenderTarget(rt);
+    this.renderer.render(this.scene, this.camera);
+    const buf = new Uint8Array(w * h * 4);
+    this.renderer.readRenderTargetPixels(rt, 0, 0, w, h, buf);
+    this.renderer.setRenderTarget(null);
+    rt.dispose();
+    const raw = document.createElement('canvas');
+    raw.width = w;
+    raw.height = h;
+    const img = raw.getContext('2d').createImageData(w, h);
+    for (let y = 0; y < h; y++) {
+      img.data.set(buf.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4);
+    }
+    raw.getContext('2d').putImageData(img, 0, 0);
+    const blur = document.createElement('canvas');
+    blur.width = w;
+    blur.height = h;
+    const b = blur.getContext('2d');
+    b.filter = 'blur(5px)';
+    b.drawImage(raw, 0, 0);
+    return blur;
+  }
+
+  _plainStill() {
+    const c = document.createElement('canvas');
+    c.width = 320;
+    c.height = 180;
+    const g = c.getContext('2d');
+    g.fillStyle = '#04110c';
+    g.fillRect(0, 0, 320, 180);
+    g.fillStyle = '#163222';
+    for (let y = 0; y < 180; y += 10) g.fillRect(0, y, 320, 2);
+    return c;
   }
 
   _presentDeath() {
     const d = this._death;
     if (!d || d.shown) return;
     d.shown = true;
+    document.getElementById('scene')?.classList.remove('is-dying');
+    document.getElementById('death-shatter')?.classList.remove('is-on');
     const veil = document.getElementById('death-veil');
     if (veil) {
       veil.classList.remove('is-blink');
@@ -2174,6 +2358,8 @@ class Game {
     this._dying = false;
     this._death = null;
     ui.finishOverReadout();
+    document.getElementById('scene')?.classList.remove('is-dying');
+    document.getElementById('death-shatter')?.classList.remove('is-on');
     const veil = document.getElementById('death-veil');
     if (veil) {
       veil.classList.remove('is-blink', 'is-black');

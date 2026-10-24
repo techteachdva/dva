@@ -30,7 +30,7 @@
  */
 
 import { BOOT } from '../config.js';
-import { settings } from '../meta/settings.js';
+import { settings } from '../meta/settings.js?v=3.21';
 
 /** Blink at 1Hz. Anything faster is a flash source and a distraction. */
 const CURSOR_HZ = 1;

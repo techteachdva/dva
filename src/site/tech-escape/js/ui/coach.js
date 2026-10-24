@@ -4,8 +4,9 @@
  * can skip it. Once finished it stays finished on this computer.
  */
 
-import { settings } from '../meta/settings.js';
-import { ui } from '../ui.js?v=3.8';
+import { settings } from '../meta/settings.js?v=3.21';
+import { ui } from '../ui.js?v=3.26';
+import { typeInto } from './typegate.js';
 
 const STEPS = [
   {
@@ -14,12 +15,12 @@ const STEPS = [
     max: 14,
   },
   {
-    text: 'Press C to crouch. Desks with glowing tape are hiding places. Hunters cannot crawl under them.',
+    text: 'Press Z to crouch. Desks with glowing tape are hiding places. Hunters cannot crawl under them.',
     done: (w) => w.player.crouching || w.player.hidden,
     max: 16,
   },
   {
-    text: 'Press F for the flashlight. The beam burns viruses. It also calls the mice. Right-click eats a snack.',
+    text: 'F is the flashlight. C eats cheetos. V drinks soda. B changes the battery. N shoots Norgin. E throws cheetos.',
     done: (w) => w.player.flashlightOn || w.player.stats.flashlightSec > 0.15,
     max: 16,
   },
@@ -91,7 +92,8 @@ export const coach = {
     const text = label();
     const step = STEPS[this._i];
     if (!el || !text || !step) return;
-    text.textContent = step.text;
+    this._stopCoach?.();
+    this._stopCoach = typeInto(text, step.text, { cps: 18 });
     el.classList.remove('hidden');
     const skip = document.getElementById('btn-skip-coach');
     if (skip) skip.classList.remove('hidden');

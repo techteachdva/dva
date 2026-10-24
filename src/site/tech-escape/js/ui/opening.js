@@ -862,21 +862,11 @@ export class ScopeOpening {
 }
 
 /**
- * The lobby was just printed by the terminal. Rows draw themselves, then
- * the controls wake up and accept clicks.
+ * The lobby prints itself, one row after another.
+ * Buttons stay clickable while the letters are still arriving.
  */
 export function revealTerminal(screen) {
   if (!screen) return;
-  const rows = screen.querySelectorAll('[data-term-row]');
-  const reduce = document.documentElement.dataset.reduceMotion === 'on';
-  for (let i = 0; i < rows.length; i++) {
-    rows[i].style.animationDelay = reduce ? '0ms' : `${70 + i * 120}ms`;
-  }
-  screen.classList.add('term-print');
-  const total = reduce ? 220 : 70 + rows.length * 120 + 520;
-  window.setTimeout(() => {
-    screen.classList.add('term-live');
-    screen.classList.remove('term-print');
-    for (let i = 0; i < rows.length; i++) rows[i].style.animationDelay = '';
-  }, total);
+  screen.classList.add('term-live');
+  screen.classList.remove('term-print');
 }

@@ -60,8 +60,8 @@ export const PLAYER = {
   hurtInvuln: 1.15,               // seconds of immunity after a hit
   // Stamina
   staminaMax: 100,
-  staminaDrain: 26,               // per second while sprinting
-  staminaRegen: 15,               // per second while not sprinting
+  staminaDrain: 10,               // per second while sprinting. Slow on purpose: the bar is a resource.
+  staminaRegen: 8,                // only after every soda on the level has been drunk
   staminaRegenDelay: 0.7,         // pause before regen starts
   staminaExhaustLock: 1.6,        // forced walk after hitting zero
   // Flashlight. The light is both vision AND the only weapon against viruses,
@@ -235,8 +235,8 @@ export const PICKUP = {
  * answer to a virus. Stacks are small on purpose - hoarding is not a strategy.
  */
 export const INVENTORY = {
-  order: ['cheetos', 'soda', 'antivirus'],
-  max: { cheetos: 3, soda: 2, antivirus: 2 },
+  order: ['battery', 'cheetos', 'soda', 'antivirus'],
+  max: { battery: 3, cheetos: 3, soda: 3, antivirus: 3 },
   // Held items are thrown from eye height with a gentle arc
   throwSpeed: 12.5,
   throwLift: 3.2,
@@ -327,7 +327,7 @@ export const DECRYPT = {
  * to skip.
  */
 export const BOOT = {
-  charsPerSecond: 34,
+  charsPerSecond: 16,
   linePause: 1200,          // ms; floor for how long a finished line holds
   minSeconds: 6.5,          // target total, within the 6-9s window
   maxSeconds: 10,           // hard cap, enforced by elapsed-time checks

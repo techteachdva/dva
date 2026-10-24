@@ -3,24 +3,30 @@
  * else can be remapped from the pause menu and persists in settings.
  */
 
-/** @typedef {'interact'|'throw'|'eatCheetos'|'light'|'cycleItem'|'crouch'} BindAction */
+/** @typedef {'interact'|'throw'|'eatCheetos'|'drinkSoda'|'reloadBattery'|'shootAntivirus'|'light'|'cycleItem'|'crouch'} BindAction */
 
 export const BIND_DEFAULTS = {
-  interact: 'Enter',
+  eatCheetos: 'KeyC',
+  drinkSoda: 'KeyV',
+  reloadBattery: 'KeyB',
+  shootAntivirus: 'KeyN',
+  crouch: 'KeyZ',
   throw: 'KeyE',
-  eatCheetos: 'KeyR',
   light: 'KeyF',
+  interact: 'Enter',
   cycleItem: 'KeyQ',
-  crouch: 'KeyC',
 };
 
 export const BIND_LABELS = {
-  interact: 'Use terminal / printer / door / pick up loot',
-  throw: 'Throw (disc at virus, cheetos otherwise)',
-  eatCheetos: 'Eat hot cheetos (drinks soda when soda is selected)',
+  eatCheetos: 'Eat hot cheetos',
+  drinkSoda: 'Drink V67 soda',
+  reloadBattery: 'Change battery',
+  shootAntivirus: 'Shoot Norgin anti-virus',
+  crouch: 'Crouch',
+  throw: 'Throw hot cheetos',
   light: 'Flashlight',
-  cycleItem: 'Switch inventory item',
-  crouch: 'Crouch / crawl',
+  interact: 'Use computer, door, or printer',
+  cycleItem: 'Switch item',
 };
 
 const DISPLAY = {
@@ -37,6 +43,10 @@ const DISPLAY = {
   KeyQ: 'Q',
   KeyG: 'G',
   KeyC: 'C',
+  KeyV: 'V',
+  KeyB: 'B',
+  KeyN: 'N',
+  KeyZ: 'Z',
   KeyW: 'W',
   KeyA: 'A',
   KeyS: 'S',
@@ -55,7 +65,16 @@ export function bindDisplay(code) {
 
 /** Merge saved binds with defaults so new actions always have a key. */
 export function normalizeBinds(raw) {
-  return { ...BIND_DEFAULTS, ...(raw && typeof raw === 'object' ? raw : null) };
+  const saved = raw && typeof raw === 'object' ? raw : {};
+  const out = { ...BIND_DEFAULTS, ...saved };
+  // Older saves used C to crouch and R to eat, and had no soda or battery key.
+  if (!saved.drinkSoda && !saved.reloadBattery) {
+    out.crouch = BIND_DEFAULTS.crouch;
+    out.eatCheetos = BIND_DEFAULTS.eatCheetos;
+    out.drinkSoda = BIND_DEFAULTS.drinkSoda;
+    out.reloadBattery = BIND_DEFAULTS.reloadBattery;
+  }
+  return out;
 }
 
 /** @param {Record<BindAction,string>} binds */

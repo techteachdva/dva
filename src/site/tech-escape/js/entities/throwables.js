@@ -19,7 +19,7 @@
 import * as THREE from '../../vendor/three.module.js';
 import { THROWN, INVENTORY, COLORS, VIRUS } from '../config.js';
 import { audio } from '../audio.js';
-import { getModelGeometry, makeCheetosBag, makeAntivirusDisc } from './models.js';
+import { getModelGeometry, makeCheetosBag, makeAntivirusDisc } from './models.js?v=3.25';
 
 const PROJECTILE_RADIUS = 0.16;
 const FLOOR_Y = 0.2;

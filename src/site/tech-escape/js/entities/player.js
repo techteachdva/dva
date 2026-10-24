@@ -33,8 +33,9 @@ export class Player {
     this.maxHealth = difficulty.startHealth;
     this.health = difficulty.startHealth;
     this.stamina = PLAYER.staminaMax;
-    this.battery = 0;
+    this.battery = 48;
     this.flashlightOn = false;
+    this.allowStaminaRegen = false;
 
     this.hidden = false;
     this.onTable = false;
@@ -447,10 +448,9 @@ export class Player {
         this.sprinting = false;
         this.wantSprint = false;
       }
-    } else {
+    } else if (this.allowStaminaRegen) {
       if (this.regenDelay > 0) this.regenDelay -= dt;
       else if (this.stamina < PLAYER.staminaMax) {
-        // Recover faster when standing still, which rewards stopping to breathe
         const rate = PLAYER.staminaRegen * (wantsMove ? 0.62 : 1.35);
         this.stamina = clamp(this.stamina + rate * dt, 0, PLAYER.staminaMax);
       }
@@ -575,8 +575,11 @@ export class Player {
       this.battery -= drain * this.diff.batteryDrainScale * dt;
       if (this.battery <= 0) {
         this.battery = 0;
-        this.flashlightOn = false;
-        audio.lightToggle(false);
+        if (this.flashlightOn) {
+          this.flashlightOn = false;
+          audio.lightToggle(false);
+        }
+        this.cellDead = true;
       }
       // Warning beeps as the battery runs out
       if (this.batteryPct < 0.2) {

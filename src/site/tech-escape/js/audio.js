@@ -467,8 +467,14 @@ class AudioEngine {
   }
 
   lightToggle(on) {
-    this._noise({ dur: 0.05, vol: 0.14, filter: on ? 4200 : 2200, q: 3 });
-    this._tone({ freq: on ? 1100 : 500, freqEnd: on ? 1500 : 300, dur: 0.07, type: 'square', vol: 0.06 });
+    this._noise({ dur: 0.05, vol: 0.1, filter: on ? 3200 : 1800, q: 2 });
+    this._tone({ freq: on ? 700 : 420, freqEnd: on ? 500 : 240, dur: 0.06, type: 'sine', vol: 0.05 });
+  }
+
+  /** Mechanical switch. Played at the end of the draw, when the beam actually starts. */
+  flashlightClick() {
+    this._noise({ dur: 0.045, vol: 0.28, filter: 2400, filterEnd: 500, q: 5 });
+    this._tone({ freq: 160, freqEnd: 70, dur: 0.07, type: 'square', vol: 0.09 });
   }
 
   lowBattery() {

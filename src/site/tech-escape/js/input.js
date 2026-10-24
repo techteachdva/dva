@@ -1,7 +1,7 @@
 /**
  * Keyboard / mouse / touch input.
  *
- * Desktop: pointer lock + keyboard + optional three-button mouse layer.
+ * Desktop: pointer lock for look. Movement and actions are the keyboard.
  * Phones: virtual stick, look zone, and action buttons (no pointer lock).
  *
  * Gameplay binds are loaded from settings and can be remapped in the pause menu.
@@ -9,8 +9,8 @@
 
 import { clamp } from './util.js';
 import { MOBILE } from './config.js';
-import { normalizeBinds } from './meta/binds.js';
-import { mousePlay } from './input-mouse.js';
+import { normalizeBinds } from './meta/binds.js?v=3.25';
+import { mousePlay } from './input-mouse.js?v=3.10';
 import { touchUi, preferTouchControls } from './input-touch.js';
 
 /** Movement and sprint — not remapped. */
@@ -58,6 +58,9 @@ export const input = {
       if (a) {
         if (!this.held[a]) this._edge[a] = true;
         this.held[a] = true;
+        if (this._enabled && (a === 'forward' || a === 'back' || a === 'left' || a === 'right' || a === 'jump')) {
+          e.preventDefault();
+        }
       }
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
         e.preventDefault();
@@ -73,14 +76,35 @@ export const input = {
 
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === canvas;
-      if (!this.locked && !this.touchMode) this.releaseAll();
       if (this.onPointerLockChange) this.onPointerLockChange(this.locked);
     });
 
-    document.addEventListener('mousemove', (e) => {
-      if (!this.locked || !this._enabled || this.touchMode) return;
-      this.mouseDX += e.movementX || 0;
-      this.mouseDY += e.movementY || 0;
+    // Look follows the mouse over the picture. Pointer lock is optional.
+    // This browser often refuses the lock, and losing it used to freeze walking.
+    this._ptr = null;
+    canvas.tabIndex = 0;
+    const onPointer = (e) => {
+      if (!this._enabled || this.touchMode) {
+        this._ptr = { x: e.clientX, y: e.clientY };
+        return;
+      }
+      const prev = this._ptr;
+      this._ptr = { x: e.clientX, y: e.clientY };
+      if (this.locked) {
+        this.mouseDX += e.movementX || 0;
+        this.mouseDY += e.movementY || 0;
+        return;
+      }
+      const r = canvas.getBoundingClientRect();
+      const inside = e.clientX >= r.left && e.clientX < r.right
+        && e.clientY >= r.top && e.clientY < r.bottom;
+      if (!inside || !prev) return;
+      this.mouseDX += e.movementX || (e.clientX - prev.x);
+      this.mouseDY += e.movementY || (e.clientY - prev.y);
+    };
+    document.addEventListener('pointermove', onPointer);
+    canvas.addEventListener('pointerdown', () => {
+      if (this._enabled) canvas.focus({ preventScroll: true });
     });
 
     touchUi.init(this);
@@ -124,6 +148,14 @@ export const input = {
   tickMouse(enabled, locked) {
     if (this.touchMode) return;
     mousePlay.tick(enabled, locked);
+    if (!enabled || this.locked || !this._ptr || !this._canvas) return;
+    const r = this._canvas.getBoundingClientRect();
+    const margin = 48;
+    const speed = 16;
+    if (this._ptr.x <= r.left + margin) this.mouseDX -= speed;
+    else if (this._ptr.x >= r.right - margin) this.mouseDX += speed;
+    if (this._ptr.y <= r.top + margin) this.mouseDY -= speed;
+    else if (this._ptr.y >= r.bottom - margin) this.mouseDY += speed;
   },
 
   requestLock() {

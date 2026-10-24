@@ -199,14 +199,6 @@ export function makeFlashlightCookie() {
   grd.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = grd;
   g.fillRect(0, 0, size, size);
-  g.strokeStyle = 'rgba(0,0,0,0.45)';
-  g.lineWidth = 2;
-  for (let i = 0; i < 5; i++) {
-    g.beginPath();
-    g.moveTo(Math.random() * size, 0);
-    g.lineTo(Math.random() * size, size);
-    g.stroke();
-  }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.magFilter = THREE.LinearFilter;

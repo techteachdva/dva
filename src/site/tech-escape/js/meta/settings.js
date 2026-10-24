@@ -18,7 +18,7 @@
  */
 
 import { FLASH_SAFETY } from '../config.js';
-import { BIND_DEFAULTS, normalizeBinds } from './binds.js';
+import { BIND_DEFAULTS, normalizeBinds } from './binds.js?v=3.21';
 
 const KEY = 'techEscape.settings.v1';
 

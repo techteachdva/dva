@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#05070d" />
 <meta name="description" content="Tech Escape 3. A phosphor boot, then the lab." />
 <title>Tech Escape 3</title>
-<link rel="stylesheet" href="styles.css?v=3.7" />
+<link rel="stylesheet" href="styles.css?v=3.27" />
 </head>
 <body>
 
@@ -17,6 +17,7 @@
   <canvas id="scene"></canvas>
   <div id="halt-veil" aria-hidden="true"></div>
   <div id="death-veil" aria-hidden="true"></div>
+  <canvas id="death-shatter" aria-hidden="true"></canvas>
 
   <div id="gfx-warm" class="gfx-banner hidden" role="status">Waking the lab graphics…</div>
   <div id="gfx-stall" class="gfx-banner hidden" role="alert">
@@ -65,31 +66,26 @@
 
     <div id="hud-bottom">
       <div id="health-row" aria-label="Health">
-        <div class="bar-label">VITALS</div>
-        <div id="health-bags"></div>
+        <div class="bar-label">HEALTH</div>
+        <div class="thin-track thin-track--health"><div class="thin-fill" id="health-fill"></div></div>
+        <div id="stance-value">STANDING</div>
       </div>
-      <div class="meter" id="stamina-meter">
+      <div id="pocket">
+        <div id="inventory-bar" class="inventory-grid" aria-label="Inventory"></div>
+        <div id="reload-prompt" class="reload-prompt hidden">RELOAD WITH R</div>
+        <div class="meter beam-slim" id="battery-meter">
+          <div class="bar-label"><span id="battery-label">BEAM</span> <span class="hint-key">F</span></div>
+          <div class="bar-track"><div class="bar-fill" id="battery-fill"></div></div>
+        </div>
+      </div>
+      <div class="meter" id="stamina-meter" aria-label="Stamina">
         <div class="bar-label">
           STAMINA <span class="hint-key">SHIFT</span>
           <span id="soda-boost" class="boost-tag hidden">BOOSTED</span>
         </div>
-        <div class="bar-track"><div class="bar-fill" id="stamina-fill"></div></div>
-      </div>
-      <div class="meter" id="battery-meter">
-        <div class="bar-label"><span id="battery-label">BEAM</span> <span class="hint-key">F</span></div>
-        <div class="bar-track"><div class="bar-fill" id="battery-fill"></div></div>
-      </div>
-      <div class="meter" id="stance-meter">
-        <div class="bar-label">STANCE <span class="hint-key">C</span></div>
-        <div id="stance-value">STANDING</div>
+        <div class="thin-track thin-track--stamina"><div class="thin-fill" id="stamina-fill"></div></div>
       </div>
     </div>
-
-    <!--
-      Inventory. Each slot carries a letter key, a distinct SHAPE, and a count, so
-      it is readable without colour and without hovering anything.
-    -->
-    <div id="inventory-bar" class="inventory-bar"></div>
 
     <div id="hide-indicator" class="hidden">
       <span class="hide-dot"></span> HIDDEN &mdash; hold still
@@ -99,6 +95,16 @@
       Captions. Sound is the danger telegraph in this game, so both caption
       channels default to on and this sits where the eye already is.
     -->
+    <div id="step-ping" class="step-ping hidden" role="status" aria-live="polite">
+      <div class="step-ripples" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="step-arrow" aria-hidden="true">
+        <svg viewBox="0 0 48 72" width="46" height="68">
+          <path d="M24 2 L42 24 H32 V36 H16 V24 H6 Z" fill="currentColor"/>
+          <path d="M24 34 L42 56 H32 V70 H16 V56 H6 Z" fill="currentColor" opacity="0.55"/>
+        </svg>
+      </div>
+      <div class="step-feet">—</div>
+    </div>
     <div id="caption-stack" class="caption-stack hidden" role="status" aria-live="polite"></div>
 
     <!-- RGB split / static burst when a virus glitches out -->
@@ -118,6 +124,18 @@
 
     <div id="danger-warning" class="hidden">
       <span>HOSTILE IN THE LAB</span>
+    </div>
+  </div>
+
+  <div id="item-use" class="item-use hidden" aria-hidden="true">
+    <span class="use-prop"></span>
+  </div>
+  <div id="flash-hand" class="flash-hand hidden" aria-hidden="true">
+    <div class="flash-rig">
+      <span class="flash-arm"></span>
+      <span class="flash-body"></span>
+      <span class="flash-head"></span>
+      <span class="flash-cell"></span>
     </div>
   </div>
 
@@ -145,8 +163,8 @@
         <ol class="rules-list">
           <li>Find <strong>4 glowing Chromebooks</strong>. Press <strong>E</strong> and answer.</li>
           <li>Match the pairs to reveal a code piece. Then print a key and open the exit.</li>
-          <li>Press <strong>C</strong> and crawl under a taped desk to hide. Hunters cannot follow.</li>
-          <li>Press <strong>F</strong> for the flashlight. It burns viruses and attracts mice.</li>
+          <li>Press <strong>Z</strong> and crawl under a taped desk to hide. Hunters cannot follow.</li>
+          <li><strong>F</strong> flashlight. <strong>C</strong> cheetos, <strong>V</strong> soda, <strong>B</strong> battery.</li>
           <li>If you linger, <strong>red floor arrows</strong> wake up and point to the nearest Chromebook.</li>
         </ol>
         <p class="story">
@@ -247,7 +265,7 @@
   <div id="screen-tutorial" class="screen hidden">
     <div class="screen-inner narrow scrollable">
       <h2 class="panel-title">HOW TO PLAY</h2>
-      <p class="tutorial-meta">3 pages &mdash; movement, items, survival. Controls also live in Settings.</p>
+      <p class="tutorial-meta">Same layout as your keyboard. Only the lit keys do something.</p>
       <h3 id="tutorial-title" class="tutorial-page-title"></h3>
       <p id="tutorial-lead" class="tutorial-lead"></p>
       <div id="tutorial-body" class="tutorial-body"></div>
@@ -265,12 +283,11 @@
     <div id="title-backdrop" class="title-backdrop" aria-hidden="true"></div>
     <div class="screen-inner title-lobby">
       <header class="title-hero" data-term-row>
-        <div class="logo logo--lobby">
-          <div class="logo-sub">DVA Media Arts &amp; Tech presents</div>
-          <h1 class="logo-title" data-text="TECH ESCAPE">TECH ESCAPE</h1>
-          <p class="logo-ver">3</p>
-          <p class="logo-tag">The lab is closed. Something else is logged in.</p>
-        </div>
+        <pre class="ascii-mark" aria-hidden="true">+--------------------------------------+
+|  T E C H     E S C A P E         3   |
+|  lab closed  /  something logged in  |
++--------------------------------------+</pre>
+        <h1 class="logo-title sr-only">TECH ESCAPE 3</h1>
         <div class="title-greeting">
           <span id="title-player" class="title-player"></span>
           <button class="link-btn" id="btn-switch-player">Not you?</button>
@@ -278,49 +295,43 @@
       </header>
 
       <div class="title-card">
-        <ol class="title-steps" data-term-row>
-          <li><span>1</span> Find 4 Chromebooks and answer</li>
-          <li><span>2</span> Match the pairs, print the key, open the exit</li>
-          <li><span>3</span> Crouch under taped desks to hide</li>
-          <li><span>4</span> Flashlight burns viruses and calls mice</li>
+        <pre class="ascii-mark ascii-mark--steps" data-term-row aria-hidden="true">[ 1 ] laptops .... answer four
+[ 2 ] key ........ match, print, leave
+[ 3 ] desk ....... crouch and hide
+[ 4 ] beam ....... light vs mice</pre>
+        <ol class="sr-only">
+          <li>Find 4 Chromebooks and answer</li>
+          <li>Match the pairs, print the key, open the exit</li>
+          <li>Crouch under taped desks to hide</li>
+          <li>Flashlight burns viruses and calls mice</li>
         </ol>
 
         <div class="title-block" data-term-row>
-          <h2 class="title-block-label">Floor</h2>
+          <h2 class="title-block-label">FLOOR</h2>
           <div id="level-select" class="level-pick" role="radiogroup" aria-label="Floor"></div>
         </div>
 
         <div class="title-block" data-term-row>
-          <h2 class="title-block-label">Difficulty</h2>
+          <h2 class="title-block-label">DIFFICULTY</h2>
           <div class="diff-pick" role="radiogroup" aria-label="Difficulty">
-            <button type="button" class="diff-btn diff-pick-btn" data-diff="beginner"
-                    title="Mice are slow. A long quiet opening. Extra snacks.">
+            <button type="button" class="diff-btn diff-pick-btn" data-diff="beginner" title="Mice are slow. A long quiet opening.">
               <span class="diff-name">BEGINNER</span>
-              <span class="diff-hint">Learn the lab</span>
             </button>
-            <button type="button" class="diff-btn diff-pick-btn" data-diff="chill"
-                    title="You can walk away from a mouse. Hiding works.">
+            <button type="button" class="diff-btn diff-pick-btn" data-diff="chill" title="You can walk away from a mouse.">
               <span class="diff-name">FIELD TRIP</span>
-              <span class="diff-hint">A gentle hunt</span>
             </button>
-            <button type="button" class="diff-btn diff-pick-btn is-selected" data-diff="normal"
-                    title="Recommended. Mice are slower than a walk. Sprint and desks are the panic tools.">
+            <button type="button" class="diff-btn diff-pick-btn is-selected" data-diff="normal" title="Recommended. Mice are slower than a walk.">
               <span class="diff-name">AFTER HOURS</span>
-              <span class="diff-hint">Recommended</span>
             </button>
-            <button type="button" class="diff-btn diff-pick-btn" data-diff="nightmare"
-                    title="Hunters outrun a walk. No quiet opening. Terminals do not pause them.">
+            <button type="button" class="diff-btn diff-pick-btn" data-diff="nightmare" title="Hunters outrun a walk.">
               <span class="diff-name">SYSTEM CRASH</span>
-              <span class="diff-hint">They outrun you</span>
             </button>
-            <button type="button" class="diff-btn diff-pick-btn" data-diff="questions"
-                    title="No mice or viruses — terminals and escape only.">
-              <span class="diff-name">QUESTIONS ONLY</span>
-              <span class="diff-hint">No enemies</span>
+            <button type="button" class="diff-btn diff-pick-btn" data-diff="questions" title="No enemies.">
+              <span class="diff-name">QUESTIONS</span>
             </button>
           </div>
           <label class="title-tension-row">
-            <span>Tension</span>
+            <span>TENSION</span>
             <select id="set-tension">
               <option value="standard">Standard</option>
               <option value="mild">Mild</option>
@@ -331,16 +342,16 @@
         <button id="btn-start" class="big-btn title-cta" type="button" data-term-row>ENTER THE LAB</button>
       </div>
 
+      <pre class="ascii-rule" data-term-row aria-hidden="true">- - - - - - - - - - - - - - - - - - - -</pre>
       <nav class="title-nav" aria-label="Lobby links" data-term-row>
-        <button class="link-btn" type="button" id="btn-high-scores">High Scores</button>
-        <button class="link-btn" type="button" id="btn-how-to-play">How to Play</button>
+        <button class="link-btn" type="button" id="btn-high-scores">Scores</button>
+        <button class="link-btn" type="button" id="btn-how-to-play">How to play</button>
         <button class="link-btn" type="button" id="btn-settings">Settings</button>
-        <button class="link-btn" type="button" id="btn-guide">Study Guide</button>
-        <button class="link-btn" type="button" id="btn-standards">What will I learn?</button>
+        <button class="link-btn" type="button" id="btn-guide">Study guide</button>
+        <button class="link-btn" type="button" id="btn-standards">Standards</button>
       </nav>
       <p class="audio-credits title-credits" data-term-row>
         Music: &quot;Controlled Chaos&quot; Kevin MacLeod (incompetech.com).
-        Licensed under
         <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
       </p>
       <div class="perf-note" id="perf-note"></div>
@@ -572,8 +583,12 @@
         </div>
       </details>
 
+      <h3 class="pause-h">KEYBOARD</h3>
+      <p class="setting-note bind-note">Same places as the keys under your hands. Lit keys are the controls.</p>
+      <div id="controls-keyboard"></div>
+
       <h3 class="pause-h">KEYBINDS</h3>
-      <p class="setting-note bind-note">Click a row, then press the key you want. Esc cancels.</p>
+      <p class="setting-note bind-note">W A S D walk. Mouse looks. Shift sprints. Space climbs. Those stay put. Click a row to change one of the others. Esc cancels.</p>
       <div id="bind-list" class="bind-list"></div>
       <button type="button" id="btn-bind-reset" class="link-btn">Reset controls to default</button>
 
@@ -680,6 +695,7 @@
         <div class="quiz-head-right">
           <span id="quiz-standard" class="quiz-standard" title="Minnesota ITEM standard"></span>
           <span id="quiz-fragment" class="quiz-fragment">FRAGMENT 1 OF 3</span>
+        <span id="quiz-pair" class="quiz-pair hidden">2 OF 3 SECURED</span>
         </div>
       </div>
 
@@ -697,6 +713,12 @@
           <div id="quiz-verdict" class="verdict"></div>
           <p id="quiz-explain" class="explain"></p>
         </div>
+      </div>
+
+      <div id="quiz-lock" class="quiz-lock hidden" role="status">
+        <p class="quiz-lock-kicker">TERMINAL LOCK</p>
+        <p id="quiz-lock-count" class="quiz-lock-count">3</p>
+        <p class="quiz-lock-note">Two misses. The terminal is cooling down.</p>
       </div>
 
       <div class="quiz-foot">
@@ -911,7 +933,7 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=3.9.1"></script>
+<script type="module" src="js/main.js?v=3.27"></script>
 <noscript>
   <p style="color:#e6edf7;font-family:system-ui,sans-serif;padding:2rem">
     Tech Escape needs JavaScript enabled to run.

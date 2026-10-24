@@ -23,7 +23,27 @@
  *    moment the player has none to spare.
  */
 
-import { settings } from '../meta/settings.js';
+import { settings } from '../meta/settings.js?v=3.21';
+
+/** 1 world unit is about half a meter. */
+const FEET_PER_UNIT = 1.64;
+
+const DIR_WORDS = [
+  'ahead', 'ahead right', 'right', 'behind right',
+  'behind', 'behind left', 'left', 'ahead left',
+];
+
+/** Whole feet. Never 0, so a body on top of you still reads as a step away. */
+export function unitsToFeet(units) {
+  return Math.max(1, Math.round(Math.max(0, units) * FEET_PER_UNIT));
+}
+
+function dirWord(angle) {
+  let a = angle;
+  while (a < 0) a += Math.PI * 2;
+  while (a >= Math.PI * 2) a -= Math.PI * 2;
+  return DIR_WORDS[Math.round(a / (Math.PI / 4)) % 8];
+}
 
 /** Eight-way, because four is not enough to tell "beside me" from "behind me". */
 const ARROWS = ['\u2191', '\u2197', '\u2192', '\u2198', '\u2193', '\u2199', '\u2190', '\u2196'];
@@ -49,6 +69,36 @@ class Captions {
 
   init() {
     this.el = document.getElementById('caption-stack');
+    this.stepsEl = document.getElementById('step-ping');
+  }
+
+  /**
+   * Nearest hunter, as a HUD ripple. The arrow turns toward the sound.
+   * The number is feet, not a word like "close".
+   */
+  steps(worldPos, player) {
+    const el = this.stepsEl;
+    if (!el) return;
+    if (!settings.get('soundCaptions')) {
+      this.hideSteps();
+      return;
+    }
+    const dx = worldPos.x - player.pos.x;
+    const dz = worldPos.z - player.pos.z;
+    const dist = Math.hypot(dx, dz);
+    const bearing = Math.atan2(dx, -dz) - player.yaw;
+    const feet = unitsToFeet(dist);
+    const arrow = el.querySelector('.step-arrow');
+    const label = el.querySelector('.step-feet');
+    if (arrow) arrow.style.transform = `rotate(${bearing}rad)`;
+    if (label) label.textContent = `${feet} ft`;
+    el.classList.remove('hidden', 'is-near', 'is-mid', 'is-far');
+    el.classList.add(feet <= 8 ? 'is-near' : feet <= 20 ? 'is-mid' : 'is-far');
+    el.setAttribute('aria-label', `Steps, ${feet} feet, ${dirWord(bearing)}`);
+  }
+
+  hideSteps() {
+    this.stepsEl?.classList.add('hidden');
   }
 
   /**

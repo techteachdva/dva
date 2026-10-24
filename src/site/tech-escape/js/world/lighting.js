@@ -11,7 +11,7 @@
 import * as THREE from '../../vendor/three.module.js';
 import { FLASHLIGHT, COLORS } from '../config.js';
 import { clamp, lerp } from '../util.js';
-import { makeFlashlightCookie } from './level-themes.js';
+import { makeFlashlightCookie } from './level-themes.js?v=3.10';
 
 export class Lighting {
   constructor(scene, camera, quality) {
@@ -23,13 +23,13 @@ export class Lighting {
     // The beam is still the bright thing. The old 0.5 ambient left the lab as
     // a black screen until the light came on, which is how a first night
     // feels broken rather than dark.
-    this.ambient = new THREE.AmbientLight(0x9eb6dc, 0.85);
+    this.ambient = new THREE.AmbientLight(0x6e7c92, 0.18);
     scene.add(this.ambient);
 
-    this.hemi = new THREE.HemisphereLight(0xc5daf0, 0x3a3024, 0.62);
+    this.hemi = new THREE.HemisphereLight(0x8aa0b8, 0x1a140e, 0.12);
     scene.add(this.hemi);
 
-    this.fill = new THREE.DirectionalLight(0xe7f1ff, 0.72);
+    this.fill = new THREE.DirectionalLight(0xc5d4e6, 0.05);
     this.fill.position.set(6, 12, 4);
     scene.add(this.fill);
 
@@ -66,7 +66,7 @@ export class Lighting {
     }
 
     // Small always-on glow at the player so you can see your own feet
-    this.playerGlow = new THREE.PointLight(0x9fc4e8, 0.9, 5.5, 2);
+    this.playerGlow = new THREE.PointLight(0x9fc4e8, 0.12, 3.2, 2);
     camera.add(this.playerGlow);
 
     this.pool = [];
@@ -87,18 +87,18 @@ export class Lighting {
 
   setBrightness(mult) {
     this.brightness = mult;
-    this.ambient.intensity = 0.85 * mult;
-    this.hemi.intensity = 0.62 * mult;
-    this.fill.intensity = 0.72 * mult;
-    this.playerGlow.intensity = 0.9 * mult;
+    this.ambient.intensity = 0.18 * mult;
+    this.hemi.intensity = 0.12 * mult;
+    this.fill.intensity = 0.05 * mult;
+    this.playerGlow.intensity = 0.12 * mult;
   }
 
   setFlashlight(on) {
-    if (on && !this._flashOn) {
+    this._flashOn = on;
+    if (on) {
       this._flashLevel = FLASHLIGHT.intensity * this.brightness;
       this.flashlight.intensity = this._flashLevel;
     }
-    this._flashOn = on;
   }
 
   /**

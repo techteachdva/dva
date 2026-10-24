@@ -4,8 +4,10 @@
  */
 
 import { clamp } from './util.js';
-import { bindDisplay, normalizeBinds } from './meta/binds.js';
-import { settings } from './meta/settings.js';
+import { bindDisplay, normalizeBinds } from './meta/binds.js?v=3.25';
+import { settings } from './meta/settings.js?v=3.21';
+import { typeInto, printTree, printTogether } from './ui/typegate.js?v=3.21';
+import { inventoryIcons } from './ui/inventory-icons.js?v=3.26';
 import { audio } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -56,6 +58,24 @@ export const ui = {
     }
     // Let Safari scroll menus; gameplay keeps touch-action: none on the canvas.
     document.body.classList.toggle('is-ui-screen', Boolean(name));
+    this._printScreen(name);
+  },
+
+  _printScreen(name) {
+    this._stopScreen?.();
+    this._stopScreen = null;
+    const menus = [
+      'screen-title', 'screen-firstrun', 'screen-profile', 'screen-guide',
+      'screen-tutorial', 'screen-pause', 'screen-standards', 'screen-highscores',
+    ];
+    if (!name || !menus.includes(name) || settings.get('reduceMotion')) return;
+    const screen = document.getElementById(name);
+    if (!screen) return;
+    const rows = screen.querySelectorAll('[data-term-row]');
+    const targets = rows.length
+      ? rows
+      : screen.querySelectorAll('h1, h2, h3, .resume-note, .story, .setting-note, .pause-lead, .std-p, .std-intro');
+    if (targets.length) this._stopScreen = printTogether(targets, { cps: 64 });
   },
 
   hideAllScreens() {
@@ -100,31 +120,27 @@ export const ui = {
 
   setObjective(text) {
     const el = this.el['objective-text'];
-    if (el && el.textContent !== text) {
-      el.textContent = text;
-      el.classList.remove('objective-pulse');
-      void el.offsetWidth;
-      el.classList.add('objective-pulse');
-      audio.objectivePing();
-    }
+    if (!el || this._objective === text) return;
+    this._objective = text;
+    this._stopObjective?.();
+    el.classList.remove('objective-pulse');
+    void el.offsetWidth;
+    el.classList.add('objective-pulse');
+    audio.objectivePing();
+    this._stopObjective = typeInto(el, text, { cps: 22 });
   },
 
   buildHealth(max) {
-    const host = this.el['health-bags'];
-    host.innerHTML = '';
-    this._bags = [];
-    for (let i = 0; i < max; i++) {
-      const b = document.createElement('div');
-      b.className = 'bag';
-      host.appendChild(b);
-      this._bags.push(b);
-    }
+    this._healthMax = max || 1;
+    this.setHealth(max);
   },
 
   setHealth(current) {
-    this._bags.forEach((b, i) => {
-      b.classList.toggle('is-empty', i >= current);
-    });
+    const max = this._healthMax || 1;
+    const el = document.getElementById('health-fill');
+    if (!el) return;
+    el.style.width = `${clamp((current / max) * 100, 0, 100)}%`;
+    el.classList.toggle('is-low', current <= 1);
   },
 
   setStamina(pct, exhausted) {
@@ -142,6 +158,12 @@ export const ui = {
     // Burning a virus drains fast, so the meter says so out loud
     el.classList.toggle('is-burning', burning && on);
     const label = this.el['battery-label'];
+    if (this._batPct != null && pct > this._batPct + 0.03) {
+      document.getElementById('battery-meter')?.classList.remove('is-gained');
+      void document.getElementById('battery-meter')?.offsetWidth;
+      document.getElementById('battery-meter')?.classList.add('is-gained');
+    }
+    this._batPct = pct;
     if (label) {
       const want = burning && on ? 'BURNING' : 'BEAM';
       if (label.dataset.state !== want) {
@@ -226,7 +248,7 @@ export const ui = {
     const keyEl = this.el['interact-key'];
     if (keyEl) {
       const binds = normalizeBinds(settings.get('binds'));
-      keyEl.textContent = `${bindDisplay(binds.interact)} / E / L-Click`;
+      keyEl.textContent = bindDisplay(binds.interact);
     }
     if (!text) {
       if (this._lastInteract !== null) {
@@ -236,7 +258,8 @@ export const ui = {
       return;
     }
     if (text !== this._lastInteract) {
-      this.el['interact-text'].textContent = text;
+      this._stopInteract?.();
+      this._stopInteract = typeInto(this.el['interact-text'], text, { cps: 24 });
       el.classList.remove('hidden');
       this._lastInteract = text;
     }
@@ -252,17 +275,97 @@ export const ui = {
     this.el['danger-warning'].classList.toggle('hidden', !on);
   },
 
-  /** Inventory HUD — shape glyphs for colourblind redundancy. */
+  /** Three spinning models per item. Empty sockets stay dark. */
   updateInventoryBar(inventory) {
     const host = this.el['inventory-bar'];
     if (!host || !inventory) return;
-    host.innerHTML = inventory.slots().map((s) => `
-      <div class="inv-slot${s.selected ? ' is-selected' : ''}${s.count ? ' has-item' : ''}"
-           data-kind="${s.kind}" title="${s.useHint || s.throwHint || ''}">
-        <span class="inv-shape inv-shape-${s.shape}" aria-hidden="true"></span>
-        <span class="inv-label">${s.short}</span>
-        <span class="inv-count">${s.count}/${s.max}</span>
-      </div>`).join('');
+    const grid = ['cheetos', 'soda', 'battery', 'antivirus'];
+    if (host.dataset.built !== 'cvbn') {
+      host.innerHTML = this._invMarkup(inventory, grid);
+      host.dataset.built = 'cvbn';
+    }
+    this._paintInv(host, inventory);
+  },
+
+  _invMarkup(inventory, kinds) {
+    const keyOf = { cheetos: 'C', soda: 'V', battery: 'B', antivirus: 'N' };
+    return kinds.map((kind) => {
+      const info = inventory.info(kind);
+      const sockets = [0, 1, 2].map((i) => `
+        <div class="inv-socket" data-slot="${i}">
+          <canvas class="inv-canvas" data-kind="${kind}" data-slot="${i}" width="64" height="64"></canvas>
+        </div>`).join('');
+      const key = keyOf[kind] ? `<span class="inv-key">${keyOf[kind]}</span>` : '';
+      return `<div class="inv-group" data-kind="${kind}" aria-label="${info?.label || kind}">${key}${sockets}</div>`;
+    }).join('');
+  },
+
+  _paintInv(host, inventory) {
+    if (!host) return;
+    for (const group of host.querySelectorAll('.inv-group')) {
+      const kind = group.dataset.kind;
+      const count = inventory.count(kind);
+      group.classList.toggle('is-selected', inventory.selected === kind);
+      group.querySelectorAll('.inv-socket').forEach((socket, i) => {
+        const filled = i < count;
+        socket.classList.toggle('is-filled', filled);
+        const canvas = socket.querySelector('canvas');
+        if (canvas) canvas.dataset.filled = filled ? '1' : '0';
+      });
+    }
+  },
+
+  setUsePrompt(text) {
+    const el = document.getElementById('reload-prompt');
+    if (!el) return;
+    if (!text) {
+      el.classList.add('hidden');
+      el.dataset.msg = '';
+      return;
+    }
+    if (el.dataset.msg !== text) {
+      el.dataset.msg = text;
+      el.textContent = text;
+    }
+    el.classList.remove('hidden');
+    el.classList.toggle('is-flashing', !settings.get('reduceFlashing'));
+  },
+
+  playItemUse(kind, reduce, onDone) {
+    const el = document.getElementById('item-use');
+    if (!el || reduce) {
+      onDone?.();
+      return;
+    }
+    el.classList.remove('hidden', 'is-cheetos', 'is-soda');
+    el.classList.add(kind === 'soda' ? 'is-soda' : 'is-cheetos');
+    clearTimeout(this._useTimer);
+    this._useTimer = setTimeout(() => {
+      el.classList.add('hidden');
+      onDone?.();
+    }, 760);
+  },
+
+  playBatteryReload(reduce, onDone) {
+    const el = document.getElementById('flash-hand');
+    if (!el || reduce) {
+      onDone?.();
+      return;
+    }
+    el.classList.remove('hidden', 'is-intro', 'is-on');
+    el.classList.add('is-reload');
+    clearTimeout(this._flashTimer);
+    this._flashTimer = setTimeout(() => {
+      el.classList.add('hidden');
+      el.classList.remove('is-reload');
+      onDone?.();
+    }, 980);
+  },
+
+  tickInventory(dt) {
+    const hud = this.el.hud;
+    if (!hud || hud.classList.contains('hidden')) return;
+    inventoryIcons.tick(dt);
   },
 
   setCaptionsVisible(on) {
@@ -270,7 +373,26 @@ export const ui = {
     if (el) el.classList.toggle('hidden', !on);
   },
 
-  /** Brief screen bloom for big moments (code piece, escape, etc.). */
+  playFlashDraw(kind, onClick) {
+    const el = document.getElementById('flash-hand');
+    if (!el) { onClick?.(); return; }
+    el.classList.remove('is-intro', 'is-on', 'hidden');
+    if (kind === 'off') {
+      el.classList.add('hidden');
+      return;
+    }
+    const cls = kind === 'intro' ? 'is-intro' : 'is-on';
+    el.classList.remove('hidden');
+    void el.offsetWidth;
+    el.classList.add(cls);
+    clearTimeout(this._flashTimer);
+    const ms = kind === 'intro' ? 980 : 420;
+    this._flashTimer = setTimeout(() => {
+      el.classList.add('hidden');
+      el.classList.remove(cls);
+      onClick?.();
+    }, ms);
+  },
   fxBloom(kind = 'good') {
     const el = document.getElementById('fx-bloom');
     if (!el) return;
@@ -315,8 +437,9 @@ export const ui = {
   toast(message, kind = '', duration = 2600) {
     const el = document.createElement('div');
     el.className = `toast${kind ? ` ${kind}` : ''}`;
-    el.textContent = message;
+    el.textContent = '';
     this.el['toast-stack'].appendChild(el);
+    typeInto(el, message, { cps: 28 });
     this._toasts.push(el);
 
     // Never let toasts stack up and cover the view
@@ -366,7 +489,10 @@ export const ui = {
       screen?.classList.add('is-live');
       return;
     }
-    this._typeOver(pre, lines, () => screen?.classList.add('is-live'));
+    this._typeOver(pre, lines, () => {
+      screen?.classList.add('is-live');
+      this._printLivePanel(screen);
+    });
   },
 
   finishOverReadout() {
@@ -394,18 +520,25 @@ export const ui = {
           if (token.skip) { step(); return; }
           text += line[c];
           el.textContent = text;
-          await new Promise((r) => setTimeout(r, 20));
+          await new Promise((r) => setTimeout(r, 16));
         }
         text += '\n';
         el.textContent = text;
         if (token.skip) { step(); return; }
-        await new Promise((r) => setTimeout(r, line.trim() ? 170 : 70));
+        await new Promise((r) => setTimeout(r, line.trim() ? 40 : 20));
       }
       if (this._overToken === token) {
         this._overToken = null;
         done?.();
       }
     })();
+  },
+
+  _printLivePanel(screen) {
+    const panel = screen?.querySelector('.hs-panel:not(.hidden)');
+    if (!panel) return;
+    this._stopScore?.();
+    this._stopScore = printTree(panel, { cps: 18 });
   },
 
   showVictory({ flavor, stats, report }) {
@@ -415,5 +548,7 @@ export const ui = {
       <h4>MISSION DEBRIEF</h4>
       <ul>${report.map((r) => `<li>${r}</li>`).join('')}</ul>`;
     this.showScreen('screen-win');
+    this._stopWin?.();
+    this._stopWin = printTree(document.querySelector('#screen-win .screen-inner'), { cps: 18 });
   },
 };

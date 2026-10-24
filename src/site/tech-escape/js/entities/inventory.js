@@ -17,6 +17,16 @@ import { INVENTORY } from '../config.js';
  * distinct outline per item so the slots never rely on colour alone.
  */
 export const ITEMS = {
+  battery: {
+    label: 'BATTERY',
+    short: 'CELL',
+    shape: 'cell',
+    useVerb: 'RELOAD',
+    useHint: 'loads the flashlight when the beam dies',
+    throwHint: null,
+    throwable: false,
+    usable: true,
+  },
   cheetos: {
     label: 'HOT CHEETOS',
     short: 'CHEETOS',
@@ -28,8 +38,8 @@ export const ITEMS = {
     usable: true,
   },
   soda: {
-    label: 'SODA CAN',
-    short: 'SODA',
+    label: 'V67 SODA',
+    short: 'V67',
     shape: 'can',
     useVerb: 'DRINK',
     useHint: 'refills stamina and boosts running',
@@ -38,11 +48,11 @@ export const ITEMS = {
     usable: true,
   },
   antivirus: {
-    label: 'ANTI-VIRUS DISC',
-    short: 'ANTI-VIRUS',
+    label: 'NORGIN ANTI-VIRUS',
+    short: 'NORGIN',
     shape: 'disc',
     useVerb: null,
-    useHint: 'cannot be used by hand',
+    useHint: 'press N to shoot a virus',
     throwHint: 'destroys a virus permanently',
     throwable: true,
     usable: false,

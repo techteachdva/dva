@@ -31,9 +31,10 @@
 import { QUIZ } from '../config.js';
 import { audio } from '../audio.js';
 import { TERMINALS } from '../data/questions.js?v=3.9.1';
-import { settings } from '../meta/settings.js';
+import { settings } from '../meta/settings.js?v=3.21';
 import { debug } from '../meta/debug.js';
 import { primersFor } from '../data/glossary.js';
+import { typeInto } from '../ui/typegate.js';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
@@ -65,6 +66,9 @@ export class Quiz {
     this.el = {
       screen: $('screen-quiz'),
       panel: $('quiz-panel'),
+      pair: $('quiz-pair'),
+      lock: $('quiz-lock'),
+      lockCount: $('quiz-lock-count'),
       name: $('quiz-terminal-name'),
       segments: $('quiz-segments'),
       fragment: $('quiz-fragment'),
@@ -105,6 +109,10 @@ export class Quiz {
     this.hooks = hooks;
     this.index = 0;
     this.firstTryCount = 0;
+    this.denials = 0;
+    this.el.panel?.classList.remove('is-accept', 'is-deny', 'is-pair', 'is-locked');
+    this.el.pair?.classList.add('hidden');
+    this.el.lock?.classList.add('hidden');
     this.attempts = 0;
     this.open = true;
     this.revealed = false;
@@ -177,6 +185,11 @@ export class Quiz {
       `FRAGMENT ${this.index + 1} OF ${this.questions.length}`;
   }
 
+  _stopPrints() {
+    for (const stop of this._prints || []) stop();
+    this._prints = [];
+  }
+
   _showPrimer(q) {
     const host = this.el.primer;
     if (!host) return;
@@ -196,9 +209,11 @@ export class Quiz {
       const row = document.createElement('p');
       row.className = 'quiz-primer-row';
       const term = document.createElement('strong');
-      term.textContent = item.term;
-      row.append(term, document.createTextNode(` — ${item.def}`));
+      const def = document.createElement('span');
+      row.append(term, document.createTextNode(' — '), def);
       host.appendChild(row);
+      this._prints.push(typeInto(term, item.term, { cps: 20 }));
+      this._prints.push(typeInto(def, item.def, { cps: 16 }));
     }
   }
 
@@ -213,16 +228,13 @@ export class Quiz {
     this._updateSegments();
     this.el.standard.textContent = q.std || q.standard || '';
     this.el.standard.classList.toggle('hidden', !(q.std || q.standard));
-    this.el.question.textContent = q.text;
+    this.el.question.textContent = '';
+    this._stopPrints();
     this._showPrimer(q);
-    this._textLocked = false;
-    this._stopType?.();
-
-    // Telling them how many to pick is the difference between assessing tech
-    // knowledge and assessing familiarity with checkbox conventions
-    this.el.mode.textContent = q.multi
+    this._prints.push(typeInto(this.el.question, q.text, { cps: 16 }));
+    this._prints.push(typeInto(this.el.mode, q.multi
       ? `SELECT ALL THAT APPLY - ${q.correctCount} CORRECT`
-      : 'SELECT ONE';
+      : 'SELECT ONE', { cps: 22 }));
     this.el.mode.classList.toggle('is-multi', !!q.multi);
 
     this._renderOptions(q);
@@ -264,13 +276,11 @@ export class Quiz {
 
       const text = document.createElement('span');
       text.className = 'answer-text';
-      text.textContent = opt.text;
-
       const mark = document.createElement('span');
       mark.className = 'answer-mark';
       mark.setAttribute('aria-hidden', 'true');
-
       btn.append(badge, text, mark);
+      this._prints.push(typeInto(text, opt.text, { cps: 18 }));
       btn.addEventListener('click', (e) => {
         // Ignore a click whose press began before this panel existed
         if (e.timeStamp && e.timeStamp < this._openedAt) return;
@@ -348,6 +358,10 @@ export class Quiz {
       this.answeredFirstTry = isRight;
       if (isRight) this.firstTryCount++;
       this.hooks.onAnswer?.(isRight, q, chosen.map((i) => q.options[i].text));
+      if (this.firstTryCount === 2 && this.questions.length >= 3) {
+        this.el.panel?.classList.add('is-pair');
+        this.el.pair?.classList.remove('hidden');
+      }
     }
 
     if (isRight) this._acceptAnswer(q);
@@ -358,6 +372,8 @@ export class Quiz {
     this.revealed = true;
     this.locked = true;
     audio.correct();
+    this.el.panel?.classList.remove('is-deny');
+    this.el.panel?.classList.add('is-accept');
 
     [...this.el.answers.children].forEach((btn, i) => {
       btn.disabled = true;
@@ -365,7 +381,8 @@ export class Quiz {
       btn.classList.remove('is-picked');
     });
 
-    this.el.verdict.innerHTML = '<span class="verdict-icon" aria-hidden="true">&#10003;</span> ACCEPTED';
+    this.el.verdict.textContent = '';
+    this._prints.push(typeInto(this.el.verdict, 'ACCEPTED', { cps: 18 }));
     this.el.feedback.classList.add('is-right');
     this._showExplanation(q, 'Credential accepted. ');
 
@@ -385,6 +402,9 @@ export class Quiz {
   _rejectAnswer(q, partial) {
     this.locked = true;
     audio.wrong();
+    this.denials = (this.denials || 0) + 1;
+    this.el.panel?.classList.remove('is-accept');
+    this.el.panel?.classList.add('is-deny');
 
     // Show which of their choices the terminal refused, but never reveal the
     // right one - they are about to try again, and the answer would end that
@@ -393,7 +413,8 @@ export class Quiz {
       if (this.picked.has(i)) btn.classList.add('is-wrong');
     });
 
-    this.el.verdict.innerHTML = '<span class="verdict-icon" aria-hidden="true">&#10007;</span> DENIED';
+    this.el.verdict.textContent = '';
+    this._prints.push(typeInto(this.el.verdict, 'DENIED', { cps: 18 }));
     this.el.feedback.classList.add('is-wrong');
     this._showExplanation(q, partial
       ? 'The terminal accepted part of that credential and rejected the rest. '
@@ -405,7 +426,34 @@ export class Quiz {
     this.hooks.onWrong?.(this.attempts);
 
     clearTimeout(this._retryTimer);
-    this._retryTimer = setTimeout(() => this._enableRetry(), RETRY_DELAY_MS);
+    clearInterval(this._lockTick);
+    const lockMs = this.denials >= 2 ? 3200 : 0;
+    const wait = Math.max(RETRY_DELAY_MS, lockMs);
+    if (lockMs) this._showLock(lockMs);
+    this._retryTimer = setTimeout(() => {
+      this._hideLock();
+      this._enableRetry();
+    }, wait);
+  }
+
+  _showLock(ms) {
+    const el = this.el.lock;
+    if (!el) return;
+    el.classList.remove('hidden');
+    this.el.panel?.classList.add('is-locked');
+    let left = Math.ceil(ms / 1000);
+    if (this.el.lockCount) this.el.lockCount.textContent = String(left);
+    this._lockTick = setInterval(() => {
+      left -= 1;
+      if (this.el.lockCount) this.el.lockCount.textContent = String(Math.max(left, 0));
+      if (left <= 0) clearInterval(this._lockTick);
+    }, 1000);
+  }
+
+  _hideLock() {
+    clearInterval(this._lockTick);
+    this.el.lock?.classList.add('hidden');
+    this.el.panel?.classList.remove('is-locked');
   }
 
   /** Options come back after the explanation has had time to be read. */
@@ -427,7 +475,8 @@ export class Quiz {
   _showExplanation(q, prefix) {
     const text = `${prefix}${q.why || ''}`.trim();
     this.el.feedback.classList.remove('hidden');
-    this.el.explain.textContent = text;
+    this.el.explain.textContent = '';
+    this._prints.push(typeInto(this.el.explain, text, { cps: 16 }));
     this.el.next.disabled = true;
     this._explainAt = performance.now();
     window.setTimeout(() => {
