@@ -45,7 +45,7 @@ import { debug, DEBUG_CODE } from './meta/debug.js';
 import { computeRunScore } from './meta/score.js';
 import { highscoresUi } from './meta/highscores-ui.js?v=3.26';
 import { BootSequence, bootShouldRush } from './ui/boot.js?v=3.21';
-import { ScopeOpening } from './ui/opening.js?v=3.12';
+import { ScopeOpening } from './ui/opening.js?v=3.30';
 import { startPauseScope } from './ui/pause-rise.js?v=3.3';
 import { createShatter, drawShatter } from './ui/death-shatter.js?v=3.27';
 import { captions } from './ui/captions.js?v=3.25';
@@ -303,7 +303,7 @@ class Game {
       canvas: document.getElementById('opening-scope'),
       reduceMotion,
       reduceFlashing: !!settings.get('reduceFlashing'),
-      fast,
+      fast: false,
       muted: !!settings.get('muted'),
       low: !!this._softwareRenderer,
     });
@@ -513,10 +513,11 @@ class Game {
     });
 
     document.getElementById('scene').addEventListener('pointerdown', () => {
-      if (this.mode !== MODE.PLAYING) return;
+      if (this.mode !== MODE.PLAYING || input.touchMode) return;
       const canvas = document.getElementById('scene');
       canvas.tabIndex = 0;
       canvas.focus({ preventScroll: true });
+      if (!input.locked) input.requestLock();
     });
 
     input.onPointerLockChange = () => {};
@@ -531,6 +532,7 @@ class Game {
   async startRun() {
     if (this._starting) return;
     this._clearDeath();
+    this._grabMouse();
     this._starting = true;
     try {
       await this._startRunBody();
@@ -766,6 +768,7 @@ class Game {
       playCanvas.tabIndex = 0;
       playCanvas.focus({ preventScroll: true });
     }
+    this._grabMouse();
     if (input.touchMode) {
       touchUi.requestFullscreen();
       ui.toast('Drag the right side to look. Stick moves. Tap FULL for fullscreen.', 'warn', 5200);
@@ -819,6 +822,17 @@ class Game {
 
   // =============================================================== flow control
 
+  _grabMouse() {
+    document.body.classList.add('is-playing');
+    if (!input.touchMode) input.requestLock();
+  }
+
+  _releaseMouse() {
+    document.body.classList.remove('is-playing');
+    this.expectUnlock = true;
+    input.releaseLock();
+  }
+
   pause(opts = {}) {
     if (this._phoneRinging || this._phoneLift) return;
     if (this.mode !== MODE.PLAYING) return;
@@ -831,8 +845,7 @@ class Game {
     this.mode = MODE.PAUSED;
     this._returnScreen = null;
     input.setEnabled(false);
-    this.expectUnlock = true;
-    input.releaseLock();
+    this._releaseMouse();
     document.getElementById('btn-quit')?.classList.remove('hidden');
     const title = document.querySelector('#screen-pause .panel-title');
     if (title) title.textContent = 'PAUSED';
@@ -860,8 +873,7 @@ class Game {
     this.mode = MODE.PAUSED;
     this._returnScreen = null;
     input.setEnabled(false);
-    this.expectUnlock = true;
-    input.releaseLock();
+    this._releaseMouse();
     document.getElementById('btn-quit')?.classList.remove('hidden');
     const title = document.querySelector('#screen-pause .panel-title');
     if (title) title.textContent = 'PAUSED';
@@ -950,8 +962,7 @@ class Game {
     input.setEnabled(true);
     input.clearEdges();
     input.showTouchUi(true);
-    const canvas = document.getElementById('scene');
-    if (canvas) canvas.focus({ preventScroll: true });
+    this._grabMouse();
     this._applyDebugPerks();
   }
 
@@ -963,8 +974,7 @@ class Game {
     audio.stopTitleMusic();
     audio.setMuffled(false);
     this.mode = MODE.TITLE;
-    this.expectUnlock = true;
-    input.releaseLock();
+    this._releaseMouse();
     input.setEnabled(false);
     input.showTouchUi(false);
     ui.setHudVisible(false);
@@ -1856,8 +1866,7 @@ class Game {
     w.progress?.noteServed?.(idsOf(questions));
 
     this.mode = MODE.QUIZ;
-    this.expectUnlock = true;
-    input.releaseLock();
+    this._releaseMouse();
     input.setEnabled(false);
     ui.setHudVisible(false);
     ui.showScreen('screen-quiz');
@@ -1975,8 +1984,7 @@ class Game {
     input.setEnabled(true);
     input.clearEdges();
     input.showTouchUi(true);
-    const canvas = document.getElementById('scene');
-    if (canvas) canvas.focus({ preventScroll: true });
+    this._grabMouse();
   }
 
   /** Loud events pull nearby hunters toward the player. */
@@ -2162,12 +2170,11 @@ class Game {
     this._phoneLift = false;
     document.getElementById('pocket-phone')?.classList.remove('is-ringing', 'is-raised');
     this.mode = MODE.OVER;
+    this._releaseMouse();
     audio.jumpscare();
     setTimeout(() => audio.defeat(), 400);
     audio.stopAmbience();
     audio.setMuffled(false);
-    this.expectUnlock = true;
-    input.releaseLock();
     input.setEnabled(false);
     ui.setHudVisible(false);
     ui.clearToasts();

@@ -192,6 +192,12 @@ body.is-ui-screen {
   display: block;
   background: #000;
 }
+body.is-playing,
+body.is-playing #scene,
+body.is-playing #hud,
+body.is-playing #crosshair {
+  cursor: none;
+}
 
 .hidden { display: none !important; }
 

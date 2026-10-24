@@ -235,7 +235,7 @@ export class ScopeOpening {
       };
     }
     return {
-      scope: 10400, scopeHold: 1100, form: 2600, hold: 2000,
+      scope: 12400, scopeHold: 1100, form: 2600, hold: 2000,
       rest: 700, collapse: 2400, settle: 800,
     };
   }
