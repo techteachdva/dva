@@ -5,8 +5,8 @@ extends Node3D
 # rim: visible, walkable only at their feet, and reserved for a later patch
 # where creatures travel up for rare resources. band_at() is that seam.
 
-const FLOOR_RADIUS: float = 40.0
-const RIM_RADIUS: float = 78.0
+const FLOOR_RADIUS: float = 46.0
+const RIM_RADIUS: float = 84.0
 const MESH_SPAN: float = 180.0
 const MESH_RES: int = 88
 var _mesh_res: int = MESH_RES
@@ -34,6 +34,7 @@ func _ready() -> void:
 	_crag.fractal_octaves = 4
 	_crag.fractal_gain = 0.55
 	_build_mesh()
+	_build_far_range()
 	river = River.new()
 	river.name = "River"
 	add_child(river)
@@ -152,6 +153,80 @@ func _build_mesh() -> void:
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
 
+# ------------------------------------------------------------------
+# The world beyond: ranges after ranges out to the horizon, so the valley is
+# a pocket in a much larger land. Colour fades into the sky's haze with
+# distance (aerial perspective baked into the mesh, so it works even where
+# the fog pass is off), and the ground curves away like a small planet.
+# ------------------------------------------------------------------
+const FAR_RINGS: Array[float] = [86.0, 92.0, 100.0, 110.0, 122.0, 136.0, 152.0, 170.0, 192.0, 218.0, 250.0, 290.0, 340.0, 400.0, 470.0, 560.0, 670.0, 800.0, 950.0]
+const FAR_SEGMENTS: int = 160
+const PLANET_RADIUS: float = 4000.0
+const HAZE := Color(0.66, 0.75, 0.84)
+
+func far_height(x: float, z: float) -> float:
+	var r: float = sqrt(x * x + z * z)
+	var half: float = MESH_SPAN * 0.5
+	# Under the valley mesh: tuck below it so the two never fight.
+	if absf(x) <= half and absf(z) <= half:
+		return height_at(x, z) - 1.5
+	var near_h: float = height_at(x, z)
+	var ridge: float = clampf(_crag.get_noise_2d(x * 0.18, z * 0.18) * 0.5 + 0.5, 0.0, 1.0)
+	var swell: float = _noise.get_noise_2d(x * 0.05, z * 0.05)
+	var far_h: float = 16.0 + ridge * ridge * 70.0 + swell * 22.0
+	var t: float = clampf((r - 130.0) / 220.0, 0.0, 1.0)
+	var h: float = lerpf(near_h, far_h, t * t * (3.0 - 2.0 * t))
+	return h - r * r / (2.0 * PLANET_RADIUS)
+
+func _build_far_range() -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rings: int = FAR_RINGS.size()
+	var pts: Array = []
+	for ri: int in rings:
+		var row: Array = []
+		var r: float = FAR_RINGS[ri]
+		for si: int in FAR_SEGMENTS:
+			var a: float = TAU * float(si) / FAR_SEGMENTS
+			var x: float = cos(a) * r
+			var z: float = sin(a) * r
+			row.append(Vector3(x, far_height(x, z), z))
+		pts.append(row)
+	for ri: int in rings - 1:
+		for si: int in FAR_SEGMENTS:
+			var sj: int = (si + 1) % FAR_SEGMENTS
+			var p00: Vector3 = pts[ri][si]
+			var p01: Vector3 = pts[ri][sj]
+			var p10: Vector3 = pts[ri + 1][si]
+			var p11: Vector3 = pts[ri + 1][sj]
+			_add_far_tri(st, p00, p10, p11)
+			_add_far_tri(st, p00, p11, p01)
+	st.generate_normals()
+	var mi := MeshInstance3D.new()
+	mi.name = "FarRange"
+	mi.mesh = st.commit()
+	var mat := StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.roughness = 1.0
+	mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+
+func _add_far_tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
+	var normal := (c - a).cross(b - a).normalized()
+	var centre := (a + b + c) / 3.0
+	var r: float = Vector2(centre.x, centre.z).length()
+	# Same rock and snow as the rim, judged on height above the curve, then
+	# washed toward the haze the further away it is.
+	var lift: float = centre.y + r * r / (2.0 * PLANET_RADIUS)
+	var col: Color = _color_at(centre.x, centre.z, lift * (0.75 if r > 200.0 else 1.0), absf(normal.y))
+	var fade: float = clampf((r - 95.0) / 600.0, 0.0, 0.9)
+	st.set_color(col.lerp(HAZE, sqrt(fade)))
+	st.add_vertex(a)
+	st.add_vertex(b)
+	st.add_vertex(c)
+
 func _add_tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
 	var normal := (c - a).cross(b - a).normalized()
 	var centre := (a + b + c) / 3.0
@@ -208,7 +283,7 @@ func _plant_copses() -> void:
 			var off: float = rng.randf_range(River.BASE_HALF_WIDTH * 1.9, 20.0) * (1.0 if rng.randf() > 0.5 else -1.0)
 			var pos := p + side * off + t * rng.randf_range(-2.0, 2.0)
 			var r: float = Vector2(pos.x, pos.z).length()
-			if r < 37.0 or r > 62.0:
+			if r < FLOOR_RADIUS - 3.0 or r > FLOOR_RADIUS + 22.0:
 				continue
 			pos.y = surface_height(pos.x, pos.z)
 			var k: float = rng.randf_range(0.85, 1.45)
@@ -282,13 +357,22 @@ func _add_sky() -> void:
 	env.ambient_light_energy = 0.62
 	# Fullscreen fog and a 5-octave sky shader dominate the web frame.
 	# The browser build keeps the sky and drops the fog pass.
-	env.fog_enabled = not OS.has_feature("web")
-	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
-	env.fog_light_color = Color(0.78, 0.84, 0.9)
-	env.fog_density = 0.0011
-	env.fog_height = 5.0
-	env.fog_height_density = -0.09
-	env.fog_aerial_perspective = 0.35
+	# Distance fog plus a little height fog pooling in the low ground, so the
+	# far ranges soften into the sky. The web build skips the costly aerial
+	# perspective (sky sampling) but keeps the fog itself.
+	env.fog_enabled = true
+	# Depth fog: clear across the meadow, thickening past the rim so the far
+	# ranges fade out, with a whisper of height fog in the low ground.
+	env.fog_mode = Environment.FOG_MODE_DEPTH
+	env.fog_light_color = HAZE
+	env.fog_density = 1.0
+	env.fog_depth_begin = 80.0
+	env.fog_depth_end = 820.0
+	env.fog_depth_curve = 1.6
+	env.fog_sky_affect = 0.0
+	env.fog_height = 3.0
+	env.fog_height_density = 0.004
+	env.fog_aerial_perspective = 0.0 if OS.has_feature("web") else 0.4
 	world_env.environment = env
 	add_child(world_env)
 
@@ -326,11 +410,15 @@ void sky() {
 	vec3 horizon = vec3(0.64, 0.76, 0.88);
 	vec3 zenith = vec3(0.27, 0.46, 0.76);
 	vec3 col = mix(horizon, zenith, pow(up, 0.7));
+	// A haze band where the land meets the sky, and haze below the horizon,
+	// so the far ranges dissolve into distance instead of ending.
+	vec3 haze = vec3(0.66, 0.75, 0.84);
 	vec2 uv = EYEDIR.xz / max(h, 0.12);
 	float n = fbm(uv * 0.42 + vec2(0.2, 0.15));
 	float cloud = smoothstep(0.46, 0.74, n);
 	cloud *= smoothstep(0.0, 0.22, h);
 	col = mix(col, vec3(0.94, 0.95, 0.97), cloud * 0.88);
+	col = mix(col, haze, smoothstep(0.12, -0.02, h));
 	COLOR = col;
 }
 "

@@ -3,24 +3,15 @@ extends Control
 class_name Tickertape
 
 # The valley's running commentary: births, deaths, scraps, floods and the
-# odd thought from nowhere. Each line pops in with a little bounce, types
-# itself out and is tinted by what kind of news it is. Written for a
-# middle-school audience: dramatic and silly, never gory.
+# odd thought from nowhere, scrolling past as a marquee, each story tinted
+# by what kind of news it is. Written for a middle-school audience:
+# dramatic and silly, never gory.
 
-const MAX_EVENTS: int = 12
-const DISPLAY_TIME: float = 6.0
-const FADE_TIME: float = 0.6
 # With nothing else to report, the valley mutters to itself.
 const MURMUR_AFTER: float = 9.0
 
-var _events: Array[Dictionary] = []
 var _director: SimulationDirector = null
-var _display_timer: float = 0.0
-var _current_index: int = 0
-var _fade_state: float = 1.0
 var _quiet: float = 0.0
-var _pop: Tween
-var _shown_text: String = ""
 
 @onready var _label: Label = $Panel/Label
 @onready var _panel: Panel = $Panel
@@ -480,8 +471,10 @@ func _murmur() -> String:
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	z_index = 100
-	_label.add_theme_font_override("font", FelecoUi.font("bold"))
-	_label.add_theme_font_size_override("font_size", 17)
+	# The single label is replaced by a marquee strip of stories.
+	_label.visible = false
+	_panel.clip_contents = true
+	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var world: Node3D = get_tree().current_scene.get_node_or_null("World")
 	if world != null:
 		_director = world as SimulationDirector
@@ -498,86 +491,75 @@ func _ready() -> void:
 			if _director.has_signal("chronicle"):
 				_director.chronicle.connect(func(t: String) -> void: _add_event(t, "news"))
 
+# ---------------------------------------------------------------------------
+# MARQUEE: one line of stories gliding right to left at an easy reading pace
+# (about 20 characters a second, whatever the game speed). New stories join
+# the end of the line; if they pile up, ambient murmurs are dropped first and
+# then the oldest waiting stories.
+# ---------------------------------------------------------------------------
+const SCROLL_PX: float = 150.0
+const GAP_PX: float = 70.0
+const MAX_WAITING: int = 6
+var _items: Array[Label] = []
+var _waiting: Array[Dictionary] = []
+
 func _process(delta: float) -> void:
+	# Steady on screen regardless of 1x/2x/4x or pause.
+	var real: float = delta / maxf(Engine.time_scale, 0.01)
 	if not get_tree().paused:
-		_quiet += delta
-		if _quiet >= MURMUR_AFTER:
-			_add_event(_murmur(), "murmur")
-	if _events.is_empty():
-		_panel.modulate = Color(1, 1, 1, 0)
-		return
-	_display_timer += delta
-	if _display_timer >= DISPLAY_TIME:
-		_display_timer = 0.0
-		_current_index = (_current_index + 1) % _events.size()
-		_fade_state = 1.0
-		_update_label()
-	elif _display_timer >= DISPLAY_TIME - FADE_TIME:
-		_fade_state = clampf(1.0 - (_display_timer - (DISPLAY_TIME - FADE_TIME)) / FADE_TIME, 0.0, 1.0)
-	else:
-		_fade_state = 1.0
-	_panel.modulate = Color(1, 1, 1, _fade_state)
-	var i: int = _events.size() - 1
-	while i >= 0:
-		_events[i]["ttl"] -= delta
-		if _events[i]["ttl"] <= 0.0:
-			_events.remove_at(i)
-			if _current_index >= _events.size() and _events.size() > 0:
-				_current_index = 0
-			elif _events.size() == 0:
-				_current_index = 0
-		i -= 1
+		_quiet += real
+	var w: float = _panel.size.x
+	for item: Label in _items:
+		item.position.x -= SCROLL_PX * real
+	while not _items.is_empty() and _items[0].position.x + _items[0].size.x < -8.0:
+		var gone: Label = _items.pop_front()
+		gone.queue_free()
+	var tail_end: float = -INF if _items.is_empty() else _items[-1].position.x + _items[-1].size.x
+	if tail_end < w - GAP_PX:
+		if _waiting.is_empty() and _quiet >= MURMUR_AFTER and _items.size() <= 1:
+			_queue(_murmur(), "murmur")
+		if not _waiting.is_empty():
+			_launch(_waiting.pop_front(), maxf(w, tail_end + GAP_PX))
+	_panel.modulate.a = move_toward(_panel.modulate.a, 1.0 if not _items.is_empty() else 0.0, real * 3.0)
 
-func _update_label() -> void:
-	if _events.is_empty():
-		_label.text = ""
-		return
-	var idx: int = clampi(_current_index, 0, _events.size() - 1)
-	var ev: Dictionary = _events[idx]
-	if ev["text"] == _shown_text:
-		return
-	_shown_text = ev["text"]
-	_label.text = ev["text"]
-	_pop_in(String(ev.get("kind", "news")))
-
-# A springy pop, a quick type-on and a flash in the colour of the news.
-func _pop_in(kind: String) -> void:
+func _launch(ev: Dictionary, at_x: float) -> void:
+	var kind: String = ev["kind"]
 	var accent: Color = KIND_COLORS.get(kind, KIND_COLORS["news"])
-	var box := _panel.get_theme_stylebox("panel") as StyleBoxFlat
-	if box != null:
-		box = box.duplicate()
-		box.border_color = accent
-		box.set_border_width_all(2)
-		_panel.add_theme_stylebox_override("panel", box)
-	_panel.pivot_offset = _panel.size * 0.5
-	if _pop != null:
-		_pop.kill()
-	_panel.scale = Vector2(0.86, 0.86)
-	_panel.rotation = deg_to_rad(randf_range(-1.6, 1.6))
-	_label.visible_ratio = 0.0
-	_label.add_theme_color_override("font_color", accent.lerp(Color(0.957, 0.937, 0.894), 0.2))
-	_pop = create_tween().set_parallel(true)
-	_pop.tween_property(_panel, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	_pop.tween_property(_panel, "rotation", 0.0, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	var type_time: float = clampf(_label.text.length() / 70.0, 0.35, 1.1)
-	_pop.tween_property(_label, "visible_ratio", 1.0, type_time)
-	_pop.tween_method(func(c: Color) -> void: _label.add_theme_color_override("font_color", c), accent.lerp(Color(1, 1, 1), 0.3), Color(0.957, 0.937, 0.894), 1.2).set_delay(type_time)
-	if kind == "big" or kind == "kill":
-		_pop.chain().tween_property(_panel, "position:x", _panel.position.x + 6.0, 0.05)
-		_pop.chain().tween_property(_panel, "position:x", _panel.position.x, 0.12).set_trans(Tween.TRANS_ELASTIC)
+	var l := Label.new()
+	l.text = ev["text"]
+	l.add_theme_font_override("font", FelecoUi.font("bold"))
+	l.add_theme_font_size_override("font_size", 18)
+	l.add_theme_color_override("font_color", Color(0.957, 0.937, 0.894) if kind in ["news", "birth", "death"] else accent.lerp(Color(0.957, 0.937, 0.894), 0.35))
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(l)
+	l.reset_size()
+	l.position = Vector2(at_x, (_panel.size.y - l.size.y) * 0.5)
+	# A small coloured pip leads each story so the eye finds where it starts.
+	var pip := ColorRect.new()
+	pip.color = accent
+	pip.size = Vector2(8, 8)
+	pip.position = Vector2(-18, l.size.y * 0.5 - 4)
+	pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.add_child(pip)
+	_items.append(l)
+
+func _queue(text: String, kind: String) -> void:
+	_waiting.append({"text": text, "kind": kind})
+	while _waiting.size() > MAX_WAITING:
+		var drop: int = 0
+		for i: int in _waiting.size():
+			if _waiting[i]["kind"] == "murmur":
+				drop = i
+				break
+		_waiting.remove_at(drop)
 
 func _add_event(text: String, kind: String = "news") -> void:
 	_quiet = 0.0
-	_events.append({"text": text, "ttl": DISPLAY_TIME * 3.0, "kind": kind})
-	if _events.size() > MAX_EVENTS:
-		if _current_index >= _events.size() - 1:
-			_current_index = 0
-		_events.remove_at(0)
-	if _events.size() == 1:
-		_current_index = 0
-		_display_timer = 0.0
-		_fade_state = 1.0
-		_update_label()
+	if kind != "murmur":
+		# Real news jumps ahead of any murmur still waiting.
+		_waiting = _waiting.filter(func(e: Dictionary) -> bool: return e["kind"] != "murmur")
+	_queue(text, kind)
 	if kind == "murmur":
 		return
 	var gc: Node = get_node_or_null("/root/GameConfig")

@@ -161,6 +161,12 @@ func _on_tick_drift(delta: float) -> void:
 	velocity.x = seek.x + (randf() - 0.5) * drift_speed
 	velocity.z = seek.z + (randf() - 0.5) * drift_speed
 	velocity.y = -drift_downward
+	# Drifting spores never blow off the meadow up into the mountains.
+	var flat := Vector2(global_position.x, global_position.z)
+	if flat.length() > ValleyTerrain.FLOOR_RADIUS - 3.0:
+		var inward := -flat.normalized() * drift_speed
+		velocity.x = inward.x
+		velocity.z = inward.y
 	global_position += velocity * delta
 	# Settle on the meadow instead of sinking through it.
 	if sim != null:

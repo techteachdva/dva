@@ -46,8 +46,8 @@ var _death_clock: float = 0.0
 var _last_energy: float = -1.0
 var _vision_cone: VisionCone = null
 const _NO_MODS: Dictionary = {"__none__": true}
-const BOUNDARY_SOFT: float = 38.0
-const BOUNDARY_HARD: float = 44.0
+const BOUNDARY_SOFT: float = ValleyTerrain.FLOOR_RADIUS - 2.0
+const BOUNDARY_HARD: float = ValleyTerrain.FLOOR_RADIUS + 4.0
 
 @onready var director: SimulationDirector = _find_director()
 

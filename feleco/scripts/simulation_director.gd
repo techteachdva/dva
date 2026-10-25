@@ -681,6 +681,7 @@ func tick(dt: float) -> void:
 	if _presence_tick == 0 or _crowd_grid.is_empty():
 		_update_presence_grid()
 	_tick_agents(dt)
+	_step_river_swell(bio)
 	if _rain_timer > 0.0:
 		_rain_timer -= bio
 		if _rain_timer <= 0.0:
@@ -707,7 +708,9 @@ func tick(dt: float) -> void:
 		_return_fish()
 		_tribal_politics(2.0)
 		_natural_flood_roll(2.0 / Clock.LIFE_PACE * DAYS_PER_SECOND)
+		_natural_rain_roll(2.0 / Clock.LIFE_PACE * DAYS_PER_SECOND)
 		_mycelium_fruiting()
+		_update_nesting()
 	_arborist_timer += dt
 	if _arborist_timer >= 5.0:
 		_arborist_timer = 0.0
@@ -1044,6 +1047,10 @@ func spawn_corpse(pos: Vector3, energy: float, species: String = "") -> void:
 
 func spawn_mushroom_spore(parent: Node, pos: Vector3) -> void:
 	if _spore_scene == null:
+		return
+	# Mushrooms grow on the meadow only, never out on the mountainsides.
+	var flat := Vector2(pos.x, pos.z)
+	if flat.length() > ValleyTerrain.FLOOR_RADIUS - 1.0:
 		return
 	var spore = _spore_scene.instantiate()
 	$Spores.add_child(spore)
@@ -2525,6 +2532,8 @@ func _apply_daylight() -> void:
 		# Many things in the valley are unshaded (sprites, grass), so night
 		# also turns the exposure down to make the dark read everywhere.
 		_env.tonemap_exposure = lerpf(1.0, 0.5, n)
+		# The haze darkens and cools with the light, so night fog isn't a glow.
+		_env.fog_light_color = ValleyTerrain.HAZE.lerp(Color(0.12, 0.15, 0.25), n * 0.9)
 	if _visual_proxy_manager != null:
 		_visual_proxy_manager.set_night(n)
 
@@ -2677,6 +2686,8 @@ func season_breeding(species: String) -> float:
 		return fungal_factor() * daynight_mult(species, 2)
 	var row: Array = SEASON_TABLE.get(species, [])
 	var b: float = 1.0 if row.is_empty() else float(row[_season_index][1])
+	if species == "falcon":
+		b *= nest_factor
 	return b * _power_mult(species, 1) * daynight_mult(species, 2)
 
 # Mushrooms and mycelium flourish in autumn and in rain; otherwise they are rare.
@@ -2849,7 +2860,7 @@ func _natural_flood_roll(days: float) -> void:
 	if _natural_flood_wait > 0.0 or _flood_timer > 0.0 or flood_receding():
 		return
 	# Tuned per season, not per roll: Spring brings about 1.2 floods, Autumn 0.45.
-	var per_season: float = {"Spring": 1.2, "Autumn": 0.45}.get(_current_season, 0.0)
+	var per_season: float = {"Spring": 0.6, "Autumn": 0.2}.get(_current_season, 0.0)
 	var chance: float = per_season * days / maxf(SEASON_LENGTH, 0.1)
 	if randf() < chance:
 		_natural_flood_wait = SEASON_LENGTH * 0.4
@@ -2860,6 +2871,58 @@ func trigger_flood() -> void:
 	_flood_timer = Clock.BIO_PER_DAY * 0.5
 	_flood_target = FLOOD_PEAK
 	FXManager.show_dramatic_text(Vector3.ZERO, "The river floods the meadow.", Color(0.35, 0.6, 0.85))
+
+# ------------------------------------------------------------------
+# Rain feeds the river. While it rains the water creeps up its banks; enough
+# rain close together and it breaks them in a full flood (Flood Toll and all).
+# Showers come on their own in spring and autumn.
+# ------------------------------------------------------------------
+var _river_swell: float = 0.0
+const SWELL_TO_FLOOD: float = Clock.BIO_PER_DAY * 0.6
+
+func _step_river_swell(bio: float) -> void:
+	if _rain_timer > 0.0:
+		_river_swell += bio
+		if _river_swell >= SWELL_TO_FLOOD and _flood_timer <= 0.0 and not flood_receding():
+			_river_swell = 0.0
+			trigger_flood()
+			chronicle.emit("Day after day of rain: the river breaks its banks.")
+		elif _flood_timer <= 0.0:
+			# Rising, not yet flooding: the water creeps up the banks.
+			_flood_target = maxf(_flood_target, 1.0 + 0.35 * (_river_swell / SWELL_TO_FLOOD))
+	else:
+		_river_swell = maxf(0.0, _river_swell - bio * 0.5)
+		if _flood_timer <= 0.0 and _flood_target > 1.0 and _river_swell <= 0.0:
+			_flood_target = 1.0
+
+func _natural_rain_roll(days: float) -> void:
+	if _rain_timer > 0.0:
+		return
+	var per_season: float = {"Spring": 1.3, "Summer": 0.3, "Autumn": 1.0}.get(_current_season, 0.0)
+	if randf() < per_season * days / maxf(SEASON_LENGTH, 0.1):
+		trigger_rain()
+		chronicle.emit("Clouds roll in over the passes. It begins to rain.")
+
+# ------------------------------------------------------------------
+# Nesting trees: falcons raise chicks only where there are grown trees to
+# nest in. Fell the woods for timber and the falcons fade; with fewer
+# falcons the robins and rabbits boom, worms and grass pay for it.
+# ------------------------------------------------------------------
+var nest_factor: float = 1.0
+var _woods_thin: bool = false
+
+func _update_nesting() -> void:
+	var grown: int = 0
+	for t in $Trees.get_children():
+		if t.get("_stage") == 2 and not bool(t.get("_dying")):
+			grown += 1
+	nest_factor = clampf(float(grown) / 14.0, 0.25, 1.2)
+	var thin: bool = nest_factor < 0.5
+	if thin and not _woods_thin:
+		chronicle.emit("So few trees still stand that the falcons have nowhere left to nest.")
+	elif not thin and _woods_thin:
+		chronicle.emit("The woods have grown back. Falcons are nesting again.")
+	_woods_thin = thin
 
 func trigger_rain() -> void:
 	_rain_timer = Clock.BIO_PER_DAY

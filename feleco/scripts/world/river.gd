@@ -23,7 +23,7 @@ func half_width() -> float:
 # The bed runs past the meadow through both passes; the stretches beyond
 # COPSE_RADIUS disappear into the boundary copses.
 const REACH: float = 60.0
-const COPSE_RADIUS: float = 40.0
+const COPSE_RADIUS: float = ValleyTerrain.FLOOR_RADIUS
 
 # Smoothed course and running distance along it (fish swim by distance).
 var _path := PackedVector3Array()

@@ -106,7 +106,10 @@ func _apply_valley_mask() -> void:
 			var idx := gz * grid_width + gx
 			if bake_heights:
 				_heights[idx] = float(_height_at.call(pos.x, pos.z))
-			var outside: bool = pos.x * pos.x + pos.z * pos.z > _valley_floor_radius_sq
+			# A ragged edge, not a ruled circle: the meadow thins out over a few
+			# metres and reaches a little way up the foothills here and there.
+			var edge: float = sqrt(_valley_floor_radius_sq) + 3.0 + 3.5 * sin(float(gx) * 1.7 + float(gz) * 0.6) * cos(float(gz) * 1.3 - float(gx) * 0.4)
+			var outside: bool = pos.x * pos.x + pos.z * pos.z > edge * edge
 			var wet: bool = _is_wet.is_valid() and bool(_is_wet.call(pos.x, pos.z))
 			var m: int = 1 if outside or wet else 0
 			if fresh or _masked[idx] != m:

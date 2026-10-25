@@ -15,7 +15,7 @@ const DESIGN := Vector2(1280, 720)
 const INFO: Dictionary = {
 	"human": ["Humans", Color(0.88, 0.68, 0.48), "builders & tribes", "Day folk. At night they go home to huts of four; couples in a hut may have a child. Sleeping rough makes them cranky. Hunt rabbits, boars and fish; forage mushrooms and grass seed.", "Builder (huts, timber) · Wizard (rain, magic mushrooms)"],
 	"wolf": ["Wolves", Color(0.6, 0.63, 0.68), "night hunters", "Night creatures: faster and hungrier after dark. Hunt sheep, rabbits, boars and fish. Boars fight back.", "Alpha (shares kills) · Moon Howler (rallies the pack)"],
-	"falcon": ["Falcons", Color(0.75, 0.54, 0.32), "aerial hunters", "Day hunters that roost at night. Dive on robins, rabbits and fish. Strongest in summer.", "Gyrfalcon (feeds the aerie) · Sky Seer (spots fish)"],
+	"falcon": ["Falcons", Color(0.75, 0.54, 0.32), "aerial hunters", "Day hunters that roost at night. Dive on robins, rabbits and fish. Strongest in summer. They nest in grown trees: fell the woods and the falcons dwindle.", "Gyrfalcon (feeds the aerie) · Sky Seer (spots fish)"],
 	"robin": ["Robins", Color(0.88, 0.42, 0.3), "songbirds", "Up with the dawn chorus, roosting at night. Eat worms, grass seed and apples. Never fish.", "Mistle Thrush (mobs falcons) · Bluebird (sows seeds)"],
 	"fish": ["Fish", Color(0.42, 0.66, 0.86), "river shoal", "Most active at dawn and dusk. Eat worms in the current. Floods spread them out; when the water falls, stranded fish die (the Flood Toll).", "Sturgeon (cleans the riverbed) · Golden Koi (blesses the shoal)"],
 	"rabbit": ["Rabbits", Color(0.79, 0.71, 0.56), "fast grazers", "Busiest at dawn and dusk, hidden in deep night. Breed fast, live short.", "Hare (lookout) · Moon Rabbit (healing warrens)"],

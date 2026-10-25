@@ -20,6 +20,8 @@ const CHANGELOG: Array = [
 			"Herds: every species drifts toward its own kind. Those in the middle of a group flee faster, hit harder, are harder to catch and stay fed longer; those on the edge get nothing.",
 			"An animation for every action: eating, fighting, fleeing, sleeping, courting and working each have their own pose.",
 			"Over a hundred names for every species and sex, most with a pun to suit: Baa-bara the ewe, Woolfgang the ram, Sow-phia the boar.",
+			"Rain swells the river until it floods, and showers come on their own in spring and autumn. Falcons nest in grown trees, so felling the woods for timber thins the falcons and lets their prey boom.",
+			"A wider valley with a softer meadow edge, and mushrooms that stay on the meadow.",
 			"Creatures walk on joints: legs swing, heads graze, tails wag, wings beat. Carcasses lie where they fall, mushrooms push up out of the soil, apples drop around the tree and felled trees regrow.",
 			"Nothing builds or spawns in the river. New fonts, a livelier ticker, and results that fit on one screen.",
 		],
