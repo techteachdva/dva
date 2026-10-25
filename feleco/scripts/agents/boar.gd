@@ -4,9 +4,9 @@ extends MarkovAgent
 @export var walk_speed: float = 3.0
 @export var charge_speed: float = 6.0
 @export var flee_speed: float = 5.0
-@export var metabolism_rate: float = 1.1
+@export var metabolism_rate: float = 1.3
 @export var repro_threshold: float = 28.0
-@export var repro_cost: float = 13.0
+@export var repro_cost: float = 16.0
 
 var health: float = 90.0
 var damage: float = 25.0
@@ -81,8 +81,8 @@ func _physics_process(delta: float) -> void:
 		if local_boars > 10:
 			health -= float(local_boars - 10) * 0.9 * delta
 		var total_boars: int = sim.get_boar_count()
-		if total_boars > 70:
-			energy -= (total_boars - 70) / 40.0 * 1.5 * delta
+		if total_boars > 40:
+			energy -= (total_boars - 40) / 40.0 * 1.5 * delta
 			if total_boars > 120:
 				health -= (total_boars - 120) / 40.0 * 3.0 * delta
 	if health <= 0.0:
@@ -180,7 +180,7 @@ func _on_tick_forage(delta: float) -> void:
 			nearest_worm.die()
 		else:
 			nearest_worm.queue_free()
-		energy += 20.0
+		energy += 10.0
 		energy = clampf(energy, 0.0, 100.0)
 		velocity = Vector3.ZERO
 		return
@@ -189,7 +189,7 @@ func _on_tick_forage(delta: float) -> void:
 	if sim.grass != null:
 		var consumed := sim.grass.consume_density(global_position, delta * 0.6)
 		if consumed > 0.0:
-			energy += consumed * 18.0
+			energy += consumed * 12.0
 			energy = clampf(energy, 0.0, 100.0)
 			velocity = Vector3.ZERO
 			return

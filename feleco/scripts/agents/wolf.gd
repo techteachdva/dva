@@ -4,7 +4,7 @@ extends MarkovAgent
 @export var chase_speed: float = 6.0
 @export var wander_speed: float = 2.5
 @export var eat_heal_rate: float = 5.0
-@export var metabolism_rate: float = 1.2
+@export var metabolism_rate: float = 0.9
 @export var repro_threshold: float = 32.0
 @export var repro_cost: float = 18.0
 
@@ -12,6 +12,8 @@ var health: float = 80.0
 var damage: float = 25.0
 var energy: float = 60.0
 var _eat_timer: float = 0.0
+# Carcass energy one mouthful takes (a carcass holds 0.2-1.5).
+const CORPSE_BITE: float = 0.6
 var _repro_cooldown: float = 0.0
 var _kill_spawn_cooldown: float = 0.0
 var _waypoints: Array = []
@@ -294,12 +296,13 @@ func _on_tick_eat(delta: float) -> void:
 			if not is_instance_valid(child) or not child is Node3D:
 				continue
 			var n3d := child as Node3D
-			if n3d.has_method("absorb_energy") and n3d.global_position.distance_to(global_position) <= 2.0:
-				health += eat_heal_rate * 4.0
+			if n3d.has_method("scavenge") and n3d.can_scavenge() and n3d.global_position.distance_to(global_position) <= 2.0:
+				# A full bite is the old whole-carcass meal; scraps give less.
+				var bite: float = clampf(n3d.scavenge(CORPSE_BITE) / CORPSE_BITE, 0.0, 1.0)
+				health += eat_heal_rate * 4.0 * bite
 				health = clampf(health, 0.0, 100.0)
-				energy += 30.0
+				energy += 30.0 * bite
 				energy = clampf(energy, 0.0, 100.0)
-				n3d.queue_free()
 				FXManager.spawn_heal_particles(global_position)
 				FXManager.show_floating_text(global_position + Vector3.UP, "+" + str(int(energy)), Color(0.3, 0.9, 0.3))
 				break
@@ -338,17 +341,20 @@ func _on_tick_scavenge(_delta: float) -> void:
 		if not is_instance_valid(child) or not child is Node3D:
 			continue
 		var n3d := child as Node3D
+		# Picked-over carcasses are left to the decomposers.
+		if not n3d.has_method("scavenge") or not n3d.can_scavenge():
+			continue
 		var d: float = global_position.distance_to(n3d.global_position)
 		if d < best_dist:
 			best_dist = d
 			nearest_corpse = n3d
 	if nearest_corpse != null:
-		if best_dist < 2.0 and nearest_corpse.has_method("absorb_energy"):
-			energy += 15.0
+		if best_dist < 2.0:
+			var bite: float = clampf(nearest_corpse.scavenge(CORPSE_BITE) / CORPSE_BITE, 0.0, 1.0)
+			energy += 15.0 * bite
 			energy = clampf(energy, 0.0, 100.0)
-			health += 5.0
+			health += 5.0 * bite
 			health = clampf(health, 0.0, 100.0)
-			nearest_corpse.queue_free()
 			if energy >= 30.0:
 				set_state("Wander")
 			return

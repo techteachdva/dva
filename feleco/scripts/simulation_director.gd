@@ -73,18 +73,18 @@ var _last_population_counts: Dictionary = {}
 const CARRYING_CAPACITY: Dictionary = {
 	"sheep": 300,
 	"wolf": 45,
-	"human": 60,
+	"human": 45,
 	"spore": 150,
 	"falcon": 70,
 	"robin": 120,
 	"boar": 50,
-	"worm": 200,
-	"rabbit": 70,
+	"worm": 120,
+	"rabbit": 50,
 }
 # Overpopulation mortality is modeled with a logistic sigmoid:
 # mortality_rate = max_mortality / (1 + exp(-steepness * (population - midpoint)))
 # where midpoint = capacity * 1.3 (mortality kicks in 30% above carrying capacity)
-const OVERPOP_STEEPNESS: float = 0.015
+const OVERPOP_STEEPNESS: float = 0.08
 const OVERPOP_MAX_MORTALITY: float = 0.25
 const CA_PERIOD: int = GrassLayer.TICK_PARTS + 4
 const CA_CYCLE: float = 1.0
@@ -1035,15 +1035,20 @@ func spawn_corpse(pos: Vector3, energy: float, species: String = "") -> void:
 		var oldest: Node = corpses.get_child(0)
 		if oldest == null or not is_instance_valid(oldest):
 			break
-		oldest.queue_free()
+		# Evicted carcasses still return to the soil before they go.
+		if oldest.has_method("finish"):
+			oldest.finish()
+		else:
+			oldest.queue_free()
 		if oldest.get_parent() == corpses:
 			corpses.remove_child(oldest)
 	var corpse = _corpse_scene.instantiate()
 	corpse.species = species
+	# Set before _ready, which reads it to fill the carcass.
+	corpse.corpse_energy = energy
 	corpses.add_child(corpse)
 	# Snap corpses to the valley floor so aerial deaths don't float
 	corpse.global_position = Vector3(pos.x, ground_height(pos.x, pos.z), pos.z)
-	corpse.corpse_energy = energy
 
 func spawn_mushroom_spore(parent: Node, pos: Vector3) -> void:
 	if _spore_scene == null:

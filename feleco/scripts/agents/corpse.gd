@@ -11,9 +11,12 @@ var species: String = ""
 
 const DECAY_TIME: float = 8.0
 const BONES_AT: float = 0.4
+# Share of a carcass scavengers may eat; the rest is reserved for decomposers.
+const SCAVENGE_SHARE: float = 0.7
 const BODY_TINT := Color(0.78, 0.74, 0.7)
 
 var _energy_remaining: float = 0.0
+var _initial_energy: float = 0.0
 var _body: Sprite3D
 var _stain: MeshInstance3D
 var _bones: Array[MeshInstance3D] = []
@@ -65,6 +68,7 @@ func _ready() -> void:
 		add_child(bone)
 		_bones.append(bone)
 	_energy_remaining = corpse_energy
+	_initial_energy = corpse_energy
 
 func _build_body() -> void:
 	var tex: Texture2D = _texture(species)
@@ -111,16 +115,34 @@ func _process(real_delta: float) -> void:
 		bone.visible = left < BONES_AT or _body == null
 	_stain.scale = Vector3(_body_size * 0.8, 1.0, _body_size * 0.45) * lerpf(0.6, 1.0, left)
 	if decay_timer <= 0.0:
-		decompose()
-		queue_free()
+		finish()
 
 func absorb_energy(amount: float) -> float:
 	var taken := minf(_energy_remaining, amount)
 	_energy_remaining -= taken
 	corpse_energy = _energy_remaining
 	if _energy_remaining <= 0.0:
-		queue_free()
+		finish()
 	return taken
+
+# Scavengers tear off meat but always leave the scraps and bones for the
+# worms, fungi and grass.
+func scavenge(amount: float) -> float:
+	var floor_left: float = _initial_energy * (1.0 - SCAVENGE_SHARE)
+	var taken := clampf(minf(amount, _energy_remaining - floor_left), 0.0, amount)
+	_energy_remaining -= taken
+	corpse_energy = _energy_remaining
+	return taken
+
+func can_scavenge() -> bool:
+	return _energy_remaining > _initial_energy * (1.0 - SCAVENGE_SHARE) + 0.01
+
+# Every way a carcass leaves the world returns it to the soil.
+func finish() -> void:
+	if is_queued_for_deletion():
+		return
+	decompose()
+	queue_free()
 
 func get_remaining_energy() -> float:
 	return _energy_remaining

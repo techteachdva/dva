@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1792933762|11756233';
+const CACHE_VERSION = '2.3.5|25378508';
 /** @type {string} */
 const CACHE_PREFIX = 'Feleco-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;

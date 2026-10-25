@@ -5,7 +5,7 @@ extends MarkovAgent
 @export var flee_speed: float = 5.0
 @export var walk_speed: float = 2.0
 @export var metabolism_rate: float = 1.3
-@export var repro_threshold: float = 22.0
+@export var repro_threshold: float = 18.0
 @export var repro_cost: float = 9.0
 
 var health: float = 25.0

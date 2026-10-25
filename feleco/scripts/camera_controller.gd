@@ -26,6 +26,7 @@ var _goal_distance: float = distance
 var _right_held: bool = false
 var _middle_held: bool = false
 var _follow: Node3D = null
+var _follow_last := Vector3.ZERO
 var _last_usec: int = 0
 
 func _ready() -> void:
@@ -60,8 +61,24 @@ func follow(node: Node3D) -> void:
 
 func following() -> Node3D:
 	if _follow != null and not is_instance_valid(_follow):
-		_follow = null
+		# The creature died: stay on its carcass, which spawns where it fell.
+		_follow = _corpse_near(_follow_last)
+	if _follow != null:
+		_follow_last = _follow.global_position
 	return _follow
+
+func _corpse_near(at: Vector3) -> Node3D:
+	var best: Node3D = null
+	var best_d: float = 9.0
+	for n: Node in get_tree().get_nodes_in_group("corpse"):
+		var c := n as Node3D
+		if c == null or c.is_queued_for_deletion():
+			continue
+		var d: float = Vector2(c.global_position.x - at.x, c.global_position.z - at.z).length_squared()
+		if d < best_d:
+			best_d = d
+			best = c
+	return best
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:

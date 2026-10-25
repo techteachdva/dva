@@ -3,7 +3,7 @@ extends MarkovAgent
 
 @export var patrol_speed: float = 5.0
 @export var dive_speed: float = 10.0
-@export var metabolism_rate: float = 1.5
+@export var metabolism_rate: float = 1.1
 @export var repro_threshold: float = 30.0
 @export var repro_cost: float = 15.0
 

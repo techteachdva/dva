@@ -18,7 +18,7 @@ static func _infer_species(node: Node) -> String:
 # Prey that can dodge, dive or scatter make hunters work for each meal.
 const HUNT: Dictionary = {
 	"falcon>robin": 0.35, "falcon>rabbit": 0.5, "falcon>fish": 0.45,
-	"wolf>rabbit": 0.5, "wolf>robin": 0.5, "wolf>boar": 0.25, "wolf>fish": 0.5,
+	"wolf>rabbit": 0.5, "wolf>robin": 0.5, "wolf>boar": 0.35, "wolf>fish": 0.3,
 	"human>rabbit": 0.4, "human>boar": 0.35, "human>human": 0.15,
 	"boar>wolf": 0.3, "boar>human": 0.3,
 }

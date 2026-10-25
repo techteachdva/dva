@@ -3,9 +3,22 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "2.3"
+const VERSION: String = "2.3.5"
 
 const CHANGELOG: Array = [
+	{
+		"version": "2.3.5",
+		"title": "Balance of the Valley",
+		"notes": [
+			"Boars no longer overrun the valley: they burn more energy, breed less cheaply, gain less from grass and worms, and feel crowded sooner. Wolves bring them down more often.",
+			"Wolves and falcons burn less energy, so the hunters survive the lean seasons more often.",
+			"Crowding only thins a species when it's near its limit, so small packs and flocks are no longer whittled away.",
+			"Rabbits breed a little slower and sheep a little faster.",
+			"Carcasses hold the energy of the creature that died, so a boar feeds far more than a rabbit.",
+			"Wolves eat carcasses bite by bite and always leave scraps and bones. Worms, mushrooms and the meadow get every last bit, and every carcass returns to the soil.",
+			"Follow mode: when the creature you're following dies, the camera stays on its carcass.",
+		],
+	},
 	{
 		"version": "2.3",
 		"title": "Sun, Moon and Roulette",
