@@ -1,0 +1,7 @@
+# Godot cache and builds: rebuilt from source, never committed.
+.godot/
+exports/
+*.exe
+*.pck
+__pycache__/
+sim_output.txt

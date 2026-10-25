@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+:root { --gold:#e6c36a; --mist:#bcc8b9; --ink:#f4efe4; --bg:#121915; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { width:1920px; height:1080px; overflow:hidden; background:var(--bg); }
+body { font-family:"Segoe UI",system-ui,sans-serif; color:var(--ink); position:relative;
+  background:
+    radial-gradient(ellipse 70% 55% at 30% 60%, rgba(70,110,70,.28), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 85% 55%, rgba(60,80,110,.22), transparent 70%),
+    radial-gradient(ellipse 80% 30% at 50% 0%, rgba(230,195,106,.10), transparent 70%),
+    linear-gradient(180deg,#16201a,#101612); }
+#grain { position:absolute; inset:0; opacity:.18; mix-blend-mode:overlay; }
+.serif { font-family:"Cambria","Georgia",serif; }
+#title { position:absolute; left:48px; top:22px; }
+#title h1 { font-size:58px; letter-spacing:10px; color:var(--gold); font-weight:700; line-height:1;
+  text-shadow:0 0 28px rgba(230,195,106,.35); }
+#title p { font-size:19px; color:var(--mist); margin-top:6px; letter-spacing:1px; }
+#rule { position:absolute; right:48px; top:30px; width:640px; text-align:right; font-size:17px; color:var(--mist); line-height:1.45; }
+#rule b { color:var(--gold); font-weight:600; }
+.panel { position:absolute; border:1px solid rgba(230,195,106,.28); border-radius:22px;
+  background:linear-gradient(180deg,rgba(20,30,24,.72),rgba(14,20,17,.6)); box-shadow:0 10px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
+.ptitle { position:absolute; left:24px; top:14px; font-size:15px; letter-spacing:4px; text-transform:uppercase; color:var(--gold); }
+.ptitle span { color:var(--mist); letter-spacing:1px; text-transform:none; font-size:14px; margin-left:10px; }
+#seasons { left:40px; top:118px; width:1840px; height:212px; }
+#web { left:40px; top:344px; width:1170px; height:650px; }
+#states { left:1226px; top:344px; width:654px; height:650px; }
+.node { position:absolute; width:156px; text-align:center; transform:translate(-50%,-50%); }
+.disc.pair { width:146px; border-radius:52px; gap:4px; position:relative; }
+.disc.pair img { max-width:62px; max-height:62px; }
+.disc.pair em { position:absolute; bottom:6px; font-style:normal; font-size:13px; font-weight:700; opacity:.85; }
+.disc.pair em.m { left:26px; color:#8ec5ff; } .disc.pair em.f { right:26px; color:#ff9ec4; }
+.disc { width:104px; height:104px; margin:0 auto; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 50% 38%, rgba(255,255,255,.16), rgba(255,255,255,.03) 62%, transparent 72%);
+  border:2px solid var(--c); box-shadow:0 0 22px color-mix(in srgb,var(--c) 45%,transparent), inset 0 0 18px rgba(0,0,0,.35); }
+.disc img { max-width:82px; max-height:72px; filter:drop-shadow(0 4px 4px rgba(0,0,0,.45)); }
+.node .nm { font-size:17px; font-weight:600; margin-top:6px; color:var(--ink); }
+.node .rl { font-size:12.5px; color:var(--mist); margin-top:1px; letter-spacing:.3px; }
+.tier { position:absolute; left:18px; font-size:12px; letter-spacing:3px; text-transform:uppercase; color:rgba(188,200,185,.55);
+  writing-mode:vertical-rl; transform:rotate(180deg); }
+svg { position:absolute; left:0; top:0; overflow:visible; }
+#legend { position:absolute; left:40px; top:1006px; width:700px; height:60px; display:flex; gap:22px; align-items:center; font-size:14.5px; color:var(--mist); }
+#legend i { display:inline-block; width:34px; height:0; border-top:3px solid; vertical-align:middle; margin-right:7px; }
+#kinds { position:absolute; right:40px; top:1002px; width:700px; height:66px; display:flex; gap:16px; align-items:center; justify-content:flex-end; font-size:14.5px; color:var(--mist); }
+#kinds img { height:52px; vertical-align:middle; margin-right:6px; filter:drop-shadow(0 3px 3px rgba(0,0,0,.5)); }
+#kinds b { color:var(--ink); }
+</style></head>
+<body>
+<svg id="grain" width="1920" height="1080"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>
+
+<div id="title"><h1 class="serif">FELECO</h1><p>The living valley — who eats whom, how creatures think, and when each one thrives</p></div>
+<div id="rule">Nine species share one valley for a year. <b>The valley goes to whoever rules it longest</b> — the species most dominant for its kind, day after day. Read the web, pick a champion, and bend the seasons.</div>
+
+<div class="panel" id="seasons"><div class="ptitle">The Year <span>coloured spans mark each species' peak season — when it breeds best and is hardest to beat</span></div></div>
+<div class="panel" id="web"><div class="ptitle">Food Web <span>arrows point from food to eater</span></div></div>
+<div class="panel" id="states"><div class="ptitle">How a creature thinks <span>agent states and what moves them</span></div></div>
+
+<div id="legend">
+  <span><i style="border-color:#e0675a"></i>hunts</span>
+  <span><i style="border-color:#8fd18a"></i>grazes</span>
+  <span><i style="border-color:#e6c36a"></i>forages</span>
+  <span><i style="border-color:#b88a5c"></i>decomposes</span>
+  <span><i style="border-color:#b48ee0;border-top-style:dashed"></i>fights / raids</span>
+</div>
+<div id="kinds">
+  <span>Every species has three kinds —</span>
+  <span><img src="img/human.png"><b>normal</b></span>
+  <span><img src="img/human_1.png"><b>tough</b></span>
+  <span><img src="img/human_2.png"><b>special</b></span>
+</div>
+
+<script>
+const C = { hunt:"#e0675a", graze:"#8fd18a", forage:"#e6c36a", decay:"#b88a5c", fight:"#b48ee0" };
+const SP = {
+  sheep:["Sheep","#eeeadf"], wolf:["Wolves","#9aa0ad"], human:["Humans","#e0ad7a"], falcon:["Falcons","#c08a52"],
+  robin:["Robins","#e06a4c"], boar:["Boars","#8a6248"], rabbit:["Rabbits","#c9b58e"], worm:["Worms","#d9869a"],
+  fish:["Fish","#6aa8dc"], mushroom:["Mushrooms","#c47ad6"], grass:["Grass","#8fd18a"], rot:["Corpses & Rot","#9b7a5a"], mycelium:["Mycelium","#d8cfb8"],
+};
+const IMG = { grass:"img/tuft.png", mycelium:"img/mycelium.png", rot:null, mushroom:"img/mushroom_1.png" };
+
+/* ---------- Season timeline ---------- */
+(function(){
+  const p = document.getElementById("seasons"), W = 1840, x0 = 150, x1 = 1810, bw = x1 - x0;
+  const svg = mk("svg",{width:W,height:212}); p.appendChild(svg);
+  const S = [["Spring","#8fd18a","#5f9f5c"],["Summer","#f2c75c","#c4943a"],["Autumn","#e0874c","#a65a30"],["Winter","#a9cbee","#6f92b8"]];
+  const defs = mk("defs"); svg.appendChild(defs);
+  S.forEach((s,i)=>{
+    const g = mk("linearGradient",{id:"sg"+i,x1:0,x2:0,y1:0,y2:1});
+    g.append(mk("stop",{offset:0,"stop-color":s[1]}), mk("stop",{offset:1,"stop-color":s[2]})); defs.appendChild(g);
+    const x = x0 + i*bw/4;
+    svg.appendChild(mk("rect",{x:x+2,y:46,width:bw/4-4,height:30,rx:9,fill:`url(#sg${i})`,opacity:.92}));
+    const t = mk("text",{x:x+bw/8,y:67,"text-anchor":"middle","font-size":16,"font-weight":700,fill:"#1a221c","letter-spacing":3}); t.textContent=s[0].toUpperCase(); svg.appendChild(t);
+  });
+  // lanes of peak spans: [species, start, end, note]
+  const lanes = [
+    [["sheep",0,.2,"lambing"],["falcon",.3,.5,"summer hunts"],["boar",.5,.72,"autumn mast"],["wolf",.78,1,"winter packs"]],
+    [["robin",.03,.22,"nesting"],["rabbit",.18,.45,"summer swarms"],["human",.55,.76,"harvest"]],
+    [["worm",0,.2,"wet soil"],["worm",.5,.7,"wet soil"],["fish",.78,.82,""]],
+    [["fish",.05,.25,"spawning · floods"],["mushroom",.52,.76,"autumn & rain"]],
+  ];
+  lanes[2].pop();
+  lanes.forEach((lane,li)=>{
+    const y = 96 + li*28;
+    lane.forEach(([sp,a,b,note])=>{
+      const col = SP[sp][1], xa = x0 + a*bw, xb = x0 + b*bw;
+      svg.appendChild(mk("rect",{x:xa,y:y-2,width:xb-xa,height:22,rx:11,fill:col,opacity:.22}));
+      svg.appendChild(mk("rect",{x:xa,y:y-2,width:xb-xa,height:22,rx:11,fill:"none",stroke:col,"stroke-width":1.5,opacity:.75}));
+      const im = mk("image",{href:IMG[sp]||`img/${sp}.png`,x:xa-36,y:y-9,width:34,height:34,preserveAspectRatio:"xMidYMid meet"}); svg.appendChild(im);
+      const t = mk("text",{x:xa+12,y:y+14,"font-size":13,"font-weight":600,fill:"#f4efe4","paint-order":"stroke",stroke:"#121915","stroke-width":3}); t.textContent = SP[sp][0] + (note?"  ·  "+note:""); svg.appendChild(t);
+    });
+  });
+  const t = mk("text",{x:20,y:68,"font-size":13,fill:"#bcc8b9","letter-spacing":2}); t.textContent="SEASONS"; svg.appendChild(t);
+  const t2 = mk("text",{x:20,y:150,"font-size":13,fill:"#bcc8b9","letter-spacing":2}); t2.textContent="PEAKS"; svg.appendChild(t2);
+})();
+
+/* ---------- Food web ---------- */
+(function(){
+  const p = document.getElementById("web");
+  const N = {
+    falcon:[250,128,"aerial hunter"], human:[585,128,"builders & tribes"], wolf:[920,128,"pack hunter"],
+    robin:[130,318,"songbird"], fish:[350,318,"river shoal"], rabbit:[585,318,"fast grazer"], sheep:[815,318,"flock grazer"], boar:[1040,318,"forager & brawler"],
+    worm:[150,525,"decomposer"], rot:[375,525,"every death"], mycelium:[600,525,"fungal threads"], grass:[815,525,"the meadow"], mushroom:[1040,525,"autumn & rain"],
+  };
+  [["APEX",128],["MIDDLE",318],["BASE",525]].forEach(([s,y])=>{ const d=document.createElement("div"); d.className="tier"; d.style.top=(y-34)+"px"; d.textContent=s; p.appendChild(d); });
+  const svg = mk("svg",{width:1170,height:650}); p.appendChild(svg); arrowDefs(svg);
+  const E = [
+    ["grass","sheep","graze",0], ["grass","rabbit","graze",-.15], ["grass","human","graze",.28], ["grass","robin","graze",.32],
+    ["mushroom","boar","forage",0], ["mushroom","human","forage",-.3],
+    ["rabbit","falcon","hunt",.12], ["robin","falcon","hunt",.12], ["fish","falcon","hunt",-.08],
+    ["sheep","wolf","hunt",-.1], ["rabbit","wolf","hunt",-.2], ["boar","wolf","hunt",.12], ["fish","wolf","hunt",-.3],
+    ["rabbit","human","hunt",.1], ["boar","human","hunt",.25], ["fish","human","hunt",.15],
+    ["worm","robin","hunt",.1],
+    ["rot","worm","decay",0], ["rot","mycelium","decay",0], ["mycelium","grass","decay",0],
+    ["mycelium","worm","decay",.38], ["mushroom","mycelium","decay",-.3],
+  ];
+  E.forEach(([a,b,k,bend])=>edge(svg,N[a],N[b],k,bend,56));
+  // fights: boar <-> wolf, boar <-> human, human raids human
+  fight(svg,N.boar,N.wolf,.18); fight(svg,N.boar,N.human,-.12);
+  const [hx,hy] = N.human;
+  svg.appendChild(mk("path",{d:`M${hx+30},${hy-52} C${hx+70},${hy-120} ${hx-70},${hy-120} ${hx-30},${hy-52}`,fill:"none",stroke:C.fight,"stroke-width":2.4,"stroke-dasharray":"7 6","marker-end":"url(#m-fight)",opacity:.9}));
+  label(svg,hx,hy-98,"tribal raids",C.fight);
+  label(svg,585,636,"every creature that dies feeds the soil  ·  wolves also scavenge carcasses  ·  wolves eat robins too",C.decay,13);
+  for (const [k,[x,y,role]] of Object.entries(N)) node(p,k,x,y,role);
+})();
+
+/* ---------- State machine ---------- */
+(function(){
+  const p = document.getElementById("states");
+  const svg = mk("svg",{width:654,height:650}); p.appendChild(svg); arrowDefs(svg);
+  const S = {
+    idle:[327,92,"Idle · Wander","#bcc8b9"], seek:[140,212,"Seek food","#8fd18a"], eat:[140,332,"Eat","#e6c36a"],
+    mate:[327,332,"Mate → Birth","#e79bc0"], flee:[514,212,"Flee","#e0675a"], rest:[514,332,"Rest · Sleep","#a9cbee"], dead:[327,452,"Death → Corpse","#9b7a5a"],
+  };
+  const T = [
+    ["idle","seek","hungry",-.15], ["seek","eat","found it",0], ["eat","idle","full",-.35], ["eat","mate","fed & grown",0],
+    ["mate","idle","",.2], ["idle","flee","threat near",.15], ["flee","idle","safe again",.2], ["idle","rest","tired / hurt",-.45],
+    ["rest","idle","",.3], ["seek","dead","starved",-.3], ["flee","dead","caught",.3],
+  ];
+  T.forEach(([a,b,l,bend])=>{ const A=S[a],B=S[b]; edge(svg,A,B,"state",bend,0,{w:118,h:40},l); });
+  for (const [k,[x,y,t,c]] of Object.entries(S)) pill(svg,x,y,t,c);
+  // special lanes
+  const lanes = [
+    ["fish","Fish","Swim","Stranded","Eaten / dies","flood recedes"],
+    ["human","Humans","Gather · Build","Tribe splits","Raid rivals","9+ in a village"],
+    ["human_2","Wizards","Channel","Rain · Cleanse","Mushroom feast","the spirit moves"],
+  ];
+  lanes.forEach(([img,name,a,b,c,why],i)=>{
+    const y = 530 + i*40;
+    svg.appendChild(mk("image",{href:`img/${img}.png`,x:16,y:y-17,width:34,height:34}));
+    const n = mk("text",{x:56,y:y+5,"font-size":14,"font-weight":600,fill:"#f4efe4"}); n.textContent=name; svg.appendChild(n);
+    [[a,215],[b,375],[c,535]].forEach(([t,x],j)=>{ pill(svg,x,y,t,j==1?"#e0675a":"#bcc8b9",{w:136,h:28,fs:13}); if(j<2) svg.appendChild(mk("path",{d:`M${x+70},${y} L${x+90},${y}`,stroke:"#bcc8b9","stroke-width":2,"marker-end":"url(#m-state)"})); });
+    const w = mk("text",{x:445,y:y-16,"font-size":11,fill:"#bcc8b9","text-anchor":"middle","font-style":"italic"}); w.textContent=why; svg.appendChild(w);
+  });
+})();
+
+/* ---------- helpers ---------- */
+function mk(tag,attrs={}){ const e=document.createElementNS("http://www.w3.org/2000/svg",tag); for(const k in attrs) e.setAttribute(k,attrs[k]); return e; }
+function arrowDefs(svg){
+  const d = mk("defs"); svg.appendChild(d);
+  Object.entries({...C,state:"#bcc8b9"}).forEach(([k,c])=>{
+    const m = mk("marker",{id:"m-"+k,viewBox:"0 0 10 10",refX:8,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"});
+    m.appendChild(mk("path",{d:"M0,0 L10,5 L0,10 L2.5,5 z",fill:c})); d.appendChild(m);
+  });
+  const g = mk("filter",{id:"glow",x:"-20%",y:"-20%",width:"140%",height:"140%"}); g.appendChild(mk("feGaussianBlur",{stdDeviation:2.2})); d.appendChild(g);
+}
+function trim(ax,ay,bx,by,box,r){
+  if (!box) { const d=Math.hypot(bx-ax,by-ay); return [ax+(bx-ax)/d*r, ay+(by-ay)/d*r]; }
+  const dx=bx-ax, dy=by-ay, s=Math.min(box.w/2/Math.abs(dx||1e-6), box.h/2/Math.abs(dy||1e-6)); return [ax+dx*s, ay+dy*s];
+}
+function edge(svg,A,B,kind,bend,r,box,lab){
+  const [ax,ay]=A,[bx,by]=B, mx=(ax+bx)/2, my=(ay+by)/2, L=Math.hypot(bx-ax,by-ay);
+  const cx = mx + (-(by-ay)/L)*bend*L, cy = my + ((bx-ax)/L)*bend*L;
+  const [sx,sy]=trim(ax,ay,cx,cy,box,r+4), [ex,ey]=trim(bx,by,cx,cy,box,r+10);
+  const col = kind==="state" ? "#bcc8b9" : C[kind];
+  const d = `M${sx},${sy} Q${cx},${cy} ${ex},${ey}`;
+  svg.appendChild(mk("path",{d,fill:"none",stroke:col,"stroke-width":5,opacity:.16,filter:"url(#glow)"}));
+  svg.appendChild(mk("path",{d,fill:"none",stroke:col,"stroke-width":kind==="state"?2:2.4,opacity:.92,"marker-end":`url(#m-${kind})`}));
+  if (lab) label(svg,(sx+2*cx+ex)/4,(sy+2*cy+ey)/4-6,lab,"#e6c36a",12);
+}
+function fight(svg,A,B,bend){
+  const [ax,ay]=A,[bx,by]=B, mx=(ax+bx)/2, my=(ay+by)/2, L=Math.hypot(bx-ax,by-ay);
+  const cx = mx + (-(by-ay)/L)*bend*L, cy = my + ((bx-ax)/L)*bend*L;
+  const [sx,sy]=trim(ax,ay,cx,cy,null,62), [ex,ey]=trim(bx,by,cx,cy,null,66);
+  svg.appendChild(mk("path",{d:`M${sx},${sy} Q${cx},${cy} ${ex},${ey}`,fill:"none",stroke:C.fight,"stroke-width":2.4,"stroke-dasharray":"7 6","marker-end":"url(#m-fight)","marker-start":"url(#m-fight)",opacity:.9}));
+}
+function label(svg,x,y,t,c,fs=12.5){
+  const e = mk("text",{x,y,"text-anchor":"middle","font-size":fs,fill:c,"font-style":"italic","paint-order":"stroke",stroke:"#121915","stroke-width":4}); e.textContent=t; svg.appendChild(e);
+}
+function pill(svg,x,y,t,c,o={}){
+  const w=o.w||118,h=o.h||40;
+  svg.appendChild(mk("rect",{x:x-w/2,y:y-h/2,width:w,height:h,rx:h/2,fill:"rgba(18,25,21,.92)",stroke:c,"stroke-width":2}));
+  const e = mk("text",{x,y:y+5,"text-anchor":"middle","font-size":o.fs||14.5,"font-weight":600,fill:"#f4efe4"}); e.textContent=t; svg.appendChild(e);
+}
+function node(p,k,x,y,role){
+  const [nm,col] = SP[k];
+  const d = document.createElement("div"); d.className="node"; d.style.left=x+"px"; d.style.top=(y+14)+"px"; d.style.setProperty("--c",col);
+  const src = k in IMG ? IMG[k] : `img/${k}.png`;
+  let inner = src ? `<img src="${src}">` : `<svg width="70" height="60" viewBox="0 0 70 60"><ellipse cx="35" cy="44" rx="30" ry="11" fill="#5a4532"/><ellipse cx="35" cy="40" rx="24" ry="9" fill="#6e553c"/><path d="M18 38 q6-10 14-2 M36 36 q8-12 16 0" stroke="#e9dfc7" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="50" cy="30" r="2" fill="#a7d07a"/><circle cx="22" cy="28" r="1.6" fill="#a7d07a"/></svg>`;
+  const paired = !(k in IMG);
+  if (paired) inner = `<img src="img/${k}.png"><img src="img/${k}_f.png"><em class="m">♂</em><em class="f">♀</em>`;
+  d.innerHTML = `<div class="disc${paired ? " pair" : ""}">${inner}</div><div class="nm">${nm}</div><div class="rl">${role}</div>`;
+  p.appendChild(d);
+}
+</script>
+</body></html>

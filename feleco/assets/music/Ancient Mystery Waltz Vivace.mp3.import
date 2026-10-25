@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cu15aypxjpj3y"
+path="res://.godot/imported/Ancient Mystery Waltz Vivace.mp3-15bedf2a116da6aab4b53ffed146c50c.mp3str"
+
+[deps]
+
+source_file="res://assets/music/Ancient Mystery Waltz Vivace.mp3"
+dest_files=["res://.godot/imported/Ancient Mystery Waltz Vivace.mp3-15bedf2a116da6aab4b53ffed146c50c.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark background -->
+  <rect width="512" height="512" fill="#0d1a0d" rx="64" ry="64"/>
+
+  <!-- Connecting lines -->
+  <g stroke-width="2" opacity="0.4">
+    <line x1="256" y1="120" x2="140" y2="220" stroke="#f0f0f0"/>
+    <line x1="256" y1="120" x2="372" y2="220" stroke="#f0f0f0"/>
+    <line x1="140" y1="220" x2="180" y2="360" stroke="#f0f0f0"/>
+    <line x1="372" y1="220" x2="332" y2="360" stroke="#f0f0f0"/>
+    <line x1="180" y1="360" x2="256" y2="420" stroke="#f0f0f0"/>
+    <line x1="332" y1="360" x2="256" y2="420" stroke="#f0f0f0"/>
+    <line x1="140" y1="220" x2="372" y2="220" stroke="#f0f0f0"/>
+    <line x1="180" y1="360" x2="332" y2="360" stroke="#f0f0f0"/>
+    <line x1="256" y1="120" x2="256" y2="420" stroke="#f0f0f0"/>
+  </g>
+
+  <!-- Center: Wolf (Red) -->
+  <g transform="translate(256, 120)" filter="url(#glow)">
+    <circle r="38" fill="none" stroke="#cc1a1a" stroke-width="4" opacity="0.95"/>
+    <circle r="26" fill="none" stroke="#cc1a1a" stroke-width="3" opacity="0.75"/>
+    <circle r="14" fill="none" stroke="#cc1a1a" stroke-width="2.5" opacity="0.55"/>
+    <circle r="6" fill="#cc1a1a" opacity="0.9"/>
+  </g>
+
+  <!-- Left: Sheep (White) -->
+  <g transform="translate(140, 220)" filter="url(#glow)">
+    <circle r="34" fill="none" stroke="#f0f0f0" stroke-width="4" opacity="0.95"/>
+    <circle r="24" fill="none" stroke="#f0f0f0" stroke-width="3" opacity="0.75"/>
+    <circle r="12" fill="none" stroke="#f0f0f0" stroke-width="2.5" opacity="0.55"/>
+    <circle r="5" fill="#f0f0f0" opacity="0.9"/>
+  </g>
+
+  <!-- Right: Human (Tan) -->
+  <g transform="translate(372, 220)" filter="url(#glow)">
+    <circle r="34" fill="none" stroke="#e6b380" stroke-width="4" opacity="0.95"/>
+    <circle r="24" fill="none" stroke="#e6b380" stroke-width="3" opacity="0.75"/>
+    <circle r="12" fill="none" stroke="#e6b380" stroke-width="2.5" opacity="0.55"/>
+    <circle r="5" fill="#e6b380" opacity="0.9"/>
+  </g>
+
+  <!-- Bottom-left: Boar (Brown) -->
+  <g transform="translate(180, 360)" filter="url(#glow)">
+    <circle r="32" fill="none" stroke="#804d33" stroke-width="4" opacity="0.95"/>
+    <circle r="22" fill="none" stroke="#804d33" stroke-width="3" opacity="0.75"/>
+    <circle r="11" fill="none" stroke="#804d33" stroke-width="2.5" opacity="0.55"/>
+    <circle r="4.5" fill="#804d33" opacity="0.9"/>
+  </g>
+
+  <!-- Bottom-right: Worm (Green) -->
+  <g transform="translate(332, 360)" filter="url(#glow)">
+    <circle r="32" fill="none" stroke="#33cc52" stroke-width="4" opacity="0.95"/>
+    <circle r="22" fill="none" stroke="#33cc52" stroke-width="3" opacity="0.75"/>
+    <circle r="11" fill="none" stroke="#33cc52" stroke-width="2.5" opacity="0.55"/>
+    <circle r="4.5" fill="#33cc52" opacity="0.9"/>
+  </g>
+
+  <!-- Bottom-center: Robin (Blue) -->
+  <g transform="translate(256, 420)" filter="url(#glow)">
+    <circle r="32" fill="none" stroke="#3399dd" stroke-width="4" opacity="0.95"/>
+    <circle r="22" fill="none" stroke="#3399dd" stroke-width="3" opacity="0.75"/>
+    <circle r="11" fill="none" stroke="#3399dd" stroke-width="2.5" opacity="0.55"/>
+    <circle r="4.5" fill="#3399dd" opacity="0.9"/>
+  </g>
+
+  <!-- Small accent nodes along connections -->
+  <g fill="#ffffff" opacity="0.5">
+    <circle cx="200" cy="170" r="3"/>
+    <circle cx="312" cy="170" r="3"/>
+    <circle cx="160" cy="290" r="3"/>
+    <circle cx="352" cy="290" r="3"/>
+    <circle cx="218" cy="390" r="3"/>
+    <circle cx="294" cy="390" r="3"/>
+    <circle cx="256" cy="270" r="4" opacity="0.7"/>
+  </g>
+</svg>

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/agents/mushroom_spore.gd" id="1_spore"]
+
+[node name="MushroomSpore" type="Node3D"]
+script = ExtResource("1_spore")

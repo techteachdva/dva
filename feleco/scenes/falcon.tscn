@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/agents/falcon.gd" id="1_falcon"]
+[ext_resource type="Script" path="res://scripts/sensors/vision_cone.gd" id="2_vision"]
+
+[node name="Falcon" type="Node3D"]
+script = ExtResource("1_falcon")
+
+[node name="VisionCone" type="Node3D" parent="."]
+script = ExtResource("2_vision")

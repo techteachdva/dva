@@ -1,0 +1,238 @@
+class_name FelecoChangelog
+extends RefCounted
+
+# Version history (newest first) and credits, shown from the main menu.
+
+const VERSION: String = "2.3"
+
+const CHANGELOG: Array = [
+	{
+		"version": "2.3",
+		"title": "Sun, Moon and Roulette",
+		"notes": [
+			"Ecosystem Roulette: a betting table before every run. Drag glowing coins from the pot onto factions, guilds, named creatures, the Flood Toll and long shots. Some bets pay the moment they happen, and the Bets button lets you bet mid-run at today's odds.",
+			"Day and night: every day is a minute of sun and moon at the standard 2x. Runs last 5, 10 or 15 days, each one a whole year. Wolves, boars, worms and mushrooms rule the night; sheep huddle, falcons roost, villagers go home.",
+			"Villagers sleep in cottages of four (watch the 3/4 badges). Couples at home may have a child; anyone sleeping rough wakes cranky.",
+			"New powers: Eclipse, Midnight Sun, Full Moon and Lantern Night, plus day and night perks in the Greenhouse.",
+			"The Field Guide: a living, animated map of the food web and the day, with a card for every creature. On the loading screen and under Rules.",
+			"Tuning Lab: set birth, ageing, hunger, speed, hunting and crowding for each species, then play and watch.",
+			"Follow mode: click any creature to ride along with it. In the manner of Dwarf Fortress, its card shows its mood and why, a personality, and dated memories: meals, wounds, fear, grief, nightfall, the safety of the herd.",
+			"Herds: every species drifts toward its own kind. Those in the middle of a group flee faster, hit harder, are harder to catch and stay fed longer; those on the edge get nothing.",
+			"An animation for every action: eating, fighting, fleeing, sleeping, courting and working each have their own pose.",
+			"Over a hundred names for every species and sex, most with a pun to suit: Baa-bara the ewe, Woolfgang the ram, Sow-phia the boar.",
+			"Creatures walk on joints: legs swing, heads graze, tails wag, wings beat. Carcasses lie where they fall, mushrooms push up out of the soil, apples drop around the tree and felled trees regrow.",
+			"Nothing builds or spawns in the river. New fonts, a livelier ticker, and results that fit on one screen.",
+		],
+	},
+	{
+		"version": "2.2",
+		"title": "King of the Hill",
+		"notes": [
+			"The valley now goes to whoever rules it longest: each half-day, the species most dominant for its kind holds the hill, and nine bars in the HUD rise as each one reigns.",
+			"Powers reworked. Heal and Call help only your champion (Call summons its kin). Rain, Famine and Flood ripple through the food web, helping some species and hurting others.",
+			"Every species is a civilization with its own road to victory, shown when you pick a champion and in creature tooltips.",
+			"A new loading screen: an illustrated map of the whole ecosystem — the food web, how creatures think, and each species' peak season. Press Play and it blows away as dust.",
+			"Hold-the-valley norms recalibrated from batch runs of whole simulated years.",
+			"Running tallies of the valley's rules, the code and the build size, and a ticker of tips, rules and behind-the-scenes facts.",
+		],
+	},
+	{
+		"version": "2.1",
+		"title": "The Living Year",
+		"notes": [
+			"A soundtrack: the Ancient Mystery Waltz plays slow at the menu, brighter in the valley, and at a gallop when a round is decided. Press M to mute.",
+			"Every species has its own good and hard season. Lambs and rabbits come in spring, falcons hunt best in summer, boars fatten in autumn, wolves rule the winter.",
+			"Mushrooms and mycelium flourish in autumn and in rain and are rare otherwise. Mycelium now feeds the grass and the worms instead of choking them.",
+			"The valley no longer starves itself: grass regrows, grazers can eat what they find, sleep no longer feeds predators, prey only run from real danger, and starving animals die.",
+			"Wolves hunt rabbits. The last few of any species are wary and hard to finish off, and extinct species wander back through the passes.",
+			"Humans split into rival tribes with names and banners. Crowded villages send founders off to build their own, and tribes raid each other, most often in summer, burning undefended huts.",
+			"Floods rise and fall over days and turn the river brown. Fish spawn across the drowned meadow, and those caught out when the water drops flop on the grass for anyone to eat.",
+			"Fish swim up and down the river and sometimes slip out through the copses, returning later.",
+			"Changelog and credits, here.",
+		],
+	},
+	{
+		"version": "2.0",
+		"title": "Kinds of Life",
+		"notes": [
+			"Every species has a normal, a tough and a special kind, each drawn separately for male and female.",
+			"New creature art with outlines and shading, per-species animations, blob shadows, grass tufts, layered trees, thatched huts with tribal banners, and seasonal light and snow.",
+			"The river runs out through both passes into pine copses.",
+			"Nothing spawns under the ground, the camera stays above it, and the game fills the browser window (F11 or Alt+Enter toggles fullscreen).",
+		],
+	},
+	{
+		"version": "1.4",
+		"title": "One Screen",
+		"notes": [
+			"Every menu fits one 1280x720 screen without scrolling.",
+			"Chromebook-class machines run the valley at about 40 FPS.",
+		],
+	},
+	{
+		"version": "1.3",
+		"title": "Smooth Running",
+		"notes": [
+			"About 60 FPS on a desktop browser; shaders compile while the valley loads instead of freezing mid-game.",
+			"Craggy peaks and snow replace the rounded rim.",
+		],
+	},
+	{
+		"version": "1.2",
+		"title": "The River",
+		"notes": [
+			"A river runs through the valley, with fish, floods and nine factions.",
+		],
+	},
+	{
+		"version": "1.1",
+		"title": "The Valley",
+		"notes": [
+			"The pocket valley, the new simulation and new menus.",
+		],
+	},
+	{
+		"version": "1.0",
+		"title": "First Light",
+		"notes": [
+			"Feleco joins the games arcade.",
+		],
+	},
+]
+
+const CREDITS: String = """[center][font_size=22][color=#e6c36a]Feleco[/color][/font_size]
+
+Game Design and Prompt Engineering by [b]DM Zemo[/b]
+Code and Graphics by [b]Claude[/b]
+Music by [b]Kevin MacLeod[/b]
+
+[font_size=15][color=#bbc8b9]"Ancient Mystery Waltz" (Allegro, Vivace, Presto)
+Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0 License
+http://creativecommons.org/licenses/by/4.0/
+
+Made with the Godot Engine.[/color][/font_size][/center]"""
+
+# Counted live from the tables the simulation actually runs on.
+static func rules_tally() -> Dictionary:
+	var seasonal: int = 0
+	for row: Array in SimulationDirector.SEASON_TABLE.values():
+		seasonal += row.size() * 2
+	var powers: int = 0
+	for fx: Dictionary in SimulationDirector.POWER_EFFECTS.values():
+		powers += fx.size() * 2
+	var kinds: int = 0
+	for k: Dictionary in Roles.KINDS.values():
+		kinds += k.size()
+	var t: Dictionary = {
+		"Predation odds": CombatSystem.HUNT.size(),
+		"Seasonal metabolism & breeding": seasonal,
+		"Power ripples": powers,
+		"Creature kinds": kinds,
+		"Civilization strategies": Roles.STRATEGIES.size(),
+		"Valley norms": SimulationDirector.HOLD_CAPACITY.size(),
+		"Migration rules": SimulationDirector.MIGRANT_COUNTS.size(),
+	}
+	var total: int = 0
+	for v: int in t.values():
+		total += v
+	t["total"] = total
+	return t
+
+static func _bytes(n: int) -> String:
+	return "%.1f MB" % (n / 1048576.0) if n >= 1048576 else "%d KB" % (n / 1024)
+
+static func tally_bbcode() -> String:
+	var t := rules_tally()
+	var parts: PackedStringArray = []
+	for k: String in t:
+		if k != "total":
+			parts.append("%s %d" % [k, t[k]])
+	return ("[center][font_size=19][color=#e6c36a]%d ecosystem rules[/color]   ·   [color=#e6c36a]%s lines of code[/color]   ·   [color=#e6c36a]%s[/color] game build[/font_size]\n"
+		+ "[font_size=13][color=#bbc8b9]%s\n%d script & shader files · %d scenes · %s of source · tallied %s[/color][/font_size][/center]\n\n") % [
+		t["total"], _thousands(GameStats.CODE_LINES), _bytes(GameStats.BUILD_BYTES), "  ·  ".join(parts),
+		GameStats.CODE_FILES, GameStats.SCENE_FILES, _bytes(GameStats.SOURCE_BYTES), GameStats.STAMP]
+
+static func _thousands(n: int) -> String:
+	var s := str(n)
+	var out := ""
+	for i in s.length():
+		if i > 0 and (s.length() - i) % 3 == 0:
+			out += ","
+		out += s[i]
+	return out
+
+const TIPS: Array[String] = [
+	"Tip: the valley goes to whoever rules longest, not whoever is biggest at the end. Watch the King of the Hill bars.",
+	"Tip: Famine starves sheep and rabbits but feeds wolves and falcons. Use it when your champion hunts.",
+	"Tip: a flood booms the fish, but when the water drops the stranded ones are a feast for falcons and wolves.",
+	"Tip: Heal and Call only ever help your champion. Rain, Famine and Flood help some species and hurt others.",
+	"Tip: rain wakes the mushrooms and mycelium, which feed the worms and the grass.",
+	"Tip: pause and hover over any creature to read its name, kind, state and strategy.",
+	"Rule: dominance is measured against each species' own norm, so ten wolves can out-rule thirty rabbits.",
+	"Rule: tough kinds have 60% more health and shrug off a third of killing blows. Specials are rare — at most four at a time.",
+	"Rule: a herd of sheep protects its own. A lone sheep is easy prey; a flock blunts the wolves.",
+	"Rule: villages count. Each standing hut adds three people to the humans' hold on the valley.",
+	"Rule: when a tribe grows past nine, founders split off and build a rival village. Rivals raid, most often in summer.",
+	"Rule: extinct species can wander back through the passes after twelve quiet days.",
+	"Rule: every creature that dies becomes a corpse, then rot, then food for worms and mycelium.",
+	"Rule: wizards channel rain, clear rot and pick magic mushrooms to feed their village.",
+	"Code: every creature of a species is drawn by one MultiMesh — a single draw call for the whole herd.",
+	"Code: the sprites are painted by code, not drawn by hand: SpriteGenerator bakes every kind and sex into an atlas.",
+	"Code: each creature is a Markov agent — a small state machine choosing its next state by weighted odds.",
+	"Code: grass, rot and mycelium are cellular automata grids, stepped a slice at a time so no frame pays for the whole map.",
+	"Code: the hold-the-valley norms come from batch runs — dozens of whole years simulated headless, then tallied.",
+	"Code: the loading poster's dust is one mote per poster grain, every mote moved by a shader on the graphics card.",
+	"Meta: Feleco runs in Godot 4.6 with the web-friendly Compatibility renderer, single-threaded so any browser can play.",
+	"Meta: game design and prompt engineering by DM Zemo, code and graphics by Claude, music by Kevin MacLeod.",
+	"Meta: the soundtrack is one waltz in three tempos — Allegro at the menu, Vivace in the valley, Presto at the finish.",
+	"Meta: press M to mute the music and F11 for fullscreen.",
+]
+
+static func changelog_bbcode() -> String:
+	var out := tally_bbcode()
+	for entry: Dictionary in CHANGELOG:
+		out += "[font_size=20][color=#e6c36a]%s[/color]  [b]%s[/b][/font_size]\n" % [entry["version"], entry["title"]]
+		for note: String in entry["notes"]:
+			out += "[indent]• %s[/indent]\n" % note
+		out += "\n"
+	return out
+
+# A themed popup with Changelog and Credits tabs.
+static func build_popup(theme: Theme) -> PopupPanel:
+	var popup := PopupPanel.new()
+	popup.theme = theme
+	popup.size = Vector2i(860, 580)
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	for side: String in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 18)
+	popup.add_child(margin)
+	var col := VBoxContainer.new()
+	margin.add_child(col)
+	var title := Label.new()
+	title.text = "Feleco  v%s" % VERSION
+	title.add_theme_font_size_override("font_size", 26)
+	col.add_child(title)
+	var tabs := TabContainer.new()
+	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(tabs)
+	var log_text := RichTextLabel.new()
+	log_text.name = "Changelog"
+	log_text.bbcode_enabled = true
+	log_text.text = changelog_bbcode()
+	log_text.add_theme_font_size_override("normal_font_size", 16)
+	tabs.add_child(log_text)
+	var credits := RichTextLabel.new()
+	credits.name = "Credits"
+	credits.bbcode_enabled = true
+	credits.text = CREDITS
+	credits.add_theme_font_size_override("normal_font_size", 18)
+	tabs.add_child(credits)
+	var close := Button.new()
+	close.text = "Close"
+	close.custom_minimum_size = Vector2(180, 48)
+	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	close.pressed.connect(popup.hide)
+	col.add_child(close)
+	return popup

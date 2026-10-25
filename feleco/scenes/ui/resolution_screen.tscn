@@ -1,0 +1,178 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/resolution_screen.gd" id="1_res"]
+[ext_resource type="Script" path="res://scripts/ui/population_graph.gd" id="2_graph"]
+
+[node name="ResolutionScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_res")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.92)
+mouse_filter = 1
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="WinnerLabel" type="Label" parent="Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "WINNER: ???"
+horizontal_alignment = 1
+
+[node name="ResultLabel" type="Label" parent="Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "..."
+horizontal_alignment = 1
+
+[node name="Columns" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="Left" type="VBoxContainer" parent="Margin/VBox/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Graph" type="Control" parent="Margin/VBox/Columns/Left"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("2_graph")
+
+[node name="FinalCounts" type="Label" parent="Margin/VBox/Columns/Left"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Right" type="VBoxContainer" parent="Margin/VBox/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.25
+theme_override_constants/separation = 6
+
+[node name="EcoPointsLabel" type="Label" parent="Margin/VBox/Columns/Right"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = ""
+horizontal_alignment = 1
+
+[node name="SideBetLabel" type="Label" parent="Margin/VBox/Columns/Right"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = ""
+
+[node name="Buttons" type="HBoxContainer" parent="Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 1
+
+[node name="EventHistoryButton" type="Button" parent="Margin/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "History"
+
+[node name="Replay" type="Button" parent="Margin/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Replay"
+
+[node name="NewSetup" type="Button" parent="Margin/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "New Setup"
+
+[node name="NextLevel" type="Button" parent="Margin/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next Level"
+
+[node name="Shop" type="Button" parent="Margin/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Visit Shop"
+
+[node name="MainMenu" type="Button" parent="Margin/VBox/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Main Menu"
+
+[node name="EventHistoryOverlay" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -450.0
+offset_top = -200.0
+offset_right = 450.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="EventHistoryOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="RichTextLabel" type="RichTextLabel" parent="EventHistoryOverlay/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+
+[node name="CloseHistory" type="Button" parent="EventHistoryOverlay"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -80.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = 30.0
+grow_horizontal = 0
+text = "Close"
