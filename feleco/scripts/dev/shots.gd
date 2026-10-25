@@ -30,6 +30,8 @@ var _shot: int = 0
 var _armed: bool = false
 var swipe: bool = false
 var demo_bets: bool = false
+var mark: bool = false
+var menuposter: bool = false
 var fast: bool = false
 var guide: bool = false
 var live_table: float = 0.0
@@ -95,6 +97,10 @@ func _ready() -> void:
 			follow_at = float(arg.substr(9))
 		elif arg == "--guide":
 			guide = true
+		elif arg == "--menuposter":
+			menuposter = true
+		elif arg == "--mark":
+			mark = true
 		elif arg == "--demo-bets":
 			demo_bets = true
 		elif arg == "--swipe":
@@ -154,6 +160,8 @@ func _ready() -> void:
 	keeper.play_at = play_at
 	keeper.swipe = swipe
 	keeper.demo_bets = demo_bets
+	keeper.mark = mark
+	keeper.menuposter = menuposter
 	keeper.fast = fast
 	keeper.guide = guide
 	keeper.live_table = live_table
@@ -219,6 +227,30 @@ func _process(delta: float) -> void:
 		myc = false
 	if fast and not get_tree().paused:
 		Engine.time_scale = 4.0
+	if menuposter and _elapsed > 3.0:
+		menuposter = false
+		var mp: Node = load("res://scripts/dev/menu_poster.gd").new()
+		mp.out = out
+		add_child(mp)
+		await mp.setup()
+		# Autumn last: its carcasses would linger into the other seasons.
+		for sn: String in ["Spring", "Summer", "Winter", "Autumn"]:
+			await mp.season(sn)
+			await get_tree().create_timer(0.4).timeout
+			await mp.shoot(sn)
+		get_tree().quit()
+	if mark and _elapsed > 2.0:
+		mark = false
+		# Put a bet on the three creatures nearest the --close camera's spot.
+		var wm := get_tree().current_scene.get_node_or_null("World") as SimulationDirector
+		var hud := get_tree().current_scene.find_child("SimulationHUD", true, false)
+		if wm != null and hud != null:
+			var picks: Array = wm._agent_registry.filter(func(d: AgentData) -> bool: return d.node is MarkovAgent)
+			picks.sort_custom(func(a: AgentData, b: AgentData) -> bool: return a.pos.distance_to(Vector3(2, 0, 8)) < b.pos.distance_to(Vector3(2, 0, 8)))
+			for d: AgentData in picks.slice(0, 3):
+				GameConfig.bets.append({"type": "survivor", "meta": {"name": (d.node as MarkovAgent).display_name, "species": d.species}})
+			hud._setup_side_bet_marker()
+			GameConfig.bets.clear()
 	if lineup and _elapsed > lineup_at:
 		lineup = false
 		# A row of carcasses (one per species) and mushrooms in every stage,

@@ -2508,6 +2508,8 @@ func _step_daylight(dt: float) -> void:
 		daypart_changed.emit(night_now)
 	_apply_daylight()
 
+const TreeScript = preload("res://scripts/agents/tree.gd")
+
 func _apply_daylight() -> void:
 	if _light_node == null:
 		_light_node = get_parent().get_node_or_null("DirectionalLight3D") as DirectionalLight3D
@@ -2526,6 +2528,17 @@ func _apply_daylight() -> void:
 		var moon: Color = NIGHT_LIGHT * (1.4 if full_moon_tonight else 1.0)
 		_light_node.light_color = warm.lerp(moon, n)
 		_light_node.light_energy = lerpf(_mood_energy, 0.18 * (1.5 if full_moon_tonight else 1.0), n)
+		# Painted shadows (creature blobs, tree shadows) follow the sun: they
+		# fall away from it and stretch as it sinks, so the hour shows on the ground.
+		var fwd: Vector3 = -_light_node.global_basis.z
+		var ground_dir := Vector2(fwd.x, fwd.z)
+		if ground_dir.length() > 0.001:
+			ground_dir = ground_dir.normalized()
+			var stretch: float = clampf(0.55 / tan(deg_to_rad(elev)), 0.25, 2.0)
+			var fade: float = lerpf(1.0, 0.25, n)
+			if _visual_proxy_manager != null:
+				_visual_proxy_manager.set_sun(ground_dir, stretch, fade)
+			TreeScript.set_sun(ground_dir, stretch, fade)
 	if _env != null:
 		_env.ambient_light_color = _mood_ambient.lerp(NIGHT_AMBIENT, n * 0.85)
 		_env.background_energy_multiplier = lerpf(1.0, 0.25, n)

@@ -24,19 +24,66 @@ var _season: String = ""
 
 # One set of meshes and materials for every tree in the valley.
 static var _trunk: CylinderMesh
-static var _blob: SphereMesh
+static var _blob: Mesh
 static var _sprout: SphereMesh
 static var _seed: SphereMesh
 static var _sapling_stem: CylinderMesh
 static var _bark: StandardMaterial3D
 static var _seed_mat: StandardMaterial3D
 static var _leaf_mats: Dictionary = {}
+static var _limb: CylinderMesh
+static var _dot: SphereMesh
+static var _leaf_mesh: Mesh
+static var _dot_mat: StandardMaterial3D
+static var _shade_quad: QuadMesh
+static var _shade_mat: ShaderMaterial
 
+# Every tree's ground shadow is one flat quad sharing this material, so the
+# director swings them all with the sun by setting three uniforms.
+static func set_sun(dir: Vector2, stretch: float, fade: float) -> void:
+	if _shade_mat == null:
+		return
+	_shade_mat.set_shader_parameter("sun_dir", dir)
+	_shade_mat.set_shader_parameter("stretch", stretch)
+	_shade_mat.set_shader_parameter("fade", fade)
+
+var _segments: Array = []  # [from, to, radius] of every branch
+var _tips: Array[Vector3] = []
+var _leaves: MultiMeshInstance3D
+var _dress: MultiMeshInstance3D
+var _rng := RandomNumberGenerator.new()
+# Apples growing on the branches: [local position, age]. Each starts as a
+# small green bud at a branch tip, swells and reddens, and drops when ripe.
+var _fruit: Array = []
+var _fruit_mm: MultiMeshInstance3D
+const RIPEN_TICKS: float = 3.0  # spawn intervals from bud to drop
+const MAX_FRUIT: int = 6
+var _size: float = 1.0
+
+# A faceted copy of a mesh (flat normals), to match the low-poly hills.
+static func _faceted(mesh: Mesh) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.create_from(mesh, 0)
+	st.deindex()
+	st.generate_normals()
+	return st.commit()
+
+# Seasons. Grown trees are a branching skeleton (after CyberMorph's Lexicon
+# Tree) with hundreds of small faceted leaves clustered at the branch tips.
+# [leaf share kept, leaf colours, blossom share, apples per tree]
+const SEASON_LOOK: Dictionary = {
+	"Spring": [1.0, [Color(0.5, 0.74, 0.32), Color(0.42, 0.66, 0.28), Color(0.58, 0.78, 0.36)], 0.32, 0],
+	"Summer": [1.0, [Color(0.24, 0.5, 0.18), Color(0.3, 0.56, 0.21), Color(0.19, 0.42, 0.16), Color(0.34, 0.6, 0.24)], 0.0, 10],
+	"Autumn": [0.7, [Color(0.86, 0.5, 0.15), Color(0.74, 0.28, 0.12), Color(0.92, 0.72, 0.24), Color(0.55, 0.5, 0.2)], 0.0, 14],
+	"Winter": [0.0, [Color(0.3, 0.4, 0.26)], 0.0, 0],
+}
+const BLOSSOM: Array = [Color(1.0, 0.98, 0.97), Color(0.98, 0.8, 0.88), Color(1.0, 0.9, 0.94), Color(0.96, 0.72, 0.84)]
+# Saplings keep simple leaf balls, coloured by season.
 const LEAVES: Dictionary = {
-	"Spring": [Color(0.4, 0.66, 0.26), Color(0.95, 0.7, 0.78), Color(0.34, 0.58, 0.24)],
-	"Summer": [Color(0.24, 0.5, 0.18), Color(0.3, 0.56, 0.2), Color(0.2, 0.44, 0.17)],
-	"Autumn": [Color(0.86, 0.48, 0.16), Color(0.74, 0.26, 0.14), Color(0.9, 0.7, 0.24)],
-	"Winter": [Color(0.86, 0.9, 0.94), Color(0.78, 0.84, 0.9), Color(0.9, 0.93, 0.96)],
+	"Spring": [Color(0.46, 0.7, 0.3), Color(0.4, 0.64, 0.27), Color(0.52, 0.74, 0.34)],
+	"Summer": [Color(0.24, 0.5, 0.18), Color(0.29, 0.55, 0.2), Color(0.2, 0.44, 0.17)],
+	"Autumn": [Color(0.84, 0.5, 0.17), Color(0.7, 0.3, 0.13), Color(0.88, 0.68, 0.24)],
+	"Winter": [Color(0.42, 0.36, 0.26), Color(0.42, 0.36, 0.26), Color(0.42, 0.36, 0.26)],
 }
 
 static func _shared() -> void:
@@ -48,11 +95,40 @@ static func _shared() -> void:
 	_trunk.bottom_radius = 0.5
 	_trunk.radial_segments = 7
 	_trunk.rings = 1
-	_blob = SphereMesh.new()
-	_blob.radius = 1.0
-	_blob.height = 1.7
-	_blob.radial_segments = 9
-	_blob.rings = 5
+	var blob := SphereMesh.new()
+	blob.radius = 1.0
+	blob.height = 1.7
+	blob.radial_segments = 8
+	blob.rings = 4
+	_blob = _faceted(blob)
+	_limb = CylinderMesh.new()
+	_limb.height = 1.0
+	_limb.top_radius = 0.72
+	_limb.bottom_radius = 1.0
+	_limb.radial_segments = 6
+	_limb.rings = 1
+	# A leaf: a flattened octahedron, faceted.
+	var leaf := SphereMesh.new()
+	leaf.radius = 1.0
+	leaf.height = 2.0
+	leaf.radial_segments = 4
+	leaf.rings = 2
+	_leaf_mesh = _faceted(leaf)
+	_dot = SphereMesh.new()
+	_dot.radius = 1.0
+	_dot.height = 2.0
+	_dot.radial_segments = 5
+	_dot.rings = 3
+	_shade_quad = QuadMesh.new()
+	_shade_quad.size = Vector2(1.0, 1.0)
+	_shade_quad.orientation = PlaneMesh.FACE_Y
+	_shade_mat = ShaderMaterial.new()
+	_shade_mat.shader = preload("res://scripts/agents/tree_shadow.gdshader")
+	var shadow_tex := SpriteGenerator.SPRITE_DIR + "shadow.png"
+	_shade_mat.set_shader_parameter("blob", load(shadow_tex) if ResourceLoader.exists(shadow_tex) else ImageTexture.create_from_image(SpriteGenerator.shadow_image()))
+	_dot_mat = StandardMaterial3D.new()
+	_dot_mat.vertex_color_use_as_albedo = true
+	_dot_mat.roughness = 0.7
 	_sprout = SphereMesh.new()
 	_sprout.radius = 0.45
 	_sprout.height = 0.7
@@ -118,13 +194,90 @@ func _paint_leaves() -> void:
 		if c == null or not is_instance_valid(c):
 			continue
 		c.material_override = _leaf(i)
-		# Winter leaves only a dusting of snow on the crown.
+		# Winter strips the crown: only a few dark evergreen-ish tufts stay.
 		if _season == "Winter" and _stage == 2:
-			c.visible = i == 0
-			c.scale = c.get_meta("base_scale") * Vector3(0.85, 0.35, 0.85)
+			c.visible = i % 3 == 0
+			c.scale = c.get_meta("base_scale") * 0.4
 		else:
 			c.visible = true
 			c.scale = c.get_meta("base_scale")
+	if _stage == 2:
+		_dress_crown()
+
+# Season dressing for a grown tree: leaves (and blossom) at the tips,
+# apples hanging under them, or snow along the bare limbs.
+func _dress_crown() -> void:
+	if _leaves == null or _tips.is_empty():
+		return
+	var look: Array = SEASON_LOOK.get(_season, SEASON_LOOK["Summer"])
+	_rng.seed = hash(get_instance_id())
+	var per_tip: int = 15
+	var leaf_cols: Array = look[1]
+	var keep: float = float(look[0])
+	var xforms: Array[Transform3D] = []
+	var cols: Array[Color] = []
+	for tip: Vector3 in _tips:
+		for k: int in per_tip:
+			# Golden-angle spiral around the tip: a little cloud of leaves.
+			var a: float = float(k) * 2.39996 + tip.x
+			var y: float = 1.0 - 2.0 * (float(k) + 0.5) / float(per_tip)
+			var rr: float = sqrt(1.0 - y * y)
+			var dir := Vector3(cos(a) * rr, y * 0.8 + 0.2, sin(a) * rr)
+			var p: Vector3 = tip + dir * _rng.randf_range(0.25, 0.78) * _size
+			var keep_roll: float = _rng.randf()
+			var bloom_roll: float = _rng.randf()
+			var sz: float = _rng.randf_range(0.17, 0.25) * _size
+			var basis := Basis(Vector3(_rng.randf_range(-1, 1), 1, _rng.randf_range(-1, 1)).normalized(), _rng.randf() * TAU)
+			var tint: int = _rng.randi()
+			var shade: float = _rng.randf_range(0.88, 1.08)
+			if keep_roll > keep:
+				continue
+			if bloom_roll < float(look[2]):
+				xforms.append(Transform3D(basis * Basis.from_scale(Vector3(sz * 0.6, sz * 0.5, sz * 0.6)), p + dir * 0.08))
+				cols.append(BLOSSOM[tint % BLOSSOM.size()])
+			else:
+				xforms.append(Transform3D(basis * Basis.from_scale(Vector3(sz, sz * 0.4, sz * 0.7)), p))
+				cols.append((leaf_cols[tint % leaf_cols.size()] as Color) * shade * (0.82 if dir.y < 0.0 else 1.0))
+	var lm: MultiMesh = _leaves.multimesh
+	lm.instance_count = xforms.size()
+	for i: int in xforms.size():
+		lm.set_instance_transform(i, xforms[i])
+		lm.set_instance_color(i, cols[i])
+	# Apples ripen from green to red under the leaves; winter snow lies on the limbs.
+	var d_x: Array[Transform3D] = []
+	var d_c: Array[Color] = []
+	if _season == "Winter":
+		for seg: Array in _segments:
+			var f: Vector3 = seg[0]
+			var t: Vector3 = seg[1]
+			if (t - f).normalized().y > 0.9:
+				continue
+			for j: int in 2:
+				var q: Vector3 = f.lerp(t, _rng.randf_range(0.2, 0.9)) + Vector3.UP * float(seg[2]) * 0.9
+				var w: float = float(seg[2]) * 1.6 + 0.05
+				d_x.append(Transform3D(Basis().scaled(Vector3(w, w * 0.45, w)), q))
+				d_c.append(Color(0.95, 0.97, 1.0))
+	var dm: MultiMesh = _dress.multimesh
+	dm.instance_count = d_x.size()
+	for i: int in d_x.size():
+		dm.set_instance_transform(i, d_x[i])
+		dm.set_instance_color(i, d_c[i])
+
+# One limb and its children: each fork splits into two or three, shorter,
+# thinner and spreading, the trunk's lean carried up into the crown.
+func _branch(from: Vector3, dir: Vector3, length: float, radius: float, depth: int) -> void:
+	var to: Vector3 = from + dir * length
+	_segments.append([from, to, radius])
+	if depth == 0:
+		_tips.append(to)
+		return
+	var n: int = 3 if depth % 2 == 0 else 2
+	var spin: float = _rng.randf() * TAU
+	for i: int in n:
+		var a: float = spin + float(i) / float(n) * TAU + _rng.randf_range(-0.35, 0.35)
+		var spread: float = 0.85 if depth >= 3 else 0.65
+		var nd: Vector3 = (dir + Vector3(cos(a) * spread, 0.28, sin(a) * spread)).normalized()
+		_branch(to, nd, length * _rng.randf_range(0.66, 0.78), radius * 0.62, depth - 1)
 
 func _add_canopy(mesh: Mesh, pos: Vector3, s: Vector3) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
@@ -144,6 +297,12 @@ func _setup_visuals() -> void:
 	_trunk_mesh = null
 	_canopy_mesh = null
 	_canopies.clear()
+	_segments.clear()
+	_tips.clear()
+	_leaves = null
+	_dress = null
+	_fruit_mm = null
+	_fruit.clear()
 	_body = null
 
 	match _stage:
@@ -172,21 +331,61 @@ func _setup_visuals() -> void:
 			_body.collision_layer = 1
 			add_child(_body)
 		2:  # Tree
-			var size: float = randf_range(0.85, 1.2)
+			_size = randf_range(0.85, 1.2)
+			_rng.seed = hash(get_instance_id()) * 7
+			_segments.clear()
+			_tips.clear()
+			var lean := Vector3(_rng.randf_range(-0.08, 0.08), 1.0, _rng.randf_range(-0.08, 0.08)).normalized()
+			_branch(Vector3.ZERO, lean, 1.9 * _size, 0.34 * _size, 4)
+			# All limbs merged into one mesh: one draw per tree.
+			var st := SurfaceTool.new()
+			for seg: Array in _segments:
+				var f: Vector3 = seg[0]
+				var t: Vector3 = seg[1]
+				var seg_len: float = f.distance_to(t)
+				var r: float = seg[2]
+				var b := Basis(Quaternion(Vector3.UP, (t - f).normalized())) * Basis.from_scale(Vector3(r, seg_len * 1.04, r))
+				st.append_from(_limb, 0, Transform3D(b, (f + t) * 0.5))
 			_trunk_mesh = MeshInstance3D.new()
-			_trunk_mesh.mesh = _trunk
+			_trunk_mesh.mesh = st.commit()
 			_trunk_mesh.material_override = _bark
-			_trunk_mesh.position.y = 1.5 * size
-			_trunk_mesh.scale = Vector3(size, size, size)
-			_trunk_mesh.rotation.y = randf() * TAU
 			add_child(_trunk_mesh)
-			_canopy_mesh = _add_canopy(_blob, Vector3(0.0, 3.9, 0.0) * size, Vector3(2.0, 1.6, 2.0) * size)
-			var spin: float = randf() * TAU
-			for k: int in 3:
-				var a: float = spin + float(k) * TAU / 3.0
-				var r: float = randf_range(0.9, 1.3) * size
-				var off := Vector3(cos(a) * r, randf_range(2.9, 3.5) * size, sin(a) * r)
-				_add_canopy(_blob, off, Vector3.ONE * randf_range(1.15, 1.45) * size)
+			_leaves = MultiMeshInstance3D.new()
+			var lmm := MultiMesh.new()
+			lmm.transform_format = MultiMesh.TRANSFORM_3D
+			lmm.use_colors = true
+			lmm.mesh = _leaf_mesh
+			_leaves.multimesh = lmm
+			_leaves.material_override = _dot_mat
+			add_child(_leaves)
+			_fruit.clear()
+			_fruit_mm = MultiMeshInstance3D.new()
+			var fmm := MultiMesh.new()
+			fmm.transform_format = MultiMesh.TRANSFORM_3D
+			fmm.use_colors = true
+			fmm.mesh = _dot
+			_fruit_mm.multimesh = fmm
+			_fruit_mm.material_override = _dot_mat
+			_fruit_mm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(_fruit_mm)
+			# The tree's painted shadow, swung by the sun (see set_sun).
+			var shade := MeshInstance3D.new()
+			shade.mesh = _shade_quad
+			shade.material_override = _shade_mat
+			shade.position.y = 0.06
+			shade.scale = Vector3(3.6, 1.0, 3.6) * _size
+			shade.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			shade.extra_cull_margin = 8.0
+			add_child(shade)
+			_dress = MultiMeshInstance3D.new()
+			var mm := MultiMesh.new()
+			mm.transform_format = MultiMesh.TRANSFORM_3D
+			mm.use_colors = true
+			mm.mesh = _dot
+			_dress.multimesh = mm
+			_dress.material_override = _dot_mat
+			_dress.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(_dress)
 			_paint_leaves()
 
 			_body = StaticBody3D.new()
@@ -232,24 +431,50 @@ func _process(real_delta: float) -> void:
 			_spawn_timer += delta
 			if _spawn_timer >= apple_spawn_interval:
 				_spawn_timer = 0.0
-				_spawn_apple()
+				_grow_fruit()
 
-func _spawn_apple() -> void:
+# One spawn interval of orchard life: every apple on the branches ages, the
+# ripe ones drop, and a new bud sets at a branch tip (none while the tree
+# is bare in winter, but apples already set still ripen and fall).
+func _grow_fruit() -> void:
+	var kept: Array = []
+	for f: Array in _fruit:
+		f[1] += 1.0
+		if f[1] >= RIPEN_TICKS:
+			_spawn_apple(f[0])
+		else:
+			kept.append(f)
+	_fruit = kept
+	if _season != "Winter" and _fruit.size() < MAX_FRUIT and not _tips.is_empty():
+		var tip: Vector3 = _tips[randi() % _tips.size()]
+		var hang := Vector3(randf_range(-0.3, 0.3), -0.35, randf_range(-0.3, 0.3)) * _size
+		_fruit.append([tip + hang, 0.0])
+	_show_fruit()
+
+func _show_fruit() -> void:
+	if _fruit_mm == null:
+		return
+	var mm: MultiMesh = _fruit_mm.multimesh
+	mm.instance_count = _fruit.size()
+	for i: int in _fruit.size():
+		var f: Array = _fruit[i]
+		var ripe: float = clampf(float(f[1]) / (RIPEN_TICKS - 1.0), 0.0, 1.0)
+		var r: float = lerpf(0.06, 0.19, ripe) * _size
+		mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3(r, r * 0.95, r)), f[0] - Vector3(0, r, 0)))
+		mm.set_instance_color(i, Color(0.55, 0.72, 0.22).lerp(Color(0.88, 0.12, 0.08), ripe))
+
+# A ripe apple lets go of its branch and falls to the grass right below.
+func _spawn_apple(at: Vector3) -> void:
 	if _apple_scene == null:
 		return
 	var apple = _apple_scene.instantiate()
-	# Apples drop from the edge of the crown, not down the trunk, and come
-	# to rest on top of the meadow wherever they land.
-	var ang: float = randf() * TAU
-	var r: float = randf_range(1.6, 3.2)
-	var off := Vector3(cos(ang) * r, 0.0, sin(ang) * r)
 	var ground: float = global_position.y
 	var sim = get_parent().get_parent() if get_parent() != null else null
 	if sim is SimulationDirector:
-		ground = (sim as SimulationDirector).ground_height(global_position.x + off.x, global_position.z + off.z)
+		ground = (sim as SimulationDirector).ground_height(global_position.x + at.x, global_position.z + at.z)
 	apple.rest_y = ground - global_position.y + 0.26
 	add_child(apple)
-	apple.position = Vector3(off.x, apple_drop_height + randf() * 1.2, off.z)
+	apple.position = at
 
 func mark_arboreal() -> void:
 	_arboreal = true

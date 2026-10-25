@@ -474,6 +474,15 @@ func _ready() -> void:
 	# The single label is replaced by a marquee strip of stories.
 	_label.visible = false
 	_panel.clip_contents = true
+	# A full-width strip along the very bottom edge, below the buttons.
+	var strip: StyleBox = _panel.get_theme_stylebox("panel")
+	if strip is StyleBoxFlat:
+		strip = strip.duplicate()
+		strip.set_corner_radius_all(0)
+		strip.border_width_left = 0
+		strip.border_width_right = 0
+		strip.border_width_bottom = 0
+		_panel.add_theme_stylebox_override("panel", strip)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var world: Node3D = get_tree().current_scene.get_node_or_null("World")
 	if world != null:

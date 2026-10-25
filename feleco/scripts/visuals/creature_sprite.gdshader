@@ -17,6 +17,8 @@ uniform vec2 grid = vec2(3.0, 2.0);
 uniform vec2 texel = vec2(0.0078125, 0.0078125);
 uniform vec4 rim_color : source_color = vec4(1.0, 0.82, 0.3, 1.0);
 uniform float rim = 0.0;
+// Creatures the player has money on: a bright outline that beats the champion gold.
+uniform vec4 bet_color : source_color = vec4(1.0, 0.97, 0.75, 1.0);
 // 0 by day, 1 at midnight. Sprites are unshaded, so the moonlight is a tint.
 uniform float night = 0.0;
 
@@ -24,12 +26,16 @@ varying float v_glow;
 varying float v_shimmer;
 varying float v_shade;
 varying float v_role;
+varying float v_bet;
 
 #include "res://scripts/visuals/creature_rig.gdshaderinc"
 
 void vertex() {
 	vec4 c = INSTANCE_CUSTOM;
 	float cell = floor(c.w);
+	// Cells 8 and up are creatures carrying a bet (see VisualProxyManager.marked).
+	v_bet = cell >= 8.0 ? 1.0 : 0.0;
+	cell -= v_bet * 8.0;
 	float seed = fract(c.w) * 20.0;
 	float role = mod(cell, 3.0);
 	float row = floor(cell / 3.0);
@@ -66,12 +72,12 @@ void fragment() {
 	if (v_glow > 0.0 && t.g > 0.75 && t.r < 0.7 && t.b < 0.8) {
 		col *= 1.0 + v_glow * 0.6;
 	}
-	if (rim > 0.0 && a < 0.5) {
-		vec2 o = texel * 3.0;
+	if ((rim > 0.0 || v_bet > 0.5) && a < 0.5) {
+		vec2 o = texel * (v_bet > 0.5 ? 4.5 : 3.0);
 		float n = texture(sprite, UV + vec2(o.x, 0.0)).a + texture(sprite, UV - vec2(o.x, 0.0)).a
 			+ texture(sprite, UV + vec2(0.0, o.y)).a + texture(sprite, UV - vec2(0.0, o.y)).a;
 		if (n > 0.5) {
-			col = rim_color.rgb;
+			col = v_bet > 0.5 ? bet_color.rgb * (1.15 + 0.25 * sin(TIME * 5.0)) : rim_color.rgb;
 			a = 1.0;
 		}
 	}

@@ -3,8 +3,8 @@ extends CanvasLayer
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 
 var _director: SimulationDirector = null
-var _side_bet_agent: Node3D = null
-var _side_bet_marker: MeshInstance3D = null
+# Creatures the player has money on: {AgentData: ground ring}.
+var _bet_rings: Dictionary = {}
 var _side_bet_pulse: float = 0.0
 var _shown_touches: int = -1
 
@@ -53,7 +53,7 @@ func _ready() -> void:
 			var sb_type: String = gc.side_bet_entity.get("bet_type", "")
 			$TopRight/VBoxContainer/SideBetLabel.text = "Side Bet: %s the %s (%s)" % [sb_name, sb_species.capitalize(), sb_type.to_upper()]
 			$TopRight/VBoxContainer/SideBetLabel.modulate = Color(1.0, 0.8, 0.0)
-			call_deferred("_setup_side_bet_marker")
+		call_deferred("_setup_side_bet_marker")
 
 	# Top speed is 4x (a 15-second day); any faster and day and night flicker.
 	$BottomBar/Speed1.pressed.connect(func() -> void: Engine.time_scale = Clock.SPEEDS[0])
@@ -209,8 +209,8 @@ func _build_power_tray() -> void:
 	_tray.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_tray.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_tray.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_tray.offset_top = -170
-	_tray.offset_bottom = -150
+	_tray.offset_top = -210
+	_tray.offset_bottom = -190
 	_tray.offset_left = -360
 	_tray.offset_right = 360
 	var sb := StyleBoxFlat.new()
@@ -314,6 +314,40 @@ func _style_roster() -> void:
 		var label: Label = $TopLeft/VBox.get_node(label_name)
 		label.add_theme_color_override("font_color", colors[label_name])
 		label.add_theme_font_size_override("font_size", 16)
+		if ROSTER_SPECIES.has(label_name):
+			# A small line under each count: males, females, tough and special kinds.
+			var detail := Label.new()
+			detail.name = label_name + "Detail"
+			detail.add_theme_font_size_override("font_size", 12)
+			detail.add_theme_color_override("font_color", (colors[label_name] as Color).lerp(Color(0.6, 0.66, 0.6), 0.55))
+			detail.add_theme_constant_override("line_spacing", 0)
+			label.add_sibling(detail)
+			_roster_details[ROSTER_SPECIES[label_name]] = detail
+	$TopLeft/VBox.add_theme_constant_override("separation", 1)
+
+const ROSTER_SPECIES: Dictionary = {
+	"SheepCount": "sheep", "WolfCount": "wolf", "HumanCount": "human", "FalconCount": "falcon",
+	"RobinCount": "robin", "BoarCount": "boar", "RabbitCount": "rabbit", "WormCount": "worm", "FishCount": "fish",
+}
+var _roster_details: Dictionary = {}
+
+func _update_breakdown() -> void:
+	if _director == null or _roster_details.is_empty():
+		return
+	var tally: Dictionary = {}
+	for data: AgentData in _director._agent_registry:
+		if data.node == null or not is_instance_valid(data.node) or not _roster_details.has(data.species):
+			continue
+		if not tally.has(data.species):
+			tally[data.species] = [0, 0, 0, 0]
+		var t: Array = tally[data.species]
+		t[1 if data.female else 0] += 1
+		var kind: int = Roles.role_index(data.role)
+		if kind > 0:
+			t[1 + kind] += 1
+	for sp: String in _roster_details.keys():
+		var t: Array = tally.get(sp, [0, 0, 0, 0])
+		(_roster_details[sp] as Label).text = "%dM · %dF · %d tough · %d special" % t
 
 func _refresh_champion() -> void:
 	var gc: Node = get_node_or_null("/root/GameConfig")
@@ -423,16 +457,21 @@ func _stop_follow() -> void:
 		cam.follow(null)
 
 func _process(_delta: float) -> void:
-	# Animate side bet highlight marker
-	if _side_bet_marker != null and _side_bet_agent != null and is_instance_valid(_side_bet_agent) and _side_bet_agent.is_inside_tree():
+	# Bet creatures: a pulsing ring on the ground at their feet, following the
+	# drawn (smoothed) position so it never slides out from under the sprite.
+	if not _bet_rings.is_empty():
 		_side_bet_pulse += _delta * 4.0
-		var base_y: float = _side_bet_agent.global_position.y + 2.0
-		_side_bet_marker.global_position = Vector3(_side_bet_agent.global_position.x, base_y + sin(_side_bet_pulse) * 0.3, _side_bet_agent.global_position.z)
-		var scale_val: float = 1.0 + sin(_side_bet_pulse * 2.0) * 0.2
-		_side_bet_marker.scale = Vector3(scale_val, 1.0, scale_val)
-	elif _side_bet_marker != null:
-		_side_bet_marker.queue_free()
-		_side_bet_marker = null
+		for data: AgentData in _bet_rings.keys():
+			var ring: MeshInstance3D = _bet_rings[data]
+			if data.node == null or not is_instance_valid(data.node) or not data.node.is_inside_tree():
+				ring.queue_free()
+				_bet_rings.erase(data)
+				continue
+			var p: Vector3 = data.shown if data.has_shown else data.pos
+			var ground: float = _director.ground_height(p.x, p.z) if _director != null else p.y
+			ring.global_position = Vector3(p.x, ground + 0.06, p.z)
+			var k: float = 1.0 + sin(_side_bet_pulse) * 0.08
+			ring.scale = Vector3(k, 1.0, k)
 	if _director != null and _director.touches_left != _shown_touches:
 		_shown_touches = _director.touches_left
 		_update_powerup_buttons()
@@ -553,42 +592,48 @@ func _build_tooltip_text(agent: Node3D) -> String:
 
 func _setup_side_bet_marker() -> void:
 	var gc: Node = get_node_or_null("/root/GameConfig")
-	if gc == null or gc.side_bet_entity.is_empty():
+	if gc == null or _director == null:
 		return
-	var sb_name: String = gc.side_bet_entity.get("name", "")
-	var sb_species: String = gc.side_bet_entity.get("species", "")
-	if _director == null:
+	# Every named creature on the slip (lives, dies early, elder), plus the legacy side bet.
+	var wanted: Dictionary = {}
+	for b: Dictionary in gc.bets:
+		var meta: Dictionary = b.get("meta", {})
+		if meta.has("name") and meta.has("species"):
+			wanted[String(meta["species"]) + "|" + String(meta["name"])] = true
+	if not gc.side_bet_entity.is_empty():
+		wanted[String(gc.side_bet_entity.get("species", "")) + "|" + String(gc.side_bet_entity.get("name", ""))] = true
+	if wanted.is_empty():
 		return
-	for data: AgentData in _director._agent_registry:
-		if data.node == null or not is_instance_valid(data.node):
-			continue
-		if not data.node is MarkovAgent:
-			continue
-		var ma: MarkovAgent = data.node as MarkovAgent
-		if ma.display_name == sb_name and data.species == sb_species:
-			_side_bet_agent = ma
-			break
-	if _side_bet_agent == null:
-		return
-	var marker := MeshInstance3D.new()
-	marker.name = "SideBetMarker"
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = 1.2
-	cyl.bottom_radius = 1.2
-	cyl.height = 0.05
-	marker.mesh = cyl
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.8, 0.0)
-	mat.emission_enabled = true
-	mat.emission = Color(1.0, 0.8, 0.0)
-	mat.emission_energy = 2.0
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.disable_receive_shadows = true
-	marker.material_override = mat
 	var world: Node3D = get_tree().current_scene.get_node_or_null("World")
-	if world != null:
-		world.add_child(marker)
-		_side_bet_marker = marker
+	var vpm: Node = world.get_node_or_null("VisualProxyManager") if world != null else null
+	for data: AgentData in _director._agent_registry:
+		if data.node == null or not is_instance_valid(data.node) or not data.node is MarkovAgent:
+			continue
+		if not wanted.has(data.species + "|" + (data.node as MarkovAgent).display_name):
+			continue
+		if vpm != null:
+			vpm.marked[data.node] = true
+		var ring := MeshInstance3D.new()
+		ring.name = "BetRing"
+		var torus := TorusMesh.new()
+		var r: float = 0.9
+		if VisualProxyManager.SPECIES_CONFIG.has(data.species):
+			r = float(VisualProxyManager.SPECIES_CONFIG[data.species]["shadow"]) * 0.6 + 0.35
+		torus.inner_radius = r
+		torus.outer_radius = r + 0.14
+		torus.rings = 48
+		torus.ring_segments = 6
+		ring.mesh = torus
+		ring.scale = Vector3.ONE
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.albedo_color = Color(1.0, 0.95, 0.65)
+		mat.no_depth_test = false
+		ring.material_override = mat
+		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if world != null:
+			world.add_child(ring)
+			_bet_rings[data] = ring
 
 func _species_rules(species: String) -> String:
 	match species:
@@ -663,6 +708,7 @@ func _on_time_updated(days_remaining: float) -> void:
 	if _director != null:
 		$TopLeft/VBox/WormCount.text = "Worms  %d" % _director._active_worms.size()
 		$TopLeft/VBox/FishCount.text = "Fish  %d" % _director._active_fish.size()
+		_update_breakdown()
 		_refresh_champion()
 
 func _on_sim_ended(winner: String) -> void:

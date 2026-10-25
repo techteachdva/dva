@@ -10,11 +10,27 @@ func _ready() -> void:
 	var viewport := get_viewport()
 	if viewport == null:
 		return
-	# 3D draws into a smaller buffer. Menus stay at the canvas size.
-	viewport.scaling_3d_scale = 0.75
 	viewport.msaa_3d = Viewport.MSAA_DISABLED
 	viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 	viewport.use_taa = false
+	get_window().size_changed.connect(_fit_3d_budget)
+	_fit_3d_budget()
+
+# The page renders at the screen's full pixel density (allow_hidpi), so menus
+# and text are sharp on phones. The 3D valley gets a pixel budget instead:
+# on a 3x phone screen it draws at a fraction of full density and is
+# upscaled, which keeps it smooth while still far crisper than before.
+const PIXELS_3D_MOBILE: float = 1_300_000.0
+const PIXELS_3D_DESKTOP: float = 2_400_000.0
+
+func _fit_3d_budget() -> void:
+	var viewport := get_viewport()
+	var px: Vector2i = get_window().size
+	if viewport == null or px.x <= 0 or px.y <= 0:
+		return
+	var mobile: bool = OS.has_feature("web_android") or OS.has_feature("web_ios") or DisplayServer.is_touchscreen_available()
+	var budget: float = PIXELS_3D_MOBILE if mobile else PIXELS_3D_DESKTOP
+	viewport.scaling_3d_scale = clampf(sqrt(budget / float(px.x * px.y)), 0.45, 1.0)
 
 func _fit_orientation() -> void:
 	var win := get_window()

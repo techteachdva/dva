@@ -811,37 +811,48 @@ main.content.arcade-page > header .header-tags { display: none; }
   50% { left: 64%; top: 36%; transform: rotate(360deg); }
 }
 
-/* Feleco */
+/* Feleco: the sun rising over its pocket valley, sheep grazing by the river. */
 .cart--feleco .cart__label {
-  background:
-    radial-gradient(circle at 30% 40%, rgba(80, 160, 70, 0.45) 0 8px, transparent 9px),
-    radial-gradient(circle at 62% 55%, rgba(200, 70, 60, 0.55) 0 6px, transparent 7px),
-    radial-gradient(circle at 48% 28%, rgba(230, 190, 70, 0.5) 0 5px, transparent 6px),
-    linear-gradient(180deg, #14301c 0%, #0c1c12 55%, #07140c 100%);
+  background: linear-gradient(180deg, #244a33 0%, #14301c 55%, #0c1c12 100%);
 }
 .cart--feleco .cart__title {
   color: #e7f6df;
   background: rgba(12, 40, 22, 0.88);
-  border: 1px solid rgba(150, 210, 120, 0.45);
+  border: 1px solid rgba(230, 195, 106, 0.55);
 }
 .cart--feleco .cart__tag {
   color: #d5ecc8;
 }
-.cart--feleco .cart__art::before {
+.cart--feleco .cart__art::after {
   content: "";
   position: absolute;
   left: 50%;
-  top: 42%;
-  width: 78px;
+  top: 30%;
+  width: 46px;
   height: 46px;
-  transform: translate(-50%, -50%);
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 50%, #f2f2f2 0 7px, transparent 8px),
-    radial-gradient(circle at 55% 40%, #c0392b 0 6px, transparent 7px),
-    radial-gradient(circle at 72% 62%, #e0b84a 0 5px, transparent 6px),
-    radial-gradient(ellipse at 50% 70%, #2f7d32 0%, #16381c 70%);
-  box-shadow: 0 8px 0 #0d2414;
+  background: radial-gradient(circle at 50% 40%, #f6dc8c 0%, #d9a441 100%);
+  box-shadow: 0 0 18px rgba(246, 220, 140, 0.45);
+  animation: feleco-sunrise 6s ease-in-out infinite;
+}
+.cart--feleco .cart__art::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 46%;
+  width: 112px;
+  height: 70px;
+  transform: translate(-50%, -50%);
+  border-radius: 10px;
+  background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 100'><defs><linearGradient id='m' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%238fcf5f'/><stop offset='1' stop-color='%234f9a3c'/></linearGradient><linearGradient id='r' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23bfe8f2'/><stop offset='1' stop-color='%234fa8d6'/></linearGradient></defs><path d='M0 62 L34 30 L56 46 L80 20 L104 46 L126 30 L160 62 Z' fill='%232f5a40'/><path d='M74 28 L80 20 L86 28 L80 31 Z' fill='%23eef3ea'/><path d='M0 62 Q40 50 80 56 Q120 50 160 62 L160 100 L0 100 Z' fill='url(%23m)'/><path d='M78 56 C70 64 90 70 82 78 C74 86 92 92 88 100 L72 100 C76 92 62 86 72 78 C80 72 68 64 76 56 Z' fill='url(%23r)'/><g fill='%23f4efe4'><ellipse cx='40' cy='76' rx='6' ry='4'/><ellipse cx='52' cy='82' rx='5' ry='3.4'/><ellipse cx='118' cy='74' rx='5' ry='3.4'/></g><g fill='%2324302a'><circle cx='45' cy='75' r='2'/><circle cx='56' cy='81' r='1.7'/><circle cx='122' cy='73' r='1.7'/></g><path d='M128 92 C122 80 128 70 142 66 C145 80 140 90 128 92 Z' fill='%232f6b34'/></svg>") center / 100% 100% no-repeat;
+}
+@keyframes feleco-sunrise {
+  0%, 100% { transform: translate(-50%, -30%); }
+  50% { transform: translate(-50%, -62%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cart--feleco .cart__art::after { animation: none; transform: translate(-50%, -50%); }
 }
 
 /* Global Tech Gauntlet */

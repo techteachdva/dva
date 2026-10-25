@@ -29,7 +29,7 @@ Music="*res://scripts/autoloads/music.gd"
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/size/mode=4
-window/dpi/allow_hidpi=false
+window/dpi/allow_hidpi=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 

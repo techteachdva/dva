@@ -46,6 +46,8 @@ var _materials: Dictionary = {}
 var _species_buffer: Dictionary = {}
 var _shadows: MultiMeshInstance3D
 var _champion: String = ""
+# Agent nodes the player has a bet on: drawn with a bright outline.
+var marked: Dictionary = {}
 
 func _ready() -> void:
 	name = "VisualProxyManager"
@@ -146,6 +148,18 @@ func _setup_shadows() -> void:
 	_shadows.material_override = mat
 	_shadows.custom_aabb = AABB(Vector3(-120, -10, -120), Vector3(240, 60, 240))
 	add_child(_shadows)
+
+# The sun's say over the blob shadows: which way they fall across the
+# ground, how far they stretch (long at dawn and dusk, short at noon) and
+# how strong they are (faint by moonlight). Set by the director each frame.
+var sun_dir := Vector2(0.0, 1.0)
+var sun_stretch: float = 0.6
+var shadow_fade: float = 1.0
+
+func set_sun(dir: Vector2, stretch: float, fade: float) -> void:
+	sun_dir = dir
+	sun_stretch = stretch
+	shadow_fade = fade
 
 # 0 by day, 1 at midnight: every creature sprite takes a cool moonlit tint.
 func set_night(n: float) -> void:
@@ -283,6 +297,8 @@ func sync(registry: Array[AgentData]) -> void:
 				cell = 0
 				if data.state == "Fruit" or data.state == "Anchor":
 					cell = 2 if fposmod(data.gait_seed * 7.0, 1.0) < 0.2 else 1
+			if data.node != null and marked.has(data.node):
+				cell += 8
 			floats[o + 19] = float(cell) + fposmod(data.gait_seed / TAU, 1.0) * 0.95
 			o += FLOATS_PER_INSTANCE
 			if shadow_w > 0.0:
@@ -292,13 +308,27 @@ func sync(registry: Array[AgentData]) -> void:
 					var height: float = y - ground
 					w *= clampf(1.2 - height * 0.05, 0.5, 1.0)
 					alpha = clampf(0.4 - height * 0.025, 0.12, 0.4)
-				shadow_floats[so] = w
-				shadow_floats[so + 3] = x
+				# Cast away from the sun: the blob stretches along the light and
+				# its near end stays under the feet. Fliers' shadows stay round.
+				var stretch: float = 0.0 if flying else sun_stretch
+				var length: float = w * (1.0 + stretch)
+				var across: float = w * 0.62
+				var d: Vector2 = sun_dir
+				var shift: float = (length - w) * 0.5
+				shadow_floats[so] = d.x * length
+				shadow_floats[so + 1] = 0.0
+				shadow_floats[so + 2] = -d.y * across
+				shadow_floats[so + 3] = x + d.x * shift
+				shadow_floats[so + 4] = 0.0
 				shadow_floats[so + 5] = 1.0
+				shadow_floats[so + 6] = 0.0
 				shadow_floats[so + 7] = ground + 0.08
-				shadow_floats[so + 10] = w * 0.62
-				shadow_floats[so + 11] = z
-				shadow_floats[so + 15] = alpha
+				shadow_floats[so + 8] = d.y * length
+				shadow_floats[so + 9] = 0.0
+				shadow_floats[so + 10] = d.x * across
+				shadow_floats[so + 11] = z + d.y * shift
+				# Long shadows thin out a little; moonlight barely casts any.
+				shadow_floats[so + 15] = alpha * shadow_fade / (1.0 + stretch * 0.35)
 				so += SHADOW_FLOATS
 		mm.buffer = floats
 	if shadow_count > 0:
