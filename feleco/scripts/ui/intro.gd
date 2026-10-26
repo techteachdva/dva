@@ -58,6 +58,19 @@ func _ready() -> void:
 	_build_overlay()
 	_play.call_deferred()
 
+# Esc, Space or Enter, or any click or tap, skips the film.
+func _unhandled_input(event: InputEvent) -> void:
+	if _done:
+		return
+	var skip: bool = event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_accept")
+	if event is InputEventMouseButton and event.pressed:
+		skip = true
+	if event is InputEventScreenTouch and event.pressed:
+		skip = true
+	if skip:
+		get_viewport().set_input_as_handled()
+		_finish()
+
 func _process(_delta: float) -> void:
 	# The speech bubble rides above whoever is talking.
 	if _bubble_on != null and is_instance_valid(_bubble_on) and _bubble.modulate.a > 0.01:
@@ -114,10 +127,10 @@ func _build_overlay() -> void:
 	_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_shade)
 	var skip := Button.new()
-	skip.text = "Skip"
+	skip.text = "Skip (any key)"
 	skip.anchor_left = 1.0
 	skip.anchor_right = 1.0
-	skip.offset_left = -150
+	skip.offset_left = -220
 	skip.offset_right = -20
 	skip.offset_top = 12
 	skip.offset_bottom = 56
