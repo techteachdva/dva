@@ -123,8 +123,8 @@ static func _golden(species: String, f: bool) -> void:
 			_ell(118, 75, 10, 7, Color(0.45, 0.3, 0.2))
 			_dot(126, 74, 3.2, Color(0.06, 0.05, 0.05))
 		"human":
-			# Gold all over, with a halo of light above the head.
-			_human(0, f)
+			# A golden wizard: gold all over, with a halo of light above the hat.
+			_human(2, f)
 			for k: int in 28:
 				var a: float = float(k) / 28.0 * TAU
 				_dot(64.0 + cos(a) * 17.0, 16.0 + sin(a) * 5.0, 2.6, Color(1.0, 0.97, 0.7))
