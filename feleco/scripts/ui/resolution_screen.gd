@@ -45,6 +45,15 @@ func show_result(winner: String) -> void:
 	else:
 		%ResultLabel.text = "%s  ·  Biggest crowd at the end: %s (%d)" % [champ_line, BetBook.label_of(big), int(crowd.get(big, 0))]
 
+	# Challenge: what the year was meant to show, and what actually happened.
+	if gc != null and gc.current_mode == "challenge" and director.bet_tracker != null:
+		var sc := ChallengeScenarios.find(gc.scenario_id)
+		if not sc.is_empty():
+			%ResultLabel.text = "%s
+%s
+%s" % [sc["moral"], ChallengeScenarios.recap(director.bet_tracker.stats), %ResultLabel.text]
+			%ResultLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
 	# Population graph
 	var graph: PopulationGraph = %Graph as PopulationGraph
 	if graph != null:
@@ -109,8 +118,8 @@ func show_result(winner: String) -> void:
 			next_btn.text = "Next Era" if won_campaign else "Restart Campaign"
 			next_btn.show()
 		elif gc.current_mode == "challenge":
-			var won_challenge: bool = _bet_to_plural(gc.player_bet) == winner
-			next_btn.text = "Next Level" if won_challenge else "Retry"
+			# Every year played unlocks the next one: the lesson is the reward.
+			next_btn.text = "Next year" if ChallengeScenarios.index_of(gc.scenario_id) + 1 < ChallengeScenarios.LIST.size() else "Back to the years"
 			next_btn.show()
 		else:
 			next_btn.hide()
@@ -125,13 +134,15 @@ func show_result(winner: String) -> void:
 				gc.campaign_era = 0
 			gc.save_meta()
 		elif gc.current_mode == "challenge":
-			if _bet_to_plural(gc.player_bet) == winner:
-				gc.challenge_level += 1
-				gc.challenge_current_streak += 1
-				if gc.challenge_current_streak > gc.challenge_best_streak:
-					gc.challenge_best_streak = gc.challenge_current_streak
-			else:
-				gc.challenge_current_streak = 0
+			var idx: int = ChallengeScenarios.index_of(gc.scenario_id)
+			gc.challenge_level = maxi(int(gc.challenge_level), idx + 1)
+			# The streak counts years whose question came true.
+			var answered: bool = false
+			if director != null and director.bet_tracker != null:
+				var fb := ChallengeScenarios.featured_bet(gc.scenario_id)
+				answered = not fb.is_empty() and ChallengeScenarios.judge({"meta": fb}, director.bet_tracker.stats, true) > 0
+			gc.challenge_current_streak = gc.challenge_current_streak + 1 if answered else 0
+			gc.challenge_best_streak = maxi(gc.challenge_best_streak, gc.challenge_current_streak)
 			gc.save_meta()
 
 func _mode_bonus(gc: Node) -> int:

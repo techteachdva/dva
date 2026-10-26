@@ -19,7 +19,13 @@ const SPECIES_CONFIG: Dictionary = {
 	"worm": {"size": Vector2(1.4, 1.4), "gait": 4.0, "kind": 2, "shadow": 0.0, "style": 10},
 	"human": {"size": Vector2(2.75, 2.75), "gait": 9.0, "kind": 0, "shadow": 1.1, "style": 5},
 	"rabbit": {"size": Vector2(2.0, 2.0), "gait": 13.0, "kind": 0, "shadow": 1.1, "style": 4},
-	"fish": {"size": Vector2(2.0, 1.0), "gait": 6.0, "kind": 2, "shadow": 0.0, "style": 11},
+	# 3.0: fish drawn smaller so they read as fish next to the bank.
+	"fish": {"size": Vector2(1.2, 0.6), "gait": 6.0, "kind": 2, "shadow": 0.0, "style": 11},
+	"deer": {"size": Vector2(3.0, 3.0), "gait": 12.0, "kind": 0, "shadow": 1.8, "style": 1},
+	"goat": {"size": Vector2(2.6, 2.6), "gait": 11.0, "kind": 0, "shadow": 1.6, "style": 1},
+	"bear": {"size": Vector2(3.6, 3.6), "gait": 9.0, "kind": 0, "shadow": 2.6, "style": 3},
+	"lion": {"size": Vector2(3.2, 3.2), "gait": 11.0, "kind": 0, "shadow": 2.0, "style": 2},
+	"beetle": {"size": Vector2(0.9, 0.9), "gait": 16.0, "kind": 0, "shadow": 0.4, "style": 10},
 	# kind 3: drawn where it is (drifting spores, toadstools on the ground).
 	"mushroom": {"size": Vector2(2.0, 2.0), "gait": 1.0, "kind": 3, "shadow": 0.8, "style": 12},
 }
@@ -223,10 +229,13 @@ func sync(registry: Array[AgentData]) -> void:
 			# Agents think on staggered ticks. Between thinks the sprite glides
 			# from where it was last drawn to the newest true position, so it
 			# never overshoots a turn and snaps back (it trails by one think).
-			# A big gap (a spawn, a hut door) is a real jump: no glide.
+			# A gap further than it could have run in one think (a spawn, a
+			# hut door) is a real jump: no glide. With many creatures each one
+			# thinks less often, so a fast runner can cover well over 5 m.
 			var t: float = clampf((now - data.sync_time) / data.interval, 0.0, 1.0)
 			var from: Vector3 = data.prev_pos
-			if from.distance_squared_to(data.pos) > 25.0:
+			var reach: float = maxf(5.0, data.vel.length() * data.interval * 2.0 + 2.0)
+			if from.distance_squared_to(data.pos) > reach * reach:
 				from = data.pos
 			var gp: Vector3 = from.lerp(data.pos, t)
 			var x: float = gp.x
@@ -241,6 +250,9 @@ func sync(registry: Array[AgentData]) -> void:
 				data.face = -1.0
 			var grown: float = clampf(data.age / GROWN_AGE, 0.0, 1.0)
 			var s: float = lerpf(0.6, 1.0, grown)
+			if data.golden > 0.05:
+				# A golden bear is by far the biggest thing in the valley.
+				s *= 1.7 if data.species == "bear" else 1.2
 			if kind == 3:
 				s = _mushroom_scale(data)
 			var ground: float = data.pos.y
@@ -274,15 +286,23 @@ func sync(registry: Array[AgentData]) -> void:
 			var motion: float = clampf((speed - 0.3) / 2.5, 0.0, 1.0) if not flying else 1.0
 			# Only the badly hurt fade toward grey.
 			var shade: float = 1.0 if kind == 3 else lerpf(0.55, 1.0, clampf(data.health / 40.0, 0.0, 1.0))
+			# Golden creatures glow gold and glint now and then.
+			var gold: float = data.golden
 			floats[o] = s
 			floats[o + 3] = x
 			floats[o + 5] = s
 			floats[o + 7] = y
 			floats[o + 10] = s
 			floats[o + 11] = z
-			floats[o + 12] = shade
-			floats[o + 13] = shade
-			floats[o + 14] = shade
+			if gold > 0.0:
+				var glint: float = 1.0 + 0.25 * gold * maxf(sin(now * 3.0 + data.gait_seed * 5.0), 0.0)
+				floats[o + 12] = shade * lerpf(1.0, 1.35, gold) * glint
+				floats[o + 13] = shade * lerpf(1.0, 1.1, gold) * glint
+				floats[o + 14] = shade * lerpf(1.0, 0.4, gold)
+			else:
+				floats[o + 12] = shade
+				floats[o + 13] = shade
+				floats[o + 14] = shade
 			# Alpha is free (sprites take alpha from the texture): it carries the
 			# action, so the rig can pose eating, fighting, sleeping and so on.
 			floats[o + 15] = float(ACTIONS.get(data.state, 0)) / 15.0
@@ -297,6 +317,9 @@ func sync(registry: Array[AgentData]) -> void:
 				cell = 0
 				if data.state == "Fruit" or data.state == "Anchor":
 					cell = 2 if fposmod(data.gait_seed * 7.0, 1.0) < 0.2 else 1
+			if gold > 0.05:
+				# Golden creatures wear their golden form (a golden cap, for mushrooms).
+				cell = SpriteGenerator.GOLDEN + (SpriteGenerator.COLS if data.female and kind != 3 else 0)
 			if data.node != null and marked.has(data.node):
 				cell += 8
 			floats[o + 19] = float(cell) + fposmod(data.gait_seed / TAU, 1.0) * 0.95

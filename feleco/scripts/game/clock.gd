@@ -39,7 +39,8 @@ const LIFESPAN_DAYS: Dictionary = {
 
 # Lifespan in the life-time units agents age in.
 static func lifespan(species: String) -> float:
-	return float(LIFESPAN_DAYS.get(species, 4.0)) * BIO_PER_DAY
+	var days: float = float(LIFESPAN_DAYS.get(species, SpeciesDB.row(species).get("days", 4.0)))
+	return days * BIO_PER_DAY
 
 static func run_label(days: float) -> String:
 	for r: Array in RUNS:

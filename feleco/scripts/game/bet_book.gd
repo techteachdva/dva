@@ -314,3 +314,198 @@ static func table_limit(gc: Node) -> int:
 	if gc.owned_upgrades.get("side_eye", false):
 		lim += 10
 	return lim
+
+# ------------------------------------------------------------------
+# 3.0: The Order Update. Two screens of bets: "The Order" (which food-web
+# group ends the year fullest, and the whole ranking), three named starters,
+# and a handful of long shots. Groups are scored by how full they are (see
+# SimulationDirector.get_group_scores), not by head count.
+# ------------------------------------------------------------------
+
+# How readily each group fills up over a year, before anything happens.
+# Placeholders until the offline odds runs exist.
+const GROUP_STRENGTH: Dictionary = {
+	"producer": 1.2, "herbivore": 1.1, "omnivore": 0.9, "carnivore": 0.6, "decomposer": 1.0,
+}
+const GROUP_EXTINCT_P: Dictionary = {
+	"producer": 0.05, "herbivore": 0.35, "omnivore": 0.3, "carnivore": 0.6, "decomposer": 0.4,
+}
+const GROUP_BOOM_P: Dictionary = {
+	"producer": 0.25, "herbivore": 0.45, "omnivore": 0.3, "carnivore": 0.2, "decomposer": 0.5,
+}
+const GROUP_ART: Dictionary = {
+	"producer": "", "herbivore": "deer", "omnivore": "bear", "carnivore": "lion", "decomposer": "beetle",
+}
+const GOLDEN_LINE: int = 10
+
+# Starter traits: [name, hint, stat it reads, above (true) or below the line].
+const TRAITS: Array = [
+	["Sure-footed", "quick to flee and to find food", "speed", true],
+	["Hardy", "shrugs off wounds and cold", "health", true],
+	["Frugal", "gets by on very little", "appetite", false],
+	["Glutton", "always hungry; starves first in a lean season", "appetite", true],
+	["Sickly", "the first to fall in a hard winter", "health", false],
+	["Slow", "an easy catch for any hunter", "speed", false],
+]
+
+# Group weights for the Order: start fill times strength, never zero.
+static func group_weights(scores: Dictionary) -> Dictionary:
+	var w: Dictionary = {}
+	for g: String in SpeciesDB.GROUPS:
+		w[g] = maxf(0.05, (0.3 + float(scores.get(g, 0.0))) * float(GROUP_STRENGTH[g]))
+	return w
+
+# Chance the first `depth` groups finish in exactly this order (Plackett-Luce).
+static func order_p(weights: Dictionary, ranking: Array, depth: int) -> float:
+	var left: float = 0.0
+	for g: String in SpeciesDB.GROUPS:
+		left += float(weights[g])
+	var p: float = 1.0
+	for i: int in mini(depth, ranking.size()):
+		var w: float = float(weights.get(ranking[i], 0.05))
+		p *= w / maxf(left, 0.001)
+		left -= w
+	return p
+
+# The likeliest order, a sensible default for the ranking widget.
+static func default_ranking(weights: Dictionary) -> Array:
+	var r: Array = SpeciesDB.GROUPS.duplicate()
+	r.sort_custom(func(a, b): return float(weights[a]) > float(weights[b]))
+	return r
+
+# Random stats for a starter: health, speed and appetite each 0.75 to 1.25,
+# plus the trait that best describes them.
+static func roll_starter(species: String, sex: String, name: String) -> Dictionary:
+	var stats := {"health": randf_range(0.75, 1.25), "speed": randf_range(0.75, 1.25), "appetite": randf_range(0.75, 1.25)}
+	var best: Array = []
+	var best_d: float = 0.08
+	for t: Array in TRAITS:
+		var v: float = float(stats[t[2]]) - 1.0
+		var d: float = v if t[3] else -v
+		if d > best_d:
+			best_d = d
+			best = t
+	var trait_info: Dictionary = {"name": "Ordinary", "hint": "nothing special either way"} if best.is_empty() else {"name": best[0], "hint": best[1]}
+	return {"name": name, "species": species, "sex": sex, "role": "", "stats": stats, "trait": trait_info, "starter": true}
+
+static func starter_survive_p(r: Dictionary, days: float, age: float = -1.0) -> float:
+	var st: Dictionary = r.get("stats", {})
+	var f: float = pow(float(st.get("health", 1.0)), 0.8) * pow(float(st.get("speed", 1.0)), 0.6) / pow(float(st.get("appetite", 1.0)), 0.8)
+	return clampf(survive_p(r["species"], days, age) * f, 0.0, 0.95)
+
+# The 3.0 table. scores: group fill now (or at the start); roster: the three
+# starters; scenario_bet: the Challenge scenario's own bet, or {}; ranking:
+# the player's order for the Order bets (defaults to the likeliest).
+static func catalogue3(scores: Dictionary, roster: Array, run_days: float, day: float = 0.0, stats: Dictionary = {}, scenario_bet: Dictionary = {}, ranking: Array = []) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var left: float = maxf(1.0, run_days - day)
+	var lf: float = clampf(left / Clock.STANDARD_DAYS, 0.3, 1.5)
+	var w := group_weights(scores)
+	var total: float = 0.0
+	for g: String in SpeciesDB.GROUPS:
+		total += float(w[g])
+	# Screen 1: the Order.
+	for g: String in SpeciesDB.GROUPS:
+		out.append(_bet("top:" + g, "top", g, SpeciesDB.GROUP_LABEL[g], GROUP_ART[g], float(w[g]) / total * 0.95, false, {"group": g}))
+	var rank: Array = ranking if ranking.size() == SpeciesDB.GROUPS.size() else default_ranking(w)
+	out.append(_bet("order:exact", "order", "exact", "Exact order", "", order_p(w, rank, 5), false, {"rank": rank.duplicate(), "depth": 5}))
+	out.append(_bet("order:top3", "order", "top3", "Top three in order", "", order_p(w, rank, 3), false, {"rank": rank.duplicate(), "depth": 3}))
+	var dead: Dictionary = stats.get("named_dead", {})
+	for r: Dictionary in roster:
+		var key: String = "%s|%s" % [r["name"], r["species"]]
+		var who: Dictionary = {"name": r["name"], "species": r["species"], "role": "", "female": r.get("sex", "") == "female", "trait": r.get("trait", {}), "stats": r.get("stats", {})}
+		# Most creatures live a few days, so the line is most of a lifetime away.
+		var life: float = float(Clock.LIFESPAN_DAYS.get(r["species"], SpeciesDB.row(r["species"]).get("days", 4.0)))
+		var span: float = minf(left, maxf(1.0, round(life * 0.8)))
+		who["by_day"] = day + span
+		var ps: float = 0.0 if dead.has(key) else starter_survive_p(r, span, float(r.get("age", -1.0)))
+		var b := _bet("survivor:" + key, "starter", key, r["name"], r["species"], ps, true, who)
+		if dead.has(key):
+			b["reason"] = "Already dead"
+		out.append(b)
+	# Screen 2: long shots.
+	var gone: Dictionary = stats.get("group_extinct", {})
+	var g_start: Dictionary = stats.get("group_start", scores)
+	for g: String in SpeciesDB.GROUPS:
+		var pe: float = 0.0 if gone.has(g) else clampf(float(GROUP_EXTINCT_P[g]) * lf, 0.02, 0.85)
+		var be := _bet("gextinct:" + g, "gextinct", g, "%s lose a species" % SpeciesDB.GROUP_LABEL[g], GROUP_ART[g], pe, true)
+		if gone.has(g):
+			be["reason"] = "Already happened"
+		out.append(be)
+		out.append(_bet("gboom:" + g, "gboom", g, "%s double" % SpeciesDB.GROUP_LABEL[g], GROUP_ART[g], clampf(float(GROUP_BOOM_P[g]) * lf, 0.03, 0.85), true, {"from": maxf(0.05, float(g_start.get(g, 0.1)))}))
+	var droughts: bool = bool(stats.get("drought", false))
+	var bd := _bet("drought", "drought", "", "Drought strikes", "", 0.0 if droughts else clampf(0.4 * lf, 0.05, 0.8), true)
+	if droughts:
+		bd["reason"] = "Already happened"
+	out.append(bd)
+	var toll: int = int(stats.get("flood_toll", 0))
+	var bf := _bet("flood:30", "flood", "30", "30+ fish", "fish", 0.0 if toll >= 30 else 0.25 * lf, true, {"line": 30})
+	if toll >= 30:
+		bf["reason"] = "Already happened"
+	out.append(bf)
+	out.append(_bet("golden", "golden", str(GOLDEN_LINE), "%d golden finds" % GOLDEN_LINE, "", clampf(0.45 * lf, 0.05, 0.85), true, {"line": GOLDEN_LINE}))
+	out.append(_bet("goldloop", "goldloop", "", "Gold reaches the soil", "beetle", clampf(0.3 * lf, 0.05, 0.8), true))
+	if not scenario_bet.is_empty():
+		out.append(_bet("scenario:" + str(scenario_bet["id"]), "scenario", str(scenario_bet["id"]), str(scenario_bet["label"]), str(scenario_bet.get("sprite", "")), float(scenario_bet.get("p", 0.3)), false, scenario_bet))
+	return out
+
+# Judging for the 3.0 bet types. Same contract as judge().
+static func judge3(bet: Dictionary, stats: Dictionary, final: bool) -> int:
+	var t: String = bet["target"]
+	var score: Dictionary = stats.get("group_score", {})
+	match String(bet["type"]):
+		"top":
+			if final:
+				return 1 if top_group(score) == t else -1
+		"order":
+			if final:
+				var rank: Array = bet["meta"]["rank"]
+				var actual := ranked_groups(score)
+				for i: int in int(bet["meta"]["depth"]):
+					if actual[i] != rank[i]:
+						return -1
+				return 1
+		"gextinct":
+			if stats.get("group_extinct", {}).has(t):
+				return 1
+			if final:
+				return -1
+		"gboom":
+			if float(stats.get("group_peak", {}).get(t, 0.0)) >= 2.0 * float(bet["meta"].get("from", 1.0)):
+				return 1
+			if final:
+				return -1
+		"drought":
+			if bool(stats.get("drought", false)):
+				return 1
+			if final:
+				return -1
+		"golden":
+			if int(stats.get("golden_finds", 0)) >= int(bet["meta"]["line"]):
+				return 1
+			if final:
+				return -1
+		"goldloop":
+			if bool(stats.get("gold_soil", false)):
+				return 1
+			if final:
+				return -1
+		"scenario":
+			return ChallengeScenarios.judge(bet, stats, final)
+		"starter":
+			if stats.get("named_dead", {}).has(t):
+				return -1
+			if final or float(stats.get("day", 0.0)) >= float(bet["meta"].get("by_day", INF)):
+				return 1
+	return 0
+
+static func ranked_groups(score: Dictionary) -> Array:
+	var r: Array = SpeciesDB.GROUPS.duplicate()
+	r.sort_custom(func(a, b): return float(score.get(a, 0.0)) > float(score.get(b, 0.0)))
+	return r
+
+static func top_group(score: Dictionary) -> String:
+	return ranked_groups(score)[0]
+
+static func is_v3(bet: Dictionary) -> bool:
+	return String(bet.get("type", "")) in ["starter", "top", "order", "gextinct", "gboom", "drought", "golden", "goldloop", "scenario"]

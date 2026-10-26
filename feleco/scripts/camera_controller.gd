@@ -26,6 +26,8 @@ var _goal_distance: float = distance
 var _right_held: bool = false
 var _middle_held: bool = false
 var _follow: Node3D = null
+# While the player steers a rampaging creature the keys drive it, not the camera.
+var locked: bool = false
 var _follow_last := Vector3.ZERO
 var _last_usec: int = 0
 
@@ -111,6 +113,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		var mg := event as InputEventMagnifyGesture
 		_goal_distance = clampf(_goal_distance / mg.factor, MIN_DIST, MAX_DIST)
 
+func flat_forward() -> Vector3:
+	return _flat_forward()
+
+func flat_right() -> Vector3:
+	return _flat_right()
+
 func _flat_forward() -> Vector3:
 	return Vector3(-sin(_goal_yaw), 0.0, -cos(_goal_yaw))
 
@@ -121,7 +129,7 @@ func _process(_delta: float) -> void:
 	var now := Time.get_ticks_usec()
 	var dt: float = 0.016 if _last_usec == 0 else clampf(float(now - _last_usec) / 1000000.0, 0.0, 0.1)
 	_last_usec = now
-	var typing := get_viewport().gui_get_focus_owner() is LineEdit
+	var typing := get_viewport().gui_get_focus_owner() is LineEdit or locked
 	var dir := Vector3.ZERO
 	if not typing:
 		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):

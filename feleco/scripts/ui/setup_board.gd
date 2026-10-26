@@ -5,18 +5,32 @@ const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 # Every setting on one screen: herd sizes on the left, season, map and
 # map in the middle; Start goes to the betting table.
 
-# [GameConfig field, label, icon, default]
+# [GameConfig field, label, icon, default, species id]. "extra:<id>" fields
+# live in GameConfig.extra_counts. Every row can be switched off: that
+# species never enters the valley, not even through the passes.
 const SPECIES_FIELDS: Array = [
-	["sheep_count", "Sheep", "sheep", 10],
-	["wolf_count", "Wolves", "wolf", 3],
-	["human_count", "Humans", "human", 5],
-	["falcon_count", "Falcons", "falcon", 3],
-	["robin_count", "Robins", "robin", 8],
-	["boar_count", "Boars", "boar", 5],
-	["rabbit_count", "Rabbits", "rabbit", 8],
-	["worm_count", "Worms", "worm", 15],
-	["spore_count", "Spores", "", 5],
-	["tree_count", "Trees", "", 6],
+	["sheep_count", "Sheep", "sheep", 10, "sheep"],
+	["rabbit_count", "Rabbits", "rabbit", 8, "rabbit"],
+	["extra:deer", "Deer", "deer", 6, "deer"],
+	["extra:goat", "Goats", "goat", 5, "goat"],
+	["wolf_count", "Wolves", "wolf", 3, "wolf"],
+	["extra:lion", "Mountain Lions", "lion", 3, "lion"],
+	["falcon_count", "Falcons", "falcon", 3, "falcon"],
+	["human_count", "Humans", "human", 5, "human"],
+	["extra:bear", "Bears", "bear", 3, "bear"],
+	["boar_count", "Boars", "boar", 5, "boar"],
+	["robin_count", "Robins", "robin", 8, "robin"],
+	["fish_count", "Fish", "fish", 8, "fish"],
+	["worm_count", "Worms", "worm", 15, "worm"],
+	["extra:beetle", "Beetles", "beetle", 10, "beetle"],
+	["spore_count", "Mushrooms", "", 5, "mushroom"],
+	["tree_count", "Trees", "", 6, "tree"],
+	["bush_count", "Berry bushes", "", 5, "bush"],
+]
+# Quick switches for whole links of the food web. Trees and bushes count as producers.
+const GROUP_SWITCHES: Array = [
+	["producer", "Producers"], ["herbivore", "Herbivores"], ["carnivore", "Carnivores"],
+	["omnivore", "Omnivores"], ["decomposer", "Decomposers"], ["human", "No humans"],
 ]
 const HERDS: Array = [["Tiny", 4], ["Small", 8], ["Medium", 16], ["Large", 32]]
 const SEASONS: Array = Clock.RUNS
@@ -24,6 +38,8 @@ const MAPS: Array[String] = ["Random Scatter", "Corner Clusters"]
 
 var _species_icons: Dictionary = {}
 var _spins: Dictionary = {}  # GameConfig field -> SpinBox
+var _toggles: Dictionary = {}  # GameConfig field -> CheckBox (on = in the valley)
+var _group_buttons: Dictionary = {}
 var _herd_buttons: Array[Button] = []
 var _season_buttons: Array[Button] = []
 var _setting_counts: bool = false
@@ -67,16 +83,43 @@ func _build_herds(card: VBoxContainer) -> void:
 	_herd_buttons[HERDS.size()].tooltip_text = "Random. A different count for each species, from 2 to 40."
 	_herd_buttons[HERDS.size()].pressed.connect(_on_random)
 
-	card.add_child(FelecoUiScript.label("Or set each population (2 to 40):", 15, FelecoUiScript.MIST))
+	card.add_child(FelecoUiScript.label("Switch whole links of the food web off and on:", 15, FelecoUiScript.MIST))
+	var groups := HFlowContainer.new()
+	groups.add_theme_constant_override("h_separation", 6)
+	groups.add_theme_constant_override("v_separation", 6)
+	card.add_child(groups)
+	for g: Array in GROUP_SWITCHES:
+		var b := Button.new()
+		b.text = g[1]
+		b.toggle_mode = true
+		b.button_pressed = g[0] != "human"
+		b.custom_minimum_size = Vector2(0, 40)
+		b.tooltip_text = "Take every one of these out of the valley, or put them back." if g[0] != "human" else "A valley without people."
+		b.toggled.connect(_on_group_toggled.bind(g[0]))
+		groups.add_child(b)
+		_group_buttons[g[0]] = b
+	card.add_child(FelecoUiScript.label("Or set each population (tick to include, 1 to 40):", 15, FelecoUiScript.MIST))
+	# Seventeen rows: they scroll inside the card so the screen always fits.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	card.add_child(scroll)
 	var grid := GridContainer.new()
 	grid.columns = 2
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_theme_constant_override("h_separation", 12)
 	grid.add_theme_constant_override("v_separation", 6)
-	card.add_child(grid)
+	scroll.add_child(grid)
 	for entry: Array in SPECIES_FIELDS:
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_theme_constant_override("separation", 8)
+		var on := CheckBox.new()
+		on.button_pressed = true
+		on.tooltip_text = "Include %s. Off: none at the start and none wander in." % entry[1]
+		on.toggled.connect(_on_species_toggled.bind(entry[0]))
+		row.add_child(on)
+		_toggles[entry[0]] = on
 		var icon := TextureRect.new()
 		icon.custom_minimum_size = Vector2(22, 22)
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -88,17 +131,15 @@ func _build_herds(card: VBoxContainer) -> void:
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_label)
 		var spin := SpinBox.new()
-		spin.min_value = 2
+		spin.min_value = 1
 		spin.max_value = 40
 		spin.value = entry[3]
-		spin.custom_minimum_size = Vector2(76, 40)
+		spin.custom_minimum_size = Vector2(70, 36)
 		spin.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		spin.value_changed.connect(_on_count_edited)
 		row.add_child(spin)
 		grid.add_child(row)
 		_spins[entry[0]] = spin
-	card.add_child(Control.new())  # pushes the totals to the card's foot
-	card.get_child(card.get_child_count() - 1).size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_total_label = FelecoUiScript.label("", 16, FelecoUiScript.MIST)
 	card.add_child(_total_label)
 	_foresight_label = FelecoUiScript.label("", 15, FelecoUiScript.GOLD)
@@ -142,9 +183,39 @@ func _read_counts_from_config() -> void:
 	var gc: Node = get_node("/root/GameConfig")
 	_setting_counts = true
 	for entry: Array in SPECIES_FIELDS:
-		_spins[entry[0]].value = clampi(int(gc.get(entry[0])), 2, 40)
+		_spins[entry[0]].value = clampi(_config_count(gc, entry), 1, 40)
+		_toggles[entry[0]].button_pressed = not gc.disabled_species.has(entry[4])
 	_setting_counts = false
 	_mark_matching_herd()
+
+func _config_count(gc: Node, entry: Array) -> int:
+	var field: String = entry[0]
+	if field.begins_with("extra:"):
+		return int(gc.extra_counts.get(field.substr(6), entry[3]))
+	var v = gc.get(field)
+	return int(entry[3]) if v == null else int(v)
+
+func _on_species_toggled(on: bool, field: String) -> void:
+	_spins[field].editable = on
+	_spins[field].modulate.a = 1.0 if on else 0.35
+	if not _setting_counts:
+		_update_summary()
+
+func _group_of_entry(entry: Array) -> String:
+	var id: String = entry[4]
+	if id == "tree" or id == "bush":
+		return "producer"
+	return SpeciesDB.group_of(id)
+
+func _on_group_toggled(on: bool, group: String) -> void:
+	_setting_counts = true
+	for entry: Array in SPECIES_FIELDS:
+		var hit: bool = entry[4] == "human" if group == "human" else _group_of_entry(entry) == group
+		if hit:
+			# "No humans" is pressed to remove them; the group buttons are pressed to keep.
+			_toggles[entry[0]].button_pressed = (not on) if group == "human" else on
+	_setting_counts = false
+	_update_summary()
 
 func _set_all_counts(values: Dictionary) -> void:
 	_setting_counts = true
@@ -187,9 +258,15 @@ func _on_count_edited(_value: float) -> void:
 
 func _update_summary() -> void:
 	var total: int = 0
+	var off: Array[String] = []
 	for entry: Array in SPECIES_FIELDS:
-		total += int(_spins[entry[0]].value)
-	_total_label.text = "%d creatures, spores and trees in the valley." % total
+		if _toggles[entry[0]].button_pressed:
+			total += int(_spins[entry[0]].value)
+		else:
+			off.append(entry[1])
+	_total_label.text = "%d creatures and plants in the valley." % total
+	if not off.is_empty():
+		_total_label.text += "  Left out: %s." % ", ".join(off)
 	var gc: Node = get_node("/root/GameConfig")
 	if gc.owned_upgrades.get("foresight_i", false) or gc.owned_upgrades.get("foresight_ii", false):
 		var predators: int = _count("wolf_count") + _count("human_count") + _count("falcon_count")
@@ -201,6 +278,8 @@ func _update_summary() -> void:
 		_foresight_label.hide()
 
 func _count(field: String) -> int:
+	if _toggles.has(field) and not _toggles[field].button_pressed:
+		return 0
 	return int(_spins[field].value)
 
 func _on_time_setting(index: int) -> void:
@@ -211,8 +290,15 @@ func _on_time_setting(index: int) -> void:
 
 func _on_start() -> void:
 	var gc: Node = get_node("/root/GameConfig")
+	gc.disabled_species.clear()
 	for entry: Array in SPECIES_FIELDS:
-		gc.set(entry[0], _count(entry[0]))
+		var field: String = entry[0]
+		if field.begins_with("extra:"):
+			gc.extra_counts[field.substr(6)] = _count(field)
+		else:
+			gc.set(field, _count(field))
+		if not _toggles[field].button_pressed:
+			gc.disabled_species.append(entry[4])
 	gc.map_preset = _map.get_item_text(_map.selected)
 	gc.grass_density = 0.5
 	gc.current_mode = "sandbox"

@@ -38,6 +38,7 @@ func _get_transition_modifiers() -> Dictionary:
 		return mods
 	var robins := vision.get_visible_by_tag("robin")
 	var rabbits := vision.get_visible_by_tag("rabbit")
+	rabbits.append_array(vision.get_visible_by_tag("beetle"))
 	var sim: SimulationDirector = director
 	var fish_near: bool = sim != null and sim.find_nearest_fish(global_position, 14.0) != null
 	if robins.size() > 0 or rabbits.size() > 0 or fish_near:
@@ -157,6 +158,7 @@ func _on_tick_dive(delta: float) -> void:
 	if vision != null:
 		var robins := vision.get_visible_by_tag("robin")
 		var rabbits := vision.get_visible_by_tag("rabbit")
+		rabbits.append_array(vision.get_visible_by_tag("beetle"))
 		# Rabbits on open ground are the staple; robins are harder to catch.
 		if rabbits.size() > 0 and is_instance_valid(rabbits[0]):
 			target = rabbits[0]
@@ -200,7 +202,7 @@ func die() -> void:
 		return
 	var sim: SimulationDirector = director
 	if sim != null:
-		sim.spawn_corpse(global_position, 1.0, "falcon")
+		sim.spawn_corpse(global_position, 1.0, "falcon", golden)
 		sim.agent_died.emit("falcon", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.95, 0.95, 0.95))
 	FXManager.show_floating_text(global_position + Vector3.UP, "X", Color(0.95, 0.95, 0.8))

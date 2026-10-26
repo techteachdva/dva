@@ -130,7 +130,7 @@ func _feed_on_corpses(delta: float) -> void:
 		return
 	var nearest_corpse := sim.find_nearest_corpse(global_position, 6.0)
 	if nearest_corpse != null and nearest_corpse.has_method("absorb_energy"):
-		var drained: float = nearest_corpse.absorb_energy(delta * 0.8)
+		var drained: float = nearest_corpse.absorb_energy(delta * 0.8, self)
 		if drained > 0.0:
 			var spawn_chance := 0.0
 			if spore_count <= 20:

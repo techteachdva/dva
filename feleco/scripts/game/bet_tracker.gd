@@ -13,6 +13,8 @@ var director: SimulationDirector
 var stats: Dictionary = {
 	"start": {}, "peak": {}, "extinct_day": {}, "named_dead": {}, "named_age": {},
 	"flood_toll": 0, "max_extinct_at_once": 0,
+	"group_start": {}, "group_score": {}, "group_peak": {}, "group_extinct": {},
+	"drought": false, "golden_finds": 0, "gold_soil": false,
 }
 var _accum: float = 0.0
 var _started: bool = false
@@ -52,6 +54,8 @@ func refresh() -> void:
 			return
 		_started = true
 		stats["start"] = c.duplicate()
+		stats["group_start"] = director.get_group_scores()
+		director.drought_started.connect(func() -> void: stats["drought"] = true)
 	var zero_now: int = 0
 	for f: Array in BetBook.FACTIONS:
 		var k: String = f[0]
@@ -63,6 +67,24 @@ func refresh() -> void:
 				stats["extinct_day"][k] = day
 	stats["max_extinct_at_once"] = maxi(int(stats["max_extinct_at_once"]), zero_now)
 	stats["flood_toll"] = director.flood_fish_toll
+	# 3.0: group fill, a group losing a species, and where gold has been.
+	var gs: Dictionary = director.get_group_scores()
+	stats["group_score"] = gs
+	for g: String in gs.keys():
+		stats["group_peak"][g] = maxf(float(stats["group_peak"].get(g, 0.0)), float(gs[g]))
+	for id: String in SpeciesDB.ROWS.keys():
+		var key := SpeciesDB.plural(id)
+		var grp := SpeciesDB.group_of(id)
+		if SpeciesDB.GROUPS.has(grp) and int(stats["start"].get(key, 0)) > 0 and int(c.get(key, 0)) == 0:
+			stats["group_extinct"][grp] = true
+	stats["golden_finds"] = director.golden_finds
+	if not stats.has("low"):
+		stats["low"] = {}
+	for key: String in c.keys():
+		stats["low"][key] = mini(int(stats["low"].get(key, 999)), int(c[key]))
+	for link: String in director.gold_links.keys():
+		if SpeciesDB.group_of(link.get_slice(">", 1)) == "decomposer":
+			stats["gold_soil"] = true
 	stats["day"] = day
 	var gc := _gc()
 	if gc == null:
@@ -95,7 +117,7 @@ func _judge_all(final: bool) -> void:
 	for bet: Dictionary in gc.bets:
 		if bet["state"] != "open":
 			continue
-		var r: int = BetBook.judge(bet, c, stats, final)
+		var r: int = BetBook.judge3(bet, stats, final) if BetBook.is_v3(bet) else BetBook.judge(bet, c, stats, final)
 		if r == 0:
 			continue
 		bet["state"] = "won" if r > 0 else "lost"

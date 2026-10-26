@@ -8,83 +8,58 @@ const UPGRADES: Array[Dictionary] = [
 	{
 		"id": "foresight_i",
 		"name": "Foresight I",
-		"cost": 50,
+		"cost": 20,
 		"desc": "Show total predator count on the setup screen.",
-	},
-	{
-		"id": "foresight_ii",
-		"name": "Foresight II",
-		"cost": 200,
-		"desc": "Show individual HP and SPD of all starting entities in setup.",
 	},
 	{
 		"id": "rain_dance",
 		"name": "Rain Dance",
-		"cost": 100,
+		"cost": 25,
 		"desc": "Start every run with 1 free Rain powerup.",
 	},
 	{
-		"id": "shepherds_blessing",
-		"name": "Shepherd's Blessing",
-		"cost": 150,
-		"desc": "Your bet species starts with +15% population.",
+		"id": "green_thumb",
+		"name": "Green Thumb",
+		"cost": 40,
+		"desc": "Golden grass, berries, apples and star moss turn up half as often again (never more than 1 in 20).",
 	},
 	{
 		"id": "time_dilation",
 		"name": "Time Dilation",
-		"cost": 300,
+		"cost": 60,
 		"desc": "Every run lasts one more day.",
 	},
 	{
 		"id": "long_days",
 		"name": "Long Days",
-		"cost": 150,
+		"cost": 30,
 		"desc": "The sun stays up two thirds of every day. Good for grazers, villagers and falcons.",
-	},
-	{
-		"id": "long_nights",
-		"name": "Long Nights",
-		"cost": 150,
-		"desc": "The moon rules two thirds of every day. Good for wolves, boars, worms and mushrooms.",
-	},
-	{
-		"id": "night_owl",
-		"name": "Night Owl",
-		"cost": 120,
-		"desc": "Your champion ignores its off-hours: day creatures stay sharp at night, night creatures by day.",
-	},
-	{
-		"id": "moonlit_harvest",
-		"name": "Moonlit Harvest",
-		"cost": 100,
-		"desc": "Mushrooms and worms get a quarter more out of every night.",
 	},
 	{
 		"id": "side_eye",
 		"name": "Side Eye",
-		"cost": 250,
+		"cost": 40,
 		"desc": "Your betting table limit is 10 coins higher.",
 	},
 	{
 		"id": "cloning_vat",
 		"name": "Cloning Vat",
-		"cost": 500,
+		"cost": 60,
 		"desc": "Your bet species gets +1 respawn if it goes extinct mid-run.",
 	},
 ]
 
 # One charge each. Durations are in days of sun and moon (see Clock).
 const POWERUPS: Array[Dictionary] = [
+	{"id": "bloom", "name": "Bloom", "cost": 15, "desc": "Producers: the meadow, the woods and the moss all surge at once."},
+	{"id": "stampede", "name": "Stampede", "cost": 15, "desc": "Herbivores: the herds panic and scatter across the valley."},
+	{"id": "predator_call", "name": "Call Kin", "cost": 25, "desc": "A few more of your champion's kind arrive."},
+	{"id": "feast", "name": "Feast", "cost": 15, "desc": "Omnivores: every bear, boar, robin and villager eats its fill."},
+	{"id": "rot_rain", "name": "Rot Rain", "cost": 15, "desc": "Decomposers: mushrooms, worms and beetles surface across the valley."},
 	{"id": "rain", "name": "Rain", "cost": 12, "desc": "Grass grows at 2.2x for a day. Worms and mushrooms surge; falcons hunt blind."},
-	{"id": "heal", "name": "Heal", "cost": 10, "desc": "Your champion's kin get +25 health and energy."},
+	{"id": "drought", "name": "Drought", "cost": 18, "desc": "The meadow bakes and the moss shrivels for a day and a half."},
 	{"id": "flood", "name": "Flood", "cost": 18, "desc": "The river rises for half a day. Fish left on dry land add to the Flood Toll."},
-	{"id": "famine", "name": "Famine", "cost": 20, "desc": "Grass grows at a quarter speed for a day."},
-	{"id": "predator_call", "name": "Call Kin", "cost": 25, "desc": "Two of your champion's kind arrive."},
-	{"id": "meteor", "name": "Meteor", "cost": 35, "desc": "A fifth of whoever holds the valley is broken."},
-	{"id": "full_moon", "name": "Full Moon", "cost": 15, "desc": "Tonight, wolves, boars, worms and mushrooms get half again their night bonus."},
-	{"id": "lantern_night", "name": "Lantern Night", "cost": 15, "desc": "Tonight, villagers and sheep near huts cannot be hunted."},
 	{"id": "eclipse", "name": "Eclipse", "cost": 30, "desc": "Night falls at once for half a day."},
-	{"id": "midnight_sun", "name": "Midnight Sun", "cost": 30, "desc": "The next night never comes: the sun holds for a whole day."},
 ]
 
 var _frame: Dictionary = {}
@@ -96,7 +71,7 @@ var _powerup_box: VBoxContainer
 func _ready() -> void:
 	_frame = FelecoUiScript.build_screen(self, "The Greenhouse", _on_back)
 	var body: HBoxContainer = _frame["body"]
-	_upgrade_box = FelecoUiScript.card(body, "Upgrades (keep forever)", 1.0)
+	_upgrade_box = FelecoUiScript.card(body, "Upgrades (win a Rampage to earn)", 1.0)
 	_powerup_box = FelecoUiScript.card(body, "Powerups (one use each)", 1.0)
 	var footer: HBoxContainer = _frame["footer"]
 	_points_label = FelecoUiScript.label("", 22, FelecoUiScript.GOLD)
@@ -138,6 +113,12 @@ func _fill(box: VBoxContainer, items: Array[Dictionary], permanent: bool) -> voi
 		if owned:
 			buy.text = "Owned"
 			buy.disabled = true
+		elif permanent:
+			# Upgrades are earned by winning a Rampage, never bought.
+			var next: bool = gc.UPGRADE_ORDER.find(item["id"]) == _next_locked(gc)
+			buy.text = "Next" if next else "Locked"
+			buy.disabled = true
+			buy.tooltip_text = "Win a Rampage to earn this: click a golden creature, press Rampage! and devour %d before its gold runs out." % gc.RAMPAGE_GOAL
 		else:
 			buy.text = "%d EP" % item["cost"]
 			buy.theme_type_variation = "PrimaryButton" if gc.eco_points >= item["cost"] else "TouchButton"
@@ -147,6 +128,12 @@ func _fill(box: VBoxContainer, items: Array[Dictionary], permanent: bool) -> voi
 			row.add_child(FelecoUiScript.label("x%d" % held, 16, FelecoUiScript.GOLD))
 		row.add_child(buy)
 		box.add_child(row)
+
+func _next_locked(gc: Node) -> int:
+	for i: int in gc.UPGRADE_ORDER.size():
+		if not gc.owned_upgrades.get(gc.UPGRADE_ORDER[i], false):
+			return i
+	return -1
 
 func _buy(item: Dictionary, permanent: bool) -> void:
 	var gc: Node = get_node("/root/GameConfig")

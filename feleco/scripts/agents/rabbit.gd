@@ -33,7 +33,7 @@ func _get_transition_modifiers() -> Dictionary:
 	var vision: VisionCone = _vision_cone
 	if vision != null:
 		var threat := false
-		for tag: String in ["human", "falcon", "wolf"]:
+		for tag: String in ["human", "falcon", "wolf", "lion", "bear"]:
 			for t: Node3D in vision.get_visible_by_tag(tag):
 				# Only bolt when the hunter is close enough to matter.
 				if is_instance_valid(t) and t.global_position.distance_squared_to(global_position) < 81.0:
@@ -130,16 +130,23 @@ func _on_tick_graze(delta: float) -> void:
 		return
 	# Eat grass
 	if sim.grass != null:
-		var consumed := sim.grass.consume_density(global_position, delta * 0.5)
+		var consumed := sim.grass.consume_density(global_position, delta * 0.5, self)
 		if consumed > 0.0:
 			energy += consumed * 8.0
 			energy = clampf(energy, 0.0, 100.0)
+			return
+	# Moss low on the tree trunks
+	var mossy := sim.find_nearest_tree(global_position, 3.0)
+	if mossy != null and mossy.has_method("eat_moss"):
+		var m: float = mossy.eat_moss(delta * 0.3, self)
+		if m > 0.0:
+			energy = clampf(energy + m * 25.0, 0.0, 100.0)
 			return
 	# Seek apples
 	var nearest_apple := sim.find_nearest_apple(global_position, 6.0)
 	if nearest_apple != null and global_position.distance_squared_to(nearest_apple.global_position) < 2.0:
 		if nearest_apple.has_method("eat"):
-			energy += nearest_apple.eat() * 0.5
+			energy += nearest_apple.eat(self) * 0.5
 			energy = clampf(energy, 0.0, 100.0)
 			return
 	# Random drift with grass bias
@@ -157,9 +164,10 @@ func _on_tick_flee(_delta: float) -> void:
 	var threat: Node3D = null
 	var vision: VisionCone = _vision_cone
 	if vision != null:
-		threat = vision.closest_visible("human")
-		if threat == null:
-			threat = vision.closest_visible("falcon")
+		for tag: String in ["human", "falcon", "wolf", "lion", "bear"]:
+			threat = vision.closest_visible(tag)
+			if threat != null:
+				break
 	if threat != null and is_instance_valid(threat):
 		var away := (global_position - threat.global_position).normalized()
 		velocity = away * flee_speed
@@ -175,7 +183,7 @@ func die() -> void:
 		return
 	var sim: SimulationDirector = director
 	if sim != null:
-		sim.spawn_corpse(global_position, 0.3, "rabbit")
+		sim.spawn_corpse(global_position, 0.3, "rabbit", golden)
 		sim.agent_died.emit("rabbit", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.78, 0.6, 0.42))
 	FXManager.show_floating_text(global_position + Vector3.UP, "X", Color(0.9, 0.7, 0.5))

@@ -10,10 +10,12 @@ extends Control
 # See docs/design/betting_table.md.
 
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
-const PAGES: Array[String] = ["Who rules", "Creatures", "Fish & Flood", "Specials"]
+const PAGES: Array[String] = ["The Order", "Long shots"]
 const CHIPS: Array[int] = [1, 5, 10]
 const MAX_PER_BOX: int = 20
-const ROSTER_SPECIES: Array[String] = ["sheep", "wolf", "human", "falcon", "robin", "boar", "worm", "rabbit"]
+# Starters are drawn from these (whichever are switched on for the run).
+const ROSTER_SPECIES: Array[String] = ["sheep", "rabbit", "deer", "goat", "wolf", "lion", "falcon", "human", "bear", "boar", "robin", "worm", "beetle"]
+const STARTERS: int = 3
 const FELT := Color(0.12, 0.27, 0.17, 1)
 const FELT_EDGE := Color(0.33, 0.22, 0.12, 1)
 
@@ -47,6 +49,9 @@ var _swipe_base: float = 0.0
 var _swipe_down: bool = false
 var _swiping: bool = false
 var _strip_tween: Tween
+# The player's ranking for the Order bets, best first.
+var _rank: Array = []
+var _rank_rows: VBoxContainer
 
 func _ready() -> void:
 	_gc = get_node("/root/GameConfig")
@@ -83,24 +88,24 @@ func _fill_viewport() -> void:
 func _ensure_roster() -> void:
 	if not _gc.spawn_roster.is_empty():
 		return
-	var used: Dictionary = {}
+	# Three starters from three different species that are in the valley,
+	# each with rolled stats and the trait that hints at its chances.
+	var pool: Array = []
 	for sp: String in ROSTER_SPECIES:
-		# One male, one female, and never the same kind: one is common, the
-		# other a tough or special variant, so the pair really differ.
-		var odd: int = randi() % 2
-		var odd_role: String = Roles.TOUGH if randf() < 0.6 else Roles.SPECIAL
-		for i: int in 2:
-			# Every name on the table is unique, so bets never get mixed up.
-			var sex: String = "male" if i == 0 else "female"
-			var nm: String = NameGenerator.generate(sp, sex)
-			var tries: int = 0
-			while used.has(nm) and tries < 20:
-				nm = NameGenerator.generate(sp, sex)
-				tries += 1
-			if used.has(nm):
-				nm = "%s %s" % [nm, ["II", "III", "IV"][i % 3]]
-			used[nm] = true
-			_gc.spawn_roster.append({"name": nm, "species": sp, "sex": sex, "role": odd_role if i == odd else Roles.NONE})
+		if not _gc.disabled_species.has(sp):
+			pool.append(sp)
+	pool.shuffle()
+	var used: Dictionary = {}
+	for i: int in mini(STARTERS, pool.size()):
+		var sp: String = pool[i]
+		var sex: String = "male" if randf() < 0.5 else "female"
+		var nm: String = NameGenerator.generate(sp, sex)
+		var tries: int = 0
+		while used.has(nm) and tries < 20:
+			nm = NameGenerator.generate(sp, sex)
+			tries += 1
+		used[nm] = true
+		_gc.spawn_roster.append(BetBook.roll_starter(sp, sex, nm))
 
 func _start_counts() -> Dictionary:
 	return {
@@ -110,22 +115,48 @@ func _start_counts() -> Dictionary:
 		"mushrooms": _gc.spore_count,
 	}
 
+# Expected group fill at the start, from the setup counts (see
+# SimulationDirector.get_group_scores for the live version).
+func _start_scores() -> Dictionary:
+	var counts := _start_counts()
+	for id: String in SpeciesDB.NEW_SPECIES:
+		counts[SpeciesDB.plural(id)] = 0 if _gc.disabled_species.has(id) else int(_gc.extra_counts.get(id, SpeciesDB.row(id).get("start", 0)))
+	var out: Dictionary = {}
+	var producers: float = float(_gc.grass_density) * 4096.0 * 0.4 / 8.0 + float(_gc.tree_count) * 3.0 + float(_gc.bush_count) * 1.5
+	out["producer"] = producers / SimulationDirector.PRODUCER_HOLD
+	for g: String in SpeciesDB.GROUPS:
+		if g == "producer":
+			continue
+		var members := SpeciesDB.members(g)
+		var total: float = 0.0
+		for id: String in members:
+			var key := SpeciesDB.plural(id)
+			var hold: float = SimulationDirector.MUSHROOM_HOLD if id == "mushroom" else float(SimulationDirector.HOLD_CAPACITY.get(key, 10.0))
+			total += float(counts.get(key, 0)) / hold
+		out[g] = total / maxf(1.0, float(members.size()))
+	return out
+
 func _build_offers() -> void:
-	var counts: Dictionary
 	var stats: Dictionary = {}
 	var day: float = 0.0
+	var scores: Dictionary
 	var roster: Array = []
 	for r: Dictionary in _gc.spawn_roster:
-		roster.append(r.duplicate())
+		if r.get("starter", false):
+			roster.append(r.duplicate())
 	if live and tracker != null:
-		counts = tracker.counts()
 		stats = tracker.stats
 		day = tracker.director.get_day()
+		scores = tracker.director.get_group_scores()
 		for r: Dictionary in roster:
 			r["age"] = float(stats["named_age"].get("%s|%s" % [r["name"], r["species"]], -1.0))
 	else:
-		counts = _start_counts()
-	var offers := BetBook.catalogue(counts, roster, float(_gc.time_limit), day, stats)
+		scores = _start_scores()
+	if _rank.is_empty():
+		_rank = BetBook.default_ranking(BetBook.group_weights(scores))
+	var scenario: Dictionary = ChallengeScenarios.featured_bet(_gc.scenario_id) if _gc.current_mode == "challenge" else {}
+	var offers := BetBook.catalogue3(scores, roster, float(_gc.time_limit), day, stats, scenario, _rank)
+	_scores = scores
 	var progress: float = tracker.progress() if (live and tracker != null) else 0.0
 	for o: Dictionary in offers:
 		if live:
@@ -134,6 +165,144 @@ func _build_offers() -> void:
 
 func _offer(id: String) -> Dictionary:
 	return _offers.get(id, {})
+
+var _scores: Dictionary = {}
+
+# Move a group up one place in the player's ranking and re-price the Order bets.
+func _rank_up(group: String) -> void:
+	var i: int = _rank.find(group)
+	if i <= 0:
+		return
+	_rank[i] = _rank[i - 1]
+	_rank[i - 1] = group
+	var w := BetBook.group_weights(_scores)
+	for id: String in ["order:exact", "order:top3"]:
+		var o := _offer(id)
+		if o.is_empty():
+			continue
+		var depth: int = int(o["meta"]["depth"])
+		o["meta"]["rank"] = _rank.duplicate()
+		o["p"] = BetBook.order_p(w, _rank, depth)
+		o["mult"] = BetBook.mult_for(float(o["p"]))
+		if live and tracker != null:
+			# Late bets pay less, re-ranked or not.
+			o["mult"] = BetBook.live_mult(float(o["mult"]), tracker.progress())
+		o["available"] = float(o["p"]) <= BetBook.MAX_P
+		if _boxes.has(id):
+			_boxes[id].reprice()
+	_fill_rank_rows()
+
+func _fill_rank_rows() -> void:
+	if _rank_rows == null:
+		return
+	for c in _rank_rows.get_children():
+		c.queue_free()
+	for i: int in _rank.size():
+		var g: String = _rank[i]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		var num := FelecoUiScript.heading("%d." % (i + 1), 16, FelecoUiScript.GOLD)
+		num.custom_minimum_size = Vector2(22, 0)
+		row.add_child(num)
+		var swatch := ColorRect.new()
+		swatch.color = SpeciesDB.GROUP_COLOR[g]
+		swatch.custom_minimum_size = Vector2(12, 12)
+		swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(swatch)
+		var nm := FelecoUiScript.heading(SpeciesDB.GROUP_LABEL[g], 16, FelecoUiScript.CREAM)
+		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(nm)
+		var up := Button.new()
+		up.text = "Up"
+		up.theme_type_variation = "GhostButton"
+		up.custom_minimum_size = Vector2(56, 40 if _compact else 30)
+		up.disabled = i == 0
+		up.tooltip_text = "Move %s up one place." % SpeciesDB.GROUP_LABEL[g]
+		up.pressed.connect(_rank_up.bind(g))
+		row.add_child(up)
+		_rank_rows.add_child(row)
+
+# Screen 1: who ends the year fullest, the full order, and the starters.
+func _order_section(col: VBoxContainer, compact_cols: int) -> void:
+	_sublabel(col, "Fullest at year's end")
+	var tops := _grid(col, compact_cols)
+	for g: String in SpeciesDB.GROUPS:
+		_add_box(tops, "top:" + g, BetBox.MINI if not _compact else BetBox.SMALL, "", Vector2(96, 92) if not _compact else Vector2.ZERO)
+	_sublabel(col, "Your order (best first)")
+	_rank_rows = VBoxContainer.new()
+	_rank_rows.add_theme_constant_override("separation", 2)
+	col.add_child(_rank_rows)
+	_fill_rank_rows()
+	var orders := HBoxContainer.new()
+	orders.add_theme_constant_override("separation", 6)
+	col.add_child(orders)
+	_add_box(orders, "order:top3", BetBox.ZONE, "Top three")
+	_add_box(orders, "order:exact", BetBox.ZONE, "Exact order")
+
+func _starter_section(col: VBoxContainer) -> void:
+	_sublabel(col, "Starters: still alive on the day shown")
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 8)
+	flow.add_theme_constant_override("v_separation", 8)
+	col.add_child(flow)
+	var survive_icon: Texture2D = load("res://assets/icons/survive.svg")
+	for r: Dictionary in _gc.spawn_roster:
+		if not r.get("starter", false):
+			continue
+		var key: String = "%s|%s" % [r["name"], r["species"]]
+		if not _offers.has("survivor:" + key):
+			continue
+		var card := VBoxContainer.new()
+		card.add_theme_constant_override("separation", 2)
+		card.custom_minimum_size = Vector2(150 if not _compact else 200, 0)
+		var head := HBoxContainer.new()
+		head.add_theme_constant_override("separation", 4)
+		card.add_child(head)
+		var art := TextureRect.new()
+		art.texture = _roster_texture(r)
+		art.custom_minimum_size = Vector2(40, 40)
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		head.add_child(art)
+		var names := VBoxContainer.new()
+		names.add_theme_constant_override("separation", 0)
+		head.add_child(names)
+		var nm := FelecoUiScript.heading(String(r["name"]), 15, FelecoUiScript.CREAM)
+		names.add_child(nm)
+		var trait_info: Dictionary = r.get("trait", {})
+		var tr := FelecoUiScript.label("%s %s" % [String(trait_info.get("name", "")), SpeciesDB.one(r["species"])], 13, FelecoUiScript.GOLD)
+		tr.tooltip_text = String(trait_info.get("hint", ""))
+		tr.mouse_filter = Control.MOUSE_FILTER_STOP
+		names.add_child(tr)
+		var line: int = int(_offer("survivor:" + key).get("meta", {}).get("by_day", 0))
+		_add_box(card, "survivor:" + key, BetBox.ZONE, "Lives to day %d" % line, Vector2.ZERO, survive_icon)
+		flow.add_child(card)
+
+# Screen 2: long shots.
+func _longshot_section(col: VBoxContainer) -> void:
+	var matrix := _grid(col, 3, 4)
+	matrix.add_child(Control.new())
+	for h: String in ["Loses a species", "Doubles"]:
+		var l := FelecoUiScript.heading(h, 13, FelecoUiScript.MIST)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.custom_minimum_size = Vector2(110, 0)
+		matrix.add_child(l)
+	for g: String in SpeciesDB.GROUPS:
+		var nm := FelecoUiScript.heading(SpeciesDB.GROUP_LABEL[g], 15, SpeciesDB.GROUP_COLOR[g].lightened(0.2))
+		nm.custom_minimum_size = Vector2(120, 0)
+		matrix.add_child(nm)
+		_add_box(matrix, "gextinct:" + g, BetBox.CELL, "", Vector2(110, 34 if _compact else 30))
+		_add_box(matrix, "gboom:" + g, BetBox.CELL, "", Vector2(110, 34 if _compact else 30))
+	_sublabel(col, "Events")
+	var ev := _grid(col, 2, 6)
+	_add_box(ev, "drought", BetBox.ZONE, "Drought", Vector2.ZERO, load("res://assets/icons/famine.svg") if ResourceLoader.exists("res://assets/icons/famine.svg") else null)
+	_add_box(ev, "flood:30", BetBox.ZONE, "Flood: 30+ fish", Vector2.ZERO, FelecoUiScript.species_texture("fish"))
+	_add_box(ev, "golden", BetBox.ZONE, "%d golden finds" % BetBook.GOLDEN_LINE)
+	_add_box(ev, "goldloop", BetBox.ZONE, "Gold to soil", Vector2.ZERO, FelecoUiScript.species_texture("beetle"))
+	var sc := ChallengeScenarios.featured_bet(_gc.scenario_id) if _gc.current_mode == "challenge" else {}
+	if not sc.is_empty():
+		_sublabel(col, "This year's question")
+		_add_box(col, "scenario:" + str(sc["id"]), BetBox.ZONE, str(sc["label"]))
 
 # ------------------------------------------------------------------
 # Layout
@@ -242,11 +411,10 @@ func _build_board(felt: Control) -> void:
 	_board.add_theme_constant_override("separation", 12)
 	_board.size = BOARD_SIZE
 	_board_holder.add_child(_board)
-	_board_rules(_board_panel("Who rules", "Bet on who has the most living members when the run ends. Guilds add their members together. The duel is falcons against robins: more at the end wins.", 0.95))
-	_board_creatures(_board_panel("Named creatures", "A male and a female of every species, one of them a rare kind.
-Heart: alive at the end.  Skull: dies in the first half of the run (pays at once).", 1.42))
-	_board_specials(_board_panel("Specials", "Flood Toll: fish that die on dry land after floods recede, counted over the whole run.
-Dies out, Doubles and Phoenix pay the moment they happen; Last one is judged at the end.", 1.0))
+	var order := _board_panel("The Order", "Which link of the food web ends the year fullest? Each group is scored by how full it is: every species against what the valley can hold of it. Rank all five for the big payouts. Starters: three named creatures with rolled stats; the trait hints at their chances.", 1.2)
+	_order_section(order, 5)
+	_starter_section(order)
+	_longshot_section(_board_panel("Long shots", "A group loses a species, or a group doubles: these pay the moment they happen. Gold to soil: gold from a golden plant passes all the way to a decomposer.", 1.0))
 	_board_holder.resized.connect(_fit_board)
 	_fit_board.call_deferred()
 
@@ -472,10 +640,13 @@ func _build_pages(felt: Control) -> void:
 	_strip = HBoxContainer.new()
 	_strip.add_theme_constant_override("separation", 0)
 	_pager.add_child(_strip)
-	_add_page(_page_rules())
-	_add_page(_page_creatures())
-	_add_page(_page_fish())
-	_add_page(_page_specials())
+	var p1 := VBoxContainer.new()
+	_order_section(p1, 3)
+	_starter_section(p1)
+	_add_page(p1)
+	var p2 := VBoxContainer.new()
+	_longshot_section(p2)
+	_add_page(p2)
 	for i: int in PAGES.size():
 		var dot := ColorRect.new()
 		dot.custom_minimum_size = Vector2(10, 10)
@@ -894,7 +1065,7 @@ func _refresh() -> void:
 	if n == 0:
 		_slip.text = "No bets yet  ·  %d EP in the pot" % coins_free()
 	else:
-		_slip.text = "%d bet%s  ·  %d EP on the felt  ·  best case +%d EP" % [n, "" if n == 1 else "s", stake, int(round(best))]
+		_slip.text = "%d bet%s  ·  %d EP on the felt  ·  best case +%d EP  ·  odds lock when placed" % [n, "" if n == 1 else "s", stake, int(round(best))]
 	show_info(null)
 	if live:
 		_start.text = "Place bets" if n > 0 else "Back to the valley"
@@ -958,8 +1129,8 @@ func _on_start() -> void:
 			_gc.player_bet = BetBook.label_of(top)
 	_gc.side_bet_entity = {}
 	for b: Dictionary in _gc.bets:
-		if b["type"] == "survivor" or b["type"] == "doomed":
-			_gc.side_bet_entity = {"name": b["meta"]["name"], "species": b["meta"]["species"], "bet_type": "survive" if b["type"] == "survivor" else "die"}
+		if b["type"] in ["survivor", "doomed", "starter"]:
+			_gc.side_bet_entity = {"name": b["meta"]["name"], "species": b["meta"]["species"], "bet_type": "die" if b["type"] == "doomed" else "survive"}
 			break
 	if _gc.current_mode == "sandbox":
 		# Campaign and challenge setups already applied them.
@@ -985,19 +1156,13 @@ func _close() -> void:
 # ------------------------------------------------------------------
 const GUIDE: Array = [
 	["coin", "How to play", "Drag coins from the pot onto a box, or pick a chip and tap boxes. Right-click or long-press a box to take coins back. A win pays your coins times the box's odds."],
-	["sheep", "Who rules", "The species with the most living members when the run ends."],
-	["mushroom", "Guilds", "Grazers (sheep, rabbits, boars), Predators (wolves, humans, falcons) or Decomposers (worms, mushrooms): the biggest combined crowd at the end."],
-	["falcon", "Bird duel", "More falcons or more robins at the end. A tie goes to the house."],
-	["survive", "Lives", "That named creature is still alive when the run ends."],
-	["die", "Dies early", "That named creature falls in the first half of the run. Pays the moment it happens."],
-	["fish", "Flood Toll", "Fish that die on dry land after floods recede, counted over the whole run. Spring floods come on their own; the Flood power adds more."],
-	["falcon", "Feast", "A parlay: the Flood Toll reaches 30 and falcons end as the largest population."],
-	["die", "Dies out", "The species hits zero at any moment. Pays at once."],
-	["survive", "Doubles", "The species reaches twice its starting number. Pays at once."],
-	["robin", "Phoenix", "The species dies out, then climbs back to its starting number."],
-	["wolf", "Last one", "The run ends with exactly one of that species alive."],
-	["worm", "Upset", "One of the three least likely species ends with the largest population."],
-	["meteor", "Total wipeout", "Three species are extinct at the same time."],
+	["deer", "The Order", "Producers, Herbivores, Omnivores, Carnivores, Decomposers: which ends the year fullest? Each group is scored by how full it is, every species against what the valley can hold."],
+	["lion", "Your order", "Rank all five with the Up buttons, then bet on the top three or the exact order. The odds change as you rearrange."],
+	["survive", "Starters", "Three named creatures with rolled health, speed and appetite. The trait hints at their chances. Lives: still alive at year's end."],
+	["die", "Loses a species", "Any species in that group dies out. Pays at once."],
+	["survive", "Doubles", "The group gets twice as full as it started. Pays at once."],
+	["fish", "Events", "A drought strikes, 30 fish die stranded after floods, ten golden finds, or gold passing from a golden plant all the way to a decomposer."],
+	["beetle", "This year's question", "In Challenge mode, each scenario asks its own question."],
 	["coin", "Live bets", "During a run, the Bets button pauses the valley and reopens this table at today's odds. Late bets pay less, and decided bets are locked."],
 ]
 
@@ -1370,7 +1535,7 @@ class BetBox extends PanelContainer:
 			var t: String = String(offer["type"])
 			if t in ["doomed", "extinct"]:
 				art.modulate = Color(1.0, 0.72, 0.65)
-			elif t in ["survivor", "elder"]:
+			elif t in ["survivor", "elder", "starter"]:
 				art.modulate = Color(0.8, 1.0, 0.75)
 			row.add_child(art)
 		if not caption.is_empty():
@@ -1423,9 +1588,29 @@ class BetBox extends PanelContainer:
 			"upset": return "One of the three long shots (%s) ends with the largest population." % offer["meta"].get("names", BetBook.label_of(t))
 			"floodfeast": return "Flood & Feast: the Flood Toll reaches 30 and falcons end with the largest population."
 			"survivor": return "Still alive when the run ends."
+			"starter": return "Still alive on day %d. Trait: %s, %s." % [int(offer["meta"].get("by_day", 0.0)), String(offer["meta"].get("trait", {}).get("name", "")), String(offer["meta"].get("trait", {}).get("hint", ""))]
 			"doomed": return "Dies by day %d, the first half of the run." % int(offer["meta"].get("by_day", 0.0))
 			"elder": return "%s the %s lives to %d days old, outliving its kind." % [offer["meta"]["name"], String(offer["meta"]["species"]).capitalize(), int(offer["meta"]["age_needed"])]
+			"top": return "%s end the year as the fullest group in the food web." % SpeciesDB.GROUP_LABEL[t]
+			"order":
+				var names: PackedStringArray = []
+				for g in offer["meta"]["rank"].slice(0, int(offer["meta"]["depth"])):
+					names.append(SpeciesDB.GROUP_LABEL[g])
+				return "The groups finish in this order: %s." % ", ".join(names)
+			"gextinct": return "Any species among the %s dies out." % SpeciesDB.GROUP_LABEL[t].to_lower()
+			"gboom": return "The %s get twice as full as they started." % SpeciesDB.GROUP_LABEL[t].to_lower()
+			"drought": return "A drought strikes this year."
+			"golden": return "%s golden finds: golden grass, berries, apples or star moss eaten." % t
+			"goldloop": return "Gold passes from a golden plant up the food web and back down to a decomposer."
+			"scenario": return String(offer["label"]) + "."
 		return String(offer["label"])
+
+	func reprice() -> void:
+		if not offer.get("available", true):
+			_mult.text = "—"
+		else:
+			_mult.text = "×%s" % _fmt(float(offer["mult"]))
+		tooltip_text = details()
 
 	# Hover card: the creature, what wins, how likely, and what a stake returns.
 	func _make_custom_tooltip(_for_text: String) -> Object:
@@ -1497,13 +1682,20 @@ class BetBox extends PanelContainer:
 			"phoenix": return "%s phoenix" % BetBook.label_of(t)
 			"lone": return "Last of the %s" % BetBook.label_of(t).to_lower()
 			"survivor": return "%s lives" % BettingTable._roster_title(offer["meta"])
+			"starter": return "%s lives to day %d" % [offer["meta"]["name"], int(offer["meta"].get("by_day", 0.0))]
 			"doomed": return "%s dies early" % BettingTable._roster_title(offer["meta"])
 			"elder": return "%s, elder" % offer["meta"]["name"]
+			"top": return "%s on top" % SpeciesDB.GROUP_LABEL[t]
+			"gextinct": return "%s lose a species" % SpeciesDB.GROUP_LABEL[t]
+			"gboom": return "%s double" % SpeciesDB.GROUP_LABEL[t]
 		return String(offer["label"])
 
 	func _accent() -> Color:
 		match String(offer["type"]):
-			"extinct", "doomed", "wipeout": return FelecoUiScript.CLAY
+			"extinct", "doomed", "wipeout", "gextinct", "drought": return FelecoUiScript.CLAY
+			"top": return SpeciesDB.GROUP_COLOR.get(String(offer["target"]), Color(0.42, 0.58, 0.44))
+			"golden", "goldloop": return FelecoUiScript.GOLD
+			"gboom": return FelecoUiScript.LEAF
 			"boom", "survivor", "elder", "phoenix": return FelecoUiScript.LEAF
 			"flood", "floodfeast": return Color(0.4, 0.66, 0.9)
 		return Color(0.42, 0.58, 0.44)

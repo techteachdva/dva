@@ -110,10 +110,17 @@ func _eat_river_worm() -> void:
 	if sim == null or sim.valley == null or sim.valley.river == null:
 		return
 	var worm := sim.find_nearest_worm(global_position, 2.6)
+	if worm == null or not sim.valley.river.covers_world(worm.global_position.x, worm.global_position.z):
+		# Beetles that wander down the bank are snapped up from the shallows.
+		worm = null
+		for b in sim.get_nearby_agents(global_position, 2.6, "beetle"):
+			if is_instance_valid(b):
+				worm = b
+				break
 	if worm == null:
 		return
-	if not sim.valley.river.covers_world(worm.global_position.x, worm.global_position.z):
-		return
+	if float(worm.get("golden")) > 0.0:
+		make_golden(float(worm.golden) * 0.7, worm.get("species_id"))
 	if worm.has_method("die"):
 		worm.die()
 	energy += 16.0
@@ -170,7 +177,7 @@ func die() -> void:
 			dry = not sim.valley.river.covers_world(global_position.x, global_position.z)
 		if dry:
 			sim.note_flood_fish_death()
-		sim.spawn_corpse(global_position, 0.4, "fish")
+		sim.spawn_corpse(global_position, 0.4, "fish", golden)
 		sim.agent_died.emit("fish", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.3, 0.65, 0.85))
 	queue_free()

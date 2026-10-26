@@ -40,6 +40,12 @@ static func heading(text: String, size: int, color: Color) -> Label:
 # A creature's own sprite (its atlas cell) for menus and the betting table.
 # role: 0 normal, 1 tough, 2 special.
 static func species_texture(species: String, role: int = 0, female: bool = false) -> Texture2D:
+	if not SpriteGenerator.SPECIES.has(species):
+		# Producers and anything without a creature sprite: a grass tuft.
+		if not _species_tex.has("tuft"):
+			var tuft := "res://assets/sprites/tuft.png"
+			_species_tex["tuft"] = load(tuft) if ResourceLoader.exists(tuft) else ImageTexture.create_from_image(SpriteGenerator.tuft_image())
+		return _species_tex["tuft"]
 	if species == "mushroom" and role == 0:
 		role = 1  # cell 0 is the drifting spore; menus show the cap
 	var key := "%s:%d:%s" % [species, role, female]

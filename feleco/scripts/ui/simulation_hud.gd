@@ -8,30 +8,31 @@ var _bet_rings: Dictionary = {}
 var _side_bet_pulse: float = 0.0
 var _shown_touches: int = -1
 
+# 3.0: one power for each link of the food web, plus the weather.
 const POWERUP_BUTTONS: Dictionary = {
-	"Rain": "rain",
+	"Bloom": "bloom",
+	"Stampede": "stampede",
 	"Call": "predator_call",
-	"Heal": "heal",
-	"Famine": "famine",
-	"Meteor": "meteor",
+	"Feast": "feast",
+	"RotRain": "rot_rain",
+	"Rain": "rain",
+	"Drought": "drought",
 	"Flood": "flood",
 	"Eclipse": "eclipse",
-	"MidnightSun": "midnight_sun",
-	"FullMoon": "full_moon",
-	"Lantern": "lantern_night",
 }
-const POWER_LABELS: Dictionary = {"Call": "Call Kin", "MidnightSun": "Midnight Sun", "FullMoon": "Full Moon", "Lantern": "Lantern Night"}
+# Scene buttons from before 3.0 that are no longer offered.
+const RETIRED_BUTTONS: Array[String] = ["Heal", "Famine", "Meteor"]
+const POWER_LABELS: Dictionary = {"Call": "Call Kin", "RotRain": "Rot Rain"}
 const POWER_TIPS: Dictionary = {
+	"Bloom": "Bloom (producers): the meadow, the woods and the moss all surge at once.",
+	"Stampede": "Stampede (herbivores): the herds panic and scatter across the valley.",
+	"Call": "Call Kin: a few more of your champion's kind arrive.",
+	"Feast": "Feast (omnivores): every bear, boar, robin and villager eats its fill.",
+	"RotRain": "Rot Rain (decomposers): the soil teems; mushrooms, worms and beetles surface.",
 	"Rain": "Rain: grass surges for a day; worms and mushrooms love it, falcons hunt blind.",
-	"Call": "Call Kin: two of your champion's kind arrive.",
-	"Heal": "Heal: your champion's kin are mended.",
-	"Famine": "Famine: the grass withers for a day. Grazers suffer, hunters feast.",
-	"Meteor": "Meteor: breaks a fifth of whoever holds the valley.",
+	"Drought": "Drought: the meadow bakes and the moss shrivels for a day and a half.",
 	"Flood": "Flood: the river rises for half a day. Fish left on dry land add to the Flood Toll.",
-	"Eclipse": "Eclipse: night falls at once for half a day. Wolves, boars and worms rejoice.",
-	"MidnightSun": "Midnight Sun: tonight never comes. Grazers, villagers and falcons keep going.",
-	"FullMoon": "Full Moon: tonight the night creatures get half again their night bonus.",
-	"Lantern": "Lantern Night: tonight villagers, and sheep near huts, cannot be hunted.",
+	"Eclipse": "Eclipse: night falls at once for half a day. The night hunters rejoice.",
 }
 
 func _ready() -> void:
@@ -228,9 +229,17 @@ func _build_power_tray() -> void:
 	_tray_flow.add_theme_constant_override("v_separation", 8)
 	_tray.add_child(_tray_flow)
 	var handlers: Dictionary = {
-		"Eclipse": _trigger_eclipse, "MidnightSun": _trigger_midnight_sun,
-		"FullMoon": _trigger_full_moon, "Lantern": _trigger_lantern,
+		"Eclipse": _trigger_eclipse,
+		"Bloom": _trigger_simple.bind("bloom", "trigger_bloom"),
+		"Stampede": _trigger_simple.bind("stampede", "trigger_stampede"),
+		"Feast": _trigger_simple.bind("feast", "trigger_feast"),
+		"RotRain": _trigger_simple.bind("rot_rain", "trigger_rot_rain"),
+		"Drought": _trigger_simple.bind("drought", "trigger_drought"),
 	}
+	for old: String in RETIRED_BUTTONS:
+		var gone: Node = $BottomBar.get_node_or_null(old)
+		if gone != null:
+			gone.queue_free()
 	for btn_name: String in POWERUP_BUTTONS.keys():
 		var btn: Button = $BottomBar.get_node_or_null(btn_name) as Button
 		if btn == null:
@@ -243,7 +252,7 @@ func _build_power_tray() -> void:
 		_tray_flow.add_child(btn)
 	_tray_button = Button.new()
 	_tray_button.text = "Powers"
-	_tray_button.tooltip_text = "Rain, floods, eclipses and more. One is free each season."
+	_tray_button.tooltip_text = "A power for each link of the food web, and the weather. One is free each season."
 	_tray_button.custom_minimum_size = Vector2(130, 52)
 	FelecoUiScript.mark(_tray_button, "TouchButton")
 	_tray_button.pressed.connect(func() -> void: _tray.visible = not _tray.visible)
@@ -266,6 +275,10 @@ func _refresh_tuned_badge() -> void:
 		badge.tooltip_text = "Tuning Lab settings (main menu) are active in this run."
 		add_child(badge)
 	badge.visible = gc != null and gc.is_tuned()
+
+func _trigger_simple(powerup_id: String, method: String) -> void:
+	if _spend_touch_or_stock(powerup_id) and _director != null:
+		_director.call(method)
 
 func _trigger_eclipse() -> void:
 	if _spend_touch_or_stock("eclipse") and _director != null:
@@ -323,6 +336,22 @@ func _style_roster() -> void:
 			detail.add_theme_constant_override("line_spacing", 0)
 			label.add_sibling(detail)
 			_roster_details[ROSTER_SPECIES[label_name]] = detail
+	# 3.0 species: their count lines are made here rather than in the scene.
+	var after: Node = $TopLeft/VBox.get_node("FishCountDetail") if $TopLeft/VBox.has_node("FishCountDetail") else $TopLeft/VBox/FishCount
+	for id: String in SpeciesDB.NEW_SPECIES:
+		var col: Color = (SpeciesDB.row(id)["color"] as Color).lightened(0.25)
+		var count := Label.new()
+		count.name = id.capitalize() + "Count"
+		count.add_theme_color_override("font_color", col)
+		count.add_theme_font_size_override("font_size", 16)
+		after.add_sibling(count)
+		var detail := Label.new()
+		detail.add_theme_font_size_override("font_size", 12)
+		detail.add_theme_color_override("font_color", col.lerp(Color(0.6, 0.66, 0.6), 0.55))
+		count.add_sibling(detail)
+		_extra_counts[id] = count
+		_roster_details[id] = detail
+		after = detail
 	$TopLeft/VBox.add_theme_constant_override("separation", 1)
 
 const ROSTER_SPECIES: Dictionary = {
@@ -330,6 +359,7 @@ const ROSTER_SPECIES: Dictionary = {
 	"RobinCount": "robin", "BoarCount": "boar", "RabbitCount": "rabbit", "WormCount": "worm", "FishCount": "fish",
 }
 var _roster_details: Dictionary = {}
+var _extra_counts: Dictionary = {}  # 3.0 species id -> count Label
 
 func _update_breakdown() -> void:
 	if _director == null or _roster_details.is_empty():
@@ -339,15 +369,25 @@ func _update_breakdown() -> void:
 		if data.node == null or not is_instance_valid(data.node) or not _roster_details.has(data.species):
 			continue
 		if not tally.has(data.species):
-			tally[data.species] = [0, 0, 0, 0]
+			tally[data.species] = [0, 0, 0, 0, 0]
 		var t: Array = tally[data.species]
 		t[1 if data.female else 0] += 1
 		var kind: int = Roles.role_index(data.role)
 		if kind > 0:
 			t[1 + kind] += 1
+		if data.golden > 0.05:
+			t[4] += 1
 	for sp: String in _roster_details.keys():
-		var t: Array = tally.get(sp, [0, 0, 0, 0])
-		(_roster_details[sp] as Label).text = "%dM · %dF · %d tough · %d special" % t
+		# With fourteen species the per-kind lines don't fit: they show on hover.
+		(_roster_details[sp] as Label).visible = false
+		var t: Array = tally.get(sp, [0, 0, 0, 0, 0])
+		var line: String = "%dM · %dF · %d tough · %d special" % t.slice(0, 4)
+		if int(t[4]) > 0:
+			line += " · %d gold" % t[4]
+		(_roster_details[sp] as Label).text = line
+		var count_label: Control = (_roster_details[sp] as Label).get_parent().get_child((_roster_details[sp] as Label).get_index() - 1)
+		count_label.mouse_filter = Control.MOUSE_FILTER_PASS
+		count_label.tooltip_text = line
 
 func _refresh_champion() -> void:
 	var gc: Node = get_node_or_null("/root/GameConfig")
@@ -708,6 +748,8 @@ func _on_time_updated(days_remaining: float) -> void:
 	if _director != null:
 		$TopLeft/VBox/WormCount.text = "Worms  %d" % _director._active_worms.size()
 		$TopLeft/VBox/FishCount.text = "Fish  %d" % _director._active_fish.size()
+		for id: String in _extra_counts.keys():
+			(_extra_counts[id] as Label).text = "%s  %d" % [SpeciesDB.label(id), _director.get_species_count(id)]
 		_update_breakdown()
 		_refresh_champion()
 
@@ -732,6 +774,9 @@ const HILL_SPECIES: Array = [
 	["robins", "Rob", Color(0.9, 0.42, 0.3)], ["boars", "Boa", Color(0.5, 0.36, 0.28)],
 	["rabbits", "Rab", Color(0.78, 0.7, 0.58)], ["worms", "Wrm", Color(0.85, 0.52, 0.6)],
 	["fish", "Fsh", Color(0.42, 0.66, 0.86)],
+	["deer", "Der", Color(0.72, 0.5, 0.32)], ["goats", "Got", Color(0.9, 0.88, 0.82)],
+	["bears", "Bea", Color(0.46, 0.3, 0.2)], ["lions", "Lio", Color(0.82, 0.62, 0.38)],
+	["beetles", "Btl", Color(0.4, 0.58, 0.45)],
 ]
 const HILL_BAR_H: float = 96.0
 var _hill_bars: Dictionary = {}
@@ -744,7 +789,7 @@ func _build_hill_bars() -> void:
 	panel.name = "HillBars"
 	panel.anchor_left = 1.0
 	panel.anchor_right = 1.0
-	panel.offset_left = -340.0
+	panel.offset_left = -470.0
 	panel.offset_right = -10.0
 	panel.offset_top = 178.0
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -772,7 +817,7 @@ func _build_hill_bars() -> void:
 	for entry: Array in HILL_SPECIES:
 		var cell := VBoxContainer.new()
 		cell.add_theme_constant_override("separation", 2)
-		cell.custom_minimum_size = Vector2(28, 0)
+		cell.custom_minimum_size = Vector2(26, 0)
 		# An icon, not a glyph: the web build has only the game's own fonts.
 		var crown := TextureRect.new()
 		crown.texture = load("res://assets/icons/crown.svg")
@@ -784,7 +829,7 @@ func _build_hill_bars() -> void:
 		var bar := ProgressBar.new()
 		bar.fill_mode = ProgressBar.FILL_BOTTOM_TO_TOP
 		bar.show_percentage = false
-		bar.custom_minimum_size = Vector2(22, HILL_BAR_H)
+		bar.custom_minimum_size = Vector2(18, HILL_BAR_H)
 		bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		bar.max_value = 1.0
 		bar.step = 0.0

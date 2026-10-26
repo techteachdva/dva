@@ -12,6 +12,12 @@ signal extinction_event(species: String)
 signal overpopulation_event(species: String)
 signal season_changed(season: String)
 signal chronicle(text: String)
+# A golden tuft, berry or apple, or star moss was eaten (3.0).
+signal golden_found(kind: String, eater: String, pos: Vector3)
+signal drought_started()
+# Gold moved from one link of the food web to the next (source -> eater).
+signal gold_passed(source: String, eater: String, pos: Vector3)
+var gold_links: Dictionary = {}
 
 var scent_network: NetworkGraph = NetworkGraph.new()
 var grass: GrassLayer
@@ -29,7 +35,15 @@ var cfg_boars: int = 5
 var cfg_worms: int = 15
 var cfg_rabbits: int = 8
 var cfg_fish: int = 8
+# Counts for the 3.0 species (SpeciesDB.NEW_SPECIES), keyed by id.
+var cfg_extra: Dictionary = {}
 var cfg_trees: int = 6
+var cfg_bushes: int = 5
+# Chance multiplier for golden grass, fruit and star moss.
+var golden_mult: float = 1.0
+# Species switched off for the whole run: they never spawn or migrate in.
+var disabled_species: Dictionary = {}
+var golden_finds: int = 0
 var cfg_bet: String = ""
 var cfg_grass_density: float = 0.5
 var cfg_time_limit: float = 120.0
@@ -126,8 +140,13 @@ const HOLD_CAPACITY: Dictionary = {
 	"rabbits": 34.0,
 	"worms": 24.0,
 	"fish": 26.0,
+	"deer": 9.0,
+	"goats": 8.0,
+	"bears": 3.0,
+	"lions": 2.5,
+	"beetles": 24.0,
 }
-const HOLD_ORDER: Array[String] = ["sheep", "wolves", "humans", "falcons", "robins", "boars", "rabbits", "worms", "fish"]
+const HOLD_ORDER: Array[String] = ["sheep", "wolves", "humans", "falcons", "robins", "boars", "rabbits", "worms", "fish", "deer", "goats", "bears", "lions", "beetles"]
 const MIGRANT_COUNTS: Dictionary = {
 	"sheep": 4,
 	"wolves": 2,
@@ -201,6 +220,8 @@ var _worm_pool: NodePool = null
 var _rabbit_pool: NodePool = null
 var _fish_pool: NodePool = null
 const POOL_SIZE: int = 40
+# The 3.0 species share one generic path: id -> {scene, pool, active}.
+var _extra: Dictionary = {}
 
 var _headless_mode: bool = false
 var _log_timer: float = 0.0
@@ -235,6 +256,8 @@ func _ready() -> void:
 		cfg_worms = 10
 		cfg_rabbits = 10
 		cfg_fish = 8
+		for id: String in SpeciesDB.NEW_SPECIES:
+			cfg_extra[id] = int(SpeciesDB.row(id).get("start", 0))
 		cfg_trees = 6
 		cfg_grass_density = 0.5
 		cfg_time_limit = Clock.STANDARD_DAYS
@@ -276,6 +299,9 @@ func _ready() -> void:
 	_worm_pool.pre_warm(mini(cfg_worms, POOL_SIZE))
 	_rabbit_pool.pre_warm(mini(cfg_rabbits, POOL_SIZE))
 	_fish_pool.pre_warm(mini(cfg_fish, POOL_SIZE))
+	for id: String in SpeciesDB.NEW_SPECIES:
+		var sc: PackedScene = load("res://scenes/%s.tscn" % id)
+		_extra[id] = {"scene": sc, "pool": NodePool.new(sc, id, POOL_SIZE), "active": []}
 
 	var gc: Node = get_node_or_null("/root/GameConfig")
 	if gc != null and not _headless_mode:
@@ -289,7 +315,19 @@ func _ready() -> void:
 		cfg_worms = gc.worm_count
 		cfg_rabbits = gc.rabbit_count
 		cfg_fish = gc.fish_count
+		for id: String in SpeciesDB.NEW_SPECIES:
+			cfg_extra[id] = int(gc.extra_counts.get(id, SpeciesDB.row(id).get("start", 0)))
 		cfg_trees = gc.tree_count
+		cfg_bushes = gc.bush_count
+		golden_mult = gc.golden_mult * (1.5 if gc.owned_upgrades.get("green_thumb", false) else 1.0)
+		for id in gc.disabled_species:
+			disabled_species[str(id)] = true
+		_apply_disabled()
+		if not str(gc.scenario_id).is_empty() and gc.current_mode == "challenge":
+			scenario_id = gc.scenario_id
+			var setup: Dictionary = ChallengeScenarios.find(scenario_id).get("setup", {})
+			drought_chance = float(setup.get("drought_chance", drought_chance))
+			_scenario_events = ChallengeScenarios.events_for(scenario_id, cfg_time_limit)
 		cfg_bet = gc.player_bet
 		cfg_grass_density = gc.grass_density
 		cfg_time_limit = gc.time_limit
@@ -331,6 +369,12 @@ func _ready() -> void:
 		var corpses := Node3D.new()
 		corpses.name = "Corpses"
 		add_child(corpses)
+	if not has_node("Bushes"):
+		var bushes := Node3D.new()
+		bushes.name = "Bushes"
+		add_child(bushes)
+	golden_found.connect(_on_golden_found)
+	gold_passed.connect(_on_gold_passed)
 	if not has_node("Spores"):
 		var spores := Node3D.new()
 		spores.name = "Spores"
@@ -511,6 +555,8 @@ func _deferred_spawn_entities() -> void:
 	spawn_entities()
 
 func spawn_trees() -> void:
+	if grass != null:
+		grass.golden_mult = golden_mult
 	if _tree_scene == null:
 		return
 	var world_half: float = 25.0
@@ -519,6 +565,62 @@ func spawn_trees() -> void:
 		$Trees.add_child(t)
 		t.global_position = dry_land(Vector3((randf() - 0.5) * world_half * 2.0, 0.0, (randf() - 0.5) * world_half * 2.0))
 		_snap_to_ground(t)
+	for i: int in range(cfg_bushes):
+		plant_bush(Vector3((randf() - 0.5) * world_half * 2.0, 0.0, (randf() - 0.5) * world_half * 2.0), true)
+
+const MAX_BUSHES: int = 30
+
+# Berry bushes: a low tree kept in $Bushes so it never counts as woodland
+# (no nests, no timber). Berries that rot where they fall plant new ones.
+func plant_bush(pos: Vector3, grown: bool = false) -> void:
+	if _tree_scene == null or $Bushes.get_child_count() >= MAX_BUSHES:
+		return
+	if not grown and randf() > 0.3:
+		return
+	var b = _tree_scene.instantiate()
+	b.bush = true
+	b.apple_spawn_interval = 2.5
+	$Bushes.add_child(b)
+	b.global_position = dry_land(pos + (Vector3.ZERO if grown else Vector3((randf() - 0.5) * 3.0, 0.0, (randf() - 0.5) * 3.0)))
+	_snap_to_ground(b)
+	if not grown:
+		b.set_stage(0)
+
+func find_nearest_berry(pos: Vector3, radius: float = 8.0) -> Node3D:
+	var best: Node3D = null
+	var best_dist_sq := radius * radius
+	for node in get_nearby_agents(pos, radius, "berry"):
+		if not is_instance_valid(node):
+			continue
+		var d_sq := pos.distance_squared_to(node.global_position)
+		if d_sq < best_dist_sq:
+			best_dist_sq = d_sq
+			best = node
+	return best
+
+# Gold's path through the food web, e.g. "grass>sheep", "sheep>wolf", "wolf>beetle".
+func _on_gold_passed(source: String, eater: String, pos: Vector3) -> void:
+	# Fruit and moss report their own finds; golden grass is found by grazing.
+	if source == "grass":
+		_on_golden_found("golden grass", eater, pos)
+	var key := "%s>%s" % [source, eater]
+	gold_links[key] = int(gold_links.get(key, 0)) + 1
+	if gold_links[key] == 1 and not source.is_empty():
+		chronicle.emit("Gold passes from %s to %s." % [source, SpeciesDB.label(eater).to_lower()])
+
+# Creatures carrying gold right now, per species id.
+func golden_census() -> Dictionary:
+	var out: Dictionary = {}
+	for data: AgentData in _agent_registry:
+		if data.golden > 0.05:
+			out[data.species] = int(out.get(data.species, 0)) + 1
+	return out
+
+func _on_golden_found(kind: String, eater: String, pos: Vector3) -> void:
+	golden_finds += 1
+	FXManager.show_dramatic_text(pos + Vector3.UP * 2.0, "Golden find: %s!" % kind.capitalize(), Color(1.0, 0.84, 0.25))
+	if not eater.is_empty():
+		chronicle.emit("A %s finds %s." % [SpeciesDB.label(eater).to_lower().trim_suffix("s"), kind])
 
 # Arborist Failsafe: when no trees exist, settlements can spontaneously
 # generate protected arboreal seeds. Also called when agents eat apples.
@@ -692,6 +794,14 @@ func tick(dt: float) -> void:
 		if _famine_timer <= 0.0:
 			_famine_timer = 0.0
 			_recompute_grass_boost()
+	if _drought_timer > 0.0:
+		_drought_timer -= bio
+		if _drought_timer <= 0.0:
+			_drought_timer = 0.0
+			_recompute_grass_boost()
+			_apply_season_mood(_current_season, false)
+			FXManager.show_dramatic_text(Vector3.ZERO, "The drought breaks.", Color(0.55, 0.75, 0.85))
+			chronicle.emit("The heat lifts. Green creeps back into the meadow.")
 	if _flood_timer > 0.0:
 		_flood_timer -= bio
 		if _flood_timer <= 0.0:
@@ -709,6 +819,8 @@ func tick(dt: float) -> void:
 		_tribal_politics(2.0)
 		_natural_flood_roll(2.0 / Clock.LIFE_PACE * DAYS_PER_SECOND)
 		_natural_rain_roll(2.0 / Clock.LIFE_PACE * DAYS_PER_SECOND)
+		_natural_drought_roll(2.0 / Clock.LIFE_PACE * DAYS_PER_SECOND)
+		_step_scenario()
 		_mycelium_fruiting()
 		_update_nesting()
 	_arborist_timer += dt
@@ -793,7 +905,7 @@ func _tick_agents(dt: float) -> void:
 		var node := data.node
 		if node == null or not is_instance_valid(node) or not node.is_inside_tree():
 			_agent_registry.remove_at(idx)
-		elif node.get_instance_id() % stagger == phase and data.species != "mushroom":
+		elif node.get_instance_id() % stagger == phase and data.species != "mushroom" and not node.rampage:
 			node._physics_process(dt * stagger)
 		idx -= 1
 	for child in spores.get_children():
@@ -936,6 +1048,15 @@ func spawn_entities() -> void:
 			rb.display_name = roster_names["rabbit"].pop_front()
 		_apply_phenotype_variance(rb)
 		_apply_campaign_traits(rb, "rabbit")
+	for id: String in SpeciesDB.NEW_SPECIES:
+		for i: int in range(int(cfg_extra.get(id, 0))):
+			var pos: Vector3 = spawn_positions.pop_back() if not spawn_positions.is_empty() else Vector3((randf() - 0.5) * 40.0, 0.0, (randf() - 0.5) * 40.0)
+			if id == "goat" and valley != null:
+				# Goats come down from the crags: start them near a pass.
+				pos = valley.random_pass_mouth()["position"] + Vector3((randf() - 0.5) * 6.0, 0.0, (randf() - 0.5) * 6.0)
+			var a := _spawn_extra(id, pos)
+			if a != null and roster_names.has(id) and not roster_names[id].is_empty():
+				a.display_name = roster_names[id].pop_front()
 	_spawn_fish(cfg_fish)
 	_apply_roster_identities()
 
@@ -963,6 +1084,20 @@ func _apply_roster_identities() -> void:
 				Roles.apply(ma, data.species, role)
 				data.role = ma.role
 				data.variant = ma.variant
+			# Starters: their rolled health, speed and appetite (see BetBook.roll_starter).
+			var st: Dictionary = entry.get("stats", {})
+			if not st.is_empty():
+				# Replace the random founder genome with the rolled one.
+				var old := Genetics.expressed(ma.genes)
+				if ma.get("health") != null:
+					ma.set("health", float(ma.get("health")) / float(old["health"]))
+				for sp_prop: String in Genetics.SPEED_PROPS:
+					if ma.get(sp_prop) != null:
+						ma.set(sp_prop, float(ma.get(sp_prop)) / float(old["speed"]))
+				if ma.get("metabolism_rate") != null:
+					ma.set("metabolism_rate", float(ma.get("metabolism_rate")) / float(old["appetite"]))
+				var trait_name: String = String(entry.get("trait", {}).get("name", ""))
+				Genetics.apply(ma, {"health": st["health"], "speed": st["speed"], "appetite": st["appetite"], "traits": [trait_name] if Genetics.TRAITS.has(trait_name) else []})
 			break
 
 func _auto_use_powerups() -> void:
@@ -976,6 +1111,11 @@ func _auto_use_powerups() -> void:
 		for i: int in range(count):
 			match key:
 				"rain": trigger_rain()
+				"drought": trigger_drought()
+				"bloom": trigger_bloom()
+				"stampede": trigger_stampede()
+				"feast": trigger_feast()
+				"rot_rain": trigger_rot_rain()
 				"predator_call": trigger_predator_call()
 				"heal": trigger_heal()
 				"famine": trigger_famine()
@@ -992,6 +1132,8 @@ func _generate_spawn_positions() -> Array[Vector3]:
 	var positions: Array[Vector3] = []
 	var world_half: float = 30.0
 	var total_agents: int = cfg_sheep + cfg_wolves + cfg_humans + cfg_spores + cfg_falcons + cfg_robins + cfg_boars + cfg_worms + cfg_rabbits
+	for id: String in cfg_extra.keys():
+		total_agents += int(cfg_extra[id])
 	match cfg_preset:
 		"Random Scatter":
 			for i: int in range(total_agents):
@@ -1024,7 +1166,7 @@ func _generate_spawn_positions() -> Array[Vector3]:
 	positions.shuffle()
 	return positions
 
-func spawn_corpse(pos: Vector3, energy: float, species: String = "") -> void:
+func spawn_corpse(pos: Vector3, energy: float, species: String = "", golden: float = 0.0) -> void:
 	if _corpse_scene == null:
 		return
 	var corpses := $Corpses
@@ -1044,6 +1186,7 @@ func spawn_corpse(pos: Vector3, energy: float, species: String = "") -> void:
 			corpses.remove_child(oldest)
 	var corpse = _corpse_scene.instantiate()
 	corpse.species = species
+	corpse.golden = golden
 	# Set before _ready, which reads it to fill the carcass.
 	corpse.corpse_energy = energy
 	corpses.add_child(corpse)
@@ -1390,6 +1533,11 @@ func _track_agent(agent: Node, array: Array) -> void:
 		elif array == _active_rabbits: species = "rabbit"
 		elif array == _active_fish: species = "fish"
 		elif array == _active_spores: species = "mushroom"
+		else:
+			for id: String in _extra.keys():
+				if array == _extra[id]["active"]:
+					species = id
+					break
 		var h: float = agent.get("health") if agent.get("health") != null else 0.0
 		var e: float = agent.get("energy") if agent.get("energy") != null else 0.0
 		var ls: float = agent.get("_lifespan") if agent.get("_lifespan") != null else 20.0
@@ -1401,6 +1549,94 @@ func _track_agent(agent: Node, array: Array) -> void:
 		_agent_registry.append(data)
 		agent.tree_exiting.connect(func(): _agent_registry.erase(data), CONNECT_ONE_SHOT)
 	_snap_to_ground(agent)
+
+# Challenge scenario: timed events, run off the day clock.
+var scenario_id: String = ""
+var _scenario_events: Array = []
+
+func _step_scenario() -> void:
+	var day := get_day()
+	while not _scenario_events.is_empty() and day >= float(_scenario_events[0]["day"]):
+		var e: Dictionary = _scenario_events.pop_front()
+		match str(e["do"]):
+			"kill_group":
+				var g: String = e["arg"]
+				for data: AgentData in _agent_registry.duplicate():
+					if SpeciesDB.group_of(data.species) == g and data.node != null and is_instance_valid(data.node) and data.node.has_method("die"):
+						data.node.die()
+				FXManager.show_dramatic_text(Vector3.ZERO, "A sickness takes the %s!" % SpeciesDB.GROUP_LABEL[g].to_lower(), Color(0.9, 0.4, 0.35))
+				chronicle.emit("Overnight, every one of the %s is gone." % SpeciesDB.GROUP_LABEL[g].to_lower())
+			"drought":
+				trigger_drought()
+
+# Genetics: founders and migrants get a random genome; a baby crosses its
+# parent with the nearest mate of the other sex (the likely father or mother).
+func _apply_genes(agent: Node, parent: Node) -> void:
+	if not agent is MarkovAgent or agent.is_in_group("spore"):
+		return
+	if parent == null or not parent is MarkovAgent or (parent as MarkovAgent).genes.is_empty():
+		Genetics.apply(agent, Genetics.random_genome())
+		return
+	var pa := parent as MarkovAgent
+	var mate: MarkovAgent = null
+	var best: float = 100.0
+	for n in get_nearby_agents(pa.global_position, 10.0, pa.species_id):
+		if n is MarkovAgent and n != pa and (n as MarkovAgent).sex != pa.sex:
+			var d: float = pa.global_position.distance_squared_to(n.global_position)
+			if d < best:
+				best = d
+				mate = n
+	Genetics.apply(agent, Genetics.cross(pa.genes, mate.genes if mate != null else {}))
+
+# Switched-off species start at zero (and _apply_pass_migration keeps them out).
+func _apply_disabled() -> void:
+	for id: String in disabled_species.keys():
+		match id:
+			"sheep": cfg_sheep = 0
+			"wolf": cfg_wolves = 0
+			"human": cfg_humans = 0
+			"falcon": cfg_falcons = 0
+			"robin": cfg_robins = 0
+			"boar": cfg_boars = 0
+			"worm": cfg_worms = 0
+			"rabbit": cfg_rabbits = 0
+			"fish": cfg_fish = 0
+			"mushroom": cfg_spores = 0
+			"tree": cfg_trees = 0
+			"bush": cfg_bushes = 0
+			_: cfg_extra[id] = 0
+
+# The generic spawn for the 3.0 species. Returns the creature, or null.
+func _spawn_extra(id: String, pos: Vector3, parent: Node = null) -> Node:
+	var e: Dictionary = _extra.get(id, {})
+	if e.is_empty() or e["scene"] == null:
+		return null
+	var a: Node = (e["pool"] as NodePool).acquire()
+	if a == null:
+		return null
+	$Agents.add_child(a)
+	if a is Node3D:
+		a.visible = true
+		a.global_position = pos
+	_track_agent(a, e["active"])
+	_apply_phenotype_variance(a, parent)
+	_apply_campaign_traits(a, id)
+	return a
+
+func spawn_offspring(id: String, parent: Node, pos: Vector3) -> void:
+	var a := _spawn_extra(id, pos, parent)
+	if a == null:
+		return
+	if a.get("energy") != null:
+		a.energy = 25.0
+	agent_born.emit(id, pos, "")
+	FXManager.spawn_birth_particles(pos, SpeciesDB.row(id).get("color", Color.WHITE))
+	FXManager.show_floating_text(pos + Vector3.UP, "Baby %s!" % SpeciesDB.label(id).trim_suffix("s"), Color(0.9, 0.9, 1.0))
+
+func get_species_count(id: String) -> int:
+	if _extra.has(id):
+		return (_extra[id]["active"] as Array).size()
+	return _get_faction_array(SpeciesDB.plural(id)).size()
 
 func spawn_sheep_offspring(parent: Node, pos: Vector3) -> void:
 	if _sheep_pool == null:
@@ -1647,6 +1883,7 @@ func _emit_population_counts() -> void:
 		"wizards": wizard_count,
 		"builders": builder_count,
 	}
+	_add_extra_counts(counts)
 	for k: String in counts.keys():
 		var old_count: int = _last_population_counts.get(k, 0)
 		if old_count != counts[k]:
@@ -1673,7 +1910,12 @@ func _apply_pass_migration() -> void:
 	# A species that has actually died out may walk back in through a pass.
 	# Low numbers are left to desperation breeding. Extinction is allowed to last.
 	var counts := get_faction_counts()
-	for faction: String in MIGRANT_COUNTS.keys():
+	var factions: Array = MIGRANT_COUNTS.keys()
+	for id: String in SpeciesDB.NEW_SPECIES:
+		factions.append(SpeciesDB.plural(id))
+	for faction: String in factions:
+		if disabled_species.has(SpeciesDB.id_for(faction)) or ChallengeScenarios.blocks_migration(scenario_id, SpeciesDB.id_for(faction)):
+			continue
 		var n: int = int(counts.get(faction, 0))
 		if n > 0:
 			_ever_lived[faction] = true
@@ -1725,6 +1967,12 @@ func _arrive_migrants(faction: String) -> void:
 			pool = _robin_pool
 			dest = _active_robins
 			species_id = "robin"
+		_:
+			var xid := SpeciesDB.id_for(faction)
+			if _extra.has(xid):
+				pool = _extra[xid]["pool"]
+				dest = _extra[xid]["active"]
+				species_id = xid
 	if faction == "worms":
 		# Worms don't walk in; they surface from deep soil where rot lies.
 		for i: int in int(MIGRANT_COUNTS[faction]):
@@ -1748,7 +1996,7 @@ func _arrive_migrants(faction: String) -> void:
 	var mouth: Dictionary = valley.random_pass_mouth() if valley != null else {"name": "the rim", "position": Vector3(30.0, 0.0, 0.0)}
 	var base: Vector3 = mouth["position"]
 	var arrived: int = 0
-	var founders: int = int(MIGRANT_COUNTS[faction])
+	var founders: int = int(MIGRANT_COUNTS.get(faction, SpeciesDB.row(SpeciesDB.id_for(faction)).get("migrants", 2)))
 	for i: int in founders:
 		var agent: Node = pool.acquire()
 		if agent == null:
@@ -1840,13 +2088,19 @@ func _apply_overpopulation() -> void:
 			_active_rabbits
 	]
 	var species_names: Array[String] = ["sheep", "wolf", "human", "spore", "falcon", "robin", "boar", "worm", "rabbit"]
+	for id: String in _extra.keys():
+		factions.append(_extra[id]["active"])
+		species_names.append(id)
 	for i: int in range(factions.size()):
 		var faction: Array = factions[i]
 		var count: int = faction.size()
 		var sp: String = species_names[i]
 		var capacity: int = capacity_of(sp)
 		var midpoint: float = capacity * 1.3
-		var mortality_rate: float = OVERPOP_MAX_MORTALITY / (1.0 + exp(-OVERPOP_STEEPNESS * (count - midpoint)))
+		# Steepness scales with capacity so small populations (a few bears or
+		# lions) aren't culled far below their limit.
+		var k: float = OVERPOP_STEEPNESS * maxf(1.0, 100.0 / float(capacity))
+		var mortality_rate: float = OVERPOP_MAX_MORTALITY / (1.0 + exp(-k * (count - midpoint)))
 		if mortality_rate <= 0.001:
 			continue
 		var culled: int = 0
@@ -1876,7 +2130,8 @@ func tune(species: String, key: String) -> float:
 	return _gc_cache.tune("mushroom" if species == "spore" else species, key)
 
 func capacity_of(species: String) -> int:
-	return maxi(2, int(float(CARRYING_CAPACITY.get(species, 300)) * tune(species, "capacity")))
+	var cap: float = float(CARRYING_CAPACITY.get(species, SpeciesDB.row(species).get("cap", 300)))
+	return maxi(2, int(cap * tune(species, "capacity")))
 
 func logistic_reproduction_factor(species: String) -> float:
 	var capacity: int = capacity_of(species)
@@ -1891,6 +2146,7 @@ func logistic_reproduction_factor(species: String) -> float:
 		"boar": count = _active_boars.size()
 		"worm": count = _active_worms.size()
 		"rabbit": count = _active_rabbits.size()
+		_: count = get_species_count(species)
 	var midpoint: float = capacity * 0.7
 	return 1.0 / (1.0 + exp(0.02 * (count - midpoint)))
 
@@ -1959,7 +2215,10 @@ func refuge(species: String) -> float:
 		"worm": arr = _active_worms
 		"rabbit": arr = _active_rabbits
 		"fish": arr = _active_fish
-		_: return 1.0
+		_:
+			if not _extra.has(species):
+				return 1.0
+			arr = _extra[species]["active"]
 	return clampf(float(arr.size()) / 8.0, 0.2, 1.0)
 
 func try_eat_fish(from: Vector3, reach: float) -> bool:
@@ -2008,7 +2267,7 @@ func get_creature_counts() -> Dictionary:
 			wizard_count += 1
 		elif h.get("variant") == "builder":
 			builder_count += 1
-	return {
+	var out := {
 		"sheep": _active_sheep.size(),
 		"wolves": _active_wolves.size(),
 		"humans": _active_humans.size(),
@@ -2021,6 +2280,50 @@ func get_creature_counts() -> Dictionary:
 		"wizards": wizard_count,
 		"builders": builder_count,
 	}
+	_add_extra_counts(out)
+	return out
+
+func _add_extra_counts(counts: Dictionary) -> void:
+	for id: String in _extra.keys():
+		counts[SpeciesDB.plural(id)] = (_extra[id]["active"] as Array).size()
+
+# Head counts per food-web group (lesson cards, the harness).
+func get_group_counts() -> Dictionary:
+	var census := get_faction_counts()
+	census["producers"] = producer_count()
+	return SpeciesDB.group_totals(census)
+
+# How full each food-web group is: every member's numbers against what the
+# valley can hold of it, averaged over the group (a missing species counts 0).
+# Producers: the meadow and the woods against a lush valley. This is what the
+# Order bet ranks, so a mushroom bloom can't outvote three wolves.
+const PRODUCER_HOLD: float = 220.0
+const MUSHROOM_HOLD: float = 40.0
+func get_group_scores() -> Dictionary:
+	var census := get_faction_counts()
+	var out: Dictionary = {"producer": producer_count() / PRODUCER_HOLD}
+	for g: String in SpeciesDB.GROUPS:
+		if g == "producer":
+			continue
+		var members := SpeciesDB.members(g)
+		var total: float = 0.0
+		for id: String in members:
+			var key := SpeciesDB.plural(id)
+			var hold: float = MUSHROOM_HOLD if id == "mushroom" else float(HOLD_CAPACITY.get(key, 10.0))
+			total += float(census.get(key, 0)) / hold
+		out[g] = total / maxf(1.0, float(members.size()))
+	return out
+
+# Producers on the same scale as animals: a tall grass tuft, a tree, a bush.
+func producer_count() -> float:
+	var n: float = 0.0
+	if grass != null:
+		for v: float in grass._grid:
+			n += v
+		n /= 8.0
+	n += float(get_tree().get_nodes_in_group("tree").size()) * 3.0
+	n += float(get_tree().get_nodes_in_group("bush").size()) * 1.5
+	return n
 
 func get_faction_counts() -> Dictionary:
 	var grass_sum: float = 0.0
@@ -2038,7 +2341,12 @@ func get_faction_counts() -> Dictionary:
 		"rabbits": _active_rabbits.size(),
 		"fish": _active_fish.size(),
 		"grass": grass_sum,
-	}
+	}.merged(_extra_counts())
+
+func _extra_counts() -> Dictionary:
+	var d: Dictionary = {}
+	_add_extra_counts(d)
+	return d
 
 func _world_to_cell(world_pos: Vector3) -> Vector2i:
 	var cx := int(floor(world_pos.x / SPATIAL_CELL_SIZE))
@@ -2119,7 +2427,10 @@ func _get_faction_array(faction: String) -> Array:
 		"boars": return _active_boars
 		"worms": return _active_worms
 		"rabbits": return _active_rabbits
-		_: return []
+		"fish": return _active_fish
+		_:
+			var id := SpeciesDB.id_for(faction)
+			return _extra[id]["active"] if _extra.has(id) else []
 
 func get_presence_count(pos: Vector3, radius: float, faction: String) -> int:
 	var slot: int = _presence_slots.get(faction, -1)
@@ -2172,6 +2483,13 @@ func _update_spatial_hash() -> void:
 	for child in $Corpses.get_children():
 		if child is Node3D:
 			_spatial_add(child)
+	for child in $Bushes.get_children():
+		if not child is Node3D:
+			continue
+		_spatial_add(child)
+		for sub in child.get_children():
+			if sub is Node3D and sub.is_in_group("berry"):
+				_spatial_add(sub)
 
 func get_nearby_agents(pos: Vector3, radius: float, group_tag: String = "") -> Array[Node3D]:
 	var r2 := radius * radius
@@ -2218,6 +2536,7 @@ func _mutate(val: float) -> float:
 	return val * (0.9 + randf() * 0.2)
 
 func _apply_phenotype_variance(agent: Node, parent: Node = null) -> void:
+	_apply_genes(agent, parent)
 	var base: Dictionary = {}
 	if parent != null:
 		# Inherit from parent
@@ -2397,7 +2716,8 @@ func _bet_key(bet: String) -> String:
 		"fish":
 			return "fish"
 		_:
-			return "sheep"
+			var id := SpeciesDB.id_for(bet)
+			return SpeciesDB.plural(id) if SpeciesDB.is_new(id) else "sheep"
 
 func _update_season(dt: float) -> void:
 	SEASON_LENGTH = maxf(0.5, cfg_time_limit / 4.0)
@@ -2430,6 +2750,8 @@ func _recompute_grass_boost() -> void:
 		boost *= 2.2
 	if _famine_timer > 0.0:
 		boost *= 0.25
+	if _drought_timer > 0.0:
+		boost *= 0.3
 	_grass_boost = boost
 
 func get_season() -> String:
@@ -2573,7 +2895,7 @@ const DAY_NIGHT: Dictionary = {
 
 # idx: 0 speed, 1 hunger, 2 breeding.
 func daynight_mult(species: String, idx: int) -> float:
-	var row: Dictionary = DAY_NIGHT.get(species, {})
+	var row: Dictionary = DAY_NIGHT.get(species, SpeciesDB.row(species).get("dn", {}))
 	if row.is_empty():
 		return 1.0
 	var n: float = night()
@@ -2678,6 +3000,11 @@ const POWER_EFFECTS: Dictionary = {
 		"sheep": [1.25, 0.5], "rabbit": [1.25, 0.5], "boar": [1.1, 0.8],
 		"wolf": [0.9, 1.25], "falcon": [0.95, 1.15], "human": [1.1, 0.8], "worm": [0.9, 1.1],
 	},
+	"drought": {
+		"sheep": [1.2, 0.6], "rabbit": [1.2, 0.6], "deer": [1.2, 0.6], "goat": [1.05, 0.9],
+		"fish": [1.3, 0.4], "worm": [1.2, 0.5], "beetle": [0.9, 1.3], "lion": [0.95, 1.1],
+		"wolf": [0.95, 1.1], "bear": [1.1, 0.8], "human": [1.1, 0.8],
+	},
 	"flood": {
 		"fish": [0.9, 2.0], "worm": [1.3, 0.6], "rabbit": [1.1, 0.6],
 		"boar": [0.9, 1.1], "falcon": [0.9, 1.1], "sheep": [1.05, 0.9],
@@ -2692,17 +3019,19 @@ func _power_mult(species: String, idx: int) -> float:
 		m *= float(POWER_EFFECTS["famine"].get(species, [1.0, 1.0])[idx])
 	if _flood_timer > 0.0:
 		m *= float(POWER_EFFECTS["flood"].get(species, [1.0, 1.0])[idx])
+	if _drought_timer > 0.0:
+		m *= float(POWER_EFFECTS["drought"].get(species, [1.0, 1.0])[idx])
 	return m
 
 func season_metabolism(species: String) -> float:
-	var row: Array = SEASON_TABLE.get(species, [])
+	var row: Array = SEASON_TABLE.get(species, SpeciesDB.row(species).get("season", []))
 	var m: float = 1.0 if row.is_empty() else float(row[_season_index][0])
 	return m * _power_mult(species, 0) * daynight_mult(species, 1)
 
 func season_breeding(species: String) -> float:
 	if species == "mushroom":
 		return fungal_factor() * daynight_mult(species, 2)
-	var row: Array = SEASON_TABLE.get(species, [])
+	var row: Array = SEASON_TABLE.get(species, SpeciesDB.row(species).get("season", []))
 	var b: float = 1.0 if row.is_empty() else float(row[_season_index][1])
 	if species == "falcon":
 		b *= nest_factor
@@ -2713,6 +3042,8 @@ func fungal_factor() -> float:
 	var f: float = [0.15, 0.08, 1.0, 0.05][_season_index]
 	if _rain_timer > 0.0 or _flood_timer > 0.0:
 		f = maxf(f, 1.0)
+	if _drought_timer > 0.0:
+		f *= 0.3
 	return f
 
 # ------------------------------------------------------------------
@@ -2720,6 +3051,35 @@ func fungal_factor() -> float:
 # ------------------------------------------------------------------
 var _rain_timer: float = 0.0
 var _famine_timer: float = 0.0
+var _drought_timer: float = 0.0
+# Chance of a drought per summer (roughly); scenarios can force one.
+var drought_chance: float = 0.45
+
+func is_raining() -> bool:
+	return _rain_timer > 0.0
+
+func is_drought() -> bool:
+	return _drought_timer > 0.0
+
+# A drought: the grass browns and barely grows, moss shrivels, the fungi go
+# quiet and no rain comes. Lasts about a day and a half.
+func trigger_drought() -> void:
+	if _drought_timer > 0.0:
+		return
+	_drought_timer = Clock.BIO_PER_DAY * 1.5
+	_rain_timer = 0.0
+	_recompute_grass_boost()
+	if grass != null:
+		grass.set_tint(Color(1.15, 0.9, 0.55))
+	FXManager.show_dramatic_text(Vector3.ZERO, "Drought! The meadow bakes.", Color(0.95, 0.65, 0.3))
+	chronicle.emit("No rain for weeks. The grass crackles underfoot and the river runs low.")
+	drought_started.emit()
+
+func _natural_drought_roll(days: float) -> void:
+	if _drought_timer > 0.0 or _current_season != "Summer":
+		return
+	if randf() < drought_chance * days / maxf(SEASON_LENGTH, 0.1):
+		trigger_drought()
 var _flood_timer: float = 0.0
 
 func _spawn_fish(count: int) -> int:
@@ -2914,7 +3274,7 @@ func _step_river_swell(bio: float) -> void:
 			_flood_target = 1.0
 
 func _natural_rain_roll(days: float) -> void:
-	if _rain_timer > 0.0:
+	if _rain_timer > 0.0 or _drought_timer > 0.0:
 		return
 	var per_season: float = {"Spring": 1.3, "Summer": 0.3, "Autumn": 1.0}.get(_current_season, 0.0)
 	if randf() < per_season * days / maxf(SEASON_LENGTH, 0.1):
@@ -2948,6 +3308,60 @@ func trigger_rain() -> void:
 	if weather != null:
 		weather.rain(Clock.SECONDS_PER_DAY)
 
+# 3.0 powers: one for each link of the food web.
+# Bloom: the meadow, the woods and the moss all surge at once.
+func trigger_bloom() -> void:
+	if grass != null:
+		for i: int in grass._grid.size():
+			if grass._masked.size() == grass._grid.size() and grass._masked[i] == 1:
+				continue
+			grass._grid[i] = minf(grass._grid[i] + 0.3, grass.max_density)
+			if int(grass._cell_stage[i]) == 0:
+				grass._cell_stage[i] = 1.0
+			grass._mark_dirty(i)
+	for t in get_tree().get_nodes_in_group("tree") + get_tree().get_nodes_in_group("bush"):
+		if t.has_method("_grow_fruit"):
+			t._grow_fruit()
+		if t.get("moss") != null and not t.bush:
+			t.moss = minf(float(t.moss) + 0.3, 1.0)
+	FXManager.show_dramatic_text(Vector3.ZERO, "Bloom! The valley bursts into leaf.", Color(0.5, 0.9, 0.4))
+	chronicle.emit("Every stem and branch in the valley swells at once.")
+
+# Stampede: the herbivores panic and scatter across the whole valley.
+func trigger_stampede() -> void:
+	for data: AgentData in _agent_registry:
+		if SpeciesDB.group_of(data.species) != "herbivore" or data.node == null or not is_instance_valid(data.node):
+			continue
+		var a := data.node as MarkovAgent
+		a.velocity = Vector3(randf() - 0.5, 0.0, randf() - 0.5).normalized() * 7.0
+		a._flee_boost_timer = 3.0
+		a._flee_boost_mult = 1.8
+		if a._states.has("Flee"):
+			a.set_state("Flee")
+	FXManager.show_dramatic_text(Vector3.ZERO, "Stampede! The herds bolt.", Color(0.95, 0.8, 0.5))
+	chronicle.emit("Something spooks the herds. Hooves thunder across the meadow.")
+
+# Feast: every omnivore eats its fill.
+func trigger_feast() -> void:
+	for data: AgentData in _agent_registry:
+		if SpeciesDB.group_of(data.species) == "omnivore" and data.node != null and is_instance_valid(data.node) and data.node.get("energy") != null:
+			data.node.energy = minf(float(data.node.energy) + 40.0, 100.0)
+	FXManager.show_dramatic_text(Vector3.ZERO, "Feast! The omnivores eat their fill.", Color(0.9, 0.6, 0.3))
+
+# Rot Rain: the soil teems; mushrooms push up, worms and beetles surface.
+func trigger_rot_rain() -> void:
+	if rot != null:
+		for i: int in rot._grid.size():
+			rot._grid[i] = minf(rot._grid[i] + 0.4, rot.max_density)
+	for i: int in 6:
+		var p := Vector3(randf_range(-24.0, 24.0), 0.0, randf_range(-24.0, 24.0))
+		spawn_mushroom_spore(self, p)
+		if not disabled_species.has("worm"):
+			spawn_worm_offspring(null, p)
+		if not disabled_species.has("beetle"):
+			spawn_offspring("beetle", null, p + Vector3(1.0, 0.0, 0.0))
+	FXManager.show_dramatic_text(Vector3.ZERO, "Rot Rain: the soil comes alive.", Color(0.7, 0.55, 0.8))
+
 func trigger_famine() -> void:
 	# Halve the season's grass for 10 days. Stacks with rain by multiplying.
 	_famine_timer = Clock.BIO_PER_DAY
@@ -2956,12 +3370,17 @@ func trigger_famine() -> void:
 func _champion_species() -> String:
 	var gc: Node = get_node_or_null("/root/GameConfig")
 	var bet: String = "" if gc == null else gc.player_bet.to_lower()
+	if bet.is_empty() and gc != null:
+		# 3.0: no champion was picked, so the first starter is the champion.
+		for r: Dictionary in gc.spawn_roster:
+			if r.get("starter", false):
+				return String(r["species"])
 	return "" if bet.is_empty() else _group_for_bet(bet)
 
 # Summons kin of the champion near its strongest member (or the valley centre).
 func trigger_predator_call() -> int:
 	var sp: String = _champion_species()
-	if sp.is_empty() or not has_method("spawn_%s_offspring" % sp):
+	if sp.is_empty() or not (has_method("spawn_%s_offspring" % sp) or _extra.has(sp)):
 		return 0
 	var anchor: Node3D = null
 	var best: float = -1.0
@@ -2977,7 +3396,10 @@ func trigger_predator_call() -> int:
 	for i in range(n):
 		var pos := centre + Vector3((randf() - 0.5) * 6.0, 0.0, (randf() - 0.5) * 6.0)
 		pos.y = ground_height(pos.x, pos.z)
-		call("spawn_%s_offspring" % sp, anchor, pos)
+		if _extra.has(sp):
+			spawn_offspring(sp, anchor, pos)
+		else:
+			call("spawn_%s_offspring" % sp, anchor, pos)
 	chronicle.emit("Kin of the %s answer your call." % sp)
 	return n
 
@@ -3015,7 +3437,7 @@ func _group_for_bet(bet: String) -> String:
 		"sheep":
 			return "sheep"
 		_:
-			return bet.to_lower()
+			return SpeciesDB.id_for(bet)
 
 func trigger_meteor() -> void:
 	# Cull a fifth of whoever currently holds the valley, not whoever has the most bodies.

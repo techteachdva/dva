@@ -188,7 +188,7 @@ func _on_tick_eat(_delta: float) -> void:
 	# Eat mushroom spores
 	var nearest_mushroom := sim.find_nearest_mushroom(global_position, 3.0)
 	if nearest_mushroom != null and global_position.distance_squared_to(nearest_mushroom.global_position) < 2.25:
-		nearest_mushroom.die()
+		devour(nearest_mushroom)
 		energy += 15.0
 		energy = clampf(energy, 0.0, 100.0)
 		ate = true
@@ -196,7 +196,7 @@ func _on_tick_eat(_delta: float) -> void:
 	if not ate:
 		var nearest_corpse := sim.find_nearest_corpse(global_position, 3.0)
 		if nearest_corpse != null and nearest_corpse.has_method("absorb_energy") and nearest_corpse.global_position.distance_to(global_position) <= 1.5:
-			var drained: float = nearest_corpse.absorb_energy(0.5)
+			var drained: float = nearest_corpse.absorb_energy(0.5, self)
 			if drained > 0.0:
 				energy += 10.0
 				energy = clampf(energy, 0.0, 100.0)
@@ -213,7 +213,7 @@ func die() -> void:
 		return
 	var sim: SimulationDirector = director
 	if sim != null:
-		sim.spawn_corpse(global_position, 0.2, "worm")
+		sim.spawn_corpse(global_position, 0.2, "worm", golden)
 		sim.agent_died.emit("worm", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.2, 0.8, 0.3))
 	FXManager.show_floating_text(global_position + Vector3.UP, "X", Color(0.5, 1.0, 0.5))

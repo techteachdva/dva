@@ -379,7 +379,7 @@ func _sim_tick() -> void:
 		return
 	sim_next += 0.5
 	var c: Dictionary = w.get_creature_counts()
-	var keys: Array = ["sheep", "wolves", "humans", "falcons", "robins", "boars", "worms", "rabbits", "fish"]
+	var keys: Array = ["sheep", "wolves", "humans", "falcons", "robins", "boars", "worms", "rabbits", "fish", "deer", "goats", "bears", "lions", "beetles"]
 	if not sim_header:
 		sim_header = true
 		print("CSV,day,season,", ",".join(keys), ",spores,huts,tribes,grass,trees")
@@ -396,6 +396,10 @@ func _sim_tick() -> void:
 	row.append_array([w._active_spores.size(), w._active_shelters.size(), tribes.size(), int(grass_sum), w.get_node("Trees").get_child_count()])
 	print("CSV,", ",".join(row.map(func(x): return str(x))))
 	print("CONTROL,", int(day), ",", ",".join(keys.map(func(k): return "%.1f" % float(w.control_days.get(k, 0.0)))))
+	# 3.0: food-web group totals, gold carriers and the paths gold has taken.
+	var g: Dictionary = w.get_group_counts()
+	print("GROUPS,", snappedf(day, 0.1), ",", ",".join(SpeciesDB.GROUPS.map(func(k): return "%s=%d" % [k, int(g.get(k, 0.0))])))
+	print("GOLD,", snappedf(day, 0.1), ",finds=", w.golden_finds, ",", JSON.stringify(w.golden_census()), ",", JSON.stringify(w.gold_links))
 	# Diagnostics: mean energy/health and the commonest states per species.
 	var diag: Dictionary = {}
 	for d: AgentData in w._agent_registry:

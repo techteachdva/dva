@@ -3,9 +3,28 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "2.3.5"
+const VERSION: String = "3.0"
 
 const CHANGELOG: Array = [
+	{
+		"version": "3.0",
+		"title": "The Order Update",
+		"notes": [
+			"A fuller food web in five links: Producers, Herbivores, Omnivores, Carnivores and Decomposers. Fish swim between them in the river.",
+			"New creatures: deer, mountain goats, bears, mountain lions and beetles. Bears fish and sleep through winter; lions hunt alone; goats come down from the passes; beetles strip carcasses.",
+			"New producers: clover and rye among the meadow grass, berry bushes, and moss that creeps up the trees. Herbivores eat the moss.",
+			"Gold: rare golden grass, berries, apples and star moss (never more than 1 in 20). Whatever eats one turns golden, hardier and less hungry, and passes the gold on to whatever eats it, all the way to the decomposers and back into the soil.",
+			"Golden forms: the Golden Fleece, a regal golden stag, a tusked golden boar, a giant golden bear, haloed golden villagers who build, cast and farm at once, and golden mushrooms.",
+			"Rampage: click a golden creature, press Rampage! and steer it yourself, devouring all in its path until its gold runs out.",
+			"Genetics: every creature carries health, speed and appetite genes and a few traits. Babies blend both parents; good traits pass on more when both parents share them, and bad ones creep in too.",
+			"Droughts can strike in summer: the meadow bakes, moss shrivels and the river suffers.",
+			"The betting table is two screens. The Order: which link of the food web ends the year fullest, and your ranking of all five. Three named starters with rolled stats and a telling trait. Then long shots.",
+			"Challenge mode is a series of What If years: Thin Soil, The Grazers Vanish, No Hunters, Empty Village, Dry Summer, Decomposer Strike and Golden Year. Each ends with what happened and why.",
+			"Sandbox: switch any species, or a whole link of the food web, off and on and watch the valley swing.",
+			"New powers for each link: Bloom, Stampede, Call Kin, Feast and Rot Rain, plus Rain, Drought, Flood and Eclipse. The Greenhouse adds Green Thumb.",
+			"Smaller fish, and the crowding cull no longer whittles away small populations.",
+		],
+	},
 	{
 		"version": "2.3.5",
 		"title": "Balance of the Valley",

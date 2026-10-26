@@ -130,9 +130,11 @@ func _get_transition_modifiers() -> Dictionary:
 		return mods
 	# Variant-specific state transitions
 	if not threatened:
-		if variant == "wizard" and energy >= 30.0:
+		# A golden villager has every gift: wizard, builder and farmer at once.
+		var gifted: bool = golden > 0.05
+		if (variant == "wizard" or gifted) and energy >= 30.0:
 			mods["Channel"] = clampf(mods.get("Channel", 0.0) + 0.25, 0.0, 1.0)
-		elif variant == "builder" and wood >= 1 and _settlement_center != Vector3.ZERO:
+		if (variant == "builder" or gifted) and wood >= 1 and _settlement_center != Vector3.ZERO:
 			mods["Build"] = clampf(mods.get("Build", 0.0) + 0.35, 0.0, 1.0)
 
 	var emitter: ScentEmitter = get_node_or_null("ScentEmitter") as ScentEmitter
@@ -445,7 +447,7 @@ func _on_tick_gather(delta: float) -> void:
 	# Opportunistic mushroom snack
 	var near_mushroom := sim.find_nearest_mushroom(global_position, 2.5)
 	if near_mushroom != null and global_position.distance_squared_to(near_mushroom.global_position) < 2.25:
-		near_mushroom.die()
+		devour(near_mushroom)
 		energy += 20.0
 		energy = clampf(energy, 0.0, 100.0)
 		velocity = Vector3.ZERO
@@ -514,7 +516,7 @@ func _on_tick_gather(delta: float) -> void:
 		if nearest_apple != null:
 			var best_dist_sq := global_position.distance_squared_to(nearest_apple.global_position)
 			if best_dist_sq < 2.0 and nearest_apple.has_method("eat"):
-				energy += nearest_apple.eat() * 0.6
+				energy += nearest_apple.eat(self) * 0.6
 				energy = clampf(energy, 0.0, 100.0)
 				sim.try_plant_tree_seed(global_position, "human")
 				health += 3.0
@@ -581,7 +583,7 @@ func _on_tick_gather(delta: float) -> void:
 		if nearest_mushroom != null:
 			var best_dist_sq := global_position.distance_squared_to(nearest_mushroom.global_position)
 			if best_dist_sq < 3.0:
-				nearest_mushroom.die()
+				devour(nearest_mushroom)
 				energy += 20.0
 				energy = clampf(energy, 0.0, 100.0)
 				velocity = Vector3.ZERO
@@ -595,10 +597,10 @@ func _on_tick_gather(delta: float) -> void:
 	# Forage grass
 	if seek_priority < 1.0:
 		if sim.grass != null:
-			var consumed := sim.grass.consume_density(global_position, delta * 0.4)
+			var consumed := sim.grass.consume_density(global_position, delta * 0.4, self)
 			if consumed > 0.0:
 				# Fields near the village are tended crops; wild grass is poor fare.
-				var farmed: bool = _settlement_center != Vector3.ZERO and global_position.distance_to(_settlement_center) < 12.0
+				var farmed: bool = golden > 0.05 or (_settlement_center != Vector3.ZERO and global_position.distance_to(_settlement_center) < 12.0)
 				energy += consumed * (12.0 if farmed else 6.0)
 				energy = clampf(energy, 0.0, 100.0)
 				velocity = Vector3.ZERO
@@ -756,7 +758,7 @@ func _on_tick_channel(delta: float) -> void:
 		return
 	if _mushroom_target != null and is_instance_valid(_mushroom_target) and _mushroom_target.is_inside_tree():
 		if global_position.distance_squared_to(_mushroom_target.global_position) < 2.5:
-			_mushroom_target.die()
+			devour(_mushroom_target)
 			_mushroom_target = null
 			magic_mushrooms += 1
 			velocity = Vector3.ZERO
@@ -806,8 +808,8 @@ func _on_tick_channel(delta: float) -> void:
 		if randf() < 0.5:
 			sim.try_plant_tree_seed(global_position, "human")
 			FXManager.show_dramatic_text(global_position + Vector3.UP * 2.0, "Verdant Growth!", Color(0.2, 0.9, 0.3))
-		elif nearest_tree != null and nearest_tree.has_method("_spawn_apple"):
-			nearest_tree._spawn_apple()
+		elif nearest_tree != null and nearest_tree.has_method("_spawn_apple") and not nearest_tree._tips.is_empty():
+			nearest_tree._spawn_apple(nearest_tree._tips.pick_random())
 			FXManager.show_dramatic_text(global_position + Vector3.UP * 2.0, "Apple Bloom!", Color(0.9, 0.4, 0.1))
 	energy -= 4.0
 	energy = clampf(energy, 0.0, 100.0)
@@ -927,7 +929,7 @@ func die() -> void:
 	var sim: SimulationDirector = director
 	if sim != null:
 		sim.release_hut(self, home)
-		sim.spawn_corpse(global_position, 1.0, "human")
+		sim.spawn_corpse(global_position, 1.0, "human", golden)
 		sim.agent_died.emit("human", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.9, 0.7, 0.5))
 	FXManager.show_floating_text(global_position + Vector3.UP, "X", Color(0.9, 0.8, 0.6))
