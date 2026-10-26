@@ -173,21 +173,19 @@ func _on_rules() -> void:
 	var close := Button.new()
 	close.text = "Close"
 	close.theme_type_variation = "PrimaryButton"
-	close.custom_minimum_size = Vector2(150, 52)
-	var vp: Vector2 = get_viewport_rect().size
-	close.position = Vector2(vp.x - 182, vp.y - 66)
+	close.custom_minimum_size = Vector2(150, 48)
 	close.pressed.connect(guide.queue_free)
-	guide.add_child(close)
 	# The Tuning Lab lives here, beside the rules it bends: hand-set birth,
 	# ageing, hunger and more (within half and double) before a run.
 	var lab := Button.new()
 	lab.text = "Tuning Lab"
 	lab.tooltip_text = "Adjust how each species lives (within half and double), then play."
 	lab.theme_type_variation = "GhostButton"
-	lab.custom_minimum_size = Vector2(170, 52)
-	lab.position = Vector2(vp.x - 182 - 186, vp.y - 66)
+	lab.custom_minimum_size = Vector2(170, 48)
 	lab.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/ui/tuning_lab.tscn"))
-	guide.add_child(lab)
+	# Both sit in the guide's footer, below the web, at the guide's scale.
+	guide.add_footer(lab)
+	guide.add_footer(close)
 
 func _on_quit() -> void:
 	get_tree().quit()

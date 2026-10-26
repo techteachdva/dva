@@ -35,6 +35,8 @@ var mark: bool = false
 var menuposter: bool = false
 var fast: bool = false
 var guide: bool = false
+# Zoom the Field Guide onto this creature (dev check of the zoomed card).
+var focus_sp: String = ""
 var live_table: float = 0.0
 var lineup: bool = false
 var follow_at: float = 0.0
@@ -96,6 +98,8 @@ func _ready() -> void:
 			lineup_at = float(arg.substr(9))
 		elif arg.begins_with("--follow="):
 			follow_at = float(arg.substr(9))
+		elif arg.begins_with("--focus="):
+			focus_sp = arg.substr(8)
 		elif arg == "--guide":
 			guide = true
 		elif arg == "--menuposter":
@@ -172,6 +176,7 @@ func _ready() -> void:
 	keeper.menuposter = menuposter
 	keeper.fast = fast
 	keeper.guide = guide
+	keeper.focus_sp = focus_sp
 	keeper.live_table = live_table
 	keeper.lineup = lineup
 	keeper.follow_at = follow_at
@@ -282,6 +287,13 @@ func _process(delta: float) -> void:
 		var w3 := get_tree().current_scene.get_node_or_null("World") as SimulationDirector
 		if hud3 != null and w3 != null and not w3._active_sheep.is_empty():
 			hud3._start_follow(w3._active_sheep[0])
+	if not focus_sp.is_empty() and _elapsed > 1.0:
+		var fg := get_tree().current_scene as FieldGuide
+		if fg == null:
+			fg = get_tree().current_scene.find_child("FieldGuide", true, false) as FieldGuide
+		if fg != null:
+			fg.focus_species(focus_sp)
+		focus_sp = ""
 	if guide and _elapsed > 1.0:
 		guide = false
 		var gt := get_tree().current_scene as BettingTable
