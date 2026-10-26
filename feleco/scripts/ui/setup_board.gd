@@ -99,11 +99,17 @@ func _build_herds(card: VBoxContainer) -> void:
 		groups.add_child(b)
 		_group_buttons[g[0]] = b
 	card.add_child(FelecoUiScript.label("Or set each population (tick to include, 1 to 40):", 15, FelecoUiScript.MIST))
+	# Seventeen rows: they scroll inside the card so the screen always fits.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	card.add_child(scroll)
 	var grid := GridContainer.new()
 	grid.columns = 2
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_theme_constant_override("h_separation", 12)
 	grid.add_theme_constant_override("v_separation", 6)
-	card.add_child(grid)
+	scroll.add_child(grid)
 	for entry: Array in SPECIES_FIELDS:
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -128,14 +134,12 @@ func _build_herds(card: VBoxContainer) -> void:
 		spin.min_value = 1
 		spin.max_value = 40
 		spin.value = entry[3]
-		spin.custom_minimum_size = Vector2(76, 40)
+		spin.custom_minimum_size = Vector2(70, 36)
 		spin.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		spin.value_changed.connect(_on_count_edited)
 		row.add_child(spin)
 		grid.add_child(row)
 		_spins[entry[0]] = spin
-	card.add_child(Control.new())  # pushes the totals to the card's foot
-	card.get_child(card.get_child_count() - 1).size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_total_label = FelecoUiScript.label("", 16, FelecoUiScript.MIST)
 	card.add_child(_total_label)
 	_foresight_label = FelecoUiScript.label("", 15, FelecoUiScript.GOLD)

@@ -414,8 +414,12 @@ static func catalogue3(scores: Dictionary, roster: Array, run_days: float, day: 
 	for r: Dictionary in roster:
 		var key: String = "%s|%s" % [r["name"], r["species"]]
 		var who: Dictionary = {"name": r["name"], "species": r["species"], "role": "", "female": r.get("sex", "") == "female", "trait": r.get("trait", {}), "stats": r.get("stats", {})}
-		var ps: float = 0.0 if dead.has(key) else starter_survive_p(r, left, float(r.get("age", -1.0)))
-		var b := _bet("survivor:" + key, "survivor", key, r["name"], r["species"], ps, false, who)
+		# Most creatures live a few days, so the line is most of a lifetime away.
+		var life: float = float(Clock.LIFESPAN_DAYS.get(r["species"], SpeciesDB.row(r["species"]).get("days", 4.0)))
+		var span: float = minf(left, maxf(1.0, round(life * 0.8)))
+		who["by_day"] = day + span
+		var ps: float = 0.0 if dead.has(key) else starter_survive_p(r, span, float(r.get("age", -1.0)))
+		var b := _bet("survivor:" + key, "starter", key, r["name"], r["species"], ps, true, who)
 		if dead.has(key):
 			b["reason"] = "Already dead"
 		out.append(b)
@@ -488,6 +492,11 @@ static func judge3(bet: Dictionary, stats: Dictionary, final: bool) -> int:
 				return -1
 		"scenario":
 			return ChallengeScenarios.judge(bet, stats, final)
+		"starter":
+			if stats.get("named_dead", {}).has(t):
+				return -1
+			if final or float(stats.get("day", 0.0)) >= float(bet["meta"].get("by_day", INF)):
+				return 1
 	return 0
 
 static func ranked_groups(score: Dictionary) -> Array:
@@ -499,4 +508,4 @@ static func top_group(score: Dictionary) -> String:
 	return ranked_groups(score)[0]
 
 static func is_v3(bet: Dictionary) -> bool:
-	return String(bet.get("type", "")) in ["top", "order", "gextinct", "gboom", "drought", "golden", "goldloop", "scenario"]
+	return String(bet.get("type", "")) in ["starter", "top", "order", "gextinct", "gboom", "drought", "golden", "goldloop", "scenario"]

@@ -88,6 +88,15 @@ static func is_new(id: String) -> bool:
 static func plural(id: String) -> String:
 	return str(row(id).get("plural", id))
 
+const ONE: Dictionary = {
+	"sheep": "sheep", "rabbit": "rabbit", "wolf": "wolf", "falcon": "falcon", "human": "villager",
+	"boar": "boar", "robin": "robin", "worm": "worm", "mushroom": "mushroom", "fish": "fish",
+	"bear": "bear", "lion": "mountain lion", "deer": "deer", "goat": "mountain goat", "beetle": "beetle",
+}
+
+static func one(id: String) -> String:
+	return str(ONE.get(id, id))
+
 static func label(id: String) -> String:
 	return str(row(id).get("label", id.capitalize()))
 

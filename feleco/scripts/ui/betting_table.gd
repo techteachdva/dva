@@ -237,7 +237,7 @@ func _order_section(col: VBoxContainer, compact_cols: int) -> void:
 	_add_box(orders, "order:exact", BetBox.ZONE, "Exact order")
 
 func _starter_section(col: VBoxContainer) -> void:
-	_sublabel(col, "Starters: alive at year's end")
+	_sublabel(col, "Starters: still alive on the day shown")
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", 8)
 	flow.add_theme_constant_override("v_separation", 8)
@@ -267,11 +267,12 @@ func _starter_section(col: VBoxContainer) -> void:
 		var nm := FelecoUiScript.heading(String(r["name"]), 15, FelecoUiScript.CREAM)
 		names.add_child(nm)
 		var trait_info: Dictionary = r.get("trait", {})
-		var tr := FelecoUiScript.label("%s %s" % [String(trait_info.get("name", "")), SpeciesDB.label(r["species"]).trim_suffix("s").to_lower()], 13, FelecoUiScript.GOLD)
+		var tr := FelecoUiScript.label("%s %s" % [String(trait_info.get("name", "")), SpeciesDB.one(r["species"])], 13, FelecoUiScript.GOLD)
 		tr.tooltip_text = String(trait_info.get("hint", ""))
 		tr.mouse_filter = Control.MOUSE_FILTER_STOP
 		names.add_child(tr)
-		_add_box(card, "survivor:" + key, BetBox.ZONE, "Lives", Vector2.ZERO, survive_icon)
+		var line: int = int(_offer("survivor:" + key).get("meta", {}).get("by_day", 0))
+		_add_box(card, "survivor:" + key, BetBox.ZONE, "Lives to day %d" % line, Vector2.ZERO, survive_icon)
 		flow.add_child(card)
 
 # Screen 2: long shots.
@@ -1125,8 +1126,8 @@ func _on_start() -> void:
 			_gc.player_bet = BetBook.label_of(top)
 	_gc.side_bet_entity = {}
 	for b: Dictionary in _gc.bets:
-		if b["type"] == "survivor" or b["type"] == "doomed":
-			_gc.side_bet_entity = {"name": b["meta"]["name"], "species": b["meta"]["species"], "bet_type": "survive" if b["type"] == "survivor" else "die"}
+		if b["type"] in ["survivor", "doomed", "starter"]:
+			_gc.side_bet_entity = {"name": b["meta"]["name"], "species": b["meta"]["species"], "bet_type": "die" if b["type"] == "doomed" else "survive"}
 			break
 	if _gc.current_mode == "sandbox":
 		# Campaign and challenge setups already applied them.
@@ -1531,7 +1532,7 @@ class BetBox extends PanelContainer:
 			var t: String = String(offer["type"])
 			if t in ["doomed", "extinct"]:
 				art.modulate = Color(1.0, 0.72, 0.65)
-			elif t in ["survivor", "elder"]:
+			elif t in ["survivor", "elder", "starter"]:
 				art.modulate = Color(0.8, 1.0, 0.75)
 			row.add_child(art)
 		if not caption.is_empty():
@@ -1584,6 +1585,7 @@ class BetBox extends PanelContainer:
 			"upset": return "One of the three long shots (%s) ends with the largest population." % offer["meta"].get("names", BetBook.label_of(t))
 			"floodfeast": return "Flood & Feast: the Flood Toll reaches 30 and falcons end with the largest population."
 			"survivor": return "Still alive when the run ends."
+			"starter": return "Still alive on day %d. Trait: %s, %s." % [int(offer["meta"].get("by_day", 0.0)), String(offer["meta"].get("trait", {}).get("name", "")), String(offer["meta"].get("trait", {}).get("hint", ""))]
 			"doomed": return "Dies by day %d, the first half of the run." % int(offer["meta"].get("by_day", 0.0))
 			"elder": return "%s the %s lives to %d days old, outliving its kind." % [offer["meta"]["name"], String(offer["meta"]["species"]).capitalize(), int(offer["meta"]["age_needed"])]
 			"top": return "%s end the year as the fullest group in the food web." % SpeciesDB.GROUP_LABEL[t]
@@ -1677,6 +1679,7 @@ class BetBox extends PanelContainer:
 			"phoenix": return "%s phoenix" % BetBook.label_of(t)
 			"lone": return "Last of the %s" % BetBook.label_of(t).to_lower()
 			"survivor": return "%s lives" % BettingTable._roster_title(offer["meta"])
+			"starter": return "%s lives to day %d" % [offer["meta"]["name"], int(offer["meta"].get("by_day", 0.0))]
 			"doomed": return "%s dies early" % BettingTable._roster_title(offer["meta"])
 			"elder": return "%s, elder" % offer["meta"]["name"]
 			"top": return "%s on top" % SpeciesDB.GROUP_LABEL[t]
