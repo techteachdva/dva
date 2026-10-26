@@ -336,6 +336,22 @@ func _style_roster() -> void:
 			detail.add_theme_constant_override("line_spacing", 0)
 			label.add_sibling(detail)
 			_roster_details[ROSTER_SPECIES[label_name]] = detail
+	# 3.0 species: their count lines are made here rather than in the scene.
+	var after: Node = $TopLeft/VBox.get_node("FishCountDetail") if $TopLeft/VBox.has_node("FishCountDetail") else $TopLeft/VBox/FishCount
+	for id: String in SpeciesDB.NEW_SPECIES:
+		var col: Color = (SpeciesDB.row(id)["color"] as Color).lightened(0.25)
+		var count := Label.new()
+		count.name = id.capitalize() + "Count"
+		count.add_theme_color_override("font_color", col)
+		count.add_theme_font_size_override("font_size", 16)
+		after.add_sibling(count)
+		var detail := Label.new()
+		detail.add_theme_font_size_override("font_size", 12)
+		detail.add_theme_color_override("font_color", col.lerp(Color(0.6, 0.66, 0.6), 0.55))
+		count.add_sibling(detail)
+		_extra_counts[id] = count
+		_roster_details[id] = detail
+		after = detail
 	$TopLeft/VBox.add_theme_constant_override("separation", 1)
 
 const ROSTER_SPECIES: Dictionary = {
@@ -343,6 +359,7 @@ const ROSTER_SPECIES: Dictionary = {
 	"RobinCount": "robin", "BoarCount": "boar", "RabbitCount": "rabbit", "WormCount": "worm", "FishCount": "fish",
 }
 var _roster_details: Dictionary = {}
+var _extra_counts: Dictionary = {}  # 3.0 species id -> count Label
 
 func _update_breakdown() -> void:
 	if _director == null or _roster_details.is_empty():
@@ -352,15 +369,25 @@ func _update_breakdown() -> void:
 		if data.node == null or not is_instance_valid(data.node) or not _roster_details.has(data.species):
 			continue
 		if not tally.has(data.species):
-			tally[data.species] = [0, 0, 0, 0]
+			tally[data.species] = [0, 0, 0, 0, 0]
 		var t: Array = tally[data.species]
 		t[1 if data.female else 0] += 1
 		var kind: int = Roles.role_index(data.role)
 		if kind > 0:
 			t[1 + kind] += 1
+		if data.golden > 0.05:
+			t[4] += 1
 	for sp: String in _roster_details.keys():
-		var t: Array = tally.get(sp, [0, 0, 0, 0])
-		(_roster_details[sp] as Label).text = "%dM · %dF · %d tough · %d special" % t
+		# With fourteen species the per-kind lines don't fit: they show on hover.
+		(_roster_details[sp] as Label).visible = false
+		var t: Array = tally.get(sp, [0, 0, 0, 0, 0])
+		var line: String = "%dM · %dF · %d tough · %d special" % t.slice(0, 4)
+		if int(t[4]) > 0:
+			line += " · %d gold" % t[4]
+		(_roster_details[sp] as Label).text = line
+		var count_label: Control = (_roster_details[sp] as Label).get_parent().get_child((_roster_details[sp] as Label).get_index() - 1)
+		count_label.mouse_filter = Control.MOUSE_FILTER_PASS
+		count_label.tooltip_text = line
 
 func _refresh_champion() -> void:
 	var gc: Node = get_node_or_null("/root/GameConfig")
@@ -721,6 +748,8 @@ func _on_time_updated(days_remaining: float) -> void:
 	if _director != null:
 		$TopLeft/VBox/WormCount.text = "Worms  %d" % _director._active_worms.size()
 		$TopLeft/VBox/FishCount.text = "Fish  %d" % _director._active_fish.size()
+		for id: String in _extra_counts.keys():
+			(_extra_counts[id] as Label).text = "%s  %d" % [SpeciesDB.label(id), _director.get_species_count(id)]
 		_update_breakdown()
 		_refresh_champion()
 
@@ -745,6 +774,9 @@ const HILL_SPECIES: Array = [
 	["robins", "Rob", Color(0.9, 0.42, 0.3)], ["boars", "Boa", Color(0.5, 0.36, 0.28)],
 	["rabbits", "Rab", Color(0.78, 0.7, 0.58)], ["worms", "Wrm", Color(0.85, 0.52, 0.6)],
 	["fish", "Fsh", Color(0.42, 0.66, 0.86)],
+	["deer", "Der", Color(0.72, 0.5, 0.32)], ["goats", "Got", Color(0.9, 0.88, 0.82)],
+	["bears", "Bea", Color(0.46, 0.3, 0.2)], ["lions", "Lio", Color(0.82, 0.62, 0.38)],
+	["beetles", "Btl", Color(0.4, 0.58, 0.45)],
 ]
 const HILL_BAR_H: float = 96.0
 var _hill_bars: Dictionary = {}
@@ -757,7 +789,7 @@ func _build_hill_bars() -> void:
 	panel.name = "HillBars"
 	panel.anchor_left = 1.0
 	panel.anchor_right = 1.0
-	panel.offset_left = -340.0
+	panel.offset_left = -470.0
 	panel.offset_right = -10.0
 	panel.offset_top = 178.0
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -785,7 +817,7 @@ func _build_hill_bars() -> void:
 	for entry: Array in HILL_SPECIES:
 		var cell := VBoxContainer.new()
 		cell.add_theme_constant_override("separation", 2)
-		cell.custom_minimum_size = Vector2(28, 0)
+		cell.custom_minimum_size = Vector2(26, 0)
 		# An icon, not a glyph: the web build has only the game's own fonts.
 		var crown := TextureRect.new()
 		crown.texture = load("res://assets/icons/crown.svg")
@@ -797,7 +829,7 @@ func _build_hill_bars() -> void:
 		var bar := ProgressBar.new()
 		bar.fill_mode = ProgressBar.FILL_BOTTOM_TO_TOP
 		bar.show_percentage = false
-		bar.custom_minimum_size = Vector2(22, HILL_BAR_H)
+		bar.custom_minimum_size = Vector2(18, HILL_BAR_H)
 		bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		bar.max_value = 1.0
 		bar.step = 0.0

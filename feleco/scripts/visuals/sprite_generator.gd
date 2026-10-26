@@ -363,33 +363,44 @@ static func _goat(r: int, f: bool) -> void:
 		_star(60, 72, 3.4, Color(1.0, 0.92, 0.6))
 
 static func _bear(r: int, f: bool) -> void:
-	# normal: brown; Grizzled: silver-tipped hump; Moon Bear: black with a pale crescent.
-	var fur: Color = _pick(r, f, [Color(0.4, 0.27, 0.17), Color(0.47, 0.32, 0.2), Color(0.5, 0.42, 0.34), Color(0.56, 0.47, 0.38), Color(0.14, 0.12, 0.12), Color(0.18, 0.16, 0.16)])
-	var dark: Color = fur.darkened(0.35)
+	# A big round ball of fur on thick legs. normal: brown; Grizzled: silver-tipped
+	# coat; Moon Bear: black with a pale crescent.
+	var fur: Color = _pick(r, f, [Color(0.42, 0.28, 0.17), Color(0.48, 0.33, 0.21), Color(0.5, 0.42, 0.34), Color(0.56, 0.47, 0.38), Color(0.14, 0.12, 0.12), Color(0.18, 0.16, 0.16)])
+	var dark: Color = fur.darkened(0.3)
 	var claw := Color(0.9, 0.86, 0.76)
-	_line(Vector2(40, 94), Vector2(38, 121), 10.0, dark)
-	_line(Vector2(78, 94), Vector2(80, 121), 10.0, dark)
-	_ell(56, 82, 40, 28 if not f else 25, fur)
-	_ell(44, 62, 18, 12, fur.lightened(0.06))
+	var bulk: float = 0.0 if f else 3.0
+	# Far legs, then the great body with a shaggy fringe all round it.
+	_ell(36, 104, 10, 18, dark)
+	_ell(80, 104, 10, 18, dark)
+	_ell(56, 76, 44 + bulk, 33 + bulk, fur)
+	for i: int in 14:
+		var a: float = PI * (0.95 + float(i) / 13.0 * 1.1)
+		var p := Vector2(56, 76) + Vector2(cos(a) * (42 + bulk), sin(a) * (31 + bulk))
+		_circ(p.x, p.y, 7.0, fur)
+	_ell(52, 70, 30, 18, fur.lightened(0.07), 0.0, 0.6)
+	_ell(58, 100, 30, 9, fur.darkened(0.08))
 	if r == 1:
-		for i: int in 7:
-			_line(Vector2(34 + i * 5, 60), Vector2(36 + i * 5, 54), 1.6, Color(0.85, 0.82, 0.76), 0.0)
-	_ell(56, 100, 28, 8, fur.lightened(0.08))
-	_line(Vector2(50, 100), Vector2(50, 122), 11.0, fur)
-	_line(Vector2(86, 98), Vector2(88, 122), 11.0, fur)
-	for x: float in [50.0, 88.0]:
+		for i: int in 9:
+			_line(Vector2(30 + i * 6, 50), Vector2(32 + i * 6, 44), 1.6, Color(0.88, 0.85, 0.78), 0.0)
+	# Near legs: thick pillars with big paws.
+	_ell(48, 106, 11, 17, fur)
+	_ell(88, 106, 11, 17, fur)
+	for x: float in [48.0, 88.0]:
+		_ell(x + 2, 120, 12, 5, dark)
 		for k: int in 3:
-			_line(Vector2(x - 4 + k * 4, 121), Vector2(x - 2 + k * 4, 124), 1.4, claw, 0.0)
-	_ell(98, 70, 16, 15, fur)
-	_circ(92, 54, 5.5, fur)
-	_circ(92, 54, 2.5, dark)
-	_poly([Vector2(106, 66), Vector2(122, 72), Vector2(120, 82), Vector2(104, 80)], fur.lightened(0.12))
-	_dot(121, 74, 2.8, Color(0.06, 0.05, 0.05))
-	_eye(102, 64, 2.2, Color(0.2, 0.12, 0.08))
+			_line(Vector2(x - 3 + k * 4, 121), Vector2(x - 1 + k * 4, 125), 1.4, claw, 0.0)
+	# Head: broad and round, small ears, a long snout.
+	_circ(100, 66, 17, fur)
+	_circ(91, 49, 6, fur)
+	_circ(91, 49, 3, dark)
+	_ell(116, 74, 11, 8, fur.lightened(0.15))
+	_dot(125, 72, 3.0, Color(0.06, 0.05, 0.05))
+	_line(Vector2(113, 80), Vector2(122, 79), 1.2, Color(0.15, 0.1, 0.08), 0.0)
+	_eye(104, 61, 2.4, Color(0.2, 0.12, 0.08))
 	if r == 2:
-		_arc(84, 88, 10.0, 200.0, 340.0, 3.5, Color(0.95, 0.92, 0.82))
+		_arc(86, 88, 11.0, 200.0, 340.0, 3.5, Color(0.95, 0.92, 0.82))
 	if r != 0 and f:
-		_circ(66, 76, 2.5, Color(0.98, 0.7, 0.8), 0.0)
+		_circ(66, 72, 2.5, Color(0.98, 0.7, 0.8), 0.0)
 
 static func _lion(r: int, f: bool) -> void:
 	# normal: tawny; Ghost Cat: pale grey; Sun Cat: golden with dark tail tip.
