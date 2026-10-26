@@ -267,16 +267,22 @@ func _physics_process(delta: float) -> void:
 	var sim: SimulationDirector = director
 	var metab_mult: float = 1.0 if sim == null else sim.season_metabolism(species_id) * sim.tune(species_id, "hunger")
 	metab_mult *= 1.0 - HERD_HUNGER * herd
+	# Gold and the middle of a herd mend the living. A creature already at
+	# zero is dead (a killing blow, or a wound that landed on empty): mending
+	# it first used to lift it back above zero before _age_and_die, so the
+	# hit never stuck.
+	var hp_now: Variant = get("health")
+	var can_mend: bool = hp_now != null and float(hp_now) > 0.0
 	if golden > 0.0:
 		metab_mult *= 1.0 - 0.35 * golden
-		if get("health") != null:
-			set("health", minf(float(get("health")) + 1.5 * golden * life, 100.0))
+		if can_mend:
+			set("health", minf(float(hp_now) + 1.5 * golden * life, 100.0))
 		golden = maxf(golden - GOLD_FADE * life, 0.0)
 		_gold_sparkle -= life
 		if _gold_sparkle <= 0.0 and golden > 0.15:
 			_gold_sparkle = 2.0 + randf() * 2.0
 			FXManager.spawn_birth_particles(global_position + Vector3.UP * 0.6, Color(1.0, 0.85, 0.3))
-	if herd > 0.0 and get("health") != null:
+	if can_mend and herd > 0.0:
 		set("health", minf(float(get("health")) + HERD_HEAL * herd * life, 100.0))
 	_metabolise(life * metab_mult)
 	# Out of season, breeding stalls; in season it comes round faster.
