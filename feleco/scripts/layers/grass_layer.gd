@@ -23,6 +23,11 @@ var _cell_kind: PackedByteArray
 # Golden Year and Green Thumb raise this.
 var golden_mult: float = 1.0
 const GOLDEN_SEED_CHANCE: float = 0.0015
+# Gold stays rare: never more than this share of the meadow is golden.
+const GOLDEN_CAP: float = 0.05
+
+func _golden_room() -> bool:
+	return _cell_kind.count(Kind.GOLDEN) < int(_cell_kind.size() * GOLDEN_CAP)
 var _dirty_cells: PackedByteArray
 var _dirty_indices: Array[int] = []
 var _soil_exhaustion: float = 0.0
@@ -194,7 +199,7 @@ func seed_golden(world_pos: Vector3, strength: float) -> void:
 	var g := world_to_grid(world_pos)
 	for k: int in 1:
 		var idx := clampi(g.y + k * (randi() % 3 - 1), 0, grid_height - 1) * grid_width + clampi(g.x + k * (randi() % 3 - 1), 0, grid_width - 1)
-		if randf() < 0.1 + strength * 0.2:
+		if randf() < 0.1 + strength * 0.2 and _golden_room():
 			_cell_kind[idx] = Kind.GOLDEN
 			_mark_dirty(idx)
 
@@ -379,7 +384,7 @@ func _pollinate(_dt: float) -> void:
 		var k: int = _cell_kind[idx]
 		if k == Kind.GOLDEN and randf() > 0.05:
 			k = Kind.MEADOW
-		elif randf() < GOLDEN_SEED_CHANCE * golden_mult * 4.0:
+		elif randf() < GOLDEN_SEED_CHANCE * golden_mult * 4.0 and _golden_room():
 			k = Kind.GOLDEN
 		_cell_kind[tidx] = k
 		_grid[tidx] = clampf(_grid[tidx] + 0.08, 0.0, max_density)

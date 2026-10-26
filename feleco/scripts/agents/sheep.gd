@@ -55,6 +55,8 @@ func _get_transition_modifiers() -> Dictionary:
 		boars = vision.get_visible_by_tag("boar")
 		if boars.size() > 0:
 			mods["Flee"] = clampf(mods.get("Flee", 0.0) + 0.6, 0.0, 1.0)
+		if not vision.get_visible_by_tag("lion").is_empty() or not vision.get_visible_by_tag("bear").is_empty():
+			mods["Flee"] = clampf(mods.get("Flee", 0.0) + 0.8, 0.0, 1.0)
 
 	var grass_density := 0.0
 	if sim.grass != null:
@@ -263,7 +265,7 @@ func _on_tick_graze(delta: float) -> void:
 	# Eat mushrooms
 	var nearest_mushroom := _cached_mushroom
 	if nearest_mushroom != null and is_instance_valid(nearest_mushroom) and global_position.distance_squared_to(nearest_mushroom.global_position) < 4.0:
-		nearest_mushroom.die()
+		devour(nearest_mushroom)
 		energy += 25.0
 		energy = clampf(energy, 0.0, 100.0)
 		_diet_boost = 10.0
@@ -300,6 +302,8 @@ func _on_tick_flee(_delta: float) -> void:
 	var vision: VisionCone = _vision_cone
 	if vision != null:
 		threat = vision.closest_visible("wolf")
+		if threat == null:
+			threat = vision.closest_visible("lion")
 		if threat == null:
 			threat = vision.closest_visible("boar")
 	if threat != null and is_instance_valid(threat):

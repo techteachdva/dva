@@ -323,6 +323,11 @@ func _ready() -> void:
 		for id in gc.disabled_species:
 			disabled_species[str(id)] = true
 		_apply_disabled()
+		if not str(gc.scenario_id).is_empty() and gc.current_mode == "challenge":
+			scenario_id = gc.scenario_id
+			var setup: Dictionary = ChallengeScenarios.find(scenario_id).get("setup", {})
+			drought_chance = float(setup.get("drought_chance", drought_chance))
+			_scenario_events = ChallengeScenarios.events_for(scenario_id, cfg_time_limit)
 		cfg_bet = gc.player_bet
 		cfg_grass_density = gc.grass_density
 		cfg_time_limit = gc.time_limit
@@ -815,6 +820,7 @@ func tick(dt: float) -> void:
 		_natural_flood_roll(2.0 / Clock.LIFE_PACE * DAYS_PER_SECOND)
 		_natural_rain_roll(2.0 / Clock.LIFE_PACE * DAYS_PER_SECOND)
 		_natural_drought_roll(2.0 / Clock.LIFE_PACE * DAYS_PER_SECOND)
+		_step_scenario()
 		_mycelium_fruiting()
 		_update_nesting()
 	_arborist_timer += dt
@@ -899,7 +905,7 @@ func _tick_agents(dt: float) -> void:
 		var node := data.node
 		if node == null or not is_instance_valid(node) or not node.is_inside_tree():
 			_agent_registry.remove_at(idx)
-		elif node.get_instance_id() % stagger == phase and data.species != "mushroom":
+		elif node.get_instance_id() % stagger == phase and data.species != "mushroom" and not node.rampage:
 			node._physics_process(dt * stagger)
 		idx -= 1
 	for child in spores.get_children():
@@ -1078,6 +1084,20 @@ func _apply_roster_identities() -> void:
 				Roles.apply(ma, data.species, role)
 				data.role = ma.role
 				data.variant = ma.variant
+			# Starters: their rolled health, speed and appetite (see BetBook.roll_starter).
+			var st: Dictionary = entry.get("stats", {})
+			if not st.is_empty():
+				# Replace the random founder genome with the rolled one.
+				var old := Genetics.expressed(ma.genes)
+				if ma.get("health") != null:
+					ma.set("health", float(ma.get("health")) / float(old["health"]))
+				for sp_prop: String in Genetics.SPEED_PROPS:
+					if ma.get(sp_prop) != null:
+						ma.set(sp_prop, float(ma.get(sp_prop)) / float(old["speed"]))
+				if ma.get("metabolism_rate") != null:
+					ma.set("metabolism_rate", float(ma.get("metabolism_rate")) / float(old["appetite"]))
+				var trait_name: String = String(entry.get("trait", {}).get("name", ""))
+				Genetics.apply(ma, {"health": st["health"], "speed": st["speed"], "appetite": st["appetite"], "traits": [trait_name] if Genetics.TRAITS.has(trait_name) else []})
 			break
 
 func _auto_use_powerups() -> void:
@@ -1525,6 +1545,44 @@ func _track_agent(agent: Node, array: Array) -> void:
 		agent.tree_exiting.connect(func(): _agent_registry.erase(data), CONNECT_ONE_SHOT)
 	_snap_to_ground(agent)
 
+# Challenge scenario: timed events, run off the day clock.
+var scenario_id: String = ""
+var _scenario_events: Array = []
+
+func _step_scenario() -> void:
+	var day := get_day()
+	while not _scenario_events.is_empty() and day >= float(_scenario_events[0]["day"]):
+		var e: Dictionary = _scenario_events.pop_front()
+		match str(e["do"]):
+			"kill_group":
+				var g: String = e["arg"]
+				for data: AgentData in _agent_registry.duplicate():
+					if SpeciesDB.group_of(data.species) == g and data.node != null and is_instance_valid(data.node) and data.node.has_method("die"):
+						data.node.die()
+				FXManager.show_dramatic_text(Vector3.ZERO, "A sickness takes the %s!" % SpeciesDB.GROUP_LABEL[g].to_lower(), Color(0.9, 0.4, 0.35))
+				chronicle.emit("Overnight, every one of the %s is gone." % SpeciesDB.GROUP_LABEL[g].to_lower())
+			"drought":
+				trigger_drought()
+
+# Genetics: founders and migrants get a random genome; a baby crosses its
+# parent with the nearest mate of the other sex (the likely father or mother).
+func _apply_genes(agent: Node, parent: Node) -> void:
+	if not agent is MarkovAgent or agent.is_in_group("spore"):
+		return
+	if parent == null or not parent is MarkovAgent or (parent as MarkovAgent).genes.is_empty():
+		Genetics.apply(agent, Genetics.random_genome())
+		return
+	var pa := parent as MarkovAgent
+	var mate: MarkovAgent = null
+	var best: float = 100.0
+	for n in get_nearby_agents(pa.global_position, 10.0, pa.species_id):
+		if n is MarkovAgent and n != pa and (n as MarkovAgent).sex != pa.sex:
+			var d: float = pa.global_position.distance_squared_to(n.global_position)
+			if d < best:
+				best = d
+				mate = n
+	Genetics.apply(agent, Genetics.cross(pa.genes, mate.genes if mate != null else {}))
+
 # Switched-off species start at zero (and _apply_pass_migration keeps them out).
 func _apply_disabled() -> void:
 	for id: String in disabled_species.keys():
@@ -1851,7 +1909,7 @@ func _apply_pass_migration() -> void:
 	for id: String in SpeciesDB.NEW_SPECIES:
 		factions.append(SpeciesDB.plural(id))
 	for faction: String in factions:
-		if disabled_species.has(SpeciesDB.id_for(faction)):
+		if disabled_species.has(SpeciesDB.id_for(faction)) or ChallengeScenarios.blocks_migration(scenario_id, SpeciesDB.id_for(faction)):
 			continue
 		var n: int = int(counts.get(faction, 0))
 		if n > 0:
@@ -2224,11 +2282,32 @@ func _add_extra_counts(counts: Dictionary) -> void:
 	for id: String in _extra.keys():
 		counts[SpeciesDB.plural(id)] = (_extra[id]["active"] as Array).size()
 
-# Year-end share of the valley per food-web group (Order bet, lesson cards).
+# Head counts per food-web group (lesson cards, the harness).
 func get_group_counts() -> Dictionary:
 	var census := get_faction_counts()
 	census["producers"] = producer_count()
 	return SpeciesDB.group_totals(census)
+
+# How full each food-web group is: every member's numbers against what the
+# valley can hold of it, averaged over the group (a missing species counts 0).
+# Producers: the meadow and the woods against a lush valley. This is what the
+# Order bet ranks, so a mushroom bloom can't outvote three wolves.
+const PRODUCER_HOLD: float = 220.0
+const MUSHROOM_HOLD: float = 40.0
+func get_group_scores() -> Dictionary:
+	var census := get_faction_counts()
+	var out: Dictionary = {"producer": producer_count() / PRODUCER_HOLD}
+	for g: String in SpeciesDB.GROUPS:
+		if g == "producer":
+			continue
+		var members := SpeciesDB.members(g)
+		var total: float = 0.0
+		for id: String in members:
+			var key := SpeciesDB.plural(id)
+			var hold: float = MUSHROOM_HOLD if id == "mushroom" else float(HOLD_CAPACITY.get(key, 10.0))
+			total += float(census.get(key, 0)) / hold
+		out[g] = total / maxf(1.0, float(members.size()))
+	return out
 
 # Producers on the same scale as animals: a tall grass tuft, a tree, a bush.
 func producer_count() -> float:
@@ -2452,6 +2531,7 @@ func _mutate(val: float) -> float:
 	return val * (0.9 + randf() * 0.2)
 
 func _apply_phenotype_variance(agent: Node, parent: Node = null) -> void:
+	_apply_genes(agent, parent)
 	var base: Dictionary = {}
 	if parent != null:
 		# Inherit from parent

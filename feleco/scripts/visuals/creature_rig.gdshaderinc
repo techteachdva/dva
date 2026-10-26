@@ -123,7 +123,7 @@ vec2 action_pose(vec2 v, float tx, float up, int st, int action, float p, float 
 // action: what it is doing (see ACTION_* below), layered on the species rig.
 // Writes glow and shimmer for the fragment stage.
 vec2 creature_rig(vec2 v, vec2 uv, float qw, float qh, int rig_style, float cell, float seed, float facing, float p, float m, int action, out float out_glow, out float out_shimmer) {
-	float role = mod(cell, 3.0);
+	float role = mod(cell, 4.0);
 	float face = facing < 0.0 ? -1.0 : 1.0;
 	float idle = 1.0 - m;
 	float h = qh;

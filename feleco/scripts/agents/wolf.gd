@@ -73,6 +73,9 @@ func _get_transition_modifiers() -> Dictionary:
 	var total_sheep: int = sim.get_sheep_count() if sim != null else 0
 
 	var rabbits := vision.get_visible_by_tag("rabbit")
+	# Deer and goats count as big game alongside rabbits.
+	rabbits.append_array(vision.get_visible_by_tag("deer"))
+	rabbits.append_array(vision.get_visible_by_tag("goat"))
 	if sheep.size() > 0:
 		if true or total_sheep > 0:
 			mods["Chase"] = 1.0  # instant interrupt: hungry wolves pounce immediately
@@ -216,6 +219,8 @@ func _on_tick_chase(delta: float) -> void:
 	if vision != null:
 		var sheep_list := vision.get_visible_by_tag("sheep")
 		var rabbit_list := vision.get_visible_by_tag("rabbit")
+		rabbit_list.append_array(vision.get_visible_by_tag("deer"))
+		rabbit_list.append_array(vision.get_visible_by_tag("goat"))
 		if sheep_list.size() > 0 and is_instance_valid(sheep_list[0]):
 			target = sheep_list[0]
 		elif rabbit_list.size() > 0 and is_instance_valid(rabbit_list[0]):
@@ -367,7 +372,7 @@ func _on_tick_scavenge(_delta: float) -> void:
 	if nearest_worm != null and global_position.distance_to(nearest_worm.global_position) < 15.0:
 		if global_position.distance_to(nearest_worm.global_position) < 1.5:
 			if nearest_worm.has_method("die"):
-				nearest_worm.die()
+				devour(nearest_worm)
 			else:
 				nearest_worm.queue_free()
 			energy += 8.0

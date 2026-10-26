@@ -152,7 +152,7 @@ func _on_tick_forage(delta: float) -> void:
 	# Opportunistic mushroom munch
 	var near_mushroom := sim.find_nearest_mushroom(global_position, 3.0)
 	if near_mushroom != null and global_position.distance_squared_to(near_mushroom.global_position) < 2.25:
-		near_mushroom.die()
+		devour(near_mushroom)
 		energy += 25.0
 		energy = clampf(energy, 0.0, 100.0)
 		velocity = Vector3.ZERO
@@ -168,7 +168,7 @@ func _on_tick_forage(delta: float) -> void:
 	# Eat mushrooms
 	var nearest_mushroom := sim.find_nearest_mushroom(global_position)
 	if nearest_mushroom != null and global_position.distance_squared_to(nearest_mushroom.global_position) < 2.0:
-		nearest_mushroom.die()
+		devour(nearest_mushroom)
 		energy += 25.0
 		energy = clampf(energy, 0.0, 100.0)
 		velocity = Vector3.ZERO
@@ -177,7 +177,7 @@ func _on_tick_forage(delta: float) -> void:
 	var nearest_worm := sim.find_nearest_worm(global_position)
 	if nearest_worm != null and global_position.distance_to(nearest_worm.global_position) <= 1.5:
 		if nearest_worm.has_method("die"):
-			nearest_worm.die()
+			devour(nearest_worm)
 		else:
 			nearest_worm.queue_free()
 		energy += 10.0

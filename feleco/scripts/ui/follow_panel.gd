@@ -113,6 +113,14 @@ func _ready() -> void:
 	names.add_child(_name)
 	_kind = FelecoUiScript.label("", 14, FelecoUiScript.MIST)
 	names.add_child(_kind)
+	_rampage_btn = Button.new()
+	_rampage_btn.text = "Rampage!"
+	_rampage_btn.theme_type_variation = "PrimaryButton"
+	_rampage_btn.custom_minimum_size = Vector2(110, 40)
+	_rampage_btn.tooltip_text = "Take this golden creature in hand and spend its gold: WASD or arrows to steer (or hold a finger where it should go). It devours anything not of its own kind until the gold runs out."
+	_rampage_btn.visible = false
+	_rampage_btn.pressed.connect(_on_rampage)
+	head.add_child(_rampage_btn)
 	var stop := Button.new()
 	stop.text = "Stop"
 	stop.theme_type_variation = "GhostButton"
@@ -160,7 +168,7 @@ func _ready() -> void:
 	_name.text = agent.display_name if not agent.display_name.is_empty() else agent.species_id.capitalize()
 	var kind: String = Roles.display_name(agent.species_id, agent.role)
 	var who: String = ("%s %s" % [agent.sex, kind.to_lower()]).strip_edges().capitalize() if agent.sex != "" else kind
-	_kind.text = "%s  ·  %s" % [who, _trait[0]]
+	_kind.text = "%s  ·  %s  ·  %s" % [who, _trait[0], Genetics.describe(agent.genes)]
 	agent.state_changed.connect(_on_state_changed)
 	if director != null:
 		director.agent_died.connect(_on_death_nearby)
@@ -240,10 +248,76 @@ func _on_fight_nearby(attacker: String, target: String, pos: Vector3, killed: bo
 	elif target == agent.species_id and not killed:
 		_remember(BAD, "felt the shock", "of an attack by a %s, and lived" % attacker, "hit", 10.0)
 
+var _rampage_btn: Button
+var _rampage_bar: ProgressBar
+var _rampaging: bool = false
+
+func _camera() -> Camera3D:
+	return get_tree().current_scene.get_node_or_null("Camera3D") as Camera3D if get_tree().current_scene != null else null
+
+func _on_rampage() -> void:
+	if agent == null or not is_instance_valid(agent) or not agent.start_rampage():
+		return
+	_rampaging = true
+	_rampage_btn.visible = false
+	var cam := _camera()
+	if cam != null:
+		cam.set("locked", true)
+	if _rampage_bar == null:
+		_rampage_bar = ProgressBar.new()
+		_rampage_bar.max_value = 1.0
+		_rampage_bar.custom_minimum_size = Vector2(0, 14)
+		_rampage_bar.show_percentage = false
+		_rampage_bar.modulate = Color(1.0, 0.85, 0.3)
+		_doing.get_parent().add_child(_rampage_bar)
+		_doing.get_parent().move_child(_rampage_bar, _doing.get_index())
+	_rampage_bar.visible = true
+	agent.rampage_ended.connect(_on_rampage_ended, CONNECT_ONE_SHOT)
+
+func _on_rampage_ended(kills: int) -> void:
+	_rampaging = false
+	var cam := _camera()
+	if cam != null:
+		cam.set("locked", false)
+	if _rampage_bar != null:
+		_rampage_bar.visible = false
+	_remember(GOOD, "felt the gold burn away", "after a rampage of %d kills" % kills, "rampage", 60.0)
+
+# Steering: keys move relative to the camera; a held finger or mouse button
+# pulls the creature toward that spot on the ground.
+func _steer_rampage() -> void:
+	var cam := _camera()
+	var steer := Vector3.ZERO
+	if cam != null and cam.has_method("flat_forward"):
+		var fwd: Vector3 = cam.flat_forward()
+		var right: Vector3 = cam.flat_right()
+		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP): steer += fwd
+		if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN): steer -= fwd
+		if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): steer += right
+		if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT): steer -= right
+		if steer == Vector3.ZERO and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and get_viewport().gui_get_hovered_control() == null:
+			var mp := get_viewport().get_mouse_position()
+			var from := cam.project_ray_origin(mp)
+			var dir := cam.project_ray_normal(mp)
+			if absf(dir.y) > 0.01:
+				var t: float = (agent.global_position.y - from.y) / dir.y
+				var hit: Vector3 = from + dir * t
+				var to: Vector3 = hit - agent.global_position
+				to.y = 0.0
+				if to.length() > 0.8:
+					steer = to.normalized()
+	agent.rampage_steer = steer.normalized() if steer != Vector3.ZERO else Vector3.ZERO
+
 func _process(delta: float) -> void:
 	if _gone:
 		return
+	if _rampaging and agent != null and is_instance_valid(agent) and not agent.is_queued_for_deletion():
+		_steer_rampage()
+		_rampage_bar.value = agent.golden
+		_doing.text = "On a rampage: %d kills" % agent.rampage_kills
 	if agent == null or not is_instance_valid(agent) or agent.is_queued_for_deletion():
+		if _rampaging:
+			_on_rampage_ended(0)
 		_gone = true
 		_doing.text = "%s has died." % _name.text
 		_mood.text = "[color=%s][b]At rest[/b][/color]  Its body returns to the meadow." % SAD
@@ -252,6 +326,9 @@ func _process(delta: float) -> void:
 	_accum += delta
 	if _accum >= 0.4:
 		_accum = 0.0
+		_rampage_btn.visible = not _rampaging and agent.golden > 0.05
+		if _rampaging:
+			return
 		_watch_changes()
 		_refresh()
 

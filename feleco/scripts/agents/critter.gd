@@ -146,7 +146,7 @@ func _eat_nearby(delta: float) -> bool:
 			"mushroom":
 				var m := sim.find_nearest_mushroom(global_position, 3.0)
 				if m != null and global_position.distance_squared_to(m.global_position) < 2.25:
-					m.die()
+					devour(m)
 					_feed(20.0)
 					return true
 			"fish":

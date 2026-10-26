@@ -268,7 +268,7 @@ func _on_tick_forage(delta: float) -> void:
 	# Eat mushrooms
 	var nearest_mushroom := sim.find_nearest_mushroom(global_position)
 	if nearest_mushroom != null and global_position.distance_squared_to(nearest_mushroom.global_position) < 2.25:
-		nearest_mushroom.die()
+		devour(nearest_mushroom)
 		energy += 8.0
 		energy = clampf(energy, 0.0, 100.0)
 		return

@@ -14,7 +14,7 @@ uniform float face_dir = 1.0;
 uniform float motion = 1.0;
 uniform float gait = 9.0;
 uniform float px = 40.0;
-uniform vec2 grid = vec2(3.0, 2.0);
+uniform vec2 grid = vec2(4.0, 2.0);
 // Hover: a gold outline and a little lift.
 uniform float hover = 0.0;
 uniform int pose_action = 0;
@@ -38,8 +38,8 @@ void vertex() {
 	if (face_dir < 0.0) {
 		uv.x = 1.0 - uv.x;
 	}
-	float role = mod(atlas_cell, 3.0);
-	float row = floor(atlas_cell / 3.0);
+	float role = mod(atlas_cell, grid.x);
+	float row = floor(atlas_cell / grid.x);
 	UV = (vec2(role, row) + clamp(uv, vec2(0.004), vec2(0.996))) / grid;
 }
 

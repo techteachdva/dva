@@ -365,7 +365,7 @@ func _setup_visuals() -> void:
 					_branch(Vector3.ZERO, Vector3(cos(a) * 0.9, 0.7, sin(a) * 0.9).normalized(), 1.1 * _size, 0.12 * _size, 2)
 			else:
 				_branch(Vector3.ZERO, lean, 1.9 * _size, 0.34 * _size, 4)
-				star_moss = _rng.randf() < 0.04 * _golden_mult()
+				star_moss = _rng.randf() < minf(0.04 * _golden_mult(), 0.05)
 			# All limbs merged into one mesh: one draw per tree.
 			var st := SurfaceTool.new()
 			for seg: Array in _segments:
@@ -544,7 +544,8 @@ func _spawn_apple(at: Vector3) -> void:
 		ground = (sim as SimulationDirector).ground_height(global_position.x + at.x, global_position.z + at.z)
 	apple.rest_y = ground - global_position.y + 0.26
 	apple.kind = "berry" if bush else "apple"
-	apple.golden = randf() < (GOLDEN_BERRY_CHANCE if bush else GOLDEN_APPLE_CHANCE) * _golden_mult()
+	# Never more than 1 in 20 fruit is golden, even in a Golden Year.
+	apple.golden = randf() < minf((GOLDEN_BERRY_CHANCE if bush else GOLDEN_APPLE_CHANCE) * _golden_mult(), 0.05)
 	add_child(apple)
 	apple.position = at
 

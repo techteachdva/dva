@@ -188,7 +188,7 @@ func _on_tick_eat(_delta: float) -> void:
 	# Eat mushroom spores
 	var nearest_mushroom := sim.find_nearest_mushroom(global_position, 3.0)
 	if nearest_mushroom != null and global_position.distance_squared_to(nearest_mushroom.global_position) < 2.25:
-		nearest_mushroom.die()
+		devour(nearest_mushroom)
 		energy += 15.0
 		energy = clampf(energy, 0.0, 100.0)
 		ate = true

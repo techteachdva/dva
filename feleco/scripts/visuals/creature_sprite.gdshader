@@ -13,7 +13,7 @@ uniform float quad_height = 2.0;
 uniform float quad_width = 2.0;
 uniform int style = 0;
 // Atlas: columns are kinds (normal, tough, special), rows are sexes (male, female).
-uniform vec2 grid = vec2(3.0, 2.0);
+uniform vec2 grid = vec2(4.0, 2.0);
 uniform vec2 texel = vec2(0.0078125, 0.0078125);
 uniform vec4 rim_color : source_color = vec4(1.0, 0.82, 0.3, 1.0);
 uniform float rim = 0.0;
@@ -37,8 +37,8 @@ void vertex() {
 	v_bet = cell >= 8.0 ? 1.0 : 0.0;
 	cell -= v_bet * 8.0;
 	float seed = fract(c.w) * 20.0;
-	float role = mod(cell, 3.0);
-	float row = floor(cell / 3.0);
+	float role = mod(cell, grid.x);
+	float row = floor(cell / grid.x);
 	v_role = role;
 	float g = 0.0;
 	float sh = 0.0;

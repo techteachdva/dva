@@ -42,8 +42,19 @@ var species_id: String = ""
 # carcass, so it marks how energy moves up and back down the food web. It
 # makes a creature hardier and less hungry, and slowly fades.
 var golden: float = 0.0
+# Genome (see Genetics): set once at birth or arrival.
+var genes: Dictionary = {}
 const GOLD_FADE: float = 0.02
 var _gold_sparkle: float = 0.0
+# Rampage: the player takes a golden creature in hand and spends its gold.
+# It devours anything not of its own kind until the gold runs out.
+signal rampage_ended(kills: int)
+var rampage: bool = false
+var rampage_steer: Vector3 = Vector3.ZERO
+var rampage_kills: int = 0
+var _rampage_strike: float = 0.0
+const RAMPAGE_DRAIN: float = 0.06  # gold per real second: a full load lasts ~16 s
+const RAMPAGE_SPEED: float = 7.5
 var _role_timer: float = 2.0
 var _age: float = 0.0
 var _lifespan: float = 80.0
@@ -100,6 +111,60 @@ func _ready() -> void:
 func _register_states() -> void:
 	pass
 
+func start_rampage() -> bool:
+	if golden <= 0.05 or rampage:
+		return false
+	rampage = true
+	rampage_kills = 0
+	# Ticks every frame while in hand, not on the director's stagger.
+	set_physics_process(true)
+	FXManager.show_dramatic_text(global_position + Vector3.UP * 2.5, "RAMPAGE!", Color(1.0, 0.82, 0.25))
+	return true
+
+func end_rampage() -> void:
+	if not rampage:
+		return
+	rampage = false
+	rampage_steer = Vector3.ZERO
+	velocity = Vector3.ZERO
+	golden = 0.0
+	set_physics_process(false)
+	var sim = director
+	if sim != null:
+		sim.chronicle.emit("%s's rampage ends after %d kills. The gold is spent." % [display_name, rampage_kills])
+	rampage_ended.emit(rampage_kills)
+
+func _rampage_tick(delta: float) -> void:
+	velocity = rampage_steer.limit_length(1.0) * RAMPAGE_SPEED
+	golden -= RAMPAGE_DRAIN * delta
+	_rampage_strike -= delta
+	var sim = director
+	if sim != null and _rampage_strike <= 0.0:
+		for n in sim.get_nearby_agents(global_position, 2.4):
+			if n == self or not n is MarkovAgent or n.is_queued_for_deletion() or (n as MarkovAgent).species_id == species_id:
+				continue
+			_rampage_strike = 0.3
+			rampage_kills += 1
+			FXManager.spawn_combat_particles(n.global_position)
+			FXManager.show_floating_text(n.global_position + Vector3.UP, "CHOMP", Color(1.0, 0.85, 0.3))
+			devour(n)
+			golden = minf(golden + 0.04, 1.0)
+			if get("energy") != null:
+				set("energy", minf(float(get("energy")) + 15.0, 100.0))
+			break
+	if golden <= 0.02:
+		end_rampage()
+
+# Eat a whole creature (a worm, a mushroom, a kill): take on its gold, then it dies.
+func devour(prey: Node) -> void:
+	if prey == null or not is_instance_valid(prey):
+		return
+	var g = prey.get("golden")
+	if g != null and float(g) > 0.0:
+		make_golden(float(g) * 0.7, str(prey.get("species_id")))
+	if prey.has_method("die"):
+		prey.die()
+
 # Take on gold from a meal. Strength 1 is a golden plant; kills and carcasses
 # pass on a share of what the eaten creature carried.
 func make_golden(strength: float, source: String = "") -> void:
@@ -145,7 +210,9 @@ func _physics_process(delta: float) -> void:
 	_flee_boost_timer = maxf(_flee_boost_timer - delta, 0.0)
 	_juvenile_timer = maxf(_juvenile_timer - life, 0.0)
 	var entry: Variant = _states.get(_current_state)
-	if entry != null:
+	if rampage:
+		_rampage_tick(delta)
+	elif entry != null:
 		var on_tick: Callable = entry["on_tick"]
 		if on_tick.is_valid():
 			on_tick.call(life)
@@ -154,7 +221,8 @@ func _physics_process(delta: float) -> void:
 		_herd_timer = 1.0 + randf() * 0.3
 		_update_herd()
 	_movement_tick(delta)
-	_evaluate_transitions(delta)
+	if not rampage:
+		_evaluate_transitions(delta)
 	if not role.is_empty():
 		Roles.tick(self, species_id, life)
 	# Unified lifecycle: subclasses override these methods. Life (hunger,

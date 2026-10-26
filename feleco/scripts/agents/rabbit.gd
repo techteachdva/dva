@@ -33,7 +33,7 @@ func _get_transition_modifiers() -> Dictionary:
 	var vision: VisionCone = _vision_cone
 	if vision != null:
 		var threat := false
-		for tag: String in ["human", "falcon", "wolf"]:
+		for tag: String in ["human", "falcon", "wolf", "lion", "bear"]:
 			for t: Node3D in vision.get_visible_by_tag(tag):
 				# Only bolt when the hunter is close enough to matter.
 				if is_instance_valid(t) and t.global_position.distance_squared_to(global_position) < 81.0:
@@ -135,6 +135,13 @@ func _on_tick_graze(delta: float) -> void:
 			energy += consumed * 8.0
 			energy = clampf(energy, 0.0, 100.0)
 			return
+	# Moss low on the tree trunks
+	var mossy := sim.find_nearest_tree(global_position, 3.0)
+	if mossy != null and mossy.has_method("eat_moss"):
+		var m: float = mossy.eat_moss(delta * 0.3, self)
+		if m > 0.0:
+			energy = clampf(energy + m * 25.0, 0.0, 100.0)
+			return
 	# Seek apples
 	var nearest_apple := sim.find_nearest_apple(global_position, 6.0)
 	if nearest_apple != null and global_position.distance_squared_to(nearest_apple.global_position) < 2.0:
@@ -157,9 +164,10 @@ func _on_tick_flee(_delta: float) -> void:
 	var threat: Node3D = null
 	var vision: VisionCone = _vision_cone
 	if vision != null:
-		threat = vision.closest_visible("human")
-		if threat == null:
-			threat = vision.closest_visible("falcon")
+		for tag: String in ["human", "falcon", "wolf", "lion", "bear"]:
+			threat = vision.closest_visible(tag)
+			if threat != null:
+				break
 	if threat != null and is_instance_valid(threat):
 		var away := (global_position - threat.global_position).normalized()
 		velocity = away * flee_speed
