@@ -1,6 +1,8 @@
 # Feleco — Ecology Simulation RPG
 ## Design Document v1.0
 
+> **Current code is Feleco 3.0.** This file is the original four-agent design (low-poly meshes, biomass betting, Gillespie clocks). Architecture, betting, gold, Rampage, genetics, scenarios, and the rules page are in [ORDER_UPDATE.md](ORDER_UPDATE.md). The 2.3 roulette spec is [design/betting_table.md](design/betting_table.md).
+
 ### 1. Design Philosophy (Will Wright’s Dynamics)
 
 Wright’s framework defines three topologies implemented explicitly:

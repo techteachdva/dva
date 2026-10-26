@@ -1,6 +1,8 @@
 # Feature Spec: The Betting Table ("Ecosystem Roulette")
 
-Status: v0.3 (implemented) · 2026-10-25 · Owner: Philip
+Status: v0.3 spec for the 2.3 table · the shipping table is 3.0 · Owner: Philip
+
+> **Shipping table.** `scripts/ui/betting_table.gd` calls `BetBook.catalogue3` (The Order: five food-web groups, a player ranking, three named starters, long shots). Behaviour, odds, and pitfalls are in [../ORDER_UPDATE.md](../ORDER_UPDATE.md). `BetBook.catalogue` and `judge` still decide the 2.3 types below. `BetTracker` routes with `BetBook.is_v3`. `scripts/dev/shots.gd` is the one caller of `catalogue` left in the tree.
 
 > **v0.3: what shipped, and how it differs from the sections below.**
 > - **Layout:** desktops, laptops and iPads show the **whole table on one screen**. It is three panels (Who rules, Named creatures, Specials) on one board, scaled to fit.
