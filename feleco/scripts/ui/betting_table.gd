@@ -184,6 +184,9 @@ func _rank_up(group: String) -> void:
 		o["meta"]["rank"] = _rank.duplicate()
 		o["p"] = BetBook.order_p(w, _rank, depth)
 		o["mult"] = BetBook.mult_for(float(o["p"]))
+		if live and tracker != null:
+			# Late bets pay less, re-ranked or not.
+			o["mult"] = BetBook.live_mult(float(o["mult"]), tracker.progress())
 		o["available"] = float(o["p"]) <= BetBook.MAX_P
 		if _boxes.has(id):
 			_boxes[id].reprice()
@@ -1062,7 +1065,7 @@ func _refresh() -> void:
 	if n == 0:
 		_slip.text = "No bets yet  ·  %d EP in the pot" % coins_free()
 	else:
-		_slip.text = "%d bet%s  ·  %d EP on the felt  ·  best case +%d EP" % [n, "" if n == 1 else "s", stake, int(round(best))]
+		_slip.text = "%d bet%s  ·  %d EP on the felt  ·  best case +%d EP  ·  odds lock when placed" % [n, "" if n == 1 else "s", stake, int(round(best))]
 	show_info(null)
 	if live:
 		_start.text = "Place bets" if n > 0 else "Back to the valley"
