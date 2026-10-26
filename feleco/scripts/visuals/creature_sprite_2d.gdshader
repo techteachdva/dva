@@ -14,7 +14,7 @@ uniform float face_dir = 1.0;
 uniform float motion = 1.0;
 uniform float gait = 9.0;
 uniform float px = 40.0;
-uniform vec2 grid = vec2(4.0, 2.0);
+uniform vec2 grid = vec2(25.0, 8.0);
 // Hover: a gold outline and a little lift.
 uniform float hover = 0.0;
 uniform int pose_action = 0;
@@ -34,13 +34,13 @@ void vertex() {
 	v_shimmer = sh;
 	v.y += hover * quad.y * 0.04;
 	VERTEX = vec2(v.x, -v.y) * px;
+	// Hovered, it looks up at you.
+	int frame = hover > 0.5 && style != 12 ? F_CAMERA : creature_frame(style, pose_action, p, motion, p / max(gait, 0.01), creature_seed, false);
 	vec2 uv = UV;
 	if (face_dir < 0.0) {
 		uv.x = 1.0 - uv.x;
 	}
-	float role = mod(atlas_cell, grid.x);
-	float row = floor(atlas_cell / grid.x);
-	UV = (vec2(role, row) + clamp(uv, vec2(0.004), vec2(0.996))) / grid;
+	UV = (vec2(float(frame), atlas_cell) + clamp(uv, vec2(0.004), vec2(0.996))) / grid;
 }
 
 void fragment() {

@@ -236,7 +236,7 @@ func _creature(parent: Control, species: String, center: Vector2, height: float)
 		var q: Vector2 = cfg["size"]
 		var mat := ShaderMaterial.new()
 		mat.shader = RIG_2D
-		var tex: Texture2D = SpriteGenerator.texture_for(species)
+		var tex: Texture2D = SpriteGenerator.anim_texture_for(species)
 		mat.set_shader_parameter("sprite", tex)
 		mat.set_shader_parameter("quad", q)
 		mat.set_shader_parameter("style", int(cfg["style"]))
@@ -247,7 +247,7 @@ func _creature(parent: Control, species: String, center: Vector2, height: float)
 		mat.set_shader_parameter("gait", float(cfg["gait"]) * 0.5)
 		mat.set_shader_parameter("px", height / maxf(q.x, q.y))
 		mat.set_shader_parameter("texel", Vector2(1.0 / tex.get_width(), 1.0 / tex.get_height()))
-		mat.set_shader_parameter("grid", Vector2(SpriteGenerator.COLS, SpriteGenerator.ROWS))
+		mat.set_shader_parameter("grid", Vector2(SpriteGenerator.FRAMES, SpriteGenerator.CELLS))
 		mi.material = mat
 		mi.position = Vector2(height, height) * 0.5
 		holder.add_child(mi)

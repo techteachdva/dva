@@ -1,19 +1,21 @@
 shader_type spatial;
 render_mode unshaded, cull_disabled, shadows_disabled;
 
-// Billboarded creature sprite drawn through a MultiMesh. The quad is a fine
-// grid, and each species has a little skeleton: parts of the drawing (legs,
-// heads, tails, ears, wings, caps) turn about their own joints, so animals
-// trot, graze, wag and flap instead of only bobbing. Style picks the rig.
+// Billboarded creature sprite drawn through a MultiMesh. Each species has an
+// animation sheet of painted frames (walk cycles, eating, sleeping, startles,
+// a look at the camera...); the rig picks the frame for what the creature is
+// doing and adds a little breathing and sway. Style picks the rig.
 // INSTANCE_CUSTOM: x facing (+1 right / -1 left), y gait phase (radians),
-// z motion 0..1, w atlas cell + fract(per-creature seed).
+// z motion 0..1 (or a forced frame + 2), w atlas cell + fract(per-creature seed).
 
 uniform sampler2D sprite : source_color, filter_linear_mipmap, repeat_disable;
 uniform float quad_height = 2.0;
 uniform float quad_width = 2.0;
 uniform int style = 0;
-// Atlas: columns are kinds (normal, tough, special), rows are sexes (male, female).
-uniform vec2 grid = vec2(4.0, 2.0);
+// Animation sheet: columns are frames, rows the six kind/sex cells.
+uniform vec2 grid = vec2(25.0, 8.0);
+// Gait phase per second, to turn the phase back into the creature's clock.
+uniform float gait = 9.0;
 uniform vec2 texel = vec2(0.0078125, 0.0078125);
 uniform vec4 rim_color : source_color = vec4(1.0, 0.82, 0.3, 1.0);
 uniform float rim = 0.0;
@@ -33,18 +35,21 @@ varying float v_bet;
 void vertex() {
 	vec4 c = INSTANCE_CUSTOM;
 	float cell = floor(c.w);
-	// Cells 8 and up are creatures carrying a bet (see VisualProxyManager.marked).
+	// +16: the camera is following this one. +8: it carries a bet
+	// (see VisualProxyManager.marked).
+	bool watched = cell >= 16.0;
+	cell -= watched ? 16.0 : 0.0;
 	v_bet = cell >= 8.0 ? 1.0 : 0.0;
 	cell -= v_bet * 8.0;
 	float seed = fract(c.w) * 20.0;
-	float role = mod(cell, grid.x);
-	float row = floor(cell / grid.x);
+	float role = mod(cell, 4.0);
 	v_role = role;
 	float g = 0.0;
 	float sh = 0.0;
 	// The instance colour's alpha carries the action (see VisualProxyManager).
 	int action = int(round(COLOR.a * 15.0));
 	vec2 v = creature_rig(VERTEX.xy, UV, quad_width, quad_height, style, cell, seed, c.x, c.y, c.z, action, g, sh);
+	int frame = creature_frame(style, action, c.y, c.z, c.y / max(gait, 0.01), seed, watched);
 	v_glow = g;
 	v_shimmer = sh;
 	float face = c.x < 0.0 ? -1.0 : 1.0;
@@ -56,7 +61,7 @@ void vertex() {
 	if (face < 0.0) {
 		uv.x = 1.0 - uv.x;
 	}
-	UV = (vec2(role, row) + clamp(uv, vec2(0.004), vec2(0.996))) / grid;
+	UV = (vec2(float(frame), cell) + clamp(uv, vec2(0.004), vec2(0.996))) / grid;
 	VERTEX.xy = v;
 	float sx = length(MODEL_MATRIX[0].xyz);
 	float sy = length(MODEL_MATRIX[1].xyz);

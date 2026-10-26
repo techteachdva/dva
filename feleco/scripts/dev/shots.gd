@@ -125,8 +125,15 @@ func _ready() -> void:
 	if scene == "anim":
 		_anim_sheet.call_deferred()
 		return
+	if scene == "frames":
+		# Animation sheets straight to --out, for checking the art: --only=human,wolf
+		for s: String in _only():
+			SpriteGenerator.anim_image(s).save_png(out + "/" + s + "_anim.png")
+			print("SHOT ", out, "/", s, "_anim.png")
+		get_tree().quit()
+		return
 	if scene == "bake":
-		SpriteGenerator.bake_all(ProjectSettings.globalize_path(SpriteGenerator.SPRITE_DIR))
+		SpriteGenerator.bake_all(ProjectSettings.globalize_path(SpriteGenerator.SPRITE_DIR), _only())
 		print("BAKED ", SpriteGenerator.SPRITE_DIR)
 		get_tree().quit()
 		return
@@ -322,6 +329,12 @@ func _process(delta: float) -> void:
 		_shot += 1
 		if _shot >= times.size():
 			get_tree().quit()
+
+func _only() -> Array:
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--only="):
+			return Array(arg.substr(7).split(","))
+	return []
 
 func gc_states() -> Array:
 	var out: Array = []

@@ -30,13 +30,14 @@ const SPECIES_CONFIG: Dictionary = {
 	"mushroom": {"size": Vector2(2.0, 2.0), "gait": 1.0, "kind": 3, "shadow": 0.8, "style": 12},
 }
 
-# Every behaviour state, as the pose the rig layers over the walk:
-# 1 eat, 2 fight, 3 flee, 4 sleep/rest, 5 court, 6 work (0 = just move).
+# Every behaviour state, as the frames the rig plays:
+# 1 eat, 2 fight, 3 flee, 4 sleep/rest, 5 court, 6 work (0 = move or stand
+# about). 7 (surprise) is set for a moment when a creature starts to flee.
 const ACTIONS: Dictionary = {
 	"Eat": 1, "Graze": 1, "Forage": 1, "Gather": 1, "Scavenge": 1,
 	"Hunt": 2, "Chase": 2, "Charge": 2, "Defend": 2, "Raid": 2, "Dive": 2,
 	"Flee": 3,
-	"Sleep": 4, "Rest": 4, "Idle": 4, "Stranded": 4, "Anchor": 4,
+	"Sleep": 4, "Rest": 4, "Stranded": 4, "Anchor": 4,
 	"Mate": 5, "Group": 5,
 	"Build": 6, "Channel": 6,
 }
@@ -46,6 +47,9 @@ const FOOT_MARGIN: float = 0.05
 const FLOATS_PER_INSTANCE: int = 20
 const SHADOW_FLOATS: int = 16
 const GROWN_AGE: float = 8.0
+const SURPRISE: int = 7
+# How long the startle shows when something turns to flee.
+const ALARM_TIME: float = 0.8
 
 var _proxies: Dictionary = {}
 var _materials: Dictionary = {}
@@ -92,7 +96,7 @@ func _setup_proxy(species: String) -> void:
 	mm.instance_count = 0
 	proxy.multimesh = mm
 
-	var tex: Texture2D = SpriteGenerator.texture_for(species)
+	var tex: Texture2D = SpriteGenerator.anim_texture_for(species)
 	var mat := ShaderMaterial.new()
 	mat.shader = SpriteShader
 	mat.set_shader_parameter("sprite", tex)
@@ -100,7 +104,8 @@ func _setup_proxy(species: String) -> void:
 	mat.set_shader_parameter("quad_width", (cfg["size"] as Vector2).x)
 	mat.set_shader_parameter("style", int(cfg["style"]))
 	mat.set_shader_parameter("texel", Vector2(1.0 / tex.get_width(), 1.0 / tex.get_height()))
-	mat.set_shader_parameter("grid", Vector2(SpriteGenerator.COLS, SpriteGenerator.ROWS))
+	mat.set_shader_parameter("grid", Vector2(SpriteGenerator.FRAMES, SpriteGenerator.CELLS))
+	mat.set_shader_parameter("gait", float(cfg["gait"]))
 	var is_champ: bool = species == _champion
 	mat.set_shader_parameter("rim", 1.0 if is_champ else 0.0)
 	proxy.material_override = mat
@@ -198,6 +203,8 @@ func sync(registry: Array[AgentData]) -> void:
 
 	var cam := get_viewport().get_camera_3d()
 	var right := Vector3.RIGHT if cam == null else cam.global_transform.basis.x
+	# The followed creature looks up at the camera now and then.
+	var followed: Node = cam.call("following") if cam != null and cam.has_method("following") else null
 	var director := get_parent() as SimulationDirector
 	var smm: MultiMesh = _shadows.multimesh
 	if smm.instance_count != shadow_count:
@@ -305,10 +312,18 @@ func sync(registry: Array[AgentData]) -> void:
 				floats[o + 14] = shade
 			# Alpha is free (sprites take alpha from the texture): it carries the
 			# action, so the rig can pose eating, fighting, sleeping and so on.
-			floats[o + 15] = float(ACTIONS.get(data.state, 0)) / 15.0
+			if data.state != data.seen_state:
+				if data.state == "Flee":
+					data.alarm_time = now
+				data.seen_state = data.state
+			var action: int = ACTIONS.get(data.state, 0)
+			if now - data.alarm_time < ALARM_TIME:
+				action = SURPRISE
+			floats[o + 15] = float(action) / 15.0
 			floats[o + 16] = data.face
 			floats[o + 17] = now * gait + data.gait_seed
-			floats[o + 18] = motion
+			# A cued look at the camera rides in the motion channel as a forced frame.
+			floats[o + 18] = motion if now >= data.look_until else float(SpriteGenerator.F_CAMERA + 2)
 			# Atlas cell (kind column, sex row) plus a per-creature fraction so
 			# idles (grazing, rooting, wingbeats) never sync up.
 			var cell: int = Roles.role_index(data.role) + (SpriteGenerator.COLS if data.female else 0)
@@ -322,6 +337,8 @@ func sync(registry: Array[AgentData]) -> void:
 				cell = SpriteGenerator.GOLDEN + (SpriteGenerator.COLS if data.female and kind != 3 else 0)
 			if data.node != null and marked.has(data.node):
 				cell += 8
+			if followed != null and data.node == followed:
+				cell += 16
 			floats[o + 19] = float(cell) + fposmod(data.gait_seed / TAU, 1.0) * 0.95
 			o += FLOATS_PER_INSTANCE
 			if shadow_w > 0.0:

@@ -163,6 +163,7 @@ func _play() -> void:
 	_dir.grass.consume_density(_anchor, 0.4)
 	FXManager.spawn_birth_particles(rabbit.global_position + Vector3.UP * 0.6, Color(1.0, 0.85, 0.3))
 	await _hold_say(rabbit, "Oh my! The rabbit is golden now!", 2.6, "Graze")
+	_look(rabbit, 2.4)
 	await _hold_say(rabbit, "You are what you eat, I suppose...", 2.8, "Idle")
 	if _done: return
 
@@ -192,6 +193,7 @@ func _play() -> void:
 	wizard.make_golden(lion_gold * 0.9, "lion")
 	await _hold_say(wizard, "Well, I guess wizard beats mountain lion.", 2.8, "Channel")
 	_follow(wizard, 8.0)
+	_look(wizard, 2.6)
 	await _hold_say(wizard, "Now the wizard is golden. Curious...", 2.8, "Idle")
 	if _done: return
 
@@ -359,6 +361,11 @@ func _walk(a: MarkovAgent, to: Vector3, secs: float, state: String) -> void:
 		p.y = _dir.ground_height(p.x, p.z)
 		a.stage_to(p, state)
 		await get_tree().process_frame
+
+# The creature turns to look straight out at the viewer for a moment.
+func _look(a: MarkovAgent, secs: float) -> void:
+	if a != null and is_instance_valid(a) and a._data != null:
+		a._data.look_until = AgentData.clock + secs
 
 func _hold(a: MarkovAgent, secs: float, state: String) -> void:
 	var t: float = 0.0
