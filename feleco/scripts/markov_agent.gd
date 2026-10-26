@@ -53,7 +53,12 @@ var rampage: bool = false
 var rampage_steer: Vector3 = Vector3.ZERO
 var rampage_kills: int = 0
 var _rampage_strike: float = 0.0
-const RAMPAGE_DRAIN: float = 0.06  # gold per real second: a full load lasts ~16 s
+var _rampage_time: float = 0.0
+# Gold burns faster the longer a rampage runs, kills never refill it, and no
+# rampage outlasts RAMPAGE_MAX seconds: a full load lasts about 10 s.
+const RAMPAGE_DRAIN: float = 0.06
+const RAMPAGE_RAMP: float = 0.008
+const RAMPAGE_MAX: float = 20.0
 const RAMPAGE_SPEED: float = 7.5
 var _role_timer: float = 2.0
 var _age: float = 0.0
@@ -116,6 +121,7 @@ func start_rampage() -> bool:
 		return false
 	rampage = true
 	rampage_kills = 0
+	_rampage_time = 0.0
 	# Ticks every frame while in hand, not on the director's stagger.
 	set_physics_process(true)
 	FXManager.show_dramatic_text(global_position + Vector3.UP * 2.5, "RAMPAGE!", Color(1.0, 0.82, 0.25))
@@ -144,7 +150,8 @@ func end_rampage() -> void:
 
 func _rampage_tick(delta: float) -> void:
 	velocity = rampage_steer.limit_length(1.0) * RAMPAGE_SPEED
-	golden -= RAMPAGE_DRAIN * delta
+	_rampage_time += delta
+	golden -= (RAMPAGE_DRAIN + RAMPAGE_RAMP * _rampage_time) * delta
 	_rampage_strike -= delta
 	var sim = director
 	if sim != null and _rampage_strike <= 0.0:
@@ -155,12 +162,14 @@ func _rampage_tick(delta: float) -> void:
 			rampage_kills += 1
 			FXManager.spawn_combat_particles(n.global_position)
 			FXManager.show_floating_text(n.global_position + Vector3.UP, "CHOMP", Color(1.0, 0.85, 0.3))
+			# Devouring golden prey must not top the gold back up.
+			var keep: float = golden
 			devour(n)
-			golden = minf(golden + 0.04, 1.0)
+			golden = keep
 			if get("energy") != null:
 				set("energy", minf(float(get("energy")) + 15.0, 100.0))
 			break
-	if golden <= 0.02:
+	if golden <= 0.02 or _rampage_time >= RAMPAGE_MAX:
 		end_rampage()
 
 # Eat a whole creature (a worm, a mushroom, a kill): take on its gold, then it dies.

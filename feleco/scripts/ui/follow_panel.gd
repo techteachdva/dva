@@ -117,7 +117,7 @@ func _ready() -> void:
 	_rampage_btn.text = "Rampage!"
 	_rampage_btn.theme_type_variation = "PrimaryButton"
 	_rampage_btn.custom_minimum_size = Vector2(110, 40)
-	_rampage_btn.tooltip_text = "Take this golden creature in hand and spend its gold: WASD or arrows to steer (or hold a finger where it should go). It devours anything not of its own kind until the gold runs out. Devour 8 to win a Greenhouse upgrade."
+	_rampage_btn.tooltip_text = "Take this golden creature in hand and spend its gold: WASD or arrows to steer (or hold a finger where it should go). It devours anything not of its own kind until the gold runs out. Gold burns faster as it goes: devour 8 in about ten seconds to win a Greenhouse upgrade."
 	_rampage_btn.visible = false
 	_rampage_btn.pressed.connect(_on_rampage)
 	head.add_child(_rampage_btn)
