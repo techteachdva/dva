@@ -274,15 +274,23 @@ func sync(registry: Array[AgentData]) -> void:
 			var motion: float = clampf((speed - 0.3) / 2.5, 0.0, 1.0) if not flying else 1.0
 			# Only the badly hurt fade toward grey.
 			var shade: float = 1.0 if kind == 3 else lerpf(0.55, 1.0, clampf(data.health / 40.0, 0.0, 1.0))
+			# Golden creatures glow gold and glint now and then.
+			var gold: float = data.golden
 			floats[o] = s
 			floats[o + 3] = x
 			floats[o + 5] = s
 			floats[o + 7] = y
 			floats[o + 10] = s
 			floats[o + 11] = z
-			floats[o + 12] = shade
-			floats[o + 13] = shade
-			floats[o + 14] = shade
+			if gold > 0.0:
+				var glint: float = 1.0 + 0.25 * gold * maxf(sin(now * 3.0 + data.gait_seed * 5.0), 0.0)
+				floats[o + 12] = shade * lerpf(1.0, 1.35, gold) * glint
+				floats[o + 13] = shade * lerpf(1.0, 1.1, gold) * glint
+				floats[o + 14] = shade * lerpf(1.0, 0.4, gold)
+			else:
+				floats[o + 12] = shade
+				floats[o + 13] = shade
+				floats[o + 14] = shade
 			# Alpha is free (sprites take alpha from the texture): it carries the
 			# action, so the rig can pose eating, fighting, sleeping and so on.
 			floats[o + 15] = float(ACTIONS.get(data.state, 0)) / 15.0

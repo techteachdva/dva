@@ -260,7 +260,7 @@ func _on_tick_forage(delta: float) -> void:
 						best_dist_sq = d_sq
 						nearest_apple = sub
 		if nearest_apple != null and best_dist_sq < 2.0 and nearest_apple.has_method("eat"):
-			energy += nearest_apple.eat()
+			energy += nearest_apple.eat(self)
 			energy = clampf(energy, 0.0, 100.0)
 			health += 3.0
 			health = clampf(health, 0.0, 100.0)
@@ -274,7 +274,7 @@ func _on_tick_forage(delta: float) -> void:
 		return
 	# Eat grass
 	if sim.grass != null:
-		var consumed := sim.grass.consume_density(global_position, delta * 0.5)
+		var consumed := sim.grass.consume_density(global_position, delta * 0.5, self)
 		if consumed > 0.0:
 			energy += consumed * 8.0
 			energy = clampf(energy, 0.0, 100.0)
@@ -328,7 +328,7 @@ func die() -> void:
 		return
 	var sim: SimulationDirector = director
 	if sim != null:
-		sim.spawn_corpse(global_position, 0.5, "robin")
+		sim.spawn_corpse(global_position, 0.5, "robin", golden)
 		sim.agent_died.emit("robin", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.9, 0.2, 0.2))
 	FXManager.show_floating_text(global_position + Vector3.UP, "X", Color(0.6, 0.8, 1.0))

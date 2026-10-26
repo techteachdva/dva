@@ -68,6 +68,15 @@ var boar_count: int = 10
 var worm_count: int = 10
 var rabbit_count: int = 10
 var fish_count: int = 8
+# 3.0 species, by id (see SpeciesDB.NEW_SPECIES). Missing ids use the registry start count.
+var extra_counts: Dictionary = {}
+var bush_count: int = 5
+# Species ids left out of the run entirely (Sandbox switches, Challenge scenarios).
+var disabled_species: Array = []
+# Golden grass, fruit and moss chance multiplier (Golden Year, Green Thumb).
+var golden_mult: float = 1.0
+# The Challenge scenario being played ("" outside Challenge mode).
+var scenario_id: String = ""
 var tree_count: int = 10
 var map_preset: String = "Random Scatter"
 

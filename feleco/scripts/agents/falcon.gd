@@ -200,7 +200,7 @@ func die() -> void:
 		return
 	var sim: SimulationDirector = director
 	if sim != null:
-		sim.spawn_corpse(global_position, 1.0, "falcon")
+		sim.spawn_corpse(global_position, 1.0, "falcon", golden)
 		sim.agent_died.emit("falcon", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.95, 0.95, 0.95))
 	FXManager.show_floating_text(global_position + Vector3.UP, "X", Color(0.95, 0.95, 0.8))

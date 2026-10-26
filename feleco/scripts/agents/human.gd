@@ -514,7 +514,7 @@ func _on_tick_gather(delta: float) -> void:
 		if nearest_apple != null:
 			var best_dist_sq := global_position.distance_squared_to(nearest_apple.global_position)
 			if best_dist_sq < 2.0 and nearest_apple.has_method("eat"):
-				energy += nearest_apple.eat() * 0.6
+				energy += nearest_apple.eat(self) * 0.6
 				energy = clampf(energy, 0.0, 100.0)
 				sim.try_plant_tree_seed(global_position, "human")
 				health += 3.0
@@ -595,7 +595,7 @@ func _on_tick_gather(delta: float) -> void:
 	# Forage grass
 	if seek_priority < 1.0:
 		if sim.grass != null:
-			var consumed := sim.grass.consume_density(global_position, delta * 0.4)
+			var consumed := sim.grass.consume_density(global_position, delta * 0.4, self)
 			if consumed > 0.0:
 				# Fields near the village are tended crops; wild grass is poor fare.
 				var farmed: bool = _settlement_center != Vector3.ZERO and global_position.distance_to(_settlement_center) < 12.0
@@ -806,8 +806,8 @@ func _on_tick_channel(delta: float) -> void:
 		if randf() < 0.5:
 			sim.try_plant_tree_seed(global_position, "human")
 			FXManager.show_dramatic_text(global_position + Vector3.UP * 2.0, "Verdant Growth!", Color(0.2, 0.9, 0.3))
-		elif nearest_tree != null and nearest_tree.has_method("_spawn_apple"):
-			nearest_tree._spawn_apple()
+		elif nearest_tree != null and nearest_tree.has_method("_spawn_apple") and not nearest_tree._tips.is_empty():
+			nearest_tree._spawn_apple(nearest_tree._tips.pick_random())
 			FXManager.show_dramatic_text(global_position + Vector3.UP * 2.0, "Apple Bloom!", Color(0.9, 0.4, 0.1))
 	energy -= 4.0
 	energy = clampf(energy, 0.0, 100.0)
@@ -927,7 +927,7 @@ func die() -> void:
 	var sim: SimulationDirector = director
 	if sim != null:
 		sim.release_hut(self, home)
-		sim.spawn_corpse(global_position, 1.0, "human")
+		sim.spawn_corpse(global_position, 1.0, "human", golden)
 		sim.agent_died.emit("human", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.9, 0.7, 0.5))
 	FXManager.show_floating_text(global_position + Vector3.UP, "X", Color(0.9, 0.8, 0.6))

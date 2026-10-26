@@ -160,7 +160,7 @@ func _on_tick_forage(delta: float) -> void:
 	# Eat apples
 	var nearest_apple := sim.find_nearest_apple(global_position)
 	if nearest_apple != null and global_position.distance_squared_to(nearest_apple.global_position) < 2.0 and nearest_apple.has_method("eat"):
-		energy += nearest_apple.eat()
+		energy += nearest_apple.eat(self)
 		energy = clampf(energy, 0.0, 100.0)
 		sim.try_plant_tree_seed(global_position, "boar")
 		velocity = Vector3.ZERO
@@ -187,7 +187,7 @@ func _on_tick_forage(delta: float) -> void:
 	# Boars leave the fish alone; humans, wolves and falcons are the fishers.
 	# Eat grass
 	if sim.grass != null:
-		var consumed := sim.grass.consume_density(global_position, delta * 0.6)
+		var consumed := sim.grass.consume_density(global_position, delta * 0.6, self)
 		if consumed > 0.0:
 			energy += consumed * 12.0
 			energy = clampf(energy, 0.0, 100.0)
@@ -276,7 +276,7 @@ func die() -> void:
 		return
 	var sim: SimulationDirector = director
 	if sim != null:
-		sim.spawn_corpse(global_position, 1.5, "boar")
+		sim.spawn_corpse(global_position, 1.5, "boar", golden)
 		sim.agent_died.emit("boar", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.5, 0.3, 0.2))
 	FXManager.show_floating_text(global_position + Vector3.UP, "X", Color(0.8, 0.6, 0.4))

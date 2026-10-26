@@ -298,7 +298,7 @@ func _on_tick_eat(delta: float) -> void:
 			var n3d := child as Node3D
 			if n3d.has_method("scavenge") and n3d.can_scavenge() and n3d.global_position.distance_to(global_position) <= 2.0:
 				# A full bite is the old whole-carcass meal; scraps give less.
-				var bite: float = clampf(n3d.scavenge(CORPSE_BITE) / CORPSE_BITE, 0.0, 1.0)
+				var bite: float = clampf(n3d.scavenge(CORPSE_BITE, self) / CORPSE_BITE, 0.0, 1.0)
 				health += eat_heal_rate * 4.0 * bite
 				health = clampf(health, 0.0, 100.0)
 				energy += 30.0 * bite
@@ -350,7 +350,7 @@ func _on_tick_scavenge(_delta: float) -> void:
 			nearest_corpse = n3d
 	if nearest_corpse != null:
 		if best_dist < 2.0:
-			var bite: float = clampf(nearest_corpse.scavenge(CORPSE_BITE) / CORPSE_BITE, 0.0, 1.0)
+			var bite: float = clampf(nearest_corpse.scavenge(CORPSE_BITE, self) / CORPSE_BITE, 0.0, 1.0)
 			energy += 15.0 * bite
 			energy = clampf(energy, 0.0, 100.0)
 			health += 5.0 * bite
@@ -405,7 +405,7 @@ func die() -> void:
 		return
 	var sim: SimulationDirector = director
 	if sim != null:
-		sim.spawn_corpse(global_position, 1.2, "wolf")
+		sim.spawn_corpse(global_position, 1.2, "wolf", golden)
 		sim.agent_died.emit("wolf", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.8, 0.1, 0.1))
 	FXManager.show_floating_text(global_position + Vector3.UP, "X", Color(0.9, 0.3, 0.3))

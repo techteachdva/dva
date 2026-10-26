@@ -38,6 +38,12 @@ var variant: String = ""
 # "", "tough" or "special" (see Roles).
 var role: String = ""
 var species_id: String = ""
+# Gold (0..1): taken in by eating a golden producer, a golden kill or a golden
+# carcass, so it marks how energy moves up and back down the food web. It
+# makes a creature hardier and less hungry, and slowly fades.
+var golden: float = 0.0
+const GOLD_FADE: float = 0.02
+var _gold_sparkle: float = 0.0
 var _role_timer: float = 2.0
 var _age: float = 0.0
 var _lifespan: float = 80.0
@@ -79,6 +85,11 @@ func _ready() -> void:
 	elif is_in_group("fish"): species = "fish"
 	elif is_in_group("spore"): species = "mushroom"
 	elif is_in_group("rabbit"): species = "rabbit"
+	else:
+		for id: String in SpeciesDB.NEW_SPECIES:
+			if is_in_group(id):
+				species = id
+				break
 	species_id = species
 	# Spores reproduce asexually; everyone else gets a sex, then a name to suit.
 	if not is_in_group("spore"):
@@ -88,6 +99,18 @@ func _ready() -> void:
 
 func _register_states() -> void:
 	pass
+
+# Take on gold from a meal. Strength 1 is a golden plant; kills and carcasses
+# pass on a share of what the eaten creature carried.
+func make_golden(strength: float, source: String = "") -> void:
+	if strength <= 0.02:
+		return
+	var was: bool = golden > 0.05
+	golden = clampf(maxf(golden, strength), 0.0, 1.0)
+	if not was and golden > 0.05:
+		var sim = director
+		if sim != null and sim.has_signal("gold_passed"):
+			sim.gold_passed.emit(source, species_id, global_position)
 
 func _register_state(state_name: String, on_enter: Callable, on_tick: Callable, on_exit: Callable) -> void:
 	_states[state_name] = {
@@ -139,6 +162,15 @@ func _physics_process(delta: float) -> void:
 	var sim: SimulationDirector = director
 	var metab_mult: float = 1.0 if sim == null else sim.season_metabolism(species_id) * sim.tune(species_id, "hunger")
 	metab_mult *= 1.0 - HERD_HUNGER * herd
+	if golden > 0.0:
+		metab_mult *= 1.0 - 0.35 * golden
+		if get("health") != null:
+			set("health", minf(float(get("health")) + 1.5 * golden * life, 100.0))
+		golden = maxf(golden - GOLD_FADE * life, 0.0)
+		_gold_sparkle -= life
+		if _gold_sparkle <= 0.0 and golden > 0.15:
+			_gold_sparkle = 2.0 + randf() * 2.0
+			FXManager.spawn_birth_particles(global_position + Vector3.UP * 0.6, Color(1.0, 0.85, 0.3))
 	if herd > 0.0 and get("health") != null:
 		set("health", minf(float(get("health")) + HERD_HEAL * herd * life, 100.0))
 	_metabolise(life * metab_mult)
@@ -174,6 +206,7 @@ func _physics_process(delta: float) -> void:
 		cur_energy = get("energy")
 		if cur_energy != null:
 			_data.energy = cur_energy
+		_data.golden = golden
 		_data.age = _age
 
 # Looks at its own kind within HERD_RADIUS: how close it is to their middle

@@ -170,7 +170,7 @@ func die() -> void:
 			dry = not sim.valley.river.covers_world(global_position.x, global_position.z)
 		if dry:
 			sim.note_flood_fish_death()
-		sim.spawn_corpse(global_position, 0.4, "fish")
+		sim.spawn_corpse(global_position, 0.4, "fish", golden)
 		sim.agent_died.emit("fish", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.3, 0.65, 0.85))
 	queue_free()

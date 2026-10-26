@@ -8,6 +8,8 @@ extends Node3D
 @export var corpse_energy: float = 1.0
 @export var decay_timer: float = 8.0
 var species: String = ""
+# Gold the creature carried when it died; whoever eats here takes some.
+var golden: float = 0.0
 
 const DECAY_TIME: float = 8.0
 const BONES_AT: float = 0.4
@@ -117,7 +119,12 @@ func _process(real_delta: float) -> void:
 	if decay_timer <= 0.0:
 		finish()
 
-func absorb_energy(amount: float) -> float:
+func _pass_gold(eater: Node) -> void:
+	if golden > 0.0 and eater != null and eater.has_method("make_golden"):
+		eater.make_golden(golden * 0.8, species)
+
+func absorb_energy(amount: float, eater: Node = null) -> float:
+	_pass_gold(eater)
 	var taken := minf(_energy_remaining, amount)
 	_energy_remaining -= taken
 	corpse_energy = _energy_remaining
@@ -127,7 +134,8 @@ func absorb_energy(amount: float) -> float:
 
 # Scavengers tear off meat but always leave the scraps and bones for the
 # worms, fungi and grass.
-func scavenge(amount: float) -> float:
+func scavenge(amount: float, eater: Node = null) -> float:
+	_pass_gold(eater)
 	var floor_left: float = _initial_energy * (1.0 - SCAVENGE_SHARE)
 	var taken := clampf(minf(amount, _energy_remaining - floor_left), 0.0, amount)
 	_energy_remaining -= taken
@@ -159,6 +167,9 @@ func decompose() -> void:
 		return
 	# Deposit rot as base nutrient
 	director.rot.add_density_at_world(global_position, corpse_energy)
+	# A golden carcass leaves gold in the soil: golden grass may come up here.
+	if golden > 0.1 and director.grass != null:
+		director.grass.seed_golden(global_position, golden)
 	# Chance to spawn mushroom from decay
 	if randf() <= 0.35 * director.fungal_factor():
 		director.spawn_mushroom_spore(self, global_position + Vector3((randf() - 0.5) * 3.0, 0.0, (randf() - 0.5) * 3.0))

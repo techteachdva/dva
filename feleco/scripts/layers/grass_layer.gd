@@ -12,6 +12,17 @@ var _senesce_rate: float = 0.3
 var _cell_age: PackedFloat32Array
 var _cell_stage: PackedFloat32Array  # 0=seed, 1=sprout, 2=tall, 3=dead
 var _nutrients: PackedFloat32Array
+# 3.0 grass kinds per cell: meadow, clover (rich, low), rye (tall, thin),
+# golden (rare, very rich). Kinds grow in patches and seed their own kind.
+enum Kind { MEADOW, CLOVER, RYE, GOLDEN }
+const KIND_VALUE: Array[float] = [1.0, 1.5, 0.8, 3.0]
+const KIND_HEIGHT: Array[float] = [1.0, 0.6, 1.5, 1.15]
+const KIND_WIDTH: Array[float] = [1.0, 1.35, 0.75, 1.05]
+const KIND_LUSH: Array[Color] = [Color(0.36, 0.64, 0.22), Color(0.22, 0.5, 0.24), Color(0.55, 0.66, 0.3), Color(0.95, 0.78, 0.22)]
+var _cell_kind: PackedByteArray
+# Golden Year and Green Thumb raise this.
+var golden_mult: float = 1.0
+const GOLDEN_SEED_CHANCE: float = 0.0015
 var _dirty_cells: PackedByteArray
 var _dirty_indices: Array[int] = []
 var _soil_exhaustion: float = 0.0
@@ -38,7 +49,9 @@ func _ready() -> void:
 	_cell_stage.resize(_grid.size())
 	_nutrients.resize(_grid.size())
 	_dirty_cells.resize(_grid.size())
+	_cell_kind.resize(_grid.size())
 	for i: int in range(_grid.size()):
+		_cell_kind[i] = _starting_kind(i)
 		_cell_age[i] = randf() * 10.0
 		_cell_stage[i] = 2.0 if _grid[i] > 0.4 else 1.0 if _grid[i] > 0.15 else 0.0
 		_nutrients[i] = clampf(0.25 + randf() * 0.15 + _grid[i] * 0.2, 0.0, NUTRIENT_MAX)
@@ -145,9 +158,52 @@ func edible_at_world(world_pos: Vector3) -> float:
 		return 0.0
 	return _grid[idx] * (0.5 if stage == 1 else 1.0)
 
-func consume_density(world_pos: Vector3, amount: float) -> float:
+func _starting_kind(i: int) -> int:
+	# Coarse hashed patches so clover and rye come in drifts, not speckles.
+	var gz: int = i / grid_width
+	var gx: int = i - gz * grid_width
+	var patch: float = _hash(int(gx / 5) * 131 + int(gz / 5), 7.0)
+	if _hash(i, 9.0) < GOLDEN_SEED_CHANCE * golden_mult:
+		return Kind.GOLDEN
+	if patch < 0.18:
+		return Kind.CLOVER
+	if patch > 0.84:
+		return Kind.RYE
+	return Kind.MEADOW
+
+func kind_at_world(world_pos: Vector3) -> int:
 	var g := world_to_grid(world_pos)
 	var idx := g.y * grid_width + g.x
+	return _cell_kind[idx] if idx >= 0 and idx < _cell_kind.size() else Kind.MEADOW
+
+# Like consume_density, but also says how good the mouthful was:
+# Vector2(amount taken, food value multiplier for this grass kind).
+func consume_food(world_pos: Vector3, amount: float, eater: Node = null) -> Vector2:
+	var kind: int = kind_at_world(world_pos)
+	var taken := consume_density(world_pos, amount, eater)
+	if taken > 0.0 and kind == Kind.GOLDEN:
+		# A golden tuft grazed bare grows back as plain meadow.
+		var g := world_to_grid(world_pos)
+		var idx := g.y * grid_width + g.x
+		if idx >= 0 and idx < _grid.size() and _grid[idx] < 0.1:
+			_cell_kind[idx] = Kind.MEADOW
+	return Vector2(taken, KIND_VALUE[kind])
+
+# Golden soil from a golden carcass: the cell (and maybe a neighbour) turns golden.
+func seed_golden(world_pos: Vector3, strength: float) -> void:
+	var g := world_to_grid(world_pos)
+	for k: int in 1:
+		var idx := clampi(g.y + k * (randi() % 3 - 1), 0, grid_height - 1) * grid_width + clampi(g.x + k * (randi() % 3 - 1), 0, grid_width - 1)
+		if randf() < 0.1 + strength * 0.2:
+			_cell_kind[idx] = Kind.GOLDEN
+			_mark_dirty(idx)
+
+func consume_density(world_pos: Vector3, amount: float, eater: Node = null) -> float:
+	var g := world_to_grid(world_pos)
+	var idx := g.y * grid_width + g.x
+	# Eating golden grass makes the grazer golden.
+	if eater != null and idx >= 0 and idx < _cell_kind.size() and _cell_kind[idx] == Kind.GOLDEN and int(_cell_stage[idx]) >= 1 and eater.has_method("make_golden"):
+		eater.make_golden(1.0, "grass")
 	if idx >= 0 and idx < _grid.size():
 		var stage: int = int(_cell_stage[idx])
 		if stage == 0:
@@ -319,6 +375,13 @@ func _pollinate(_dt: float) -> void:
 	var tz := clampi(gz + (randi() % 20 - 10), 0, grid_height - 1)
 	var tidx := tz * grid_width + tx
 	if _grid[tidx] < 0.15:
+		# Seed carries its parent's kind; golden seed rarely breeds true.
+		var k: int = _cell_kind[idx]
+		if k == Kind.GOLDEN and randf() > 0.05:
+			k = Kind.MEADOW
+		elif randf() < GOLDEN_SEED_CHANCE * golden_mult * 4.0:
+			k = Kind.GOLDEN
+		_cell_kind[tidx] = k
 		_grid[tidx] = clampf(_grid[tidx] + 0.08, 0.0, max_density)
 		_cell_age[tidx] = 0.0
 		_cell_stage[tidx] = 0.0
@@ -397,6 +460,7 @@ func _update_visuals() -> void:
 		if has_heights:
 			pos.y = _heights[i] - 0.05
 		var jitter: float = _hash(i, 3.0)
+		var kind: int = _cell_kind[i] if i < _cell_kind.size() else Kind.MEADOW
 		var h := 0.0
 		var w := 1.0
 		var color := Color.BLACK
@@ -410,17 +474,21 @@ func _update_visuals() -> void:
 				w = 0.8
 				color = Color(0.5, 0.8, 0.3).lerp(Color(0.42, 0.72, 0.26), jitter)
 			2:  # tall
-				h = clampf(0.55 + density * 1.1, 0.55, 1.5)
-				w = 1.0 + density * 0.35
-				var lush := Color(0.36, 0.64, 0.22).lerp(Color(0.46, 0.7, 0.24), jitter)
+				h = clampf(0.55 + density * 1.1, 0.55, 1.5) * KIND_HEIGHT[kind]
+				w = (1.0 + density * 0.35) * KIND_WIDTH[kind]
+				var lush := KIND_LUSH[kind].lerp(KIND_LUSH[kind].lightened(0.15), jitter)
 				var ripe := Color(0.74, 0.7, 0.34)
 				var t := clampf((density - max_density * 0.6) / (max_density * 0.4), 0.0, 1.0)
-				color = lush.lerp(ripe, t * 0.8)
+				color = lush if kind == Kind.GOLDEN else lush.lerp(ripe, t * 0.8)
 			3:  # dead
 				h = clampf(0.25 + density * 0.4, 0.2, 0.55)
 				w = 0.9
 				color = Color(0.52, 0.4, 0.24).lerp(Color(0.44, 0.33, 0.2), jitter)
-		color = Color(color.r * tint.r, color.g * tint.g, color.b * tint.b) * (0.92 + jitter * 0.16)
+		if kind != Kind.GOLDEN or stage != 2:
+			color = Color(color.r * tint.r, color.g * tint.g, color.b * tint.b) * (0.92 + jitter * 0.16)
+		else:
+			# Golden grass ignores the season tint and glows a little.
+			color = color * 1.25
 		color.a = 1.0
 		var xf := Transform3D(Basis().scaled(Vector3(w, h, 1.0)), pos)
 		mm.set_instance_transform(i, xf)

@@ -11,6 +11,16 @@ var _spawn_timer: float = 0.0
 var _apple_scene: PackedScene
 
 var _lifespan: float = 180.0
+# A berry bush is this same plant kept low: a short, wide tangle of branches
+# with berry clusters at the tips instead of apples.
+@export var bush: bool = false
+# Moss on the bark of grown trees (0..1). Grazers and browsers eat it.
+# A rare tree grows star moss: a bright, very rich patch.
+var moss: float = 0.0
+var star_moss: bool = false
+var _moss_shown: int = -1
+const GOLDEN_APPLE_CHANCE: float = 0.02
+const GOLDEN_BERRY_CHANCE: float = 0.03
 var _dying: bool = false
 var _death_timer: float = 0.0
 var _arboreal: bool = false
@@ -160,7 +170,7 @@ static func _shared() -> void:
 		_leaf_mats[season] = mats
 
 func _ready() -> void:
-	add_to_group("tree")
+	add_to_group("bush" if bush else "tree")
 	_apple_scene = load("res://scenes/apple.tscn")
 	_tone = randi() % 3
 	_season = _current_season()
@@ -211,7 +221,7 @@ func _dress_crown() -> void:
 		return
 	var look: Array = SEASON_LOOK.get(_season, SEASON_LOOK["Summer"])
 	_rng.seed = hash(get_instance_id())
-	var per_tip: int = 15
+	var per_tip: int = 5 if bush else 15
 	var leaf_cols: Array = look[1]
 	var keep: float = float(look[0])
 	var xforms: Array[Transform3D] = []
@@ -257,6 +267,17 @@ func _dress_crown() -> void:
 				var w: float = float(seg[2]) * 1.6 + 0.05
 				d_x.append(Transform3D(Basis().scaled(Vector3(w, w * 0.45, w)), q))
 				d_c.append(Color(0.95, 0.97, 1.0))
+	# Moss: soft green pads low on the trunk and limbs, star moss in gold.
+	var pads: int = int(round(moss * 10.0))
+	_moss_shown = pads
+	if not bush and pads > 0:
+		for k: int in pads:
+			var seg: Array = _segments[k % mini(_segments.size(), 6)]
+			var q: Vector3 = (seg[0] as Vector3).lerp(seg[1], _rng.randf_range(0.1, 0.7))
+			var side := Vector3(_rng.randf_range(-1, 1), 0.0, _rng.randf_range(-1, 1)).normalized() * float(seg[2]) * 0.9
+			var w: float = float(seg[2]) * 0.9 + 0.08
+			d_x.append(Transform3D(Basis().scaled(Vector3(w, w * 0.7, w)), q + side))
+			d_c.append(Color(0.98, 0.85, 0.3) if star_moss and k % 3 == 0 else Color(0.3, 0.55, 0.22) * _rng.randf_range(0.85, 1.1))
 	var dm: MultiMesh = _dress.multimesh
 	dm.instance_count = d_x.size()
 	for i: int in d_x.size():
@@ -336,7 +357,15 @@ func _setup_visuals() -> void:
 			_segments.clear()
 			_tips.clear()
 			var lean := Vector3(_rng.randf_range(-0.08, 0.08), 1.0, _rng.randf_range(-0.08, 0.08)).normalized()
-			_branch(Vector3.ZERO, lean, 1.9 * _size, 0.34 * _size, 4)
+			if bush:
+				# Several low stems fanning out from the ground, two forks each.
+				_size = randf_range(0.45, 0.6)
+				for s: int in 4:
+					var a: float = float(s) / 4.0 * TAU + _rng.randf_range(-0.4, 0.4)
+					_branch(Vector3.ZERO, Vector3(cos(a) * 0.9, 0.7, sin(a) * 0.9).normalized(), 1.1 * _size, 0.12 * _size, 2)
+			else:
+				_branch(Vector3.ZERO, lean, 1.9 * _size, 0.34 * _size, 4)
+				star_moss = _rng.randf() < 0.04 * _golden_mult()
 			# All limbs merged into one mesh: one draw per tree.
 			var st := SurfaceTool.new()
 			for seg: Array in _segments:
@@ -391,7 +420,7 @@ func _setup_visuals() -> void:
 			_body = StaticBody3D.new()
 			var col2 := CollisionShape3D.new()
 			var box2 := BoxShape3D.new()
-			box2.size = Vector3(3.0, 5.5, 3.0)
+			box2.size = Vector3(1.6, 1.2, 1.6) if bush else Vector3(3.0, 5.5, 3.0)
 			col2.shape = box2
 			_body.add_child(col2)
 			_body.collision_layer = 1
@@ -432,6 +461,7 @@ func _process(real_delta: float) -> void:
 			if _spawn_timer >= apple_spawn_interval:
 				_spawn_timer = 0.0
 				_grow_fruit()
+				_grow_moss()
 
 # One spawn interval of orchard life: every apple on the branches ages, the
 # ripe ones drop, and a new bud sets at a branch tip (none while the tree
@@ -445,11 +475,50 @@ func _grow_fruit() -> void:
 		else:
 			kept.append(f)
 	_fruit = kept
-	if _season != "Winter" and _fruit.size() < MAX_FRUIT and not _tips.is_empty():
+	var cap: int = 10 if bush else MAX_FRUIT
+	if _season != "Winter" and _fruit.size() < cap and not _tips.is_empty():
 		var tip: Vector3 = _tips[randi() % _tips.size()]
 		var hang := Vector3(randf_range(-0.3, 0.3), -0.35, randf_range(-0.3, 0.3)) * _size
 		_fruit.append([tip + hang, 0.0])
 	_show_fruit()
+
+func _golden_mult() -> float:
+	var sim = get_parent().get_parent() if get_parent() != null else null
+	return float(sim.golden_mult) if sim is SimulationDirector else 1.0
+
+# Moss creeps over the bark in the damp seasons and in rain, and dies back
+# in the dry heat of summer and drought.
+func _grow_moss() -> void:
+	if bush:
+		return
+	var sim = get_parent().get_parent() if get_parent() != null else null
+	var wet: bool = sim is SimulationDirector and (sim as SimulationDirector).is_raining()
+	var dry: bool = sim is SimulationDirector and (sim as SimulationDirector).is_drought()
+	var rate: float = {"Spring": 0.05, "Summer": 0.01, "Autumn": 0.06, "Winter": 0.02}.get(_season, 0.03)
+	if wet:
+		rate *= 2.5
+	if dry:
+		rate = -0.05
+	moss = clampf(moss + rate, 0.0, 1.0)
+	if int(round(moss * 10.0)) != _moss_shown:
+		_dress_crown()
+
+# A browser's bite of moss. Returns what it got; star moss is worth five.
+func eat_moss(amount: float, eater: Variant = null) -> float:
+	if bush or _stage != 2 or moss <= 0.0:
+		return 0.0
+	var took: float = minf(moss, amount)
+	moss -= took
+	if int(round(moss * 10.0)) != _moss_shown:
+		_dress_crown()
+	if star_moss:
+		var sim = get_parent().get_parent() if get_parent() != null else null
+		if eater is Node and eater.has_method("make_golden"):
+			eater.make_golden(1.0, "moss")
+		if sim is SimulationDirector:
+			sim.golden_found.emit("star moss", str(eater.get("species_id")) if eater is Node else "", global_position)
+		return took * 5.0
+	return took
 
 func _show_fruit() -> void:
 	if _fruit_mm == null:
@@ -459,9 +528,10 @@ func _show_fruit() -> void:
 	for i: int in _fruit.size():
 		var f: Array = _fruit[i]
 		var ripe: float = clampf(float(f[1]) / (RIPEN_TICKS - 1.0), 0.0, 1.0)
-		var r: float = lerpf(0.06, 0.19, ripe) * _size
+		var r: float = lerpf(0.06, 0.19, ripe) * _size * (1.4 if bush else 1.0)
 		mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3(r, r * 0.95, r)), f[0] - Vector3(0, r, 0)))
-		mm.set_instance_color(i, Color(0.55, 0.72, 0.22).lerp(Color(0.88, 0.12, 0.08), ripe))
+		var ripe_col := Color(0.38, 0.16, 0.5) if bush else Color(0.88, 0.12, 0.08)
+		mm.set_instance_color(i, Color(0.55, 0.72, 0.22).lerp(ripe_col, ripe))
 
 # A ripe apple lets go of its branch and falls to the grass right below.
 func _spawn_apple(at: Vector3) -> void:
@@ -473,6 +543,8 @@ func _spawn_apple(at: Vector3) -> void:
 	if sim is SimulationDirector:
 		ground = (sim as SimulationDirector).ground_height(global_position.x + at.x, global_position.z + at.z)
 	apple.rest_y = ground - global_position.y + 0.26
+	apple.kind = "berry" if bush else "apple"
+	apple.golden = randf() < (GOLDEN_BERRY_CHANCE if bush else GOLDEN_APPLE_CHANCE) * _golden_mult()
 	add_child(apple)
 	apple.position = at
 
@@ -482,7 +554,7 @@ func mark_arboreal() -> void:
 # Felling a grown tree yields timber and leaves a stump that sprouts again,
 # so a wood keeps giving apples and wood if it isn't cut faster than it grows.
 func harvest() -> bool:
-	if _arboreal:
+	if _arboreal or bush:
 		return false
 	if _stage != 2:
 		return false

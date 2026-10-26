@@ -7,7 +7,7 @@ import subprocess, sys, statistics, pathlib, concurrent.futures as cf
 GODOT = r"D:\coding-projects\dva\.cache\godot\editor\Godot_v4.6-stable_win64_console.exe"
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SPECIES_CSV = ["sheep", "wolves", "humans", "falcons", "robins", "boars", "worms", "rabbits", "fish"]
-SPECIES = ["sheep", "wolves", "humans", "falcons", "robins", "boars", "worms", "rabbits", "fish"]
+SPECIES = ["sheep", "wolves", "humans", "falcons", "robins", "boars", "worms", "rabbits", "fish", "deer", "goats", "bears", "lions", "beetles"]
 
 def run(seed, days, extra):
     cmd = [GODOT, "--headless", "--fixed-fps", "30", "--path", str(ROOT), "res://scenes/dev/shots.tscn",

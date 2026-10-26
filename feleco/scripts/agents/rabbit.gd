@@ -130,7 +130,7 @@ func _on_tick_graze(delta: float) -> void:
 		return
 	# Eat grass
 	if sim.grass != null:
-		var consumed := sim.grass.consume_density(global_position, delta * 0.5)
+		var consumed := sim.grass.consume_density(global_position, delta * 0.5, self)
 		if consumed > 0.0:
 			energy += consumed * 8.0
 			energy = clampf(energy, 0.0, 100.0)
@@ -139,7 +139,7 @@ func _on_tick_graze(delta: float) -> void:
 	var nearest_apple := sim.find_nearest_apple(global_position, 6.0)
 	if nearest_apple != null and global_position.distance_squared_to(nearest_apple.global_position) < 2.0:
 		if nearest_apple.has_method("eat"):
-			energy += nearest_apple.eat() * 0.5
+			energy += nearest_apple.eat(self) * 0.5
 			energy = clampf(energy, 0.0, 100.0)
 			return
 	# Random drift with grass bias
@@ -175,7 +175,7 @@ func die() -> void:
 		return
 	var sim: SimulationDirector = director
 	if sim != null:
-		sim.spawn_corpse(global_position, 0.3, "rabbit")
+		sim.spawn_corpse(global_position, 0.3, "rabbit", golden)
 		sim.agent_died.emit("rabbit", global_position)
 	FXManager.spawn_death_particles(global_position, Color(0.78, 0.6, 0.42))
 	FXManager.show_floating_text(global_position + Vector3.UP, "X", Color(0.9, 0.7, 0.5))

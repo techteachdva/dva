@@ -12,6 +12,8 @@ static func _infer_species(node: Node) -> String:
 	if node.is_in_group("rabbit"): return "rabbit"
 	if node.is_in_group("fish"): return "fish"
 	if node.is_in_group("spore"): return "mushroom"
+	for id: String in SpeciesDB.NEW_SPECIES:
+		if node.is_in_group(id): return id
 	return "unknown"
 
 # Chance a strike kills outright (attacker>target). A miss still wounds.
@@ -21,6 +23,13 @@ const HUNT: Dictionary = {
 	"wolf>rabbit": 0.5, "wolf>robin": 0.5, "wolf>boar": 0.35, "wolf>fish": 0.3,
 	"human>rabbit": 0.4, "human>boar": 0.35, "human>human": 0.15,
 	"boar>wolf": 0.3, "boar>human": 0.3,
+	# 3.0: mountain lions ambush alone; bears fish and dig out rabbits.
+	"lion>rabbit": 0.55, "lion>robin": 0.4, "lion>sheep": 0.45, "lion>deer": 0.4, "lion>goat": 0.35, "lion>fish": 0.3,
+	"bear>rabbit": 0.35, "bear>fish": 0.45, "bear>wolf": 0.3, "bear>lion": 0.25,
+	"wolf>deer": 0.35, "wolf>goat": 0.3, "wolf>beetle": 0.6,
+	"falcon>beetle": 0.6, "robin>beetle": 0.7, "robin>fish": 0.2,
+	"human>deer": 0.35, "human>goat": 0.35, "human>bear": 0.2, "human>lion": 0.2,
+	"fish>beetle": 0.6,
 }
 
 static func resolve_attack(attacker, target) -> bool:
@@ -145,6 +154,10 @@ static func resolve_attack(attacker, target) -> bool:
 
 	if kill:
 		attacker._attack_cooldown = 1.0
+		# A golden kill passes most of its gold up to the hunter.
+		var tg = target.get("golden")
+		if tg != null and float(tg) > 0.0 and attacker.has_method("make_golden"):
+			attacker.make_golden(float(tg) * 0.7, _infer_species(target))
 		var th = target.get("health")
 		if th != null:
 			target.health = 0.0
