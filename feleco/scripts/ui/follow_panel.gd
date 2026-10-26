@@ -117,7 +117,7 @@ func _ready() -> void:
 	_rampage_btn.text = "Rampage!"
 	_rampage_btn.theme_type_variation = "PrimaryButton"
 	_rampage_btn.custom_minimum_size = Vector2(110, 40)
-	_rampage_btn.tooltip_text = "Take this golden creature in hand and spend its gold: WASD or arrows to steer (or hold a finger where it should go). It devours anything not of its own kind until the gold runs out."
+	_rampage_btn.tooltip_text = "Take this golden creature in hand and spend its gold: WASD or arrows to steer (or hold a finger where it should go). It devours anything not of its own kind until the gold runs out. Devour 8 to win a Greenhouse upgrade."
 	_rampage_btn.visible = false
 	_rampage_btn.pressed.connect(_on_rampage)
 	head.add_child(_rampage_btn)
@@ -314,7 +314,8 @@ func _process(delta: float) -> void:
 	if _rampaging and agent != null and is_instance_valid(agent) and not agent.is_queued_for_deletion():
 		_steer_rampage()
 		_rampage_bar.value = agent.golden
-		_doing.text = "On a rampage: %d kills" % agent.rampage_kills
+		var goal: int = int(get_node("/root/GameConfig").RAMPAGE_GOAL)
+		_doing.text = "On a rampage: %d / %d kills%s" % [agent.rampage_kills, goal, "  WON!" if agent.rampage_kills >= goal else ""]
 	if agent == null or not is_instance_valid(agent) or agent.is_queued_for_deletion():
 		if _rampaging:
 			_on_rampage_ended(0)

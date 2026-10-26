@@ -319,7 +319,7 @@ func _ready() -> void:
 			cfg_extra[id] = int(gc.extra_counts.get(id, SpeciesDB.row(id).get("start", 0)))
 		cfg_trees = gc.tree_count
 		cfg_bushes = gc.bush_count
-		golden_mult = gc.golden_mult
+		golden_mult = gc.golden_mult * (1.5 if gc.owned_upgrades.get("green_thumb", false) else 1.0)
 		for id in gc.disabled_species:
 			disabled_species[str(id)] = true
 		_apply_disabled()
@@ -1111,6 +1111,11 @@ func _auto_use_powerups() -> void:
 		for i: int in range(count):
 			match key:
 				"rain": trigger_rain()
+				"drought": trigger_drought()
+				"bloom": trigger_bloom()
+				"stampede": trigger_stampede()
+				"feast": trigger_feast()
+				"rot_rain": trigger_rot_rain()
 				"predator_call": trigger_predator_call()
 				"heal": trigger_heal()
 				"famine": trigger_famine()
@@ -3303,6 +3308,60 @@ func trigger_rain() -> void:
 	if weather != null:
 		weather.rain(Clock.SECONDS_PER_DAY)
 
+# 3.0 powers: one for each link of the food web.
+# Bloom: the meadow, the woods and the moss all surge at once.
+func trigger_bloom() -> void:
+	if grass != null:
+		for i: int in grass._grid.size():
+			if grass._masked.size() == grass._grid.size() and grass._masked[i] == 1:
+				continue
+			grass._grid[i] = minf(grass._grid[i] + 0.3, grass.max_density)
+			if int(grass._cell_stage[i]) == 0:
+				grass._cell_stage[i] = 1.0
+			grass._mark_dirty(i)
+	for t in get_tree().get_nodes_in_group("tree") + get_tree().get_nodes_in_group("bush"):
+		if t.has_method("_grow_fruit"):
+			t._grow_fruit()
+		if t.get("moss") != null and not t.bush:
+			t.moss = minf(float(t.moss) + 0.3, 1.0)
+	FXManager.show_dramatic_text(Vector3.ZERO, "Bloom! The valley bursts into leaf.", Color(0.5, 0.9, 0.4))
+	chronicle.emit("Every stem and branch in the valley swells at once.")
+
+# Stampede: the herbivores panic and scatter across the whole valley.
+func trigger_stampede() -> void:
+	for data: AgentData in _agent_registry:
+		if SpeciesDB.group_of(data.species) != "herbivore" or data.node == null or not is_instance_valid(data.node):
+			continue
+		var a := data.node as MarkovAgent
+		a.velocity = Vector3(randf() - 0.5, 0.0, randf() - 0.5).normalized() * 7.0
+		a._flee_boost_timer = 3.0
+		a._flee_boost_mult = 1.8
+		if a._states.has("Flee"):
+			a.set_state("Flee")
+	FXManager.show_dramatic_text(Vector3.ZERO, "Stampede! The herds bolt.", Color(0.95, 0.8, 0.5))
+	chronicle.emit("Something spooks the herds. Hooves thunder across the meadow.")
+
+# Feast: every omnivore eats its fill.
+func trigger_feast() -> void:
+	for data: AgentData in _agent_registry:
+		if SpeciesDB.group_of(data.species) == "omnivore" and data.node != null and is_instance_valid(data.node) and data.node.get("energy") != null:
+			data.node.energy = minf(float(data.node.energy) + 40.0, 100.0)
+	FXManager.show_dramatic_text(Vector3.ZERO, "Feast! The omnivores eat their fill.", Color(0.9, 0.6, 0.3))
+
+# Rot Rain: the soil teems; mushrooms push up, worms and beetles surface.
+func trigger_rot_rain() -> void:
+	if rot != null:
+		for i: int in rot._grid.size():
+			rot._grid[i] = minf(rot._grid[i] + 0.4, rot.max_density)
+	for i: int in 6:
+		var p := Vector3(randf_range(-24.0, 24.0), 0.0, randf_range(-24.0, 24.0))
+		spawn_mushroom_spore(self, p)
+		if not disabled_species.has("worm"):
+			spawn_worm_offspring(null, p)
+		if not disabled_species.has("beetle"):
+			spawn_offspring("beetle", null, p + Vector3(1.0, 0.0, 0.0))
+	FXManager.show_dramatic_text(Vector3.ZERO, "Rot Rain: the soil comes alive.", Color(0.7, 0.55, 0.8))
+
 func trigger_famine() -> void:
 	# Halve the season's grass for 10 days. Stacks with rain by multiplying.
 	_famine_timer = Clock.BIO_PER_DAY
@@ -3311,6 +3370,11 @@ func trigger_famine() -> void:
 func _champion_species() -> String:
 	var gc: Node = get_node_or_null("/root/GameConfig")
 	var bet: String = "" if gc == null else gc.player_bet.to_lower()
+	if bet.is_empty() and gc != null:
+		# 3.0: no champion was picked, so the first starter is the champion.
+		for r: Dictionary in gc.spawn_roster:
+			if r.get("starter", false):
+				return String(r["species"])
 	return "" if bet.is_empty() else _group_for_bet(bet)
 
 # Summons kin of the champion near its strongest member (or the valley centre).

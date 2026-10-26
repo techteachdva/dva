@@ -8,30 +8,31 @@ var _bet_rings: Dictionary = {}
 var _side_bet_pulse: float = 0.0
 var _shown_touches: int = -1
 
+# 3.0: one power for each link of the food web, plus the weather.
 const POWERUP_BUTTONS: Dictionary = {
-	"Rain": "rain",
+	"Bloom": "bloom",
+	"Stampede": "stampede",
 	"Call": "predator_call",
-	"Heal": "heal",
-	"Famine": "famine",
-	"Meteor": "meteor",
+	"Feast": "feast",
+	"RotRain": "rot_rain",
+	"Rain": "rain",
+	"Drought": "drought",
 	"Flood": "flood",
 	"Eclipse": "eclipse",
-	"MidnightSun": "midnight_sun",
-	"FullMoon": "full_moon",
-	"Lantern": "lantern_night",
 }
-const POWER_LABELS: Dictionary = {"Call": "Call Kin", "MidnightSun": "Midnight Sun", "FullMoon": "Full Moon", "Lantern": "Lantern Night"}
+# Scene buttons from before 3.0 that are no longer offered.
+const RETIRED_BUTTONS: Array[String] = ["Heal", "Famine", "Meteor"]
+const POWER_LABELS: Dictionary = {"Call": "Call Kin", "RotRain": "Rot Rain"}
 const POWER_TIPS: Dictionary = {
+	"Bloom": "Bloom (producers): the meadow, the woods and the moss all surge at once.",
+	"Stampede": "Stampede (herbivores): the herds panic and scatter across the valley.",
+	"Call": "Call Kin: a few more of your champion's kind arrive.",
+	"Feast": "Feast (omnivores): every bear, boar, robin and villager eats its fill.",
+	"RotRain": "Rot Rain (decomposers): the soil teems; mushrooms, worms and beetles surface.",
 	"Rain": "Rain: grass surges for a day; worms and mushrooms love it, falcons hunt blind.",
-	"Call": "Call Kin: two of your champion's kind arrive.",
-	"Heal": "Heal: your champion's kin are mended.",
-	"Famine": "Famine: the grass withers for a day. Grazers suffer, hunters feast.",
-	"Meteor": "Meteor: breaks a fifth of whoever holds the valley.",
+	"Drought": "Drought: the meadow bakes and the moss shrivels for a day and a half.",
 	"Flood": "Flood: the river rises for half a day. Fish left on dry land add to the Flood Toll.",
-	"Eclipse": "Eclipse: night falls at once for half a day. Wolves, boars and worms rejoice.",
-	"MidnightSun": "Midnight Sun: tonight never comes. Grazers, villagers and falcons keep going.",
-	"FullMoon": "Full Moon: tonight the night creatures get half again their night bonus.",
-	"Lantern": "Lantern Night: tonight villagers, and sheep near huts, cannot be hunted.",
+	"Eclipse": "Eclipse: night falls at once for half a day. The night hunters rejoice.",
 }
 
 func _ready() -> void:
@@ -228,9 +229,17 @@ func _build_power_tray() -> void:
 	_tray_flow.add_theme_constant_override("v_separation", 8)
 	_tray.add_child(_tray_flow)
 	var handlers: Dictionary = {
-		"Eclipse": _trigger_eclipse, "MidnightSun": _trigger_midnight_sun,
-		"FullMoon": _trigger_full_moon, "Lantern": _trigger_lantern,
+		"Eclipse": _trigger_eclipse,
+		"Bloom": _trigger_simple.bind("bloom", "trigger_bloom"),
+		"Stampede": _trigger_simple.bind("stampede", "trigger_stampede"),
+		"Feast": _trigger_simple.bind("feast", "trigger_feast"),
+		"RotRain": _trigger_simple.bind("rot_rain", "trigger_rot_rain"),
+		"Drought": _trigger_simple.bind("drought", "trigger_drought"),
 	}
+	for old: String in RETIRED_BUTTONS:
+		var gone: Node = $BottomBar.get_node_or_null(old)
+		if gone != null:
+			gone.queue_free()
 	for btn_name: String in POWERUP_BUTTONS.keys():
 		var btn: Button = $BottomBar.get_node_or_null(btn_name) as Button
 		if btn == null:
@@ -243,7 +252,7 @@ func _build_power_tray() -> void:
 		_tray_flow.add_child(btn)
 	_tray_button = Button.new()
 	_tray_button.text = "Powers"
-	_tray_button.tooltip_text = "Rain, floods, eclipses and more. One is free each season."
+	_tray_button.tooltip_text = "A power for each link of the food web, and the weather. One is free each season."
 	_tray_button.custom_minimum_size = Vector2(130, 52)
 	FelecoUiScript.mark(_tray_button, "TouchButton")
 	_tray_button.pressed.connect(func() -> void: _tray.visible = not _tray.visible)
@@ -266,6 +275,10 @@ func _refresh_tuned_badge() -> void:
 		badge.tooltip_text = "Tuning Lab settings (main menu) are active in this run."
 		add_child(badge)
 	badge.visible = gc != null and gc.is_tuned()
+
+func _trigger_simple(powerup_id: String, method: String) -> void:
+	if _spend_touch_or_stock(powerup_id) and _director != null:
+		_director.call(method)
 
 func _trigger_eclipse() -> void:
 	if _spend_touch_or_stock("eclipse") and _director != null:

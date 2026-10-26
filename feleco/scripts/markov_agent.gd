@@ -132,6 +132,14 @@ func end_rampage() -> void:
 	var sim = director
 	if sim != null:
 		sim.chronicle.emit("%s's rampage ends after %d kills. The gold is spent." % [display_name, rampage_kills])
+	# Win the rampage, earn a Greenhouse upgrade.
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	if gc != null and rampage_kills >= gc.RAMPAGE_GOAL:
+		var id: String = gc.unlock_next_upgrade()
+		var what: String = "every upgrade is already yours" if id.is_empty() else "%s unlocked" % id.replace("_", " ").capitalize()
+		FXManager.show_dramatic_text(global_position + Vector3.UP * 3.0, "Rampage won! %s" % what, Color(1.0, 0.85, 0.3))
+		if sim != null:
+			sim.chronicle.emit("A rampage for the ages: %s." % what)
 	rampage_ended.emit(rampage_kills)
 
 func _rampage_tick(delta: float) -> void:

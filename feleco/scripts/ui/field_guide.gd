@@ -26,31 +26,47 @@ const INFO: Dictionary = {
 	"grass": ["Grass", Color(0.56, 0.82, 0.54), "the meadow", "Grows fastest in spring and after rain; fed by corpses and the mycelium beneath it.", ""],
 	"rot": ["Corpses & rot", Color(0.61, 0.48, 0.35), "every death", "Every body returns: it feeds the grass, the mycelium, worms and mushrooms.", ""],
 	"mycelium": ["Mycelium", Color(0.85, 0.81, 0.72), "fungal threads", "The underground network: carries food to the grass and pushes up mushrooms.", ""],
+	"deer": ["Deer", Color(0.72, 0.5, 0.32), "wary browsers", "Herbivores. Graze, strip moss from the trees and raid berry bushes. Quick to bolt from lions, wolves and bears.", "Twelve-point (great rack) · White Hart (pale and rare)"],
+	"goat": ["Mountain Goats", Color(0.9, 0.88, 0.82), "crag climbers", "Herbivores. Come down from the passes; hardy in the cold, they live on tough grass and moss.", "Old Billy (bearded) · Crag Climber (golden horns)"],
+	"bear": ["Bears", Color(0.46, 0.3, 0.2), "big omnivores", "Omnivores. Fish the river, dig out rabbits, eat apples, berries and mushrooms. Sleep through winter.", "Grizzled (silver hump) · Moon Bear (pale crescent)"],
+	"lion": ["Mountain Lions", Color(0.82, 0.62, 0.38), "lone ambushers", "Carnivores. Hunt alone at night: deer, goats, sheep, rabbits, robins, the odd fish. Wary of bears.", "Ghost Cat (pale) · Sun Cat (golden)"],
+	"beetle": ["Beetles", Color(0.3, 0.45, 0.35), "carrion beetles", "Decomposers. Strip the last scraps from carcasses and work rot into the soil. Fish and robins eat them.", "Stag (big jaws) · Scarab (golden shell)"],
+	"berry": ["Berry bushes", Color(0.55, 0.3, 0.6), "low and tangled", "Producers. Small, branchy bushes heavy with berries; now and then a golden one.", ""],
+	"moss": ["Moss", Color(0.36, 0.6, 0.3), "on the bark", "Producers. Creeps up the trees in spring, autumn and rain; shrivels in drought. A rare tree grows star moss.", ""],
+	"apple": ["Apple trees", Color(0.85, 0.25, 0.2), "the orchard", "Producers. Apples drop when ripe and seed new trees. One in fifty is golden.", ""],
+	"gold": ["Gold", Color(1.0, 0.82, 0.3), "follow the energy", "Eat a golden plant and you turn golden: hardier and less hungry. Whoever eats you takes the gold on, all the way down to the decomposers and back into the soil. Click a golden creature to Rampage.", ""],
 }
 
 # Food web: positions in the web panel (0..1), edges food -> eater.
+# 3.0: one row per link of the food web, hunters on top, soil at the bottom.
 const NODES: Dictionary = {
-	"falcon": Vector2(0.2, 0.15), "human": Vector2(0.5, 0.15), "wolf": Vector2(0.8, 0.15),
-	"robin": Vector2(0.1, 0.5), "fish": Vector2(0.3, 0.5), "rabbit": Vector2(0.5, 0.5), "sheep": Vector2(0.7, 0.5), "boar": Vector2(0.9, 0.5),
-	"worm": Vector2(0.12, 0.85), "rot": Vector2(0.32, 0.85), "mycelium": Vector2(0.52, 0.85), "grass": Vector2(0.72, 0.85), "mushroom": Vector2(0.9, 0.85),
+	"falcon": Vector2(0.2, 0.08), "lion": Vector2(0.5, 0.08), "wolf": Vector2(0.8, 0.08),
+	"human": Vector2(0.14, 0.3), "bear": Vector2(0.38, 0.3), "boar": Vector2(0.62, 0.3), "robin": Vector2(0.86, 0.3),
+	"rabbit": Vector2(0.1, 0.52), "deer": Vector2(0.3, 0.52), "goat": Vector2(0.5, 0.52), "sheep": Vector2(0.7, 0.52), "fish": Vector2(0.9, 0.52),
+	"grass": Vector2(0.18, 0.73), "berry": Vector2(0.4, 0.73), "moss": Vector2(0.62, 0.73), "apple": Vector2(0.84, 0.73),
+	"worm": Vector2(0.1, 0.93), "beetle": Vector2(0.3, 0.93), "mushroom": Vector2(0.5, 0.93), "rot": Vector2(0.7, 0.93), "mycelium": Vector2(0.9, 0.93),
 }
 const EDGES: Array = [
-	["grass", "sheep", "graze"], ["grass", "rabbit", "graze"], ["grass", "robin", "graze"], ["grass", "boar", "graze"],
-	["mushroom", "boar", "forage"], ["mushroom", "human", "forage"], ["worm", "boar", "forage"],
+	["grass", "sheep", "graze"], ["grass", "rabbit", "graze"], ["grass", "deer", "graze"], ["grass", "goat", "graze"], ["grass", "boar", "graze"],
+	["moss", "deer", "graze"], ["moss", "goat", "graze"], ["moss", "rabbit", "graze"],
+	["berry", "deer", "forage"], ["berry", "bear", "forage"], ["berry", "goat", "forage"],
+	["apple", "sheep", "forage"], ["apple", "bear", "forage"], ["apple", "boar", "forage"], ["apple", "robin", "forage"],
+	["mushroom", "bear", "forage"], ["mushroom", "boar", "forage"], ["mushroom", "human", "forage"],
 	["rabbit", "falcon", "hunt"], ["robin", "falcon", "hunt"], ["fish", "falcon", "hunt"],
-	["sheep", "wolf", "hunt"], ["rabbit", "wolf", "hunt"], ["boar", "wolf", "hunt"], ["fish", "wolf", "hunt"],
-	["rabbit", "human", "hunt"], ["boar", "human", "hunt"], ["fish", "human", "hunt"],
-	["worm", "robin", "hunt"], ["worm", "fish", "hunt"],
-	["rot", "worm", "decay"], ["rot", "mycelium", "decay"], ["rot", "grass", "decay"],
+	["sheep", "wolf", "hunt"], ["rabbit", "wolf", "hunt"], ["deer", "wolf", "hunt"], ["goat", "wolf", "hunt"], ["boar", "wolf", "hunt"],
+	["deer", "lion", "hunt"], ["goat", "lion", "hunt"], ["sheep", "lion", "hunt"], ["rabbit", "lion", "hunt"], ["robin", "lion", "hunt"],
+	["fish", "bear", "hunt"], ["rabbit", "bear", "hunt"], ["fish", "human", "hunt"], ["deer", "human", "hunt"], ["boar", "human", "hunt"],
+	["worm", "fish", "hunt"], ["beetle", "fish", "hunt"], ["worm", "robin", "hunt"], ["beetle", "robin", "hunt"],
+	["rot", "worm", "decay"], ["rot", "beetle", "decay"], ["rot", "mycelium", "decay"], ["rot", "grass", "decay"],
 	["mycelium", "grass", "decay"], ["mycelium", "mushroom", "decay"],
 ]
 const EDGE_COLORS: Dictionary = {
 	"hunt": Color(0.88, 0.4, 0.35), "graze": Color(0.56, 0.82, 0.54),
 	"forage": Color(0.9, 0.75, 0.4), "decay": Color(0.7, 0.58, 0.44),
 }
-const DAY_SPECIES: Array[String] = ["sheep", "human", "falcon", "robin"]
-const TWILIGHT_SPECIES: Array[String] = ["rabbit", "fish"]
-const NIGHT_SPECIES: Array[String] = ["wolf", "boar", "worm", "mushroom"]
+const DAY_SPECIES: Array[String] = ["sheep", "goat", "human", "falcon", "robin"]
+const TWILIGHT_SPECIES: Array[String] = ["rabbit", "deer", "bear", "fish"]
+const NIGHT_SPECIES: Array[String] = ["wolf", "lion", "boar", "worm", "beetle", "mushroom"]
 
 signal play_pressed
 

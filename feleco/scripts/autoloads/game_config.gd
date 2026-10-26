@@ -77,6 +77,19 @@ var disabled_species: Array = []
 var golden_mult: float = 1.0
 # The Challenge scenario being played ("" outside Challenge mode).
 var scenario_id: String = ""
+# Upgrades are earned, not bought: each Rampage won (RAMPAGE_GOAL kills before
+# the gold runs out) unlocks the next one in this order.
+const UPGRADE_ORDER: Array[String] = ["rain_dance", "foresight_i", "long_days", "green_thumb", "side_eye", "time_dilation", "cloning_vat"]
+const RAMPAGE_GOAL: int = 8
+
+# Returns the id unlocked, or "" when every upgrade is already earned.
+func unlock_next_upgrade() -> String:
+	for id: String in UPGRADE_ORDER:
+		if not owned_upgrades.get(id, false):
+			owned_upgrades[id] = true
+			save_meta()
+			return id
+	return ""
 var tree_count: int = 10
 var map_preset: String = "Random Scatter"
 
