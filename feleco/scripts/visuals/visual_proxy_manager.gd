@@ -229,10 +229,13 @@ func sync(registry: Array[AgentData]) -> void:
 			# Agents think on staggered ticks. Between thinks the sprite glides
 			# from where it was last drawn to the newest true position, so it
 			# never overshoots a turn and snaps back (it trails by one think).
-			# A big gap (a spawn, a hut door) is a real jump: no glide.
+			# A gap further than it could have run in one think (a spawn, a
+			# hut door) is a real jump: no glide. With many creatures each one
+			# thinks less often, so a fast runner can cover well over 5 m.
 			var t: float = clampf((now - data.sync_time) / data.interval, 0.0, 1.0)
 			var from: Vector3 = data.prev_pos
-			if from.distance_squared_to(data.pos) > 25.0:
+			var reach: float = maxf(5.0, data.vel.length() * data.interval * 2.0 + 2.0)
+			if from.distance_squared_to(data.pos) > reach * reach:
 				from = data.pos
 			var gp: Vector3 = from.lerp(data.pos, t)
 			var x: float = gp.x
