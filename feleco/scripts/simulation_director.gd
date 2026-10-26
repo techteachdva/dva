@@ -578,7 +578,7 @@ const MAX_BUSHES: int = 30
 # Berry bushes: a low tree kept in $Bushes so it never counts as woodland
 # (no nests, no timber). Berries that rot where they fall plant new ones.
 func plant_bush(pos: Vector3, grown: bool = false) -> void:
-	if _tree_scene == null or $Bushes.get_child_count() >= MAX_BUSHES:
+	if _tree_scene == null or $Bushes.get_child_count() >= MAX_BUSHES or (not grown and not tree_planting):
 		return
 	if not grown and randf() > 0.3:
 		return
@@ -632,8 +632,11 @@ func _on_golden_found(kind: String, eater: String, pos: Vector3) -> void:
 # The meadow holds this many trees; seeds that fall on a full valley don't take.
 const MAX_TREES: int = 48
 
+# Off while the opening film is staged, so no sapling sprouts mid-shot.
+var tree_planting: bool = true
+
 func can_plant_tree() -> bool:
-	return $Trees.get_child_count() < MAX_TREES
+	return tree_planting and $Trees.get_child_count() < MAX_TREES
 
 func try_plant_tree_seed(pos: Vector3, planter_group: String = "") -> bool:
 	if not can_plant_tree():

@@ -147,6 +147,7 @@ func _play() -> void:
 		await get_tree().process_frame
 	_anchor = _dir.dry_land(Vector3(-6.0, 0.0, 8.0))
 	_anchor.y = _dir.ground_height(_anchor.x, _anchor.z)
+	_clear_stage()
 	_grow_gold(_anchor, 1)
 	_view(_anchor, 0.2, -0.42, 8.0, true)
 	await _fade(0.0, 1.4)
@@ -219,6 +220,28 @@ func _play() -> void:
 	if _done: return
 	await _say(SIGN_OFFS.pick_random(), 1.8)
 	_finish()
+
+# Every beat plays out along a strip around the anchor, with the camera on
+# its +z side. Trees, bushes and fallen fruit there move to the far side of
+# the valley, where they frame the shots instead of blocking them, and
+# nothing new takes root until the finale.
+func _clear_stage() -> void:
+	_dir.tree_planting = false
+	var stage := Rect2(_anchor.x - 18.0, _anchor.z - 8.0, 48.0, 40.0)
+	var back_z: float = _anchor.z - 10.0
+	for t: Node in _dir.get_node("Trees").get_children() + _dir.get_node("Bushes").get_children():
+		var n := t as Node3D
+		if n == null or not stage.has_point(Vector2(n.global_position.x, n.global_position.z)):
+			continue
+		for a: Node in n.find_children("*", "", true, false):
+			if a.is_in_group("apple"):
+				a.queue_free()
+		n.global_position = _dir.dry_land(Vector3(randf_range(-24.0, 24.0), 0.0, randf_range(-25.0, back_z)))
+		_dir._snap_to_ground(n)
+	for a: Node in get_tree().get_nodes_in_group("apple"):
+		var an := a as Node3D
+		if an != null and stage.has_point(Vector2(an.global_position.x, an.global_position.z)):
+			an.queue_free()
 
 # Golden grass, tall and ripe, around a spot.
 func _grow_gold(at: Vector3, radius: int) -> void:
@@ -297,6 +320,7 @@ func _bet_on_wolves() -> void:
 # The whole valley at once: every species, running on its own.
 func _unleash() -> void:
 	_dir.disabled_species.clear()
+	_dir.tree_planting = true
 	var counts: Dictionary = {"sheep": 8, "rabbit": 8, "deer": 6, "goat": 5, "wolf": 5, "lion": 2, "falcon": 3,
 		"human": 6, "bear": 2, "boar": 5, "robin": 6, "worm": 8, "beetle": 8, "fish": 6}
 	for id: String in counts.keys():
