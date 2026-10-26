@@ -79,6 +79,8 @@ var golden_mult: float = 1.0
 var scenario_id: String = ""
 # The opening film plays once, on first launch.
 var intro_seen: bool = false
+# The first-run welcome card and starter goals have been seen.
+var tutorial_done: bool = false
 # Upgrades are earned, not bought: each Rampage won (RAMPAGE_GOAL kills before
 # the gold runs out) unlocks the next one in this order.
 const UPGRADE_ORDER: Array[String] = ["rain_dance", "foresight_i", "long_days", "green_thumb", "side_eye", "time_dilation", "cloning_vat"]
@@ -163,6 +165,7 @@ func save_meta() -> void:
 		"challenge_best_streak": challenge_best_streak,
 		"owned_upgrades": owned_upgrades,
 		"intro_seen": intro_seen,
+		"tutorial_done": tutorial_done,
 		"powerup_inventory": powerup_inventory,
 		"last_bets": last_bets,
 		"tuning": tuning,
@@ -192,6 +195,7 @@ func load_meta() -> void:
 		challenge_best_streak = d.get("challenge_best_streak", 0)
 		owned_upgrades = d.get("owned_upgrades", {}) if d.get("owned_upgrades") is Dictionary else {}
 		intro_seen = bool(d.get("intro_seen", false))
+		tutorial_done = bool(d.get("tutorial_done", false))
 		powerup_inventory = d.get("powerup_inventory", {}) if d.get("powerup_inventory") is Dictionary else {}
 		tuning = d.get("tuning", {}) if d.get("tuning") is Dictionary else {}
 		last_bets.clear()

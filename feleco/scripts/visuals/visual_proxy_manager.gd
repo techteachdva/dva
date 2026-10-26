@@ -45,6 +45,13 @@ const ACTIONS: Dictionary = {
 # Feet sit this far above the bottom of the sprite canvas.
 const FOOT_MARGIN: float = 0.05
 const FLOATS_PER_INSTANCE: int = 20
+# Buffers grow in chunks and never shrink; visible_instance_count shows the
+# live ones. Reallocating GPU buffers every birth and death corrupted the
+# instance data on some Chromebook GPUs (giant rainbow smears).
+const CAPACITY_CHUNK: int = 64
+# The Compatibility renderer packs colour and custom data as 16-bit floats,
+# so the gait phase wraps here to stay small and precise (20 full turns).
+const PHASE_WRAP: float = 40.0 * PI
 const SHADOW_FLOATS: int = 16
 const GROWN_AGE: float = 8.0
 const SURPRISE: int = 7
@@ -191,6 +198,9 @@ func sync(registry: Array[AgentData]) -> void:
 	for data: AgentData in registry:
 		if data.node == null or not is_instance_valid(data.node):
 			continue
+		# A bad position would draw as a screen-filling smear on some GPUs.
+		if not data.pos.is_finite() or not data.prev_pos.is_finite():
+			continue
 		if not data.node.is_inside_tree():
 			continue
 		# Villagers asleep in their huts are out of sight until morning.
@@ -207,10 +217,9 @@ func sync(registry: Array[AgentData]) -> void:
 	var followed: Node = cam.call("following") if cam != null and cam.has_method("following") else null
 	var director := get_parent() as SimulationDirector
 	var smm: MultiMesh = _shadows.multimesh
-	if smm.instance_count != shadow_count:
-		smm.instance_count = shadow_count
+	var shadow_cap: int = _fit_capacity(smm, shadow_count)
 	var shadow_floats := PackedFloat32Array()
-	shadow_floats.resize(shadow_count * SHADOW_FLOATS)
+	shadow_floats.resize(shadow_cap * SHADOW_FLOATS)
 	var so: int = 0
 
 	# Per instance: 3x4 transform (uniform scale, the shader billboards),
@@ -219,8 +228,7 @@ func sync(registry: Array[AgentData]) -> void:
 		var buffer: Array = _species_buffer[species]
 		var mm: MultiMesh = _proxies[species].multimesh
 		var count: int = buffer.size()
-		if mm.instance_count != count:
-			mm.instance_count = count
+		var cap: int = _fit_capacity(mm, count)
 		if count == 0:
 			continue
 		var cfg: Dictionary = SPECIES_CONFIG[species]
@@ -230,7 +238,7 @@ func sync(registry: Array[AgentData]) -> void:
 		var kind: int = cfg["kind"]
 		var shadow_w: float = cfg["shadow"]
 		var floats := PackedFloat32Array()
-		floats.resize(count * FLOATS_PER_INSTANCE)
+		floats.resize(cap * FLOATS_PER_INSTANCE)
 		var o: int = 0
 		for data: AgentData in buffer:
 			# Agents think on staggered ticks. Between thinks the sprite glides
@@ -310,6 +318,10 @@ func sync(registry: Array[AgentData]) -> void:
 				floats[o + 12] = shade
 				floats[o + 13] = shade
 				floats[o + 14] = shade
+			if data.tint != Color.WHITE:
+				floats[o + 12] *= data.tint.r
+				floats[o + 13] *= data.tint.g
+				floats[o + 14] *= data.tint.b
 			# Alpha is free (sprites take alpha from the texture): it carries the
 			# action, so the rig can pose eating, fighting, sleeping and so on.
 			if data.state != data.seen_state:
@@ -319,9 +331,12 @@ func sync(registry: Array[AgentData]) -> void:
 			var action: int = ACTIONS.get(data.state, 0)
 			if now - data.alarm_time < ALARM_TIME:
 				action = SURPRISE
+			# Someone sleepy still walking to bed walks; they lie down on arrival.
+			if action == ACTIONS["Sleep"] and speed > 0.4:
+				action = 0
 			floats[o + 15] = float(action) / 15.0
 			floats[o + 16] = data.face
-			floats[o + 17] = now * gait + data.gait_seed
+			floats[o + 17] = fposmod(now * gait + data.gait_seed, PHASE_WRAP)
 			# A cued look at the camera rides in the motion channel as a forced frame.
 			floats[o + 18] = motion if now >= data.look_until else float(SpriteGenerator.F_CAMERA + 2)
 			# Atlas cell (kind column, sex row) plus a per-creature fraction so
@@ -371,5 +386,13 @@ func sync(registry: Array[AgentData]) -> void:
 				shadow_floats[so + 15] = alpha * shadow_fade / (1.0 + stretch * 0.35)
 				so += SHADOW_FLOATS
 		mm.buffer = floats
-	if shadow_count > 0:
+	if shadow_cap > 0:
 		smm.buffer = shadow_floats
+
+# Grows the buffer in chunks (never shrinks, so births and deaths don't
+# reallocate) and shows only the live instances. Returns the capacity.
+func _fit_capacity(mm: MultiMesh, count: int) -> int:
+	if mm.instance_count < count:
+		mm.instance_count = (count / CAPACITY_CHUNK + 1) * CAPACITY_CHUNK
+	mm.visible_instance_count = count
+	return mm.instance_count

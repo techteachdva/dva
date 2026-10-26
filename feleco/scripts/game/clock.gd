@@ -11,9 +11,8 @@ extends RefCounted
 # Lifespans and bet odds are set in days, so either knob can be retuned
 # without touching any species.
 
-# Sim seconds per day. Runs start at 2x, the standard pace, where a day of
-# sun and moon takes one real minute; 1x is the slow, gritty view (2 min
-# days) and 4x halves the standard (30 s days).
+# Sim seconds per day. Runs start at 1x (2 min days): students found 2x
+# too fast to follow. 2x takes one real minute a day, 4x 30 seconds.
 const SECONDS_PER_DAY: float = 120.0
 const DAYLIGHT: float = 0.5
 const TWILIGHT: float = 10.0
@@ -24,7 +23,7 @@ const BIO_PER_DAY: float = SECONDS_PER_DAY * LIFE_PACE
 const RUNS: Array = [["Short", 5.0], ["Standard", 10.0], ["Long", 15.0]]
 const STANDARD_DAYS: float = 10.0
 const SPEEDS: Array[float] = [1.0, 2.0, 4.0]
-const DEFAULT_SPEED: float = 2.0
+const DEFAULT_SPEED: float = 1.0
 
 # Real minutes a run of `days` takes at a given speed.
 static func run_minutes(days: float, speed: float = DEFAULT_SPEED) -> float:

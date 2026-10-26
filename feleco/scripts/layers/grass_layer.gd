@@ -457,6 +457,10 @@ func _update_visuals() -> void:
 			mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ZERO), Vector3.ZERO))
 			continue
 		var density := _grid[i]
+		# A non-finite density would stretch the tuft across the whole sky.
+		if not is_finite(density):
+			density = 0.0
+			_grid[i] = 0.0
 		var stage: int = int(_cell_stage[i])
 		var pos := grid_to_world(gx, gz)
 		# Break up the grid: every cell's tuft sits at its own spot.
@@ -495,6 +499,8 @@ func _update_visuals() -> void:
 			# Golden grass ignores the season tint and glows a little.
 			color = color * 1.25
 		color.a = 1.0
+		h = clampf(h, 0.0, 2.5)
+		w = clampf(w, 0.0, 2.5)
 		var xf := Transform3D(Basis().scaled(Vector3(w, h, 1.0)), pos)
 		mm.set_instance_transform(i, xf)
 		mm.set_instance_color(i, color)

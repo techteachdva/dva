@@ -91,6 +91,11 @@ func _unhandled_input(event: InputEvent) -> void:
 				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if _right_held else Input.MOUSE_MODE_VISIBLE
 			MOUSE_BUTTON_MIDDLE:
 				_middle_held = mb.pressed
+			MOUSE_BUTTON_LEFT:
+				# Chromebook touchpads and touchscreens have no middle button:
+				# a left drag pans too (a short press stays a tap that selects).
+				_left_held = mb.pressed
+				_left_drag = 0.0
 			MOUSE_BUTTON_WHEEL_UP:
 				if mb.pressed:
 					_goal_distance = clampf(_goal_distance * 0.88, MIN_DIST, MAX_DIST)
@@ -102,7 +107,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _right_held:
 			_goal_yaw -= mm.relative.x * mouse_sensitivity
 			_goal_pitch = clampf(_goal_pitch - mm.relative.y * mouse_sensitivity, MIN_PITCH, MAX_PITCH)
-		elif _middle_held:
+		elif _middle_held or (_left_held and _follow == null and _drag_past(mm.relative)):
 			_follow = null
 			var k: float = _goal_distance * 0.0016
 			_goal_target += (_flat_right() * -mm.relative.x + _flat_forward() * mm.relative.y) * k
@@ -112,6 +117,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMagnifyGesture:
 		var mg := event as InputEventMagnifyGesture
 		_goal_distance = clampf(_goal_distance / mg.factor, MIN_DIST, MAX_DIST)
+
+var _left_held: bool = false
+var _left_drag: float = 0.0
+
+func _drag_past(rel: Vector2) -> bool:
+	_left_drag += rel.length()
+	return _left_drag > 16.0
 
 func flat_forward() -> Vector3:
 	return _flat_forward()

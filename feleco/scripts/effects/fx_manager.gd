@@ -202,6 +202,9 @@ func spawn_graze_particles(pos: Vector3) -> void:
 func show_floating_text(world_pos: Vector3, text: String, color: Color, is_crit: bool = false) -> void:
 	if not _has_budget():
 		return
+	# Births are constant; a few labels say so without burying the valley.
+	if text.begins_with("Baby ") and randf() > 0.25:
+		return
 	var label: FloatingText = null
 	for l in _text_pool:
 		if not l.visible:
@@ -221,6 +224,9 @@ func screen_shake(_intensity: float, _duration: float) -> void:
 
 func show_dramatic_text(world_pos: Vector3, text: String, color: Color) -> void:
 	if not _has_budget():
+		return
+	# Births are constant; a few labels say so without burying the valley.
+	if text.begins_with("Baby ") and randf() > 0.25:
 		return
 	var label: FloatingText = null
 	for l in _text_pool:

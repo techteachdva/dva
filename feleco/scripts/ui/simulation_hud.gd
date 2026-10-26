@@ -68,8 +68,8 @@ func _ready() -> void:
 	$BottomBar/TopDown.pressed.connect(_snap_top_down)
 	$BottomBar/TopDown.tooltip_text = "Look straight down. Right-drag orbits, scroll zooms, WASD moves."
 	$BottomBar/History.pressed.connect(_open_history)
-	$BottomBar/Speed1.tooltip_text = "Slow and gritty: a day takes two minutes."
-	$BottomBar/Speed2.tooltip_text = "Standard pace: a day of sun and moon takes one minute."
+	$BottomBar/Speed1.tooltip_text = "Standard pace: a day of sun and moon takes two minutes."
+	$BottomBar/Speed2.tooltip_text = "Faster: a day takes one minute."
 	$BottomBar/Speed5.tooltip_text = "Fast: a day of sun and moon takes 30 seconds."
 	$BottomBar/Pause.tooltip_text = "Hold the valley still."
 	$BottomBar/EndEarly.tooltip_text = "End the run and score the bets now."
@@ -93,6 +93,7 @@ func _ready() -> void:
 	_power_btn("Meteor").icon = load("res://assets/icons/meteor.svg")
 
 	_update_powerup_buttons()
+	_build_goals()
 	_build_hill_bars()
 	_add_bets_button()
 	_refresh_tuned_badge()
@@ -415,13 +416,90 @@ func _update_powerup_buttons() -> void:
 		else:
 			btn.tooltip_text = "%s\nUses a Greenhouse charge. Stock: %d." % [tip, count]
 
+# Goals, the tutorial and My Creature live in one card at the top.
+var _goals: GoalsPanel
+
+func _build_goals() -> void:
+	_goals = GoalsPanel.new()
+	_goals.name = "Goals"
+	_goals.director = _director
+	_goals.hud = self
+	# Top centre: the one strip of screen the stats, champion and bottom bar leave free.
+	_goals.anchor_left = 0.5
+	_goals.anchor_right = 0.5
+	_goals.offset_left = -180.0
+	_goals.offset_right = 180.0
+	_goals.offset_top = 10.0
+	_goals.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	add_child(_goals)
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	if gc != null and not gc.tutorial_done and gc.current_mode == "sandbox":
+		_show_welcome.call_deferred()
+
+# First run: say plainly what Feleco is and what to do.
+func _show_welcome() -> void:
+	# Wait out the loading screen, which pauses the tree.
+	while get_tree().paused:
+		await get_tree().create_timer(0.3, true, false, true).timeout
+	var shade := ColorRect.new()
+	shade.name = "Welcome"
+	shade.color = Color(0, 0, 0, 0.55)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(shade)
+	var card := PanelContainer.new()
+	card.set_anchors_preset(Control.PRESET_CENTER)
+	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	card.grow_vertical = Control.GROW_DIRECTION_BOTH
+	card.custom_minimum_size = Vector2(520, 0)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.06, 0.09, 0.07, 0.97)
+	sb.border_color = FelecoUiScript.GOLD
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(18)
+	for side in [SIDE_LEFT, SIDE_RIGHT, SIDE_TOP, SIDE_BOTTOM]:
+		sb.set_content_margin(side, 24)
+	card.add_theme_stylebox_override("panel", sb)
+	shade.add_child(card)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	card.add_child(col)
+	col.add_child(FelecoUiScript.heading("Welcome to Feleco!", 30, FelecoUiScript.GOLD))
+	for line: String in [
+		"This valley is alive. Every animal eats, sleeps, hunts, has babies and grows old on its own.",
+		"Your job: pick an animal to raise, help it survive, and bet on which species will rule the valley.",
+		"Tap any animal to watch it. Press Make Mine to adopt it, then level it up and train it.",
+		"Drag to move the camera. Use Powers to change the weather and help (or hurt) the valley.",
+		"Follow the Goals card at the top to earn EP. Watch for a rare diamond!",
+	]:
+		var l := FelecoUiScript.label(line, 17, FelecoUiScript.CREAM)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		col.add_child(l)
+	var go := Button.new()
+	go.text = "Let's go!"
+	go.theme_type_variation = "PrimaryButton"
+	go.custom_minimum_size = Vector2(0, 48)
+	go.pressed.connect(func() -> void:
+		var gc: Node = get_node_or_null("/root/GameConfig")
+		if gc != null:
+			gc.tutorial_done = true
+			gc.save_meta()
+		shade.queue_free())
+	col.add_child(go)
+
+# Powers used this run (the goals panel counts them).
+var power_uses: int = 0
+
 func _spend_touch_or_stock(powerup_id: String) -> bool:
 	if _director != null and _director.touches_left > 0:
 		_director.touches_left -= 1
 		_update_powerup_buttons()
 		_refresh_champion()
+		power_uses += 1
 		return true
-	return _consume_powerup(powerup_id)
+	var used: bool = _consume_powerup(powerup_id)
+	if used:
+		power_uses += 1
+	return used
 
 func _consume_powerup(powerup_id: String) -> bool:
 	var gc: Node = get_node_or_null("/root/GameConfig")
@@ -460,7 +538,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_press_at = mb.position
 		return
 	# A click, not a drag: pick the creature under the pointer.
-	if _press_at.distance_to(mb.position) > 8.0 or has_node("LiveTable") or has_node("Resolution"):
+	if _press_at.distance_to(mb.position) > 16.0 or has_node("LiveTable") or has_node("Resolution"):
+		return
+	if _goals != null and _goals.try_collect(mb.position):
 		return
 	var agent := _get_hovered_agent() as MarkovAgent
 	if agent != null:
@@ -556,30 +636,31 @@ func _get_hovered_agent() -> Node3D:
 				break
 	if cam == null:
 		return null
-	var mouse_pos := get_viewport().get_mouse_position()
-	var ray_origin := cam.project_ray_origin(mouse_pos)
-	var ray_dir := cam.project_ray_normal(mouse_pos)
-	# Intersect with ground plane y=0
-	if absf(ray_dir.y) < 0.001:
-		return null
-	var t := -ray_origin.y / ray_dir.y
-	if t < 0:
-		return null
-	var hit_pos := ray_origin + ray_dir * t
-	var best: Node3D = null
-	var best_dist := 12.0  # generous hover radius for angled cameras
 	if _director == null:
 		return null
+	# Pick on screen, where the player is looking: the sprite drawn nearest
+	# the pointer wins, and among overlapping ones the one in front. (The old
+	# ground-plane test picked whatever stood behind on sloped ground.)
+	var mouse_pos := get_viewport().get_mouse_position()
+	var reach: float = 40.0 * get_viewport().get_visible_rect().size.y / 720.0
+	var best: Node3D = null
+	var best_score := INF
 	for data: AgentData in _director._agent_registry:
 		if data.node == null or not is_instance_valid(data.node):
 			continue
 		if not data.node.is_inside_tree():
 			continue
-		var node_pos: Vector3 = data.node.global_position
-		# Ignore Y difference for ground agents; use full 3D distance for aerial
-		var d: float = Vector2(hit_pos.x, hit_pos.z).distance_to(Vector2(node_pos.x, node_pos.z))
-		if d < best_dist:
-			best_dist = d
+		var p: Vector3 = data.shown if data.has_shown else data.pos
+		var mid: Vector3 = p + Vector3.UP * 0.8
+		if cam.is_position_behind(mid):
+			continue
+		var d: float = cam.unproject_position(mid).distance_to(mouse_pos)
+		if d > reach:
+			continue
+		# Mostly screen distance; depth breaks near-ties toward the front.
+		var score: float = d + cam.global_position.distance_to(mid) * 0.5
+		if score < best_score:
+			best_score = score
 			best = data.node
 	return best
 

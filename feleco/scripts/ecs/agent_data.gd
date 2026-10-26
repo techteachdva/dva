@@ -34,6 +34,9 @@ var seen_state: String = ""
 var alarm_time: float = -100.0
 # Until this time the sprite turns to look out at the camera (the opening film cues it).
 var look_until: float = -1.0
+# The player's own creature: a colour of their choosing and trained speed.
+var tint: Color = Color.WHITE
+var speed_boost: float = 1.0
 
 func _init(p_species: String, p_health: float, p_energy: float, p_pos: Vector3, p_lifespan: float, p_node: Node3D = null):
 	species = p_species

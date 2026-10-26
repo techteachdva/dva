@@ -1,0 +1,394 @@
+class_name GoalsPanel
+extends PanelContainer
+
+# Something to do while the valley runs. Students found Feleco confusing and
+# "just watching", so this card gives every run a short list of goals (the
+# first ones double as the tutorial), and holds My Creature: one animal the
+# player adopts, levels up, trains, renames and recolours. A rare diamond
+# turns up once a run for sharp-eyed players.
+
+const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
+
+# [id, goal, hint, EP reward]. Shown two at a time, in order.
+const GOALS: Array = [
+	["watch", "Tap an animal to watch it", "Tap or click any creature. Drag to move the camera; scroll or pinch to zoom.", 10],
+	["adopt", "Make it your creature", "On the animal's card, press Make Mine.", 15],
+	["power", "Use a power", "Open Powers at the bottom and try one on the valley.", 15],
+	["skill", "Train your creature", "Your creature earns XP by eating and staying alive. Spend a point below.", 20],
+	["bet", "Place a bet", "Open Bets and back the species you think will rule the valley.", 15],
+	["survive", "Keep your creature alive a whole day", "Heal it, feed it, keep it away from hunters.", 40],
+	["level5", "Raise your creature to level 5", "Eating and surviving earn XP faster as it trains.", 60],
+	["diamond", "Find the rare diamond", "Now and then a diamond glints somewhere in the valley. Tap it!", 100],
+]
+const SKILLS: Array = [
+	["speed", "Speed", "Runs 10% faster per point."],
+	["tough", "Toughness", "Heals itself a little every second."],
+	["vital", "Vitality", "Lives 10% longer per point."],
+]
+const SKILL_MAX: int = 5
+const COLOURS: Array = [
+	Color.WHITE, Color(1.0, 0.55, 0.55), Color(0.55, 0.75, 1.0),
+	Color(0.6, 1.0, 0.6), Color(1.0, 0.6, 1.0), Color(0.5, 0.45, 0.4),
+]
+const DIAMOND_EP: int = 250
+
+var director: SimulationDirector
+var hud: Node
+
+var _done: Dictionary = {}
+var _goal_box: VBoxContainer
+var _creature_box: VBoxContainer
+var _collapse: Button
+var _body: VBoxContainer
+var _accum: float = 0.0
+
+# My Creature.
+var companion: MarkovAgent = null
+var _c_data: AgentData = null
+var _adopt_day: float = 0.0
+var xp: float = 0.0
+var level: int = 1
+var points: int = 0
+var skills: Dictionary = {"speed": 0, "tough": 0, "vital": 0}
+var _last_energy: float = -1.0
+var _c_title: Label
+var _c_xp: ProgressBar
+var _c_info: Label
+var _skill_btns: Dictionary = {}
+
+# The diamond.
+var _diamond: Node3D = null
+var _diamond_day: float = 0.0
+var _diamond_gone_day: float = 0.0
+var _diamond_found: bool = false
+
+func _ready() -> void:
+	add_to_group("goals_panel")
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.06, 0.09, 0.07, 0.9)
+	sb.border_color = FelecoUiScript.GOLD
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(16)
+	for side in [SIDE_LEFT, SIDE_RIGHT, SIDE_TOP, SIDE_BOTTOM]:
+		sb.set_content_margin(side, 10)
+	add_theme_stylebox_override("panel", sb)
+	custom_minimum_size = Vector2(360, 0)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 4)
+	add_child(col)
+	var head := HBoxContainer.new()
+	col.add_child(head)
+	var title := FelecoUiScript.heading("Goals", 16, FelecoUiScript.GOLD)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	_collapse = Button.new()
+	_collapse.text = "Hide"
+	_collapse.theme_type_variation = "GhostButton"
+	_collapse.custom_minimum_size = Vector2(56, 26)
+	_collapse.pressed.connect(_toggle)
+	head.add_child(_collapse)
+	_body = VBoxContainer.new()
+	_body.add_theme_constant_override("separation", 6)
+	col.add_child(_body)
+	_goal_box = VBoxContainer.new()
+	_goal_box.add_theme_constant_override("separation", 2)
+	_body.add_child(_goal_box)
+	_creature_box = VBoxContainer.new()
+	_creature_box.add_theme_constant_override("separation", 3)
+	_creature_box.visible = false
+	_body.add_child(_creature_box)
+	_build_creature_box()
+	_refresh_goals()
+	_diamond_day = -1.0
+
+func _toggle() -> void:
+	_body.visible = not _body.visible
+	_collapse.text = "Hide" if _body.visible else "Show"
+
+# --- Goals ---------------------------------------------------------------
+
+func _refresh_goals() -> void:
+	for c in _goal_box.get_children():
+		c.queue_free()
+	var shown: int = 0
+	for g: Array in GOALS:
+		if _done.has(g[0]):
+			continue
+		var first: bool = shown == 0
+		var row := FelecoUiScript.label(("▶ " if first else "• ") + g[1] + "  (+%d EP)" % g[3], 15 if first else 13,
+			FelecoUiScript.CREAM if first else FelecoUiScript.MIST)
+		row.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_goal_box.add_child(row)
+		if first:
+			var hint := FelecoUiScript.label(g[2], 12, FelecoUiScript.GOLD)
+			hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			_goal_box.add_child(hint)
+		shown += 1
+		if shown >= 2:
+			break
+	if shown == 0:
+		_goal_box.add_child(FelecoUiScript.label("All goals done! Try a Challenge next.", 14, FelecoUiScript.LEAF))
+
+func _complete(id: String) -> void:
+	if _done.has(id):
+		return
+	_done[id] = true
+	for g: Array in GOALS:
+		if g[0] == id:
+			var gc: Node = get_node_or_null("/root/GameConfig")
+			if gc != null:
+				gc.award_eco_points(int(g[3]))
+			FXManager.show_dramatic_text(Vector3.ZERO, "Goal done: %s  +%d EP" % [g[1], g[3]], Color(0.62, 0.9, 0.5))
+	_refresh_goals()
+
+func _check_goals() -> void:
+	if hud != null and hud.get("_follow_panel") != null and is_instance_valid(hud.get("_follow_panel")):
+		_complete("watch")
+	if companion != null:
+		_complete("adopt")
+	if hud != null and int(hud.get("power_uses")) > 0:
+		_complete("power")
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	if gc != null and not (gc.bets as Array).is_empty():
+		_complete("bet")
+	if _alive() and director != null and director._sim_day - _adopt_day >= 1.0:
+		_complete("survive")
+	if level >= 5:
+		_complete("level5")
+
+# --- My Creature ---------------------------------------------------------
+
+func _alive() -> bool:
+	return companion != null and is_instance_valid(companion) and not companion.is_queued_for_deletion() \
+		and companion.is_inside_tree() and companion._data == _c_data
+
+func is_companion(agent: Node) -> bool:
+	return _alive() and agent == companion
+
+func adopt(agent: MarkovAgent) -> void:
+	if agent == null:
+		return
+	if _alive():
+		_c_data.tint = Color.WHITE
+		_c_data.speed_boost = 1.0
+	companion = agent
+	_c_data = agent._data
+	_adopt_day = director._sim_day if director != null else 0.0
+	xp = 0.0
+	level = 1
+	points = 1
+	skills = {"speed": 0, "tough": 0, "vital": 0}
+	_last_energy = -1.0
+	_creature_box.visible = true
+	FXManager.show_dramatic_text(agent.global_position, "%s is yours now!" % agent.display_name, FelecoUiScript.GOLD)
+	_refresh_creature()
+
+func _build_creature_box() -> void:
+	_creature_box.add_child(FelecoUiScript.divider())
+	var row := HBoxContainer.new()
+	_creature_box.add_child(row)
+	_c_title = FelecoUiScript.heading("My Creature", 16, FelecoUiScript.GOLD)
+	_c_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_c_title.clip_text = true
+	row.add_child(_c_title)
+	var find := Button.new()
+	find.text = "Find"
+	find.theme_type_variation = "GhostButton"
+	find.tooltip_text = "Fly the camera to your creature."
+	find.pressed.connect(func() -> void:
+		if _alive() and hud != null and hud.has_method("_start_follow"):
+			hud.call("_start_follow", companion))
+	row.add_child(find)
+	_c_xp = ProgressBar.new()
+	_c_xp.show_percentage = false
+	_c_xp.custom_minimum_size = Vector2(0, 10)
+	_creature_box.add_child(_c_xp)
+	_c_info = FelecoUiScript.label("", 12, FelecoUiScript.MIST)
+	_c_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_creature_box.add_child(_c_info)
+	var skill_row := HBoxContainer.new()
+	skill_row.add_theme_constant_override("separation", 4)
+	_creature_box.add_child(skill_row)
+	for s: Array in SKILLS:
+		var b := Button.new()
+		b.tooltip_text = s[2]
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.custom_minimum_size = Vector2(0, 32)
+		var id: String = s[0]
+		b.pressed.connect(func() -> void: _train(id))
+		skill_row.add_child(b)
+		_skill_btns[id] = b
+	var custom := HBoxContainer.new()
+	custom.add_theme_constant_override("separation", 4)
+	_creature_box.add_child(custom)
+	var name_edit := LineEdit.new()
+	name_edit.placeholder_text = "Rename..."
+	name_edit.max_length = 16
+	name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_edit.text_submitted.connect(func(t: String) -> void:
+		if _alive() and not t.strip_edges().is_empty():
+			companion.display_name = t.strip_edges()
+			name_edit.text = ""
+			name_edit.release_focus()
+			_refresh_creature())
+	custom.add_child(name_edit)
+	for c: Color in COLOURS:
+		var sw := Button.new()
+		sw.custom_minimum_size = Vector2(24, 28)
+		sw.tooltip_text = "Colour your creature."
+		var st := StyleBoxFlat.new()
+		st.bg_color = c
+		st.set_corner_radius_all(6)
+		sw.add_theme_stylebox_override("normal", st)
+		sw.add_theme_stylebox_override("hover", st)
+		sw.add_theme_stylebox_override("pressed", st)
+		sw.pressed.connect(func() -> void:
+			if _alive():
+				_c_data.tint = c)
+		custom.add_child(sw)
+
+func _xp_needed() -> float:
+	return 30.0 + 25.0 * float(level)
+
+func _train(id: String) -> void:
+	if not _alive() or points <= 0 or int(skills[id]) >= SKILL_MAX:
+		return
+	points -= 1
+	skills[id] = int(skills[id]) + 1
+	match id:
+		"speed":
+			_c_data.speed_boost = 1.0 + 0.1 * float(skills["speed"])
+		"vital":
+			companion._lifespan *= 1.1
+	_complete("skill")
+	_refresh_creature()
+
+func _tick_creature(delta: float) -> void:
+	if companion == null:
+		return
+	if not _alive():
+		companion = null
+		_c_title.text = "Your creature has died"
+		_c_info.text = "Tap another animal and press Make Mine to start again."
+		for b: Button in _skill_btns.values():
+			b.disabled = true
+		return
+	# XP: staying alive, plus every bite it eats.
+	var gain: float = delta * 1.5
+	var en: float = float(companion.get("energy")) if companion.get("energy") != null else 0.0
+	if _last_energy >= 0.0 and en > _last_energy:
+		gain += (en - _last_energy) * 0.5
+	_last_energy = en
+	xp += gain
+	while xp >= _xp_needed():
+		xp -= _xp_needed()
+		level += 1
+		points += 1
+		if companion.get("health") != null:
+			companion.health = minf(float(companion.health) + 25.0, 100.0)
+		FXManager.show_dramatic_text(companion.global_position, "%s reached level %d!" % [companion.display_name, level], FelecoUiScript.GOLD)
+	var tough: int = int(skills["tough"])
+	if tough > 0 and companion.get("health") != null:
+		companion.health = minf(float(companion.health) + 0.6 * float(tough) * delta, 100.0)
+
+func _refresh_creature() -> void:
+	if not _alive():
+		return
+	_c_title.text = "%s  ·  Lv %d" % [companion.display_name, level]
+	_c_xp.max_value = _xp_needed()
+	_c_xp.value = xp
+	var hp: float = float(companion.get("health")) if companion.get("health") != null else 0.0
+	_c_info.text = "%s · Health %d · %s" % [SpeciesDB.label(companion.species_id).trim_suffix("s"), int(hp),
+		("%d skill point%s to spend" % [points, "" if points == 1 else "s"]) if points > 0 else "Earn XP to level up"]
+	for s: Array in SKILLS:
+		var b: Button = _skill_btns[s[0]]
+		var n: int = int(skills[s[0]])
+		b.text = "%s %d%s" % [s[1], n, " +" if points > 0 and n < SKILL_MAX else ""]
+		b.disabled = points <= 0 or n >= SKILL_MAX
+
+# --- The diamond ---------------------------------------------------------
+
+func _tick_diamond(delta: float) -> void:
+	if director == null or _diamond_found:
+		return
+	if _diamond_day < 0.0:
+		# The first diamond turns up somewhere in the first few days.
+		_diamond_day = director._sim_day + randf_range(0.8, 3.0)
+	if _diamond == null and director._sim_day >= _diamond_day:
+		_spawn_diamond()
+	if _diamond != null:
+		_diamond.rotate_y(delta * 2.0)
+		if director._sim_day >= _diamond_gone_day:
+			# Missed it: it sinks away, and another turns up later.
+			_diamond.queue_free()
+			_diamond = null
+			_diamond_day = director._sim_day + randf_range(1.0, 2.0)
+
+func _spawn_diamond() -> void:
+	var ang: float = randf() * TAU
+	var r: float = randf_range(8.0, ValleyTerrain.FLOOR_RADIUS - 8.0)
+	var x: float = cos(ang) * r
+	var z: float = sin(ang) * r
+	var gem := MeshInstance3D.new()
+	var m := CylinderMesh.new()
+	m.top_radius = 0.0
+	m.bottom_radius = 0.7
+	m.height = 1.2
+	m.radial_segments = 6
+	m.rings = 1
+	gem.mesh = m
+	var under := MeshInstance3D.new()
+	var m2 := CylinderMesh.new()
+	m2.top_radius = 0.7
+	m2.bottom_radius = 0.0
+	m2.height = 0.6
+	m2.radial_segments = 6
+	m2.rings = 1
+	under.mesh = m2
+	under.position.y = -0.9
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(0.7, 0.95, 1.0)
+	gem.material_override = mat
+	under.material_override = mat
+	_diamond = Node3D.new()
+	_diamond.name = "Diamond"
+	_diamond.add_child(gem)
+	gem.add_child(under)
+	director.add_child(_diamond)
+	_diamond.global_position = Vector3(x, director.ground_height(x, z) + 1.5, z)
+	_diamond_gone_day = director._sim_day + 0.75
+	FXManager.show_dramatic_text(_diamond.global_position, "Something glints in the grass...", Color(0.7, 0.95, 1.0))
+
+# Called by the HUD on a tap, before it picks a creature. True if it took it.
+func try_collect(screen_pos: Vector2) -> bool:
+	if _diamond == null:
+		return false
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or cam.is_position_behind(_diamond.global_position):
+		return false
+	var reach: float = 48.0 * get_viewport().get_visible_rect().size.y / 720.0
+	if cam.unproject_position(_diamond.global_position).distance_to(screen_pos) > reach:
+		return false
+	_diamond_found = true
+	FXManager.show_dramatic_text(_diamond.global_position, "DIAMOND!  +%d EP" % DIAMOND_EP, Color(0.7, 0.95, 1.0))
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	if gc != null:
+		gc.award_eco_points(DIAMOND_EP)
+	_diamond.queue_free()
+	_diamond = null
+	_complete("diamond")
+	return true
+
+func _process(delta: float) -> void:
+	if get_tree().paused:
+		return
+	# delta already runs at the game speed (Engine.time_scale).
+	_tick_creature(delta)
+	_tick_diamond(delta)
+	_accum += delta
+	if _accum >= 0.5:
+		_accum = 0.0
+		_check_goals()
+		_refresh_creature()

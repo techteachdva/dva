@@ -1640,14 +1640,16 @@ func _spawn_extra(id: String, pos: Vector3, parent: Node = null) -> Node:
 	$Agents.add_child(a)
 	if a is Node3D:
 		a.visible = true
-		a.global_position = pos
+		a.global_position = _in_valley(pos)
 	_track_agent(a, e["active"])
 	_apply_phenotype_variance(a, parent)
 	_apply_campaign_traits(a, id)
 	return a
 
 func spawn_offspring(id: String, parent: Node, pos: Vector3) -> void:
-	var a := _spawn_extra(id, pos, parent)
+	if not _room_for_birth():
+		return
+	var a := _spawn_extra(id, _in_valley(pos), parent)
 	if a == null:
 		return
 	if a.get("energy") != null:
@@ -1662,6 +1664,8 @@ func get_species_count(id: String) -> int:
 	return _get_faction_array(SpeciesDB.plural(id)).size()
 
 func spawn_sheep_offspring(parent: Node, pos: Vector3) -> void:
+	if not _room_for_birth():
+		return
 	if _sheep_pool == null:
 		return
 	var s: Node = _sheep_pool.acquire()
@@ -1670,7 +1674,7 @@ func spawn_sheep_offspring(parent: Node, pos: Vector3) -> void:
 	$Agents.add_child(s)
 	if s is Node3D:
 		s.visible = true
-		s.global_position = pos
+		s.global_position = _in_valley(pos)
 	if s.get("energy") != null:
 		s.energy = 15.0
 	_track_agent(s, _active_sheep)
@@ -1681,6 +1685,8 @@ func spawn_sheep_offspring(parent: Node, pos: Vector3) -> void:
 	FXManager.show_floating_text(pos + Vector3.UP, "Baby Sheep!", Color(0.9, 0.9, 1.0))
 
 func spawn_wolf_offspring(parent: Node, pos: Vector3) -> void:
+	if not _room_for_birth():
+		return
 	if _wolf_pool == null:
 		return
 	var w: Node = _wolf_pool.acquire()
@@ -1689,7 +1695,7 @@ func spawn_wolf_offspring(parent: Node, pos: Vector3) -> void:
 	$Agents.add_child(w)
 	if w is Node3D:
 		w.visible = true
-		w.global_position = pos
+		w.global_position = _in_valley(pos)
 	if w.get("energy") != null:
 		w.energy = 35.0
 	_track_agent(w, _active_wolves)
@@ -1700,6 +1706,8 @@ func spawn_wolf_offspring(parent: Node, pos: Vector3) -> void:
 	FXManager.show_floating_text(pos + Vector3.UP, "Baby Wolf!", Color(1.0, 0.5, 0.5))
 
 func spawn_human_offspring(parent: Node, pos: Vector3) -> void:
+	if not _room_for_birth():
+		return
 	if _human_pool == null:
 		return
 	var h: Node = _human_pool.acquire()
@@ -1748,6 +1756,8 @@ func spawn_human_offspring(parent: Node, pos: Vector3) -> void:
 	FXManager.show_floating_text(spawn_pos + Vector3.UP, "Baby Human!", Color(0.95, 0.8, 0.6))
 
 func spawn_falcon_offspring(parent: Node, pos: Vector3) -> void:
+	if not _room_for_birth():
+		return
 	if _falcon_pool == null:
 		return
 	var f: Node = _falcon_pool.acquire()
@@ -1756,7 +1766,7 @@ func spawn_falcon_offspring(parent: Node, pos: Vector3) -> void:
 	$Agents.add_child(f)
 	if f is Node3D:
 		f.visible = true
-		f.global_position = pos
+		f.global_position = _in_valley(pos)
 		f.global_position.y = 8.0 + randf() * 3.0
 	if f.get("energy") != null:
 		f.energy = 40.0
@@ -1768,6 +1778,8 @@ func spawn_falcon_offspring(parent: Node, pos: Vector3) -> void:
 	FXManager.show_floating_text(pos + Vector3.UP, "Baby Falcon!", Color(0.95, 0.95, 0.8))
 
 func spawn_robin_offspring(parent: Node, pos: Vector3) -> void:
+	if not _room_for_birth():
+		return
 	if _robin_pool == null:
 		return
 	var r: Node = _robin_pool.acquire()
@@ -1776,7 +1788,7 @@ func spawn_robin_offspring(parent: Node, pos: Vector3) -> void:
 	$Agents.add_child(r)
 	if r is Node3D:
 		r.visible = true
-		r.global_position = pos
+		r.global_position = _in_valley(pos)
 		r.global_position.y = 2.0 + randf() * 2.0
 	if r.get("energy") != null:
 		r.energy = 15.0
@@ -1788,6 +1800,8 @@ func spawn_robin_offspring(parent: Node, pos: Vector3) -> void:
 	FXManager.show_floating_text(pos + Vector3.UP, "Baby Robin!", Color(0.6, 0.8, 1.0))
 
 func spawn_boar_offspring(parent: Node, pos: Vector3) -> void:
+	if not _room_for_birth():
+		return
 	if _boar_pool == null:
 		return
 	var b: Node = _boar_pool.acquire()
@@ -1796,7 +1810,7 @@ func spawn_boar_offspring(parent: Node, pos: Vector3) -> void:
 	$Agents.add_child(b)
 	if b is Node3D:
 		b.visible = true
-		b.global_position = pos
+		b.global_position = _in_valley(pos)
 	if b.get("energy") != null:
 		b.energy = 25.0
 	_track_agent(b, _active_boars)
@@ -1807,6 +1821,8 @@ func spawn_boar_offspring(parent: Node, pos: Vector3) -> void:
 	FXManager.show_floating_text(pos + Vector3.UP, "Baby Boar!", Color(0.8, 0.6, 0.4))
 
 func spawn_worm_offspring(parent: Node, pos: Vector3) -> void:
+	if not _room_for_birth():
+		return
 	if _worm_pool == null:
 		return
 	var wr: Node = _worm_pool.acquire()
@@ -1815,7 +1831,7 @@ func spawn_worm_offspring(parent: Node, pos: Vector3) -> void:
 	$Agents.add_child(wr)
 	if wr is Node3D:
 		wr.visible = true
-		wr.global_position = pos
+		wr.global_position = _in_valley(pos)
 	if wr.get("energy") != null:
 		wr.energy = 15.0
 	_track_agent(wr, _active_worms)
@@ -1826,6 +1842,8 @@ func spawn_worm_offspring(parent: Node, pos: Vector3) -> void:
 	FXManager.show_floating_text(pos + Vector3.UP, "Baby Worm!", Color(0.5, 1.0, 0.5))
 
 func spawn_rabbit_offspring(parent: Node, pos: Vector3) -> void:
+	if not _room_for_birth():
+		return
 	if _rabbit_pool == null:
 		return
 	var rb: Node = _rabbit_pool.acquire()
@@ -1834,7 +1852,7 @@ func spawn_rabbit_offspring(parent: Node, pos: Vector3) -> void:
 	$Agents.add_child(rb)
 	if rb is Node3D:
 		rb.visible = true
-		rb.global_position = pos
+		rb.global_position = _in_valley(pos)
 	if rb.get("energy") != null:
 		rb.energy = 12.0
 	_track_agent(rb, _active_rabbits)
@@ -2438,6 +2456,9 @@ func get_crowding_vector(pos: Vector3) -> Vector3:
 				var k: float = float(count) * (1.0 / maxf(dist, 1.0)) * 2.0 / dist
 				steer.x -= to_x * k
 				steer.z -= to_z * k
+	# A packed crowd must not fling anyone out of the valley: cap the shove.
+	if steer.length_squared() > 9.0:
+		steer = steer.normalized() * 3.0
 	return steer
 
 func _get_faction_array(faction: String) -> Array:
@@ -3165,6 +3186,8 @@ func _return_fish() -> void:
 		i -= 1
 
 func spawn_fish_offspring(parent: Node, pos: Vector3) -> void:
+	if not _room_for_birth():
+		return
 	if _fish_pool == null:
 		return
 	var fish: Node = _fish_pool.acquire()
@@ -3490,3 +3513,20 @@ func trigger_meteor() -> void:
 				data.node._die()
 			killed += 1
 	emit_signal("combat_event", "meteor", target_key, Vector3.ZERO, true)
+
+# A valley-wide ceiling on creatures. Chromebooks run the web build, so the
+# browser gets a smaller valley: the story reads better and nothing lags.
+func max_creatures() -> int:
+	return 300 if OS.has_feature("web") else 600
+
+func _room_for_birth() -> bool:
+	return _agent_registry.size() < max_creatures()
+
+# Births at the rim land back on the meadow, never up the slopes.
+func _in_valley(pos: Vector3) -> Vector3:
+	var flat := Vector2(pos.x, pos.z)
+	var limit: float = ValleyTerrain.FLOOR_RADIUS - 4.0
+	if flat.length() > limit:
+		flat = flat.normalized() * limit
+		return Vector3(flat.x, ground_height(flat.x, flat.y), flat.y)
+	return pos

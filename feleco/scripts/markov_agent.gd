@@ -20,6 +20,7 @@ const HERD_FLEE: float = 0.2      # prey run up to 20% faster from the middle
 const HERD_HUNGER: float = 0.1    # everyone in the middle gets hungry 10% slower
 const HERD_HEAL: float = 0.4      # and mends a little
 const URGENT_STATES: Array[String] = ["Flee", "Chase", "Dive", "Charge", "Raid", "Stranded", "Sleep"]
+const RESTING_STATES: Array[String] = ["Sleep", "Rest"]
 
 var _states: Dictionary = {}
 var _current_state: String = ""
@@ -59,8 +60,8 @@ var _rampage_strike: float = 0.0
 var _rampage_time: float = 0.0
 # Gold burns faster the longer a rampage runs, kills never refill it, and no
 # rampage outlasts RAMPAGE_MAX seconds: a full load lasts about 10 s.
-const RAMPAGE_DRAIN: float = 0.06
-const RAMPAGE_RAMP: float = 0.008
+const RAMPAGE_DRAIN: float = 0.04
+const RAMPAGE_RAMP: float = 0.005
 const RAMPAGE_MAX: float = 20.0
 const RAMPAGE_SPEED: float = 7.5
 var _role_timer: float = 2.0
@@ -370,7 +371,16 @@ func _movement_tick(delta: float) -> void:
 		var r: float = Vector2(global_position.x, global_position.z).length()
 		if r > BOUNDARY_SOFT:
 			var inward := Vector3(-global_position.x, 0.0, -global_position.z) / r
+			# Drop any push outward first, so a crowd at the rim slides back in
+			# instead of pinning itself into a ring against the slopes.
+			var outward: float = -velocity.dot(inward)
+			if outward > 0.0:
+				velocity += inward * outward
 			velocity += inward * 5.0 * (1.0 + (r - BOUNDARY_SOFT) * 0.5)
+	# Sleepers and resters lie still: no jostling from the crowd or the herd.
+	var lying: bool = RESTING_STATES.has(_current_state) and velocity.length_squared() < 0.25
+	if lying:
+		velocity = Vector3.ZERO
 	# Batch separation via crowding field (no per-agent spatial queries)
 	if velocity.length_squared() > 0.01:
 		var sim: SimulationDirector = director
@@ -387,6 +397,8 @@ func _movement_tick(delta: float) -> void:
 			pace = dn_sim.daynight_mult(species_id, 0) * dn_sim.tune(species_id, "speed")
 			if _current_state == "Flee":
 				pace *= 1.0 + HERD_FLEE * herd
+		if _data != null:
+			pace *= _data.speed_boost
 		_move_pace = pace
 		global_position += velocity * delta * pace
 	if not _aerial:

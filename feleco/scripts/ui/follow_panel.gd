@@ -121,6 +121,17 @@ func _ready() -> void:
 	_rampage_btn.visible = false
 	_rampage_btn.pressed.connect(_on_rampage)
 	head.add_child(_rampage_btn)
+	_mine_btn = Button.new()
+	_mine_btn.text = "Make Mine"
+	_mine_btn.theme_type_variation = "PrimaryButton"
+	_mine_btn.custom_minimum_size = Vector2(110, 40)
+	_mine_btn.tooltip_text = "Adopt this animal: it earns XP, levels up, and you can train, rename and colour it."
+	_mine_btn.pressed.connect(func() -> void:
+		var goals: Node = get_tree().get_first_node_in_group("goals_panel")
+		if goals != null:
+			goals.call("adopt", agent)
+		_mine_btn.visible = false)
+	head.add_child(_mine_btn)
 	var stop := Button.new()
 	stop.text = "Stop"
 	stop.theme_type_variation = "GhostButton"
@@ -248,6 +259,7 @@ func _on_fight_nearby(attacker: String, target: String, pos: Vector3, killed: bo
 	elif target == agent.species_id and not killed:
 		_remember(BAD, "felt the shock", "of an attack by a %s, and lived" % attacker, "hit", 10.0)
 
+var _mine_btn: Button
 var _rampage_btn: Button
 var _rampage_bar: ProgressBar
 var _rampaging: bool = false
@@ -328,6 +340,8 @@ func _process(delta: float) -> void:
 	if _accum >= 0.4:
 		_accum = 0.0
 		_rampage_btn.visible = not _rampaging and agent.golden > 0.05
+		var goals: Node = get_tree().get_first_node_in_group("goals_panel")
+		_mine_btn.visible = not _rampaging and goals != null and not goals.call("is_companion", agent)
 		if _rampaging:
 			return
 		_watch_changes()
