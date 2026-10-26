@@ -74,7 +74,45 @@ static func dress_menu(root: Control) -> void:
 	var bg := root.get_node_or_null("BG")
 	if bg is ColorRect:
 		(bg as ColorRect).color = INK
+	_backdrop(root)
 	_fit_targets(root)
+
+# Every menu sits over the valley's season paintings, dimmed so the cards
+# read clearly. The main menu has its own, brighter copy.
+static func _backdrop(root: Control) -> void:
+	if root.get_node_or_null("SeasonBackdrop") != null or root.find_children("*", "MenuBackdrop", true, false).size() > 0:
+		return
+	var holder := Control.new()
+	holder.name = "SeasonBackdrop"
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var art := MenuBackdrop.new()
+	holder.add_child(art)
+	var dim := ColorRect.new()
+	dim.color = Color(INK.r, INK.g, INK.b, 0.74)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	holder.add_child(dim)
+	root.add_child(holder)
+	var bg2 := root.get_node_or_null("BG")
+	root.move_child(holder, bg2.get_index() + 1 if bg2 != null else 0)
+
+# A thin gold rule that fades out at both ends, under titles.
+static func divider(width: float = 0.0) -> Control:
+	var line := TextureRect.new()
+	var grad := Gradient.new()
+	grad.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
+	grad.colors = PackedColorArray([Color(GOLD.r, GOLD.g, GOLD.b, 0.0), GOLD, Color(GOLD.r, GOLD.g, GOLD.b, 0.0)])
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.width = 256
+	tex.height = 2
+	line.texture = tex
+	line.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	line.stretch_mode = TextureRect.STRETCH_SCALE
+	line.custom_minimum_size = Vector2(width, 2)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return line
 
 static func dress_hud(layer: Node) -> void:
 	_assign(layer, theme())
@@ -124,10 +162,18 @@ static func build_screen(root: Control, title: String, on_back: Callable) -> Dic
 	back.theme_type_variation = "GhostButton"
 	back.pressed.connect(on_back)
 	header.add_child(back)
-	var head := heading(title, 34, CREAM)
+	var titles := VBoxContainer.new()
+	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	titles.add_theme_constant_override("separation", 4)
+	header.add_child(titles)
+	var head := heading(title, 36, GOLD)
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	head.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(head)
+	head.add_theme_color_override("font_outline_color", Color(0.05, 0.04, 0.02, 0.9))
+	head.add_theme_constant_override("outline_size", 6)
+	titles.add_child(head)
+	var rule := divider(360.0)
+	rule.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	titles.add_child(rule)
 	var balance := Control.new()
 	balance.custom_minimum_size = Vector2(150, 0)
 	header.add_child(balance)
@@ -155,6 +201,7 @@ static func card(parent: Control, title: String, stretch: float = 1.0, min_width
 	panel.add_child(inner)
 	if not title.is_empty():
 		inner.add_child(heading(title, 22, GOLD))
+		inner.add_child(divider())
 	return inner
 
 static func label(text: String, size: int, color: Color) -> Label:
@@ -197,6 +244,12 @@ static func _build() -> Theme:
 
 	var card := _box(CARD, LINE, 18, 1)
 	var glass := _box(GLASS, Color(LINE.r, LINE.g, LINE.b, 0.45), 20, 1)
+	# Panels: a gold top edge and a soft drop shadow.
+	glass.border_color = Color(GOLD.r, GOLD.g, GOLD.b, 0.32)
+	glass.border_width_top = 2
+	glass.shadow_color = Color(0, 0, 0, 0.45)
+	glass.shadow_size = 14
+	glass.shadow_offset = Vector2(0, 4)
 	var button := _box(MOSS, LINE, 16, 1)
 	var button_hover := _box(Color(0.2, 0.26, 0.21, 1), GOLD, 16, 1)
 	var button_down := _box(Color(0.11, 0.15, 0.12, 1), GOLD_DEEP, 16, 1)

@@ -126,7 +126,7 @@ func _build() -> void:
 	var sub := FelecoUiScript.label("The living valley: who eats whom, and when each one wakes.", 17, FelecoUiScript.MIST)
 	sub.position = Vector2(40, 80)
 	_board.add_child(sub)
-	var rule := FelecoUiScript.label("A run is one year in a handful of days, every day a sun and a moon.\nBet on the biggest crowd at the end, and on everything along the way.", 16, FelecoUiScript.CREAM)
+	var rule := FelecoUiScript.label("A run is one year in a handful of days, every day a sun and a moon.\nBet on which link of the food web ends the year fullest, and on everything along the way.", 16, FelecoUiScript.CREAM)
 	rule.position = Vector2(700, 26)
 	rule.size = Vector2(546, 60)
 	rule.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -169,13 +169,15 @@ func _build() -> void:
 	# The food web.
 	_web = _panel(Rect2(36, 222, 800, 470), "Food web")
 	var legend := HBoxContainer.new()
-	legend.position = Vector2(470, 8)
+	legend.position = Vector2(300, 8)
 	legend.add_theme_constant_override("separation", 14)
 	_web.add_child(legend)
+	var hint := FelecoUiScript.label("Hover one to see what it eats and what eats it.", 13, FelecoUiScript.MIST)
+	legend.add_child(hint)
 	for k: String in ["hunt", "graze", "forage", "decay"]:
 		var l := FelecoUiScript.label("—  %s" % k, 13, EDGE_COLORS[k])
 		legend.add_child(l)
-	var area := Rect2(40, 40, 720, 400)
+	var area := WEB_AREA
 	for key: String in NODES.keys():
 		var c: Vector2 = area.position + NODES[key] * area.size
 		_node_centers[key] = c
@@ -262,6 +264,7 @@ func _creature(parent: Control, species: String, center: Vector2, height: float)
 		var tr := TextureRect.new()
 		match species:
 			"grass": tr.texture = load(SpriteGenerator.SPRITE_DIR + "tuft.png")
+			"berry", "moss", "apple": tr.texture = load(SpriteGenerator.SPRITE_DIR + species + ".png")
 			_: tr.texture = load(SpriteGenerator.SPRITE_DIR + "mycelium.png")
 		tr.set_anchors_preset(Control.PRESET_FULL_RECT)
 		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -271,32 +274,36 @@ func _creature(parent: Control, species: String, center: Vector2, height: float)
 	holder.mouse_entered.connect(func() -> void: _set_hover(key, species, true))
 	holder.mouse_exited.connect(func() -> void: _set_hover(key, species, false))
 
+# The web is drawn in rows, one per link of the food web (see NODES).
+const WEB_AREA := Rect2(118, 40, 660, 404)
+const WEB_ROWS: Array = [
+	[0.08, "carnivore", "Carnivores"], [0.30, "omnivore", "Omnivores"], [0.52, "herbivore", "Herbivores"],
+	[0.73, "producer", "Producers"], [0.93, "decomposer", "Decomposers"],
+]
+
 func _web_node(key: String, c: Vector2) -> void:
 	var disc := Panel.new()
 	var info: Array = INFO[key]
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(1, 1, 1, 0.05)
+	sb.bg_color = Color(0.04, 0.06, 0.05, 0.75)
 	sb.border_color = info[1]
 	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(40)
-	sb.shadow_color = Color(info[1].r, info[1].g, info[1].b, 0.35)
-	sb.shadow_size = 8
+	sb.set_corner_radius_all(30)
+	sb.shadow_color = Color(info[1].r, info[1].g, info[1].b, 0.3)
+	sb.shadow_size = 6
 	disc.add_theme_stylebox_override("panel", sb)
-	disc.position = c - Vector2(40, 40)
-	disc.size = Vector2(80, 80)
+	disc.position = c - Vector2(28, 28)
+	disc.size = Vector2(56, 56)
 	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_web.add_child(disc)
-	_creature(_web, key, c, 64.0)
-	var n := FelecoUiScript.heading(info[0], 15, FelecoUiScript.CREAM)
-	n.position = c + Vector2(-60, 42)
-	n.size = Vector2(120, 20)
+	_creature(_web, key, c, 46.0)
+	var n := FelecoUiScript.heading(info[0], 13, FelecoUiScript.CREAM)
+	n.position = c + Vector2(-60, 28)
+	n.size = Vector2(120, 18)
 	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	n.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	n.add_theme_constant_override("outline_size", 4)
 	_web.add_child(n)
-	var r := FelecoUiScript.label(info[2], 12, FelecoUiScript.MIST)
-	r.position = c + Vector2(-70, 60)
-	r.size = Vector2(140, 16)
-	r.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_web.add_child(r)
 
 func _set_hover(key: String, species: String, on: bool) -> void:
 	_hover_key = species if on else ""
@@ -305,22 +312,31 @@ func _set_hover(key: String, species: String, on: bool) -> void:
 	_web.queue_redraw()
 
 func _draw_web() -> void:
-	# Arrows from food to eater; the hovered creature's links light up.
+	# Bands: one per link of the food web, labelled down the left side.
+	var font: Font = FelecoUiScript.font("heading")
+	for row: Array in WEB_ROWS:
+		var y: float = WEB_AREA.position.y + float(row[0]) * WEB_AREA.size.y
+		var col: Color = SpeciesDB.GROUP_COLOR[row[1]]
+		_web.draw_rect(Rect2(14, y - 36, WEB_AREA.end.x - 4, 72), Color(col.r, col.g, col.b, 0.07))
+		_web.draw_rect(Rect2(14, y - 36, 4, 72), Color(col.r, col.g, col.b, 0.8))
+		_web.draw_string(font, Vector2(26, y + 6), String(row[2]), HORIZONTAL_ALIGNMENT_LEFT, 92, 15, col.lightened(0.15))
+	# Arrows from food to eater. Faint until you hover: then that creature's
+	# meals and its hunters light up and everything else fades away.
 	for e: Array in EDGES:
 		var a: Vector2 = _node_centers[e[0]]
 		var b: Vector2 = _node_centers[e[1]]
 		var col: Color = EDGE_COLORS[e[2]]
 		var lit: bool = _hover_key.is_empty() or _hover_key == e[0] or _hover_key == e[1]
-		col.a = 0.8 if lit and not _hover_key.is_empty() else (0.45 if lit else 0.08)
+		col.a = 0.9 if lit and not _hover_key.is_empty() else (0.22 if lit else 0.04)
 		var dir: Vector2 = (b - a).normalized()
-		var p0: Vector2 = a + dir * 44.0
-		var p1: Vector2 = b - dir * 46.0
+		var p0: Vector2 = a + dir * 32.0
+		var p1: Vector2 = b - dir * 34.0
 		var mid: Vector2 = (p0 + p1) * 0.5 + Vector2(-dir.y, dir.x) * 18.0
 		var pts := PackedVector2Array()
 		for i: int in 17:
 			var t: float = i / 16.0
 			pts.append(p0.lerp(mid, t).lerp(mid.lerp(p1, t), t))
-		_web.draw_polyline(pts, col, 2.5 if lit and not _hover_key.is_empty() else 1.6, true)
+		_web.draw_polyline(pts, col, 3.0 if lit and not _hover_key.is_empty() else 1.3, true)
 		var tip: Vector2 = pts[pts.size() - 1]
 		var back: Vector2 = (pts[pts.size() - 1] - pts[pts.size() - 3]).normalized()
 		var side := Vector2(-back.y, back.x)

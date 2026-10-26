@@ -56,6 +56,13 @@ func _play_title() -> void:
 	morph.finished.connect(func() -> void: create_tween().tween_property(tagline, "modulate:a", 1.0, 0.6))
 
 func _ready() -> void:
+	# First launch: the opening film plays before the menu.
+	var cfg: Node = get_node_or_null("/root/GameConfig")
+	if cfg != null:
+		cfg.load_meta()
+	if cfg != null and not cfg.intro_seen and DisplayServer.get_name() != "headless" and OS.get_cmdline_user_args().is_empty():
+		get_tree().change_scene_to_file.call_deferred("res://scenes/ui/intro.tscn")
+		return
 	FelecoUiScript.dress_menu(self)
 	# The seasons of the valley behind the menu, in place of the old diagram.
 	$TitleGraphic.hide()
@@ -101,6 +108,13 @@ func _ready() -> void:
 	btn_about.pressed.connect(func() -> void: about.popup_centered())
 	$CenterContainer/VBoxContainer.add_child(btn_about)
 	$CenterContainer/VBoxContainer.move_child(btn_about, _btn_rules.get_index() + 1)
+	var btn_intro := Button.new()
+	btn_intro.text = "Watch the opening"
+	btn_intro.custom_minimum_size = Vector2(340, 44)
+	FelecoUiScript.mark(btn_intro, "GhostButton")
+	btn_intro.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/ui/intro.tscn"))
+	$CenterContainer/VBoxContainer.add_child(btn_intro)
+	$CenterContainer/VBoxContainer.move_child(btn_intro, btn_about.get_index() + 1)
 	_hook_rays($CenterContainer)
 	var version := Label.new()
 	version.text = "v%s  ·  M mutes music  ·  F11 fullscreen" % FelecoChangelog.VERSION

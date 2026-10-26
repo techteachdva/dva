@@ -50,6 +50,9 @@ var _gold_sparkle: float = 0.0
 # It devours anything not of its own kind until the gold runs out.
 signal rampage_ended(kills: int)
 var rampage: bool = false
+# Scripted (the opening film): the director leaves it alone and something
+# else moves it with stage_to().
+var scripted: bool = false
 var rampage_steer: Vector3 = Vector3.ZERO
 var rampage_kills: int = 0
 var _rampage_strike: float = 0.0
@@ -115,6 +118,23 @@ func _ready() -> void:
 
 func _register_states() -> void:
 	pass
+
+# Puts a scripted creature somewhere this frame and tells its sprite how it
+# is moving, so it walks, eats or sleeps on screen without the AI.
+func stage_to(pos: Vector3, state: String = "Walk") -> void:
+	var was: Vector3 = global_position
+	global_position = pos
+	if _data != null:
+		var dt: float = maxf(get_process_delta_time(), 0.001)
+		_data.prev_pos = pos
+		_data.pos = pos
+		_data.vel = (pos - was) / dt
+		_data.sync_time = AgentData.clock
+		_data.interval = 0.05
+		_data.state = state
+		_data.golden = golden
+		if _data.age < 30.0:
+			_data.age = 30.0
 
 func start_rampage() -> bool:
 	if golden <= 0.05 or rampage:

@@ -22,6 +22,10 @@ func _ready() -> void:
 	mesh.mesh = sphere
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.4, 0.15, 0.55) if kind == "berry" else Color(0.95, 0.1, 0.05)
+	var skin: String = SpriteGenerator.SPRITE_DIR + ("berry_skin.png" if kind == "berry" else "apple_skin.png")
+	if ResourceLoader.exists(skin) and not golden:
+		mat.albedo_texture = load(skin)
+		mat.albedo_color = Color.WHITE
 	if golden:
 		mat.albedo_color = Color(1.0, 0.82, 0.2)
 		mat.emission_enabled = true
@@ -84,6 +88,14 @@ func _spawn_seed() -> void:
 
 func eat(eater: Variant = null) -> float:
 	queue_free()
+	var counter := get_parent()
+	while counter != null and not counter is SimulationDirector:
+		counter = counter.get_parent()
+	if counter != null:
+		if kind == "berry":
+			counter.berries_eaten += 1
+		else:
+			counter.apples_eaten += 1
 	var value: float = 20.0 if kind == "berry" else 35.0
 	if golden:
 		if eater is Node and eater.has_method("make_golden"):

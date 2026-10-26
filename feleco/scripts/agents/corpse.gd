@@ -109,7 +109,9 @@ func _process(real_delta: float) -> void:
 	if _body != null:
 		# Fresh, then grey and sunken, then gone to bones.
 		var rot: float = 1.0 - left
-		_body.modulate = BODY_TINT.lerp(Color(0.42, 0.38, 0.34), rot)
+		# A golden carcass stays gold while it lasts.
+		var tint: Color = Color(1.0, 0.82, 0.32) if golden > 0.05 else BODY_TINT
+		_body.modulate = tint.lerp(Color(0.42, 0.38, 0.34), rot * (0.4 if golden > 0.05 else 1.0))
 		_body.visible = left > BONES_AT * 0.5
 		_body.scale = Vector3.ONE * lerpf(1.0, 0.8, rot)
 		_body.position.y = _body_size * 0.16 * lerpf(1.0, 0.3, rot)

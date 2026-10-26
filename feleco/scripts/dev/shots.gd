@@ -14,6 +14,7 @@ const SCENES: Dictionary = {
 	"table": "res://scenes/ui/betting_table.tscn",
 	"guide": "res://scenes/ui/field_guide.tscn",
 	"lab": "res://scenes/ui/tuning_lab.tscn",
+	"intro": "res://scenes/ui/intro.tscn",
 }
 
 var out: String = "user://shots"
@@ -399,6 +400,7 @@ func _sim_tick() -> void:
 	# 3.0: food-web group totals, gold carriers and the paths gold has taken.
 	var g: Dictionary = w.get_group_counts()
 	print("GROUPS,", snappedf(day, 0.1), ",", ",".join(SpeciesDB.GROUPS.map(func(k): return "%s=%d" % [k, int(g.get(k, 0.0))])))
+	print("FRUIT,", snappedf(day, 0.1), ",apples ", w.apples_dropped, " dropped ", w.apples_eaten, " eaten,berries ", w.berries_dropped, " dropped ", w.berries_eaten, " eaten,trees ", w.get_node("Trees").get_child_count(), ",bushes ", w.get_node("Bushes").get_child_count())
 	print("GOLD,", snappedf(day, 0.1), ",finds=", w.golden_finds, ",", JSON.stringify(w.golden_census()), ",", JSON.stringify(w.gold_links))
 	# Diagnostics: mean energy/health and the commonest states per species.
 	var diag: Dictionary = {}

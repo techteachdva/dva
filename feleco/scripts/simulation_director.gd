@@ -44,6 +44,11 @@ var golden_mult: float = 1.0
 # Species switched off for the whole run: they never spawn or migrate in.
 var disabled_species: Dictionary = {}
 var golden_finds: int = 0
+# Fruit bookkeeping, to check the orchard is feeding anyone.
+var apples_dropped: int = 0
+var apples_eaten: int = 0
+var berries_dropped: int = 0
+var berries_eaten: int = 0
 var cfg_bet: String = ""
 var cfg_grass_density: float = 0.5
 var cfg_time_limit: float = 120.0
@@ -905,11 +910,11 @@ func _tick_agents(dt: float) -> void:
 		var node := data.node
 		if node == null or not is_instance_valid(node) or not node.is_inside_tree():
 			_agent_registry.remove_at(idx)
-		elif node.get_instance_id() % stagger == phase and data.species != "mushroom" and not node.rampage:
+		elif node.get_instance_id() % stagger == phase and data.species != "mushroom" and not node.rampage and not node.scripted:
 			node._physics_process(dt * stagger)
 		idx -= 1
 	for child in spores.get_children():
-		if child.get_instance_id() % spore_stagger == spore_phase and child is MarkovAgent:
+		if child.get_instance_id() % spore_stagger == spore_phase and child is MarkovAgent and not child.scripted:
 			child._physics_process(dt * spore_stagger)
 
 func spawn_entities() -> void:
@@ -1605,6 +1610,21 @@ func _apply_disabled() -> void:
 			"tree": cfg_trees = 0
 			"bush": cfg_bushes = 0
 			_: cfg_extra[id] = 0
+
+# One creature for the opening film: tracked and drawn like any other, but
+# the director never runs its AI (see MarkovAgent.scripted).
+func spawn_scripted(id: String, pos: Vector3) -> MarkovAgent:
+	var path: String = "res://scenes/mushroom_spore.tscn" if id == "mushroom" else "res://scenes/%s.tscn" % id
+	var a := (load(path) as PackedScene).instantiate() as MarkovAgent
+	a.scripted = true
+	if id == "mushroom":
+		$Spores.add_child(a)
+	else:
+		$Agents.add_child(a)
+	a.global_position = Vector3(pos.x, ground_height(pos.x, pos.z), pos.z)
+	var arr: Array = _active_spores if id == "mushroom" else (_extra[id]["active"] if _extra.has(id) else _get_faction_array(SpeciesDB.plural(id)))
+	_track_agent(a, arr)
+	return a
 
 # The generic spawn for the 3.0 species. Returns the creature, or null.
 func _spawn_extra(id: String, pos: Vector3, parent: Node = null) -> Node:

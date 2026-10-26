@@ -156,7 +156,15 @@ static func _shared() -> void:
 	_sapling_stem.radial_segments = 5
 	_sapling_stem.rings = 1
 	_bark = StandardMaterial3D.new()
-	_bark.albedo_color = Color(0.4, 0.27, 0.17)
+	var bark_tex := SpriteGenerator.SPRITE_DIR + "bark.png"
+	if ResourceLoader.exists(bark_tex):
+		# Baked furrowed bark, wrapped round every limb (triplanar: no seams).
+		_bark.albedo_texture = load(bark_tex)
+		_bark.albedo_color = Color(1.0, 0.95, 0.9)
+		_bark.uv1_triplanar = true
+		_bark.uv1_scale = Vector3(1.6, 1.6, 1.6)
+	else:
+		_bark.albedo_color = Color(0.4, 0.27, 0.17)
 	_bark.roughness = 1.0
 	_seed_mat = StandardMaterial3D.new()
 	_seed_mat.albedo_color = Color(0.52, 0.36, 0.18)
@@ -544,6 +552,11 @@ func _spawn_apple(at: Vector3) -> void:
 		ground = (sim as SimulationDirector).ground_height(global_position.x + at.x, global_position.z + at.z)
 	apple.rest_y = ground - global_position.y + 0.26
 	apple.kind = "berry" if bush else "apple"
+	if sim is SimulationDirector:
+		if bush:
+			(sim as SimulationDirector).berries_dropped += 1
+		else:
+			(sim as SimulationDirector).apples_dropped += 1
 	# Never more than 1 in 20 fruit is golden, even in a Golden Year.
 	apple.golden = randf() < minf((GOLDEN_BERRY_CHANCE if bush else GOLDEN_APPLE_CHANCE) * _golden_mult(), 0.05)
 	add_child(apple)

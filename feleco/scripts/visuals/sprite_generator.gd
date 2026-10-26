@@ -81,6 +81,15 @@ static func bake_all(dir: String) -> void:
 	shadow_image().save_png(dir.path_join("shadow.png"))
 	tuft_image().save_png(dir.path_join("tuft.png"))
 	mycelium_image().save_png(dir.path_join("mycelium.png"))
+	bake_plants(dir)
+
+# Producer icons and the 3D plant textures (see tree.gd and apple.gd).
+static func bake_plants(dir: String) -> void:
+	for k: String in ["berry", "moss", "apple"]:
+		producer_image(k).save_png(dir.path_join(k + ".png"))
+	bark_image().save_png(dir.path_join("bark.png"))
+	fruit_image(Color(0.86, 0.14, 0.1)).save_png(dir.path_join("apple_skin.png"))
+	fruit_image(Color(0.42, 0.16, 0.55)).save_png(dir.path_join("berry_skin.png"))
 
 # Golden forms. Most species are their normal selves cast in gold; a few
 # become something grander.
@@ -790,6 +799,72 @@ static func mycelium_image() -> Image:
 	return out
 
 # A clump of blades in near-white so the grass instance colour tints it.
+# ------------------------------------------------------------------
+# Producer icons (menus, the Field Guide) and textures for the 3D plants.
+# ------------------------------------------------------------------
+static func producer_image(kind: String) -> Image:
+	var ink := Color(0.1, 0.08, 0.07)
+	_begin(Vector2i(SIZE, SIZE), ink)
+	match kind:
+		"berry":
+			# A low tangle of branches heavy with berries.
+			var wood := Color(0.42, 0.28, 0.17)
+			for a: float in [-60.0, -30.0, 0.0, 30.0, 60.0]:
+				var d := Vector2(sin(deg_to_rad(a)), -cos(deg_to_rad(a)))
+				_line(Vector2(64, 118), Vector2(64, 118) + d * 46.0, 5.0, wood)
+				_line(Vector2(64, 118) + d * 30.0, Vector2(64, 118) + d * 30.0 + Vector2(d.x * 18.0 + 10.0, -14.0), 3.0, wood)
+			for p: Vector2 in [Vector2(40, 74), Vector2(30, 90), Vector2(52, 62), Vector2(64, 70), Vector2(78, 62), Vector2(90, 74), Vector2(98, 90), Vector2(70, 84), Vector2(48, 84), Vector2(84, 86)]:
+				_ell(p.x + 6, p.y - 6, 9, 5, Color(0.3, 0.52, 0.24), 30.0)
+				_circ(p.x, p.y, 6.0, Color(0.42, 0.16, 0.55))
+				_dot(p.x - 2, p.y - 2, 1.6, Color(0.8, 0.6, 0.95))
+		"moss":
+			# A stub of trunk wrapped in moss, a star moss on top.
+			_poly([Vector2(42, 124), Vector2(48, 20), Vector2(82, 20), Vector2(88, 124)], Color(0.42, 0.28, 0.17))
+			for i: int in 6:
+				_line(Vector2(52 + i * 5, 26), Vector2(50 + i * 6, 120), 1.2, Color(0.3, 0.2, 0.12), 0.0)
+			for p: Vector3 in [Vector3(48, 96, 14), Vector3(70, 104, 16), Vector3(84, 84, 12), Vector3(52, 64, 12), Vector3(76, 54, 11), Vector3(60, 80, 10)]:
+				_circ(p.x, p.y, p.z, Color(0.32, 0.58, 0.24))
+				_circ(p.x - p.z * 0.3, p.y - p.z * 0.3, p.z * 0.45, Color(0.45, 0.7, 0.32), 0.0)
+			_star(66, 36, 10.0, Color(0.98, 0.86, 0.3))
+		"apple":
+			# A red apple with a leaf, a golden one tucked behind.
+			_circ(84, 82, 22.0, Color(0.98, 0.8, 0.25))
+			_circ(56, 78, 30.0, Color(0.86, 0.14, 0.1))
+			_ell(46, 66, 9, 6, Color(1.0, 0.6, 0.55), -30.0, 0.0)
+			_line(Vector2(58, 50), Vector2(62, 34), 3.0, Color(0.38, 0.24, 0.12))
+			_ell(72, 38, 12, 6, Color(0.36, 0.62, 0.26), -20.0)
+	return _finish(ink, 3)
+
+# Tiling bark: dark furrows running up the trunk over warm brown.
+static func bark_image() -> Image:
+	var img := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	var base := Color(0.42, 0.29, 0.18)
+	for y: int in 128:
+		for x: int in 128:
+			var u: float = float(x) / 128.0 * TAU
+			# Wavy vertical furrows that wrap left to right without a seam.
+			var w: float = sin(u * 6.0 + sin(float(y) / 128.0 * TAU * 2.0 + u) * 1.2)
+			var n: float = sin(u * 17.0 + float(y) * 0.31) * 0.5 + sin(float(y) * 0.9 + u * 3.0) * 0.3
+			var shade: float = clampf(0.82 + 0.22 * w + 0.08 * n, 0.45, 1.15)
+			if w < -0.75:
+				shade *= 0.55
+			img.set_pixel(x, y, Color(base.r * shade, base.g * shade, base.b * shade))
+	img.generate_mipmaps()
+	return img
+
+# Fruit skin: a soft blush with a highlight and a few freckles.
+static func fruit_image(base: Color) -> Image:
+	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for y: int in 64:
+		for x: int in 64:
+			var v: float = float(y) / 63.0
+			var c := base.lightened(0.25 * (1.0 - v)).darkened(0.25 * v)
+			if (x * 7 + y * 13) % 29 == 0:
+				c = c.lightened(0.3)
+			img.set_pixel(x, y, c)
+	img.generate_mipmaps()
+	return img
+
 static func tuft_image() -> Image:
 	_begin(Vector2i(64, 64), Color(0.5, 0.6, 0.4))
 	var rng := RandomNumberGenerator.new()
