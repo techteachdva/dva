@@ -165,6 +165,10 @@ static func resolve_attack(attacker, target) -> bool:
 		FXManager.show_floating_text(target.global_position if target is Node3D else Vector3.ZERO, str(int(damage)), Color(0.9, 0.1, 0.1), true)
 		if sim != null:
 			sim.combat_event.emit(attacker_species, target_species, pos, true)
+		# Drop them now. Waiting for the victim's next think let gold or herd
+		# mending run first and erase the kill. die() ignores a second call.
+		if target.has_method("die"):
+			target.die()
 		return true
 	else:
 		if wound_damage > 0.0:
