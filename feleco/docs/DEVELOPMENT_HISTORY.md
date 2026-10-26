@@ -142,6 +142,18 @@
   - Hover radius increased from 4.0 to 12.0 units; now uses 2D ground-plane distance (ignores Y).
   - Added fallback camera search, explicit tooltip Panel/RichTextLabel sizes, and `_input` mouse-motion handler for more responsive updates.
 
+## Phase 11 — The Order Update (3.0)
+
+Shipped after this history was last revised. The developer map is [ORDER_UPDATE.md](ORDER_UPDATE.md). In short:
+
+- **Food web in five links**, scored by fill (`SimulationDirector.get_group_scores`), plus fish in the river. New creatures: deer, goat, bear, lion, beetle, all on `CritterAgent` and registered only in `SpeciesDB` (`"new": true`).
+- **The Order table** (`BetBook.catalogue3`): which group ends fullest, the player's ranking (exact order and top three), three named starters with rolled genes, and long shots. Late bets pay less and stay reduced when the ranking is edited. Odds lock when the coin is placed.
+- **Gold** moves plant → eater → eater → decomposer. **Rampage** spends that gold in the player's hands (8 kills unlocks the next Greenhouse upgrade).
+- **Genetics** on founders, migrants, and babies. Starters overwrite the founder roll with the stats shown on the felt.
+- **Challenge** is seven scripted years in `ChallengeScenarios`. Sandbox can disable a species or a whole group.
+- **Link powers:** Bloom, Stampede, Call Kin, Feast, Rot Rain.
+- **Field Guide** is the rules page: a zoomable food web and a card per creature (`scripts/ui/field_guide.gd`).
+
 ## Known Architectural Notes
 - `FELECO_ANALYSIS.md` contains a deep-dive performance audit from an earlier review.
 - `_update_presence_grid()` is called every frame inside `tick()` (the analysis worried it was missing, but it is present).
@@ -150,4 +162,4 @@
 - Scent network is functional but trails are not rendered.
 
 ---
-*Last updated: 2026-06-25*
+*Last updated: 2026-10-26*
