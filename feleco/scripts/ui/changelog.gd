@@ -3,9 +3,24 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "3.0"
+const VERSION: String = "4.0"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.0",
+		"title": "The Playground Update",
+		"notes": [
+			"Campaign: pick a link of the food web and play its own game. Producers play Seedling Golf (light puzzles with mini golf), Carnivores box in Predator Brawl (evolve and RAMPAGE!), Herbivores race in Stampede Sprint (type to run), Omnivores fight for the map in Valley Dominion. Every game teaches itself with a How to play card.",
+			"My Creature: adopt any animal, name it, colour it, and level it up by winning a Feast. Train Speed, Toughness, Vitality, Senses and Charm, each with its own minigame.",
+			"Goals and a first-run welcome explain what to do. A rare diamond hides in the valley.",
+			"A complete food web: herbivores eat every producer; boars hunt rabbits and fish; robins eat berries (and fish, badly); fish eat fruit that falls in the water and mycelium when a flood carries them.",
+			"Seasons matter: grass peaks in spring, berries in summer, apples in autumn, moss in winter. Spring rain floods the river; in winter it freezes over with the fish beneath.",
+			"Carcasses are 3D skeletons under a heap of offal. Their stink draws the decomposers from far off; other animals keep clear.",
+			"Falcons hunt, swoop and perch on treetops. Sleepers lie still and breathe out a faint Zzz. Spores ride the wind. Creatures climb partway up the slopes.",
+			"Runs smoothly on Chromebooks: fixed the giant rainbow glitch, the ring of animals at the valley edge, and creatures stuck on the mountains. Slower default speed and easier tapping.",
+			"Classroom safe: no names from books, films or games, and a filter on the names you choose.",
+		],
+	},
 	{
 		"version": "3.0",
 		"title": "The Order Update",
