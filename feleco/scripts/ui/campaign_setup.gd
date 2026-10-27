@@ -98,17 +98,27 @@ func _show_type_picker() -> void:
 	bg.bg_color = Color(0.05, 0.07, 0.06, 0.97)
 	cover.add_theme_stylebox_override("panel", bg)
 	add_child(cover)
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	cover.add_child(scroll)
+	var pad := MarginContainer.new()
+	for side: String in ["left", "right", "top", "bottom"]:
+		pad.add_theme_constant_override("margin_" + side, 16)
+	pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(pad)
 	var col := VBoxContainer.new()
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	col.add_theme_constant_override("separation", 16)
-	cover.add_child(col)
+	col.add_theme_constant_override("separation", 12)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pad.add_child(col)
 	var t := FelecoUiScript.heading("Campaign: Pick Your Type", 42, FelecoUiScript.GOLD)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(t)
-	var sub := FelecoUiScript.label("Every link of the food web plays differently. Pick one to play its game. Win, and that link grows a little stronger in the Valley campaign.", 19, FelecoUiScript.CREAM)
+	var sub := FelecoUiScript.label("Every link of the food web plays differently. Pick one to play its game. Win, and that link grows a little stronger in the valley.", 19, FelecoUiScript.CREAM)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sub.custom_minimum_size = Vector2(1100, 0)
+	sub.custom_minimum_size = Vector2(900, 0)
 	col.add_child(sub)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -121,7 +131,7 @@ func _show_type_picker() -> void:
 		card.custom_minimum_size = Vector2(230, 0)
 		row.add_child(card)
 		var pic := TextureRect.new()
-		pic.custom_minimum_size = Vector2(230, 120)
+		pic.custom_minimum_size = Vector2(230, 96)
 		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		if not String(ty[5]).is_empty():
@@ -137,7 +147,8 @@ func _show_type_picker() -> void:
 		card.add_child(about)
 		# What this link has earned for the valley, or what a win would earn.
 		var boon: Dictionary = boons.get(ty[0], {})
-		var boon_text: String = "Valley boon: %s." % boon["text"] if not boon.is_empty() else ("Win to earn a valley boon for %s." % String(ty[1]).to_lower() + "s" if not String(ty[4]).is_empty() else "")
+		var tease: String = "Win to earn a valley boon for %s." % (String(ty[1]).to_lower() + "s") if not String(ty[4]).is_empty() else ""
+		var boon_text: String = ("Valley boon: %s." % boon["text"]) if not boon.is_empty() else tease
 		var bl := FelecoUiScript.label(boon_text, 13, FelecoUiScript.GOLD if not boon.is_empty() else FelecoUiScript.MIST)
 		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		bl.custom_minimum_size = Vector2(0, 40)

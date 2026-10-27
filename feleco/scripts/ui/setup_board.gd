@@ -302,6 +302,9 @@ func _on_start() -> void:
 	gc.map_preset = _map.get_item_text(_map.selected)
 	gc.grass_density = 0.5
 	gc.current_mode = "sandbox"
+	var producer: Dictionary = gc.link_boons().get("producer", {})
+	gc.tree_count += int(producer.get("trees", 0))
+	gc.grass_density = minf(gc.grass_density + float(producer.get("grass", 0.0)), 0.8)
 	# The betting table names a fresh roster and applies upgrades once the
 	# champion (the biggest faction stake) is known.
 	gc.spawn_roster.clear()

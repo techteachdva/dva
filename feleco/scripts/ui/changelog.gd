@@ -3,9 +3,17 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.1"
+const VERSION: String = "4.1.1"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.1.1",
+		"title": "The valley feels a win",
+		"notes": [
+			"Winning a food-web game now lends its link a little strength in the ordinary valley too, not only the 10-era campaign: hardier carnivores, longer-lived omnivores, quicker herbivores, extra trees and a richer meadow.",
+			"The campaign type cards say herbivores (not herbivore.s), and the page scrolls so Play and Back stay reachable on a short window.",
+		],
+	},
 	{
 		"version": "4.1",
 		"title": "Games Worth Winning",

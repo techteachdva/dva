@@ -2695,12 +2695,12 @@ func _assign_role(agent: Node, parent: Node) -> void:
 
 func _apply_campaign_traits(agent: Node, species: String) -> void:
 	var gc = get_node_or_null("/root/GameConfig")
-	if gc == null or gc.current_mode != "campaign":
+	if gc == null or (gc.current_mode != "campaign" and gc.current_mode != "sandbox"):
 		return
 	var health_mult: float = 1.0
 	var speed_mult: float = 1.0
 	var lifespan_mult: float = 1.0
-	if gc.campaign_faction == species:
+	if gc.current_mode == "campaign" and gc.campaign_faction == species:
 		var traits: Dictionary = gc.campaign_traits
 		health_mult *= float(traits.get("health_boost", 1.0))
 		speed_mult *= float(traits.get("speed_boost", 1.0))
