@@ -51,7 +51,7 @@ var _power_btn: Button
 var _hover := Vector2i(-1, -1)
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = FelecoUiScript.theme()
 	_show_select()
 	# First time here: explain the game before anything else.
@@ -63,7 +63,7 @@ func _show_select() -> void:
 	if _select != null:
 		_select.queue_free()
 	_select = PanelContainer.new()
-	_select.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_select.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_select)
 	var col := VBoxContainer.new()
 	col.alignment = BoxContainer.ALIGNMENT_CENTER

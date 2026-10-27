@@ -290,7 +290,7 @@ func _on_rampage() -> void:
 	get_tree().root.add_child(layer)
 	var shade := ColorRect.new()
 	shade.color = Color(0, 0, 0, 0.5)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(shade)
 	var card := PanelContainer.new()
 	card.set_anchors_preset(Control.PRESET_CENTER)

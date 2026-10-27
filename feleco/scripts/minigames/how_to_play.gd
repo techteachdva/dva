@@ -51,7 +51,7 @@ static func show(parent: Control, key: String, done: Callable = Callable()) -> v
 	var info: Array = GAMES[key]
 	var shade := ColorRect.new()
 	shade.color = Color(0, 0, 0, 0.6)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.z_index = 50
 	parent.add_child(shade)
 	var card := PanelContainer.new()

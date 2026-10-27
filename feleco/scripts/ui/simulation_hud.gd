@@ -445,7 +445,7 @@ func _show_welcome() -> void:
 	var shade := ColorRect.new()
 	shade.name = "Welcome"
 	shade.color = Color(0, 0, 0, 0.55)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(shade)
 	var card := PanelContainer.new()
 	card.set_anchors_preset(Control.PRESET_CENTER)

@@ -93,7 +93,7 @@ const TYPES: Array = [
 func _show_type_picker() -> void:
 	var cover := PanelContainer.new()
 	cover.name = "TypePicker"
-	cover.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0.05, 0.07, 0.06, 0.97)
 	cover.add_theme_stylebox_override("panel", bg)

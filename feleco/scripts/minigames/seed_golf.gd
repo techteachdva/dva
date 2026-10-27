@@ -127,7 +127,7 @@ var _sense_btns: Dictionary = {}
 var _select: Control
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	# The game's look without the menu backdrop (the course is drawn here).
 	theme = FelecoUiScript.theme()
@@ -143,7 +143,7 @@ func _show_select() -> void:
 	if _select != null:
 		_select.queue_free()
 	_select = PanelContainer.new()
-	_select.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_select.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_select)
 	var col := VBoxContainer.new()
 	col.alignment = BoxContainer.ALIGNMENT_CENTER

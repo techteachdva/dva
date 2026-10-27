@@ -14,16 +14,11 @@ const GOALS: Array = [
 	["watch", "Tap an animal to watch it", "Tap or click any creature. Drag to move the camera; scroll or pinch to zoom.", 10],
 	["adopt", "Make it your creature", "On the animal's card, press Make Mine.", 15],
 	["power", "Use a power", "Open Powers at the bottom and try one on the valley.", 15],
-	["skill", "Train your creature", "Your creature earns XP by eating and staying alive. Spend a point below.", 20],
+	["skill", "Train your creature", "Press Level Up & Train on your creature and win a trial.", 20],
 	["bet", "Place a bet", "Open Bets and back the species you think will rule the valley.", 15],
 	["survive", "Keep your creature alive a whole day", "Heal it, feed it, keep it away from hunters.", 40],
 	["level5", "Raise your creature to level 5", "Eating and surviving earn XP faster as it trains.", 60],
 	["diamond", "Find the rare diamond", "Now and then a diamond glints somewhere in the valley. Tap it!", 100],
-]
-const SKILLS: Array = [
-	["speed", "Speed", "Runs 10% faster per point."],
-	["tough", "Toughness", "Heals itself a little every second."],
-	["vital", "Vitality", "Lives 10% longer per point."],
 ]
 const SKILL_MAX: int = 5
 # Strong, saturated colours (they multiply the sprite, so they need to be
@@ -51,12 +46,12 @@ var _adopt_day: float = 0.0
 var xp: float = 0.0
 var level: int = 1
 var points: int = 0
-var skills: Dictionary = {"speed": 0, "tough": 0, "vital": 0}
+var skills: Dictionary = {"speed": 0, "tough": 0, "vital": 0, "senses": 0, "charm": 0}
+var _train_btn: Button
 var _last_energy: float = -1.0
 var _c_title: Label
 var _c_xp: ProgressBar
 var _c_info: Label
-var _skill_btns: Dictionary = {}
 
 # The diamond.
 var _diamond: Node3D = null
@@ -180,7 +175,7 @@ func adopt(agent: MarkovAgent) -> void:
 	xp = 0.0
 	level = 1
 	points = 1
-	skills = {"speed": 0, "tough": 0, "vital": 0}
+	skills = {"speed": 0, "tough": 0, "vital": 0, "senses": 0, "charm": 0}
 	_last_energy = -1.0
 	_creature_box.visible = true
 	FXManager.show_dramatic_text(agent.global_position, "%s is yours now!" % agent.display_name, FelecoUiScript.GOLD)
@@ -209,18 +204,14 @@ func _build_creature_box() -> void:
 	_c_info = FelecoUiScript.label("", 12, FelecoUiScript.MIST)
 	_c_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_creature_box.add_child(_c_info)
-	var skill_row := HBoxContainer.new()
-	skill_row.add_theme_constant_override("separation", 4)
-	_creature_box.add_child(skill_row)
-	for s: Array in SKILLS:
-		var b := Button.new()
-		b.tooltip_text = s[2]
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.custom_minimum_size = Vector2(0, 32)
-		var id: String = s[0]
-		b.pressed.connect(func() -> void: _train(id))
-		skill_row.add_child(b)
-		_skill_btns[id] = b
+	# Levelling and training happen in their own menu (LevelUpMenu).
+	_train_btn = Button.new()
+	_train_btn.text = "Level Up & Train"
+	_train_btn.theme_type_variation = "PrimaryButton"
+	_train_btn.custom_minimum_size = Vector2(0, 36)
+	_train_btn.tooltip_text = "Win minigames to level up and to train Speed, Toughness, Vitality, Senses and Charm."
+	_train_btn.pressed.connect(open_menu)
+	_creature_box.add_child(_train_btn)
 	var custom := HBoxContainer.new()
 	custom.add_theme_constant_override("separation", 4)
 	_creature_box.add_child(custom)
@@ -261,7 +252,40 @@ func _build_creature_box() -> void:
 func _xp_needed() -> float:
 	return 30.0 + 25.0 * float(level)
 
-func _train(id: String) -> void:
+# --- For LevelUpMenu ---
+
+func xp_needed() -> float:
+	return _xp_needed()
+
+func alive() -> bool:
+	return _alive()
+
+func tint() -> Color:
+	return _c_data.tint if _alive() else Color.WHITE
+
+func open_menu() -> void:
+	if not _alive() or hud == null:
+		return
+	var menu := LevelUpMenu.new()
+	menu.goals = self
+	hud.add_child(menu)
+
+func refresh_now() -> void:
+	_refresh_creature()
+
+# Won the Feast: the full XP bar becomes a level and a skill point.
+func level_up() -> void:
+	if not _alive():
+		return
+	xp = 0.0
+	level += 1
+	points += 1
+	if companion.get("health") != null:
+		companion.health = minf(float(companion.health) + 25.0, 100.0)
+	FXManager.show_dramatic_text(companion.global_position, "%s reached level %d!" % [companion.display_name, level], FelecoUiScript.GOLD)
+
+# Won a trial: spend the point and raise that line.
+func train(id: String) -> void:
 	if not _alive() or points <= 0 or int(skills[id]) >= SKILL_MAX:
 		return
 	points -= 1
@@ -271,6 +295,9 @@ func _train(id: String) -> void:
 			_c_data.speed_boost = 1.0 + 0.1 * float(skills["speed"])
 		"vital":
 			companion._lifespan *= 1.1
+		"senses":
+			if companion._vision_cone != null:
+				companion._vision_cone.vision_range *= 1.15
 	_complete("skill")
 	_refresh_creature()
 
@@ -281,8 +308,7 @@ func _tick_creature(delta: float) -> void:
 		companion = null
 		_c_title.text = "Your creature has died"
 		_c_info.text = "Tap another animal and press Make Mine to start again."
-		for b: Button in _skill_btns.values():
-			b.disabled = true
+		_train_btn.disabled = true
 		return
 	# XP: staying alive, plus every bite it eats.
 	var gain: float = delta * 1.5
@@ -290,14 +316,15 @@ func _tick_creature(delta: float) -> void:
 	if _last_energy >= 0.0 and en > _last_energy:
 		gain += (en - _last_energy) * 0.5
 	_last_energy = en
-	xp += gain
-	while xp >= _xp_needed():
-		xp -= _xp_needed()
-		level += 1
-		points += 1
-		if companion.get("health") != null:
-			companion.health = minf(float(companion.health) + 25.0, 100.0)
-		FXManager.show_dramatic_text(companion.global_position, "%s reached level %d!" % [companion.display_name, level], FelecoUiScript.GOLD)
+	# The bar fills and waits: a Feast in the Level Up menu cashes it in.
+	var was_full: bool = xp >= _xp_needed()
+	xp = minf(xp + gain, _xp_needed())
+	if not was_full and xp >= _xp_needed():
+		FXManager.show_dramatic_text(companion.global_position, "%s is ready to level up!" % companion.display_name, FelecoUiScript.GOLD)
+	# Charm: ready to raise young sooner.
+	var charm: int = int(skills["charm"])
+	if charm > 0 and companion.get("_repro_cooldown") != null:
+		companion.set("_repro_cooldown", float(companion.get("_repro_cooldown")) - 0.3 * charm * delta)
 	var tough: int = int(skills["tough"])
 	if tough > 0 and companion.get("health") != null:
 		companion.health = minf(float(companion.health) + 0.6 * float(tough) * delta, 100.0)
@@ -309,13 +336,11 @@ func _refresh_creature() -> void:
 	_c_xp.max_value = _xp_needed()
 	_c_xp.value = xp
 	var hp: float = float(companion.get("health")) if companion.get("health") != null else 0.0
+	var ready: bool = xp >= _xp_needed()
 	_c_info.text = "%s · Health %d · %s" % [SpeciesDB.label(companion.species_id).trim_suffix("s"), int(hp),
-		("%d skill point%s to spend" % [points, "" if points == 1 else "s"]) if points > 0 else "Earn XP to level up"]
-	for s: Array in SKILLS:
-		var b: Button = _skill_btns[s[0]]
-		var n: int = int(skills[s[0]])
-		b.text = "%s %d%s" % [s[1], n, " +" if points > 0 and n < SKILL_MAX else ""]
-		b.disabled = points <= 0 or n >= SKILL_MAX
+		"READY TO LEVEL UP!" if ready else (("%d skill point%s to spend" % [points, "" if points == 1 else "s"]) if points > 0 else "Earn XP by eating and surviving")]
+	_train_btn.disabled = false
+	_train_btn.text = "Level Up!" if ready else ("Train (%d point%s)" % [points, "" if points == 1 else "s"] if points > 0 else "Level Up & Train")
 
 # --- The diamond ---------------------------------------------------------
 
