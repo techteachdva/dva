@@ -84,7 +84,7 @@ var tutorial_done: bool = false
 # Upgrades are earned, not bought: each Rampage won (RAMPAGE_GOAL kills before
 # the gold runs out) unlocks the next one in this order.
 const UPGRADE_ORDER: Array[String] = ["rain_dance", "foresight_i", "long_days", "green_thumb", "side_eye", "time_dilation", "cloning_vat"]
-const RAMPAGE_GOAL: int = 8
+const RAMPAGE_GOAL: int = 12
 
 # Returns the id unlocked, or "" when every upgrade is already earned.
 func unlock_next_upgrade() -> String:

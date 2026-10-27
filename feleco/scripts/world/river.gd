@@ -272,6 +272,11 @@ func _rebuild_mesh() -> void:
 		prev_d = dist
 	_mesh_instance.mesh = st.commit()
 
+# Winter: the river (and any floodwater still out) freezes over.
+func set_ice(level: float) -> void:
+	if _mesh_instance != null:
+		(_mesh_instance.material_override as ShaderMaterial).set_shader_parameter("ice", level)
+
 # 0 = normal river, 1 = full flood: the water turns muddy and opaque.
 func set_flood_tint(level: float) -> void:
 	if _mesh_instance != null:

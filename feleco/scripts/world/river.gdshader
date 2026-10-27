@@ -14,6 +14,8 @@ uniform float river_length = 100.0;
 // 0..1: flood water is brown with silt and carries more foam.
 uniform float flood = 0.0;
 uniform vec3 silt : source_color = vec3(0.42, 0.38, 0.27);
+// 0 = open water, 1 = frozen over: pale, still ice with fish faint beneath.
+uniform float ice = 0.0;
 
 void fragment() {
 	float u = abs(UV.x - 0.5) * 2.0;
@@ -32,6 +34,13 @@ void fragment() {
 	float alpha = 0.86;
 	col = mix(col, silt + vec3(streak * 0.25), flood * 0.75);
 	alpha = mix(alpha, 0.95, flood);
+	if (ice > 0.0) {
+		float crack = smoothstep(0.93, 1.0, abs(sin(v * 0.9 + UV.x * 7.0) * sin(v * 0.37 - UV.x * 13.0)));
+		vec3 frost = mix(vec3(0.78, 0.88, 0.95), vec3(0.93, 0.97, 1.0), smoothstep(0.0, water_edge, u));
+		frost = mix(frost, vec3(0.55, 0.68, 0.8), crack * 0.6);
+		col = mix(col, frost, ice);
+		alpha = mix(alpha, 0.74, ice);
+	}
 	if (u > water_edge) {
 		float b = (u - water_edge) / (1.0 - water_edge);
 		col = mix(sand, moss, b);

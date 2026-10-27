@@ -129,14 +129,14 @@ func _eat_nearby(delta: float) -> bool:
 				if sim.grass != null:
 					var got: Vector2 = sim.grass.consume_food(global_position, delta * 0.5, self)
 					if got.x > 0.0:
-						_feed(got.x * grass_gain * got.y)
+						_feed(got.x * grass_gain * got.y * sim.producer_value("grass"))
 						return true
 			"moss":
 				var tree := sim.find_nearest_tree(global_position)
 				if tree != null and tree.has_method("eat_moss") and global_position.distance_squared_to(tree.global_position) < 9.0:
 					var m: float = tree.eat_moss(delta * 0.4, self)
 					if m > 0.0:
-						_feed(m * 30.0)
+						_feed(m * 30.0 * sim.producer_value("moss"))
 						return true
 			"berry", "apple":
 				var fruit: Node3D = sim.find_nearest_berry(global_position) if food == "berry" else sim.find_nearest_apple(global_position)
@@ -203,7 +203,8 @@ func _find_food() -> Variant:
 				if f != null:
 					return f.global_position
 			"corpse":
-				var c := sim.find_nearest_corpse(global_position, 14.0)
+				# Decomposers have the keenest noses: any stink in range draws them.
+				var c: Node3D = sim.smell_corpse(global_position) if SpeciesDB.group_of(species) == "decomposer" else sim.find_nearest_corpse(global_position, 14.0)
 				if c != null:
 					return c.global_position
 			"rot":

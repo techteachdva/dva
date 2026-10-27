@@ -152,7 +152,7 @@ func _check_goals() -> void:
 	var gc: Node = get_node_or_null("/root/GameConfig")
 	if gc != null and not (gc.bets as Array).is_empty():
 		_complete("bet")
-	if _alive() and director != null and director._sim_day - _adopt_day >= 1.0:
+	if _alive() and director != null and director.get_day() - _adopt_day >= 1.0:
 		_complete("survive")
 	if level >= 5:
 		_complete("level5")
@@ -174,7 +174,7 @@ func adopt(agent: MarkovAgent) -> void:
 		_c_data.speed_boost = 1.0
 	companion = agent
 	_c_data = agent._data
-	_adopt_day = director._sim_day if director != null else 0.0
+	_adopt_day = director.get_day() if director != null else 0.0
 	xp = 0.0
 	level = 1
 	points = 1
@@ -314,16 +314,16 @@ func _tick_diamond(delta: float) -> void:
 		return
 	if _diamond_day < 0.0:
 		# The first diamond turns up somewhere in the first few days.
-		_diamond_day = director._sim_day + randf_range(0.8, 3.0)
-	if _diamond == null and director._sim_day >= _diamond_day:
+		_diamond_day = director.get_day() + randf_range(0.8, 3.0)
+	if _diamond == null and director.get_day() >= _diamond_day:
 		_spawn_diamond()
 	if _diamond != null:
 		_diamond.rotate_y(delta * 2.0)
-		if director._sim_day >= _diamond_gone_day:
+		if director.get_day() >= _diamond_gone_day:
 			# Missed it: it sinks away, and another turns up later.
 			_diamond.queue_free()
 			_diamond = null
-			_diamond_day = director._sim_day + randf_range(1.0, 2.0)
+			_diamond_day = director.get_day() + randf_range(1.0, 2.0)
 
 func _spawn_diamond() -> void:
 	var ang: float = randf() * TAU
@@ -358,7 +358,7 @@ func _spawn_diamond() -> void:
 	gem.add_child(under)
 	director.add_child(_diamond)
 	_diamond.global_position = Vector3(x, director.ground_height(x, z) + 1.5, z)
-	_diamond_gone_day = director._sim_day + 0.75
+	_diamond_gone_day = director.get_day() + 0.75
 	FXManager.show_dramatic_text(_diamond.global_position, "Something glints in the grass...", Color(0.7, 0.95, 1.0))
 
 # Called by the HUD on a tap, before it picks a creature. True if it took it.

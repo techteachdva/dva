@@ -4,6 +4,8 @@ extends Node3D
 signal population_changed(faction: String, count: int)
 signal time_updated(days_remaining: float)
 signal simulation_ended(winner: String)
+# A rampage just ended: whose, how many it devoured, and whether it won.
+signal rampage_result(who: String, kills: int, won: bool)
 signal agent_born(species: String, pos: Vector3, variant: String)
 signal agent_died(species: String, pos: Vector3)
 signal combat_event(attacker_species: String, target_species: String, pos: Vector3, killed: bool)
@@ -791,7 +793,8 @@ func tick(dt: float) -> void:
 	if _presence_tick == 0 or _crowd_grid.is_empty():
 		_update_presence_grid()
 	_tick_agents(dt)
-	_step_river_swell(bio)
+	if not river_frozen:
+		_step_river_swell(bio)
 	if _rain_timer > 0.0:
 		_rain_timer -= bio
 		if _rain_timer <= 0.0:
@@ -810,13 +813,14 @@ func tick(dt: float) -> void:
 			_apply_season_mood(_current_season, false)
 			FXManager.show_dramatic_text(Vector3.ZERO, "The drought breaks.", Color(0.55, 0.75, 0.85))
 			chronicle.emit("The heat lifts. Green creeps back into the meadow.")
-	if _flood_timer > 0.0:
+	if _flood_timer > 0.0 and not river_frozen:
 		_flood_timer -= bio
 		if _flood_timer <= 0.0:
 			_flood_timer = 0.0
 			_flood_target = 1.0
 			FXManager.show_dramatic_text(Vector3.ZERO, "The river falls back to its bed.", Color(0.55, 0.75, 0.85))
-	_step_flood(dt)
+	if not river_frozen:
+		_step_flood(dt)
 	_overpop_timer += bio
 	if _overpop_timer >= 2.0:
 		_overpop_timer = 0.0
@@ -825,7 +829,6 @@ func tick(dt: float) -> void:
 		_check_cloning_vat()
 		_return_fish()
 		_tribal_politics(2.0)
-		_natural_flood_roll(2.0 / Clock.LIFE_PACE * DAYS_PER_SECOND)
 		_natural_rain_roll(2.0 / Clock.LIFE_PACE * DAYS_PER_SECOND)
 		_natural_drought_roll(2.0 / Clock.LIFE_PACE * DAYS_PER_SECOND)
 		_step_scenario()
@@ -1201,8 +1204,11 @@ func spawn_corpse(pos: Vector3, energy: float, species: String = "", golden: flo
 	# Snap corpses to the valley floor so aerial deaths don't float
 	corpse.global_position = Vector3(pos.x, ground_height(pos.x, pos.z), pos.z)
 
+# Mushrooms are a treat to find, not a carpet: the valley holds only so many.
+const MAX_MUSHROOMS: int = 30
+
 func spawn_mushroom_spore(parent: Node, pos: Vector3) -> void:
-	if _spore_scene == null:
+	if _spore_scene == null or _active_spores.size() >= MAX_MUSHROOMS:
 		return
 	# Mushrooms grow on the meadow only, never out on the mountainsides.
 	var flat := Vector2(pos.x, pos.z)
@@ -2230,6 +2236,9 @@ func find_nearest_mushroom(pos: Vector3, radius: float = 6.0) -> Node3D:
 	return best
 
 func find_nearest_fish(pos: Vector3, radius: float = 8.0) -> Node3D:
+	# Under winter ice the fish are out of reach of every hunter.
+	if river_frozen:
+		return null
 	var best: Node3D = null
 	var best_dist_sq := radius * radius
 	for node in _active_fish:
@@ -2772,6 +2781,7 @@ func _update_season(dt: float) -> void:
 		_current_season = SEASONS[_season_index]
 		touches_left = 1
 		_apply_season_mood(_current_season, false)
+		_river_season_turn(_current_season)
 		season_changed.emit(_current_season)
 	match _current_season:
 		"Spring":
@@ -3002,6 +3012,7 @@ func _apply_season_mood(season: String, instant: bool) -> void:
 	if grass != null:
 		grass.set_tint(mood["grass"])
 	get_tree().call_group("tree", "apply_season", season)
+	get_tree().call_group("bush", "apply_season", season)
 	# The sun and moon read these every frame (see _step_daylight).
 	var dur: float = 0.01 if instant else 3.0
 	var tw := create_tween().set_parallel(true)
@@ -3258,13 +3269,13 @@ func _strand_fish() -> void:
 
 # Thick mycelium pushes up mushrooms (most in autumn and rain).
 func _mycelium_fruiting() -> void:
-	if mycelium == null or _active_spores.size() >= 150:
+	if mycelium == null or _active_spores.size() >= MAX_MUSHROOMS:
 		return
 	var ff: float = fungal_factor()
-	for i: int in 8:
+	for i: int in 4:
 		var idx: int = randi() % mycelium._grid.size()
 		var d: float = mycelium._grid[idx]
-		if d > 0.35 and randf() < d * 0.3 * ff:
+		if d > 0.5 and randf() < d * 0.08 * ff:
 			var gx: int = idx % mycelium.grid_width
 			var gz: int = int(idx / float(mycelium.grid_width))
 			spawn_mushroom_spore(null, mycelium.grid_to_world(gx, gz))
@@ -3272,26 +3283,61 @@ func _mycelium_fruiting() -> void:
 # Fish that die on dry land after a flood falls back: the Flood Toll bet.
 var flood_fish_toll: int = 0
 var bet_tracker: BetTracker = null
-var _natural_flood_wait: float = 0.5
 
 func note_flood_fish_death() -> void:
 	flood_fish_toll += 1
 
-# Spring melt (and now and then an autumn storm) floods the meadow on its
-# own, so the Flood Toll is live even if the player never calls one.
-func _natural_flood_roll(days: float) -> void:
-	_natural_flood_wait -= days
-	if _natural_flood_wait > 0.0 or _flood_timer > 0.0 or flood_receding():
+# Floods are predictable: they come from rain, never out of the blue.
+# Rain swells the river, and how much rain it takes to break the banks
+# depends on the season. Spring rain lands on snowmelt, so a spring shower
+# soon floods; autumn takes a long wet spell; summer ground drinks it up.
+# In winter the river freezes over, fish and all, until the spring thaw.
+const SWELL_DAYS: Dictionary = {"Spring": 0.25, "Summer": 1.2, "Autumn": 0.6}
+# A flood still out when winter comes may freeze where it stands.
+const FLOOD_FREEZE_CHANCE: float = 0.6
+var river_frozen: bool = false
+
+func swell_to_flood() -> float:
+	return Clock.BIO_PER_DAY * float(SWELL_DAYS.get(_current_season, 0.6))
+
+func _river_season_turn(season: String) -> void:
+	if valley == null or valley.river == null:
 		return
-	# Tuned per season, not per roll: Spring brings about 1.2 floods, Autumn 0.45.
-	var per_season: float = {"Spring": 0.6, "Autumn": 0.2}.get(_current_season, 0.0)
-	var chance: float = per_season * days / maxf(SEASON_LENGTH, 0.1)
-	if randf() < chance:
-		_natural_flood_wait = SEASON_LENGTH * 0.4
-		trigger_flood()
-		chronicle.emit("Meltwater swells the river over its banks.")
+	var river: River = valley.river
+	if season == "Winter" and not river_frozen:
+		var flooded: bool = flood_level() > 0.15 or _flood_timer > 0.0
+		if flooded and randf() < FLOOD_FREEZE_CHANCE:
+			# The floodwater freezes out over the meadow, fish and all.
+			_flood_target = _flood_now
+			_flood_timer = 0.0
+			chronicle.emit("The cold snaps shut on the flood: the meadow is a sheet of ice.")
+			FXManager.show_dramatic_text(Vector3.ZERO, "The flood freezes over!", Color(0.75, 0.88, 1.0))
+		else:
+			# Otherwise the water drains back to its bed before it sets.
+			_flood_timer = 0.0
+			_flood_target = 1.0
+			_flood_now = 1.0
+			_set_flood_scale(1.0)
+			river.set_flood_tint(0.0)
+			chronicle.emit("Winter: the river freezes over. The fish wait out the cold beneath the ice.")
+			FXManager.show_dramatic_text(Vector3.ZERO, "The river freezes over.", Color(0.75, 0.88, 1.0))
+		river_frozen = true
+		_river_swell = 0.0
+		river.set_ice(1.0)
+	elif season == "Spring" and river_frozen:
+		river_frozen = false
+		river.set_ice(0.0)
+		# The thaw lets any frozen flood drain, and the melt fills the river
+		# halfway to its banks: a spring rain now will surely flood it.
+		_flood_target = 1.0
+		_river_swell = swell_to_flood() * 0.5
+		chronicle.emit("The ice breaks up. Meltwater runs high: one good spring rain and the river floods.")
+		FXManager.show_dramatic_text(Vector3.ZERO, "The thaw! The river runs high.", Color(0.55, 0.75, 0.85))
 
 func trigger_flood() -> void:
+	if river_frozen:
+		FXManager.show_dramatic_text(Vector3.ZERO, "The river is frozen solid.", Color(0.75, 0.88, 1.0))
+		return
 	_flood_timer = Clock.BIO_PER_DAY * 0.5
 	_flood_target = FLOOD_PEAK
 	FXManager.show_dramatic_text(Vector3.ZERO, "The river floods the meadow.", Color(0.35, 0.6, 0.85))
@@ -3302,18 +3348,17 @@ func trigger_flood() -> void:
 # Showers come on their own in spring and autumn.
 # ------------------------------------------------------------------
 var _river_swell: float = 0.0
-const SWELL_TO_FLOOD: float = Clock.BIO_PER_DAY * 0.6
 
 func _step_river_swell(bio: float) -> void:
 	if _rain_timer > 0.0:
 		_river_swell += bio
-		if _river_swell >= SWELL_TO_FLOOD and _flood_timer <= 0.0 and not flood_receding():
+		if _river_swell >= swell_to_flood() and _flood_timer <= 0.0 and not flood_receding():
 			_river_swell = 0.0
 			trigger_flood()
 			chronicle.emit("Day after day of rain: the river breaks its banks.")
 		elif _flood_timer <= 0.0:
 			# Rising, not yet flooding: the water creeps up the banks.
-			_flood_target = maxf(_flood_target, 1.0 + 0.35 * (_river_swell / SWELL_TO_FLOOD))
+			_flood_target = maxf(_flood_target, 1.0 + 0.35 * (_river_swell / swell_to_flood()))
 	else:
 		_river_swell = maxf(0.0, _river_swell - bio * 0.5)
 		if _flood_timer <= 0.0 and _flood_target > 1.0 and _river_swell <= 0.0:
@@ -3325,7 +3370,10 @@ func _natural_rain_roll(days: float) -> void:
 	var per_season: float = {"Spring": 1.3, "Summer": 0.3, "Autumn": 1.0}.get(_current_season, 0.0)
 	if randf() < per_season * days / maxf(SEASON_LENGTH, 0.1):
 		trigger_rain()
-		chronicle.emit("Clouds roll in over the passes. It begins to rain.")
+		if _current_season == "Spring":
+			chronicle.emit("Spring rain on the snowmelt. The river is rising: expect a flood.")
+		else:
+			chronicle.emit("Clouds roll in over the passes. It begins to rain.")
 
 # ------------------------------------------------------------------
 # Nesting trees: falcons raise chicks only where there are grown trees to
@@ -3530,3 +3578,51 @@ func _in_valley(pos: Vector3) -> Vector3:
 		flat = flat.normalized() * limit
 		return Vector3(flat.x, ground_height(flat.x, flat.y), flat.y)
 	return pos
+
+# ------------------------------------------------------------------
+# Producers: each one ripens in its own season and is worth most then.
+# Grass is everywhere and peaks in spring; berry bushes fruit in summer;
+# apple trees drop their (rich, uncommon) apples in autumn; moss, the
+# rarest, thickens on the bark through the damp winter.
+# ------------------------------------------------------------------
+const PRODUCER_VALUE: Dictionary = {
+	"grass": {"Spring": 1.3, "Summer": 1.0, "Autumn": 0.8, "Winter": 0.5},
+	"moss": {"Spring": 0.9, "Summer": 0.6, "Autumn": 1.1, "Winter": 1.5},
+}
+
+func producer_value(kind: String) -> float:
+	var row: Dictionary = PRODUCER_VALUE.get(kind, {})
+	return float(row.get(_current_season, 1.0))
+
+# A grazer's side dish: a berry at its feet or moss on a trunk beside it.
+# Returns the energy it got (0 if nothing was in reach).
+func browse(eater: Node3D, delta: float) -> float:
+	var pos: Vector3 = eater.global_position
+	var berry := find_nearest_berry(pos, 2.0)
+	if berry != null and berry.has_method("eat") and pos.distance_squared_to(berry.global_position) < 2.0:
+		return berry.eat(eater)
+	var tree := find_nearest_tree(pos, 3.0)
+	if tree != null and tree.has_method("eat_moss"):
+		var m: float = tree.eat_moss(delta * 0.35, eater)
+		if m > 0.0:
+			return m * 30.0 * producer_value("moss")
+	return 0.0
+
+# A decomposer follows its nose: the carcass whose stink reaches it most
+# strongly, from up to Corpse.STINK_RANGE_MAX away. Null if none reaches.
+func smell_corpse(pos: Vector3) -> Node3D:
+	var best: Node3D = null
+	var best_pull: float = 0.0
+	for c in $Corpses.get_children():
+		if not c is Corpse or c.is_queued_for_deletion():
+			continue
+		var corpse := c as Corpse
+		var d: float = pos.distance_to(corpse.global_position)
+		var reach: float = corpse.stink_range()
+		if d > reach:
+			continue
+		var pull: float = corpse.stink() * (1.0 - d / reach)
+		if pull > best_pull:
+			best_pull = pull
+			best = corpse
+	return best

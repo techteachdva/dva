@@ -62,6 +62,12 @@ var _proxies: Dictionary = {}
 var _materials: Dictionary = {}
 var _species_buffer: Dictionary = {}
 var _shadows: MultiMeshInstance3D
+# Sleepers breathe out a faint "z" now and then: [x, top of head, z, seed].
+var _zzz: MultiMeshInstance3D
+var _sleepers: Array = []
+const ZZZ_FLOATS: int = 16
+# Seconds for one z to rise and fade.
+const ZZZ_CYCLE: float = 2.8
 var _champion: String = ""
 # Agent nodes the player has a bet on: drawn with a bright outline.
 var marked: Dictionary = {}
@@ -72,6 +78,7 @@ func _ready() -> void:
 	for species: String in SPECIES_CONFIG.keys():
 		_setup_proxy(species)
 	_setup_shadows()
+	_setup_zzz()
 
 func _champion_species() -> String:
 	var gc: Node = get_node_or_null("/root/GameConfig")
@@ -139,6 +146,50 @@ func _mushroom_scale(data: AgentData) -> float:
 		wither = lerpf(1.0, 0.6, clampf((data.age / data.lifespan - 0.85) / 0.15, 0.0, 1.0))
 	return lerpf(0.3, size, grow * grow * (3.0 - 2.0 * grow)) * wither
 
+func _setup_zzz() -> void:
+	_zzz = MultiMeshInstance3D.new()
+	_zzz.name = "SleepZzz"
+	_zzz.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	var q := QuadMesh.new()
+	q.size = Vector2(1.0, 1.0)
+	mm.mesh = q
+	mm.instance_count = 0
+	_zzz.multimesh = mm
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://scripts/visuals/zzz.gdshader")
+	_zzz.material_override = mat
+	_zzz.custom_aabb = AABB(Vector3(-120, -10, -120), Vector3(240, 60, 240))
+	add_child(_zzz)
+
+# One z per sleeper, rising from its head and fading, each on its own beat.
+func _draw_zzz(now: float) -> void:
+	var mm: MultiMesh = _zzz.multimesh
+	var cap: int = _fit_capacity(mm, _sleepers.size())
+	if cap == 0:
+		return
+	var buf := PackedFloat32Array()
+	buf.resize(cap * ZZZ_FLOATS)
+	var o: int = 0
+	for e: Array in _sleepers:
+		var t: float = fposmod(now / ZZZ_CYCLE + float(e[3]), 1.0)
+		var size: float = lerpf(0.22, 0.4, t)
+		buf[o] = size
+		buf[o + 3] = float(e[0]) + t * 0.5
+		buf[o + 5] = size
+		buf[o + 7] = float(e[1]) + 0.2 + t * 0.9
+		buf[o + 10] = size
+		buf[o + 11] = float(e[2])
+		buf[o + 12] = 1.0
+		buf[o + 13] = 1.0
+		buf[o + 14] = 1.0
+		# Subtle: never more than half opaque, easing in and out.
+		buf[o + 15] = 0.5 * sin(t * PI)
+		o += ZZZ_FLOATS
+	mm.buffer = buf
+
 func _setup_shadows() -> void:
 	_shadows = MultiMeshInstance3D.new()
 	_shadows.name = "CreatureShadows"
@@ -195,6 +246,7 @@ func sync(registry: Array[AgentData]) -> void:
 	for species: String in _species_buffer.keys():
 		_species_buffer[species].clear()
 	var shadow_count: int = 0
+	_sleepers.clear()
 	for data: AgentData in registry:
 		if data.node == null or not is_instance_valid(data.node):
 			continue
@@ -334,6 +386,8 @@ func sync(registry: Array[AgentData]) -> void:
 			# Someone sleepy still walking to bed walks; they lie down on arrival.
 			if action == ACTIONS["Sleep"] and speed > 0.4:
 				action = 0
+			elif data.state == "Sleep" and action == ACTIONS["Sleep"]:
+				_sleepers.append([x, y + size.y * 0.5 * s, z, fposmod(data.gait_seed, 1.0)])
 			floats[o + 15] = float(action) / 15.0
 			floats[o + 16] = data.face
 			floats[o + 17] = fposmod(now * gait + data.gait_seed, PHASE_WRAP)
@@ -388,6 +442,7 @@ func sync(registry: Array[AgentData]) -> void:
 		mm.buffer = floats
 	if shadow_cap > 0:
 		smm.buffer = shadow_floats
+	_draw_zzz(now)
 
 # Grows the buffer in chunks (never shrinks, so births and deaths don't
 # reallocate) and shows only the live instances. Returns the capacity.

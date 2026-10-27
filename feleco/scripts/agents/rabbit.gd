@@ -132,16 +132,14 @@ func _on_tick_graze(delta: float) -> void:
 	if sim.grass != null:
 		var consumed := sim.grass.consume_density(global_position, delta * 0.5, self)
 		if consumed > 0.0:
-			energy += consumed * 8.0
+			energy += consumed * 8.0 * sim.producer_value("grass")
 			energy = clampf(energy, 0.0, 100.0)
 			return
-	# Moss low on the tree trunks
-	var mossy := sim.find_nearest_tree(global_position, 3.0)
-	if mossy != null and mossy.has_method("eat_moss"):
-		var m: float = mossy.eat_moss(delta * 0.3, self)
-		if m > 0.0:
-			energy = clampf(energy + m * 25.0, 0.0, 100.0)
-			return
+	# Berries underfoot and moss low on the tree trunks.
+	var browsed: float = sim.browse(self, delta)
+	if browsed > 0.0:
+		energy = clampf(energy + browsed * 0.8, 0.0, 100.0)
+		return
 	# Seek apples
 	var nearest_apple := sim.find_nearest_apple(global_position, 6.0)
 	if nearest_apple != null and global_position.distance_squared_to(nearest_apple.global_position) < 2.0:

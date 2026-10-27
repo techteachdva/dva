@@ -117,7 +117,7 @@ func _ready() -> void:
 	_rampage_btn.text = "Rampage!"
 	_rampage_btn.theme_type_variation = "PrimaryButton"
 	_rampage_btn.custom_minimum_size = Vector2(110, 40)
-	_rampage_btn.tooltip_text = "Take this golden creature in hand and spend its gold: WASD or arrows to steer (or hold a finger where it should go). It devours anything not of its own kind until the gold runs out. Gold burns faster as it goes: devour 8 in about ten seconds to win a Greenhouse upgrade."
+	_rampage_btn.tooltip_text = "Take this golden creature in hand and spend its gold: WASD or arrows to steer (or hold a finger where it should go). It devours anything not of its own kind until the gold runs out. Gold burns faster as it goes: devour 12 before it runs out to win a Greenhouse upgrade."
 	_rampage_btn.visible = false
 	_rampage_btn.pressed.connect(_on_rampage)
 	head.add_child(_rampage_btn)
@@ -267,7 +267,51 @@ var _rampaging: bool = false
 func _camera() -> Camera3D:
 	return get_tree().current_scene.get_node_or_null("Camera3D") as Camera3D if get_tree().current_scene != null else null
 
+# Before the gold starts burning, a card says plainly what to do. The valley
+# holds still until the player presses Go.
 func _on_rampage() -> void:
+	if agent == null or not is_instance_valid(agent) or agent.golden <= 0.05:
+		return
+	var goal: int = int(get_node("/root/GameConfig").RAMPAGE_GOAL)
+	var was_paused: bool = get_tree().paused
+	get_tree().paused = true
+	var layer := CanvasLayer.new()
+	layer.layer = 50
+	layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().root.add_child(layer)
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.5)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(shade)
+	var card := PanelContainer.new()
+	card.set_anchors_preset(Control.PRESET_CENTER)
+	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	card.grow_vertical = Control.GROW_DIRECTION_BOTH
+	card.custom_minimum_size = Vector2(500, 0)
+	card.add_theme_stylebox_override("panel", get_theme_stylebox("panel"))
+	shade.add_child(card)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	card.add_child(col)
+	col.add_child(FelecoUiScript.heading("RAMPAGE!", 32, FelecoUiScript.GOLD))
+	for line: String in [
+		"Goal: devour %d creatures before your gold runs out." % goal,
+		"Steer with WASD or the arrow keys, or hold your finger (or mouse) where you want to go.",
+		"Run right into other animals to eat them. Your own kind is safe.",
+		"The gold bar drains faster and faster. Win to unlock a Greenhouse upgrade!",
+	]:
+		var l := FelecoUiScript.label(line, 18, FelecoUiScript.CREAM)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		col.add_child(l)
+	var go := Button.new()
+	go.text = "Go!"
+	go.theme_type_variation = "PrimaryButton"
+	go.custom_minimum_size = Vector2(0, 50)
+	col.add_child(go)
+	go.grab_focus()
+	await go.pressed
+	layer.queue_free()
+	get_tree().paused = was_paused
 	if agent == null or not is_instance_valid(agent) or not agent.start_rampage():
 		return
 	_rampaging = true

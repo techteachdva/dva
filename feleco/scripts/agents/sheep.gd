@@ -271,6 +271,15 @@ func _on_tick_graze(delta: float) -> void:
 		_diet_boost = 10.0
 		return
 
+	# "Mares eat oats and does eat oats and little lambs eat ivy,
+	# A sheep would eat ivy too, wouldn't you?" Sheep eat every producer:
+	# berries and the moss on the trunks as well as grass and apples.
+	var browsed: float = sim.browse(self, delta)
+	if browsed > 0.0:
+		energy = clampf(energy + browsed, 0.0, 100.0)
+		_diet_boost = maxf(_diet_boost, 4.0)
+		return
+
 	if sim.grass != null:
 		var grass_density := sim.grass.edible_at_world(global_position)
 		if grass_density < 0.05:
@@ -278,7 +287,7 @@ func _on_tick_graze(delta: float) -> void:
 			return
 		var consumed := sim.grass.consume_density(global_position, delta * graze_rate, self)
 		if consumed > 0.0:
-			energy += consumed * 12.0
+			energy += consumed * 12.0 * sim.producer_value("grass")
 			energy = clampf(energy, 0.0, 100.0)
 			health += 1.0
 			health = clampf(health, 0.0, 100.0)

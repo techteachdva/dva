@@ -60,7 +60,10 @@ func _get_transition_modifiers() -> Dictionary:
 		else:
 			mods["Flee"] = clampf(mods.get("Flee", 0.0) + 0.5, 0.0, 1.0)
 	else:
-		if energy < 25.0:
+		# Hungry boars run down small game: rabbits in the open.
+		if energy < 45.0 and not vision.get_visible_by_tag("rabbit").is_empty():
+			mods["Charge"] = 0.6
+		elif energy < 25.0:
 			mods["Forage"] = clampf(mods.get("Forage", 0.0) + 0.5, 0.0, 1.0)
 		else:
 			mods["Group"] = clampf(mods.get("Group", 0.0) + 0.3, 0.0, 1.0)
@@ -184,12 +187,27 @@ func _on_tick_forage(delta: float) -> void:
 		energy = clampf(energy, 0.0, 100.0)
 		velocity = Vector3.ZERO
 		return
-	# Boars leave the fish alone; humans, wolves and falcons are the fishers.
+	# Berries, and the moss on the trunks.
+	var browsed: float = sim.browse(self, delta)
+	if browsed > 0.0:
+		energy = clampf(energy + browsed, 0.0, 100.0)
+		velocity = Vector3.ZERO
+		return
+	# A hungry boar wades into the shallows after fish.
+	if energy < 50.0:
+		if sim.try_eat_fish(global_position, 2.2):
+			energy = clampf(energy + 15.0, 0.0, 100.0)
+			velocity = Vector3.ZERO
+			return
+		var fish := sim.find_nearest_fish(global_position, 8.0)
+		if fish != null:
+			velocity = (fish.global_position - global_position).normalized() * walk_speed
+			return
 	# Eat grass
 	if sim.grass != null:
 		var consumed := sim.grass.consume_density(global_position, delta * 0.6, self)
 		if consumed > 0.0:
-			energy += consumed * 12.0
+			energy += consumed * 12.0 * sim.producer_value("grass")
 			energy = clampf(energy, 0.0, 100.0)
 			velocity = Vector3.ZERO
 			return
@@ -232,6 +250,8 @@ func _on_enter_charge() -> void:
 		_charge_target = wolves[0]
 	elif humans.size() > 0 and is_instance_valid(humans[0]):
 		_charge_target = humans[0]
+	else:
+		_charge_target = vision.closest_visible("rabbit")
 
 func _on_tick_charge(delta: float) -> void:
 	if _charge_target != null and is_instance_valid(_charge_target):

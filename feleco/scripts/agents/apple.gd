@@ -96,7 +96,8 @@ func eat(eater: Variant = null) -> float:
 			counter.berries_eaten += 1
 		else:
 			counter.apples_eaten += 1
-	var value: float = 20.0 if kind == "berry" else 35.0
+	# Apples are uncommon but the richest meal a producer gives.
+	var value: float = 18.0 if kind == "berry" else 45.0
 	if golden:
 		if eater is Node and eater.has_method("make_golden"):
 			eater.make_golden(1.0, kind)

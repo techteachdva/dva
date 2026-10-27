@@ -153,7 +153,8 @@ func _on_tick_drift(delta: float) -> void:
 	var seek := Vector3.ZERO
 	if sim != null and _drift_seek_timer <= 0.0:
 		_drift_seek_timer = 1.0 + randf() * 0.5
-		var nearest_corpse := sim.find_nearest_corpse(global_position, 20.0)
+		# Spores ride the stink of carrion down to where the rot will be.
+		var nearest_corpse := sim.smell_corpse(global_position)
 		if nearest_corpse != null:
 			var flat_dir := (nearest_corpse.global_position - global_position)
 			flat_dir.y = 0.0

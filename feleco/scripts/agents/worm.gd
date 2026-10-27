@@ -131,7 +131,8 @@ func _on_tick_crawl(_delta: float) -> void:
 	var sim: SimulationDirector = director
 	var seek := Vector3.ZERO
 	if sim != null:
-		var nearest_corpse := sim.find_nearest_corpse(global_position, 12.0)
+		# Worms smell carrion from far off and crawl to it.
+		var nearest_corpse := sim.smell_corpse(global_position)
 		if nearest_corpse != null:
 			var best_dist := global_position.distance_squared_to(nearest_corpse.global_position)
 			if best_dist < 100.0:

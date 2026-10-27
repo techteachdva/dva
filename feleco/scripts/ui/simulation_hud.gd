@@ -44,6 +44,7 @@ func _ready() -> void:
 			_director.population_changed.connect(_on_pop_changed)
 			_director.time_updated.connect(_on_time_updated)
 			_director.simulation_ended.connect(_on_sim_ended)
+			_director.rampage_result.connect(_on_rampage_result)
 
 	var gc: Node = get_node_or_null("/root/GameConfig")
 	if gc != null:
@@ -512,6 +513,19 @@ func _consume_powerup(powerup_id: String) -> bool:
 	gc.save_meta()
 	_update_powerup_buttons()
 	return true
+
+# Rampages go in the History in gold (won) or red (lost), and the History
+# button glows that colour for a few seconds so the player knows to look.
+func _on_rampage_result(who: String, kills: int, won: bool) -> void:
+	var goal: int = int(get_node("/root/GameConfig").RAMPAGE_GOAL)
+	var col: Color = Color(1.0, 0.82, 0.3) if won else Color(0.95, 0.35, 0.3)
+	var history: EventHistory = get_node_or_null("EventHistory")
+	if history != null:
+		history.add_highlight("%s %s's rampage: %d of %d devoured" % ["★ WON" if won else "✖ LOST", who, kills, goal], col)
+	var btn: Button = $BottomBar/History
+	var tw := create_tween().set_loops(4)
+	tw.tween_property(btn, "modulate", col * 1.4, 0.35)
+	tw.tween_property(btn, "modulate", Color.WHITE, 0.35)
 
 func _open_history() -> void:
 	var history: EventHistory = get_node_or_null("EventHistory")

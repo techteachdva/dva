@@ -32,6 +32,11 @@ func add_entry(text: String) -> void:
 	if _panel.visible:
 		_refresh_display()
 
+# A line that stands out: gold for a rampage won, red for one lost.
+func add_highlight(text: String, color: Color) -> void:
+	var bg: Color = color.darkened(0.7)
+	add_entry("[bgcolor=#%s][color=#%s][b]%s[/b][/color][/bgcolor]" % [bg.to_html(false), color.to_html(false), text])
+
 func set_entries_from_log(entries: Array[String]) -> void:
 	_entries = entries.duplicate()
 	_refresh_display()

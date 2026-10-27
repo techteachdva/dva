@@ -22,6 +22,12 @@ const LEAVE_CHANCE: float = 0.3
 # flood is falling, so fish out on the floodplain get left behind.
 var _lat_abs: float = 0.0
 var stranded: bool = false
+# Under winter ice the fish are drawn pale and still.
+const ICE_TINT := Color(0.7, 0.85, 1.0)
+
+func _frozen() -> bool:
+	var sim: SimulationDirector = director
+	return sim != null and sim.river_frozen
 
 # Called by the director when falling flood water leaves this fish on land.
 func strand() -> void:
@@ -45,13 +51,18 @@ func _register_states() -> void:
 # Flapping on dry land: no swimming, slowly suffocating, easy pickings.
 func _on_tick_stranded(delta: float) -> void:
 	velocity = Vector3.ZERO
+	if _frozen():
+		return
 	health -= 2.5 * delta
 
 func _on_enter_swim() -> void:
 	pass
 
 func _on_tick_swim(delta: float) -> void:
+	if _frozen():
+		return
 	_eat_river_worm()
+	_eat_drifting_food()
 	if randf() < delta * 0.15:
 		_lateral = randf_range(-0.8, 0.8)
 
@@ -68,6 +79,15 @@ func _swim_tick(delta: float) -> void:
 	if sim == null or sim.valley == null or sim.valley.river == null:
 		return
 	var river: River = sim.valley.river
+	if _data != null:
+		if _frozen():
+			_data.tint = ICE_TINT
+		elif _data.tint == ICE_TINT:
+			_data.tint = Color.WHITE
+	if _frozen():
+		# Frozen in under the ice: they hang still and wait for the thaw.
+		velocity = Vector3.ZERO
+		return
 	if stranded:
 		global_position.y = sim.ground_height(global_position.x, global_position.z)
 		return
@@ -105,6 +125,24 @@ func _swim_tick(delta: float) -> void:
 	global_position.y = along.y + 0.05
 	velocity = tangent * _dir * swim_speed
 
+# Fish don't graze grass or moss, but fruit that falls or rolls into the
+# water is fair game, and a flood washes them over the fungal mat, where
+# they nibble the mycelium out of the drowned soil.
+func _eat_drifting_food() -> void:
+	var sim: SimulationDirector = director
+	if sim == null or sim.valley == null or sim.valley.river == null:
+		return
+	var river: River = sim.valley.river
+	for fruit: Node3D in [sim.find_nearest_apple(global_position, 2.6), sim.find_nearest_berry(global_position, 2.6)]:
+		if fruit != null and fruit.has_method("eat") and river.covers_world(fruit.global_position.x, fruit.global_position.z):
+			energy = clampf(energy + fruit.eat(self) * 0.6, 0.0, 100.0)
+			health = clampf(health + 3.0, 0.0, 40.0)
+			return
+	if sim.flood_level() > 0.1 and sim.mycelium != null:
+		var m: float = sim.mycelium.consume_density(global_position, 0.04)
+		if m > 0.0:
+			energy = clampf(energy + m * 60.0, 0.0, 100.0)
+
 func _eat_river_worm() -> void:
 	var sim: SimulationDirector = director
 	if sim == null or sim.valley == null or sim.valley.river == null:
@@ -133,6 +171,10 @@ func _metabolise(delta: float) -> void:
 	var wet := false
 	if sim != null and sim.valley != null and sim.valley.river != null:
 		wet = sim.valley.river.covers_world(global_position.x, global_position.z)
+	if _frozen():
+		# Cold and still under the ice: they barely burn anything.
+		energy = maxf(energy - metabolism_rate * 0.15 * delta, 5.0)
+		return
 	if wet:
 		energy += 1.4 * delta
 	energy -= metabolism_rate * delta
@@ -141,7 +183,7 @@ func _metabolise(delta: float) -> void:
 		health -= 2.0 * delta
 
 func _try_reproduce(delta: float) -> void:
-	if stranded:
+	if stranded or _frozen():
 		return
 	_repro_cooldown -= delta
 	if _repro_cooldown > 0.0 or energy < repro_threshold:

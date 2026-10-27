@@ -68,6 +68,11 @@ var _fruit: Array = []
 var _fruit_mm: MultiMeshInstance3D
 const RIPEN_TICKS: float = 3.0  # spawn intervals from bud to drop
 const MAX_FRUIT: int = 6
+# Each producer has its season. Buds set through the growing months, but
+# fruit only lets go once ripe: berries in summer, apples in autumn. In the
+# season after, the last stragglers still drop; then the branches are bare.
+const BUD_SEASONS: Dictionary = {"apple": ["Spring", "Summer", "Autumn"], "berry": ["Spring", "Summer"]}
+const RIPE_SEASONS: Dictionary = {"apple": ["Autumn", "Winter"], "berry": ["Summer", "Autumn"]}
 var _size: float = 1.0
 
 # A faceted copy of a mesh (flat normals), to match the low-poly hills.
@@ -475,16 +480,21 @@ func _process(real_delta: float) -> void:
 # ripe ones drop, and a new bud sets at a branch tip (none while the tree
 # is bare in winter, but apples already set still ripen and fall).
 func _grow_fruit() -> void:
+	var kind: String = "berry" if bush else "apple"
+	var ripe_now: bool = (RIPE_SEASONS[kind] as Array).has(_season)
+	# A few at a time, so a tree feeds the valley through its season.
+	var drops_left: int = 2 if bush else 1
 	var kept: Array = []
 	for f: Array in _fruit:
-		f[1] += 1.0
-		if f[1] >= RIPEN_TICKS:
+		f[1] = minf(f[1] + 1.0, RIPEN_TICKS)
+		if f[1] >= RIPEN_TICKS and ripe_now and drops_left > 0:
+			drops_left -= 1
 			_spawn_apple(f[0])
 		else:
 			kept.append(f)
 	_fruit = kept
 	var cap: int = 10 if bush else MAX_FRUIT
-	if _season != "Winter" and _fruit.size() < cap and not _tips.is_empty():
+	if (BUD_SEASONS[kind] as Array).has(_season) and _fruit.size() < cap and not _tips.is_empty():
 		var tip: Vector3 = _tips[randi() % _tips.size()]
 		var hang := Vector3(randf_range(-0.3, 0.3), -0.35, randf_range(-0.3, 0.3)) * _size
 		_fruit.append([tip + hang, 0.0])
@@ -494,15 +504,15 @@ func _golden_mult() -> float:
 	var sim = get_parent().get_parent() if get_parent() != null else null
 	return float(sim.golden_mult) if sim is SimulationDirector else 1.0
 
-# Moss creeps over the bark in the damp seasons and in rain, and dies back
-# in the dry heat of summer and drought.
+# Moss is the rarest producer. It creeps over the bark in the damp and is
+# thickest (and ripest) in winter; it dies back in summer heat and drought.
 func _grow_moss() -> void:
 	if bush:
 		return
 	var sim = get_parent().get_parent() if get_parent() != null else null
 	var wet: bool = sim is SimulationDirector and (sim as SimulationDirector).is_raining()
 	var dry: bool = sim is SimulationDirector and (sim as SimulationDirector).is_drought()
-	var rate: float = {"Spring": 0.05, "Summer": 0.01, "Autumn": 0.06, "Winter": 0.02}.get(_season, 0.03)
+	var rate: float = {"Spring": 0.02, "Summer": 0.005, "Autumn": 0.04, "Winter": 0.06}.get(_season, 0.03)
 	if wet:
 		rate *= 2.5
 	if dry:

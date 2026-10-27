@@ -48,17 +48,20 @@ const NODES: Dictionary = {
 }
 const EDGES: Array = [
 	["grass", "sheep", "graze"], ["grass", "rabbit", "graze"], ["grass", "deer", "graze"], ["grass", "goat", "graze"], ["grass", "boar", "graze"],
-	["moss", "deer", "graze"], ["moss", "goat", "graze"], ["moss", "rabbit", "graze"],
-	["berry", "deer", "forage"], ["berry", "bear", "forage"], ["berry", "goat", "forage"],
+	["grass", "robin", "graze"],
+	["moss", "deer", "graze"], ["moss", "goat", "graze"], ["moss", "rabbit", "graze"], ["moss", "sheep", "graze"], ["moss", "boar", "graze"],
+	["berry", "deer", "forage"], ["berry", "bear", "forage"], ["berry", "goat", "forage"], ["berry", "sheep", "forage"], ["berry", "rabbit", "forage"],
+	["berry", "boar", "forage"], ["berry", "robin", "forage"], ["berry", "fish", "forage"],
 	["apple", "sheep", "forage"], ["apple", "bear", "forage"], ["apple", "boar", "forage"], ["apple", "robin", "forage"],
-	["mushroom", "bear", "forage"], ["mushroom", "boar", "forage"], ["mushroom", "human", "forage"],
+	["apple", "deer", "forage"], ["apple", "goat", "forage"], ["apple", "rabbit", "forage"], ["apple", "fish", "forage"],
+	["mushroom", "bear", "forage"], ["mushroom", "boar", "forage"], ["mushroom", "human", "forage"], ["mushroom", "sheep", "forage"], ["mushroom", "robin", "forage"],
 	["rabbit", "falcon", "hunt"], ["robin", "falcon", "hunt"], ["fish", "falcon", "hunt"],
 	["sheep", "wolf", "hunt"], ["rabbit", "wolf", "hunt"], ["deer", "wolf", "hunt"], ["goat", "wolf", "hunt"], ["boar", "wolf", "hunt"],
 	["deer", "lion", "hunt"], ["goat", "lion", "hunt"], ["sheep", "lion", "hunt"], ["rabbit", "lion", "hunt"], ["robin", "lion", "hunt"],
-	["fish", "bear", "hunt"], ["rabbit", "bear", "hunt"], ["fish", "human", "hunt"], ["deer", "human", "hunt"], ["boar", "human", "hunt"],
+	["fish", "bear", "hunt"], ["rabbit", "bear", "hunt"], ["rabbit", "boar", "hunt"], ["fish", "boar", "hunt"], ["fish", "robin", "hunt"], ["worm", "boar", "hunt"], ["fish", "human", "hunt"], ["deer", "human", "hunt"], ["boar", "human", "hunt"],
 	["worm", "fish", "hunt"], ["beetle", "fish", "hunt"], ["worm", "robin", "hunt"], ["beetle", "robin", "hunt"],
 	["rot", "worm", "decay"], ["rot", "beetle", "decay"], ["rot", "mycelium", "decay"], ["rot", "grass", "decay"],
-	["mycelium", "grass", "decay"], ["mycelium", "mushroom", "decay"],
+	["mycelium", "grass", "decay"], ["mycelium", "mushroom", "decay"], ["mycelium", "fish", "decay"],
 ]
 const EDGE_COLORS: Dictionary = {
 	"hunt": Color(0.88, 0.4, 0.35), "graze": Color(0.56, 0.82, 0.54),
@@ -75,7 +78,7 @@ const PRIME: Dictionary = {
 	"deer": [0, "fawns"], "bear": [0, "cubs leave the den"], "lion": [0, "cubs"], "grass": [0, "the spring flush"],
 	"falcon": [1, "hunt hardest"], "rabbit": [1, "swarm"], "beetle": [1, "grubs hatch"], "berry": [1, "fruit"],
 	"boar": [2, "fatten on mast"], "mushroom": [2, "fruit after rain"], "human": [2, "harvest"],
-	"worm": [2, "surface in the rains"], "apple": [2, "apples drop"], "moss": [2, "creeps up the bark"],
+	"worm": [2, "surface in the rains"], "apple": [2, "apples drop"], "moss": [3, "thickest on the winter bark"],
 	"wolf": [3, "packs grow bold"], "goat": [3, "hardy in the cold"],
 }
 const SEASONS: Array = [

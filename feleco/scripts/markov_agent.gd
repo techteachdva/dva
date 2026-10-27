@@ -161,7 +161,12 @@ func end_rampage() -> void:
 		sim.chronicle.emit("%s's rampage ends after %d kills. The gold is spent." % [display_name, rampage_kills])
 	# Win the rampage, earn a Greenhouse upgrade.
 	var gc: Node = get_node_or_null("/root/GameConfig")
-	if gc != null and rampage_kills >= gc.RAMPAGE_GOAL:
+	var won: bool = gc != null and rampage_kills >= gc.RAMPAGE_GOAL
+	if sim != null:
+		sim.rampage_result.emit(display_name, rampage_kills, won)
+	if not won:
+		FXManager.show_dramatic_text(global_position + Vector3.UP * 3.0, "Rampage failed: %d of %d" % [rampage_kills, int(gc.RAMPAGE_GOAL) if gc != null else 0], Color(0.95, 0.35, 0.3))
+	if won:
 		var id: String = gc.unlock_next_upgrade()
 		var what: String = "every upgrade is already yours" if id.is_empty() else "%s unlocked" % id.replace("_", " ").capitalize()
 		FXManager.show_dramatic_text(global_position + Vector3.UP * 3.0, "Rampage won! %s" % what, Color(1.0, 0.85, 0.3))
@@ -176,10 +181,11 @@ func _rampage_tick(delta: float) -> void:
 	_rampage_strike -= delta
 	var sim = director
 	if sim != null and _rampage_strike <= 0.0:
-		for n in sim.get_nearby_agents(global_position, 2.4):
+		# A tight bite: the player has to steer right onto the prey.
+		for n in sim.get_nearby_agents(global_position, 1.8):
 			if n == self or not n is MarkovAgent or n.is_queued_for_deletion() or (n as MarkovAgent).species_id == species_id:
 				continue
-			_rampage_strike = 0.3
+			_rampage_strike = 0.45
 			rampage_kills += 1
 			FXManager.spawn_combat_particles(n.global_position)
 			FXManager.show_floating_text(n.global_position + Vector3.UP, "CHOMP", Color(1.0, 0.85, 0.3))
@@ -258,6 +264,7 @@ func _physics_process(delta: float) -> void:
 	if _herd_timer <= 0.0:
 		_herd_timer = 1.0 + randf() * 0.3
 		_update_herd()
+		_update_corpse_push()
 	_movement_tick(delta)
 	if not rampage:
 		_evaluate_transitions(delta)
@@ -317,6 +324,28 @@ func _physics_process(delta: float) -> void:
 
 # Looks at its own kind within HERD_RADIUS: how close it is to their middle
 # and how packed the middle is. Edge-dwellers score near zero.
+# Most creatures give a carcass a wide berth. Only the carnivores (and the
+# bears) who pick bodies clean, and the decomposers who finish them, go near.
+const CORPSE_EATERS: Array[String] = ["wolf", "falcon", "lion", "bear", "beetle", "worm", "mushroom"]
+const CORPSE_BERTH: float = 4.0
+var _corpse_push: Vector3 = Vector3.ZERO
+
+func _update_corpse_push() -> void:
+	_corpse_push = Vector3.ZERO
+	if _aerial or _aquatic or CORPSE_EATERS.has(species_id):
+		return
+	var sim: SimulationDirector = director
+	if sim == null:
+		return
+	var c := sim.find_nearest_corpse(global_position, CORPSE_BERTH)
+	if c == null:
+		return
+	var away := global_position - c.global_position
+	away.y = 0.0
+	var d: float = away.length()
+	if d > 0.01:
+		_corpse_push = away / d * (1.0 - d / CORPSE_BERTH) * 2.5
+
 func _update_herd() -> void:
 	var sim: SimulationDirector = director
 	if sim == null or species_id.is_empty() or species_id == "mushroom":
@@ -364,6 +393,11 @@ func _movement_tick(delta: float) -> void:
 		if has_method("_swim_tick"):
 			call("_swim_tick", delta)
 		return
+	# Asleep (or resting) and not walking anywhere: lie perfectly still. No
+	# crowd, herd, rim or riverbank shove may nudge a sleeper along the ground.
+	if RESTING_STATES.has(_current_state) and velocity.length_squared() < 0.25 and not _aerial:
+		velocity = Vector3.ZERO
+		return
 	if not _aerial:
 		velocity.y = 0.0
 		# Soft round boundary: the meadow ends at the valley floor and only
@@ -377,10 +411,6 @@ func _movement_tick(delta: float) -> void:
 			if outward > 0.0:
 				velocity += inward * outward
 			velocity += inward * 5.0 * (1.0 + (r - BOUNDARY_SOFT) * 0.5)
-	# Sleepers and resters lie still: no jostling from the crowd or the herd.
-	var lying: bool = RESTING_STATES.has(_current_state) and velocity.length_squared() < 0.25
-	if lying:
-		velocity = Vector3.ZERO
 	# Batch separation via crowding field (no per-agent spatial queries)
 	if velocity.length_squared() > 0.01:
 		var sim: SimulationDirector = director
@@ -389,6 +419,7 @@ func _movement_tick(delta: float) -> void:
 		# Magnetism toward their own kind, unless something urgent is happening.
 		if not URGENT_STATES.has(_current_state):
 			velocity += _herd_pull
+		velocity += _corpse_push
 	if velocity.length_squared() > 0.001:
 		# Day and night set the pace: sleepers barely shuffle, hunters prowl.
 		var pace: float = 1.0

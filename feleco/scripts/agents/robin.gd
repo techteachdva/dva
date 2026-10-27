@@ -241,7 +241,12 @@ func _on_tick_forage(delta: float) -> void:
 			health = clampf(health, 0.0, 100.0)
 			energy = clampf(energy, 0.0, 100.0)
 			return
-	# Robins don't fish: worms, seeds and apples only.
+	# Berries are a robin's favourite fruit.
+	var berry := sim.find_nearest_berry(global_position, 2.5)
+	if berry != null and berry.has_method("eat") and global_position.distance_squared_to(berry.global_position) < 2.0:
+		energy = clampf(energy + berry.eat(self), 0.0, 100.0)
+		health = clampf(health + 3.0, 0.0, 100.0)
+		return
 	# Eat apples
 	var trees_node := sim.get_node_or_null("Trees")
 	if trees_node != null:
@@ -281,6 +286,11 @@ func _on_tick_forage(delta: float) -> void:
 			health += 2.0
 			health = clampf(health, 0.0, 100.0)
 			return
+	# Last resort: a clumsy grab at a fish in the shallows. Robins are poor
+	# fishers next to falcons, so most tries miss, and they try only hungry.
+	if energy < 35.0 and randf() < 0.4 and sim.try_eat_fish(global_position, 2.5):
+		energy = clampf(energy + 14.0, 0.0, 100.0)
+		return
 	# If nothing here, take off
 	if energy > 25.0:
 		set_state("Fly")

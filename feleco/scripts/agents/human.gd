@@ -90,7 +90,8 @@ func _get_transition_modifiers() -> Dictionary:
 	var threatened := wolves.size() > 0 or boars.size() > 0
 	var protected := _shelter_protection_timer > 0.0
 	# Night: everyone heads to bed unless something is on their heels.
-	if sim != null and sim.night() > 0.6 and (not threatened or indoors):
+	# Once asleep they stay down until morning proper (no waking at dusk).
+	if sim != null and sim.night() > (0.35 if _current_state == "Sleep" else 0.6) and (not threatened or indoors):
 		mods["Sleep"] = 0.8
 		return mods
 
