@@ -116,7 +116,7 @@ func _refresh_goals() -> void:
 		if _done.has(g[0]):
 			continue
 		var first: bool = shown == 0
-		var row := FelecoUiScript.label(("▶ " if first else "• ") + g[1] + "  (+%d EP)" % g[3], 15 if first else 13,
+		var row := FelecoUiScript.label(("> " if first else "- ") + g[1] + "  (+%d EP)" % g[3], 15 if first else 13,
 			FelecoUiScript.CREAM if first else FelecoUiScript.MIST)
 		row.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_goal_box.add_child(row)

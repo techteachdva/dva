@@ -521,7 +521,7 @@ func _on_rampage_result(who: String, kills: int, won: bool) -> void:
 	var col: Color = Color(1.0, 0.82, 0.3) if won else Color(0.95, 0.35, 0.3)
 	var history: EventHistory = get_node_or_null("EventHistory")
 	if history != null:
-		history.add_highlight("%s %s's rampage: %d of %d devoured" % ["★ WON" if won else "✖ LOST", who, kills, goal], col)
+		history.add_highlight("%s %s's rampage: %d of %d devoured" % ["WON:" if won else "LOST:", who, kills, goal], col)
 	var btn: Button = $BottomBar/History
 	var tw := create_tween().set_loops(4)
 	tw.tween_property(btn, "modulate", col * 1.4, 0.35)
