@@ -2,7 +2,8 @@ extends Node
 
 # The opening film, played in the real valley. A narrator stumbles on golden
 # grass and follows the gold from rabbit to mountain lion to wizard, finds
-# some golden coins, bets on the wolves and sets the whole valley running:
+# some golden coins for the Coin Pot, bets on the wizard's rampage, watches
+# it win and the payout fly home, then sets the whole valley running:
 # "Felicitus Ecologia", which folds itself into FelEco. One creature per beat,
 # scripted (see MarkovAgent.stage_to). Plays once on first launch; Skip, or
 # the main menu's "Watch the opening", at any time.
@@ -27,6 +28,9 @@ var _bubble_on: Node3D = null
 var _shade: ColorRect
 var _done: bool = false
 var _anchor: Vector3 = Vector3.ZERO
+var _pot: int = 0
+var _pot_label: Label
+var _pot_box: PanelContainer
 
 func _ready() -> void:
 	var gc: Node = get_node("/root/GameConfig")
@@ -205,15 +209,25 @@ func _play() -> void:
 
 	await _coins()
 	if _done: return
-	await _bet_on_wolves()
+	var card: Control = await _bet_on_rampage(wizard)
+	if _done: return
+	var won: bool = await _rampage(wizard)
+	if _done: return
+	if won:
+		await _payout(card, wizard)
 	if _done: return
 
-	_say("Now let's see what happens if I...", 2.4)
-	await get_tree().create_timer(1.2 * READ_PACE).timeout
+	_say("So I bet, and my choices change how it plays out. Now let's see what happens if I...", 3.4)
+	await get_tree().create_timer(1.6 * READ_PACE).timeout
 	_unleash()
 	_view(Vector3(0, 0, 4), 0.6, -0.75, 62.0)
-	# The whole valley at its own pace for a few seconds.
-	await get_tree().create_timer(7.0).timeout
+	# The whole valley at its own pace, with the rest of the toolbox.
+	await _say("Bet on who rules the year. Pick a champion and back it.", 3.0)
+	if _done: return
+	await _say("Make a creature yours. Use powers to tip the odds.", 3.0)
+	if _done: return
+	await _say("Win rampages and minigames to unlock Greenhouse upgrades.", 3.0)
+	if _done: return
 	await _say("Oh my stars! What is this game? Luck and ecology?", 3.4)
 	if _done: return
 	await _title_card()
@@ -260,24 +274,59 @@ func _grow_gold(at: Vector3, radius: int) -> void:
 			g._mark_dirty(i)
 	g.flush_visuals()
 
-# Golden coins tumble down and gather into a little pile.
+# Golden coins tumble down into the Coin Pot, the purse every bet comes from.
 func _coins() -> void:
-	_say("Oh, what's this? Some golden coins? Well, I might as well play a game of chance...", 3.6)
+	_build_pot()
+	_say("Oh, what's this? Golden coins? Into the Coin Pot they go. Let's play a game of chance...", 3.6)
 	var vp: Vector2 = _root.get_viewport_rect().size
-	for i: int in 18:
+	var home: Vector2 = _pot_box.position + Vector2(14, 10)
+	for i: int in 20:
 		var coin := Coin.new()
 		coin.position = Vector2(randf_range(vp.x * 0.3, vp.x * 0.7), -40.0)
 		_root.add_child(coin)
-		var land := Vector2(vp.x * 0.5 + randf_range(-60, 60), vp.y * 0.55 + randf_range(-14, 14))
 		var tw := create_tween()
 		tw.tween_interval(i * 0.08)
-		tw.tween_property(coin, "position", land, 0.7).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-		coin.set_meta("tw", tw)
-	await get_tree().create_timer(3.4 * READ_PACE).timeout
+		tw.tween_property(coin, "position", Vector2(vp.x * 0.5 + randf_range(-60, 60), vp.y * 0.45), 0.45).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+		tw.tween_property(coin, "position", home, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_callback(func() -> void:
+			coin.queue_free()
+			_add_pot(5))
+	await get_tree().create_timer(3.6 * READ_PACE).timeout
 
-# A card for the wolves; one coin hops from the pile onto it.
-func _bet_on_wolves() -> void:
+# The Coin Pot, bottom left above the letterbox: what the player has to bet.
+func _build_pot() -> void:
 	var vp: Vector2 = _root.get_viewport_rect().size
+	_pot_box = PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.08, 0.1, 0.07, 0.92)
+	sb.border_color = FelecoUiScript.GOLD
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(14)
+	sb.set_content_margin_all(10)
+	_pot_box.add_theme_stylebox_override("panel", sb)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	_pot_box.add_child(row)
+	var icon := Coin.new()
+	icon.custom_minimum_size = Vector2(36, 36)
+	row.add_child(icon)
+	_pot_label = FelecoUiScript.heading("Coin Pot  0", 26, FelecoUiScript.GOLD)
+	row.add_child(_pot_label)
+	_pot_box.position = Vector2(28, vp.y - 64.0 - 76.0)
+	_pot_box.modulate.a = 0.0
+	_root.add_child(_pot_box)
+	create_tween().tween_property(_pot_box, "modulate:a", 1.0, 0.4)
+
+func _add_pot(n: int) -> void:
+	_pot += n
+	_pot_label.text = "Coin Pot  %d" % _pot
+	_pot_box.pivot_offset = _pot_box.size * 0.5
+	var tw := create_tween()
+	tw.tween_property(_pot_box, "scale", Vector2(1.08, 1.08), 0.06)
+	tw.tween_property(_pot_box, "scale", Vector2.ONE, 0.12)
+
+# A bet card in the style of the Bet Slip.
+func _bet_card(sprite: String, title: String, line: String, odds: String) -> PanelContainer:
 	var card := PanelContainer.new()
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.12, 0.27, 0.17, 0.95)
@@ -289,32 +338,162 @@ func _bet_on_wolves() -> void:
 	var col := VBoxContainer.new()
 	card.add_child(col)
 	var art := TextureRect.new()
-	art.texture = FelecoUiScript.species_texture("wolf")
-	art.custom_minimum_size = Vector2(150, 120)
+	art.texture = FelecoUiScript.species_texture(sprite)
+	art.custom_minimum_size = Vector2(150, 100)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	col.add_child(art)
-	var name := FelecoUiScript.heading("Wolves", 24, FelecoUiScript.CREAM)
-	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	col.add_child(name)
-	card.position = Vector2(vp.x * 0.68, vp.y * 0.22)
+	for t: Array in [[title, 24, FelecoUiScript.CREAM], [line, 16, FelecoUiScript.CREAM], [odds, 22, FelecoUiScript.GOLD]]:
+		var l := FelecoUiScript.heading(t[0], t[1], t[2])
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(l)
+	card.custom_minimum_size = Vector2(220, 0)
 	card.modulate.a = 0.0
 	_root.add_child(card)
-	var tw := create_tween()
-	tw.tween_property(card, "modulate:a", 1.0, 0.4)
-	_say("Let's see, who do I want to win... Wolves. OK.", 3.2)
-	await get_tree().create_timer(1.6 * READ_PACE).timeout
-	var coin := Coin.new()
-	coin.position = Vector2(vp.x * 0.5, vp.y * 0.55)
-	_root.add_child(coin)
-	var hop := create_tween()
-	hop.tween_property(coin, "position", card.position + Vector2(70, 140), 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	await get_tree().create_timer(1.8 * READ_PACE).timeout
-	# Clear the table: coins and card fade as the valley comes alive.
+	return card
+
+# Two bets on the wizard; the rampage bet gets the stake. Returns its card.
+func _bet_on_rampage(wizard: MarkovAgent) -> Control:
+	var vp: Vector2 = _root.get_viewport_rect().size
+	_view(wizard.global_position + Vector3(-2, 0, 0), 0.4, -0.5, 13.0)
+	var safe := _bet_card("human", "Wizard survives", "Lives to the end of the year", "x1.4")
+	var bold := _bet_card("human", "Successful Rampage", "12 kills before the gold runs out", "x3")
+	safe.position = Vector2(vp.x * 0.56, vp.y * 0.16)
+	bold.position = Vector2(vp.x * 0.56 + 250.0, vp.y * 0.16)
+	for c: Control in [safe, bold]:
+		create_tween().tween_property(c, "modulate:a", 1.0, 0.4)
+	await _say("Golden creatures can be bet on. Safe and small, or bold and big...", 3.2)
+	if _done: return bold
+	_say("A golden wizard? I'm betting on a Successful Rampage!", 3.0)
+	create_tween().tween_property(safe, "modulate:a", 0.35, 0.4)
+	bold.pivot_offset = bold.size * 0.5
+	var pick := create_tween()
+	pick.tween_property(bold, "scale", Vector2(1.1, 1.1), 0.15)
+	pick.tween_property(bold, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK)
+	# The stake, ten coins, hops out of the pot onto the slip.
+	for i: int in 2:
+		var coin := Coin.new()
+		coin.position = _pot_box.position + Vector2(14, 10)
+		_root.add_child(coin)
+		_add_pot(-5)
+		var hop := create_tween()
+		hop.tween_interval(i * 0.15)
+		hop.tween_property(coin, "position", bold.position + Vector2(90 + i * 14, bold.size.y - 30), 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		coin.add_to_group("stake")
+	await get_tree().create_timer(2.6 * READ_PACE).timeout
+	var out := create_tween()
+	out.tween_property(safe, "modulate:a", 0.0, 0.4)
+	return bold
+
+# The wizard's golden rampage, played for the viewer: it dashes from prey to
+# prey while the gold drains. Twelve kills wins, as in the game (RAMPAGE_GOAL).
+func _rampage(wizard: MarkovAgent) -> bool:
+	if wizard == null or not is_instance_valid(wizard):
+		return false
+	var goal: int = int(get_node("/root/GameConfig").RAMPAGE_GOAL)
+	var prey: Array[MarkovAgent] = []
+	var kinds: Array[String] = ["sheep", "rabbit", "deer", "goat", "boar"]
+	for i: int in goal + 3:
+		var ang: float = TAU * float(i) / float(goal + 3) + randf_range(-0.2, 0.2)
+		var p := _dir.dry_land(wizard.global_position + Vector3(cos(ang), 0, sin(ang)) * randf_range(3.5, 8.0))
+		var a := _dir.spawn_scripted(kinds[i % kinds.size()], p)
+		if a != null:
+			prey.append(a)
+	_follow(wizard, 14.0)
+	await _say("Make it yours, press Rampage, and the gold turns to fury!", 2.8)
+	if _done: return false
+	# The rampage HUD: gold left and kills toward the goal.
+	var vp: Vector2 = _root.get_viewport_rect().size
+	var hud := VBoxContainer.new()
+	hud.position = Vector2(vp.x * 0.5 - 160.0, 84.0)
+	hud.custom_minimum_size = Vector2(320, 0)
+	var kills_l := FelecoUiScript.heading("Rampage  0 / %d" % goal, 28, FelecoUiScript.GOLD)
+	kills_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	kills_l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	kills_l.add_theme_constant_override("outline_size", 8)
+	hud.add_child(kills_l)
+	var bar := ProgressBar.new()
+	bar.max_value = 1.0
+	bar.value = 1.0
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(320, 14)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = FelecoUiScript.GOLD
+	fill.set_corner_radius_all(7)
+	bar.add_theme_stylebox_override("fill", fill)
+	hud.add_child(bar)
+	_root.add_child(hud)
+	wizard.golden = 1.0
+	FXManager.show_dramatic_text(wizard.global_position + Vector3.UP * 2.5, "RAMPAGE!", Color(1.0, 0.82, 0.25))
+	Engine.time_scale = 1.0
+	var kills: int = 0
+	var gold: float = 1.0
+	while kills < goal and not _done and is_instance_valid(wizard):
+		var best: MarkovAgent = null
+		var best_d: float = INF
+		for a: MarkovAgent in prey:
+			if is_instance_valid(a) and not a.is_queued_for_deletion():
+				var d: float = a.global_position.distance_to(wizard.global_position)
+				if d < best_d:
+					best_d = d
+					best = a
+		if best == null:
+			break
+		await _walk(wizard, best.global_position, clampf(best_d / 9.0, 0.25, 0.6), "Walk")
+		if _done or not is_instance_valid(best):
+			break
+		FXManager.spawn_combat_particles(best.global_position)
+		FXManager.show_floating_text(best.global_position + Vector3.UP, "CHOMP", Color(1.0, 0.85, 0.3))
+		prey.erase(best)
+		wizard.devour(best)
+		kills += 1
+		gold -= 0.065
+		wizard.golden = gold
+		kills_l.text = "Rampage  %d / %d" % [kills, goal]
+		create_tween().tween_property(bar, "value", gold, 0.2)
+	if _done:
+		return false
+	wizard.golden = maxf(gold, 0.0)
+	FXManager.show_dramatic_text(wizard.global_position + Vector3.UP * 3.0, "Rampage won!", Color(1.0, 0.85, 0.3))
+	kills_l.text = "RAMPAGE WON  %d / %d" % [kills, goal]
+	await _hold_say(wizard, "Twelve before the gold ran out. The rampage is won!", 2.8, "Channel")
 	var out := create_tween().set_parallel(true)
-	for n in _root.get_children():
-		if n is Coin or n == card:
-			out.tween_property(n, "modulate:a", 0.0, 0.6)
+	out.tween_property(hud, "modulate:a", 0.0, 0.5)
+	for a: MarkovAgent in prey:
+		if is_instance_valid(a):
+			a.queue_free()
+	return kills >= goal
+
+# The bet pays: stake times three flies from the slip back into the pot.
+func _payout(card: Control, wizard: MarkovAgent) -> void:
+	var stamp := FelecoUiScript.heading("BET WON  x3", 30, FelecoUiScript.GOLD)
+	stamp.add_theme_color_override("font_outline_color", Color(0.25, 0.15, 0.02, 0.95))
+	stamp.add_theme_constant_override("outline_size", 10)
+	stamp.position = card.position + Vector2(10, -48)
+	_root.add_child(stamp)
+	_say("The bet pays three to one. Into the pot!", 3.0)
+	for c: Node in get_tree().get_nodes_in_group("stake"):
+		(c as Control).queue_free()
+	var home: Vector2 = _pot_box.position + Vector2(14, 10)
+	var from: Vector2 = card.position + card.size * 0.5
+	if is_instance_valid(wizard):
+		from = _cam.unproject_position(wizard.global_position + Vector3.UP * 1.5)
+	for i: int in 6:
+		var coin := Coin.new()
+		coin.position = from + Vector2(randf_range(-30, 30), randf_range(-30, 30))
+		_root.add_child(coin)
+		var mid: Vector2 = coin.position.lerp(home, 0.5) + Vector2(0, -160)
+		var tw := create_tween()
+		tw.tween_interval(i * 0.12)
+		tw.tween_property(coin, "position", mid, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(coin, "position", home, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_callback(func() -> void:
+			coin.queue_free()
+			_add_pot(5))
+	await get_tree().create_timer(3.0 * READ_PACE).timeout
+	var out := create_tween().set_parallel(true)
+	out.tween_property(card, "modulate:a", 0.0, 0.5)
+	out.tween_property(stamp, "modulate:a", 0.0, 0.5)
 	await out.finished
 
 # The whole valley at once: every species, running on its own.

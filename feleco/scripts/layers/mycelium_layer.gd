@@ -72,6 +72,13 @@ func _setup_visuals() -> void:
 	mm.use_colors = true
 	mm.mesh = _create_cell_mesh()
 	mm.instance_count = grid_width * grid_height
+	# A new buffer is all zeros, and only cells the fungus has reached are
+	# ever written. A zero-scale patch has no normal to light, and the GPU
+	# draws thousands of them as raw green and red streaks across the screen
+	# the moment the first carcass grows a mat. Every patch starts hidden.
+	for i: int in mm.instance_count:
+		mm.set_instance_transform(i, HIDDEN_PATCH)
+		mm.set_instance_color(i, Color(0, 0, 0, 0))
 	_multimesh.multimesh = mm
 	_multimesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# A faint, earthy root mat that takes the scene's light (so it dims at
@@ -98,6 +105,9 @@ func _create_cell_mesh() -> Mesh:
 	quad.orientation = PlaneMesh.FACE_Y
 	return quad
 
+# Tiny, deep underground and never size zero (see _setup_visuals).
+const HIDDEN_PATCH := Transform3D(Basis(Vector3(0.001, 0, 0), Vector3(0, 0.001, 0), Vector3(0, 0, 0.001)), Vector3(0.0, -500.0, 0.0))
+
 # Ground heights per cell, shared from the grass layer once the valley exists.
 var heights: PackedFloat32Array = PackedFloat32Array()
 
@@ -110,6 +120,13 @@ func _update_visuals() -> void:
 		var gz := int(i / float(grid_width))
 		var gx := i % grid_width
 		var density := _grid[i]
+		if not is_finite(density):
+			density = 0.0
+			_grid[i] = 0.0
+		if density <= 0.0:
+			mm.set_instance_transform(i, HIDDEN_PATCH)
+			mm.set_instance_color(i, Color(0, 0, 0, 0))
+			continue
 		var pos := grid_to_world(gx, gz)
 		if heights.size() == _grid.size():
 			pos.y = heights[i] + 0.06

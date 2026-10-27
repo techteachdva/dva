@@ -3,9 +3,17 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.2"
+const VERSION: String = "4.2.1"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.2.1",
+		"title": "Clean Streaks",
+		"notes": [
+			"Fixed the giant green and red streaks across the screen: once a carcass began growing mycelium, thousands of unused underground fungus patches drew as smears. Every patch now starts hidden.",
+			"The opening film now plays a whole round: coins drop into your Coin Pot, you bet on the golden wizard's rampage, watch it win twelve kills before the gold runs out, and the payout flies home.",
+		],
+	},
 	{
 		"version": "4.2",
 		"title": "A Clearer Valley",
