@@ -665,7 +665,7 @@ func _get_hovered_agent() -> Node3D:
 		if not data.node.is_inside_tree():
 			continue
 		var p: Vector3 = data.shown if data.has_shown else data.pos
-		var mid: Vector3 = p + Vector3.UP * 0.8
+		var mid := Vector3(p.x, data.drawn_mid_y if data.has_shown else p.y + 0.8, p.z)
 		if cam.is_position_behind(mid):
 			continue
 		var d: float = cam.unproject_position(mid).distance_to(mouse_pos)

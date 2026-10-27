@@ -350,6 +350,7 @@ func sync(registry: Array[AgentData]) -> void:
 					y = data.pos.y + lift * s * 0.35
 			else:
 				y = ground + lift * s if kind == 1 else data.pos.y + lift * s
+			data.drawn_mid_y = y
 			var motion: float = clampf((speed - 0.3) / 2.5, 0.0, 1.0) if not flying else 1.0
 			# Only the badly hurt fade toward grey.
 			var shade: float = 1.0 if kind == 3 else lerpf(0.55, 1.0, clampf(data.health / 40.0, 0.0, 1.0))

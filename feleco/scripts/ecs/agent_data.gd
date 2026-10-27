@@ -17,6 +17,9 @@ var sync_time: float = 0.0
 var prev_pos: Vector3 = Vector3.ZERO
 var shown: Vector3 = Vector3.ZERO
 var has_shown: bool = false
+# Height of the sprite's middle as last drawn (fliers soar well above their
+# true position), so taps land on what the player actually sees.
+var drawn_mid_y: float = 0.0
 var interval: float = 0.1
 var state: String = ""
 var age: float = 0.0
