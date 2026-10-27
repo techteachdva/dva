@@ -68,6 +68,7 @@ var _play_t: float = 0.0
 var _won: bool = false
 var _msg: String = ""
 var _keys_prev: Dictionary = {}
+var _t_over: float = 0.0
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -135,6 +136,8 @@ func _process(delta: float) -> void:
 		if _intro_t <= 0.0:
 			_phase = "play"
 		return
+	if _phase == "over":
+		_t_over += delta
 	if _phase != "play":
 		return
 	_t += delta
@@ -157,12 +160,34 @@ func _end(won: bool, msg: String) -> void:
 	var b := Button.new()
 	b.text = "Continue"
 	b.theme_type_variation = "PrimaryButton"
-	b.custom_minimum_size = Vector2(240, 56)
-	b.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	b.position = Vector2(size.x * 0.5 - 120, size.y - 130)
-	b.pressed.connect(func() -> void: finished.emit(_won))
+	# Anchored to the bottom centre of the screen (offsets, not position, so
+	# it can never end up off-screen).
+	b.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	b.offset_left = -130
+	b.offset_right = 130
+	b.offset_top = -140
+	b.offset_bottom = -80
+	b.pressed.connect(_continue)
 	add_child(b)
 	b.grab_focus()
+
+var _done: bool = false
+
+# Back to the menu. Also reached by Enter, Space or a click anywhere once
+# the result has been up a moment, so a player can never get stuck here.
+func _continue() -> void:
+	if _done:
+		return
+	_done = true
+	finished.emit(_won)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _phase != "over" or _t_over < 0.6:
+		return
+	var k := event as InputEventKey
+	var mb := event as InputEventMouseButton
+	if (k != null and k.pressed and k.physical_keycode in [KEY_ENTER, KEY_SPACE, KEY_ESCAPE, KEY_KP_ENTER]) or (mb != null and mb.pressed):
+		_continue()
 
 # Evade: the predator steers after you, faster as time goes on.
 func _tick_evade(delta: float) -> void:

@@ -625,8 +625,11 @@ func _finish(won: bool) -> void:
 	again.text = "Play again"
 	again.theme_type_variation = "PrimaryButton"
 	again.custom_minimum_size = Vector2(220, 56)
-	again.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	again.position = Vector2(size.x * 0.5 - 110, size.y - 120)
+	again.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	again.offset_left = -110
+	again.offset_right = 110
+	again.offset_top = -130
+	again.offset_bottom = -74
 	again.pressed.connect(func() -> void:
 		again.queue_free()
 		_show_select())

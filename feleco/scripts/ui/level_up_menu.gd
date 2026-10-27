@@ -149,4 +149,8 @@ func _trial(mode: String, skill: String) -> void:
 				goals.level_up()
 			else:
 				goals.train(skill)
-		_build())
+			# A win goes straight back to the valley; a loss returns here
+			# so the player can try again.
+			_close()
+		else:
+			_build())
