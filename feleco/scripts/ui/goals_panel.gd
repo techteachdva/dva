@@ -21,6 +21,7 @@ const GOALS: Array = [
 	["diamond", "Find the rare diamond", "Now and then a diamond glints somewhere in the valley. Tap it!", 100],
 ]
 const SKILL_MAX: int = 5
+const SKILL_NAME: Dictionary = {"speed": "Speed", "tough": "Toughness", "vital": "Vitality", "senses": "Senses", "charm": "Charm"}
 # Strong, saturated colours (they multiply the sprite, so they need to be
 # punchy to show on white wool or brown fur).
 const COLOURS: Array = [
@@ -290,14 +291,25 @@ func train(id: String) -> void:
 		return
 	points -= 1
 	skills[id] = int(skills[id]) + 1
+	var r: int = int(skills[id])
+	var effect: String = ""
 	match id:
 		"speed":
 			_c_data.speed_boost = 1.0 + 0.1 * float(skills["speed"])
+			effect = "runs %d%% faster" % (10 * r)
+		"tough":
+			effect = "heals %.1f health a second" % (0.6 * r)
 		"vital":
 			companion._lifespan *= 1.1
+			effect = "lives %d%% longer" % int(round((pow(1.1, r) - 1.0) * 100.0))
 		"senses":
 			if companion._vision_cone != null:
 				companion._vision_cone.vision_range *= 1.15
+			effect = "spots food and danger %d%% further" % int(round((pow(1.15, r) - 1.0) * 100.0))
+		"charm":
+			effect = "is ready to raise young sooner"
+	# Say what the rank did, so training has a visible result in the valley.
+	FXManager.show_dramatic_text(companion.global_position, "%s: %s %d/%d  -  %s" % [companion.display_name, SKILL_NAME.get(id, id.capitalize()), r, SKILL_MAX, effect], FelecoUiScript.GOLD)
 	_complete("skill")
 	_refresh_creature()
 

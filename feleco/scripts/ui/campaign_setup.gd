@@ -105,13 +105,17 @@ func _show_type_picker() -> void:
 	var t := FelecoUiScript.heading("Campaign: Pick Your Type", 42, FelecoUiScript.GOLD)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(t)
-	var sub := FelecoUiScript.label("Every link of the food web plays differently. Pick one to play its game.", 20, FelecoUiScript.CREAM)
+	var sub := FelecoUiScript.label("Every link of the food web plays differently. Pick one to play its game. Win, and that link grows a little stronger in the Valley campaign.", 19, FelecoUiScript.CREAM)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sub.custom_minimum_size = Vector2(1100, 0)
 	col.add_child(sub)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 14)
 	col.add_child(row)
+	var gc: Node = get_node("/root/GameConfig")
+	var boons: Dictionary = gc.link_boons()
 	for ty: Array in TYPES:
 		var card := VBoxContainer.new()
 		card.custom_minimum_size = Vector2(230, 0)
@@ -131,6 +135,13 @@ func _show_type_picker() -> void:
 		about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		about.custom_minimum_size = Vector2(0, 70)
 		card.add_child(about)
+		# What this link has earned for the valley, or what a win would earn.
+		var boon: Dictionary = boons.get(ty[0], {})
+		var boon_text: String = "Valley boon: %s." % boon["text"] if not boon.is_empty() else ("Win to earn a valley boon for %s." % String(ty[1]).to_lower() + "s" if not String(ty[4]).is_empty() else "")
+		var bl := FelecoUiScript.label(boon_text, 13, FelecoUiScript.GOLD if not boon.is_empty() else FelecoUiScript.MIST)
+		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		bl.custom_minimum_size = Vector2(0, 40)
+		card.add_child(bl)
 		var b := Button.new()
 		b.text = "Play" if not String(ty[4]).is_empty() else "Soon"
 		b.disabled = String(ty[4]).is_empty()
@@ -218,6 +229,10 @@ func _format_traits(traits: Dictionary) -> String:
 		parts.append("Population +%d" % traits["population_boost"])
 	if traits.get("lifespan_boost", 1.0) > 1.0:
 		parts.append("Lifespan +%.0f%%" % ((traits["lifespan_boost"] - 1.0) * 100.0))
+	var gc: Node = get_node("/root/GameConfig")
+	var boon: Dictionary = gc.link_boons().get(SpeciesDB.group_of(gc.campaign_faction), {})
+	if not boon.is_empty():
+		parts.append("Link boon: %s" % boon["text"])
 	if parts.is_empty():
 		return "No traits yet."
 	return "Active Buffs: " + "  |  ".join(parts)
@@ -238,6 +253,10 @@ func _on_start() -> void:
 
 	var counts: Dictionary = _generate_campaign_era_counts(gc.campaign_faction, gc.campaign_era)
 	_apply_counts_to_gameconfig(counts)
+	# Strong seedlings in Seedling Golf: more trees and a richer meadow.
+	var producer: Dictionary = gc.link_boons().get("producer", {})
+	gc.tree_count += int(producer.get("trees", 0))
+	gc.grass_density = minf(gc.grass_density + float(producer.get("grass", 0.0)), 0.8)
 	gc.time_limit = Clock.STANDARD_DAYS
 	gc.time_setting = "Standard"
 	gc.map_preset = "Random Scatter"

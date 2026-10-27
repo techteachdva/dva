@@ -175,9 +175,9 @@ func _show_select() -> void:
 		b.pressed.connect(func() -> void: _start_level(idx))
 		grid.add_child(b)
 	var back := Button.new()
-	back.text = "Back"
+	back.text = "Back to campaign"
 	back.theme_type_variation = "GhostButton"
-	back.custom_minimum_size = Vector2(200, 50)
+	back.custom_minimum_size = Vector2(220, 50)
 	back.pressed.connect(_leave)
 	var bc := HBoxContainer.new()
 	bc.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -188,6 +188,16 @@ func _show_select() -> void:
 
 func _leave() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/campaign_setup.tscn")
+
+# Esc: back to the holes from a hole, back to the campaign from the holes.
+func _unhandled_key_input(event: InputEvent) -> void:
+	var k := event as InputEventKey
+	if k == null or not k.pressed or k.echo or k.physical_keycode != KEY_ESCAPE:
+		return
+	if _select != null:
+		_leave()
+	else:
+		_show_select()
 
 # --- In-level UI ----------------------------------------------------------
 

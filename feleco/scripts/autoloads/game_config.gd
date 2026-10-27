@@ -91,6 +91,40 @@ func set_record(game: String, key: String, value: Variant) -> void:
 	records[game][key] = value
 	save_meta()
 
+# Link boons: winning a food-web game lends its link a little strength in
+# the Valley campaign. Carnivore champions make every carnivore hardier,
+# clans that ruled Valley Dominion make omnivores live longer, race golds
+# make herbivores quicker, and strong seedlings give the valley more trees
+# and a richer meadow. Derived from the records each time; never saved.
+# group -> {"health"/"speed"/"lifespan": mult, "trees": int, "grass": float, "text": String}.
+func link_boons() -> Dictionary:
+	var out: Dictionary = {}
+	var brawl: Dictionary = records.get("brawl", {})
+	if not brawl.is_empty():
+		var best: int = 0
+		for v in brawl.values():
+			var i: int = ["cub", "hunter", "dire"].find(String(v))
+			best = maxi(best, i if i >= 0 else 1)
+		var mult: float = [1.05, 1.1, 1.15][best]
+		out["carnivore"] = {"health": mult, "text": "Carnivores start with %d%% more health" % int(round((mult - 1.0) * 100.0))}
+	var dom: Dictionary = records.get("dominion", {})
+	if not dom.is_empty():
+		var mult: float = 1.0 + 0.05 * mini(dom.size(), 4)
+		out["omnivore"] = {"lifespan": mult, "text": "Omnivores live %d%% longer" % int(round((mult - 1.0) * 100.0))}
+	var golds: int = 0
+	for v in (records.get("race", {}) as Dictionary).values():
+		if String(v) == "Gold":
+			golds += 1
+	if golds > 0:
+		out["herbivore"] = {"speed": 1.0 + 0.02 * golds, "text": "Herbivores run %d%% faster" % (2 * golds)}
+	var strong: int = 0
+	for v in (records.get("golf", {}) as Dictionary).values():
+		if String(v) in ["A", "S"]:
+			strong += 1
+	if strong > 0:
+		out["producer"] = {"trees": (strong + 1) / 2, "grass": 0.02 * strong, "text": "The valley starts with %d more tree%s and a richer meadow" % [(strong + 1) / 2, "" if (strong + 1) / 2 == 1 else "s"]}
+	return out
+
 # The first-run welcome card and starter goals have been seen.
 var tutorial_done: bool = false
 # Upgrades are earned, not bought: each Rampage won (RAMPAGE_GOAL kills before

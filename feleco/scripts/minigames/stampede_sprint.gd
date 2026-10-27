@@ -4,7 +4,10 @@ extends Control
 # type, and what you type is the valley's own chatter: chunks of the
 # creatures' thoughts and the ticker's gossip. Short words first, longer
 # runs of words as the finish nears. Every right key is a stride; a wrong
-# one is a stumble. Four races, each with faster rivals.
+# one is a stumble. Four races, each with faster rivals. Rivals stumble too,
+# and the pack bunches up a little (a runner far ahead eases off, one far
+# behind digs in), so a race is rarely decided before the last stretch.
+# Esc pauses, with a way back to the runners or the campaign.
 
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 const Brawl = preload("res://scripts/minigames/predator_brawl.gd")
@@ -70,18 +73,97 @@ var _select: Control
 var _rival_species: Array[String] = []
 var _tex: Dictionary = {}
 var _end_btns: HBoxContainer
+# Rivals trip now and then: [tilt time left] per lane.
+var _rival_stumble: Array[float] = [0.0, 0.0, 0.0, 0.0]
+var _paused: bool = false
+var _pause_box: Control
+var _pause_btn: Button
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = FelecoUiScript.theme()
 	focus_mode = Control.FOCUS_ALL
+	_build_pause_button()
 	_show_select()
 	# First time here: explain the game before anything else.
 	if not HowToPlay.seen(self, "race"):
 		HowToPlay.show(self, "race")
 
+func _quit_to_campaign() -> void:
+	get_tree().change_scene_to_file("res://scenes/ui/campaign_setup.tscn")
+
+func _build_pause_button() -> void:
+	_pause_btn = Button.new()
+	_pause_btn.text = "Pause"
+	_pause_btn.icon = load("res://assets/icons/pause.svg")
+	_pause_btn.tooltip_text = "Pause, or leave the race (Esc)."
+	_pause_btn.theme_type_variation = "GhostButton"
+	_pause_btn.custom_minimum_size = Vector2(130, 44)
+	_pause_btn.focus_mode = Control.FOCUS_NONE
+	_pause_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_pause_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_pause_btn.offset_right = -12
+	_pause_btn.offset_top = 10
+	_pause_btn.offset_left = -142
+	_pause_btn.offset_bottom = 54
+	_pause_btn.visible = false
+	_pause_btn.pressed.connect(func() -> void:
+		if _mode in ["race", "count"]:
+			_toggle_pause())
+	add_child(_pause_btn)
+
+func _toggle_pause() -> void:
+	_paused = not _paused
+	_pause_btn.text = "Resume" if _paused else "Pause"
+	if _paused:
+		_pause_box = PanelContainer.new()
+		_pause_box.set_anchors_preset(Control.PRESET_CENTER)
+		_pause_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		_pause_box.grow_vertical = Control.GROW_DIRECTION_BOTH
+		add_child(_pause_box)
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 12)
+		_pause_box.add_child(col)
+		var h := FelecoUiScript.heading("Paused", 40, FelecoUiScript.GOLD)
+		h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(h)
+		for b: Array in [["Resume", _toggle_pause, "PrimaryButton"], ["Restart race", func() -> void:
+			_toggle_pause()
+			_start_race(), ""], ["Runners", func() -> void:
+			_toggle_pause()
+			_show_select(), "GhostButton"], ["Back to campaign", _quit_to_campaign, "GhostButton"]]:
+			var btn := Button.new()
+			btn.text = b[0]
+			btn.custom_minimum_size = Vector2(280, 50)
+			if not String(b[2]).is_empty():
+				btn.theme_type_variation = b[2]
+			btn.pressed.connect(b[1])
+			col.add_child(btn)
+	elif _pause_box != null:
+		_pause_box.queue_free()
+		_pause_box = null
+		grab_focus()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	var k := event as InputEventKey
+	if k == null or not k.pressed or k.echo or k.physical_keycode != KEY_ESCAPE:
+		return
+	match _mode:
+		"select":
+			_quit_to_campaign()
+		"done":
+			_show_select()
+		_:
+			_toggle_pause()
+
 func _show_select() -> void:
 	_mode = "select"
+	_paused = false
+	if _pause_box != null:
+		_pause_box.queue_free()
+		_pause_box = null
+	_pause_btn.visible = false
+	_pause_btn.text = "Pause"
 	if _end_btns != null:
 		_end_btns.queue_free()
 		_end_btns = null
@@ -133,10 +215,10 @@ func _show_select() -> void:
 	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(bl)
 	var back := Button.new()
-	back.text = "Back"
+	back.text = "Back to campaign"
 	back.theme_type_variation = "GhostButton"
-	back.custom_minimum_size = Vector2(200, 48)
-	back.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/ui/campaign_setup.tscn"))
+	back.custom_minimum_size = Vector2(220, 48)
+	back.pressed.connect(_quit_to_campaign)
 	var bc := HBoxContainer.new()
 	bc.alignment = BoxContainer.ALIGNMENT_CENTER
 	bc.add_theme_constant_override("separation", 14)
@@ -156,11 +238,13 @@ func _start_race() -> void:
 	if _end_btns != null:
 		_end_btns.queue_free()
 		_end_btns = null
+	_pause_btn.visible = true
 	_length = float(RACES[_race][1])
 	_rival_pace = float(RACES[_race][2])
 	_pos = [0.0, 0.0, 0.0, 0.0]
 	_speed = [0.0, 0.0, 0.0, 0.0]
 	_finish_time = [-1.0, -1.0, -1.0, -1.0]
+	_rival_stumble = [0.0, 0.0, 0.0, 0.0]
 	_rival_species = []
 	for sp: String in RUNNERS.keys():
 		if sp != _species:
@@ -206,7 +290,9 @@ func _next_prompt() -> void:
 
 func _gui_input(event: InputEvent) -> void:
 	var k := event as InputEventKey
-	if k == null or not k.pressed or k.echo or _mode != "race":
+	if k == null or not k.pressed or k.echo or _mode != "race" or _paused:
+		return
+	if k.physical_keycode == KEY_ESCAPE:
 		return
 	accept_event()
 	if _finish_time[0] >= 0.0:
@@ -236,6 +322,8 @@ func _gui_input(event: InputEvent) -> void:
 # --- Race ---------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	if _paused:
+		return
 	for t: Array in _texts:
 		t[1] -= delta
 	_texts = _texts.filter(func(t: Array) -> bool: return t[1] > 0.0)
@@ -258,6 +346,18 @@ func _process(delta: float) -> void:
 		var pace: float = _rival_pace * (0.88 + 0.08 * i) * (1.0 + 0.06 * sin(_t * (0.7 + i * 0.3)))
 		if _pos[i] > _length * 0.8:
 			pace *= 1.08
+		# The pack bunches: a rival far ahead of you eases off a little, one
+		# far behind digs in. Gentle, so a good typist still wins clean.
+		var gap: float = (_pos[i] - _pos[0]) / _length
+		pace *= clampf(1.0 - gap * 0.6, 0.85, 1.12)
+		# Now and then a rival trips too.
+		_rival_stumble[i] = maxf(_rival_stumble[i] - delta, 0.0)
+		if _rival_stumble[i] <= 0.0 and randf() < delta * 0.06 and _pos[i] < _length * 0.9:
+			_rival_stumble[i] = 0.5
+			_speed[i] *= 0.5
+			_texts.append(["%s stumbles!" % RUNNERS[_rival_species[(i - 1) % _rival_species.size()]]["name"], 0.9])
+		if _rival_stumble[i] > 0.0:
+			pace *= 0.4
 		_speed[i] = lerpf(_speed[i], pace, delta * 1.5)
 	for i: int in LANES:
 		if _finish_time[i] < 0.0:
@@ -275,8 +375,11 @@ func _place() -> int:
 			place += 1
 	return place
 
+const EP_BY_PLACE: Array[int] = [60, 35, 20, 5]
+
 func _end_race() -> void:
 	_mode = "done"
+	_pause_btn.visible = false
 	var place: int = _place()
 	var medal: String = ["Gold", "Silver", "Bronze", "4th"][place - 1]
 	var gc: Node = get_node_or_null("/root/GameConfig")
@@ -285,15 +388,15 @@ func _end_race() -> void:
 		var prev = gc.record("race", str(_race))
 		if prev == null or order.find(medal) > order.find(String(prev)):
 			gc.set_record("race", str(_race), medal)
-		gc.award_eco_points([60, 35, 20, 5][place - 1])
+		gc.award_eco_points(EP_BY_PLACE[place - 1])
 	_end_btns = HBoxContainer.new()
 	_end_btns.alignment = BoxContainer.ALIGNMENT_CENTER
 	_end_btns.add_theme_constant_override("separation", 14)
 	_end_btns.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_end_btns.offset_top = -110
 	_end_btns.offset_bottom = -50
-	_end_btns.offset_left = -300
-	_end_btns.offset_right = 300
+	_end_btns.offset_left = -400
+	_end_btns.offset_right = 400
 	add_child(_end_btns)
 	if place <= 3 and _race + 1 < RACES.size():
 		var nb := Button.new()
@@ -315,6 +418,12 @@ func _end_race() -> void:
 	menu.custom_minimum_size = Vector2(150, 54)
 	menu.pressed.connect(_show_select)
 	_end_btns.add_child(menu)
+	var back := Button.new()
+	back.text = "Back to campaign"
+	back.theme_type_variation = "GhostButton"
+	back.custom_minimum_size = Vector2(200, 54)
+	back.pressed.connect(_quit_to_campaign)
+	_end_btns.add_child(back)
 
 # --- Drawing --------------------------------------------------------------
 
@@ -360,7 +469,7 @@ func _draw() -> void:
 		draw_set_transform_matrix(_xform() * Transform2D(0.0, Vector2(1.0, 0.2), 0.0, Vector2(x, y)))
 		draw_circle(Vector2.ZERO, w * 0.35, Color(0, 0, 0, 0.25))
 		draw_set_transform_matrix(_xform())
-		var tilt: float = 0.3 if i == 0 and _stumble > 0.0 else 0.0
+		var tilt: float = 0.3 if (i == 0 and _stumble > 0.0) or (i > 0 and _rival_stumble[i] > 0.0) else 0.0
 		draw_set_transform_matrix(_xform() * Transform2D(tilt, Vector2(x, y - hop)))
 		draw_texture_rect(tex, Rect2(-w * 0.5, -h, w, h), false)
 		draw_set_transform_matrix(_xform())
@@ -376,7 +485,7 @@ func _draw_hud() -> void:
 	draw_rect(Rect2(30, 70, 600, 10), Color(0, 0, 0, 0.4))
 	for i: int in LANES:
 		draw_circle(Vector2(30 + 600 * _pos[i] / _length, 75), 9 if i == 0 else 6, FelecoUiScript.GOLD if i == 0 else Color(1, 1, 1, 0.8))
-	draw_string(font, Vector2(VIEW.x - 330, 48), "%d m/s   %d m to go" % [int(_speed[0]), int(maxf(_length - _pos[0], 0.0))], HORIZONTAL_ALIGNMENT_RIGHT, 300, 22, Color.WHITE)
+	draw_string(font, Vector2(VIEW.x - 500, 48), "%d m/s   %d m to go" % [int(_speed[0]), int(maxf(_length - _pos[0], 0.0))], HORIZONTAL_ALIGNMENT_RIGHT, 300, 22, Color.WHITE)
 	# The prompt: typed part green, the rest white.
 	if _mode == "race" and _finish_time[0] < 0.0:
 		var label: String = ["Type the word!", "Type both words!", "Type the phrase!", "Type the whole line!"][_stage()]
@@ -398,8 +507,16 @@ func _draw_hud() -> void:
 	if _mode == "done":
 		var place: int = _place()
 		var acc: int = int(100.0 * _keys_right / maxf(_keys_right + _keys_wrong, 1))
-		var box := Rect2(VIEW.x * 0.5 - 300, 110, 600, 170)
+		# Words per minute, the typist's measure: five keys to a word.
+		var wpm: int = int(round(_keys_right / 5.0 / maxf(_finish_time[0], 1.0) * 60.0))
+		var box := Rect2(VIEW.x * 0.5 - 300, 110, 600, 200)
 		draw_rect(box, Color(0.06, 0.09, 0.07, 0.94))
 		draw_rect(box, FelecoUiScript.GOLD, false, 3.0)
 		draw_string(font, box.position + Vector2(0, 74), ["1st place! GOLD", "2nd place: Silver", "3rd place: Bronze", "4th place"][place - 1], HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 46, [Color(1, 0.85, 0.2), Color(0.85, 0.88, 0.95), Color(0.85, 0.55, 0.3), Color(0.8, 0.8, 0.8)][place - 1])
-		draw_string(font, box.position + Vector2(0, 126), "Time %.1f s     Accuracy %d%%" % [_finish_time[0], acc], HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 22, Color.WHITE)
+		draw_string(font, box.position + Vector2(0, 124), "Time %.1f s     %d words a minute     Accuracy %d%%" % [_finish_time[0], wpm, acc], HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 21, Color.WHITE)
+		var note: String = "+%d EP" % EP_BY_PLACE[place - 1]
+		if place <= 3 and _race + 1 < RACES.size():
+			note += "   -   the next race is unlocked!"
+		elif place > 3:
+			note += "   -   top 3 unlocks the next race. Accuracy beats speed!"
+		draw_string(font, box.position + Vector2(0, 166), note, HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 18, FelecoUiScript.GOLD)

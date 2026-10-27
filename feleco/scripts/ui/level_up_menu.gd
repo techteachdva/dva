@@ -22,16 +22,22 @@ const MAX_RANK: int = 5
 var goals: GoalsPanel
 var _root: Control
 var _was_paused: bool = false
+# The valley's speed (1x, 2x, 4x) must not leak into the trials: a 20 s
+# Evade at 4x would be a five-second blur. Pin real time while this is open.
+var _was_speed: float = 1.0
 
 func _ready() -> void:
 	layer = 60
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_was_paused = get_tree().paused
+	_was_speed = Engine.time_scale
+	Engine.time_scale = 1.0
 	get_tree().paused = true
 	_build()
 
 func _close() -> void:
 	get_tree().paused = _was_paused
+	Engine.time_scale = _was_speed
 	goals.refresh_now()
 	queue_free()
 

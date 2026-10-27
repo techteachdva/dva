@@ -3,9 +3,22 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.0"
+const VERSION: String = "4.1"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.1",
+		"title": "Games Worth Winning",
+		"notes": [
+			"Every campaign game now has a Pause button on screen and a Back to campaign button, so Esc is never the only way out. Esc works everywhere too.",
+			"Valley Dominion is a real ecology now: every tile has its own food bar that grows by terrain and season and is eaten down by the clan living there. Eat a tile bare and it starves. Twelve turns, then winter: almost nothing grows, and the biggest clan still standing rules the valley. A Winter forecast tells you how many would starve if the snow fell today.",
+			"Dominion clans have a way of life as well as a power: villagers farm around huts that store food and keep wolves out; bears have thick hides, fish the river and sleep through winter in the forests; boars dig roots in autumn and charge two tiles; robins fly two tiles and spread fast but lose fights. A wolf pack comes down from the passes in late summer. Attack odds show before you fight. The year ends with a graph of every clan, season by season.",
+			"Predator Brawl: pick Cub, Hunter or Dire rivals. The ladder adds a Dire rival before the champion. Combos scale down and the fourth hit knocks the rival down, so nobody can be juggled forever; blocking shoves the attacker off and builds meter. Rivals block, punish and retreat by temper (wolves rush, lions wait, falcons stoop). Eco Points per rival and per perfect round, a Dire timer, and a tally at the end.",
+			"Stampede Sprint: rivals stumble too, the pack bunches up a little so the finish stays close, and the result shows words a minute.",
+			"My Creature trials: the valley's speed no longer leaks into them (a 20-second Evade at 4x was a five-second blur). Each rank earned makes the next trial a little sharper. Food is what the creature really eats. Dash (Space) in Evade to slip the predator's telegraphed lunge. Winning a trial says what the rank did.",
+			"Link boons: winning a food-web game lends its link a little strength in the Valley campaign (hardier carnivores, longer-lived omnivores, quicker herbivores, more trees and a richer meadow). Shown on the campaign cards.",
+		],
+	},
 	{
 		"version": "4.0",
 		"title": "The Playground Update",

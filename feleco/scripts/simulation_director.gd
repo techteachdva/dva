@@ -2697,12 +2697,21 @@ func _apply_campaign_traits(agent: Node, species: String) -> void:
 	var gc = get_node_or_null("/root/GameConfig")
 	if gc == null or gc.current_mode != "campaign":
 		return
-	if gc.campaign_faction != species:
+	var health_mult: float = 1.0
+	var speed_mult: float = 1.0
+	var lifespan_mult: float = 1.0
+	if gc.campaign_faction == species:
+		var traits: Dictionary = gc.campaign_traits
+		health_mult *= float(traits.get("health_boost", 1.0))
+		speed_mult *= float(traits.get("speed_boost", 1.0))
+		lifespan_mult *= float(traits.get("lifespan_boost", 1.0))
+	# Link boons: the food-web games played and won lend their whole link a little.
+	var boon: Dictionary = gc.link_boons().get(SpeciesDB.group_of(species), {})
+	health_mult *= float(boon.get("health", 1.0))
+	speed_mult *= float(boon.get("speed", 1.0))
+	lifespan_mult *= float(boon.get("lifespan", 1.0))
+	if is_equal_approx(health_mult, 1.0) and is_equal_approx(speed_mult, 1.0) and is_equal_approx(lifespan_mult, 1.0):
 		return
-	var traits: Dictionary = gc.campaign_traits
-	var health_mult: float = traits.get("health_boost", 1.0)
-	var speed_mult: float = traits.get("speed_boost", 1.0)
-	var lifespan_mult: float = traits.get("lifespan_boost", 1.0)
 	if agent.get("health") != null:
 		agent.health *= health_mult
 	if agent.get("max_health") != null:
