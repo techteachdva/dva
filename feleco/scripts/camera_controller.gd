@@ -49,18 +49,28 @@ func set_view(at: Vector3, p_yaw: float, p_pitch: float, p_distance: float, inst
 		_apply()
 
 func snap_top_down() -> void:
-	_follow = null
+	release_follow()
 	set_view(Vector3(0.0, 0.0, 0.0), 0.0, MIN_PITCH, 92.0)
 
 func reset_view() -> void:
-	_follow = null
+	release_follow()
 	set_view(Vector3(0.0, 0.0, 2.0), 0.0, deg_to_rad(-40.0), 64.0)
 
 func follow(node: Node3D) -> void:
+	if node == null:
+		release_follow()
+		return
 	_follow = node
-	_following_any = node != null
-	if node != null and _goal_distance > 34.0:
+	_following_any = true
+	if _goal_distance > 34.0:
 		_goal_distance = 26.0
+
+# The player looked away (WASD, a pan drag, Top Down). Clearing only
+# `_follow` used to look like the creature had died: following() would
+# grab the nearest carcass and the camera could not leave it.
+func release_follow() -> void:
+	_follow = null
+	_following_any = false
 
 func following() -> Node3D:
 	# A freed creature does not compare equal to null, so test validity only.
@@ -115,7 +125,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_goal_yaw -= mm.relative.x * mouse_sensitivity
 			_goal_pitch = clampf(_goal_pitch - mm.relative.y * mouse_sensitivity, MIN_PITCH, MAX_PITCH)
 		elif _middle_held or (_left_held and _follow == null and _drag_past(mm.relative)):
-			_follow = null
+			release_follow()
 			var k: float = _goal_distance * 0.0016
 			_goal_target += (_flat_right() * -mm.relative.x + _flat_forward() * mm.relative.y) * k
 	elif event is InputEventPanGesture:
@@ -164,7 +174,7 @@ func _process(_delta: float) -> void:
 		if Input.is_key_pressed(KEY_E):
 			_goal_yaw -= 1.6 * dt
 	if dir != Vector3.ZERO:
-		_follow = null
+		release_follow()
 		_goal_target += dir.normalized() * pan_speed * dt * clampf(_goal_distance / 60.0, 0.4, 1.6)
 	var f := following()
 	if f != null and f.is_inside_tree():

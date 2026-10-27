@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/dev/camera_follow_playtest.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/camera_controller.gd" id="2"]
+
+[node name="CameraFollowPlaytest" type="Node"]
+script = ExtResource("1")
+
+[node name="Cam" type="Camera3D" parent="."]
+script = ExtResource("2")
+
+[node name="Body" type="Node3D" parent="."]
+
+[node name="Corpse" type="Node3D" parent="." groups=["corpse"]]
