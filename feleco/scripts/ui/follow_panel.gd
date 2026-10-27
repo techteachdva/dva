@@ -111,8 +111,14 @@ func _ready() -> void:
 	head.add_child(names)
 	_name = FelecoUiScript.heading("", 22, FelecoUiScript.GOLD)
 	names.add_child(_name)
+	_name.clip_text = true
 	_kind = FelecoUiScript.label("", 14, FelecoUiScript.MIST)
+	_kind.clip_text = true
 	names.add_child(_kind)
+	# The buttons get a row of their own so the card never outgrows the screen.
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	col.add_child(actions)
 	_rampage_btn = Button.new()
 	_rampage_btn.text = "Rampage!"
 	_rampage_btn.theme_type_variation = "PrimaryButton"
@@ -120,7 +126,8 @@ func _ready() -> void:
 	_rampage_btn.tooltip_text = "Take this golden creature in hand and spend its gold: WASD or arrows to steer (or hold a finger where it should go). It devours anything not of its own kind until the gold runs out. Gold burns faster as it goes: devour 12 before it runs out to win a Greenhouse upgrade."
 	_rampage_btn.visible = false
 	_rampage_btn.pressed.connect(_on_rampage)
-	head.add_child(_rampage_btn)
+	_rampage_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(_rampage_btn)
 	_mine_btn = Button.new()
 	_mine_btn.text = "Make Mine"
 	_mine_btn.theme_type_variation = "PrimaryButton"
@@ -131,14 +138,16 @@ func _ready() -> void:
 		if goals != null:
 			goals.call("adopt", agent)
 		_mine_btn.visible = false)
-	head.add_child(_mine_btn)
+	_mine_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(_mine_btn)
 	var stop := Button.new()
 	stop.text = "Stop"
 	stop.theme_type_variation = "GhostButton"
 	stop.custom_minimum_size = Vector2(76, 40)
 	stop.tooltip_text = "Stop following."
 	stop.pressed.connect(func() -> void: stopped.emit())
-	head.add_child(stop)
+	stop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(stop)
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 8)

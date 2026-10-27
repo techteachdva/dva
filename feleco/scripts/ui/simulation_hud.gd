@@ -573,6 +573,8 @@ func _start_follow(agent: MarkovAgent) -> void:
 	_follow_panel.offset_left = -440.0
 	_follow_panel.offset_right = -10.0
 	_follow_panel.offset_top = 170.0
+	# If it ever needs more room it widens to the left, never off the screen.
+	_follow_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_follow_panel.stopped.connect(_stop_follow)
 	add_child(_follow_panel)
 	var hill: Control = get_node_or_null("HillBars")
