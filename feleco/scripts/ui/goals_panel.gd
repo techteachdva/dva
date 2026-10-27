@@ -26,9 +26,11 @@ const SKILLS: Array = [
 	["vital", "Vitality", "Lives 10% longer per point."],
 ]
 const SKILL_MAX: int = 5
+# Strong, saturated colours (they multiply the sprite, so they need to be
+# punchy to show on white wool or brown fur).
 const COLOURS: Array = [
-	Color.WHITE, Color(1.0, 0.55, 0.55), Color(0.55, 0.75, 1.0),
-	Color(0.6, 1.0, 0.6), Color(1.0, 0.6, 1.0), Color(0.5, 0.45, 0.4),
+	Color.WHITE, Color(1.25, 0.12, 0.12), Color(0.15, 0.45, 1.3),
+	Color(0.15, 1.2, 0.2), Color(1.0, 0.15, 1.25), Color(1.3, 0.85, 0.05), Color(0.05, 1.1, 1.25),
 ]
 const DIAMOND_EP: int = 250
 
@@ -227,11 +229,19 @@ func _build_creature_box() -> void:
 	name_edit.max_length = 16
 	name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_edit.text_submitted.connect(func(t: String) -> void:
-		if _alive() and not t.strip_edges().is_empty():
-			companion.display_name = t.strip_edges()
+		if not _alive():
+			return
+		# Classroom-safe and original names only (NameGenerator.check_player_name).
+		var why: String = NameGenerator.check_player_name(t)
+		if not why.is_empty():
 			name_edit.text = ""
-			name_edit.release_focus()
-			_refresh_creature())
+			name_edit.placeholder_text = why
+			return
+		companion.display_name = t.strip_edges()
+		name_edit.text = ""
+		name_edit.placeholder_text = "Rename..."
+		name_edit.release_focus()
+		_refresh_creature())
 	custom.add_child(name_edit)
 	for c: Color in COLOURS:
 		var sw := Button.new()

@@ -79,6 +79,18 @@ var golden_mult: float = 1.0
 var scenario_id: String = ""
 # The opening film plays once, on first launch.
 var intro_seen: bool = false
+# Campaign game records: {"golf": {"1": "A", ...}, "brawl": {...}}.
+var records: Dictionary = {}
+
+func record(game: String, key: String) -> Variant:
+	return (records.get(game, {}) as Dictionary).get(key, null)
+
+func set_record(game: String, key: String, value: Variant) -> void:
+	if not records.has(game):
+		records[game] = {}
+	records[game][key] = value
+	save_meta()
+
 # The first-run welcome card and starter goals have been seen.
 var tutorial_done: bool = false
 # Upgrades are earned, not bought: each Rampage won (RAMPAGE_GOAL kills before
@@ -166,6 +178,7 @@ func save_meta() -> void:
 		"owned_upgrades": owned_upgrades,
 		"intro_seen": intro_seen,
 		"tutorial_done": tutorial_done,
+		"records": records,
 		"powerup_inventory": powerup_inventory,
 		"last_bets": last_bets,
 		"tuning": tuning,
@@ -196,6 +209,7 @@ func load_meta() -> void:
 		owned_upgrades = d.get("owned_upgrades", {}) if d.get("owned_upgrades") is Dictionary else {}
 		intro_seen = bool(d.get("intro_seen", false))
 		tutorial_done = bool(d.get("tutorial_done", false))
+		records = d.get("records", {}) if d.get("records") is Dictionary else {}
 		powerup_inventory = d.get("powerup_inventory", {}) if d.get("powerup_inventory") is Dictionary else {}
 		tuning = d.get("tuning", {}) if d.get("tuning") is Dictionary else {}
 		last_bets.clear()

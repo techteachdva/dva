@@ -144,36 +144,41 @@ func _feed_on_corpses(delta: float) -> void:
 				sim.spawn_mushroom_spore(self, global_position + spread_dir)
 
 # Spores and fruiting bodies are drawn by VisualProxyManager.
+# A spore is not a creature: it is blown by the wind for a moment, then
+# settles on the grass and stays put (rooting if it lands on rot).
+var _airtime: float = 0.0
+
 func _on_enter_drift() -> void:
-	pass
+	# Seconds aloft (life time): a short ride on the breeze.
+	_airtime = randf_range(0.3, 0.7)
 
 func _on_tick_drift(delta: float) -> void:
-	_drift_seek_timer -= delta
 	var sim: SimulationDirector = director
-	var seek := Vector3.ZERO
-	if sim != null and _drift_seek_timer <= 0.0:
-		_drift_seek_timer = 1.0 + randf() * 0.5
-		# Spores ride the stink of carrion down to where the rot will be.
-		var nearest_corpse := sim.smell_corpse(global_position)
-		if nearest_corpse != null:
-			var flat_dir := (nearest_corpse.global_position - global_position)
-			flat_dir.y = 0.0
-			seek = flat_dir.normalized() * drift_speed * 0.5
-	velocity.x = seek.x + (randf() - 0.5) * drift_speed
-	velocity.z = seek.z + (randf() - 0.5) * drift_speed
-	velocity.y = -drift_downward
-	# Drifting spores never blow off the meadow up into the mountains.
+	if _airtime <= 0.0:
+		velocity = Vector3.ZERO
+		return
+	_airtime -= delta * Clock.LIFE_PACE
+	var push := Vector3.ZERO
+	if sim != null:
+		push = sim.wind()
+		# The stink of carrion tilts the ride a little, nothing more.
+		var c := sim.smell_corpse(global_position)
+		if c != null:
+			var to := c.global_position - global_position
+			to.y = 0.0
+			push += to.normalized() * 0.6
+	velocity = Vector3(push.x, 0.0, push.z)
+	# Easing down at the end of the ride.
+	if _airtime <= 0.0:
+		velocity = Vector3.ZERO
+	global_position += velocity * delta
 	var flat := Vector2(global_position.x, global_position.z)
 	if flat.length() > ValleyTerrain.FLOOR_RADIUS - 3.0:
-		var inward := -flat.normalized() * drift_speed
-		velocity.x = inward.x
-		velocity.z = inward.y
-	global_position += velocity * delta
-	# Settle on the meadow instead of sinking through it.
+		flat = flat.normalized() * (ValleyTerrain.FLOOR_RADIUS - 3.0)
+		global_position.x = flat.x
+		global_position.z = flat.y
 	if sim != null:
-		var ground: float = sim.ground_height(global_position.x, global_position.z)
-		if global_position.y < ground:
-			global_position.y = ground
+		global_position.y = sim.ground_height(global_position.x, global_position.z)
 
 func _on_exit_drift() -> void:
 	pass
@@ -249,3 +254,8 @@ func die() -> void:
 	if _glow_instance != null:
 		_glow_instance.queue_free()
 	queue_free()
+
+# Spores move only on the wind (see _on_tick_drift); no walking, herding or
+# crowd shoves like a creature.
+func _movement_tick(_delta: float) -> void:
+	pass

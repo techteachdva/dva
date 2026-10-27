@@ -353,7 +353,8 @@ func sync(registry: Array[AgentData]) -> void:
 					y = ground + 2.0 + sin(now * 2.2 + data.gait_seed) * 0.3
 			elif kind == 3:
 				# Spores float at their own height; a fruiting cap stands on the ground.
-				if data.state == "Fruit" or data.state == "Anchor":
+				# Settled spores sit on the grass; only one riding the wind floats.
+				if data.state == "Fruit" or data.state == "Anchor" or data.vel.length_squared() < 0.01:
 					y = data.pos.y + lift * s
 				else:
 					y = data.pos.y + 0.6 + sin(now * 1.3 + data.gait_seed) * 0.12

@@ -79,6 +79,81 @@ func _ready() -> void:
 		_show_continuation()
 	else:
 		_show_faction_selection()
+	_show_type_picker()
+
+# Campaigns by food-web type: each link of the web plays as its own game.
+const TYPES: Array = [
+	["herbivore", "Herbivore", "Stampede Sprint", "A typing race: type what the valley says to run faster.", "res://scenes/minigames/stampede_sprint.tscn", "deer"],
+	["carnivore", "Carnivore", "Predator Brawl", "A fighting game between the valley's hunters. Evolve and RAMPAGE!", "res://scenes/minigames/predator_brawl.tscn", "wolf"],
+	["omnivore", "Omnivore", "Valley Dominion", "A strategy board game: take over the valley before winter.", "res://scenes/minigames/valley_dominion.tscn", "bear"],
+	["producer", "Producer", "Seedling Golf", "Light puzzles with mini golf: find the best light, water and soil.", "res://scenes/minigames/seed_golf.tscn", ""],
+	["decomposer", "Decomposer", "Coming next", "The rot, the worms and the fungi get their own game soon.", "", "worm"],
+]
+
+func _show_type_picker() -> void:
+	var cover := PanelContainer.new()
+	cover.name = "TypePicker"
+	cover.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.05, 0.07, 0.06, 0.97)
+	cover.add_theme_stylebox_override("panel", bg)
+	add_child(cover)
+	var col := VBoxContainer.new()
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_theme_constant_override("separation", 16)
+	cover.add_child(col)
+	var t := FelecoUiScript.heading("Campaign: Pick Your Type", 42, FelecoUiScript.GOLD)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(t)
+	var sub := FelecoUiScript.label("Every link of the food web plays differently. Pick one to play its game.", 20, FelecoUiScript.CREAM)
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(sub)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	col.add_child(row)
+	for ty: Array in TYPES:
+		var card := VBoxContainer.new()
+		card.custom_minimum_size = Vector2(230, 0)
+		row.add_child(card)
+		var pic := TextureRect.new()
+		pic.custom_minimum_size = Vector2(230, 120)
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		if not String(ty[5]).is_empty():
+			pic.texture = preload("res://scripts/minigames/predator_brawl.gd").portrait(ty[5])
+		else:
+			pic.texture = load("res://assets/sprites/berry.png")
+		card.add_child(pic)
+		card.add_child(FelecoUiScript.heading(ty[1], 26, SpeciesDB.GROUP_COLOR.get(ty[0], FelecoUiScript.GOLD)))
+		card.add_child(FelecoUiScript.heading(ty[2], 18, FelecoUiScript.GOLD))
+		var about := FelecoUiScript.label(ty[3], 15, FelecoUiScript.MIST)
+		about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		about.custom_minimum_size = Vector2(0, 70)
+		card.add_child(about)
+		var b := Button.new()
+		b.text = "Play" if not String(ty[4]).is_empty() else "Soon"
+		b.disabled = String(ty[4]).is_empty()
+		b.theme_type_variation = "PrimaryButton"
+		b.custom_minimum_size = Vector2(0, 50)
+		var scene: String = ty[4]
+		b.pressed.connect(func() -> void: get_tree().change_scene_to_file(scene))
+		card.add_child(b)
+	var foot := HBoxContainer.new()
+	foot.alignment = BoxContainer.ALIGNMENT_CENTER
+	foot.add_theme_constant_override("separation", 14)
+	col.add_child(foot)
+	var classic := Button.new()
+	classic.text = "Valley campaign (10 eras)"
+	classic.custom_minimum_size = Vector2(300, 50)
+	classic.pressed.connect(func() -> void: cover.queue_free())
+	foot.add_child(classic)
+	var back := Button.new()
+	back.text = "Back"
+	back.theme_type_variation = "GhostButton"
+	back.custom_minimum_size = Vector2(200, 50)
+	back.pressed.connect(_on_back)
+	foot.add_child(back)
 
 func _apply_era_traits(era: int) -> void:
 	var gc: Node = get_node("/root/GameConfig")

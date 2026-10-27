@@ -16,5 +16,6 @@ func _initialize() -> void:
 			if not NameGenerator.is_clean(n):
 				bad.append(n)
 	print("blocked in lists: ", bad)
-	print("filter catches: ", ["Cock", "Tit", "Dickon", "Big Butt"].filter(func(n): return not NameGenerator.is_clean(n)))
+	print("filter catches: ", ["Cock", "Tit", "Dickon", "Big Butt", "Dumbledore", "sh1t", "F u c k", "Pikachu", "B00bs"].filter(func(n): return not NameGenerator.is_clean(n)))
+	print("filter allows: ", ["Spice", "Ashton", "Cucumber", "Scunthorpe", "Bramble", "Sir Hops"].filter(func(n): return NameGenerator.is_clean(n)))
 	quit()

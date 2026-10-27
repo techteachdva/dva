@@ -4,13 +4,13 @@
 # Regenerate scripts/names/name_lists.gd with: python scripts/dev/build_names.py
 
 ## sheep male
-Lambert, Ram-bo, Woolfgang, Baa-ron, Fleecemore, Shaun, Timmy, Mutton, Woolliam, Ramsey,
+Lambert, Woolfgang, Baa-ron, Fleecemore, Timmy, Mutton, Woolliam, Ramsey,
 Baartholomew, Lambchop, Cotton, Nimbus, Cumulus, Stratus, Cirrus, Fluff, Tufty, Shearwood,
 Dorset, Suffolk, Cheviot, Merino, Lincoln, Jacob, Soay, Manx, Shetland, Hebridean,
 Ryeland, Texel, Herdwick, Swaledale, Wensleydale, Romney, Clun, Dale, Fell, Moor,
 Bramble, Thistle, Clover, Barley, Oats, Hay, Haystack, Meadow, Pasture, Paddock,
-Woolly, Fuzzbuzz, Curly, Puff, Bobble, Mopsy, Shaggy, Tuft, Ramson, Ramekin,
-Lambo, Baa-sil, Woolverine, Ewe-lysses, Fleece Willis, Shear Khan, Baa-rney, Lamb-ert Jr, Ram Dass, Baa-tholomew,
+Woolly, Fuzzbuzz, Curly, Puff, Bobble, Shaggy, Tuft, Ramson, Ramekin,
+Lambo, Baa-sil, Woolverine, Ewe-lysses, Shear Khan, Baa-rney, Lamb-ert Jr, Baa-tholomew,
 Sir Fluffington, Duke Woolsley, Lord Fleece, Captain Curls, Professor Puff, Doctor Wool, Old Tom, Big Ben, Little Joe, Grey Ned,
 Hamish, Angus, Fergus, Duncan, Rory, Callum, Ewan, Murdo, Alasdair, Tavish,
 Bertie, Archie, Basil, Barnaby, Buttons, Pip, Dougal, Dewey, Woolfred, Ramses,
@@ -21,36 +21,36 @@ Baa-bara, Ewe-genie, Fleecia, Lambrina, Ewe-nice, Woolma, Baa-beth, Shearlotte, 
 Dolly, Tuppence, Penny, Lambie, Bo, Peep, Mary, Cotton Candy, Misty, Foggy,
 Cloudia, Nimbella, Fluffy, Daisy, Clover, Buttercup, Primrose, Bluebell, Heather, Bracken,
 Bramblina, Thistle, Meadowsweet, Hazel, Willow, Ivy, Holly, Myrtle, Rosie, Poppy,
-Woolly May, Curly Sue, Puffin, Bobbie, Mopsy, Flossie, Lottie, Dottie, Hettie, Mabel,
+Woolly May, Curly Sue, Puffin, Bobbie, Flossie, Lottie, Dottie, Hettie, Mabel,
 Merino, Shetlanda, Dorsetta, Suffolka, Texelle, Romneya, Herdwicka, Swaledale, Cheviotte, Jacoba,
 Lady Fleece, Duchess Woolsley, Baroness Baa, Countess Curl, Madam Mutton, Queen Ewe, Princess Puff, Dame Fluff, Miss Woolly, Granny Shear,
-Isla, Morag, Kirsty, Ailsa, Fiona, Heather Mae, Shona, Elspeth, Iona, Mairi,
+Isla, Morag, Kirsty, Ailsa, Heather Mae, Shona, Elspeth, Iona, Mairi,
 Biscuit, Crumpet, Muffin, Toffee, Fudge, Meringue, Snowdrop, Snowflake, Pudding, Custard,
 Lambda, Baa-lerie, Ewe-nora, Fleecity, Woolhelmina, Shearah, Lambrusca, Ewe-phoria, Baa-dette, Woolliana,
 Annie, Bella, Connie, Edie, Gracie, Ivy Lou, Josie, Maisie, Nellie, Winnie
 
 ## wolf male
-Fenrir, Skoll, Hati, Romulus, Remus, Freki, Geri, Ghost, Grey Wind, Shaggydog,
+Fenrir, Skoll, Hati, Romulus, Remus, Freki, Geri,
 Howler, Moonfang, Shadow, Storm, Raven, Ash, Ember, Frost, Thorn, Rune,
 Sable, Onyx, Flint, Cinder, Bramble, Dusk, Sirius, Canis, Lycan, Varg,
-Ulfr, Kiba, Akela, Balto, Whitefang, Okami, Lobo, Ulf, Wolfgang, Howlett,
+Ulfr, Kiba, Balto, Whitefang, Okami, Lobo, Ulf, Wolfgang, Howlett,
 Fang, Grizzle, Smoke, Slate, Granite, Basalt, Obsidian, Iron, Steel, Pike,
 Ridge, Crag, Tor, Fell, Hollow, Timber, Pine, Spruce, Cedar, Larch,
 Midnight, Eclipse, Comet, Orion, Rigel, Talon, Blaze, Scorch, Tempest, Gale,
 Thunder, Rumble, Growl, Snarl, Prowl, Stalker, Tracker, Ranger, Scout, Hunter,
 Alpha, Beta, Grimm, Grey, Silver, Slater, Duskmane, Nightpaw, Stormcoat, Ironjaw,
 Kodiak, Yukon, Klondike, Denali, Kenai, Sitka, Tundra, Aspen, Boreal, Taiga,
-Bjorn, Leif, Sven, Rolf, Gunnar, Torvald, Erik, Harald, Ragnar, Sigurd
+Bjorn, Leif, Rolf, Gunnar, Torvald, Erik, Harald, Ragnar, Sigurd
 
 ## wolf female
-Lupa, Luna, Nymeria, Summer, Lady, Tala, Raksha, Ayasha, Kaya, Nita,
+Lupa, Luna, Summer, Lady, Tala, Raksha, Ayasha, Kaya, Nita,
 Selene, Artemis, Diana, Freya, Skadi, Hela, Sigrid, Astrid, Ingrid, Solveig,
 Moonbeam, Starfall, Silverpaw, Mistral, Breeze, Willow, Aspen, Juniper, Sage, Sorrel,
 Shadow, Shade, Dusk, Dawn, Twilight, Aurora, Borealis, Nova, Stella, Vega,
 Ember, Ash, Cinder, Sienna, Russet, Amber, Rowan, Hazel, Fern, Briar,
 Snow, Frost, Icicle, Glacier, Sleet, Winter, Holly, Ivy, Laurel, Thistle,
 Wolfina, Howlie, Lupina, Fangela, Snarla, Prowlette, Growla, Lycana, Lunette, Pawline,
-Kodi, Sitka, Tundra, Denali, Yuki, Kira, Kaia, Inka, Nala, Zara,
+Kodi, Sitka, Tundra, Denali, Yuki, Kira, Kaia, Inka, Zara,
 Wren, Raven, Robin, Kestrel, Merlin, Sparrow, Lark, Swift, Teal, Finch,
 Tempest, Storm, Thunder, Gale, Squall, Rain, Misty, Fog, Haze, Cloud,
 Greta, Helga, Thora, Brynja, Liv, Runa, Sif, Embla, Gerda, Yrsa
@@ -78,7 +78,7 @@ Maud, Nell, Petronella, Rosamund, Sabine, Theodora, Wilhelmina, Alys, Branwen, C
 Enid, Gwyneth, Heledd, Ione, Linnet, Morwenna, Rhiannon, Seren, Tegan, Wenna,
 Ada, Bryony, Clara, Della, Eliza, Fenella, Grace, Harriet, Iris, Juniper,
 Kezia, Lydia, Martha, Nora, Opal, Prue, Ruth, Sophie, Tilly, Una,
-Vera, Wren, Yara, Zelda, Ailsa, Briar, Cora, Elsie, Fern, Hazel,
+Vera, Wren, Yara, Ailsa, Briar, Cora, Elsie, Fern, Hazel,
 Ivy, Lark, Maple, Nettie, Posy, Rue, Saffron, Thea, Willa, Bess
 
 ## falcon male
@@ -123,7 +123,7 @@ Busker, Bard, Minstrel, Piper, Fiddler, Harper, Singer, Crooner, Tenor, Baritone
 ## robin female
 Marian, Ruby, Scarlett, Rosie, Cherry, Berry, Holly, Hollyberry, Rowanna, Hazel,
 Robina, Robyn, Bobbie, Bobbina, Roberta, Rubina, Carmina, Garnetta, Crimsonia, Cardinella,
-Trilla, Warbla, Chirpy, Tweety, Peepa, Pipa, Twitta, Flutta, Melody, Harmony,
+Trilla, Warbla, Chirpy, Peepa, Pipa, Twitta, Flutta, Melody, Harmony,
 Carol, Noelle, Ivy, Mistletoe, Tinsel, Snowdrop, Frost, Winter, Jingle, Bell,
 Lark, Wren, Linnet, Siskin, Twite, Phoebe, Song, Lyric, Aria, Cadence,
 Dawn, Aurora, Sunny, Morning, Sunrise, Daybreak, Goldie, Amber, Honey, Marigold,
@@ -142,13 +142,13 @@ Swinestein, Porkington, Trotter, Hamlet, Hamish, Hammond, Hamilton, Sir Oinksalo
 Tusker, Ironhide, Stonesnout, Mudslinger, Rootmaster, Thicket, Bracken, Briar, Thornback, Mossback,
 Oakley, Ashby, Elmo, Beech, Birch, Alder, Hornbeam, Holm, Bark, Burl,
 Rumble, Thud, Bash, Bump, Clunk, Crash, Biff, Bonk, Stomp, Trample,
-Pumbaa, Wilbur, Babe, Napoleon, Snowball, Squealer, Piglet, Peppa, Gub, Spud,
+Napoleon, Snowball, Squealer, Gub, Spud,
 Potato, Turnip, Parsnip, Beetroot, Swede, Radish, Carrot, Mangold, Tuber, Yam,
 Brutus, Maximus, Magnus, Goliath, Titan, Atlas, Hercules, Samson, Bruno, Bulwark
 
 ## boar female
 Sow-phia, Hogetta, Porcina, Truffla, Snoutrice, Bristella, Grunhilda, Oinkette, Squealia, Wallowa,
-Petunia, Penelope, Peppa, Priscilla, Prudence, Pansy, Primrose, Poppy, Posy, Pippa,
+Petunia, Penelope, Priscilla, Prudence, Pansy, Primrose, Poppy, Posy, Pippa,
 Hazel, Acorn, Chestnut, Walnut, Pecan, Almond, Cashew, Brazil, Filbert, Beechnut,
 Morella, Chanterella, Porcinia, Boleta, Truffina, Chaga, Russula, Enoki, Shiitake, Oyster,
 Mudpie, Puddle, Wallow, Splash, Muddy, Squelch, Slosh, Dabble, Paddle, Ripple,
@@ -160,20 +160,20 @@ Gaia, Terra, Earthina, Clay, Loam, Ochre, Umber, Sienna, Russet, Tawny,
 Bertha, Brunhild, Valda, Greta, Ilse, Frieda, Heidi, Lotte, Magda, Ursel
 
 ## rabbit male
-Thumper, Hopkins, Bunsen, Buck, Jack, Hazel, Fiver, Bigwig, Dandelion, Blackberry,
-Pipkin, Silver, Holly, Bluebell, Speedwell, Acorn, Hawkbit, Buckthorn, Campion, Strawberry,
-Bugs, Peter, Benjamin, Roger, Oswald, Harvey, Bucky, Thumpkin, Hopscotch, Hip-Hop,
+Hopkins, Bunsen, Buck, Jack, Hazel, Dandelion, Blackberry,
+Silver, Holly, Bluebell, Speedwell, Acorn, Buckthorn, Campion, Strawberry,
+Peter, Benjamin, Roger, Oswald, Harvey, Bucky, Thumpkin, Hopscotch, Hip-Hop,
 Clover, Barley, Sorrel, Basil, Parsley, Chive, Dill, Fennel, Tarragon, Chervil,
 Carrots, Radish, Lettuce, Kale, Cabbage, Sprout, Turnip, Swede, Parsnip, Celery,
 Fluff, Puff, Cotton, Tail, Scut, Whiskers, Twitch, Nibbles, Munch, Crunch,
 Dash, Zip, Bolt, Flash, Sprint, Scamper, Skip, Leap, Bound, Spring,
 Warren, Burrow, Den, Hollow, Tunnel, Dig, Digby, Delve, Burrows, Thatch,
 Snowball, Frost, Flake, Pebble, Stone, Moss, Fern, Bracken, Briar, Heath,
-Harry, Hector, Horace, Hugo, Humphrey, Herbert, Hamish, Henry, Hal, Hank,
+Hector, Horace, Hugo, Humphrey, Herbert, Hamish, Henry, Hal, Hank,
 Moonhop, Starleap, Dawnrunner, Dusktail, Meadowdash, Hedgehop, Furrow, Tuft, Clove, Nutkin
 
 ## rabbit female
-Flopsy, Mopsy, Cottontail, Clover, Bluebell, Primrose, Hyzenthlay, Blackavar, Thethuthinnang, Vilthuril,
+Clover, Bluebell, Primrose,
 Bunny, Bunnie, Honey Bunny, Hopsy, Hoppity, Bounce, Skippy, Twinkletoes, Lollop, Boing,
 Daisy, Violet, Pansy, Petunia, Marigold, Buttercup, Cowslip, Snowdrop, Foxglove, Lavender,
 Lettuce, Parsley, Rosemary, Sage, Thyme, Mint, Basil, Chamomile, Dandelion, Sorrel,
@@ -206,7 +206,7 @@ Slinkie, Springa, Coila, Twisty, Twirly, Spirella, Curly, Loopy, Knotty, Tangles
 Rosebud, Rootie, Seedie, Sprouty, Shootie, Stemma, Stalka, Bulba, Tubera, Rhizoma,
 Dewdrop, Raindrop, Drizzle, Puddles, Misty, Damp, Dampy, Soggy, Squelchy, Splashy,
 Gertie, Mabel, Myrtle, Ethel, Doris, Edna, Gladys, Hilda, Irma, Mildred,
-Inchy, Stretchy, Longina, Slimma, Lanka, Tiny, Teeny, Weeny, Minnie, Middy,
+Inchy, Stretchy, Longina, Slimma, Lanka, Tiny, Teeny, Weeny, Middy,
 Wormelia, Wormanda, Wormina, Lumbrica, Eisenia, Aporrecta, Octavia, Dendra, Bimasta, Allolobia,
 Crumbs, Cookie, Fudge, Toffee, Treacle, Molasses, Syrup, Honey, Caramel, Praline,
 Ruby, Rosy, Pinkie, Blush, Coral, Salmon, Peachy, Apricot, Melon, Guava
@@ -222,20 +222,20 @@ Neptune, Poseidon, Triton, Nereus, Proteus, Oceanus, Aegir, Njord, Manannan, Lir
 Captain Fins, Admiral Gill, Sir Splash, Lord Ripple, Baron Bream, Duke Dace, Count Carp, King Pike, Prince Perch, Squire Smelt,
 Flipper, Paddle, Flap, Flick, Swish, Dart, Zip, Glint, Gleam, Sparkle,
 River, Stream, Creek, Beck, Brooke, Ford, Weir, Lock, Pool, Shoal,
-Nemo, Marlin, Dory-Boy, Gilbert, Fishwick, Waterford, Riverton, Bankside, Shallows, Deepwater
+Marlin, Dory-Boy, Gilbert, Fishwick, Waterford, Riverton, Bankside, Shallows, Deepwater
 
 ## fish female
-Pearl, Coral, Marina, Nerissa, Ondine, Undine, Naiad, Nixie, Sirena, Ariel,
+Pearl, Coral, Marina, Nerissa, Ondine, Undine, Naiad, Nixie, Sirena,
 Brooke, River, Rivulet, Stream, Cascade, Rill, Ripple, Wave, Tide, Eddy,
 Shimmer, Glimmer, Sparkle, Glint, Gleam, Dazzle, Twinkle, Flicker, Lustre, Sheen,
-Minnie, Minnow, Dace, Roachelle, Perchina, Troutina, Salmona, Carpella, Bream, Tench,
+Minnow, Dace, Roachelle, Perchina, Troutina, Salmona, Carpella, Bream, Tench,
 Bubbles, Splashy, Sploosh, Droplet, Dewdrop, Puddles, Paddles, Flippa, Fins, Finola,
 Gilly, Gillian, Scales, Scalia, Sardine, Anchovy, Sprat, Herring, Kipper, Sole,
 Koi, Goldie, Sunny, Amber, Honey, Saffron, Marigold, Tangerine, Clementine, Peach,
 Lady Gill, Duchess Splash, Princess Pearl, Queen Coral, Countess Carp, Madam Minnow, Dame Dace, Miss Ripple, Baroness Bream, Lady Loach,
 Willow, Reed, Rush, Sedge, Lily, Waterlily, Lotus, Iris, Flag, Cress,
 Aqua, Azure, Cerulean, Teal, Turquoise, Sapphire, Aquamarine, Lapis, Cobalt, Indigo,
-Wanda, Dora, Fishella, Finnella, Rivera, Lakelyn, Shoaly, Brooklyn, Shallow, Seaborne
+Fishella, Finnella, Rivera, Lakelyn, Shoaly, Brooklyn, Shallow, Seaborne
 
 ## mushroom any
 Spore, Mycel, Fungus, Toadstool, Puffball, Truffle, Morel, Chanterelle, Shiitake, Oyster,

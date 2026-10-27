@@ -3692,3 +3692,12 @@ func smell_corpse(pos: Vector3) -> Node3D:
 			best_pull = pull
 			best = corpse
 	return best
+
+# The valley's wind: a slowly veering direction with gusts, stronger in the
+# rain. Spores ride it; nothing alive steers by it.
+func wind() -> Vector3:
+	var a: float = _clock_s * 0.011 + sin(_clock_s * 0.003) * 1.7
+	var strength: float = 1.4 + 1.1 * sin(_clock_s * 0.045) + 0.5 * sin(_clock_s * 0.31)
+	if is_raining():
+		strength *= 1.6
+	return Vector3(cos(a), 0.0, sin(a)) * maxf(strength, 0.3)
