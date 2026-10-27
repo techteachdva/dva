@@ -394,7 +394,8 @@ func _process(delta: float) -> void:
 		_accum = 0.0
 		_rampage_btn.visible = not _rampaging and agent.golden > 0.05
 		var goals: Node = get_tree().get_first_node_in_group("goals_panel")
-		_mine_btn.visible = not _rampaging and goals != null and not goals.call("is_companion", agent)
+		# Animals only: a drifting spore is no pet.
+		_mine_btn.visible = not _rampaging and agent.species_id != "mushroom" and goals != null and not goals.call("is_companion", agent)
 		if _rampaging:
 			return
 		_watch_changes()

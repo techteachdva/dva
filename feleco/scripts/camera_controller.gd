@@ -58,16 +58,23 @@ func reset_view() -> void:
 
 func follow(node: Node3D) -> void:
 	_follow = node
+	_following_any = node != null
 	if node != null and _goal_distance > 34.0:
 		_goal_distance = 26.0
 
 func following() -> Node3D:
-	if _follow != null and not is_instance_valid(_follow):
+	# A freed creature does not compare equal to null, so test validity only.
+	if _following_any and not is_instance_valid(_follow):
 		# The creature died: stay on its carcass, which spawns where it fell.
 		_follow = _corpse_near(_follow_last)
-	if _follow != null:
-		_follow_last = _follow.global_position
+	_following_any = is_instance_valid(_follow)
+	if not _following_any:
+		_follow = null
+		return null
+	_follow_last = _follow.global_position
 	return _follow
+
+var _following_any: bool = false
 
 func _corpse_near(at: Vector3) -> Node3D:
 	var best: Node3D = null
@@ -165,9 +172,14 @@ func _process(_delta: float) -> void:
 		# position, which jumps between staggered thinks.
 		var at: Vector3 = f.global_position
 		var d = f.get("_data")
+		_focus_lift = 0.0
 		if d != null and d.has_shown:
 			at = d.shown
+			# Fliers soar metres above the grass: look at the bird, not the ground.
+			_focus_lift = maxf(d.drawn_mid_y - _ground(at.x, at.z), 0.0)
 		_goal_target = Vector3(at.x, 0.0, at.z)
+	else:
+		_focus_lift = 0.0
 	var flat := Vector2(_goal_target.x, _goal_target.z)
 	if flat.length() > BOUND:
 		flat = flat.normalized() * BOUND
@@ -180,6 +192,9 @@ func _process(_delta: float) -> void:
 	_apply()
 
 const CLEARANCE: float = 2.5
+# How far above the ground the camera's focus sits (a followed bird's height).
+var _focus_lift: float = 0.0
+var _lift_now: float = 0.0
 var _director: SimulationDirector = null
 
 func _ground(x: float, z: float) -> float:
@@ -189,13 +204,21 @@ func _ground(x: float, z: float) -> float:
 	return 0.0 if _director == null else _director.ground_height(x, z)
 
 func _apply() -> void:
-	var focus := Vector3(target.x, _ground(target.x, target.z), target.z)
+	_lift_now = lerpf(_lift_now, _focus_lift, 0.1)
+	var focus := Vector3(target.x, _ground(target.x, target.z) + _lift_now, target.z)
 	var offset := Vector3(0.0, 0.0, distance).rotated(Vector3.RIGHT, pitch).rotated(Vector3.UP, yaw)
 	var pos := focus + offset
-	# Never dip below the terrain: rise over slopes, peaks and the river bank.
+	# Never dip below the terrain, and keep the line of sight clear: sample
+	# the ground all along the view and rise over any ridge in the way.
 	var floor_y: float = _ground(pos.x, pos.z) + CLEARANCE
-	var mid := focus.lerp(pos, 0.5)
-	floor_y = maxf(floor_y, _ground(mid.x, mid.z) + CLEARANCE * 0.5)
+	for i: int in range(1, 8):
+		var t: float = float(i) / 8.0
+		var p := focus.lerp(pos, t)
+		# The ground at p must sit below the sight line, which rises toward
+		# the camera: lift the camera end so the line clears it.
+		var need: float = _ground(p.x, p.z) + CLEARANCE * 0.5
+		if p.y < need:
+			floor_y = maxf(floor_y, focus.y + (need - focus.y) / t)
 	if pos.y < floor_y:
 		pos.y = floor_y
 	global_position = pos

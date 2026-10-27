@@ -188,6 +188,13 @@ func _ready() -> void:
 	_tone = randi() % 3
 	_season = _current_season()
 	_setup_visuals()
+	_check_plot.call_deferred()
+
+# Whoever planted it, a tree that ends up inside a hut never takes root.
+func _check_plot() -> void:
+	var sim := get_parent().get_parent() if get_parent() != null else null
+	if sim is SimulationDirector and (sim as SimulationDirector).in_hut(global_position):
+		queue_free()
 
 func _current_season() -> String:
 	var sim := get_parent().get_parent() if get_parent() != null else null
@@ -499,6 +506,13 @@ func _grow_fruit() -> void:
 		var hang := Vector3(randf_range(-0.3, 0.3), -0.35, randf_range(-0.3, 0.3)) * _size
 		_fruit.append([tip + hang, 0.0])
 	_show_fruit()
+
+# World height of the top of the crown, where a falcon can perch.
+func crown_top() -> float:
+	var top: float = 0.0
+	for t: Vector3 in _tips:
+		top = maxf(top, t.y)
+	return global_position.y + top + 0.5 * _size
 
 func _golden_mult() -> float:
 	var sim = get_parent().get_parent() if get_parent() != null else null

@@ -527,6 +527,12 @@ func tree_spot(pos: Vector3) -> Vector3:
 			p = dry_land(Vector3(p.x, pos.y, p.z))
 	return p
 
+func in_hut(pos: Vector3) -> bool:
+	for s in _active_shelters:
+		if s != null and is_instance_valid(s) and Vector2(pos.x - s.global_position.x, pos.z - s.global_position.z).length() < HUT_CLEARANCE - 0.5:
+			return true
+	return false
+
 # A new hut clears the young growth from its plot (grown trees are felled
 # for the timber anyway, so only seeds and saplings stand in the way).
 func _clear_hut_plot(pos: Vector3) -> void:

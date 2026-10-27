@@ -35,7 +35,7 @@ const SPECIES_CONFIG: Dictionary = {
 # about). 7 (surprise) is set for a moment when a creature starts to flee.
 const ACTIONS: Dictionary = {
 	"Eat": 1, "Graze": 1, "Forage": 1, "Gather": 1, "Scavenge": 1,
-	"Hunt": 2, "Chase": 2, "Charge": 2, "Defend": 2, "Raid": 2, "Dive": 2,
+	"Hunt": 2, "Chase": 2, "Charge": 2, "Defend": 2, "Raid": 2, "Dive": 2, "Perch": 0,
 	"Flee": 3,
 	"Sleep": 4, "Rest": 4, "Stranded": 4, "Anchor": 4,
 	"Mate": 5, "Group": 5,
@@ -332,7 +332,23 @@ func sync(registry: Array[AgentData]) -> void:
 					flying = false
 			if flying:
 				if species == "falcon":
-					y = ground + 8.0 + sin(now * 0.9 + data.gait_seed) * 0.5
+					# Soars high on patrol; stoops to the grass to strike and eat.
+					# Each falcon rides its own height, drifting slowly up and down
+					# (5 to 16 m); it stoops to the grass to strike and eat, and
+					# drops onto a treetop to perch.
+					var low: bool = data.state == "Dive" or data.state == "Eat"
+					var cruise: float = 6.0 + fposmod(data.gait_seed * 3.7, 1.0) * 6.0 + sin(now * 0.12 + data.gait_seed * 2.0) * 3.5
+					var want: float = 1.2 if low else cruise
+					if data.perch_y >= 0.0:
+						want = data.perch_y - ground + lift * s * 0.6
+					if data.alt < 0.0:
+						data.alt = want
+					data.alt = move_toward(data.alt, want, (14.0 if low else 4.0) * get_process_delta_time())
+					var bob: float = sin(now * 0.9 + data.gait_seed) * 0.5 if not low and data.perch_y < 0.0 else 0.0
+					y = ground + data.alt + bob
+					# Sitting on a crown: wings folded, no flapping.
+					if data.perch_y >= 0.0 and absf(data.alt - want) < 0.3:
+						flying = false
 				else:
 					y = ground + 2.0 + sin(now * 2.2 + data.gait_seed) * 0.3
 			elif kind == 3:
@@ -385,7 +401,10 @@ func sync(registry: Array[AgentData]) -> void:
 			if now - data.alarm_time < ALARM_TIME:
 				action = SURPRISE
 			# Someone sleepy still walking to bed walks; they lie down on arrival.
-			if action == ACTIONS["Sleep"] and speed > 0.4:
+			# Anyone actually covering ground walks, whatever its state says:
+			# its velocity is from its last think and can lag behind.
+			var moved: bool = data.prev_pos.distance_squared_to(data.pos) > 0.0025
+			if action == ACTIONS["Sleep"] and (speed > 0.4 or moved):
 				action = 0
 			elif data.state == "Sleep" and action == ACTIONS["Sleep"]:
 				_sleepers.append([x, y + size.y * 0.5 * s, z, fposmod(data.gait_seed, 1.0)])

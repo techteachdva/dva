@@ -400,6 +400,11 @@ func _movement_tick(delta: float) -> void:
 	if RESTING_STATES.has(_current_state) and velocity.length_squared() < 0.25 and not _aerial:
 		velocity = Vector3.ZERO
 		return
+	if _aerial:
+		# Birds and drifting spores keep over the valley, not the peaks.
+		var ra: float = Vector2(global_position.x, global_position.z).length()
+		if ra > BOUNDARY_SOFT:
+			velocity += Vector3(-global_position.x, 0.0, -global_position.z) / ra * 6.0 * (1.0 + (ra - BOUNDARY_SOFT) * 0.4)
 	if not _aerial:
 		velocity.y = 0.0
 		# Soft round boundary: past the meadow the slopes are walkable for a
@@ -434,6 +439,14 @@ func _movement_tick(delta: float) -> void:
 			pace *= _data.speed_boost
 		_move_pace = pace
 		global_position += velocity * delta * pace
+		# However hard they flee (and however long a staggered step), fliers
+		# never pass the hard edge.
+		if _aerial:
+			var fl := Vector2(global_position.x, global_position.z)
+			if fl.length() > BOUNDARY_HARD:
+				fl = fl.normalized() * BOUNDARY_HARD
+				global_position.x = fl.x
+				global_position.z = fl.y
 	if not _aerial:
 		var ground_y := 0.0
 		var ground_sim: SimulationDirector = director

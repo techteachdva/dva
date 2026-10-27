@@ -20,6 +20,11 @@ var has_shown: bool = false
 # Height of the sprite's middle as last drawn (fliers soar well above their
 # true position), so taps land on what the player actually sees.
 var drawn_mid_y: float = 0.0
+# A flier's drawn height above the ground, eased so a falcon visibly swoops
+# down on a dive and climbs back to soar.
+var alt: float = -1.0
+# World height a perched bird sits at (a treetop), or -1 when not perched.
+var perch_y: float = -1.0
 var interval: float = 0.1
 var state: String = ""
 var age: float = 0.0

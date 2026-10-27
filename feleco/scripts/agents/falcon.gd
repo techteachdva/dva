@@ -2,7 +2,7 @@ class_name Falcon
 extends MarkovAgent
 
 @export var patrol_speed: float = 5.0
-@export var dive_speed: float = 10.0
+@export var dive_speed: float = 12.0
 @export var metabolism_rate: float = 1.1
 @export var repro_threshold: float = 30.0
 @export var repro_cost: float = 15.0
@@ -29,6 +29,7 @@ func _register_states() -> void:
 	_register_state("Patrol", _on_enter_patrol, _on_tick_patrol, _on_exit_patrol)
 	_register_state("Dive", _on_enter_dive, _on_tick_dive, _on_exit_dive)
 	_register_state("Eat", _on_enter_eat, _on_tick_eat, _on_exit_eat)
+	_register_state("Perch", _on_enter_perch, _on_tick_perch, _on_exit_perch)
 	_current_state = "Patrol"
 
 func _get_transition_modifiers() -> Dictionary:
@@ -36,19 +37,27 @@ func _get_transition_modifiers() -> Dictionary:
 	var vision: VisionCone = _vision_cone
 	if vision == null:
 		return mods
-	var robins := vision.get_visible_by_tag("robin")
-	var rabbits := vision.get_visible_by_tag("rabbit")
-	rabbits.append_array(vision.get_visible_by_tag("beetle"))
 	var sim: SimulationDirector = director
-	var fish_near: bool = sim != null and sim.find_nearest_fish(global_position, 14.0) != null
-	if robins.size() > 0 or rabbits.size() > 0 or fish_near:
+	# From up high a falcon sees all around it, not just ahead: once hungry it
+	# stoops on anything small in range.
+	# A perched falcon only leaves its tree for prey once it's hungry.
+	var hunt_at: float = 60.0 if _current_state == "Perch" else 85.0
+	var prey: Node3D = _spot_prey() if energy < hunt_at else null
+	var fish_near: bool = energy < hunt_at and sim != null and sim.find_nearest_fish(global_position, 16.0) != null
+	if prey != null or fish_near:
 		mods["Dive"] = 1.0  # instant interrupt
+	elif _current_state == "Perch":
+		mods["Perch"] = 1.0
+	elif energy > 45.0 and _perch_rest <= 0.0 and randf() < 0.05:
+		# Well fed: drop onto a treetop for a while and watch the meadow.
+		mods["Perch"] = 0.9
 	else:
 		if energy < 25.0:
 			mods["Eat"] = clampf(mods.get("Eat", 0.0) + 0.3, 0.0, 1.0)
 	return mods
 
 func _physics_process(delta: float) -> void:
+	_perch_rest = maxf(_perch_rest - delta, 0.0)
 	super._physics_process(delta)
 	# Everything below is life, not movement: it runs at Clock.LIFE_PACE.
 	delta *= Clock.LIFE_PACE
@@ -129,8 +138,12 @@ func _try_reproduce(delta: float) -> void:
 
 func _pick_patrol_target() -> void:
 	_patrol_target = global_position + Vector3((randf() - 0.5) * 20.0, 0.0, (randf() - 0.5) * 20.0)
-	_patrol_target.x = clampf(_patrol_target.x, -45.0, 45.0)
-	_patrol_target.z = clampf(_patrol_target.z, -45.0, 45.0)
+	# Patrol over the valley, never out over the peaks.
+	var flat := Vector2(_patrol_target.x, _patrol_target.z)
+	if flat.length() > ValleyTerrain.FLOOR_RADIUS - 6.0:
+		flat = flat.normalized() * (ValleyTerrain.FLOOR_RADIUS - 6.0)
+	_patrol_target.x = flat.x
+	_patrol_target.z = flat.y
 
 func _on_enter_patrol() -> void:
 	_pick_patrol_target()
@@ -150,20 +163,79 @@ func _on_exit_patrol() -> void:
 	pass
 
 func _on_enter_dive() -> void:
-	pass
+	_dive_target = null
+
+# Perching: fly to a grown tree and sit on its crown for a while.
+var _perch_tree: Node3D = null
+var _perch_left: float = 0.0
+# Seconds before it will perch again.
+var _perch_rest: float = 0.0
+
+func _on_enter_perch() -> void:
+	var sim: SimulationDirector = director
+	_perch_tree = null
+	if sim != null:
+		var t := sim.find_nearest_tree(global_position, 30.0)
+		if t != null and t.get("_stage") == 2 and not bool(t.get("bush")) and t.has_method("crown_top"):
+			_perch_tree = t
+	_perch_left = randf_range(8.0, 16.0)
+	if _perch_tree == null:
+		_perch_rest = 6.0
+		set_state("Patrol")
+
+func _on_tick_perch(delta: float) -> void:
+	if _perch_tree == null or not is_instance_valid(_perch_tree):
+		set_state("Patrol")
+		return
+	var to := _perch_tree.global_position - global_position
+	to.y = 0.0
+	if to.length() > 0.6:
+		velocity = to.normalized() * patrol_speed
+		if _data != null:
+			_data.perch_y = -1.0
+		return
+	velocity = Vector3.ZERO
+	if _data != null:
+		_data.perch_y = _perch_tree.crown_top()
+	# Perched time runs on the life clock like everything else here.
+	_perch_left -= delta / Clock.LIFE_PACE
+	if _perch_left <= 0.0:
+		set_state("Patrol")
+
+func _on_exit_perch() -> void:
+	_perch_rest = randf_range(20.0, 40.0)
+	if _data != null:
+		_data.perch_y = -1.0
+
+const PREY: Array[String] = ["rabbit", "robin", "beetle", "worm"]
+const SPOT_RANGE: float = 20.0
+var _dive_target: Node3D = null
+
+# The nearest small creature in range: rabbits on open ground are the
+# staple, robins and beetles and surfaced worms will do.
+func _spot_prey() -> Node3D:
+	var sim: SimulationDirector = director
+	if sim == null:
+		return null
+	var best: Node3D = null
+	var best_d: float = SPOT_RANGE * SPOT_RANGE
+	for n in sim.get_nearby_agents(global_position, SPOT_RANGE):
+		if n == self or not is_instance_valid(n) or not n is MarkovAgent:
+			continue
+		if not PREY.has((n as MarkovAgent).species_id) or n.get("indoors") == true:
+			continue
+		var d: float = Vector2(n.global_position.x - global_position.x, n.global_position.z - global_position.z).length_squared()
+		if (n as MarkovAgent).species_id == "rabbit":
+			d *= 0.6
+		if d < best_d:
+			best_d = d
+			best = n
+	return best
 
 func _on_tick_dive(delta: float) -> void:
-	var target: Node3D = null
-	var vision: VisionCone = _vision_cone
-	if vision != null:
-		var robins := vision.get_visible_by_tag("robin")
-		var rabbits := vision.get_visible_by_tag("rabbit")
-		rabbits.append_array(vision.get_visible_by_tag("beetle"))
-		# Rabbits on open ground are the staple; robins are harder to catch.
-		if rabbits.size() > 0 and is_instance_valid(rabbits[0]):
-			target = rabbits[0]
-		elif robins.size() > 0 and is_instance_valid(robins[0]):
-			target = robins[0]
+	if _dive_target == null or not is_instance_valid(_dive_target) or not _dive_target.is_inside_tree():
+		_dive_target = _spot_prey()
+	var target: Node3D = _dive_target
 	if target == null:
 		var sim: SimulationDirector = director
 		if sim != null:
@@ -171,14 +243,16 @@ func _on_tick_dive(delta: float) -> void:
 	if target != null and is_instance_valid(target):
 		var dir := (target.global_position - global_position).normalized()
 		velocity = dir * dive_speed
-		var bite: float = 2.8 if target.is_in_group("fish") else 2.0
-		if global_position.distance_to(target.global_position) < bite and target is MarkovAgent:
+		var bite: float = 3.0 if target.is_in_group("fish") else 2.6
+		var flat := Vector2(target.global_position.x - global_position.x, target.global_position.z - global_position.z)
+		if flat.length() < bite and target is MarkovAgent:
 			if CombatSystem.resolve_attack(self, target as MarkovAgent):
 				energy += 15.0
 				energy = clampf(energy, 0.0, 100.0)
 				set_state("Eat")
 	else:
-		velocity = velocity.move_toward(Vector3.ZERO, delta * 2.0)
+		# Lost it: climb back up and keep looking.
+		set_state("Patrol")
 
 func _on_exit_dive() -> void:
 	pass

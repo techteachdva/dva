@@ -176,7 +176,11 @@ func _on_enter_fly() -> void:
 	velocity = Vector3(randf() - 0.5, 0.0, randf() - 0.5).normalized() * fly_speed
 
 func _on_tick_fly(_delta: float) -> void:
-	# Random wandering flight
+	# Random wandering flight, turning home once out over the slopes.
+	var out: float = Vector2(global_position.x, global_position.z).length()
+	if out > ValleyTerrain.FLOOR_RADIUS + 2.0:
+		velocity = Vector3(-global_position.x, 0.0, -global_position.z).normalized() * fly_speed
+		return
 	if randf() < 0.02:
 		velocity = Vector3(randf() - 0.5, 0.0, randf() - 0.5).normalized() * fly_speed
 	# Flock with robins
@@ -205,6 +209,11 @@ func _on_enter_land() -> void:
 			target = best.global_position
 	if target == Vector3.ZERO:
 		target = global_position + Vector3((randf() - 0.5) * 8.0, 0.0, (randf() - 0.5) * 8.0)
+	# Robins come down on the meadow, not up on the rocks.
+	var flat := Vector2(target.x, target.z)
+	if flat.length() > ValleyTerrain.FLOOR_RADIUS:
+		flat = flat.normalized() * (ValleyTerrain.FLOOR_RADIUS - 2.0)
+		target = Vector3(flat.x, target.y, flat.y)
 	_land_at(target)
 
 func _on_tick_land(_delta: float) -> void:
