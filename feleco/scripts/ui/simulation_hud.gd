@@ -140,6 +140,7 @@ func _ready() -> void:
 	_style_roster()
 	_mark_dock()
 	_refresh_champion()
+	_build_rail()
 
 # Live betting: the Bets button pauses the valley and opens the table over it.
 var _bets_button: Button
@@ -153,8 +154,6 @@ func _add_bets_button() -> void:
 	_bets_button.theme_type_variation = "PrimaryButton"
 	_bets_button.custom_minimum_size = Vector2(120, 56)
 	_bets_button.pressed.connect(_open_bets)
-	$BottomBar.add_child(_bets_button)
-	$BottomBar.move_child(_bets_button, 0)
 	if _director != null and _director.bet_tracker != null:
 		_director.bet_tracker.bet_settled.connect(func(_b: Dictionary) -> void: _refresh_bet_line())
 	_refresh_bet_line()
@@ -258,7 +257,6 @@ func _build_power_tray() -> void:
 	_tray_button.custom_minimum_size = Vector2(130, 52)
 	FelecoUiScript.mark(_tray_button, "TouchButton")
 	_tray_button.pressed.connect(func() -> void: _tray.visible = not _tray.visible)
-	$BottomBar.add_child(_tray_button)
 
 # A reminder in the corner when custom tuning is on, so results aren't mistaken for defaults.
 func _refresh_tuned_badge() -> void:
@@ -433,6 +431,7 @@ func _build_goals() -> void:
 	_goals.offset_top = 10.0
 	_goals.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	add_child(_goals)
+	HudWindow.movable(_goals)
 	var gc: Node = get_node_or_null("/root/GameConfig")
 	if gc != null and not gc.tutorial_done and gc.current_mode == "sandbox":
 		_show_welcome.call_deferred()
@@ -522,7 +521,7 @@ func _on_rampage_result(who: String, kills: int, won: bool) -> void:
 	var history: EventHistory = get_node_or_null("EventHistory")
 	if history != null:
 		history.add_highlight("%s %s's rampage: %d of %d devoured" % ["WON:" if won else "LOST:", who, kills, goal], col)
-	var btn: Button = $BottomBar/History
+	var btn: Button = _rail_buttons.get("History", $BottomBar/History)
 	var tw := create_tween().set_loops(4)
 	tw.tween_property(btn, "modulate", col * 1.4, 0.35)
 	tw.tween_property(btn, "modulate", Color.WHITE, 0.35)
@@ -570,13 +569,14 @@ func _start_follow(agent: MarkovAgent) -> void:
 	_follow_panel.director = _director
 	_follow_panel.anchor_left = 1.0
 	_follow_panel.anchor_right = 1.0
-	_follow_panel.offset_left = -440.0
-	_follow_panel.offset_right = -10.0
+	_follow_panel.offset_left = -440.0 - RAIL_W
+	_follow_panel.offset_right = -10.0 - RAIL_W
 	_follow_panel.offset_top = 170.0
 	# If it ever needs more room it widens to the left, never off the screen.
 	_follow_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_follow_panel.stopped.connect(_stop_follow)
 	add_child(_follow_panel)
+	HudWindow.dress(_follow_panel, "Creature", null, _stop_follow)
 	var hill: Control = get_node_or_null("HillBars")
 	if hill != null:
 		hill.visible = false
@@ -592,7 +592,13 @@ func _stop_follow() -> void:
 	if cam != null and cam.has_method("follow") and cam.call("following") != null:
 		cam.follow(null)
 
+var _rail_clock: float = 0.0
+
 func _process(_delta: float) -> void:
+	_rail_clock -= _delta / maxf(Engine.time_scale, 0.01)
+	if _rail_clock <= 0.0 and not _rail_buttons.is_empty():
+		_rail_clock = 0.25
+		_refresh_rail()
 	# Bet creatures: a pulsing ring on the ground at their feet, following the
 	# drawn (smoothed) position so it never slides out from under the sprite.
 	if not _bet_rings.is_empty():
@@ -889,10 +895,9 @@ func _build_hill_bars() -> void:
 	panel.name = "HillBars"
 	panel.anchor_left = 1.0
 	panel.anchor_right = 1.0
-	panel.offset_left = -470.0
-	panel.offset_right = -10.0
+	panel.offset_left = -470.0 - RAIL_W
+	panel.offset_right = -10.0 - RAIL_W
 	panel.offset_top = 178.0
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.tooltip_text = "Who rules the valley. A bar rises for each day that species is the most dominant population for its kind. Most days ruled at year's end wins."
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.09, 0.125, 0.102, 0.78)
@@ -906,7 +911,7 @@ func _build_hill_bars() -> void:
 	col.add_theme_constant_override("separation", 4)
 	panel.add_child(col)
 	_hill_title = Label.new()
-	_hill_title.text = "King of the Hill"
+	_hill_title.text = "No one rules yet"
 	_hill_title.add_theme_font_size_override("font_size", 14)
 	_hill_title.modulate = Color(0.95, 0.85, 0.55)
 	col.add_child(_hill_title)
@@ -979,7 +984,7 @@ func _update_hill_bars() -> void:
 		bar.modulate = Color(1.25, 1.2, 1.05) if ruling else Color(0.85, 0.85, 0.85)
 		(_hill_crowns[sp] as Control).modulate.a = 1.0 if sp == top else (0.45 if ruling else 0.0)
 	if not _director.current_leader.is_empty():
-		_hill_title.text = "King of the Hill · %s rule now" % _director.current_leader.capitalize()
+		_hill_title.text = "%s rule now" % _director.current_leader.capitalize()
 
 var _user_paused: bool = false
 
@@ -1038,3 +1043,170 @@ func _trigger_meteor() -> void:
 	if _director != null:
 		_director.trigger_meteor()
 		FXManager.show_dramatic_text(Vector3.ZERO, "A meteor breaks whoever holds the valley.", Color(0.9, 0.45, 0.35))
+
+
+# ---------------------------------------------------------------------------
+# RIGHT RAIL: one button per HUD window, so every window can be closed and
+# opened again, plus Clear view to hide them all and watch the valley. The
+# dock along the bottom keeps only time controls; the windows sit left of the
+# rail, can be dragged anywhere and fold down to their title bars.
+# ---------------------------------------------------------------------------
+const RAIL_W: float = 132.0
+# An icon for every rail button: SVGs in assets/icons, not emoji (the game's
+# fonts have no emoji, so they would draw as empty boxes on Chromebooks).
+const RAIL_ICONS: Dictionary = {
+	"Census": "rail_census", "Goals": "rail_goals", "Hill": "crown", "Bet Slip": "rail_bets",
+	"Creature": "rail_creature", "History": "scroll", "Ticker": "rail_ticker", "Time": "rail_time",
+	"Powers": "rail_powers", "Bets": "rail_bets", "Clear view": "eye",
+}
+var _rail_buttons: Dictionary = {}
+var _cleared: Array[Control] = []
+
+func _build_rail() -> void:
+	$TopRight.offset_left -= RAIL_W
+	$TopRight.offset_right -= RAIL_W
+	# The dock: one compact row of time controls above the ticker.
+	$BottomBar/History.visible = false
+	$BottomBar.offset_right = -16.0 - RAIL_W
+	$BottomBar.offset_top = -112.0
+	$BottomBar.offset_bottom = -48.0
+	for b: Node in $BottomBar.get_children():
+		if b is Button:
+			(b as Button).custom_minimum_size = Vector2(84, 48)
+	_tray.offset_top = -190.0
+	_tray.offset_bottom = -120.0
+	# The census grows to fit its lines instead of a fixed tall box.
+	$TopLeft.offset_bottom = $TopLeft.offset_top
+	$TopRight.offset_bottom = $TopRight.offset_top
+	HudWindow.dress($TopLeft, "Census", $TopLeft/VBox)
+	HudWindow.dress($TopRight, "Champion and Bets", $TopRight/VBoxContainer)
+	HudWindow.dress(get_node("HillBars"), "King of the Hill")
+	# Start with the bars folded: the valley is the show.
+	HudWindow.set_folded(get_node("HillBars"), true)
+	_dress_history()
+
+	var rail := VBoxContainer.new()
+	rail.name = "Rail"
+	rail.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	rail.offset_left = -RAIL_W + 6.0
+	rail.offset_right = -8.0
+	rail.offset_top = 10.0
+	rail.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	rail.add_theme_constant_override("separation", 6)
+	add_child(rail)
+	var history: EventHistory = get_node_or_null("EventHistory")
+	var ticker: Control = get_node_or_null("Tickertape")
+	_rail_button(rail, "Census", "Show or hide the count of every species.", func() -> void: _toggle_window($TopLeft))
+	_rail_button(rail, "Goals", "Show or hide your goals and My Creature.", func() -> void: _toggle_window(_goals))
+	_rail_button(rail, "Hill", "Show or hide King of the Hill: who rules the valley.", func() -> void: _toggle_window(get_node("HillBars")))
+	_rail_button(rail, "Bet Slip", "Show or hide your bets.", func() -> void: _toggle_window($TopRight))
+	_rail_button(rail, "Creature", "Show or hide the card of the creature you are following.", func() -> void:
+		if _follow_panel != null and is_instance_valid(_follow_panel):
+			_toggle_window(_follow_panel))
+	_rail_button(rail, "History", "Every birth, death, fight and big moment, colour-coded.", _open_history)
+	_rail_button(rail, "Ticker", "Show or hide the news ticker along the bottom.", func() -> void:
+		if ticker != null:
+			ticker.visible = not ticker.visible)
+	_rail_button(rail, "Time", "Show or hide the speed and pause buttons.", func() -> void: $BottomBar.visible = not $BottomBar.visible)
+	rail.add_child(HSeparator.new())
+	_tray_button.text = "Powers"
+	_bets_button.text = "Bets"
+	_rail_buttons["Powers"] = _tray_button
+	_rail_buttons["Bets"] = _bets_button
+	for b: Button in [_tray_button, _bets_button]:
+		b.custom_minimum_size = Vector2(0, 44)
+		b.add_theme_font_size_override("font_size", 14)
+		b.focus_mode = Control.FOCUS_NONE
+		rail.add_child(b)
+	rail.add_child(HSeparator.new())
+	_rail_button(rail, "Clear view", "Hide every window to watch the valley. Press again to bring them back.", _toggle_clear_view)
+	for key: String in RAIL_ICONS.keys():
+		if _rail_buttons.has(key):
+			var b: Button = _rail_buttons[key]
+			b.icon = load("res://assets/icons/%s.svg" % RAIL_ICONS[key])
+			b.expand_icon = false
+			b.add_theme_constant_override("icon_max_width", 20)
+			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	if history != null:
+		history.visibility_changed.connect(_refresh_rail)
+	_refresh_rail()
+
+func _rail_button(rail: Control, text: String, tip: String, action: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.tooltip_text = tip
+	b.toggle_mode = false
+	b.custom_minimum_size = Vector2(0, 44)
+	b.add_theme_font_size_override("font_size", 14)
+	b.focus_mode = Control.FOCUS_NONE
+	b.theme_type_variation = "GhostButton"
+	b.pressed.connect(func() -> void:
+		action.call()
+		_refresh_rail())
+	rail.add_child(b)
+	_rail_buttons[text] = b
+	return b
+
+func _toggle_window(win: Control) -> void:
+	if win == null:
+		return
+	win.visible = not win.visible
+	if win.visible:
+		HudWindow.set_folded(win, false)
+
+func _dress_history() -> void:
+	var history: EventHistory = get_node_or_null("EventHistory")
+	if history == null:
+		return
+	var panel: Panel = history.get_node("Panel")
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.offset_left = -330.0
+	panel.offset_right = 330.0
+	panel.offset_top = -250.0
+	panel.offset_bottom = 230.0
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.06, 0.09, 0.07, 0.97)
+	sb.border_color = FelecoUiScript.GOLD
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(16)
+	panel.add_theme_stylebox_override("panel", sb)
+	HudWindow.dress(panel, "History", history.get_node("Panel/MarginContainer/VBoxContainer"))
+
+func _toggle_clear_view() -> void:
+	var windows: Array[Control] = [$TopLeft, $TopRight, _goals, get_node("HillBars"), $BottomBar]
+	if _follow_panel != null and is_instance_valid(_follow_panel):
+		windows.append(_follow_panel)
+	var ticker: Control = get_node_or_null("Tickertape")
+	if ticker != null:
+		windows.append(ticker)
+	if _cleared.is_empty():
+		for w: Control in windows:
+			if w.visible:
+				w.visible = false
+				_cleared.append(w)
+		_tray.visible = false
+	else:
+		for w: Control in _cleared:
+			if is_instance_valid(w):
+				w.visible = true
+		_cleared.clear()
+
+# Lit rail buttons mark the windows that are open.
+func _refresh_rail() -> void:
+	var lit: Dictionary = {
+		"Census": $TopLeft.visible,
+		"Goals": _goals != null and _goals.visible,
+		"Hill": get_node("HillBars").visible,
+		"Bet Slip": $TopRight.visible,
+		"Creature": _follow_panel != null and is_instance_valid(_follow_panel) and _follow_panel.visible,
+		"Ticker": get_node_or_null("Tickertape") != null and get_node("Tickertape").visible,
+		"Time": $BottomBar.visible,
+		"Clear view": not _cleared.is_empty(),
+	}
+	var history: EventHistory = get_node_or_null("EventHistory")
+	lit["History"] = history != null and history.get_node("Panel").visible
+	for key: String in lit.keys():
+		if _rail_buttons.has(key):
+			(_rail_buttons[key] as Button).modulate = Color(1.0, 0.93, 0.7) if lit[key] else Color(0.72, 0.76, 0.72)
+	if _rail_buttons.has("Creature"):
+		(_rail_buttons["Creature"] as Button).disabled = _follow_panel == null or not is_instance_valid(_follow_panel)

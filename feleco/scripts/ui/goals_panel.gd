@@ -81,9 +81,9 @@ func _ready() -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title)
 	_collapse = Button.new()
-	_collapse.text = "Hide"
-	_collapse.theme_type_variation = "GhostButton"
-	_collapse.custom_minimum_size = Vector2(56, 26)
+	_collapse.text = "-"
+	_collapse.tooltip_text = "Fold the goals down to their title. Drag the card to move it."
+	HudWindow.style_bar_button(_collapse)
 	_collapse.pressed.connect(_toggle)
 	head.add_child(_collapse)
 	_body = VBoxContainer.new()
@@ -102,7 +102,7 @@ func _ready() -> void:
 
 func _toggle() -> void:
 	_body.visible = not _body.visible
-	_collapse.text = "Hide" if _body.visible else "Show"
+	_collapse.text = "-" if _body.visible else "+"
 
 # --- Goals ---------------------------------------------------------------
 

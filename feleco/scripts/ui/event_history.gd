@@ -23,9 +23,20 @@ func toggle() -> void:
 	if _panel.visible:
 		_refresh_display()
 
-func add_entry(text: String) -> void:
+# Each kind of event gets the ticker's colour and tag, so History reads at a
+# glance: green births, grey deaths, red hunts, orange fights, gold big news.
+func add_entry(text: String, kind: String = "") -> void:
 	var timestamp: String = _format_time()
-	var entry: String = "[%s] %s" % [timestamp, text]
+	var entry: String = "[color=#7f8a80][%s][/color] %s" % [timestamp, text]
+	if Tickertape.KIND_COLORS.has(kind):
+		var col: Color = Tickertape.KIND_COLORS[kind]
+		var tag: String = Tickertape.KIND_TAGS[kind]
+		var words: String = "[color=#%s]%s[/color]" % [col.lerp(Color(0.97, 0.95, 0.9), 0.3).to_html(false), text]
+		if kind in ["big", "kill"]:
+			words = "[b]%s[/b]" % words
+		if kind == "big":
+			words = "[bgcolor=#%s]%s[/bgcolor]" % [col.darkened(0.75).to_html(false), words]
+		entry = "[color=#7f8a80][%s][/color] [bgcolor=#%s][color=#10140f][b] %s [/b][/color][/bgcolor] %s" % [timestamp, col.to_html(false), tag, words]
 	_entries.append(entry)
 	if _entries.size() > MAX_ENTRIES:
 		_entries.remove_at(0)
@@ -47,10 +58,14 @@ func _format_time() -> String:
 	var secs: int = int(total) % 60
 	return "%02d:%02d" % [mins, secs]
 
+const LEGEND: String = "[font_size=13][color=#73e066]BORN[/color]   [color=#b3bdc7]DIED[/color]   [color=#f2614f]HUNT[/color]   [color=#fa9e4d]FIGHT[/color]   [color=#ffcc47]BIG NEWS[/color]   [color=#d9a8ff]VALLEY[/color][/font_size]
+
+"
+
 func _refresh_display() -> void:
-	var bbcode := ""
+	var bbcode := LEGEND
 	for entry: String in _entries:
 		bbcode += entry + "\n"
 	_rich_text.text = bbcode
 	# Auto-scroll to bottom
-	_rich_text.scroll_to_line(_entries.size())
+	_rich_text.scroll_to_line(_entries.size() + 2)

@@ -29,6 +29,9 @@ static func font(kind: String = "body") -> Font:
 		fv.base_font = load(path) as FontFile
 		var ts := TextServerManager.get_primary_interface()
 		fv.variation_opentype = {ts.name_to_tag("wght"): 600 if kind == "heading" else (800 if kind == "bold" else 650)}
+		if kind == "italic":
+			# Nunito has no italic face: slant the regular one.
+			fv.variation_transform = Transform2D(Vector2(1, 0), Vector2(0.22, 1), Vector2.ZERO)
 		_fonts[kind] = fv
 	return _fonts[kind]
 

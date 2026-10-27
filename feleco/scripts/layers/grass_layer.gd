@@ -403,6 +403,9 @@ func _setup_visuals() -> void:
 	mm.use_colors = true
 	mm.mesh = _create_blade_mesh()
 	mm.instance_count = grid_width * grid_height
+	# A new buffer is all zeros: zero-size billboards (see HIDDEN_TUFT).
+	for i: int in mm.instance_count:
+		mm.set_instance_transform(i, HIDDEN_TUFT)
 	_multimesh.multimesh = mm
 	_multimesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var mat := StandardMaterial3D.new()
@@ -439,6 +442,13 @@ func set_tint(c: Color) -> void:
 	for i: int in range(_grid.size()):
 		_mark_dirty(i)
 
+# Tufts are billboards that keep their scale: the shader divides by each
+# tuft's scale, so a zero-size tuft (a hidden cell under a hut or the river)
+# can blow up into a giant yellow-green sheet across the screen. Hidden tufts
+# are tiny instead, parked deep underground, and no tuft is ever size zero.
+const MIN_TUFT: float = 0.02
+const HIDDEN_TUFT := Transform3D(Basis(Vector3(0.001, 0, 0), Vector3(0, 0.001, 0), Vector3(0, 0, 0.001)), Vector3(0.0, -500.0, 0.0))
+
 static func _hash(i: int, salt: float) -> float:
 	var v: float = sin(float(i) * 12.9898 + salt * 78.233) * 43758.5453
 	return v - floor(v)
@@ -454,7 +464,7 @@ func _update_visuals() -> void:
 		var gz: int = i / grid_width
 		var gx: int = i - gz * grid_width
 		if has_mask and _masked[i] == 1:
-			mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ZERO), Vector3.ZERO))
+			mm.set_instance_transform(i, HIDDEN_TUFT)
 			continue
 		var density := _grid[i]
 		# A non-finite density would stretch the tuft across the whole sky.
@@ -499,8 +509,8 @@ func _update_visuals() -> void:
 			# Golden grass ignores the season tint and glows a little.
 			color = color * 1.25
 		color.a = 1.0
-		h = clampf(h, 0.0, 2.5)
-		w = clampf(w, 0.0, 2.5)
+		h = clampf(h, MIN_TUFT, 2.5)
+		w = clampf(w, MIN_TUFT, 2.5)
 		var xf := Transform3D(Basis().scaled(Vector3(w, h, 1.0)), pos)
 		mm.set_instance_transform(i, xf)
 		mm.set_instance_color(i, color)

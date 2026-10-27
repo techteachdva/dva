@@ -354,10 +354,14 @@ func sync(registry: Array[AgentData]) -> void:
 			elif kind == 3:
 				# Spores float at their own height; a fruiting cap stands on the ground.
 				# Settled spores sit on the grass; only one riding the wind floats.
+				# Always measured from the grass, never the spore's own height: a
+				# spore left high (born where a bird fell, or nudged upward) was
+				# drawn floating among the falcons.
+				var soil: float = director.ground_height(x, z) if director != null else data.pos.y
 				if data.state == "Fruit" or data.state == "Anchor" or data.vel.length_squared() < 0.01:
-					y = data.pos.y + lift * s
+					y = soil + lift * s
 				else:
-					y = data.pos.y + 0.6 + sin(now * 1.3 + data.gait_seed) * 0.12
+					y = soil + 0.6 + sin(now * 1.3 + data.gait_seed) * 0.12
 			elif species == "fish":
 				if data.state == "Stranded":
 					# Flopping about on the grass.

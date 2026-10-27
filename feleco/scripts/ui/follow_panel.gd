@@ -226,6 +226,9 @@ func _remember(color: String, verb: String, cause: String, key: String = "", coo
 		if now < float(_cool.get(key, 0.0)):
 			return
 		_cool[key] = now + cool
+		if StoryBank.MEMORIES.has(key) and randf() < 0.6:
+			var alts: Array = StoryBank.MEMORIES[key]
+			cause = String(alts[randi() % alts.size()])
 	var when: String = ""
 	if director != null:
 		when = "Day %d, %s" % [int(director.get_day()) + 1, "night" if director.is_night() else "day"]
@@ -480,32 +483,53 @@ func _mood_now(state: String) -> Array:
 		return ["Content", GOOD, "Fed, whole and among its own."]
 	return ["Watchful", CALM, "Getting by."]
 
-# The inner voice: the most pressing thing on its mind right now.
+# The inner voice: the most pressing thing on its mind right now. Each
+# situation has several lines (StoryBank.THOUGHTS); one holds for about eight
+# seconds, then another, so the card keeps saying something new.
 func _think(state: String, default: String) -> String:
 	var hp: float = float(agent.get("health")) if agent.get("health") != null else 50.0
 	var en: float = float(agent.get("energy")) if agent.get("energy") != null else 50.0
 	var night: bool = director != null and director.is_night()
 	var nocturnal: bool = NOCTURNAL.has(agent.species_id)
 	if state == "Flee":
-		return "Something is after me!"
+		return _line("flee")
 	if hp < 25.0:
-		return "I'm hurt badly. I need to rest somewhere safe."
+		return _line("hurt")
 	if en < 15.0:
-		return "So hungry I can barely stand."
+		return _line("starving")
 	if agent.get("cranky") != null and float(agent.get("cranky")) > 0.5:
-		return "Slept on rocks all night. Don't talk to me."
+		return _line("cranky")
 	if agent._age > agent._lifespan * 0.85:
-		return "My bones ache. I've seen a lot of seasons."
+		return _line("old")
 	if en < 35.0 and state not in ["Eat", "Graze", "Forage", "Gather", "Hunt", "Chase", "Dive"]:
-		return "My stomach is growling. Food first."
+		return _line("peckish")
 	if agent.herd > 0.6 and state != "Sleep":
-		return "The pack is with me. Let's hunt." if agent.species_id in ["wolf", "falcon", "human"] else "Safe in the middle of the flock."
+		return _line("pack" if agent.species_id in ["wolf", "falcon", "human", "lion"] else "herd")
 	if agent.herd < 0.05 and state in ["Graze", "Walk", "Wander", "Forage"]:
-		return "Where did everyone go? It isn't safe out here alone."
+		return _line("alone")
 	if night and not nocturnal and state != "Sleep" and agent.species_id != "fish":
-		return "It's dark. I should be tucked up somewhere safe."
+		return _line("dark")
 	if night and nocturnal and state not in ["Sleep", "Eat"]:
-		return "The night belongs to me."
+		return _line("night_owl")
 	if not night and nocturnal and state in ["Wander", "Sleep"]:
-		return "Too bright. I'll wait for the moon."
-	return default if not default.is_empty() else "Just getting on with things."
+		return _line("too_bright")
+	# Calm moments: now and then, something only this species would think.
+	var lines: Array = []
+	if not default.is_empty():
+		lines.append(default)
+	lines.append_array(StoryBank.THOUGHTS.get(state, []))
+	if state not in ["Sleep", "Chase", "Hunt"]:
+		lines.append_array(StoryBank.SPECIES_THOUGHTS.get(agent.species_id, []))
+	if lines.is_empty():
+		return "Just getting on with things."
+	return _rotate(state, lines)
+
+func _line(key: String) -> String:
+	return _rotate(key, StoryBank.THOUGHTS.get(key, ["..."]))
+
+# Steady for a while, then the next line: picked by the creature, the topic
+# and an eight-second slot, so it never flickers between refreshes.
+func _rotate(key: String, lines: Array) -> String:
+	var slot: int = int(Time.get_ticks_msec() / 8000)
+	var i: int = absi(hash("%d|%s|%d" % [agent.get_instance_id(), key, slot])) % lines.size()
+	return String(lines[i])

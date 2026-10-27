@@ -38,7 +38,9 @@ func _make(amount: int, life: float, gravity: Vector3, color: Color, size: Vecto
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.vertex_color_use_as_albedo = true
-	mat.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y if size.y > size.x * 3.0 else BaseMaterial3D.BILLBOARD_ENABLED
+	# Particle billboards (see Corpse._build_stink): plain ones blow up on
+	# particles that haven't been emitted yet.
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	quad.material = mat
 	p.mesh = quad
 	p.color = color

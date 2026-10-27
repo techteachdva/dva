@@ -3,9 +3,21 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.1.1"
+const VERSION: String = "4.2"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.2",
+		"title": "A Clearer Valley",
+		"notes": [
+			"A rail of buttons down the right side opens and closes every window: Census, Goals, King of the Hill, Bets, your Creature, History, the ticker and the speed buttons. Clear view hides them all so you can watch the valley.",
+			"Every window can be dragged anywhere by its background and folded down to its title bar with the - button.",
+			"The ticker is slower and colour-coded: green BORN, grey DIED, red HUNT, orange FIGHT, gold BIG NEWS, purple VALLEY, and blue for the valley's idle thoughts. History uses the same colours and tags.",
+			"Stories use each creature's real name and remember it: a rabbit that escapes three times is called the luckiest in the valley, and a hunter's catches are counted. Deer, goats, bears, mountain lions and beetles have their own stories now.",
+			"Creature cards think many more thoughts, and each one stays on screen long enough to read.",
+			"Fixed a giant yellow-green flash: hidden grass tufts could stretch across the screen.",
+		],
+	},
 	{
 		"version": "4.1.1",
 		"title": "The valley feels a win",

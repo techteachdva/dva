@@ -66,7 +66,11 @@ func _build_stink() -> void:
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	# Particle billboards, never plain ones: a particle not yet emitted has a
+	# zero-size transform, and a plain billboard turns that into a sheet of
+	# yellow-green across the whole screen (seen at the start of a new run,
+	# when the first carcasses appear).
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	m.albedo_color = Color(0.62, 0.75, 0.3, 0.35)
 	m.albedo_texture = SpriteGenerator.texture_for_shadow()
 	q.material = m

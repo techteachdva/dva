@@ -16,16 +16,23 @@ var _quiet: float = 0.0
 @onready var _label: Label = $Panel/Label
 @onready var _panel: Panel = $Panel
 
-# Tint of the panel border per kind of news.
+# Each kind of news has its own colour, a tag word and a font style, shared
+# with the History window so a kill always looks like a kill.
 const KIND_COLORS: Dictionary = {
-	"birth": Color(0.55, 0.82, 0.48),
-	"death": Color(0.73, 0.78, 0.73),
-	"kill": Color(0.86, 0.48, 0.4),
-	"wound": Color(0.9, 0.66, 0.42),
-	"big": Color(0.902, 0.765, 0.416),
-	"murmur": Color(0.62, 0.72, 0.9),
-	"news": Color(0.902, 0.765, 0.416),
+	"birth": Color(0.45, 0.88, 0.4),
+	"death": Color(0.7, 0.74, 0.78),
+	"kill": Color(0.95, 0.38, 0.32),
+	"wound": Color(0.98, 0.62, 0.3),
+	"big": Color(1.0, 0.8, 0.28),
+	"murmur": Color(0.55, 0.72, 1.0),
+	"news": Color(0.85, 0.66, 1.0),
 }
+const KIND_TAGS: Dictionary = {
+	"birth": "BORN", "death": "DIED", "kill": "HUNT", "wound": "FIGHT",
+	"big": "BIG NEWS", "murmur": "...", "news": "VALLEY",
+}
+# Font per kind: big news bold, murmurs italic, the rest regular.
+const KIND_FONTS: Dictionary = {"big": "bold", "kill": "bold", "murmur": "italic"}
 
 # ---------------------------------------------------------------------------
 # BIRTH
@@ -170,12 +177,12 @@ const KILL_POOLS: Dictionary = {
 	],
 	"human->wolf": [
 		"A hunter's spear finds its mark. %s the human brings down %s the wolf.",
-		"The pack loses a member. %s the wolf was no match for %s's spear.",
+		"The pack loses a member. %s's spear was too much for %s the wolf.",
 		"%s the human out-thinks %s the wolf. Brains: 1, teeth: 0.",
 	],
 	"wolf->human": [
 		"The hunter becomes the hunted. %s the wolf catches %s the human far from home.",
-		"%s the human wandered too far. %s the wolf made sure they didn't wander back.",
+		"%s the wolf was waiting when %s the human wandered too far from the village.",
 	],
 	"human->sheep": [
 		"%s the human needed mutton. %s the sheep was in the wrong field at the wrong time.",
@@ -199,7 +206,7 @@ const KILL_POOLS: Dictionary = {
 	],
 	"falcon->fish": [
 		"Splash! %s the falcon plucks %s the fish straight out of the river.",
-		"%s the fish looked up at exactly the wrong moment. %s the falcon says thanks.",
+		"%s the falcon catches %s the fish looking up at exactly the wrong moment.",
 	],
 	"boar->wolf": [
 		"A boar charges like a hairy boulder. %s flattens %s the wolf.",
@@ -207,7 +214,7 @@ const KILL_POOLS: Dictionary = {
 	],
 	"boar->human": [
 		"A wall of bristle and grumpiness. %s the boar bowls over %s the human.",
-		"%s the human tried to shoo %s the boar. It did not shoo.",
+		"%s the boar did not shoo when %s the human tried to shoo it.",
 	],
 	"boar->sheep": [
 		"Wrong field, wrong boar. %s the boar knocks %s the sheep clean over.",
@@ -246,7 +253,7 @@ const WOUND_POOLS: Dictionary = {
 	],
 	"falcon->robin": [
 		"Feathers fly, but nobody falls. %s the falcon just misses %s the robin.",
-		"A near miss with talons. %s the robin escapes %s the falcon and tells everyone.",
+		"A near miss with talons. %s the falcon swoops, but %s the robin escapes and tells everyone.",
 	],
 	"boar->*": [
 		"%s the boar barrels through %s the %s, who staggers off seeing stars.",
@@ -406,34 +413,150 @@ func _fmt(template: String, args: Array) -> String:
 		a.append(a[a.size() - 1])
 	return template % a.slice(0, need)
 
-func _flavor_birth(species: String, variant: String = "") -> String:
+# The base pools here plus StoryBank's extra lines for the same key.
+func _pool(base: Dictionary, extra: Dictionary, key: String, fallback: String = "") -> Array:
+	var out: Array = []
+	out.append_array(base.get(key, []))
+	out.append_array(extra.get(key, []))
+	if out.is_empty() and not fallback.is_empty():
+		out.append_array(base.get(fallback, []))
+		out.append_array(extra.get(fallback, []))
+	return out
+
+# ---------------------------------------------------------------------------
+# SAGAS: stories use the real creature's name, and the ticker remembers what
+# happened to it, so a lucky rabbit's third escape or a lion's fifth catch is
+# called back when it happens. Keyed by instance id; cleared as they die.
+# ---------------------------------------------------------------------------
+var _sagas: Dictionary = {}
+# Creatures whose end (or birth) was already told, so it isn't told twice.
+var _told: Dictionary = {}
+
+# The creature an event happened to: the nearest of its species, or for a
+# birth the youngest nearby (the parent stands right beside the baby).
+func _real(species: String, pos: Vector3, skip: Node = null, newborn: bool = false) -> MarkovAgent:
+	if _director == null:
+		return null
+	var agents: Node = _director.get_node_or_null("Agents")
+	if agents == null:
+		return null
+	var best: MarkovAgent = null
+	var best_d: float = 9.0
+	for n: Node in agents.get_children():
+		var a := n as MarkovAgent
+		if a == null or a == skip or a.species_id != species or a.display_name.is_empty() or (newborn and _told.has(a.get_instance_id())):
+			continue
+		var d: float = a.global_position.distance_squared_to(pos)
+		if newborn:
+			if d > 9.0 or a._age > 1.0:
+				continue
+			d = a._age
+		if d < best_d:
+			best_d = d
+			best = a
+	return best
+
+func _name_of(a: MarkovAgent, species: String) -> String:
+	return a.display_name if a != null else NameGenerator.generate(species)
+
+func _saga(a: MarkovAgent) -> Dictionary:
+	if a == null:
+		return {}
+	var id: int = a.get_instance_id()
+	if not _sagas.has(id):
+		_sagas[id] = {"escapes": 0, "kills": 0}
+	return _sagas[id]
+
+static func nth(n: int) -> String:
+	var suffix: String = "th"
+	if n % 100 < 11 or n % 100 > 13:
+		suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][n % 10]
+	return "%d%s" % [n, suffix]
+
+func _flavor_birth(species: String, variant: String = "", pos: Vector3 = Vector3.ZERO) -> String:
 	var key: String = variant if not variant.is_empty() else species
-	var name_str: String = NameGenerator.generate(key)
-	var pool: Array = BIRTH_POOLS.get(key, BIRTH_POOLS.get(species, BIRTH_POOLS.get("sheep", [])))
+	var a: MarkovAgent = _real(species, pos, null, true)
+	if a != null:
+		_told[a.get_instance_id()] = true
+	var name_str: String = a.display_name if a != null else NameGenerator.generate(key)
+	var pool: Array = _pool(BIRTH_POOLS, StoryBank.BIRTHS, key)
+	if pool.is_empty():
+		pool = _pool(BIRTH_POOLS, StoryBank.BIRTHS, species)
+	if pool.is_empty():
+		pool = ["%s the " + species + " is born. Welcome to the valley!"]
 	return _fmt(_pick(pool), [name_str])
 
-func _flavor_death(species: String) -> String:
-	var name_str: String = NameGenerator.generate(species)
-	var pool: Array = DEATH_POOLS.get(species, DEATH_POOLS.get("sheep", []))
-	return _fmt(_pick(pool), [name_str])
+func _flavor_death(species: String, pos: Vector3 = Vector3.ZERO) -> String:
+	var a: MarkovAgent = _real(species, pos)
+	var name_str: String = _name_of(a, species)
+	var pool: Array = _pool(DEATH_POOLS, StoryBank.DEATHS, species)
+	if pool.is_empty():
+		pool = ["%s the " + species + " has died, and returns to the soil."]
+	var line: String = _fmt(_pick(pool), [name_str])
+	return line + _epitaph(a, name_str)
 
-func _flavor_kill(attacker: String, target: String) -> String:
-	var a_name: String = NameGenerator.generate(attacker)
-	var t_name: String = NameGenerator.generate(target)
-	var key: String = "%s->%s" % [attacker, target]
-	if not KILL_POOLS.has(key):
-		return _fmt(_pick(KILL_POOLS["generic"]), [a_name, attacker.capitalize(), t_name, target.capitalize()])
-	return _fmt(_pick(KILL_POOLS[key]), [a_name, t_name])
+# A short callback to the creature's story, when it had one.
+func _epitaph(a: MarkovAgent, name_str: String) -> String:
+	if a == null:
+		return ""
+	var saga: Dictionary = _sagas.get(a.get_instance_id(), {})
+	_sagas.erase(a.get_instance_id())
+	if int(saga.get("kills", 0)) >= 3:
+		return " " + _pick(StoryBank.SAGA_FALL_HUNTER) % [name_str, int(saga["kills"])]
+	if int(saga.get("escapes", 0)) >= 2:
+		return " " + _pick(StoryBank.SAGA_FALL_SURVIVOR) % [name_str, int(saga["escapes"])]
+	if a._age > a._lifespan * 0.85:
+		var seasons: int = maxi(4, int(a._age / maxf(a._lifespan, 1.0) * 8.0))
+		return " " + _pick(StoryBank.SAGA_OLD) % [name_str, seasons]
+	return ""
 
-func _flavor_wound(attacker: String, target: String) -> String:
-	var a_name: String = NameGenerator.generate(attacker)
-	var t_name: String = NameGenerator.generate(target)
+func _flavor_kill(attacker: String, target: String, pos: Vector3 = Vector3.ZERO) -> String:
+	var t: MarkovAgent = _real(target, pos)
+	var at: MarkovAgent = _real(attacker, pos, t)
+	var a_name: String = _name_of(at, attacker)
+	var t_name: String = _name_of(t, target)
 	var key: String = "%s->%s" % [attacker, target]
-	if attacker == "boar" and not WOUND_POOLS.has(key):
-		return _fmt(_pick(WOUND_POOLS["boar->*"]), [a_name, t_name, target.capitalize()])
-	if not WOUND_POOLS.has(key):
-		return _fmt(_pick(WOUND_POOLS["generic"]), [a_name, attacker.capitalize(), t_name, target.capitalize()])
-	return _fmt(_pick(WOUND_POOLS[key]), [a_name, t_name])
+	var pool: Array = _pool(KILL_POOLS, StoryBank.KILLS, key)
+	var line: String
+	if pool.is_empty():
+		line = _fmt(_pick(_pool(KILL_POOLS, StoryBank.KILLS, "generic")), [a_name, _species_word(attacker), t_name, _species_word(target)])
+	else:
+		line = _fmt(_pick(pool), [a_name, t_name])
+	line += _epitaph(t, t_name)
+	if t != null:
+		_told[t.get_instance_id()] = "killed"
+	var saga: Dictionary = _saga(at)
+	if not saga.is_empty():
+		saga["kills"] = int(saga["kills"]) + 1
+		if int(saga["kills"]) >= 3 and randf() < 0.6:
+			line += " " + _pick(StoryBank.SAGA_TALLY) % [a_name, nth(int(saga["kills"]))]
+	return line
+
+func _flavor_wound(attacker: String, target: String, pos: Vector3 = Vector3.ZERO) -> String:
+	var t: MarkovAgent = _real(target, pos)
+	var at: MarkovAgent = _real(attacker, pos, t)
+	var a_name: String = _name_of(at, attacker)
+	var t_name: String = _name_of(t, target)
+	var key: String = "%s->%s" % [attacker, target]
+	var pool: Array = _pool(WOUND_POOLS, StoryBank.WOUNDS, key)
+	var line: String
+	if not pool.is_empty():
+		line = _fmt(_pick(pool), [a_name, t_name])
+	elif attacker == "boar":
+		line = _fmt(_pick(WOUND_POOLS["boar->*"]), [a_name, t_name, _species_word(target)])
+	else:
+		line = _fmt(_pick(_pool(WOUND_POOLS, StoryBank.WOUNDS, "generic")), [a_name, _species_word(attacker), t_name, _species_word(target)])
+	var saga: Dictionary = _saga(t)
+	if not saga.is_empty():
+		saga["escapes"] = int(saga["escapes"]) + 1
+		if int(saga["escapes"]) >= 2:
+			line += " " + _pick(StoryBank.SAGA_SURVIVOR) % [t_name, nth(int(saga["escapes"]))]
+	return line
+
+const SPECIES_WORDS: Dictionary = {"lion": "mountain lion", "goat": "mountain goat", "spore": "mushroom"}
+
+func _species_word(species: String) -> String:
+	return SPECIES_WORDS.get(species, species)
 
 func _flavor_settlement() -> String:
 	return _pick(SETTLEMENT_POOL)
@@ -463,7 +586,9 @@ func _murmur() -> String:
 				var huts: int = _director._active_shelters.filter(func(s): return is_instance_valid(s)).size()
 				return line % [n, "%d hut%s" % [huts, "" if huts == 1 else "s"]]
 			return line % n
-	return _pick(MURMURS)
+	if _director != null and randf() < 0.25:
+		return _pick(StoryBank.SEASON_MURMURS.get(_director.get_season(), MURMURS))
+	return _pick(MURMURS + StoryBank.MURMURS)
 
 # ---------------------------------------------------------------------------
 # LIFECYCLE
@@ -502,14 +627,14 @@ func _ready() -> void:
 
 # ---------------------------------------------------------------------------
 # MARQUEE: one line of stories gliding right to left at an easy reading pace
-# (about 20 characters a second, whatever the game speed). New stories join
+# (about 13 characters a second, whatever the game speed). New stories join
 # the end of the line; if they pile up, ambient murmurs are dropped first and
 # then the oldest waiting stories.
 # ---------------------------------------------------------------------------
-const SCROLL_PX: float = 150.0
-const GAP_PX: float = 70.0
+const SCROLL_PX: float = 95.0
+const GAP_PX: float = 90.0
 const MAX_WAITING: int = 6
-var _items: Array[Label] = []
+var _items: Array[Control] = []
 var _waiting: Array[Dictionary] = []
 
 func _process(delta: float) -> void:
@@ -518,10 +643,10 @@ func _process(delta: float) -> void:
 	if not get_tree().paused:
 		_quiet += real
 	var w: float = _panel.size.x
-	for item: Label in _items:
+	for item: Control in _items:
 		item.position.x -= SCROLL_PX * real
 	while not _items.is_empty() and _items[0].position.x + _items[0].size.x < -8.0:
-		var gone: Label = _items.pop_front()
+		var gone: Control = _items.pop_front()
 		gone.queue_free()
 	var tail_end: float = -INF if _items.is_empty() else _items[-1].position.x + _items[-1].size.x
 	if tail_end < w - GAP_PX:
@@ -534,24 +659,43 @@ func _process(delta: float) -> void:
 func _launch(ev: Dictionary, at_x: float) -> void:
 	var kind: String = ev["kind"]
 	var accent: Color = KIND_COLORS.get(kind, KIND_COLORS["news"])
-	var l := Label.new()
-	l.text = ev["text"]
-	l.add_theme_font_override("font", FelecoUi.font("bold"))
-	l.add_theme_font_size_override("font_size", 18)
-	l.add_theme_color_override("font_color", Color(0.957, 0.937, 0.894) if kind in ["news", "birth", "death"] else accent.lerp(Color(0.957, 0.937, 0.894), 0.35))
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(l)
-	l.reset_size()
-	l.position = Vector2(at_x, (_panel.size.y - l.size.y) * 0.5)
-	# A small coloured pip leads each story so the eye finds where it starts.
-	var pip := ColorRect.new()
-	pip.color = accent
-	pip.size = Vector2(8, 8)
-	pip.position = Vector2(-18, l.size.y * 0.5 - 4)
-	pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	l.add_child(pip)
-	_items.append(l)
+	# One story = a coloured tag saying what kind it is, then its words in
+	# that kind's colour and font.
+	var tag := Label.new()
+	tag.text = KIND_TAGS.get(kind, "VALLEY")
+	tag.add_theme_font_override("font", FelecoUi.font("bold"))
+	tag.add_theme_font_size_override("font_size", 12)
+	tag.add_theme_color_override("font_color", Color(0.06, 0.08, 0.06))
+	var tag_bg := StyleBoxFlat.new()
+	tag_bg.bg_color = accent
+	tag_bg.set_corner_radius_all(6)
+	tag_bg.content_margin_left = 7
+	tag_bg.content_margin_right = 7
+	tag_bg.content_margin_top = 2
+	tag_bg.content_margin_bottom = 2
+	tag.add_theme_stylebox_override("normal", tag_bg)
+	var words := Label.new()
+	words.text = ev["text"]
+	words.add_theme_font_override("font", FelecoUi.font(KIND_FONTS.get(kind, "regular")))
+	words.add_theme_font_size_override("font_size", 20 if kind == "big" else 18)
+	words.add_theme_color_override("font_color", accent.lerp(Color(0.97, 0.95, 0.9), 0.15 if kind == "big" else 0.4))
+	if kind == "big":
+		words.add_theme_color_override("font_outline_color", Color(0.3, 0.2, 0.0))
+		words.add_theme_constant_override("outline_size", 4)
+	var story := Control.new()
+	for c: Control in [story, tag, words]:
+		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	story.add_child(tag)
+	story.add_child(words)
+	_panel.add_child(story)
+	tag.reset_size()
+	words.reset_size()
+	var h: float = maxf(tag.size.y, words.size.y)
+	tag.position = Vector2(0, (h - tag.size.y) * 0.5)
+	words.position = Vector2(tag.size.x + 10.0, (h - words.size.y) * 0.5)
+	story.size = Vector2(words.position.x + words.size.x, h)
+	story.position = Vector2(at_x, (_panel.size.y - h) * 0.5)
+	_items.append(story)
 
 func _queue(text: String, kind: String) -> void:
 	_waiting.append({"text": text, "kind": kind})
@@ -578,19 +722,26 @@ func _add_event(text: String, kind: String = "news") -> void:
 	if history == null:
 		history = get_tree().current_scene.get_node_or_null("EventHistory")
 	if history != null:
-		history.add_entry(text)
+		history.add_entry(text, kind)
 
 func _on_agent_born(species: String, _pos: Vector3, variant: String = "") -> void:
-	_add_event(_flavor_birth(species, variant), "birth")
+	_add_event(_flavor_birth(species, variant, _pos), "birth")
 
 func _on_agent_died(species: String, _pos: Vector3) -> void:
-	_add_event(_flavor_death(species), "death")
+	# A hunted creature's end was already told by its hunter's story.
+	var a: MarkovAgent = _real(species, _pos)
+	if a != null and _told.get(a.get_instance_id()) is String:
+		_told.erase(a.get_instance_id())
+		return
+	if a != null:
+		_told.erase(a.get_instance_id())
+	_add_event(_flavor_death(species, _pos), "death")
 
 func _on_combat_event(attacker_species: String, target_species: String, _pos: Vector3, killed: bool) -> void:
 	if killed:
-		_add_event(_flavor_kill(attacker_species, target_species), "kill")
+		_add_event(_flavor_kill(attacker_species, target_species, _pos), "kill")
 	else:
-		_add_event(_flavor_wound(attacker_species, target_species), "wound")
+		_add_event(_flavor_wound(attacker_species, target_species, _pos), "wound")
 
 func _on_settlement_built(_pos: Vector3) -> void:
 	_add_event(_flavor_settlement(), "big")
