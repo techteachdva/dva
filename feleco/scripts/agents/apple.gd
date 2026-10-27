@@ -80,7 +80,7 @@ func _spawn_seed() -> void:
 		return
 	var tree = load("res://scenes/tree.tscn").instantiate()
 	sim.get_node("Trees").add_child(tree)
-	tree.global_position = sim.dry_land(global_position + Vector3((randf() - 0.5) * 3.0, 0.0, (randf() - 0.5) * 3.0))
+	tree.global_position = sim.tree_spot(global_position + Vector3((randf() - 0.5) * 3.0, 0.0, (randf() - 0.5) * 3.0))
 	if sim.has_method("_snap_to_ground"):
 		sim._snap_to_ground(tree)
 	if tree.has_method("set_stage"):

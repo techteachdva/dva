@@ -510,6 +510,31 @@ func _prewarm_shaders() -> void:
 
 # The river and its flood plain belong to the fish: anything placed there
 # (huts, trees, newcomers) is moved out to dry ground past the flood line.
+# Room a hut needs: no tree or bush may take root inside this radius.
+const HUT_CLEARANCE: float = 4.5
+
+# Where a tree or bush may take root: on dry land and never inside a hut.
+func tree_spot(pos: Vector3) -> Vector3:
+	var p := dry_land(pos)
+	for s in _active_shelters:
+		if s == null or not is_instance_valid(s):
+			continue
+		var away := Vector3(p.x - s.global_position.x, 0.0, p.z - s.global_position.z)
+		if away.length() < HUT_CLEARANCE:
+			if away.length_squared() < 0.01:
+				away = Vector3(randf() - 0.5, 0.0, randf() - 0.5)
+			p = s.global_position + away.normalized() * (HUT_CLEARANCE + 0.5)
+			p = dry_land(Vector3(p.x, pos.y, p.z))
+	return p
+
+# A new hut clears the young growth from its plot (grown trees are felled
+# for the timber anyway, so only seeds and saplings stand in the way).
+func _clear_hut_plot(pos: Vector3) -> void:
+	for group: Node in [$Trees, $Bushes]:
+		for t in group.get_children():
+			if t is Node3D and Vector2(t.global_position.x - pos.x, t.global_position.z - pos.z).length() < HUT_CLEARANCE:
+				t.queue_free()
+
 func dry_land(pos: Vector3, margin: float = 1.5) -> Vector3:
 	if valley == null or valley.river == null:
 		return pos
@@ -570,7 +595,7 @@ func spawn_trees() -> void:
 	for i: int in range(cfg_trees):
 		var t = _tree_scene.instantiate()
 		$Trees.add_child(t)
-		t.global_position = dry_land(Vector3((randf() - 0.5) * world_half * 2.0, 0.0, (randf() - 0.5) * world_half * 2.0))
+		t.global_position = tree_spot(Vector3((randf() - 0.5) * world_half * 2.0, 0.0, (randf() - 0.5) * world_half * 2.0))
 		_snap_to_ground(t)
 	for i: int in range(cfg_bushes):
 		plant_bush(Vector3((randf() - 0.5) * world_half * 2.0, 0.0, (randf() - 0.5) * world_half * 2.0), true)
@@ -588,7 +613,7 @@ func plant_bush(pos: Vector3, grown: bool = false) -> void:
 	b.bush = true
 	b.apple_spawn_interval = 2.5
 	$Bushes.add_child(b)
-	b.global_position = dry_land(pos + (Vector3.ZERO if grown else Vector3((randf() - 0.5) * 3.0, 0.0, (randf() - 0.5) * 3.0)))
+	b.global_position = tree_spot(pos + (Vector3.ZERO if grown else Vector3((randf() - 0.5) * 3.0, 0.0, (randf() - 0.5) * 3.0)))
 	_snap_to_ground(b)
 	if not grown:
 		b.set_stage(0)
@@ -659,7 +684,7 @@ func try_plant_tree_seed(pos: Vector3, planter_group: String = "") -> bool:
 		return false
 	var t = _tree_scene.instantiate()
 	$Trees.add_child(t)
-	t.global_position = dry_land(pos + Vector3((randf() - 0.5) * 4.0, 0.0, (randf() - 0.5) * 4.0))
+	t.global_position = tree_spot(pos + Vector3((randf() - 0.5) * 4.0, 0.0, (randf() - 0.5) * 4.0))
 	_snap_to_ground(t)
 	if t.has_method("set_stage"):
 		t.set_stage(0)
@@ -1394,6 +1419,7 @@ func build_shelter(pos: Vector3, tribe: int = 0) -> int:
 	$Shelters.add_child(shelter)
 	shelter.global_position = Vector3(pos.x, ground_height(pos.x, pos.z), pos.z)
 	_active_shelters.append(shelter)
+	_clear_hut_plot(shelter.global_position)
 	settlement_built.emit(pos)
 	return sid
 
@@ -3169,7 +3195,41 @@ func fish_left_valley(fish: Node, at_start: bool) -> void:
 		chronicle.emit("%s the %s slips %s through the pines." % [fish.display_name, Roles.display_name("fish", fish.role).to_lower(), way])
 	fish.queue_free()
 
+# The river is fed from the mountains: while it runs open, new fish keep
+# swimming down into the valley from upstream, faster when the shoal is thin.
+func _restock_fish_upstream() -> void:
+	if river_frozen or valley == null or valley.river == null or _fish_pool == null:
+		return
+	if disabled_species.has("fish") or not _room_for_birth():
+		return
+	var shoal: int = _active_fish.size()
+	var cap: int = Fish.RIVER_CAPACITY
+	if shoal >= cap:
+		return
+	var chance: float = 0.5 if shoal < cap / 3 else (0.25 if shoal < cap * 2 / 3 else 0.08)
+	if randf() > chance:
+		return
+	var river: River = valley.river
+	var arrived: int = 0
+	for k: int in randi_range(1, 3):
+		var fish: Node = _fish_pool.acquire()
+		if fish == null:
+			break
+		$Agents.add_child(fish)
+		var s: float = 0.5 + randf() * 2.0
+		fish.visible = true
+		fish.global_position = river.point_at(s)
+		fish.sex = "female" if randf() < 0.5 else "male"
+		fish._s = s
+		fish._dir = 1.0
+		_track_agent(fish, _active_fish)
+		_apply_phenotype_variance(fish, null)
+		arrived += 1
+	if arrived > 0 and shoal < 4:
+		chronicle.emit("Fresh fish come down the river from the mountains.")
+
 func _return_fish() -> void:
+	_restock_fish_upstream()
 	if _fish_away.is_empty() or valley == null or valley.river == null or _fish_pool == null:
 		return
 	var river: River = valley.river

@@ -500,7 +500,7 @@ func _on_tick_gather(delta: float) -> void:
 					if randf() < 0.5 and sim.can_plant_tree():
 						var tree = load("res://scenes/tree.tscn").instantiate()
 						sim.get_node("Trees").add_child(tree)
-						tree.global_position = sim.dry_land(global_position + Vector3((randf() - 0.5) * 6.0, 0.0, (randf() - 0.5) * 6.0))
+						tree.global_position = sim.tree_spot(global_position + Vector3((randf() - 0.5) * 6.0, 0.0, (randf() - 0.5) * 6.0))
 						sim._snap_to_ground(tree)
 						if tree.has_method("set_stage"):
 							tree.set_stage(0)

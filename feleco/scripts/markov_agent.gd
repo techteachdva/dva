@@ -72,8 +72,10 @@ var _death_clock: float = 0.0
 var _last_energy: float = -1.0
 var _vision_cone: VisionCone = null
 const _NO_MODS: Dictionary = {"__none__": true}
-const BOUNDARY_SOFT: float = ValleyTerrain.FLOOR_RADIUS - 2.0
-const BOUNDARY_HARD: float = ValleyTerrain.FLOOR_RADIUS + 4.0
+# Creatures may roam up the lower slopes (about a third of the way to the
+# rim) but are turned back long before the crags.
+const BOUNDARY_SOFT: float = ValleyTerrain.FLOOR_RADIUS + 6.0
+const BOUNDARY_HARD: float = ValleyTerrain.FLOOR_RADIUS + 14.0
 
 @onready var director: SimulationDirector = _find_director()
 
@@ -400,8 +402,8 @@ func _movement_tick(delta: float) -> void:
 		return
 	if not _aerial:
 		velocity.y = 0.0
-		# Soft round boundary: the meadow ends at the valley floor and only
-		# the foot of the slopes is walkable.
+		# Soft round boundary: past the meadow the slopes are walkable for a
+		# way, with a gentle and then firmer push back down.
 		var r: float = Vector2(global_position.x, global_position.z).length()
 		if r > BOUNDARY_SOFT:
 			var inward := Vector3(-global_position.x, 0.0, -global_position.z) / r
@@ -410,7 +412,7 @@ func _movement_tick(delta: float) -> void:
 			var outward: float = -velocity.dot(inward)
 			if outward > 0.0:
 				velocity += inward * outward
-			velocity += inward * 5.0 * (1.0 + (r - BOUNDARY_SOFT) * 0.5)
+			velocity += inward * 2.0 * (1.0 + (r - BOUNDARY_SOFT) * 0.4)
 	# Batch separation via crowding field (no per-agent spatial queries)
 	if velocity.length_squared() > 0.01:
 		var sim: SimulationDirector = director
