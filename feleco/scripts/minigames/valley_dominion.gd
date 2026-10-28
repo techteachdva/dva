@@ -159,7 +159,7 @@ func _show_select() -> void:
 	how.custom_minimum_size = Vector2(1100, 0)
 	col.add_child(how)
 	var back := Button.new()
-	back.text = "Back to campaign"
+	back.text = "Back to Mini-Games"
 	back.theme_type_variation = "GhostButton"
 	back.custom_minimum_size = Vector2(220, 48)
 	back.pressed.connect(_quit_to_campaign)
@@ -802,7 +802,7 @@ func _build_side() -> void:
 	quit.pressed.connect(_show_select)
 	foot.add_child(quit)
 	var back := Button.new()
-	back.text = "Back to campaign"
+	back.text = "Back to Mini-Games"
 	back.theme_type_variation = "GhostButton"
 	back.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	back.pressed.connect(_quit_to_campaign)
@@ -945,7 +945,11 @@ func _gui_input(event: InputEvent) -> void:
 				_fx.append([_cell_center(p), "+2", 0.9, CLANS[_player]["color"]])
 				_refresh()
 				return
-	var legal: Array[Vector2i] = _targets(_sel, _player, _stampede) if _sel.x >= 0 else []
+	# (A typed array can't take an untyped [] from a ternary: that threw on
+	# every click with nothing selected, so the board ignored all clicks.)
+	var legal: Array[Vector2i] = []
+	if _sel.x >= 0:
+		legal = _targets(_sel, _player, _stampede)
 	if _owner[_idx(p)] == _player and (_sel.x < 0 or not legal.has(p) or p == _sel):
 		Juice.sfx(self, "click")
 		_sel = p
@@ -1064,10 +1068,12 @@ func _draw() -> void:
 				draw_string(font, rect.position + Vector2(cell * 0.06, cell * 0.36), ps, HORIZONTAL_ALIGNMENT_LEFT, -1, int(cell * 0.34), Color.WHITE)
 	# Your tiles that can move glow, so it's clear what to click.
 	if _mode == "play" and _sel.x < 0 and _moves > 0:
-		var g: float = 0.35 + 0.3 * sin(_t * 5.0)
+		var g: float = 0.5 + 0.5 * sin(_t * 6.0)
 		for mine: Vector2i in _tiles_of(_player):
 			if int(_pop[_idx(mine)]) >= 2:
-				draw_rect(Rect2(r.position + Vector2(mine) * cell, Vector2(cell, cell)).grow(-2), Color(1, 1, 0.7, g), false, 4.0)
+				var gr := Rect2(r.position + Vector2(mine) * cell, Vector2(cell, cell))
+				draw_rect(gr.grow(-2), Color(1, 1, 0.6, 0.18 * g))
+				draw_rect(gr.grow(-2), Color(1, 0.95, 0.4, 0.55 + 0.45 * g), false, 6.0)
 	# The wolf pack.
 	if _wolf.x >= 0 and not winter:
 		var wr := Rect2(r.position + Vector2(_wolf) * cell, Vector2(cell, cell))

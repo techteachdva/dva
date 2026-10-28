@@ -3,9 +3,22 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.3"
+const VERSION: String = "4.4"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.4",
+		"title": "The Valley Saga",
+		"notes": [
+			"Enter the Valley is now a five-year saga you can beat: one big goal each year, and meeting 4 of 5 makes you Keeper of the Valley. Continue carries your valley into the next year.",
+			"Every dawn the valley asks you a question with two answers, and your choice changes what happens next.",
+			"Three daily quests, refilled each dawn, and tutorial goals that stay done.",
+			"Campaign is now Mini-Games, and wins there make their part of the food web much stronger in Enter the Valley.",
+			"Valley Dominion works again: clicking the board did nothing. Your movable tiles glow brighter.",
+			"Seedling Golf: real grow puzzles with thorns, dew and tight move budgets, and three new holes: Volcano Rim, Twin Peaks and Summit, with spinning bars.",
+			"Stampede Sprint shows the next line coming up, and the final stretch is a little gentler. Predator Brawl rivals get serious when you're cruising.",
+		],
+	},
 	{
 		"version": "4.3",
 		"title": "Juiced Up",

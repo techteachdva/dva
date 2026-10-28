@@ -88,7 +88,9 @@ func show_result(winner: String) -> void:
 	bet_label.get_parent().move_child(board, bet_label.get_index() + 1)
 
 	# Event history
-	var event_log: Array[String] = gc.event_log if gc != null else []
+	var event_log: Array[String] = []
+	if gc != null:
+		event_log = gc.event_log
 	var richtext: RichTextLabel = $EventHistoryOverlay/MarginContainer/RichTextLabel
 	var bbcode: String = ""
 	for entry in event_log:
@@ -121,6 +123,8 @@ func show_result(winner: String) -> void:
 			# Every year played unlocks the next one: the lesson is the reward.
 			next_btn.text = "Next year" if ChallengeScenarios.index_of(gc.scenario_id) + 1 < ChallengeScenarios.LIST.size() else "Back to the years"
 			next_btn.show()
+		elif gc.current_mode == "sandbox":
+			_saga_end(gc, director, next_btn)
 		else:
 			next_btn.hide()
 		# Advance campaign / challenge progress
@@ -144,6 +148,30 @@ func show_result(winner: String) -> void:
 			gc.challenge_current_streak = gc.challenge_current_streak + 1 if answered else 0
 			gc.challenge_best_streak = maxi(gc.challenge_best_streak, gc.challenge_current_streak)
 			gc.save_meta()
+
+# The Valley Saga: how the year went, and Continue into the next one.
+var _saga_summary: Dictionary = {}
+
+func _saga_end(_gc: Node, director: SimulationDirector, next_btn: Button) -> void:
+	var saga: ValleySaga = get_tree().current_scene.find_child("Saga", true, false) as ValleySaga
+	if saga == null:
+		next_btn.hide()
+		return
+	_saga_summary = saga.finish_year()
+	var s: Dictionary = _saga_summary
+	var line: String = "%s  -  YEAR GOAL %s: %s  -  goals met %d of %d (need %d to beat FelEco)" % [s["title"], "MET" if s["met"] else "MISSED", s["goal"], s["count"], ValleySaga.YEARS.size(), ValleySaga.YEARS_TO_WIN]
+	%ResultLabel.text = "%s
+%s" % [line, %ResultLabel.text]
+	%ResultLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if s["beaten"]:
+		%WinnerLabel.text = "YOU BEAT FELECO!  Keeper of the Valley  (+%d EP)" % ValleySaga.SAGA_WIN_EP
+		next_btn.text = "Begin a new saga"
+	elif s["over"]:
+		next_btn.text = "Saga over (%d of %d). Try again" % [s["count"], ValleySaga.YEARS.size()]
+	else:
+		next_btn.text = "Continue to Year %d" % (int(s["year"]) + 1)
+	FelecoUiScript.mark(next_btn, "PrimaryButton")
+	next_btn.show()
 
 func _mode_bonus(gc: Node) -> int:
 	if gc.current_mode == "campaign":
@@ -294,6 +322,8 @@ func _on_replay() -> void:
 		gc.side_bet_result = ""
 		gc.bets.clear()
 		gc.spawn_roster.clear()
+		if gc.current_mode == "sandbox" and not _saga_summary.is_empty():
+			ValleySaga.continue_saga(gc, null, true)
 	# Same valley, new bets.
 	get_tree().change_scene_to_file("res://scenes/ui/betting_table.tscn")
 
@@ -318,7 +348,14 @@ func _on_next_level() -> void:
 	if gc != null:
 		gc.event_log.clear()
 		gc.side_bet_result = ""
-	if gc != null and gc.current_mode == "campaign":
+	if gc != null and gc.current_mode == "sandbox" and not _saga_summary.is_empty():
+		# The saga goes on: next year, this valley's creatures, new bets.
+		var director: SimulationDirector = get_tree().current_scene.get_node_or_null("World") as SimulationDirector
+		ValleySaga.continue_saga(gc, director, false)
+		gc.bets.clear()
+		gc.spawn_roster.clear()
+		get_tree().change_scene_to_file("res://scenes/ui/betting_table.tscn")
+	elif gc != null and gc.current_mode == "campaign":
 		get_tree().change_scene_to_file("res://scenes/ui/campaign_setup.tscn")
 	elif gc != null and gc.current_mode == "challenge":
 		get_tree().change_scene_to_file("res://scenes/ui/challenge_setup.tscn")

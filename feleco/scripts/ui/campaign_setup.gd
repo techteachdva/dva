@@ -86,7 +86,7 @@ const TYPES: Array = [
 	["herbivore", "Herbivore", "Stampede Sprint", "A typing race: type what the valley says to run faster.", "res://scenes/minigames/stampede_sprint.tscn", "deer"],
 	["carnivore", "Carnivore", "Predator Brawl", "A fighting game between the valley's hunters. Evolve and RAMPAGE!", "res://scenes/minigames/predator_brawl.tscn", "wolf"],
 	["omnivore", "Omnivore", "Valley Dominion", "A strategy board game: take over the valley before winter.", "res://scenes/minigames/valley_dominion.tscn", "bear"],
-	["producer", "Producer", "Seedling Golf", "Light puzzles with mini golf: find the best light, water and soil.", "res://scenes/minigames/seed_golf.tscn", ""],
+	["producer", "Producer", "Seedling Golf", "Minigolf, watering, then a puzzle to grow your plant up to the sun.", "res://scenes/minigames/seed_golf.tscn", ""],
 	["decomposer", "Decomposer", "Coming next", "The rot, the worms and the fungi get their own game soon.", "", "worm"],
 ]
 
@@ -112,10 +112,10 @@ func _show_type_picker() -> void:
 	col.add_theme_constant_override("separation", 12)
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pad.add_child(col)
-	var t := FelecoUiScript.heading("Campaign: Pick Your Type", 42, FelecoUiScript.GOLD)
+	var t := FelecoUiScript.heading("Mini-Games", 46, FelecoUiScript.GOLD)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(t)
-	var sub := FelecoUiScript.label("Every link of the food web plays differently. Pick one to play its game. Win, and that link grows a little stronger in the valley.", 19, FelecoUiScript.CREAM)
+	var sub := FelecoUiScript.label("Every win here makes that part of the food web STRONGER in Enter the Valley. Beat more levels for bigger boosts. Your boosts are shown in gold under each game.", 20, FelecoUiScript.CREAM)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sub.custom_minimum_size = Vector2(900, 0)
@@ -147,9 +147,10 @@ func _show_type_picker() -> void:
 		card.add_child(about)
 		# What this link has earned for the valley, or what a win would earn.
 		var boon: Dictionary = boons.get(ty[0], {})
-		var tease: String = "Win to earn a valley boon for %s." % (String(ty[1]).to_lower() + "s") if not String(ty[4]).is_empty() else ""
-		var boon_text: String = ("Valley boon: %s." % boon["text"]) if not boon.is_empty() else tease
-		var bl := FelecoUiScript.label(boon_text, 13, FelecoUiScript.GOLD if not boon.is_empty() else FelecoUiScript.MIST)
+		var earn: Dictionary = {"herbivore": "Win race golds", "carnivore": "Beat the brawl ladder (harder = bigger)", "omnivore": "Rule the valley with each clan", "producer": "Grade A or S on holes"}
+		var tease: String = ("%s to make %s stronger in the Valley." % [earn.get(ty[0], "Win"), String(ty[1]).to_lower() + "s"]) if not String(ty[4]).is_empty() else ""
+		var boon_text: String = ("In the Valley: %s." % boon["text"]) if not boon.is_empty() else tease
+		var bl := FelecoUiScript.label(boon_text, 15, FelecoUiScript.GOLD if not boon.is_empty() else FelecoUiScript.MIST)
 		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		bl.custom_minimum_size = Vector2(0, 40)
 		card.add_child(bl)
@@ -165,11 +166,6 @@ func _show_type_picker() -> void:
 	foot.alignment = BoxContainer.ALIGNMENT_CENTER
 	foot.add_theme_constant_override("separation", 14)
 	col.add_child(foot)
-	var classic := Button.new()
-	classic.text = "Valley campaign (10 eras)"
-	classic.custom_minimum_size = Vector2(300, 50)
-	classic.pressed.connect(func() -> void: cover.queue_free())
-	foot.add_child(classic)
 	var back := Button.new()
 	back.text = "Back"
 	back.theme_type_variation = "GhostButton"

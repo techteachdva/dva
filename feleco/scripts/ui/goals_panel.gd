@@ -32,6 +32,8 @@ const DIAMOND_EP: int = 250
 
 var director: SimulationDirector
 var hud: Node
+var saga: ValleySaga = null
+var _saga_box: VBoxContainer
 
 var _done: Dictionary = {}
 var _goal_box: VBoxContainer
@@ -89,9 +91,18 @@ func _ready() -> void:
 	_body = VBoxContainer.new()
 	_body.add_theme_constant_override("separation", 6)
 	col.add_child(_body)
+	_saga_box = VBoxContainer.new()
+	_saga_box.add_theme_constant_override("separation", 2)
+	_body.add_child(_saga_box)
 	_goal_box = VBoxContainer.new()
 	_goal_box.add_theme_constant_override("separation", 2)
 	_body.add_child(_goal_box)
+	# Tutorial goals done in earlier runs stay done.
+	var gc0: Node = get_node_or_null("/root/GameConfig")
+	if gc0 != null:
+		var saved = gc0.record("goals", "done")
+		if saved is Dictionary:
+			_done = (saved as Dictionary).duplicate()
 	_creature_box = VBoxContainer.new()
 	_creature_box.add_theme_constant_override("separation", 3)
 	_creature_box.visible = false
@@ -125,13 +136,16 @@ func _refresh_goals() -> void:
 		shown += 1
 		if shown >= 2:
 			break
-	if shown == 0:
+	if shown == 0 and saga == null:
 		_goal_box.add_child(FelecoUiScript.label("All goals done! Try a Challenge next.", 14, FelecoUiScript.LEAF))
 
 func _complete(id: String) -> void:
 	if _done.has(id):
 		return
 	_done[id] = true
+	var gcs: Node = get_node_or_null("/root/GameConfig")
+	if gcs != null:
+		gcs.set_record("goals", "done", _done.duplicate())
 	for g: Array in GOALS:
 		if g[0] == id:
 			var gc: Node = get_node_or_null("/root/GameConfig")
@@ -154,6 +168,35 @@ func _check_goals() -> void:
 		_complete("survive")
 	if level >= 5:
 		_complete("level5")
+
+# The saga: this year's goal with a progress bar, then today's quests.
+func refresh_saga() -> void:
+	if saga == null or _saga_box == null:
+		return
+	for c in _saga_box.get_children():
+		c.queue_free()
+	var y: Array = ValleySaga.YEARS[saga.year - 1]
+	var prog: Array = saga.year_progress()
+	_saga_box.add_child(FelecoUiScript.heading("%s  (of %d)" % [y[0], ValleySaga.YEARS.size()], 15, FelecoUiScript.GOLD))
+	var goal := FelecoUiScript.label("YEAR GOAL: %s" % y[1], 14, FelecoUiScript.CREAM)
+	goal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_saga_box.add_child(goal)
+	var bar := ProgressBar.new()
+	bar.max_value = 1.0
+	bar.value = float(prog[0])
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(0, 10)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color(0.5, 0.9, 0.4) if float(prog[0]) >= 0.999 else FelecoUiScript.GOLD
+	fill.set_corner_radius_all(4)
+	bar.add_theme_stylebox_override("fill", fill)
+	_saga_box.add_child(bar)
+	_saga_box.add_child(FelecoUiScript.label(prog[1], 12, FelecoUiScript.MIST))
+	_saga_box.add_child(FelecoUiScript.heading("Today's quests", 14, FelecoUiScript.GOLD))
+	for q: Dictionary in saga.quests():
+		var row := FelecoUiScript.label(("[done] " if q["done"] else "- ") + "%s  (+%d EP)" % [q["text"], q["ep"]], 13, FelecoUiScript.LEAF if q["done"] else FelecoUiScript.CREAM)
+		row.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_saga_box.add_child(row)
 
 # --- My Creature ---------------------------------------------------------
 
@@ -439,3 +482,4 @@ func _process(delta: float) -> void:
 		_accum = 0.0
 		_check_goals()
 		_refresh_creature()
+		refresh_saga()

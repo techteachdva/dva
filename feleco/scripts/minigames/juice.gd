@@ -1,7 +1,7 @@
 class_name Juice
 extends RefCounted
 
-# Game feel for the campaign games: synthesized sound effects (no audio
+# Game feel for the Mini-Games games: synthesized sound effects (no audio
 # files: every sound is built from sine sweeps and noise the first time it
 # plays), and a little effects layer each game owns and draws in its own
 # coordinates: particle bursts, confetti, rings, streaks, floating text,

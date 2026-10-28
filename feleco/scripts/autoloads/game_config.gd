@@ -91,11 +91,12 @@ func set_record(game: String, key: String, value: Variant) -> void:
 	records[game][key] = value
 	save_meta()
 
-# Link boons: winning a food-web game lends its link a little strength in
-# the Valley campaign. Carnivore champions make every carnivore hardier,
-# clans that ruled Valley Dominion make omnivores live longer, race golds
-# make herbivores quicker, and strong seedlings give the valley more trees
-# and a richer meadow. Derived from the records each time; never saved.
+# Link boons: the Mini-Games make their link of the food web stronger in
+# Enter the Valley, more for every level beaten. Brawl champions (by
+# difficulty) toughen carnivores; clans that ruled Valley Dominion make
+# omnivores live longer and hardier; race golds make herbivores faster and
+# longer-lived; A and S seedlings plant extra trees and a richer meadow.
+# Derived from the records each time; never saved.
 # group -> {"health"/"speed"/"lifespan": mult, "trees": int, "grass": float, "text": String}.
 func link_boons() -> Dictionary:
 	var out: Dictionary = {}
@@ -105,24 +106,29 @@ func link_boons() -> Dictionary:
 		for v in brawl.values():
 			var i: int = ["cub", "hunter", "dire"].find(String(v))
 			best = maxi(best, i if i >= 0 else 1)
-		var mult: float = [1.05, 1.1, 1.15][best]
-		out["carnivore"] = {"health": mult, "text": "Carnivores start with %d%% more health" % int(round((mult - 1.0) * 100.0))}
+		var mult: float = [1.15, 1.25, 1.4][best]
+		var spd: float = 1.0 + 0.03 * brawl.size()
+		out["carnivore"] = {"health": mult, "speed": spd, "text": "Carnivores: +%d%% health, +%d%% speed" % [int(round((mult - 1.0) * 100.0)), int(round((spd - 1.0) * 100.0))]}
 	var dom: Dictionary = records.get("dominion", {})
 	if not dom.is_empty():
-		var mult: float = 1.0 + 0.05 * mini(dom.size(), 4)
-		out["omnivore"] = {"lifespan": mult, "text": "Omnivores live %d%% longer" % int(round((mult - 1.0) * 100.0))}
+		var n: int = mini(dom.size(), 4)
+		var life: float = 1.0 + 0.1 * n
+		var hp: float = 1.0 + 0.05 * n
+		out["omnivore"] = {"lifespan": life, "health": hp, "text": "Omnivores: live %d%% longer, +%d%% health" % [int(round((life - 1.0) * 100.0)), int(round((hp - 1.0) * 100.0))]}
 	var golds: int = 0
 	for v in (records.get("race", {}) as Dictionary).values():
 		if String(v) == "Gold":
 			golds += 1
 	if golds > 0:
-		out["herbivore"] = {"speed": 1.0 + 0.02 * golds, "text": "Herbivores run %d%% faster" % (2 * golds)}
+		var spd: float = 1.0 + 0.04 * golds
+		var life: float = 1.0 + 0.05 * golds
+		out["herbivore"] = {"speed": spd, "lifespan": life, "text": "Herbivores: +%d%% speed, live %d%% longer" % [int(round((spd - 1.0) * 100.0)), int(round((life - 1.0) * 100.0))]}
 	var strong: int = 0
 	for v in (records.get("golf", {}) as Dictionary).values():
 		if String(v) in ["A", "S"]:
 			strong += 1
 	if strong > 0:
-		out["producer"] = {"trees": (strong + 1) / 2, "grass": 0.02 * strong, "text": "The valley starts with %d more tree%s and a richer meadow" % [(strong + 1) / 2, "" if (strong + 1) / 2 == 1 else "s"]}
+		out["producer"] = {"trees": 2 * strong, "grass": 0.05 * strong, "text": "Producers: +%d trees and a %d%% richer meadow" % [2 * strong, 5 * strong]}
 	return out
 
 # The first-run welcome card and starter goals have been seen.

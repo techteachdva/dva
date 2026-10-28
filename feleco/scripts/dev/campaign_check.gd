@@ -61,7 +61,7 @@ func _run() -> void:
 	await _shot("race_miss")
 	# --- Golf
 	var golf: Control = await _game("res://scenes/minigames/seed_golf.tscn")
-	golf._start_level(1)
+	golf._start_level(5)
 	await _wait(0.3)
 	golf._dragging = true
 	golf._drag_now = golf._seed + Vector2(-120, 60)
@@ -80,7 +80,7 @@ func _run() -> void:
 	golf._set_rain(false)
 	await _wait(1.5)
 	print("CHECK golf phase ", golf._phase, " moves ", golf._moves_total)
-	for d: Vector2i in [Vector2i(0, -1), Vector2i(0, -1), Vector2i(-1, 0), Vector2i(0, -1)]:
+	for d: Vector2i in [Vector2i(-1, 0), Vector2i(-1, 0), Vector2i(0, -1), Vector2i(0, -1), Vector2i(0, -1)]:
 		golf._grow_to(golf._path[-1] + d)
 		await _wait(0.15)
 	await _shot("golf_grow")

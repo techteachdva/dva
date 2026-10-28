@@ -5,9 +5,11 @@ extends Control
 #   1 PUTT   real minigolf: curved fairways, hills that roll the seed away,
 #            bowls that pull it in, bumpers and ponds. Sink it in the cup.
 #   2 WATER  hold to rain on the planted seed; let go in the green band.
-#   3 GROW   a stretching puzzle: grow the stalk cell by cell from the soil to
-#            the sun, around rocks, with a limited number of moves. Sunbeams
-#            on the way are bonus light.
+#   3 GROW   a routing puzzle: grow the stalk cell by cell (up, left or
+#            right, never back) from the soil to the sun around rocks.
+#            Thorns cost two moves, dew gives three back, and sunbeams are
+#            off the short route: the budget is tight (worked out exactly by
+#            a solver), so reaching the sun AND the light takes planning.
 # A good putt (par or better) and good watering each earn an extra move.
 # The hole is graded S, A, B, C, D or F.
 
@@ -22,8 +24,9 @@ const MAX_SPEED: float = 1000.0
 const ROLL_DRAG: float = 0.45
 const SINK_SPEED: float = 380.0
 # The grow grid.
-const COLS: int = 7
-const ROWS: int = 9
+const COLS: int = 9
+const ROWS: int = 11
+const DEW_BACK: int = 3
 # The water band: let go between these.
 const WATER_LO: float = 0.62
 const WATER_HI: float = 0.82
@@ -32,53 +35,82 @@ const WATER_RATE: float = 0.42
 # Hand-made holes, easy to hard, on a 1200 x 640 field.
 # edge: the fairway outline (the seed banks off it); hills: [centre, radius,
 # push] (push > 0 rolls the seed away, < 0 is a bowl that pulls it in);
-# bumpers: [centre, radius]; ponds: [centre, radius]. grid: the grow puzzle,
-# top row first: '.' open, '#' rock, '*' sunbeam, 'S' the seed.
+# bumpers: [centre, radius]; ponds: [centre, radius]; spinners: [centre,
+# length, turns per second] rotating bars. grid: the grow puzzle, top row
+# first: '.' open, '#' rock, '*' sunbeam, '~' thorn (2 moves), '+' dew
+# (gives 3 back), 'S' the seed. moves: the budget before bonuses.
 const LEVELS: Array = [
 	{
-		"name": "First Sprout", "par": 2, "slack": 4,
+		"name": "First Sprout", "par": 2,
 		"tee": Vector2(170, 320), "cup": Vector2(1030, 320),
 		"edge": [Vector2(70, 170), Vector2(300, 110), Vector2(900, 110), Vector2(1130, 170), Vector2(1160, 320), Vector2(1130, 470), Vector2(900, 530), Vector2(300, 530), Vector2(70, 470), Vector2(40, 320)],
 		"hills": [[Vector2(600, 320), 140.0, 420.0]],
 		"bumpers": [], "ponds": [],
-		"grid": [".......", "..*....", ".##.##.", ".......", "...#...", "..*....", ".##.###", ".......", "...S..."],
+		"grid": [".........", ".#..#..#.", "+.*##~#.#", "#........", "..#.#.#..", "######...", "##..#.##.", "....#.#..", "#*.*...~.", "..~.##...", "....S...."], "moves": 21,
 		"tip": "Drag BACK from the seed and let go. The hill in the middle rolls it aside: go around, or hit it hard!",
 	},
 	{
-		"name": "Dogleg Dell", "par": 3, "slack": 3,
+		"name": "Dogleg Dell", "par": 3,
 		"tee": Vector2(150, 520), "cup": Vector2(1020, 150),
 		"edge": [Vector2(60, 430), Vector2(700, 430), Vector2(820, 400), Vector2(880, 330), Vector2(900, 60), Vector2(1150, 60), Vector2(1150, 420), Vector2(1100, 560), Vector2(950, 610), Vector2(60, 610)],
 		"hills": [[Vector2(1020, 330), 110.0, -260.0], [Vector2(520, 520), 90.0, 300.0]],
 		"bumpers": [[Vector2(980, 500), 26.0]], "ponds": [],
-		"grid": ["...*...", "#.###.#", "....*..", ".####..", "......#", "#.##.##", "*......", "..###..", "...S..."],
+		"grid": [".........", "..#...#.~", "....#..**", "....*.#..", ".#.#~.##.", "#.#...#.#", "#....#+..", "*..~.###.", "..###.~+.", "#.~.#.#..", "....S...."], "moves": 19,
 		"tip": "Bank it off the curved wall round the corner. The bowl near the cup pulls the seed in.",
 	},
 	{
-		"name": "Bowl Valley", "par": 3, "slack": 3,
+		"name": "Bowl Valley", "par": 3,
 		"tee": Vector2(150, 320), "cup": Vector2(820, 320),
 		"edge": [Vector2(60, 220), Vector2(260, 90), Vector2(600, 60), Vector2(940, 90), Vector2(1140, 220), Vector2(1170, 320), Vector2(1140, 420), Vector2(940, 550), Vector2(600, 580), Vector2(260, 550), Vector2(60, 420), Vector2(40, 320)],
 		"hills": [[Vector2(820, 320), 170.0, -300.0], [Vector2(420, 200), 100.0, 340.0], [Vector2(420, 440), 100.0, 340.0]],
-		"bumpers": [[Vector2(560, 320), 30.0]], "ponds": [[Vector2(1040, 320), 70.0]],
-		"grid": ["...*...", ".#.#.#.", ".#*#.#.", ".#.#.#.", "...#...", "##.#.##", "*......", "..##.#.", "...S..."],
+		"bumpers": [[Vector2(560, 320), 30.0]], "ponds": [[Vector2(1040, 320), 70.0]], "spinners": [[Vector2(640, 160), 150.0, 0.25]],
+		"grid": [".........", "#..#.#.**", "#..##~#.#", "#.....~..", ".....*###", ".+#..##..", "#..#...##", ".#...#.##", "#.+#~#~#*", ".##.#~~##", "....S...."], "moves": 20,
 		"tip": "The big bowl pulls the seed to the cup, but too hard and it rolls out into the pond behind!",
 	},
 	{
-		"name": "Curvy Creek", "par": 4, "slack": 3,
+		"name": "Curvy Creek", "par": 4,
 		"tee": Vector2(130, 540), "cup": Vector2(1070, 110),
 		"edge": [Vector2(50, 460), Vector2(420, 440), Vector2(520, 380), Vector2(540, 260), Vector2(620, 150), Vector2(780, 60), Vector2(1150, 50), Vector2(1160, 200), Vector2(820, 220), Vector2(760, 300), Vector2(740, 430), Vector2(640, 560), Vector2(450, 615), Vector2(50, 615)],
 		"hills": [[Vector2(650, 300), 80.0, 280.0], [Vector2(330, 530), 80.0, -200.0]],
-		"bumpers": [[Vector2(900, 140), 24.0]], "ponds": [[Vector2(620, 470), 55.0], [Vector2(960, 110), 35.0]],
-		"grid": ["..*....", "####.##", ".......", ".######", "......*", "######.", ".*.....", ".######", "...S..."],
+		"bumpers": [[Vector2(900, 140), 24.0]], "ponds": [[Vector2(620, 470), 55.0], [Vector2(960, 110), 35.0]], "spinners": [[Vector2(640, 110), 130.0, -0.3]],
+		"grid": [".........", ".~#...#.*", "#.#...#.#", "#...###.+", "#.*.~.*.#", "..#.###..", "#..##*+#.", "####.~.~~", "##..~.#..", "#.~###*##", "....S...."], "moves": 25,
 		"tip": "An S-bend with a creek. Short, careful putts beat one big swing.",
 	},
 	{
-		"name": "Mole Hills", "par": 4, "slack": 2,
+		"name": "Mole Hills", "par": 4,
 		"tee": Vector2(120, 560), "cup": Vector2(1080, 100),
 		"edge": [Vector2(50, 60), Vector2(1150, 60), Vector2(1150, 610), Vector2(50, 610)],
 		"hills": [[Vector2(360, 420), 90.0, 380.0], [Vector2(600, 300), 100.0, 380.0], [Vector2(840, 200), 90.0, 380.0], [Vector2(360, 160), 80.0, -220.0], [Vector2(860, 480), 90.0, -220.0], [Vector2(1080, 100), 90.0, -150.0]],
 		"bumpers": [[Vector2(600, 520), 28.0], [Vector2(980, 300), 28.0], [Vector2(220, 300), 28.0]], "ponds": [[Vector2(1000, 520), 60.0]],
-		"grid": ["...*...", ".#.#.#.", "#.....#", "..#*#..", ".#...#.", "...#...", "#*#.#.#", ".......", "...S..."],
+		"grid": [".........", "*..#.+.##", "~..~###..", "#*.~..#.*", ".####~..#", "#.+*~##.#", "####....#", ".~+..#...", ".......#.", "#~....##*", "....S...."], "moves": 21,
 		"tip": "Mole hills everywhere! Read the slopes and use the bowls.",
+	},
+	{
+		"name": "Volcano Rim", "par": 3,
+		"tee": Vector2(150, 320), "cup": Vector2(920, 320),
+		"edge": [Vector2(60, 200), Vector2(400, 120), Vector2(800, 70), Vector2(1100, 120), Vector2(1170, 320), Vector2(1100, 520), Vector2(800, 570), Vector2(400, 520), Vector2(60, 440)],
+		"hills": [[Vector2(920, 320), 230.0, 520.0], [Vector2(920, 320), 80.0, -900.0], [Vector2(420, 200), 90.0, 300.0], [Vector2(420, 440), 90.0, 300.0]],
+		"bumpers": [], "ponds": [[Vector2(640, 320), 50.0]], "spinners": [[Vector2(640, 320), 170.0, 0.3]],
+		"grid": [".........", "*.#~..*#+", "#..#*+###", "#*#######", ".~..#####", "+.~~....#", "##..~~~#.", "..#.#..#.", "#####..*.", "##.###~.#", "....S...."], "moves": 22,
+		"tip": "The cup sits in a crater on top of a hill. Too soft rolls back down; too hard flies over!",
+	},
+	{
+		"name": "Twin Peaks", "par": 4,
+		"tee": Vector2(130, 560), "cup": Vector2(1060, 110),
+		"edge": [Vector2(50, 610), Vector2(50, 380), Vector2(320, 300), Vector2(380, 60), Vector2(1150, 60), Vector2(1150, 330), Vector2(820, 380), Vector2(760, 610)],
+		"hills": [[Vector2(520, 230), 130.0, 460.0], [Vector2(800, 200), 130.0, 460.0], [Vector2(660, 330), 70.0, -300.0], [Vector2(1060, 110), 90.0, -260.0], [Vector2(300, 500), 100.0, 280.0]],
+		"bumpers": [[Vector2(660, 120), 26.0], [Vector2(560, 500), 26.0]], "ponds": [[Vector2(980, 260), 45.0]], "spinners": [[Vector2(660, 480), 150.0, -0.35]],
+		"grid": [".........", ".##**##.#", "####~~.#.", "#.#.##.~#", "###+##.#+", "....~#~#.", ".*+##.~##", "##**.....", ".#*.###~.", "##~#.###.", "....S...."], "moves": 23,
+		"tip": "Thread the saddle between the two peaks. The little bowl in the pass is your friend.",
+	},
+	{
+		"name": "Summit", "par": 5,
+		"tee": Vector2(120, 570), "cup": Vector2(1080, 100),
+		"edge": [Vector2(50, 610), Vector2(50, 420), Vector2(560, 420), Vector2(560, 300), Vector2(50, 300), Vector2(50, 60), Vector2(1150, 60), Vector2(1150, 200), Vector2(640, 200), Vector2(640, 330), Vector2(1150, 330), Vector2(1150, 610)],
+		"hills": [[Vector2(820, 480), 110.0, 420.0], [Vector2(300, 180), 100.0, 420.0], [Vector2(1080, 100), 110.0, 380.0], [Vector2(1080, 100), 45.0, -900.0], [Vector2(600, 520), 70.0, -280.0]],
+		"bumpers": [[Vector2(1000, 520), 26.0], [Vector2(150, 160), 26.0]], "ponds": [[Vector2(380, 520), 45.0], [Vector2(800, 120), 40.0]], "spinners": [[Vector2(980, 470), 140.0, 0.4], [Vector2(560, 130), 140.0, -0.4]],
+		"grid": [".........", "#.#*#.##~", "*##.#~*.~", "#~##.###~", ".###*..+.", "..+##.~*+", "..#.#~#..", ".#....#~#", "...######", "*####..~.", "....S...."], "moves": 24,
+		"tip": "The last climb: a switchback to a summit cup with a rim. Bank, time the spinners, then crest it.",
 	},
 ]
 
@@ -108,6 +140,8 @@ var _moves_left: int = 0
 var _moves_total: int = 0
 var _beams: int = 0
 var _beams_total: int = 0
+# Moves each step cost (thorns 2, dew gives some back), for undo.
+var _step_costs: Array[int] = []
 var _reached_sun: bool = false
 var _tip_pop: float = 0.0
 var _result: Dictionary = {}
@@ -176,7 +210,7 @@ func _show_select() -> void:
 			_start_level(idx))
 		grid.add_child(b)
 	var back := Button.new()
-	back.text = "Back to campaign"
+	back.text = "Back to Mini-Games"
 	back.theme_type_variation = "GhostButton"
 	back.custom_minimum_size = Vector2(220, 50)
 	back.pressed.connect(_leave)
@@ -292,7 +326,7 @@ func _refresh_ui() -> void:
 			_hud.text = "Water %d%%" % int(_water * 100)
 		Phase.GROW:
 			_phase_lbl.text = "3. GROW to the sun: click a glowing cell (or arrow keys)"
-			_hud.text = "Moves left %d   Sunbeams %d/%d" % [_moves_left, _beams, _beams_total]
+			_hud.text = "Moves left %d   Sunbeams %d/%d   (thorns cost 2, dew gives 3)" % [_moves_left, _beams, _beams_total]
 		Phase.DONE:
 			_phase_lbl.text = "Grown!"
 			_hud.text = ""
@@ -323,7 +357,7 @@ func _to_field(screen: Vector2) -> Vector2:
 	return (screen - t.origin) / t.x.x
 
 # The grow grid sits in the middle of the field.
-const CELL: float = 66.0
+const CELL: float = 54.0
 func _grid_origin() -> Vector2:
 	return Vector2((FIELD.x - COLS * CELL) * 0.5, (FIELD.y - ROWS * CELL) * 0.5 + 10.0)
 
@@ -468,6 +502,19 @@ func _step(dt: float) -> void:
 			next = c + n * r
 			_bump(c + n * float(bp[1]), _vel.length())
 			_fx.ring(c, Color(1, 0.9, 0.4), float(bp[1]) * 2.2)
+	for sp: Array in _lv.get("spinners", []):
+		var c: Vector2 = sp[0]
+		var half: Vector2 = Vector2.from_angle(_t * TAU * float(sp[2])) * float(sp[1]) * 0.5
+		var q: Vector2 = Geometry2D.get_closest_point_to_segment(next, c - half, c + half)
+		if next.distance_to(q) < SEED_R + 5.0:
+			var n: Vector2 = (next - q).normalized()
+			if n == Vector2.ZERO:
+				n = half.orthogonal().normalized()
+			# The bar swats the seed along with its own swing.
+			var swing: Vector2 = half.orthogonal().normalized() * TAU * float(sp[2]) * (q - c).length() * signf((q - c).dot(half))
+			_vel = _vel.bounce(n) * 0.8 + swing * 0.6
+			next = q + n * (SEED_R + 5.0)
+			_bump(q, _vel.length())
 	_seed = next
 	var cup: Vector2 = _lv["cup"]
 	var dc: float = _seed.distance_to(cup)
@@ -556,22 +603,6 @@ func _set_rain(on: bool) -> void:
 
 # --- 3. Grow --------------------------------------------------------------
 
-# Shortest climb from the seed to the top row (up, left or right only).
-func _shortest() -> int:
-	var start := _find_seed()
-	var dist: Dictionary = {start: 0}
-	var q: Array[Vector2i] = [start]
-	while not q.is_empty():
-		var c: Vector2i = q.pop_front()
-		if c.y == 0:
-			return int(dist[c])
-		for d: Vector2i in [Vector2i(0, -1), Vector2i(-1, 0), Vector2i(1, 0)]:
-			var n: Vector2i = c + d
-			if _open(n) and not dist.has(n):
-				dist[n] = int(dist[c]) + 1
-				q.append(n)
-	return 12
-
 func _find_seed() -> Vector2i:
 	for y: int in ROWS:
 		var x: int = _grid[y].find("S")
@@ -590,7 +621,8 @@ func _begin_grow() -> void:
 		bonus += 1
 	if _water_score >= 0.99:
 		bonus += 1
-	_moves_total = _shortest() + int(_lv["slack"]) + bonus
+	_moves_total = int(_lv["moves"]) + bonus
+	_step_costs.clear()
 	_moves_left = _moves_total
 	var why: String = ""
 	if bonus > 0:
@@ -606,7 +638,10 @@ func _can_grow(c: Vector2i) -> bool:
 	var d: Vector2i = c - tip
 	if not (d == Vector2i(0, -1) or d == Vector2i(-1, 0) or d == Vector2i(1, 0)):
 		return false
-	return _open(c) and not _path.has(c)
+	return _open(c) and not _path.has(c) and _moves_left >= _cost(c)
+
+func _cost(c: Vector2i) -> int:
+	return 2 if _grid[c.y][c.x] == "~" else 1
 
 func _grow_to(c: Vector2i) -> void:
 	if _phase != Phase.GROW:
@@ -617,9 +652,21 @@ func _grow_to(c: Vector2i) -> void:
 			_fx.shake(0.15)
 		return
 	_path.append(c)
-	_moves_left -= 1
+	var spent: int = _cost(c)
+	if _grid[c.y][c.x] == "+":
+		spent -= DEW_BACK
+	_step_costs.append(spent)
+	_moves_left -= spent
 	_tip_pop = 1.0
 	var at: Vector2 = _cell_center(c)
+	if _grid[c.y][c.x] == "~":
+		Juice.sfx(self, "hit", 1.4, -10.0)
+		_fx.text(at + Vector2(0, -36), "Thorns! -2", Color(1, 0.5, 0.4), 22)
+		_fx.shake(0.15)
+	elif _grid[c.y][c.x] == "+":
+		Juice.sfx(self, "plink")
+		_fx.drops(at, Color(0.6, 0.85, 1.0), 12)
+		_fx.text(at + Vector2(0, -36), "Dew! +%d moves" % DEW_BACK, Color(0.6, 0.85, 1.0), 22)
 	Juice.sfx(self, "grow", 1.0 + 0.08 * float(ROWS - c.y))
 	_fx.burst(at, Color(0.5, 0.95, 0.4), 8, 160.0, 4.0, 100.0)
 	if _grid[c.y][c.x] == "*":
@@ -634,10 +681,17 @@ func _grow_to(c: Vector2i) -> void:
 		_fx.flash(Color(1, 0.95, 0.6, 0.45))
 		_fx.text(at + Vector2(0, 40), "REACHED THE SUN!", Color(1, 0.85, 0.2), 42)
 		get_tree().create_timer(1.0).timeout.connect(_finish)
-	elif _moves_left <= 0:
-		_say("Out of moves!", 2.0)
+	elif not _any_move():
+		_say("Out of moves!" if _moves_left <= 0 else "Stuck! Undo to try another way, or Finish.", 3.0)
 		get_tree().create_timer(0.8).timeout.connect(_finish)
 	_refresh_ui()
+
+func _any_move() -> bool:
+	var tip: Vector2i = _path[-1]
+	for d: Vector2i in [Vector2i(0, -1), Vector2i(-1, 0), Vector2i(1, 0)]:
+		if _can_grow(tip + d):
+			return true
+	return false
 
 func _undo() -> void:
 	if _phase != Phase.GROW or _path.size() <= 1 or _reached_sun:
@@ -645,7 +699,7 @@ func _undo() -> void:
 	var c: Vector2i = _path.pop_back()
 	if _grid[c.y][c.x] == "*":
 		_beams -= 1
-	_moves_left += 1
+	_moves_left += int(_step_costs.pop_back()) if not _step_costs.is_empty() else 1
 	Juice.sfx(self, "swish", 0.8)
 	_refresh_ui()
 
@@ -732,6 +786,12 @@ func _draw_course() -> void:
 		draw_circle(bp[0], float(bp[1]) + 3, Color(0.4, 0.25, 0.1))
 		draw_circle(bp[0], float(bp[1]), Color(0.85, 0.55, 0.25))
 		draw_circle((bp[0] as Vector2) + Vector2(-6, -6), float(bp[1]) * 0.4, Color(1, 0.8, 0.5))
+	for sp: Array in _lv.get("spinners", []):
+		var c: Vector2 = sp[0]
+		var half: Vector2 = Vector2.from_angle(_t * TAU * float(sp[2])) * float(sp[1]) * 0.5
+		draw_line(c - half, c + half, Color(0.35, 0.22, 0.1), 16.0)
+		draw_line(c - half, c + half, Color(0.85, 0.6, 0.3), 9.0)
+		draw_circle(c, 12.0, Color(0.95, 0.8, 0.4))
 	# The cup and its flag.
 	var cup: Vector2 = _lv["cup"]
 	draw_circle(cup, HOLE_R + 5, Color(0.25, 0.17, 0.08))
@@ -826,6 +886,16 @@ func _draw_grow() -> void:
 			if ch == "#":
 				draw_circle(r.get_center(), CELL * 0.4, Color(0.42, 0.42, 0.46))
 				draw_circle(r.get_center() + Vector2(-8, -8), CELL * 0.18, Color(0.6, 0.6, 0.62))
+			elif ch == "~" and not _path.has(c):
+				var tc: Vector2 = r.get_center()
+				for k: int in 6:
+					var a: float = k * TAU / 6.0
+					draw_line(tc, tc + Vector2.from_angle(a) * CELL * 0.36, Color(0.55, 0.25, 0.3), 3.0)
+				draw_circle(tc, CELL * 0.14, Color(0.7, 0.3, 0.35))
+			elif ch == "+" and not _path.has(c):
+				var dc: Vector2 = r.get_center() + Vector2(0, sin(_t * 3.0 + x) * 2.0)
+				draw_circle(dc, CELL * 0.22, Color(0.55, 0.8, 1.0, 0.9))
+				draw_circle(dc + Vector2(-4, -4), CELL * 0.07, Color(1, 1, 1, 0.8))
 			elif ch == "*" and not _path.has(c):
 				var pulse: float = 0.6 + 0.4 * sin(_t * 5.0 + x + y)
 				draw_circle(r.get_center(), CELL * 0.28 * pulse + 6, Color(1, 0.9, 0.35, 0.55))

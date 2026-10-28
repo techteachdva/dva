@@ -154,7 +154,10 @@ func _spawn_particle(type: String, pos: Vector3, cfg: Dictionary) -> void:
 	p.emitting = true
 	var delay: float = cfg.get("lifetime", 0.6) + 0.2
 	var tween := create_tween()
-	tween.tween_callback(func() -> void: p.emitting = false).set_delay(delay)
+	# The particle may be gone by then (freed with the world on a scene change).
+	tween.tween_callback(func() -> void:
+		if is_instance_valid(p):
+			p.emitting = false).set_delay(delay)
 
 # ------------------------------------------------------------------
 # Public spawn API

@@ -250,7 +250,7 @@ func _show_select() -> void:
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(keys)
 	var back := Button.new()
-	back.text = "Back to campaign"
+	back.text = "Back to Mini-Games"
 	back.theme_type_variation = "GhostButton"
 	back.custom_minimum_size = Vector2(220, 48)
 	back.pressed.connect(_quit_to_campaign)
@@ -332,6 +332,7 @@ func _start_round() -> void:
 		f.combo = 0
 		f.stagger = 0.0
 		f.chain = 0
+		f.set_meta("serious", false)
 		f.chain_t = 0.0
 		f.plan = ""
 		f.inputs.clear()
@@ -541,6 +542,15 @@ func _cpu_input(f: Fighter, foe: Fighter, delta: float) -> void:
 	# The comeback: when the player is clearly losing, the rival eases off,
 	# fights sloppier, and now and then stops to show off (a taunt that
 	# leaves it wide open), so a struggling player gets a real chance.
+	# And the other way: a player who is cruising meets a rival that gets
+	# serious (sharper blocks, quicker punishes), so wins stay earned.
+	if _dominating(foe, f):
+		level = minf(level * 1.4 + 0.15, 1.25)
+		react *= 0.65
+		if not f.get_meta("serious", false):
+			f.set_meta("serious", true)
+			_word(f.pos + Vector2(0, -260), "Getting serious!", Color(1.0, 0.45, 0.35))
+			Juice.sfx(self, "power", 0.7, -8.0)
 	if _struggling(foe, f):
 		level *= 0.45
 		react *= 1.6
@@ -666,6 +676,13 @@ func _struggling(player: Fighter, cpu: Fighter) -> bool:
 		return true
 	return _wins.y > _wins.x and player.hp < cpu.hp
 
+func _dominating(player: Fighter, cpu: Fighter) -> bool:
+	if demo or player != _p1:
+		return false
+	if player.hp - cpu.hp > 30.0:
+		return true
+	return _wins.x > _wins.y and player.hp >= cpu.hp
+
 # --- Simulation -----------------------------------------------------------
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -726,7 +743,7 @@ func _toggle_pause() -> void:
 		var info := FelecoUiScript.label("Rival %d of %d: %s   -   rounds %d to %d" % [_stage + 1, _ladder.size(), rival, _wins.x, _wins.y], 16, FelecoUiScript.MIST)
 		info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		col.add_child(info)
-		for b: Array in [["Resume", _toggle_pause, "PrimaryButton"], ["Restart this match", _restart_match, ""], ["Quit to fighters", _quit_to_select, "GhostButton"], ["Back to campaign", _quit_to_campaign, "GhostButton"]]:
+		for b: Array in [["Resume", _toggle_pause, "PrimaryButton"], ["Restart this match", _restart_match, ""], ["Quit to fighters", _quit_to_select, "GhostButton"], ["Back to Mini-Games", _quit_to_campaign, "GhostButton"]]:
 			var btn := Button.new()
 			btn.text = b[0]
 			btn.custom_minimum_size = Vector2(300, 50)
@@ -1086,7 +1103,7 @@ func _finish(won: bool) -> void:
 	fighters.pressed.connect(_show_select)
 	row.add_child(fighters)
 	var back := Button.new()
-	back.text = "Back to campaign"
+	back.text = "Back to Mini-Games"
 	back.theme_type_variation = "GhostButton"
 	back.custom_minimum_size = Vector2(200, 52)
 	back.pressed.connect(_quit_to_campaign)

@@ -7,7 +7,7 @@ extends Control
 # one is a stumble. Four races, each with faster rivals. Rivals stumble too,
 # and the pack bunches up a little (a runner far ahead eases off, one far
 # behind digs in), so a race is rarely decided before the last stretch.
-# Esc pauses, with a way back to the runners or the campaign.
+# Esc pauses, with a way back to the runners or the Mini-Games.
 
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 const Brawl = preload("res://scripts/minigames/predator_brawl.gd")
@@ -63,6 +63,8 @@ var _finish_time: Array[float] = []
 var _t: float = 0.0
 var _mode: String = "select"
 var _prompt: String = ""
+# The line after this one, shown faintly underneath so you can read ahead.
+var _upcoming: String = ""
 var _typed: int = 0
 var _stumble: float = 0.0
 var _count: float = 0.0
@@ -140,7 +142,7 @@ func _toggle_pause() -> void:
 			_toggle_pause()
 			_start_race(), ""], ["Runners", func() -> void:
 			_toggle_pause()
-			_show_select(), "GhostButton"], ["Back to campaign", _quit_to_campaign, "GhostButton"]]:
+			_show_select(), "GhostButton"], ["Back to Mini-Games", _quit_to_campaign, "GhostButton"]]:
 			var btn := Button.new()
 			btn.text = b[0]
 			btn.custom_minimum_size = Vector2(280, 50)
@@ -224,7 +226,7 @@ func _show_select() -> void:
 	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(bl)
 	var back := Button.new()
-	back.text = "Back to campaign"
+	back.text = "Back to Mini-Games"
 	back.theme_type_variation = "GhostButton"
 	back.custom_minimum_size = Vector2(220, 48)
 	back.pressed.connect(_quit_to_campaign)
@@ -268,6 +270,7 @@ func _start_race() -> void:
 	_keys_wrong = 0
 	_texts.clear()
 	_prompt = ""
+	_upcoming = ""
 	_next_prompt()
 	grab_focus()
 
@@ -288,16 +291,21 @@ func _stage() -> int:
 func _next_prompt() -> void:
 	_typed = 0
 	_cursor_x = -1.0
+	if _upcoming.is_empty():
+		_upcoming = _make_prompt()
+	_prompt = _upcoming
+	_upcoming = _make_prompt()
+
+func _make_prompt() -> String:
 	var lines := _dialog()
 	var words: PackedStringArray = lines[randi() % lines.size()].split(" ", false)
-	var want: int = [1, 2, 3, 5][_stage()]
+	var want: int = [1, 2, 3, 4][_stage()]
 	if want == 1:
 		# Opening words are short and friendly.
 		var short: Array = Array(words).filter(func(w: String) -> bool: return w.length() >= 3 and w.length() <= 6)
-		_prompt = short[randi() % short.size()] if not short.is_empty() else words[0]
-		return
+		return short[randi() % short.size()] if not short.is_empty() else words[0]
 	var start: int = randi() % maxi(words.size() - want + 1, 1)
-	_prompt = " ".join(words.slice(start, start + want))
+	return " ".join(words.slice(start, start + want))
 
 func _gui_input(event: InputEvent) -> void:
 	var k := event as InputEventKey
@@ -378,7 +386,7 @@ func _process(delta: float) -> void:
 		# Rivals: a steady pace with a little wobble and a late kick.
 		var pace: float = _rival_pace * (0.88 + 0.08 * i) * (1.0 + 0.06 * sin(_t * (0.7 + i * 0.3)))
 		if _pos[i] > _length * 0.8:
-			pace *= 1.08
+			pace *= 1.04
 		# The pack bunches: a rival far ahead of you eases off a little, one
 		# far behind digs in. Gentle, so a good typist still wins clean.
 		var gap: float = (_pos[i] - _pos[0]) / _length
@@ -458,7 +466,7 @@ func _end_race() -> void:
 	menu.pressed.connect(_show_select)
 	_end_btns.add_child(menu)
 	var back := Button.new()
-	back.text = "Back to campaign"
+	back.text = "Back to Mini-Games"
 	back.theme_type_variation = "GhostButton"
 	back.custom_minimum_size = Vector2(200, 54)
 	back.pressed.connect(_quit_to_campaign)
@@ -521,6 +529,9 @@ func _draw_prompt(font: Font) -> void:
 				lift = _pop * big * 0.12
 			draw_string(font, Vector2(x, base_y - lift), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, big, col)
 		x += widths[i] + gap
+	# The line after this one, faint, so you can read ahead.
+	if not _upcoming.is_empty():
+		draw_string(font, Vector2(0, top + hgt + 104), "Up next:  " + _upcoming.to_upper(), HORIZONTAL_ALIGNMENT_CENTER, VIEW.x, 24, Color(1, 1, 1, 0.38))
 	# The next key, spelled out on a key cap.
 	if _typed < word.length():
 		var nxt: String = word[_typed]

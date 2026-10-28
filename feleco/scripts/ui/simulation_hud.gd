@@ -417,6 +417,7 @@ func _update_powerup_buttons() -> void:
 
 # Goals, the tutorial and My Creature live in one card at the top.
 var _goals: GoalsPanel
+var saga: ValleySaga = null
 
 func _build_goals() -> void:
 	_goals = GoalsPanel.new()
@@ -433,6 +434,14 @@ func _build_goals() -> void:
 	add_child(_goals)
 	HudWindow.movable(_goals)
 	var gc: Node = get_node_or_null("/root/GameConfig")
+	# Enter the Valley is a five-year saga (year goals, dawn dilemmas, quests).
+	if gc != null and gc.current_mode == "sandbox":
+		saga = ValleySaga.new()
+		saga.name = "Saga"
+		saga.director = _director
+		saga.hud = self
+		add_child(saga)
+		_goals.saga = saga
 	if gc != null and not gc.tutorial_done and gc.current_mode == "sandbox":
 		_show_welcome.call_deferred()
 

@@ -337,6 +337,11 @@ func _ready() -> void:
 			_scenario_events = ChallengeScenarios.events_for(scenario_id, cfg_time_limit)
 		cfg_bet = gc.player_bet
 		cfg_grass_density = gc.grass_density
+		# The producer boon (Seedling Golf): more trees and a richer meadow.
+		if gc.current_mode == "sandbox":
+			var pb: Dictionary = gc.link_boons().get("producer", {})
+			cfg_trees += int(pb.get("trees", 0))
+			cfg_grass_density = minf(cfg_grass_density + float(pb.get("grass", 0.0)), 1.0)
 		cfg_time_limit = gc.time_limit
 		cfg_preset = gc.map_preset
 
