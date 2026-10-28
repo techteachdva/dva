@@ -20,6 +20,9 @@ var _body: Label
 var _next: Button
 var _t: float = 0.0
 var _waiting_click: bool = false
+# The card eases to the best free spot each frame, until the player drags it.
+var _card_goal := Vector2(-1, -1)
+var _dragged: bool = false
 
 # [title, words, highlight in the guide's design coordinates (or empty), wait for a creature click].
 const STEPS: Array = [
@@ -47,6 +50,9 @@ func _ready() -> void:
 	sb.set_content_margin_all(18)
 	_card.add_theme_stylebox_override("panel", sb)
 	_card.custom_minimum_size = Vector2(460, 0)
+	_card.mouse_default_cursor_shape = Control.CURSOR_MOVE
+	_card.tooltip_text = "Drag me anywhere."
+	_card.gui_input.connect(_drag_card)
 	add_child(_card)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 10)
@@ -90,27 +96,67 @@ func _advance() -> void:
 	# During the click step, let the mouse through to the guide.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE if _waiting_click else Control.MOUSE_FILTER_STOP
 	Juice.sfx(self, "pop", 1.0 + 0.05 * _step, -10.0)
-	_place_card()
+	_dragged = false
+	_card_goal = Vector2(-1, -1)
 
-func _place_card() -> void:
-	_card.reset_size()
-	var vs: Vector2 = size
-	var cs: Vector2 = _card.get_combined_minimum_size()
-	var pos := Vector2((vs.x - cs.x) * 0.5, (vs.y - cs.y) * 0.5)
-	if _hole_goal.size != Vector2.ZERO:
-		# Beside the lit part: below it if there's room, else above, else bottom right.
-		if _hole_goal.end.y + cs.y + 16 < vs.y:
-			pos = Vector2(clampf(_hole_goal.get_center().x - cs.x * 0.5, 16, vs.x - cs.x - 16), _hole_goal.end.y + 12)
-		elif _hole_goal.position.y - cs.y - 16 > 0:
-			pos = Vector2(clampf(_hole_goal.get_center().x - cs.x * 0.5, 16, vs.x - cs.x - 16), _hole_goal.position.y - cs.y - 12)
-		else:
-			pos = Vector2(vs.x - cs.x - 24, vs.y - cs.y - 24)
-	_card.position = pos
+# The best spot for the card: the first of below, above, right, left of the
+# lit part that fits on screen without covering it; else the screen corner
+# farthest from it; centred when nothing is lit. Always fully on screen.
+func _best_spot() -> Vector2:
+	var vs: Vector2 = get_viewport_rect().size
+	var cs: Vector2 = _card.size
+	var m: float = 16.0
+	var centred := ((vs - cs) * 0.5).floor()
+	if _hole_goal.size == Vector2.ZERO:
+		return centred
+	var h := _hole_goal.grow(12)
+	var cx: float = h.get_center().x - cs.x * 0.5
+	var cy: float = h.get_center().y - cs.y * 0.5
+	var options: Array[Vector2] = [
+		Vector2(cx, h.end.y + 8), Vector2(cx, h.position.y - cs.y - 8),
+		Vector2(h.end.x + 8, cy), Vector2(h.position.x - cs.x - 8, cy),
+	]
+	for o: Vector2 in options:
+		var p := Vector2(clampf(o.x, m, vs.x - cs.x - m), clampf(o.y, m, vs.y - cs.y - m))
+		var r := Rect2(p, cs)
+		if p.x >= m - 0.5 and p.y >= m - 0.5 and not r.intersects(_hole_goal):
+			return p
+	# Nothing beside it fits (the lit part is most of the screen): the corner
+	# farthest from its centre, so the card covers as little as possible.
+	var best := Vector2(m, m)
+	var far: float = -1.0
+	for corner: Vector2 in [Vector2(m, m), Vector2(vs.x - cs.x - m, m), Vector2(m, vs.y - cs.y - m), Vector2(vs.x - cs.x - m, vs.y - cs.y - m)]:
+		var d: float = (corner + cs * 0.5).distance_to(_hole_goal.get_center())
+		if d > far:
+			far = d
+			best = corner
+	return best
+
+func _clamp_on_screen(p: Vector2) -> Vector2:
+	var vs: Vector2 = get_viewport_rect().size
+	return Vector2(clampf(p.x, 8.0, maxf(8.0, vs.x - _card.size.x - 8.0)), clampf(p.y, 8.0, maxf(8.0, vs.y - _card.size.y - 8.0)))
+
+func _drag_card(event: InputEvent) -> void:
+	var mm := event as InputEventMouseMotion
+	if mm != null and mm.button_mask & MOUSE_BUTTON_MASK_LEFT:
+		_dragged = true
+		_card.position = _clamp_on_screen(_card.position + mm.relative)
+		_card.accept_event()
 
 func _process(delta: float) -> void:
 	_t += delta
 	var k: float = 1.0 - exp(-delta * 10.0)
 	_hole = Rect2(_hole.position.lerp(_hole_goal.position, k), _hole.size.lerp(_hole_goal.size, k))
+	# Keep the card readable: ease to the best spot (once its size is known),
+	# unless the player has moved it; either way, never off screen.
+	if _card.size.x > 1.0:
+		if not _dragged:
+			var goal: Vector2 = _best_spot()
+			if _card_goal.x < 0.0:
+				_card.position = goal
+			_card_goal = goal
+			_card.position = _card.position.lerp(goal, 1.0 - exp(-delta * 12.0))
+		_card.position = _clamp_on_screen(_card.position)
 	if _waiting_click and guide != null and not String(guide._focus).is_empty():
 		_waiting_click = false
 		Juice.sfx(self, "chime")

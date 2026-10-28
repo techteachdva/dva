@@ -3,9 +3,17 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.6"
+const VERSION: String = "4.6.1"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.6.1",
+		"title": "Tidy Tour",
+		"notes": [
+			"The Rules tour's cards always land in an easy-to-read spot on any screen (the first one was half off the corner), and every tour, how-to, dilemma and Plans card can be dragged anywhere.",
+			"There may be a secret in the Credits.",
+		],
+	},
 	{
 		"version": "4.6",
 		"title": "Learn the Valley",
@@ -240,7 +248,7 @@ const CHANGELOG: Array = [
 
 const CREDITS: String = """[center][font_size=22][color=#e6c36a]Feleco[/color][/font_size]
 
-Game Design and Prompt Engineering by [b]DM Zemo[/b]
+Game Design and Prompt Engineering by [url=zemo][b]DM Zemo[/b][/url]
 Code and Graphics by [b]Claude[/b]
 Music by [b]Kevin MacLeod[/b]
 
@@ -366,6 +374,12 @@ static func build_popup(theme: Theme) -> PopupPanel:
 	credits.bbcode_enabled = true
 	credits.text = CREDITS
 	credits.add_theme_font_size_override("normal_font_size", 18)
+	# A secret: DM Zemo's name opens the developer console (no underline, no hint).
+	credits.meta_underlined = false
+	credits.meta_clicked.connect(func(meta: Variant) -> void:
+		if str(meta) == "zemo":
+			popup.hide()
+			DevConsole.open_from(credits))
 	tabs.add_child(credits)
 	var close := Button.new()
 	close.text = "Close"

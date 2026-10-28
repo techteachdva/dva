@@ -309,6 +309,7 @@ func _show_dilemma(d: Dictionary) -> void:
 	card.grow_vertical = Control.GROW_DIRECTION_BOTH
 	card.custom_minimum_size = Vector2(620, 0)
 	shade.add_child(card)
+	HudWindow.movable(card)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 12)
 	card.add_child(col)

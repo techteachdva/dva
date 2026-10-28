@@ -1245,6 +1245,7 @@ func _open_plans() -> void:
 	sb.set_content_margin_all(20)
 	card.add_theme_stylebox_override("panel", sb)
 	shade.add_child(card)
+	HudWindow.movable(card)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 10)
 	card.add_child(col)
