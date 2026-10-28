@@ -49,6 +49,14 @@ const FLOATS_PER_INSTANCE: int = 20
 # live ones. Reallocating GPU buffers every birth and death corrupted the
 # instance data on some Chromebook GPUs (giant rainbow smears).
 const CAPACITY_CHUNK: int = 64
+# Failsafe: no sprite or shadow is ever drawn at size zero (or NaN). The
+# billboard shader divides the quad by its scale, so a zero, NaN or huge
+# scale on some GPUs blows one creature up into a giant distorted sprite.
+const MIN_SCALE: float = 0.2
+const MAX_SCALE: float = 3.0
+# Unused slots in a chunk are parked tiny and deep underground, never zero.
+const PARK_SCALE: float = 0.001
+const PARK_Y: float = -500.0
 # The Compatibility renderer packs colour and custom data as 16-bit floats,
 # so the gait phase wraps here to stay small and precise (20 full turns).
 const PHASE_WRAP: float = 40.0 * PI
@@ -299,12 +307,17 @@ func sync(registry: Array[AgentData]) -> void:
 			# A gap further than it could have run in one think (a spawn, a
 			# hut door) is a real jump: no glide. With many creatures each one
 			# thinks less often, so a fast runner can cover well over 5 m.
-			var t: float = clampf((now - data.sync_time) / data.interval, 0.0, 1.0)
+			# A newborn can arrive before its first think, with no interval yet.
+			var t: float = clampf((now - data.sync_time) / maxf(data.interval, 0.001), 0.0, 1.0)
+			if not is_finite(t):
+				t = 1.0
 			var from: Vector3 = data.prev_pos
 			var reach: float = maxf(5.0, data.vel.length() * data.interval * 2.0 + 2.0)
 			if from.distance_squared_to(data.pos) > reach * reach:
 				from = data.pos
 			var gp: Vector3 = from.lerp(data.pos, t)
+			if not gp.is_finite():
+				gp = data.pos
 			var x: float = gp.x
 			var z: float = gp.z
 			data.shown = gp
@@ -322,6 +335,7 @@ func sync(registry: Array[AgentData]) -> void:
 				s *= 1.7 if data.species == "bear" else 1.2
 			if kind == 3:
 				s = _mushroom_scale(data)
+			s = clampf(s, MIN_SCALE, MAX_SCALE) if is_finite(s) else 1.0
 			var ground: float = data.pos.y
 			var y: float
 			var flying: bool = kind == 1
@@ -434,6 +448,8 @@ func sync(registry: Array[AgentData]) -> void:
 			if followed != null and data.node == followed:
 				cell += 16
 			floats[o + 19] = float(cell) + fposmod(data.gait_seed / TAU, 1.0) * 0.95
+			if not is_finite(y):
+				floats[o + 7] = data.pos.y
 			o += FLOATS_PER_INSTANCE
 			if shadow_w > 0.0:
 				var w: float = shadow_w * s
@@ -445,9 +461,12 @@ func sync(registry: Array[AgentData]) -> void:
 				# Cast away from the sun: the blob stretches along the light and
 				# its near end stays under the feet. Fliers' shadows stay round.
 				var stretch: float = 0.0 if flying else sun_stretch
+				if not is_finite(stretch):
+					stretch = 0.0
 				var length: float = w * (1.0 + stretch)
 				var across: float = w * 0.62
-				var d: Vector2 = sun_dir
+				# A zero or bad sun direction would flatten every shadow to nothing.
+				var d: Vector2 = sun_dir.normalized() if sun_dir.is_finite() and sun_dir.length_squared() > 0.0001 else Vector2(0.0, 1.0)
 				var shift: float = (length - w) * 0.5
 				shadow_floats[so] = d.x * length
 				shadow_floats[so + 1] = 0.0
@@ -464,10 +483,22 @@ func sync(registry: Array[AgentData]) -> void:
 				# Long shadows thin out a little; moonlight barely casts any.
 				shadow_floats[so + 15] = alpha * shadow_fade / (1.0 + stretch * 0.35)
 				so += SHADOW_FLOATS
+		_park(floats, o, FLOATS_PER_INSTANCE)
 		mm.buffer = floats
 	if shadow_cap > 0:
+		_park(shadow_floats, so, SHADOW_FLOATS)
 		smm.buffer = shadow_floats
 	_draw_zzz(now)
+
+# Every slot from `from` on is parked: tiny, deep underground, invisible.
+static func _park(buf: PackedFloat32Array, from: int, stride: int) -> void:
+	var at: int = from
+	while at + 11 < buf.size():
+		buf[at] = PARK_SCALE
+		buf[at + 5] = PARK_SCALE
+		buf[at + 10] = PARK_SCALE
+		buf[at + 7] = PARK_Y
+		at += stride
 
 # Grows the buffer in chunks (never shrinks, so births and deaths don't
 # reallocate) and shows only the live instances. Returns the capacity.

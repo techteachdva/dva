@@ -8,37 +8,31 @@ extends RefCounted
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 
 const GAMES: Dictionary = {
-	"golf": ["Seedling Golf", "Grow the strongest plant by finding the spot with the best light, water and soil.", [
-		"PUTT: press on the seed, drag BACK (like a slingshot) and let go. The further you pull, the harder the flick.",
-		"Land the seed in a dark planting hole. Rocks bounce it, puddles wash it back (+1 stroke), arrows push it.",
-		"Not every hole is equal! Turn on Sense Light, Sense Water and Sense Soil to see where each is good. Yellow, blue and brown = good.",
-		"WATER: drag back from the cloud to flick raindrops. Drops that stop close to your seedling give it water.",
-		"LIGHT: tap the dark leafy blobs to trim the shade over your seedling. You only get a few snips.",
-		"Press Grow! Your plant is ranked F to S. The WEAKEST of light, water and soil holds it back, so balance all three.",
+	"golf": ["Seedling Golf", "Plant your seed, water it, and grow it to the sun.", [
+		"PUTT: drag BACK from the seed and let go. Sink it in the cup with the flag.",
+		"Hills roll the seed away, bowls pull it in, bumpers bounce it, water costs a stroke.",
+		"WATER: hold the mouse (or Space) to rain. Let go in the GREEN band.",
+		"GROW: click a glowing cell (or arrow keys) to stretch up, left or right. Reach the SUN before your moves run out. Sunbeams are bonus.",
+		"A par putt and perfect watering each give you an extra move. Graded S to F.",
 	]],
-	"brawl": ["Predator Brawl", "Knock out every rival hunter, a Dire rival, then the golden Dire champion.", [
-		"Pick a fighter: Wolf (fast), Mountain Lion (strong) or Falcon (jumps three times). Pick how sharp the rivals are: Cub, Hunter or Dire.",
-		"A / D to move, W to jump, hold S to block. J is a quick punch, K a big punch, L your special move.",
-		"Press J J K fast for a FINISHER combo. Four hits in a row knock the rival down, but each hit in a row does a little less.",
-		"Blocking a hit shoves the attacker back and fills your meter. Hit back while they're still swinging!",
-		"Landing hits fills your blue meter. Specials cost a quarter of it. When the meter turns gold, EVOLVE: tap Down, Forward, Down, Forward, then L. You turn Dire: bigger, golden and stronger for 12 seconds. RAMPAGE!",
-		"Win two rounds to beat a rival. The Pause button (or Esc) always lets you leave.",
+	"brawl": ["Predator Brawl", "Knock out every rival, then the golden champion.", [
+		"A / D move, W jump, hold S block. J light, K heavy, L special.",
+		"COMBOS are three keys in a row (D = down, F = toward the rival, B = away). The list is always on the left of the screen.",
+		"Try D D K for a low sweep that goes under blocks!",
+		"Hits fill your meter. When it turns GOLD, press ENTER to EVOLVE: bigger, golden and stronger.",
+		"Win two rounds to beat a rival. Esc pauses.",
 	]],
-	"race": ["Stampede Sprint", "Win the race by typing fast and carefully.", [
-		"Pick a runner. Each one has a different top speed and stride.",
-		"Words appear in the middle of the screen. Type them! Every correct letter is a stride forward.",
-		"Spaces count too. Letters you've typed turn green.",
-		"A wrong key makes you STUMBLE and slows you down. Accuracy beats panic! Rivals stumble too.",
-		"The words get longer near the finish: first single words, then whole lines the creatures say.",
-		"Finish in the top 3 to unlock the next, faster race. Esc pauses.",
+	"race": ["Stampede Sprint", "Type to run. Win the race!", [
+		"Type the letters in the box. The gold cursor shows your NEXT key.",
+		"Spaces count: when you see the space bar, press SPACE.",
+		"Wrong keys make you stumble. Accuracy beats speed!",
+		"Top 3 unlocks the next, faster race. Esc pauses.",
 	]],
-	"dominion": ["Valley Dominion", "Have the biggest clan still standing after winter (12 turns, then the snow).", [
-		"You are one of four clans. Your tiles have your colour; the number is how many of your clan live there. The green bar is the tile's FOOD.",
-		"To move: click one of YOUR tiles, then click a tile right next to it. Half the clan on your tile moves there. You get 3 moves a turn, then press End turn.",
-		"An empty tile becomes yours. Moving into a RIVAL's tile starts a fight: the numbers show your attack against their defence. Forests, huts and bears defend well.",
-		"Every turn each tile grows food (meadows in spring, forests in summer and autumn), then the clan there eats half its number. Food to spare: the clan grows. Eat a tile bare: it starves.",
-		"In winter almost nothing grows. Fill the forests before the snow, and watch the Winter forecast on the right. Late summer, a wolf pack comes: it bites the smallest group beside it. Huts keep it out.",
-		"Use your clan's power once a turn (the gold button). Each clan also has its own way of life: read the cards.",
+	"dominion": ["Valley Dominion", "Have the biggest clan after winter.", [
+		"Click one of your glowing tiles, then a YELLOW tile: half your clan moves there. 3 moves a turn, then End turn.",
+		"Empty tiles become yours. Moving onto a rival starts a fight: the numbers show who's stronger.",
+		"Green bars are food. Your clan eats every turn, so keep it where food is.",
+		"Winter comes after 12 turns and almost nothing grows: fill the forests before then.",
 	]],
 }
 

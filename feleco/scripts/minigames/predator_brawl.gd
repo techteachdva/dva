@@ -6,7 +6,9 @@ extends Control
 # three rounds each.
 #   Move  A / D or Left / Right     Jump  W or Up     Block  hold S or Down
 #   Light J (chain J J J)           Heavy K           Special L
-#   Combo J J K: a finisher         EVOLVE (meter full): Down, Fwd, Down, Fwd, then L
+#   Combos are three inputs (see COMBOS): D D K low sweep, J J K finisher,
+#   F F J lunge, D F K rising uppercut, K K K slam, B F L whirlwind.
+#   EVOLVE (meter gold): Enter
 # Evolving turns the fighter Dire: bigger, golden, faster and harder hitting,
 # with RAMPAGE! shaking across the screen.
 # Combos scale down (each hit in a row does a little less) and the fourth
@@ -43,10 +45,28 @@ const FIGHTERS: Dictionary = {
 # How hard the computer fights. level scales how often it blocks, punishes
 # and evolves; react is its thinking time in seconds.
 const DIFFICULTY: Array = [
-	["cub", "Cub", "Rivals are slow to block and gentle. A good first climb.", 0.45, 0.5],
-	["hunter", "Hunter", "Rivals block, punish and evolve.", 0.8, 0.3],
-	["dire", "Dire", "Rivals read you like a book. For champions.", 1.15, 0.17],
+	["cub", "Cub", "Rivals are slow to block and gentle. A good first climb.", 0.22, 0.7],
+	["hunter", "Hunter", "Rivals block, punish and evolve.", 0.5, 0.45],
+	["dire", "Dire", "Rivals read you like a book. For champions.", 0.85, 0.28],
 ]
+# Three-input combos: the last three inputs (directions relative to facing:
+# D down, F forward, B back; J light, K heavy, L special) within COMBO_WINDOW
+# seconds. Each is its own move with its own pose (FighterArt).
+const COMBOS: Dictionary = {
+	"DDK": ["sweep", "LOW SWEEP!"],
+	"JJK": ["finisher", "FINISHER!"],
+	"FFJ": ["lunge", "LUNGE!"],
+	"DFK": ["rising", "RISING UPPERCUT!"],
+	"KKK": ["slam", "SLAM!"],
+	"BFL": ["whirl", "WHIRLWIND!"],
+}
+const COMBO_LIST: String = "D D K low sweep   J J K finisher   F F J lunge   D F K rising uppercut   K K K slam   B F L whirlwind"
+const COMBO_WINDOW: float = 0.9
+const WHIRL_COST: float = 15.0
+const ATTACKS: Array[String] = ["light", "heavy", "special", "sweep", "finisher", "lunge", "rising", "slam", "whirl"]
+# What a rival says when it stops to show off (the comeback, see _cpu_input).
+const TAUNTS: Array[String] = ["Is that all?", "Too easy!", "Catch me!", "Yawn...", "Nyah nyah!", "Come on!"]
+const TAUNT_TIME: float = 2.2
 const HIT_WORDS: Array[String] = ["BONK!", "POW!", "THWAP!", "CHOMP!", "BOOP!", "WHAM!", "SNAP!", "OOF!"]
 
 class Fighter:
@@ -116,10 +136,12 @@ var _diff_btns: Array[Button] = []
 var _stats: Dictionary = {}
 # Attract mode / tests: the computer plays both sides.
 var demo: bool = false
+var _jx := Juice.new()
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = FelecoUiScript.theme()
+	_jx.font = FelecoUiScript.font("heading")
 	focus_mode = Control.FOCUS_ALL
 	_build_pause_button()
 	_show_select()
@@ -224,7 +246,7 @@ func _show_select() -> void:
 				_diff_btns[k].theme_type_variation = "PrimaryButton" if k == idx else "TouchButton")
 		drow.add_child(db)
 		_diff_btns.append(db)
-	var keys := FelecoUiScript.label("Move A/D   Jump W   Block hold S   Light J   Heavy K   Special L\nCombo: J J K     EVOLVE when your meter is full: Down, Forward, Down, Forward, then L", 16, FelecoUiScript.CREAM)
+	var keys := FelecoUiScript.label("Move A/D   Jump W   Block hold S   Light J   Heavy K   Special L\nCombos (D down, F forward, B back): " + COMBO_LIST + "\nEVOLVE when your meter turns gold: press ENTER", 16, FelecoUiScript.CREAM)
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(keys)
 	var back := Button.new()
@@ -353,13 +375,36 @@ func _player_input(f: Fighter, delta: float) -> void:
 	var light: bool = _tapped("light", [KEY_J, KEY_Z])
 	var heavy: bool = _tapped("heavy", [KEY_K, KEY_X])
 	var special: bool = _tapped("special", [KEY_L, KEY_C])
-	# Directions for the evolution motion, relative to facing.
+	# EVOLVE is one key: Enter, the moment the meter is gold.
+	if _tapped("evolve", [KEY_ENTER, KEY_KP_ENTER]) and _can_evolve(f):
+		_evolve(f)
+		return
+	if f.meter >= 100.0 and f.dire <= 0.0 and not f.get_meta("told", false):
+		f.set_meta("told", true)
+		_announce("EVOLVE READY! Press ENTER", 1.8)
+	elif f.meter < 100.0:
+		f.set_meta("told", false)
+	# Directions for the combos, relative to facing.
 	if _tapped("down", [KEY_S, KEY_DOWN]):
 		f.inputs.append(["D", 0.0])
 	var fwd_keys: Array = [KEY_D, KEY_RIGHT] if f.facing > 0.0 else [KEY_A, KEY_LEFT]
+	var back_keys: Array = [KEY_A, KEY_LEFT] if f.facing > 0.0 else [KEY_D, KEY_RIGHT]
 	if _tapped("fwd", fwd_keys):
 		f.inputs.append(["F", 0.0])
+	if _tapped("back", back_keys):
+		f.inputs.append(["B", 0.0])
 	_control(f, (1.0 if right else 0.0) - (1.0 if left else 0.0), jump, down, light, heavy, special, delta)
+
+func _can_evolve(f: Fighter) -> bool:
+	return f.meter >= 100.0 and f.dire <= 0.0 and f.state not in ["ko", "down", "evolve"]
+
+# The last three inputs inside the combo window, as a string like "DDK".
+func _recent(f: Fighter) -> String:
+	var seq: String = ""
+	for i in f.inputs:
+		if float(i[1]) <= COMBO_WINDOW:
+			seq += String(i[0])
+	return seq.right(3)
 
 func _evolve_ready(f: Fighter) -> bool:
 	# Down, Forward, Down, Forward within a couple of seconds.
@@ -369,7 +414,7 @@ func _evolve_ready(f: Fighter) -> bool:
 	return seq.ends_with("DFDF")
 
 func _control(f: Fighter, move: float, jump: bool, block: bool, light: bool, heavy: bool, special: bool, _delta: float) -> void:
-	var busy: bool = f.state in ["light", "heavy", "special", "hurt", "ko", "evolve", "down"]
+	var busy: bool = f.state in ATTACKS or f.state in ["hurt", "ko", "evolve", "down", "taunt"]
 	f.blocking = block and f.on_ground and not busy
 	if not busy and not f.blocking:
 		f.vel.x = move * float(f.sheet["speed"]) * (1.15 if f.dire > 0.0 else 1.0)
@@ -386,20 +431,34 @@ func _control(f: Fighter, move: float, jump: bool, block: bool, light: bool, hea
 			f.on_ground = false
 			f.air_jumps_left = int(f.sheet["air_jumps"])
 			_dust(f.pos)
+			Juice.sfx(self, "swish", 1.3, -14.0)
 		elif f.air_jumps_left > 0:
 			f.air_jumps_left -= 1
 			f.vel.y = -float(f.sheet["jump"]) * 0.85
 	if special and f.meter >= 100.0 and _evolve_ready(f) and f.dire <= 0.0:
 		_evolve(f)
 		return
+	# Every attack press is an input too; three in a row may make a combo.
+	var key: String = "J" if light else ("K" if heavy else ("L" if special else ""))
+	if not key.is_empty():
+		f.inputs.append([key, 0.0])
 	if busy:
 		return
+	if not key.is_empty() and COMBOS.has(_recent(f)):
+		var c: Array = COMBOS[_recent(f)]
+		if c[0] != "whirl" or f.meter >= WHIRL_COST:
+			if c[0] == "whirl":
+				f.meter -= WHIRL_COST
+			f.inputs.clear()
+			f.chain = 0
+			_word(f.pos + Vector2(0, -340 * f.scale()), String(c[1]), Color(1.0, 0.7, 0.25))
+			_begin(f, String(c[0]))
+			return
 	if light:
 		# Light hits chain three times; a heavy straight after two is the finisher.
 		f.chain = f.chain + 1 if f.chain_t > 0.0 and f.chain < 3 else 1
 		_begin(f, "light")
 	elif heavy:
-		f.set_meta("finisher", f.chain >= 2 and f.chain_t > 0.0)
 		f.chain = 0
 		_begin(f, "heavy")
 	elif special and f.meter >= 25.0:
@@ -407,11 +466,24 @@ func _control(f: Fighter, move: float, jump: bool, block: bool, light: bool, hea
 		_begin(f, "special")
 
 func _begin(f: Fighter, s: String) -> void:
+	Juice.sfx(self, "swish" if s == "light" else "whoosh", 1.2 if s == "light" else (0.8 if s in ["slam", "finisher", "special"] else 1.0), -12.0)
+	if s in ["sweep", "finisher", "lunge", "rising", "slam", "whirl"]:
+		Juice.sfx(self, "power", 1.6, -16.0)
+		_jx.ring(f.pos + Vector2(0, -90), Color(1, 0.75, 0.3), 120.0, 0.35)
 	f.state = s
 	f.state_t = 0.0
 	f.hit_done = false
 	if f.on_ground:
 		f.vel.x = 0.0
+	f.set_meta("hits", 0)
+	match s:
+		"lunge":
+			f.vel.x = f.facing * 950.0
+		"rising":
+			f.vel = Vector2(f.facing * 120.0, -760.0)
+			f.on_ground = false
+		"slam":
+			f.vel.x = f.facing * 160.0
 	if s == "special":
 		match f.species:
 			"wolf":
@@ -432,6 +504,10 @@ func _evolve(f: Fighter) -> void:
 	f.hp = minf(f.hp + 20.0, 100.0)
 	_rampage_t = 2.2
 	_shake = 0.7
+	Juice.sfx(self, "power")
+	_jx.flash(Color(1, 0.85, 0.3, 0.6))
+	_jx.burst(f.pos + Vector2(0, -100), Color(1, 0.85, 0.3), 40, 600.0, 7.0, 200.0)
+	_jx.ring(f.pos + Vector2(0, -100), Color(1, 0.9, 0.4), 260.0, 0.8)
 	_announce("%s EVOLVES!" % String(FIGHTERS[f.species]["name"]).to_upper(), 1.6)
 
 # --- The CPU rival --------------------------------------------------------
@@ -459,9 +535,23 @@ func _cpu_input(f: Fighter, foe: Fighter, delta: float) -> void:
 	var light := false
 	var heavy := false
 	var special := false
-	if f.state in ["hurt", "ko", "evolve", "down"]:
+	if f.state in ["hurt", "ko", "evolve", "down", "taunt"]:
 		_control(f, 0.0, false, false, false, false, false, delta)
 		return
+	# The comeback: when the player is clearly losing, the rival eases off,
+	# fights sloppier, and now and then stops to show off (a taunt that
+	# leaves it wide open), so a struggling player gets a real chance.
+	if _struggling(foe, f):
+		level *= 0.45
+		react *= 1.6
+		if float(f.get_meta("taunt_cd", 0.0)) <= 0.0 and not near and f.on_ground and not foe_attacking:
+			f.set_meta("taunt_cd", 6.5)
+			f.state = "taunt"
+			f.state_t = 0.0
+			f.vel.x = 0.0
+			_word(f.pos + Vector2(0, -260), TAUNTS[randi() % TAUNTS.size()], Color(1.0, 0.6, 0.9))
+			Juice.sfx(self, "taunt")
+			return
 	# React once to each incoming attack: block (sharper rivals block more:
 	# Cub about a third of the time, Dire three in four), or hop away from a
 	# special.
@@ -509,6 +599,14 @@ func _cpu_input(f: Fighter, foe: Fighter, delta: float) -> void:
 			elif low and r < 0.75 and not foe_attacking:
 				f.plan = "retreat"
 				f.plan_t = randf_range(0.4, 0.9)
+			elif r < 0.12 + 0.12 * level:
+				# Now and then a rival throws a combo of its own.
+				var seqs: Array = COMBOS.keys().filter(func(q: String) -> bool: return q != "BFL" or f.meter >= WHIRL_COST)
+				var q: String = seqs[randi() % seqs.size()]
+				f.inputs = [[q[0], 0.0], [q[1], 0.0]]
+				light = q[2] == "J"
+				heavy = q[2] == "K"
+				special = q[2] == "L"
 			elif r < 0.5:
 				light = true
 			elif r < 0.72:
@@ -552,12 +650,21 @@ func _cpu_input(f: Fighter, foe: Fighter, delta: float) -> void:
 			if f.meter >= 60.0 and randf() < 0.25:
 				special = true
 		# Evolves when it can; the champion already has.
-		if f.meter >= 100.0 and f.dire <= 0.0 and randf() < 0.3 + 0.6 * level:
+		if f.meter >= 100.0 and f.dire <= 0.0 and randf() < 0.2 + 0.5 * level:
 			f.inputs = [["D", 0.0], ["F", 0.0], ["D", 0.0], ["F", 0.0]]
 			special = true
 			light = false
 			heavy = false
 	_control(f, move, jump, block, light, heavy, special, delta)
+
+# Is `player` (fighting `cpu`) having a rough time? Well behind on health,
+# or a round down and behind. Never in demo mode.
+func _struggling(player: Fighter, cpu: Fighter) -> bool:
+	if demo or player != _p1:
+		return false
+	if player.hp < 45.0 and cpu.hp - player.hp > 25.0:
+		return true
+	return _wins.y > _wins.x and player.hp < cpu.hp
 
 # --- Simulation -----------------------------------------------------------
 
@@ -627,7 +734,7 @@ func _toggle_pause() -> void:
 				btn.theme_type_variation = b[2]
 			btn.pressed.connect(b[1])
 			col.add_child(btn)
-		var keys := FelecoUiScript.label("A/D move   W jump   S block   J light   K heavy   L special\nJ J K finisher   Meter full: Down, Fwd, Down, Fwd, L to EVOLVE", 14, FelecoUiScript.CREAM)
+		var keys := FelecoUiScript.label("A/D move   W jump   S block   J light   K heavy   L special   ENTER evolve\n" + COMBO_LIST, 14, FelecoUiScript.CREAM)
 		keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		col.add_child(keys)
 	elif _pause_box != null:
@@ -648,6 +755,7 @@ func _process(real_delta: float) -> void:
 	_banner_t -= delta
 	_rampage_t -= delta
 	_shake = maxf(_shake - delta * 1.5, 0.0)
+	_jx.update(delta)
 	for w: Array in _words:
 		w[2] -= delta
 		w[0] += Vector2(0, -60) * delta
@@ -681,6 +789,7 @@ func _process(real_delta: float) -> void:
 		for i in f.inputs:
 			i[1] += delta
 		f.inputs = f.inputs.filter(func(i: Array) -> bool: return float(i[1]) < 1.6)
+		f.set_meta("taunt_cd", maxf(float(f.get_meta("taunt_cd", 0.0)) - delta, 0.0))
 		f.chain_t = maxf(f.chain_t - delta, 0.0)
 		if f.dire > 0.0 and f.dire < 900.0:
 			f.dire = maxf(f.dire - delta, 0.0)
@@ -730,11 +839,13 @@ func _physics(f: Fighter, delta: float) -> void:
 				f.vel.y = 0.0
 				f.on_ground = true
 	f.pos.x = clampf(f.pos.x, 60.0, ARENA.x - 60.0)
-	if f.on_ground and f.state not in ["special", "light", "heavy"]:
+	if f.on_ground and f.state not in ATTACKS:
 		f.vel.x = move_toward(f.vel.x, 0.0, 3000.0 * delta) if f.state in ["hurt", "ko", "down"] else f.vel.x
 	if f.state == "hurt" and f.state_t > 0.35:
 		f.state = "idle"
 	if f.state == "evolve" and f.state_t > 0.9:
+		f.state = "idle"
+	if f.state == "taunt" and f.state_t > TAUNT_TIME:
 		f.state = "idle"
 
 # Attacks: [active from, active to, total time, reach, damage, knockback].
@@ -744,8 +855,19 @@ func _attack_frame(f: Fighter) -> Array:
 		"light":
 			return [0.06, 0.14, 0.24, 120.0, float(s["light"]), 260.0]
 		"heavy":
-			var fin: bool = f.get_meta("finisher", false)
-			return [0.18, 0.3, 0.5, 150.0, float(s["heavy"]) * (1.6 if fin else 1.0), 620.0 if fin else 480.0]
+			return [0.18, 0.3, 0.5, 150.0, float(s["heavy"]), 480.0]
+		"sweep":
+			return [0.1, 0.24, 0.45, 165.0, float(s["heavy"]) * 0.9, 300.0]
+		"finisher":
+			return [0.2, 0.32, 0.6, 155.0, float(s["heavy"]) * 1.6, 640.0]
+		"lunge":
+			return [0.05, 0.26, 0.42, 125.0, float(s["light"]) * 2.4, 440.0]
+		"rising":
+			return [0.06, 0.3, 0.6, 135.0, float(s["heavy"]) * 1.3, 380.0]
+		"slam":
+			return [0.32, 0.44, 0.72, 165.0, float(s["heavy"]) * 1.8, 700.0]
+		"whirl":
+			return [0.05, 0.62, 0.72, 145.0, float(s["heavy"]) * 0.6, 260.0]
 		"special":
 			match f.species:
 				"wolf":
@@ -764,11 +886,17 @@ func _attack_tick(f: Fighter, foe: Fighter, _delta: float) -> void:
 		f.vel = Vector2(f.facing * 700.0, 1300.0)
 	if f.state == "special" and f.species == "wolf":
 		f.vel.x = f.facing * 1100.0 * (1.0 - f.state_t / 0.45)
+	if f.state == "lunge":
+		f.vel.x = f.facing * 950.0 * maxf(1.0 - f.state_t / 0.35, 0.0)
+	# The whirlwind hits up to three times as it spins.
+	if f.state == "whirl" and f.hit_done and int(f.get_meta("hits", 0)) < 3 and fmod(f.state_t, 0.2) < 0.03:
+		f.hit_done = false
 	if not f.hit_done and f.state_t >= float(a[0]) and f.state_t <= float(a[1]):
 		var reach: float = float(a[3]) * f.scale()
 		var dx: float = (foe.pos.x - f.pos.x) * f.facing
 		if dx > -30.0 and dx < reach and absf(foe.pos.y - f.pos.y) < 120.0 * f.scale() and foe.state != "ko" and foe.stagger <= 0.0:
 			f.hit_done = true
+			f.set_meta("hits", int(f.get_meta("hits", 0)) + 1)
 			_hit(f, foe, float(a[4]), float(a[5]))
 	if f.state_t >= float(a[2]) or (f.state == "special" and f.on_ground and f.state_t > float(a[0]) + 0.1 and f.species != "wolf"):
 		if f.state == "light":
@@ -779,8 +907,14 @@ func _attack_tick(f: Fighter, foe: Fighter, _delta: float) -> void:
 
 func _hit(f: Fighter, foe: Fighter, dmg: float, knock: float) -> void:
 	dmg *= f.dmg_mult()
-	var blocked: bool = foe.blocking and signf(f.pos.x - foe.pos.x) == foe.facing
+	# The comeback: a rival hits softer while the player is struggling.
+	if f == _p2 and _struggling(_p1, _p2):
+		dmg *= 0.7
+	# A low sweep goes under any block; sweeps, slams and finishers knock down.
+	var floors: bool = f.state in ["sweep", "slam", "finisher"]
+	var blocked: bool = foe.blocking and signf(f.pos.x - foe.pos.x) == foe.facing and f.state != "sweep"
 	if blocked:
+		Juice.sfx(self, "block")
 		dmg *= 0.2
 		knock *= 0.4
 		_word(foe.pos + Vector2(0, -150), "BLOCK!", Color(0.7, 0.85, 1.0))
@@ -792,6 +926,7 @@ func _hit(f: Fighter, foe: Fighter, dmg: float, knock: float) -> void:
 		foe.state = "hurt"
 		foe.state_t = 0.0
 		foe.flash = 0.15
+		Juice.sfx(self, "bighit" if dmg >= 14.0 or f.state in ["slam", "finisher", "rising", "sweep"] else "hit", randf_range(0.9, 1.15), -6.0)
 		f.combo += 1
 		foe.combo = 0
 		# Each hit in a row does a little less; the fourth knocks the rival down.
@@ -802,10 +937,11 @@ func _hit(f: Fighter, foe: Fighter, dmg: float, knock: float) -> void:
 		_word(foe.pos + Vector2(randf_range(-30, 30), -170), HIT_WORDS[randi() % HIT_WORDS.size()], Color(1.0, 0.9, 0.3) if f.dire > 0.0 else Color.WHITE)
 		if f.combo >= 3:
 			_word(f.pos + Vector2(0, -230), "%d HIT COMBO!" % f.combo, Color(1.0, 0.55, 0.2))
-		if f.get_meta("finisher", false) and f.state == "heavy":
-			_word(foe.pos + Vector2(0, -210), "FINISHER!", Color(1.0, 0.4, 0.3))
+		if f.state in ["finisher", "slam", "rising"]:
 			_shake = 0.35
-		if f.combo >= KNOCKDOWN_HITS:
+		if foe.state == "taunt":
+			_word(foe.pos + Vector2(0, -290), "Caught showing off!", Color(1.0, 0.85, 0.3))
+		if f.combo >= KNOCKDOWN_HITS or floors:
 			foe.state = "down"
 			foe.stagger = STAGGER_TIME
 			knock *= 1.6
@@ -814,6 +950,9 @@ func _hit(f: Fighter, foe: Fighter, dmg: float, knock: float) -> void:
 			_shake = maxf(_shake, 0.4)
 	foe.hp = maxf(foe.hp - dmg, 0.0)
 	foe.vel = Vector2(f.facing * knock, -knock * 0.45)
+	if f.state == "rising" and not blocked:
+		# Launched up into the air.
+		foe.vel = Vector2(f.facing * 220.0, -980.0)
 	foe.on_ground = false
 	f.meter = minf(f.meter + 9.0, 100.0)
 	foe.meter = minf(foe.meter + 5.0, 100.0)
@@ -822,6 +961,8 @@ func _hit(f: Fighter, foe: Fighter, dmg: float, knock: float) -> void:
 	for k: int in 10:
 		_sparks.append([foe.pos + Vector2(0, -70), Vector2.from_angle(randf() * TAU) * randf_range(200, 520), 0.35, Color(1, 0.85, 0.3) if f.dire > 0.0 else Color(1, 1, 1)])
 	if foe.hp <= 0.0:
+		Juice.sfx(self, "bighit", 0.7)
+		_jx.flash(Color(1, 1, 1, 0.55))
 		foe.state = "ko"
 		foe.stagger = 0.0
 		_slowmo = 1.2
@@ -855,6 +996,11 @@ func _end_round() -> void:
 	winner.state = "win"
 	winner.state_t = 0.0
 	_announce("TUCKERED OUT!" if loser.hp <= 0.0 else "TIME!", 2.0)
+	if p1_won and not demo:
+		Juice.sfx(self, "fanfare")
+		_jx.confetti(winner.pos + Vector2(0, -200), 60, 500.0)
+	elif not demo:
+		Juice.sfx(self, "lose")
 
 func _award(ep: int) -> void:
 	if demo:
@@ -975,12 +1121,14 @@ func _draw() -> void:
 		_draw_fighter(f)
 	for s: Array in _sparks:
 		draw_circle(s[0], 5.0 * float(s[2]) / 0.4 + 1.0, s[3])
+	_jx.draw(self)
 	var font := FelecoUiScript.font("heading")
 	for w: Array in _words:
 		draw_string_outline(font, (w[0] as Vector2) - Vector2(120, 0), w[1], HORIZONTAL_ALIGNMENT_CENTER, 240, 34, 8, Color(0, 0, 0, clampf(w[2], 0, 1)))
 		draw_string(font, (w[0] as Vector2) - Vector2(120, 0), w[1], HORIZONTAL_ALIGNMENT_CENTER, 240, 34, Color(w[3], clampf(w[2], 0, 1)))
 	_draw_hud(font)
 	draw_set_transform_matrix(Transform2D.IDENTITY)
+	_jx.draw_flash(self, Rect2(Vector2.ZERO, size))
 
 func _draw_fighter(f: Fighter) -> void:
 	# Upright cartoon brawlers (FighterArt), all the same height.
@@ -1011,7 +1159,15 @@ func _draw_fighter(f: Fighter) -> void:
 		pose = "evolve"
 	if pose == "down":
 		pose = "ko"
-	FighterArt.set_base(self, _xform() * Transform2D(0.0, Vector2(f.facing, 1.0), 0.0, f.pos))
+	var at: Vector2 = f.pos
+	if pose == "taunt":
+		# Showing off: hops on the spot.
+		at.y -= absf(sin(f.state_t * 9.0)) * 22.0
+	# A swoosh trails every strike while it can land.
+	var a: Array = _attack_frame(f)
+	if not a.is_empty() and f.state_t >= float(a[0]) - 0.04 and f.state_t <= float(a[1]) + 0.06:
+		FighterArt.swoosh(self, _xform() * Transform2D(0.0, Vector2(f.facing, 1.0), 0.0, at), f.state, f.state_t, u, Color(1, 0.85, 0.3) if f.dire > 0.0 else Color(1, 1, 1))
+	FighterArt.set_base(self, _xform() * Transform2D(0.0, Vector2(f.facing, 1.0), 0.0, at))
 	FighterArt.paint(self, f.species, pose, f.state_t if pose != "idle" else Time.get_ticks_msec() / 1000.0, u, tint, f.chain)
 	if f.blocking:
 		draw_arc(Vector2(2.2 * u, -8.0 * u), 2.4 * u, -1.3, 1.3, 16, Color(0.6, 0.85, 1.0, 0.8), 0.3 * u)
@@ -1037,12 +1193,23 @@ func _draw_hud(font: Font) -> void:
 			draw_circle(Vector2(x + (20 + k * 26 if side == 0 else 480 - k * 26), 118), 9, Color(1, 0.85, 0.2))
 	draw_string(font, Vector2(0, 76), str(int(ceil(maxf(_timer, 0.0)))), HORIZONTAL_ALIGNMENT_CENTER, ARENA.x, 44, Color(1, 0.4, 0.35) if _timer < 10.0 else Color.WHITE)
 	draw_string(font, Vector2(40, 112), "EVOLVE", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1, 0.7))
-	draw_string(font, Vector2(0, ARENA.y - 18), "A/D move   W jump   S block   J light   K heavy   L special   J J K finisher   Esc or Pause to leave", HORIZONTAL_ALIGNMENT_CENTER, ARENA.x, 16, Color(1, 1, 1, 0.75))
+	draw_string(font, Vector2(0, ARENA.y - 18), "A/D move  W jump  S block  J light  K heavy  L special  ENTER evolve   |   " + COMBO_LIST, HORIZONTAL_ALIGNMENT_CENTER, ARENA.x, 16, Color(1, 1, 1, 0.75))
 	var kind: String = ["Rival", "Dire rival", "Champion"][_rival_kind()]
 	draw_string(font, Vector2(0, 112), "%s %d of %d   -   %s" % [kind, _stage + 1, _ladder.size(), _diff()[1]], HORIZONTAL_ALIGNMENT_CENTER, ARENA.x, 16, Color(1, 1, 1, 0.8))
 	if _p1.meter >= 100.0 and _p1.dire <= 0.0 and _mode == "fight":
 		var a: float = 0.6 + 0.4 * sin(Time.get_ticks_msec() * 0.01)
-		draw_string(font, Vector2(40, 130), "EVOLVE READY: Down, Fwd, Down, Fwd, then L", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 0.85, 0.2, a))
+		draw_string_outline(font, Vector2(40, 142), "EVOLVE READY!  Press ENTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 26, 8, Color(0.25, 0.12, 0.0, a))
+		draw_string(font, Vector2(40, 142), "EVOLVE READY!  Press ENTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Color(1, 0.85, 0.2, a))
+	# A faint list of the combos down the left edge, always there to glance at.
+	if _mode in ["fight", "intro", "roundover"]:
+		var ly: float = 190.0
+		draw_string(font, Vector2(40, ly), "COMBOS", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 0.85, 0.3, 0.55))
+		for q: String in COMBOS.keys():
+			ly += 22.0
+			var nm: String = String(COMBOS[q][1]).trim_suffix("!").capitalize()
+			draw_string(font, Vector2(40, ly), "%s %s %s   %s" % [q[0], q[1], q[2], nm], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 1, 1, 0.42))
+		ly += 22.0
+		draw_string(font, Vector2(40, ly), "ENTER   Evolve (gold meter)", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 0.85, 0.3, 0.42))
 	if _banner_t > 0.0:
 		draw_string_outline(font, Vector2(0, 330), _banner, HORIZONTAL_ALIGNMENT_CENTER, ARENA.x, 56, 12, Color(0, 0, 0, 0.8))
 		draw_string(font, Vector2(0, 330), _banner, HORIZONTAL_ALIGNMENT_CENTER, ARENA.x, 56, Color(1, 0.95, 0.7))

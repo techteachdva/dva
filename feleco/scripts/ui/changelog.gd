@@ -3,9 +3,22 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.2.1"
+const VERSION: String = "4.3"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.3",
+		"title": "Juiced Up",
+		"notes": [
+			"Every campaign game has sound effects, sparks, confetti, screen shake and flashes.",
+			"Stampede Sprint: a gold cursor glides to your next key, spaces show as a little space bar, and a key cap below says exactly what to press (SPACE included).",
+			"Predator Brawl: six three-key combos, each with its own move: D D K low sweep, J J K finisher, F F J lunge, D F K rising uppercut, K K K slam, B F L whirlwind. The list stays on screen.",
+			"Predator Brawl: press ENTER to evolve once your meter is gold. Rivals are gentler, and when you're losing they ease off and stop to show off, so you can fight back.",
+			"Seedling Golf is new: real minigolf with hills, bowls and curved rails, then water your seed just right, then grow it up to the sun in a stretching puzzle. Graded S to F.",
+			"Valley Dominion: a smaller board, a line that always says what to do next, glowing tiles you can move, and short, clear instructions.",
+			"Fixed giant distorted creature sprites: nothing can be drawn at size zero any more, newborns and carcasses included.",
+		],
+	},
 	{
 		"version": "4.2.1",
 		"title": "Clean Streaks",

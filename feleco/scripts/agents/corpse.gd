@@ -43,6 +43,8 @@ func _ready() -> void:
 		_stain_mat.render_priority = -1
 	if VisualProxyManager.SPECIES_CONFIG.has(species):
 		_body_size = (VisualProxyManager.SPECIES_CONFIG[species]["size"] as Vector2).x
+	# Failsafe: a carcass is never drawn at size zero (see VisualProxyManager).
+	_body_size = clampf(_body_size, 0.3, 4.0) if is_finite(_body_size) else 1.0
 	_stain = MeshInstance3D.new()
 	_stain.mesh = _stain_mesh
 	_stain.material_override = _stain_mat
@@ -116,12 +118,12 @@ func _process(real_delta: float) -> void:
 	# sink into the grass at the very end.
 	var meat: float = clampf(_energy_remaining / maxf(_initial_energy, 0.001), 0.0, 1.0)
 	if _guts != null:
-		var g: float = (0.25 + 0.75 * meat) * lerpf(0.5, 1.0, left)
+		var g: float = maxf((0.25 + 0.75 * meat) * lerpf(0.5, 1.0, left), 0.1)
 		_guts.scale = Vector3(g, g, g)
 		_guts.visible = meat > 0.04 and left > BONES_AT * 0.25
 	if _skel != null:
 		_skel.position.y = -lerpf(0.0, 0.08, clampf((BONES_AT - left) / BONES_AT, 0.0, 1.0))
-	_stain.scale = Vector3(_body_size * 0.8, 1.0, _body_size * 0.45) * lerpf(0.6, 1.0, left)
+	_stain.scale = Vector3(_body_size * 0.8, 1.0, _body_size * 0.45) * maxf(lerpf(0.6, 1.0, left), 0.6)
 	if _wisps != null:
 		_wisps.emitting = stink() > 0.25
 	if decay_timer <= 0.0:
@@ -136,7 +138,7 @@ func _pass_gold(eater: Node) -> void:
 func stink() -> float:
 	if _initial_energy <= 0.0:
 		return 0.0
-	var left: float = clampf(_energy_remaining / _initial_energy, 0.0, 1.0)
+	var left: float = clampf(_energy_remaining / maxf(_initial_energy, 0.001), 0.0, 1.0)
 	var fresh: float = clampf(decay_timer / DECAY_TIME, 0.0, 1.0)
 	return clampf(0.3 + 0.7 * left, 0.0, 1.0) * lerpf(0.4, 1.0, fresh)
 

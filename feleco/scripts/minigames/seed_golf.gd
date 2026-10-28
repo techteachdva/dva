@@ -1,99 +1,88 @@
 extends Control
 
-# Producer campaign: Seedling Golf. A seed has to find the best spot to grow:
-# good soil, water and light. Each hole is a little meadow puzzle played in
-# three phases, all with the same slingshot flick:
-#   1 PUTT   flick the seed into a planting hole (or plant where it rests)
-#   2 WATER  flick raindrops from the cloud so they roll to the seedling
-#   3 LIGHT  trim the leafy canopy shading it (a few snips only)
-# Then it grows, and the spot is ranked F to S. "Sense" overlays show where
-# the light, water and soil are good, because the best hole is rarely the
-# easiest one to reach.
+# Producer campaign: Seedling Golf. A seed's whole first season, in three
+# parts on every hole:
+#   1 PUTT   real minigolf: curved fairways, hills that roll the seed away,
+#            bowls that pull it in, bumpers and ponds. Sink it in the cup.
+#   2 WATER  hold to rain on the planted seed; let go in the green band.
+#   3 GROW   a stretching puzzle: grow the stalk cell by cell from the soil to
+#            the sun, around rocks, with a limited number of moves. Sunbeams
+#            on the way are bonus light.
+# A good putt (par or better) and good watering each earn an extra move.
+# The hole is graded S, A, B, C, D or F.
 
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 
 const FIELD := Vector2(1200, 640)
-const SEED_R: float = 9.0
-const HOLE_R: float = 16.0
-const MAX_PULL: float = 240.0
-const MAX_SPEED: float = 900.0
+const SEED_R: float = 10.0
+const HOLE_R: float = 17.0
+const MAX_PULL: float = 220.0
+const MAX_SPEED: float = 1000.0
 # Fraction of speed kept per second while rolling.
-const ROLL_DRAG: float = 0.42
-const SINK_SPEED: float = 330.0
+const ROLL_DRAG: float = 0.45
+const SINK_SPEED: float = 380.0
+# The grow grid.
+const COLS: int = 7
+const ROWS: int = 9
+# The water band: let go between these.
+const WATER_LO: float = 0.62
+const WATER_HI: float = 0.82
+const WATER_RATE: float = 0.42
 
-# Hand-made holes, easy to hard. Positions are field pixels (1200 x 640).
-# soil: [pos, radius, quality]; puddles: water and a hazard; shade: canopy
-# blobs [pos, radius]; slopes: [rect, push]; walls: rects; rocks: [pos, r].
+# Hand-made holes, easy to hard, on a 1200 x 640 field.
+# edge: the fairway outline (the seed banks off it); hills: [centre, radius,
+# push] (push > 0 rolls the seed away, < 0 is a bowl that pulls it in);
+# bumpers: [centre, radius]; ponds: [centre, radius]. grid: the grow puzzle,
+# top row first: '.' open, '#' rock, '*' sunbeam, 'S' the seed.
 const LEVELS: Array = [
 	{
-		"name": "First Sprout", "par": 2, "drops": 3, "snips": 1,
-		"tee": Vector2(150, 320), "cloud": Vector2(120, 80),
-		"holes": [Vector2(760, 320), Vector2(1000, 160)],
-		"soil": [[Vector2(1000, 160), 150, 1.0], [Vector2(760, 320), 120, 0.55]],
-		"puddles": [[Vector2(1080, 300), 60]],
-		"shade": [[Vector2(760, 300), 110]],
-		"rocks": [], "walls": [], "slopes": [],
-		"tip": "Drag back from the seed and let go to flick it. Use Sense to see which hole is best.",
+		"name": "First Sprout", "par": 2, "slack": 4,
+		"tee": Vector2(170, 320), "cup": Vector2(1030, 320),
+		"edge": [Vector2(70, 170), Vector2(300, 110), Vector2(900, 110), Vector2(1130, 170), Vector2(1160, 320), Vector2(1130, 470), Vector2(900, 530), Vector2(300, 530), Vector2(70, 470), Vector2(40, 320)],
+		"hills": [[Vector2(600, 320), 140.0, 420.0]],
+		"bumpers": [], "ponds": [],
+		"grid": [".......", "..*....", ".##.##.", ".......", "...#...", "..*....", ".##.###", ".......", "...S..."],
+		"tip": "Drag BACK from the seed and let go. The hill in the middle rolls it aside: go around, or hit it hard!",
 	},
 	{
-		"name": "Rocky Rise", "par": 3, "drops": 3, "snips": 2,
-		"tee": Vector2(120, 520), "cloud": Vector2(1080, 80),
-		"holes": [Vector2(600, 520), Vector2(980, 420), Vector2(560, 150)],
-		"soil": [[Vector2(560, 150), 140, 0.95], [Vector2(980, 420), 120, 0.7], [Vector2(600, 520), 90, 0.4]],
-		"puddles": [[Vector2(760, 170), 70]],
-		"shade": [[Vector2(560, 120), 120], [Vector2(980, 460), 100]],
-		"rocks": [[Vector2(380, 380), 50], [Vector2(560, 300), 40], [Vector2(780, 420), 45]],
-		"walls": [], "slopes": [],
-		"tip": "Rocks bounce the seed. Bank shots count!",
+		"name": "Dogleg Dell", "par": 3, "slack": 3,
+		"tee": Vector2(150, 520), "cup": Vector2(1020, 150),
+		"edge": [Vector2(60, 430), Vector2(700, 430), Vector2(820, 400), Vector2(880, 330), Vector2(900, 60), Vector2(1150, 60), Vector2(1150, 420), Vector2(1100, 560), Vector2(950, 610), Vector2(60, 610)],
+		"hills": [[Vector2(1020, 330), 110.0, -260.0], [Vector2(520, 520), 90.0, 300.0]],
+		"bumpers": [[Vector2(980, 500), 26.0]], "ponds": [],
+		"grid": ["...*...", "#.###.#", "....*..", ".####..", "......#", "#.##.##", "*......", "..###..", "...S..."],
+		"tip": "Bank it off the curved wall round the corner. The bowl near the cup pulls the seed in.",
 	},
 	{
-		"name": "Brook Bend", "par": 3, "drops": 4, "snips": 2,
-		"tee": Vector2(110, 120), "cloud": Vector2(600, 60),
-		"holes": [Vector2(420, 520), Vector2(1050, 540), Vector2(900, 160)],
-		"soil": [[Vector2(1050, 540), 130, 1.0], [Vector2(900, 160), 120, 0.75], [Vector2(420, 520), 120, 0.6]],
-		"puddles": [[Vector2(640, 330), 90], [Vector2(760, 420), 70]],
-		"shade": [[Vector2(1050, 560), 90], [Vector2(420, 500), 130]],
-		"rocks": [[Vector2(300, 320), 40]],
-		"walls": [], "slopes": [[Rect2(700, 470, 260, 140), Vector2(-160, 0)]],
-		"tip": "Puddles drown the seed (one stroke back). Slopes (arrows) push it along.",
+		"name": "Bowl Valley", "par": 3, "slack": 3,
+		"tee": Vector2(150, 320), "cup": Vector2(820, 320),
+		"edge": [Vector2(60, 220), Vector2(260, 90), Vector2(600, 60), Vector2(940, 90), Vector2(1140, 220), Vector2(1170, 320), Vector2(1140, 420), Vector2(940, 550), Vector2(600, 580), Vector2(260, 550), Vector2(60, 420), Vector2(40, 320)],
+		"hills": [[Vector2(820, 320), 170.0, -300.0], [Vector2(420, 200), 100.0, 340.0], [Vector2(420, 440), 100.0, 340.0]],
+		"bumpers": [[Vector2(560, 320), 30.0]], "ponds": [[Vector2(1040, 320), 70.0]],
+		"grid": ["...*...", ".#.#.#.", ".#*#.#.", ".#.#.#.", "...#...", "##.#.##", "*......", "..##.#.", "...S..."],
+		"tip": "The big bowl pulls the seed to the cup, but too hard and it rolls out into the pond behind!",
 	},
 	{
-		"name": "Sun or Rain", "par": 3, "drops": 3, "snips": 3,
-		"tee": Vector2(600, 600), "cloud": Vector2(600, 60),
-		"holes": [Vector2(180, 160), Vector2(1020, 160), Vector2(600, 300)],
-		"soil": [[Vector2(180, 160), 130, 0.9], [Vector2(1020, 160), 130, 0.9], [Vector2(600, 300), 120, 0.5]],
-		"puddles": [[Vector2(120, 330), 80]],
-		"shade": [[Vector2(180, 140), 140], [Vector2(240, 220), 90], [Vector2(600, 260), 70]],
-		"rocks": [[Vector2(420, 420), 50], [Vector2(780, 420), 50]],
-		"walls": [Rect2(560, 360, 80, 20)], "slopes": [],
-		"tip": "One hole is wet but shady, one sunny but dry. Water and snips can fix one of them...",
+		"name": "Curvy Creek", "par": 4, "slack": 3,
+		"tee": Vector2(130, 540), "cup": Vector2(1070, 110),
+		"edge": [Vector2(50, 460), Vector2(420, 440), Vector2(520, 380), Vector2(540, 260), Vector2(620, 150), Vector2(780, 60), Vector2(1150, 50), Vector2(1160, 200), Vector2(820, 220), Vector2(760, 300), Vector2(740, 430), Vector2(640, 560), Vector2(450, 615), Vector2(50, 615)],
+		"hills": [[Vector2(650, 300), 80.0, 280.0], [Vector2(330, 530), 80.0, -200.0]],
+		"bumpers": [[Vector2(900, 140), 24.0]], "ponds": [[Vector2(620, 470), 55.0], [Vector2(960, 110), 35.0]],
+		"grid": ["..*....", "####.##", ".......", ".######", "......*", "######.", ".*.....", ".######", "...S..."],
+		"tip": "An S-bend with a creek. Short, careful putts beat one big swing.",
 	},
 	{
-		"name": "Hedge Maze", "par": 4, "drops": 4, "snips": 2,
-		"tee": Vector2(90, 560), "cloud": Vector2(1100, 560),
-		"holes": [Vector2(1100, 90), Vector2(340, 110), Vector2(820, 560)],
-		"soil": [[Vector2(1100, 90), 130, 1.0], [Vector2(340, 110), 110, 0.7], [Vector2(820, 560), 100, 0.5]],
-		"puddles": [[Vector2(980, 300), 60]],
-		"shade": [[Vector2(1100, 70), 80], [Vector2(340, 90), 120]],
-		"rocks": [[Vector2(640, 320), 36]],
-		"walls": [Rect2(240, 220, 20, 420), Rect2(480, 0, 20, 420), Rect2(720, 220, 20, 420), Rect2(960, 0, 20, 220)],
-		"slopes": [[Rect2(500, 460, 220, 180), Vector2(180, 0)]],
-		"tip": "Hedges block the way. Plan your path.",
-	},
-	{
-		"name": "Windy Ridge", "par": 4, "drops": 4, "snips": 3, "wind": Vector2(70, -30),
-		"tee": Vector2(100, 320), "cloud": Vector2(100, 70),
-		"holes": [Vector2(1110, 320), Vector2(700, 110), Vector2(700, 540)],
-		"soil": [[Vector2(1110, 320), 120, 1.0], [Vector2(700, 110), 110, 0.8], [Vector2(700, 540), 110, 0.8]],
-		"puddles": [[Vector2(900, 320), 80], [Vector2(450, 560), 60]],
-		"shade": [[Vector2(1110, 300), 110], [Vector2(700, 90), 100], [Vector2(680, 560), 100], [Vector2(1050, 400), 80]],
-		"rocks": [[Vector2(400, 220), 44], [Vector2(400, 420), 44], [Vector2(800, 220), 40]],
-		"walls": [], "slopes": [[Rect2(950, 150, 140, 340), Vector2(0, 140)]],
-		"tip": "The wind (top right) bends every flick.",
+		"name": "Mole Hills", "par": 4, "slack": 2,
+		"tee": Vector2(120, 560), "cup": Vector2(1080, 100),
+		"edge": [Vector2(50, 60), Vector2(1150, 60), Vector2(1150, 610), Vector2(50, 610)],
+		"hills": [[Vector2(360, 420), 90.0, 380.0], [Vector2(600, 300), 100.0, 380.0], [Vector2(840, 200), 90.0, 380.0], [Vector2(360, 160), 80.0, -220.0], [Vector2(860, 480), 90.0, -220.0], [Vector2(1080, 100), 90.0, -150.0]],
+		"bumpers": [[Vector2(600, 520), 28.0], [Vector2(980, 300), 28.0], [Vector2(220, 300), 28.0]], "ponds": [[Vector2(1000, 520), 60.0]],
+		"grid": ["...*...", ".#.#.#.", "#.....#", "..#*#..", ".#...#.", "...#...", "#*#.#.#", ".......", "...S..."],
+		"tip": "Mole hills everywhere! Read the slopes and use the bowls.",
 	},
 ]
 
-enum Phase { PUTT, WATER, LIGHT, DONE }
+enum Phase { PUTT, WATER, GROW, DONE }
 
 var level_index: int = 0
 var _lv: Dictionary = {}
@@ -103,34 +92,43 @@ var _vel: Vector2 = Vector2.ZERO
 var _rolling: bool = false
 var _last_rest: Vector2
 var _strokes: int = 0
-var _planted_at: Vector2 = Vector2(-1, -1)
-var _in_hole: bool = false
-var _drops_left: int = 0
-var _water_given: float = 0.0
-var _snips_left: int = 0
-var _shade: Array = []
 var _dragging: bool = false
-var _drag_from: Vector2
 var _drag_now: Vector2
-var _sense: String = ""
-var _grow_t: float = -1.0
+var _trail: Array[Vector2] = []
+var _sunk_t: float = -1.0
+# Water.
+var _water: float = 0.0
+var _raining: bool = false
+var _watered: bool = false
+var _water_score: float = 0.0
+# Grow.
+var _grid: Array[String] = []
+var _path: Array[Vector2i] = []
+var _moves_left: int = 0
+var _moves_total: int = 0
+var _beams: int = 0
+var _beams_total: int = 0
+var _reached_sun: bool = false
+var _tip_pop: float = 0.0
 var _result: Dictionary = {}
+var _result_t: float = 0.0
 var _msg: String = ""
 var _msg_t: float = 0.0
-var _splashes: Array = []
+var _t: float = 0.0
 var _hud: Label
 var _phase_lbl: Label
 var _buttons: HBoxContainer
-var _plant_btn: Button
-var _grow_btn: Button
-var _sense_btns: Dictionary = {}
+var _action_btn: Button
+var _undo_btn: Button
 var _select: Control
+var _fx := Juice.new()
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	# The game's look without the menu backdrop (the course is drawn here).
+	focus_mode = Control.FOCUS_ALL
 	theme = FelecoUiScript.theme()
+	_fx.font = FelecoUiScript.font("heading")
 	_build_ui()
 	_show_select()
 	# First time here: explain the game before anything else.
@@ -142,6 +140,7 @@ func _ready() -> void:
 func _show_select() -> void:
 	if _select != null:
 		_select.queue_free()
+	_buttons.visible = false
 	_select = PanelContainer.new()
 	_select.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_select)
@@ -152,7 +151,7 @@ func _show_select() -> void:
 	var t := FelecoUiScript.heading("Seedling Golf", 44, FelecoUiScript.GOLD)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(t)
-	var sub := FelecoUiScript.label("You are a seed. Find the spot with the best light, water and soil, then grow!", 20, FelecoUiScript.CREAM)
+	var sub := FelecoUiScript.label("Putt the seed into the cup, water it just right, then grow it up to the sun!", 20, FelecoUiScript.CREAM)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(sub)
 	var grid := GridContainer.new()
@@ -172,7 +171,9 @@ func _show_select() -> void:
 		b.disabled = not unlocked
 		b.theme_type_variation = "TouchButton"
 		var idx := i
-		b.pressed.connect(func() -> void: _start_level(idx))
+		b.pressed.connect(func() -> void:
+			Juice.sfx(self, "click")
+			_start_level(idx))
 		grid.add_child(b)
 	var back := Button.new()
 	back.text = "Back to campaign"
@@ -189,15 +190,15 @@ func _show_select() -> void:
 func _leave() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/campaign_setup.tscn")
 
-# Esc: back to the holes from a hole, back to the campaign from the holes.
 func _unhandled_key_input(event: InputEvent) -> void:
 	var k := event as InputEventKey
-	if k == null or not k.pressed or k.echo or k.physical_keycode != KEY_ESCAPE:
+	if k == null or not k.pressed or k.echo:
 		return
-	if _select != null:
-		_leave()
-	else:
-		_show_select()
+	if k.physical_keycode == KEY_ESCAPE:
+		if _select != null:
+			_leave()
+		else:
+			_show_select()
 
 # --- In-level UI ----------------------------------------------------------
 
@@ -210,7 +211,7 @@ func _build_ui() -> void:
 	add_child(top)
 	_phase_lbl = FelecoUiScript.heading("", 24, FelecoUiScript.GOLD)
 	top.add_child(_phase_lbl)
-	_hud = FelecoUiScript.label("", 17, FelecoUiScript.CREAM)
+	_hud = FelecoUiScript.label("", 18, FelecoUiScript.CREAM)
 	_hud.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_hud.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	top.add_child(_hud)
@@ -223,32 +224,16 @@ func _build_ui() -> void:
 	_buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	_buttons.add_theme_constant_override("separation", 10)
 	add_child(_buttons)
-	for s: Array in [["light", "Sense Light"], ["water", "Sense Water"], ["soil", "Sense Soil"]]:
-		var b := Button.new()
-		b.text = s[1]
-		b.toggle_mode = true
-		b.custom_minimum_size = Vector2(150, 44)
-		var key: String = s[0]
-		b.toggled.connect(func(on: bool) -> void:
-			_sense = key if on else ""
-			for k: String in _sense_btns.keys():
-				if k != key:
-					(_sense_btns[k] as Button).set_pressed_no_signal(false)
-			queue_redraw())
-		_buttons.add_child(b)
-		_sense_btns[key] = b
-	_plant_btn = Button.new()
-	_plant_btn.text = "Plant here"
-	_plant_btn.theme_type_variation = "PrimaryButton"
-	_plant_btn.custom_minimum_size = Vector2(150, 44)
-	_plant_btn.pressed.connect(func() -> void: _plant(_seed, false))
-	_buttons.add_child(_plant_btn)
-	_grow_btn = Button.new()
-	_grow_btn.text = "Next"
-	_grow_btn.theme_type_variation = "PrimaryButton"
-	_grow_btn.custom_minimum_size = Vector2(150, 44)
-	_grow_btn.pressed.connect(_next_phase)
-	_buttons.add_child(_grow_btn)
+	_undo_btn = Button.new()
+	_undo_btn.text = "Undo"
+	_undo_btn.custom_minimum_size = Vector2(110, 44)
+	_undo_btn.pressed.connect(_undo)
+	_buttons.add_child(_undo_btn)
+	_action_btn = Button.new()
+	_action_btn.theme_type_variation = "PrimaryButton"
+	_action_btn.custom_minimum_size = Vector2(190, 44)
+	_action_btn.pressed.connect(_action)
+	_buttons.add_child(_action_btn)
 	var restart := Button.new()
 	restart.text = "Restart"
 	restart.theme_type_variation = "GhostButton"
@@ -266,6 +251,7 @@ func _start_level(i: int) -> void:
 	if _select != null:
 		_select.queue_free()
 		_select = null
+	_buttons.visible = true
 	level_index = i
 	_lv = LEVELS[i]
 	_phase = Phase.PUTT
@@ -274,18 +260,22 @@ func _start_level(i: int) -> void:
 	_vel = Vector2.ZERO
 	_rolling = false
 	_strokes = 0
-	_planted_at = Vector2(-1, -1)
-	_in_hole = false
-	_drops_left = int(_lv["drops"])
-	_water_given = 0.0
-	_snips_left = int(_lv["snips"])
-	_shade = []
-	for sh: Array in _lv["shade"]:
-		_shade.append([sh[0], float(sh[1])])
-	_grow_t = -1.0
+	_trail.clear()
+	_sunk_t = -1.0
+	_water = 0.0
+	_raining = false
+	_watered = false
+	_water_score = 0.0
+	_grid.assign(_lv["grid"])
+	_path.clear()
+	_beams = 0
+	_beams_total = 0
+	for row: String in _grid:
+		_beams_total += row.count("*")
+	_reached_sun = false
 	_result = {}
-	_splashes.clear()
 	_say(String(_lv["tip"]), 6.0)
+	grab_focus()
 	_refresh_ui()
 
 func _say(text: String, secs: float = 2.5) -> void:
@@ -295,70 +285,56 @@ func _say(text: String, secs: float = 2.5) -> void:
 func _refresh_ui() -> void:
 	match _phase:
 		Phase.PUTT:
-			_phase_lbl.text = "Hole %d: %s  -  1. Putt" % [level_index + 1, _lv["name"]]
-			_hud.text = "Strokes %d  (par %d)" % [_strokes, _lv["par"]]
+			_phase_lbl.text = "Hole %d: %s   1. PUTT" % [level_index + 1, _lv["name"]]
+			_hud.text = "Strokes %d   Par %d" % [_strokes, _lv["par"]]
 		Phase.WATER:
-			_phase_lbl.text = "2. Water: flick raindrops from the cloud"
-			_hud.text = "Drops left %d   Water %d%%" % [_drops_left, int(_water_at(_planted_at) * 100)]
-		Phase.LIGHT:
-			_phase_lbl.text = "3. Light: tap the leafy shade to trim it"
-			_hud.text = "Snips left %d   Light %d%%" % [_snips_left, int(_light_at(_planted_at) * 100)]
+			_phase_lbl.text = "2. WATER: hold the mouse (or Space), let go in the green"
+			_hud.text = "Water %d%%" % int(_water * 100)
+		Phase.GROW:
+			_phase_lbl.text = "3. GROW to the sun: click a glowing cell (or arrow keys)"
+			_hud.text = "Moves left %d   Sunbeams %d/%d" % [_moves_left, _beams, _beams_total]
 		Phase.DONE:
 			_phase_lbl.text = "Grown!"
 			_hud.text = ""
-	_plant_btn.visible = _phase == Phase.PUTT and not _rolling and _strokes > 0
-	_grow_btn.visible = _phase == Phase.WATER or _phase == Phase.LIGHT or _phase == Phase.DONE
-	_grow_btn.text = {Phase.WATER: "Done watering", Phase.LIGHT: "Grow!", Phase.DONE: "Next hole"}.get(_phase, "Next")
+	_undo_btn.visible = _phase == Phase.GROW
+	_undo_btn.disabled = _path.size() <= 1
+	_action_btn.visible = _phase in [Phase.GROW, Phase.DONE]
+	_action_btn.text = "Finish growing" if _phase == Phase.GROW else ("Next hole" if level_index + 1 < LEVELS.size() else "All holes")
 
-# --- The field: what makes a spot good ------------------------------------
+func _action() -> void:
+	Juice.sfx(self, "click")
+	if _phase == Phase.GROW:
+		_finish()
+	elif _phase == Phase.DONE:
+		if level_index + 1 < LEVELS.size():
+			_start_level(level_index + 1)
+		else:
+			_show_select()
 
-func _soil_at(p: Vector2) -> float:
-	var q: float = 0.25
-	for s: Array in _lv["soil"]:
-		var d: float = p.distance_to(s[0])
-		if d < float(s[1]):
-			q = maxf(q, float(s[2]) * (1.0 - 0.4 * d / float(s[1])))
-	return clampf(q, 0.0, 1.0)
+# --- Coordinates ----------------------------------------------------------
 
-# Ground water from nearby puddles, plus what the player rained on it.
-func _ground_water_at(p: Vector2) -> float:
-	var w: float = 0.15
-	for pd: Array in _lv["puddles"]:
-		var d: float = maxf(p.distance_to(pd[0]) - float(pd[1]), 0.0)
-		w = maxf(w, 0.6 * (1.0 - clampf(d / 220.0, 0.0, 1.0)))
-	return w
-
-func _water_at(p: Vector2) -> float:
-	return clampf(_ground_water_at(p) + (_water_given if p == _planted_at else 0.0), 0.0, 1.0)
-
-func _light_at(p: Vector2) -> float:
-	var shade: float = 0.0
-	for sh: Array in _shade:
-		var d: float = p.distance_to(sh[0])
-		var r: float = float(sh[1])
-		if d < r:
-			shade += 0.75 * (1.0 - d / r * 0.6)
-	return clampf(1.0 - shade, 0.05, 1.0)
-
-func _in_puddle(p: Vector2) -> bool:
-	for pd: Array in _lv["puddles"]:
-		if p.distance_to(pd[0]) < float(pd[1]) - 6.0:
-			return true
-	return false
-
-# --- Input ----------------------------------------------------------------
+func _field_xform() -> Transform2D:
+	var s: float = minf(size.x / FIELD.x, (size.y - 130.0) / FIELD.y)
+	var off := Vector2((size.x - FIELD.x * s) * 0.5, 56.0 + (size.y - 130.0 - FIELD.y * s) * 0.5)
+	return Transform2D(Vector2(s, 0), Vector2(0, s), off + _fx.offset())
 
 func _to_field(screen: Vector2) -> Vector2:
 	var t := _field_xform()
 	return (screen - t.origin) / t.x.x
 
-func _field_xform() -> Transform2D:
-	var s: float = minf(size.x / FIELD.x, (size.y - 130.0) / FIELD.y)
-	var off := Vector2((size.x - FIELD.x * s) * 0.5, 56.0 + (size.y - 130.0 - FIELD.y * s) * 0.5)
-	return Transform2D(Vector2(s, 0), Vector2(0, s), off)
+# The grow grid sits in the middle of the field.
+const CELL: float = 66.0
+func _grid_origin() -> Vector2:
+	return Vector2((FIELD.x - COLS * CELL) * 0.5, (FIELD.y - ROWS * CELL) * 0.5 + 10.0)
 
-func _flick_origin() -> Vector2:
-	return _seed if _phase == Phase.PUTT else _lv["cloud"]
+func _cell_center(c: Vector2i) -> Vector2:
+	return _grid_origin() + (Vector2(c) + Vector2(0.5, 0.5)) * CELL
+
+func _cell_at(fp: Vector2) -> Vector2i:
+	var g: Vector2 = (fp - _grid_origin()) / CELL
+	return Vector2i(int(floor(g.x)), int(floor(g.y)))
+
+# --- Input ----------------------------------------------------------------
 
 func _gui_input(event: InputEvent) -> void:
 	if _select != null or _lv.is_empty():
@@ -366,178 +342,337 @@ func _gui_input(event: InputEvent) -> void:
 	var mb := event as InputEventMouseButton
 	if mb != null and mb.button_index == MOUSE_BUTTON_LEFT:
 		var fp := _to_field(mb.position)
-		if mb.pressed:
-			if _phase == Phase.LIGHT:
-				_try_snip(fp)
-				return
-			if (_phase == Phase.PUTT and not _rolling) or (_phase == Phase.WATER and _drops_left > 0 and not _rolling):
-				if fp.distance_to(_flick_origin()) < 70.0:
+		match _phase:
+			Phase.PUTT:
+				if mb.pressed and not _rolling and fp.distance_to(_seed) < 80.0:
 					_dragging = true
-					_drag_from = _flick_origin()
 					_drag_now = fp
-		elif _dragging:
-			_dragging = false
-			_release(fp)
-		queue_redraw()
+				elif not mb.pressed and _dragging:
+					_dragging = false
+					_putt(fp)
+			Phase.WATER:
+				_set_rain(mb.pressed)
+			Phase.GROW:
+				if mb.pressed:
+					_grow_to(_cell_at(fp))
+		accept_event()
 	var mm := event as InputEventMouseMotion
-	if mm != null:
-		if _dragging:
-			_drag_now = _to_field(mm.position)
-		queue_redraw()
+	if mm != null and _dragging:
+		_drag_now = _to_field(mm.position)
 
-func _release(fp: Vector2) -> void:
-	var pull: Vector2 = _drag_from - fp
+func _input(event: InputEvent) -> void:
+	# Space rains too (held, like the mouse).
+	var k := event as InputEventKey
+	if k == null or k.echo or _select != null:
+		return
+	if k.physical_keycode == KEY_SPACE and _phase == Phase.WATER:
+		_set_rain(k.pressed)
+		get_viewport().set_input_as_handled()
+	# Arrow keys or WASD grow the stalk (read here, before focus navigation).
+	elif k.pressed and _phase == Phase.GROW:
+		var dir := Vector2i.ZERO
+		match k.physical_keycode:
+			KEY_UP, KEY_W: dir = Vector2i(0, -1)
+			KEY_LEFT, KEY_A: dir = Vector2i(-1, 0)
+			KEY_RIGHT, KEY_D: dir = Vector2i(1, 0)
+			KEY_BACKSPACE, KEY_Z: _undo()
+		if dir != Vector2i.ZERO:
+			_grow_to(_path[-1] + dir)
+		if dir != Vector2i.ZERO or k.physical_keycode in [KEY_BACKSPACE, KEY_Z]:
+			get_viewport().set_input_as_handled()
+
+# --- 1. Putt --------------------------------------------------------------
+
+func _putt(fp: Vector2) -> void:
+	var pull: Vector2 = _seed - fp
 	if pull.length() < 12.0:
 		return
 	var power: float = clampf(pull.length() / MAX_PULL, 0.0, 1.0)
 	_vel = pull.normalized() * power * MAX_SPEED
 	_rolling = true
-	if _phase == Phase.PUTT:
-		_strokes += 1
-		_last_rest = _seed
-	else:
-		_drops_left -= 1
-		_seed = _lv["cloud"]
+	_strokes += 1
+	_last_rest = _seed
+	Juice.sfx(self, "whoosh", 0.8 + power * 0.6)
+	_fx.dust(_seed, Color(0.7, 0.85, 0.55), 6 + int(power * 8))
 	_refresh_ui()
 
-func _try_snip(fp: Vector2) -> void:
-	if _snips_left <= 0:
-		_say("No snips left. Press Grow!")
-		return
-	for sh: Array in _shade:
-		if fp.distance_to(sh[0]) < float(sh[1]) and float(sh[1]) > 20.0:
-			sh[1] = float(sh[1]) * 0.55
-			_snips_left -= 1
-			_say("Snip! More light gets through.", 1.5)
-			_refresh_ui()
-			return
-
-# --- Physics --------------------------------------------------------------
-
 func _process(delta: float) -> void:
+	_t += delta
 	_msg_t -= delta
-	for s: Array in _splashes:
-		s[1] -= delta
-	_splashes = _splashes.filter(func(s: Array) -> bool: return s[1] > 0.0)
-	if _grow_t >= 0.0 and _grow_t < 1.0:
-		_grow_t = minf(_grow_t + delta * 0.5, 1.0)
+	_tip_pop = maxf(_tip_pop - delta * 4.0, 0.0)
+	_fx.update(delta)
 	if _rolling:
-		for k: int in 4:
+		for k: int in 6:
 			if not _rolling:
 				break
-			_step(delta / 4.0)
+			_step(delta / 6.0)
+		_trail.append(_seed)
+		if _trail.size() > 14:
+			_trail.remove_at(0)
+	elif not _trail.is_empty():
+		_trail.remove_at(0)
+	if _sunk_t >= 0.0:
+		_sunk_t += delta
+		if _sunk_t > 1.1:
+			_sunk_t = -1.0
+			_begin_water()
+	if _phase == Phase.WATER and _raining and not _watered:
+		_water = minf(_water + WATER_RATE * delta, 1.0)
+		if randf() < delta * 30.0:
+			_fx.drops(_lv["cup"] + Vector2(randf_range(-40, 40), -120), Color(0.55, 0.78, 1.0), 1)
+		if fmod(_t, 0.12) < delta:
+			Juice.sfx(self, "rain", 1.0, -16.0)
+		if _water >= 1.0:
+			_set_rain(false)
+		_refresh_ui()
+	if _result_t > 0.0:
+		_result_t += delta
 	queue_redraw()
 
 func _step(dt: float) -> void:
-	var wind: Vector2 = _lv.get("wind", Vector2.ZERO)
-	_vel += wind * dt
-	for sl: Array in _lv["slopes"]:
-		if (sl[0] as Rect2).has_point(_seed):
-			_vel += (sl[1] as Vector2) * dt
+	# Hills and bowls: a push away from (or toward) each centre, strongest
+	# halfway down the slope.
+	for h: Array in _lv["hills"]:
+		var d: Vector2 = _seed - (h[0] as Vector2)
+		var r: float = float(h[1])
+		var dl: float = d.length()
+		if dl < r and dl > 0.5:
+			var k: float = sin(dl / r * PI)
+			_vel += d / dl * float(h[2]) * k * dt
 	_vel *= pow(ROLL_DRAG, dt)
 	var next: Vector2 = _seed + _vel * dt
-	# Field edges.
-	if next.x < SEED_R or next.x > FIELD.x - SEED_R:
-		_vel.x = -_vel.x * 0.7
-		next.x = clampf(next.x, SEED_R, FIELD.x - SEED_R)
-	if next.y < SEED_R or next.y > FIELD.y - SEED_R:
-		_vel.y = -_vel.y * 0.7
-		next.y = clampf(next.y, SEED_R, FIELD.y - SEED_R)
-	for rk: Array in _lv["rocks"]:
-		var c: Vector2 = rk[0]
-		var r: float = float(rk[1]) + SEED_R
+	# The fairway's curved edge: bounce off whichever segment it touches.
+	var edge: Array = _lv["edge"]
+	for i: int in edge.size():
+		var a: Vector2 = edge[i]
+		var b: Vector2 = edge[(i + 1) % edge.size()]
+		var q: Vector2 = Geometry2D.get_closest_point_to_segment(next, a, b)
+		if next.distance_to(q) < SEED_R:
+			var n: Vector2 = (next - q).normalized()
+			if n == Vector2.ZERO:
+				n = (b - a).orthogonal().normalized()
+			if _vel.dot(n) < 0.0:
+				_vel = _vel.bounce(n) * 0.78
+				_bump(q, _vel.length())
+			next = q + n * SEED_R
+	if not Geometry2D.is_point_in_polygon(next, PackedVector2Array(edge)):
+		next = _seed
+		_vel = -_vel * 0.5
+	for bp: Array in _lv["bumpers"]:
+		var c: Vector2 = bp[0]
+		var r: float = float(bp[1]) + SEED_R
 		if next.distance_to(c) < r:
 			var n := (next - c).normalized()
-			_vel = _vel.bounce(n) * 0.8
+			# Bumpers kick back a little harder than they were hit.
+			_vel = _vel.bounce(n) * 1.1
 			next = c + n * r
-	for w: Rect2 in _lv["walls"]:
-		var g := w.grow(SEED_R)
-		if g.has_point(next):
-			# Bounce off whichever face it came through.
-			if _seed.x <= g.position.x or _seed.x >= g.end.x:
-				_vel.x = -_vel.x * 0.7
-			else:
-				_vel.y = -_vel.y * 0.7
-			next = _seed
+			_bump(c + n * float(bp[1]), _vel.length())
+			_fx.ring(c, Color(1, 0.9, 0.4), float(bp[1]) * 2.2)
 	_seed = next
-	if _phase == Phase.PUTT:
-		for h: Vector2 in _lv["holes"]:
-			if _seed.distance_to(h) < HOLE_R and _vel.length() < SINK_SPEED:
-				_seed = h
-				_plant(h, true)
-				return
-		if _in_puddle(_seed):
-			_splashes.append([_seed, 0.8])
-			_say("Splash! The seed washes back. +1 stroke.")
+	var cup: Vector2 = _lv["cup"]
+	var dc: float = _seed.distance_to(cup)
+	if dc < HOLE_R:
+		if _vel.length() < SINK_SPEED:
+			_sink()
+			return
+		# Too fast: it lips over the cup and is nudged aside.
+		_vel = _vel.rotated(randf_range(-0.3, 0.3)) * 0.85
+	for pd: Array in _lv["ponds"]:
+		if _seed.distance_to(pd[0]) < float(pd[1]) - 4.0:
+			Juice.sfx(self, "splash")
+			_fx.drops(_seed, Color(0.5, 0.75, 1.0), 16)
+			_fx.ring(_seed, Color(0.6, 0.85, 1.0), 60.0)
+			_say("Splash! Back where you hit from, +1 stroke.")
 			_strokes += 1
 			_seed = _last_rest
 			_vel = Vector2.ZERO
 			_rolling = false
 			_refresh_ui()
 			return
-	else:
-		# A raindrop soaks in when it slows down; near the seedling it counts.
-		if _vel.length() < 40.0 or _in_puddle(_seed):
-			var d: float = _seed.distance_to(_planted_at)
-			var got: float = clampf(1.0 - d / 70.0, 0.0, 1.0) * 0.18
-			_water_given += got
-			_splashes.append([_seed, 0.8])
-			_say(("Splish! +%d%% water" % int(got * 100)) if got > 0.0 else "Missed. The drop soaks into the grass.", 1.5)
-			_rolling = false
-			_vel = Vector2.ZERO
-			_refresh_ui()
-			return
-	if _vel.length() < 8.0:
+	if _vel.length() < 9.0:
 		_vel = Vector2.ZERO
 		_rolling = false
-		if _phase == Phase.PUTT and _strokes >= int(_lv["par"]) + 3:
-			_say("Out of strokes: the seed takes root where it lies.")
-			_plant(_seed, false)
+		if _strokes >= int(_lv["par"]) + 4:
+			_say("Out of strokes! The wind carries the seed into the cup (+2).")
+			_strokes += 2
+			_seed = cup
+			_sink()
+			return
 		_refresh_ui()
 
-func _plant(at: Vector2, in_hole: bool) -> void:
-	_planted_at = at
-	_in_hole = in_hole
+func _bump(at: Vector2, speed: float) -> void:
+	if speed > 90.0:
+		Juice.sfx(self, "bonk", clampf(speed / 500.0, 0.6, 1.5), -10.0 + clampf(speed / 100.0, 0.0, 6.0))
+		_fx.burst(at, Color(1, 1, 0.8), 5, speed * 0.3, 3.0, 200.0)
+
+func _sink() -> void:
 	_rolling = false
 	_vel = Vector2.ZERO
-	_phase = Phase.WATER
-	_say("Planted%s! Now water it." % (" in a hole" if in_hole else ""), 2.5)
+	_seed = _lv["cup"]
+	_sunk_t = 0.0
+	var par: int = int(_lv["par"])
+	var word: String = "HOLE IN ONE!!" if _strokes == 1 else ("UNDER PAR!" if _strokes < par else ("PAR!" if _strokes == par else "In the cup!"))
+	Juice.sfx(self, "sink")
+	if _strokes <= par:
+		Juice.sfx(self, "fanfare", 1.0, -8.0)
+		_fx.confetti(_seed, 50)
+	_fx.burst(_seed, Color(1, 0.85, 0.3), 24, 380.0)
+	_fx.ring(_seed, Color(1, 0.9, 0.5), 90.0, 0.7)
+	_fx.text(_seed + Vector2(0, -60), word, Color(1, 0.85, 0.3), 40)
+	_fx.shake(0.35)
 	_refresh_ui()
 
-func _next_phase() -> void:
-	match _phase:
-		Phase.WATER:
-			_phase = Phase.LIGHT
-		Phase.LIGHT:
-			_finish()
-		Phase.DONE:
-			if level_index + 1 < LEVELS.size():
-				_start_level(level_index + 1)
-			else:
-				_show_select()
-			return
+# --- 2. Water -------------------------------------------------------------
+
+func _begin_water() -> void:
+	_phase = Phase.WATER
+	_say("Planted! Hold to rain. Let go when the water is in the GREEN band.", 5.0)
+	Juice.sfx(self, "pop")
 	_refresh_ui()
+
+func _set_rain(on: bool) -> void:
+	if _watered or _phase != Phase.WATER:
+		return
+	if on and not _raining:
+		_raining = true
+		Juice.sfx(self, "swish")
+	elif not on and _raining:
+		_raining = false
+		if _water < 0.05:
+			return
+		_watered = true
+		var mid: float = (WATER_LO + WATER_HI) * 0.5
+		var inside: bool = _water >= WATER_LO and _water <= WATER_HI
+		_water_score = 1.0 if inside else clampf(1.0 - (absf(_water - mid) - (WATER_HI - WATER_LO) * 0.5) * 3.0, 0.0, 1.0)
+		var cup: Vector2 = _lv["cup"]
+		if inside:
+			_fx.text(cup + Vector2(0, -90), "PERFECT WATERING!", Color(0.5, 1.0, 0.6), 34)
+			_fx.burst(cup, Color(0.5, 0.85, 1.0), 20, 300.0)
+			Juice.sfx(self, "chime")
+		else:
+			_fx.text(cup + Vector2(0, -90), "Too dry..." if _water < WATER_LO else "Soggy!", Color(1, 0.75, 0.4), 30)
+			Juice.sfx(self, "error")
+		get_tree().create_timer(1.1).timeout.connect(_begin_grow)
+
+# --- 3. Grow --------------------------------------------------------------
+
+# Shortest climb from the seed to the top row (up, left or right only).
+func _shortest() -> int:
+	var start := _find_seed()
+	var dist: Dictionary = {start: 0}
+	var q: Array[Vector2i] = [start]
+	while not q.is_empty():
+		var c: Vector2i = q.pop_front()
+		if c.y == 0:
+			return int(dist[c])
+		for d: Vector2i in [Vector2i(0, -1), Vector2i(-1, 0), Vector2i(1, 0)]:
+			var n: Vector2i = c + d
+			if _open(n) and not dist.has(n):
+				dist[n] = int(dist[c]) + 1
+				q.append(n)
+	return 12
+
+func _find_seed() -> Vector2i:
+	for y: int in ROWS:
+		var x: int = _grid[y].find("S")
+		if x >= 0:
+			return Vector2i(x, y)
+	return Vector2i(COLS / 2, ROWS - 1)
+
+func _open(c: Vector2i) -> bool:
+	return c.x >= 0 and c.x < COLS and c.y >= 0 and c.y < ROWS and _grid[c.y][c.x] != "#"
+
+func _begin_grow() -> void:
+	_phase = Phase.GROW
+	_path = [_find_seed()]
+	var bonus: int = 0
+	if _strokes <= int(_lv["par"]):
+		bonus += 1
+	if _water_score >= 0.99:
+		bonus += 1
+	_moves_total = _shortest() + int(_lv["slack"]) + bonus
+	_moves_left = _moves_total
+	var why: String = ""
+	if bonus > 0:
+		why = "  (+%d for %s)" % [bonus, "a great putt and watering" if bonus == 2 else ("a great putt" if _strokes <= int(_lv["par"]) else "great watering")]
+	_say("Grow up to the SUN! %d moves%s. Sunbeams are bonus light." % [_moves_total, why], 6.0)
+	Juice.sfx(self, "grow")
+	_refresh_ui()
+
+func _can_grow(c: Vector2i) -> bool:
+	if _moves_left <= 0 or _reached_sun or _path.is_empty():
+		return false
+	var tip: Vector2i = _path[-1]
+	var d: Vector2i = c - tip
+	if not (d == Vector2i(0, -1) or d == Vector2i(-1, 0) or d == Vector2i(1, 0)):
+		return false
+	return _open(c) and not _path.has(c)
+
+func _grow_to(c: Vector2i) -> void:
+	if _phase != Phase.GROW:
+		return
+	if not _can_grow(c):
+		if _moves_left > 0 and not _reached_sun:
+			Juice.sfx(self, "error", 1.0, -10.0)
+			_fx.shake(0.15)
+		return
+	_path.append(c)
+	_moves_left -= 1
+	_tip_pop = 1.0
+	var at: Vector2 = _cell_center(c)
+	Juice.sfx(self, "grow", 1.0 + 0.08 * float(ROWS - c.y))
+	_fx.burst(at, Color(0.5, 0.95, 0.4), 8, 160.0, 4.0, 100.0)
+	if _grid[c.y][c.x] == "*":
+		_beams += 1
+		Juice.sfx(self, "coin")
+		_fx.burst(at, Color(1, 0.9, 0.3), 18, 260.0)
+		_fx.text(at + Vector2(0, -40), "SUNBEAM!", Color(1, 0.9, 0.3), 26)
+	if c.y == 0:
+		_reached_sun = true
+		Juice.sfx(self, "fanfare")
+		_fx.confetti(at, 70)
+		_fx.flash(Color(1, 0.95, 0.6, 0.45))
+		_fx.text(at + Vector2(0, 40), "REACHED THE SUN!", Color(1, 0.85, 0.2), 42)
+		get_tree().create_timer(1.0).timeout.connect(_finish)
+	elif _moves_left <= 0:
+		_say("Out of moves!", 2.0)
+		get_tree().create_timer(0.8).timeout.connect(_finish)
+	_refresh_ui()
+
+func _undo() -> void:
+	if _phase != Phase.GROW or _path.size() <= 1 or _reached_sun:
+		return
+	var c: Vector2i = _path.pop_back()
+	if _grid[c.y][c.x] == "*":
+		_beams -= 1
+	_moves_left += 1
+	Juice.sfx(self, "swish", 0.8)
+	_refresh_ui()
+
+# --- Grade ----------------------------------------------------------------
 
 func _finish() -> void:
-	var light: float = _light_at(_planted_at)
-	var water: float = _water_at(_planted_at)
-	var soil: float = _soil_at(_planted_at)
-	if not _in_hole:
-		soil *= 0.7
-	# A plant is only as strong as its weakest need.
-	var balance: float = minf(light, minf(water, soil))
-	var score: float = 100.0 * (0.25 * light + 0.25 * water + 0.25 * soil + 0.25 * balance)
-	score -= maxf(_strokes - int(_lv["par"]), 0) * 4.0
-	score += _snips_left * 2.0 + _drops_left * 2.0
-	score = clampf(score, 0.0, 100.0)
+	if _phase != Phase.GROW:
+		return
+	var par: int = int(_lv["par"])
+	var putt: float = clampf(30.0 - 6.0 * maxf(_strokes - par, 0) + (4.0 if _strokes < par else 0.0), 0.0, 32.0)
+	var water: float = 20.0 * _water_score
+	var tip: Vector2i = _path[-1]
+	var height: float = float(ROWS - 1 - tip.y) / float(ROWS - 1)
+	var grow: float = 30.0 * height + (8.0 if _reached_sun else 0.0) + 12.0 * float(_beams) / maxf(_beams_total, 1)
+	var score: float = clampf(putt + water + grow, 0.0, 100.0)
 	var rank: String = "F"
-	for r: Array in [[92.0, "S"], [82.0, "A"], [70.0, "B"], [58.0, "C"], [45.0, "D"]]:
+	for r: Array in [[90.0, "S"], [80.0, "A"], [68.0, "B"], [55.0, "C"], [40.0, "D"]]:
 		if score >= float(r[0]):
 			rank = r[1]
 			break
-	_result = {"light": light, "water": water, "soil": soil, "score": score, "rank": rank}
+	_result = {"putt": putt, "water": water, "grow": grow, "score": score, "rank": rank}
 	_phase = Phase.DONE
-	_grow_t = 0.0
+	_result_t = 0.01
+	Juice.sfx(self, "fanfare" if rank in ["S", "A"] else ("chime" if rank in ["B", "C"] else "lose"))
+	if rank == "S":
+		_fx.confetti(FIELD * Vector2(0.5, 0.2), 120, 600.0)
+		_fx.shake(0.5)
 	var gc: Node = get_node_or_null("/root/GameConfig")
 	if gc != null:
 		var order := "FDCBAS"
@@ -554,118 +689,188 @@ func _draw() -> void:
 	if _lv.is_empty() or _select != null:
 		return
 	draw_set_transform_matrix(_field_xform())
-	draw_rect(Rect2(Vector2.ZERO, FIELD), Color(0.36, 0.56, 0.27))
-	# Mown stripes.
-	for i: int in 12:
-		draw_rect(Rect2(i * 100, 0, 50, FIELD.y), Color(1, 1, 1, 0.025))
-	for s: Array in _lv["soil"]:
-		draw_circle(s[0], float(s[1]), Color(0.32, 0.22, 0.12, 0.25 + 0.35 * float(s[2])))
-	for sl: Array in _lv["slopes"]:
-		var r: Rect2 = sl[0]
-		draw_rect(r, Color(0.9, 0.85, 0.5, 0.12))
-		var push: Vector2 = (sl[1] as Vector2).normalized()
-		for k: int in 3:
-			var c := r.position + r.size * Vector2(0.25 + 0.25 * k, 0.5)
-			draw_line(c - push * 18, c + push * 18, Color(1, 1, 0.8, 0.5), 3.0)
-			draw_line(c + push * 18, c + push * 8 + push.orthogonal() * 8, Color(1, 1, 0.8, 0.5), 3.0)
-	for pd: Array in _lv["puddles"]:
-		draw_circle(pd[0], float(pd[1]), Color(0.25, 0.5, 0.8))
-		draw_circle(pd[0], float(pd[1]) * 0.7, Color(0.35, 0.62, 0.9))
-	for w: Rect2 in _lv["walls"]:
-		draw_rect(w, Color(0.18, 0.36, 0.16))
-		draw_rect(w.grow(-4), Color(0.24, 0.46, 0.2))
-	for rk: Array in _lv["rocks"]:
-		draw_circle(rk[0], float(rk[1]), Color(0.45, 0.45, 0.48))
-		draw_circle((rk[0] as Vector2) + Vector2(-8, -8), float(rk[1]) * 0.55, Color(0.58, 0.58, 0.6))
-	for h: Vector2 in _lv["holes"]:
-		draw_circle(h, HOLE_R + 4, Color(0.2, 0.13, 0.07))
-		draw_circle(h, HOLE_R, Color(0.08, 0.05, 0.03))
-	if not _sense.is_empty():
-		_draw_sense()
-	# Leafy canopy shade, drawn last on the ground so it darkens what's under it.
-	for sh: Array in _shade:
-		draw_circle(sh[0], float(sh[1]), Color(0.05, 0.18, 0.06, 0.45))
-		for k: int in 6:
-			var a: float = k * TAU / 6.0
-			draw_circle((sh[0] as Vector2) + Vector2(cos(a), sin(a)) * float(sh[1]) * 0.6, float(sh[1]) * 0.35, Color(0.12, 0.32, 0.12, 0.35))
-	# The rain cloud.
-	if _phase == Phase.WATER:
-		var c: Vector2 = _lv["cloud"]
-		for o: Vector2 in [Vector2(-26, 4), Vector2(0, -8), Vector2(26, 4), Vector2(0, 10)]:
-			draw_circle(c + o, 26, Color(0.85, 0.9, 0.95))
-	for s: Array in _splashes:
-		draw_arc(s[0], 30.0 * (1.0 - float(s[1])) + 6.0, 0, TAU, 24, Color(0.6, 0.8, 1.0, float(s[1])), 3.0)
-	# The planted seedling (or the rolling seed / raindrop).
-	if _planted_at.x >= 0.0:
-		_draw_sprout(_planted_at)
-	if _phase == Phase.PUTT or (_phase == Phase.WATER and _rolling):
-		var col := Color(0.55, 0.36, 0.18) if _phase == Phase.PUTT else Color(0.45, 0.7, 1.0)
-		draw_circle(_seed + Vector2(3, 4), SEED_R, Color(0, 0, 0, 0.25))
-		draw_circle(_seed, SEED_R, col)
-		draw_circle(_seed + Vector2(-3, -3), SEED_R * 0.35, Color(1, 1, 1, 0.4))
-	if _dragging:
-		var pull: Vector2 = _drag_from - _drag_now
-		var power: float = clampf(pull.length() / MAX_PULL, 0.0, 1.0)
-		var dirv := pull.normalized()
-		for k: int in 8:
-			draw_circle(_drag_from + dirv * (20.0 + k * 22.0 * power * 1.6), 4.0, Color(1, 1, 0.8, 0.8 - k * 0.09))
-		draw_line(_drag_from, _drag_from - dirv * pull.length() * 0.5, Color(1, 0.9, 0.5, 0.6), 3.0)
-	var wind: Vector2 = _lv.get("wind", Vector2.ZERO)
-	if wind != Vector2.ZERO:
-		var wc := Vector2(FIELD.x - 70, 40)
-		draw_line(wc - wind.normalized() * 30, wc + wind.normalized() * 30, Color(1, 1, 1, 0.8), 4.0)
-		draw_circle(wc + wind.normalized() * 30, 6, Color(1, 1, 1, 0.8))
+	if _phase in [Phase.PUTT, Phase.WATER] or (_phase == Phase.DONE and _path.is_empty()):
+		_draw_course()
+	else:
+		_draw_grow()
+	_fx.draw(self)
 	draw_set_transform_matrix(Transform2D.IDENTITY)
+	_fx.draw_flash(self, Rect2(Vector2.ZERO, size))
 	_draw_overlays()
 
-func _draw_sense() -> void:
-	var step: float = 40.0
-	for gy: int in int(FIELD.y / step):
-		for gx: int in int(FIELD.x / step):
-			var p := Vector2(gx + 0.5, gy + 0.5) * step
-			var v: float = 0.0
-			var col := Color.WHITE
-			match _sense:
-				"light":
-					v = _light_at(p)
-					col = Color(1.0, 0.92, 0.3)
-				"water":
-					v = _ground_water_at(p)
-					col = Color(0.3, 0.6, 1.0)
-				"soil":
-					v = _soil_at(p)
-					col = Color(0.75, 0.45, 0.2)
-			draw_rect(Rect2(p - Vector2(step, step) * 0.5, Vector2(step, step)), Color(col.r, col.g, col.b, v * 0.55))
+func _draw_course() -> void:
+	draw_rect(Rect2(Vector2.ZERO, FIELD), Color(0.2, 0.32, 0.17))
+	var edge := PackedVector2Array(_lv["edge"])
+	# Fairway with a thick wooden rail.
+	draw_colored_polygon(edge, Color(0.38, 0.62, 0.3))
+	var closed := edge.duplicate()
+	closed.append(edge[0])
+	draw_polyline(closed, Color(0.45, 0.3, 0.16), 14.0, true)
+	draw_polyline(closed, Color(0.62, 0.44, 0.24), 7.0, true)
+	# Hills and bowls as contour rings: light rings are hills, dark are bowls.
+	for h: Array in _lv["hills"]:
+		var c: Vector2 = h[0]
+		var r: float = float(h[1])
+		var up: bool = float(h[2]) > 0.0
+		for k: int in 5:
+			var rr: float = r * (1.0 - k * 0.19)
+			draw_circle(c, rr, Color(1, 1, 0.85, 0.07) if up else Color(0, 0.1, 0, 0.1))
+		for k: int in 3:
+			draw_arc(c, r * (0.35 + k * 0.25), 0, TAU, 40, Color(1, 1, 1, 0.12) if up else Color(0, 0, 0, 0.18), 2.0)
+		# Little arrows showing which way it rolls.
+		for k: int in 6:
+			var a: float = k * TAU / 6.0 + _t * 0.3
+			var dirv := Vector2.from_angle(a) * (1.0 if up else -1.0)
+			var p: Vector2 = c + Vector2.from_angle(a) * r * 0.6
+			draw_line(p - dirv * 8, p + dirv * 8, Color(1, 1, 0.8, 0.35), 2.0)
+			draw_line(p + dirv * 8, p + dirv * 2 + dirv.orthogonal() * 5, Color(1, 1, 0.8, 0.35), 2.0)
+	for pd: Array in _lv["ponds"]:
+		draw_circle(pd[0], float(pd[1]) + 4, Color(0.55, 0.45, 0.3))
+		draw_circle(pd[0], float(pd[1]), Color(0.25, 0.5, 0.8))
+		draw_circle(pd[0], float(pd[1]) * (0.6 + 0.08 * sin(_t * 2.0)), Color(0.35, 0.62, 0.9))
+	for bp: Array in _lv["bumpers"]:
+		draw_circle(bp[0], float(bp[1]) + 3, Color(0.4, 0.25, 0.1))
+		draw_circle(bp[0], float(bp[1]), Color(0.85, 0.55, 0.25))
+		draw_circle((bp[0] as Vector2) + Vector2(-6, -6), float(bp[1]) * 0.4, Color(1, 0.8, 0.5))
+	# The cup and its flag.
+	var cup: Vector2 = _lv["cup"]
+	draw_circle(cup, HOLE_R + 5, Color(0.25, 0.17, 0.08))
+	draw_circle(cup, HOLE_R, Color(0.05, 0.03, 0.02))
+	var wave: float = sin(_t * 4.0) * 6.0
+	draw_line(cup, cup + Vector2(0, -80), Color(0.95, 0.95, 0.9), 3.0)
+	draw_colored_polygon(PackedVector2Array([cup + Vector2(0, -80), cup + Vector2(40, -70 + wave), cup + Vector2(0, -58)]), Color(1, 0.35, 0.3))
+	# The seed and its motion trail.
+	for i: int in _trail.size():
+		var a: float = float(i) / maxf(_trail.size(), 1)
+		draw_circle(_trail[i], SEED_R * a, Color(1, 1, 0.8, 0.25 * a))
+	if _phase == Phase.PUTT:
+		var sq: float = 1.0 + 0.15 * sin(_t * 6.0) if not _rolling else 1.0
+		draw_circle(_seed + Vector2(3, 5), SEED_R, Color(0, 0, 0, 0.25))
+		draw_set_transform_matrix(_field_xform() * Transform2D(0.0, Vector2(sq, 1.0 / sq), 0.0, _seed))
+		draw_circle(Vector2.ZERO, SEED_R, Color(0.6, 0.4, 0.2))
+		draw_circle(Vector2(-3, -3), SEED_R * 0.35, Color(1, 1, 1, 0.45))
+		draw_set_transform_matrix(_field_xform())
+		if not _rolling and not _dragging and _strokes == 0:
+			draw_arc(_seed, 26.0 + 6.0 * sin(_t * 5.0), 0, TAU, 24, Color(1, 1, 0.7, 0.6), 2.0)
+	if _dragging:
+		_draw_aim()
+	if _phase == Phase.WATER or (_sunk_t < 0.0 and _phase != Phase.PUTT):
+		_draw_seedling(cup, 0.3 + 0.4 * _water)
+	if _phase == Phase.WATER:
+		_draw_water_meter(cup)
 
-func _draw_sprout(at: Vector2) -> void:
-	var grow: float = 0.25 if _grow_t < 0.0 else lerpf(0.25, 1.0, _grow_t)
-	var vigor: float = 0.5 if _result.is_empty() else clampf(float(_result["score"]) / 100.0, 0.2, 1.0)
-	var h: float = 60.0 * grow * (0.5 + vigor)
-	draw_line(at, at + Vector2(0, -h), Color(0.3, 0.65, 0.2), 5.0)
-	for k: int in int(2 + 4 * grow * vigor):
-		var y: float = -h * (0.3 + 0.7 * float(k) / 6.0)
-		var side: float = -1.0 if k % 2 == 0 else 1.0
-		draw_circle(at + Vector2(side * 12.0, y), 9.0 * grow, Color(0.35 + 0.2 * vigor, 0.75, 0.25))
-	if _grow_t >= 1.0 and vigor > 0.8:
-		draw_circle(at + Vector2(0, -h - 8), 10.0, Color(1.0, 0.85, 0.3))
+# A dotted path showing the flick, and a power bar.
+func _draw_aim() -> void:
+	var pull: Vector2 = _seed - _drag_now
+	var power: float = clampf(pull.length() / MAX_PULL, 0.0, 1.0)
+	var dirv := pull.normalized()
+	var col := Color(0.5, 1.0, 0.4).lerp(Color(1.0, 0.35, 0.25), power)
+	for k: int in 10:
+		draw_circle(_seed + dirv * (24.0 + k * 26.0 * (0.4 + power * 1.4)), 5.0 - k * 0.35, Color(col.r, col.g, col.b, 0.9 - k * 0.08))
+	draw_line(_seed, _seed - dirv * minf(pull.length(), MAX_PULL), Color(1, 1, 1, 0.35), 3.0)
+	var bar := Rect2(_seed + Vector2(-40, 26), Vector2(80, 10))
+	draw_rect(bar, Color(0, 0, 0, 0.5))
+	draw_rect(Rect2(bar.position, Vector2(80 * power, 10)), col)
+
+func _draw_water_meter(cup: Vector2) -> void:
+	# The rain cloud over the cup.
+	var cc: Vector2 = cup + Vector2(0, -150)
+	var puff: float = 1.0 + (0.06 * sin(_t * 10.0) if _raining else 0.0)
+	for o: Vector2 in [Vector2(-34, 6), Vector2(0, -10), Vector2(34, 6), Vector2(0, 14)]:
+		draw_circle(cc + o * puff, 32 * puff, Color(0.7, 0.75, 0.85) if _raining else Color(0.88, 0.92, 0.96))
+	if _raining:
+		for k: int in 10:
+			var x: float = cc.x + (k - 4.5) * 9.0
+			var y: float = cc.y + 30.0 + fmod(_t * 420.0 + k * 37.0, 110.0)
+			draw_line(Vector2(x, y), Vector2(x - 2, y + 12), Color(0.6, 0.8, 1.0, 0.85), 2.0)
+	# The tall meter beside it, with its green band.
+	var m := Rect2(cup + Vector2(110, -200), Vector2(34, 220))
+	draw_rect(m, Color(0, 0, 0, 0.55))
+	var band_lo: float = m.end.y - m.size.y * WATER_LO
+	var band_hi: float = m.end.y - m.size.y * WATER_HI
+	draw_rect(Rect2(m.position.x, band_hi, m.size.x, band_lo - band_hi), Color(0.3, 0.9, 0.35, 0.45))
+	var fill: float = m.size.y * _water
+	var wc := Color(0.4, 0.7, 1.0)
+	if _water > WATER_HI:
+		wc = Color(0.3, 0.45, 0.95)
+	draw_rect(Rect2(m.position.x + 4, m.end.y - fill, m.size.x - 8, fill), wc)
+	draw_rect(m, Color(1, 1, 1, 0.8), false, 2.0)
+	var font := FelecoUiScript.font("heading")
+	draw_string(font, Vector2(m.end.x + 8, band_hi + 18), "GOOD", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.5, 1, 0.5))
+
+func _draw_seedling(at: Vector2, grow: float) -> void:
+	var h: float = 40.0 * grow
+	draw_line(at, at + Vector2(0, -h), Color(0.3, 0.65, 0.2), 4.0)
+	draw_circle(at + Vector2(-8, -h), 7.0 * grow + 2.0, Color(0.45, 0.8, 0.3))
+	draw_circle(at + Vector2(8, -h + 4), 7.0 * grow + 2.0, Color(0.45, 0.8, 0.3))
+
+func _draw_grow() -> void:
+	# Sky up top, soil at the bottom, the sun waiting above the grid.
+	for k: int in 16:
+		var y: float = FIELD.y * k / 16.0
+		draw_rect(Rect2(0, y, FIELD.x, FIELD.y / 16.0 + 1), Color(0.45, 0.7, 0.95).lerp(Color(0.3, 0.55, 0.3), float(k) / 16.0))
+	var o := _grid_origin()
+	var sun := Vector2(FIELD.x * 0.5, o.y - 2.0)
+	for k: int in 12:
+		var a: float = k * TAU / 12.0 + _t * 0.4
+		draw_line(sun + Vector2.from_angle(a) * 46, sun + Vector2.from_angle(a) * (70 + 8 * sin(_t * 3.0 + k)), Color(1, 0.85, 0.3, 0.8), 4.0)
+	draw_circle(sun, 40, Color(1, 0.85, 0.25))
+	draw_circle(sun, 30, Color(1, 0.95, 0.55))
+	var tip: Vector2i = _path[-1] if not _path.is_empty() else Vector2i(-1, -1)
+	for y: int in ROWS:
+		for x: int in COLS:
+			var c := Vector2i(x, y)
+			var r := Rect2(o + Vector2(x, y) * CELL, Vector2(CELL, CELL)).grow(-3)
+			var ch: String = _grid[y][x]
+			draw_rect(r, Color(0.32, 0.22, 0.12, 0.55) if y == ROWS - 1 else Color(1, 1, 1, 0.08))
+			if ch == "#":
+				draw_circle(r.get_center(), CELL * 0.4, Color(0.42, 0.42, 0.46))
+				draw_circle(r.get_center() + Vector2(-8, -8), CELL * 0.18, Color(0.6, 0.6, 0.62))
+			elif ch == "*" and not _path.has(c):
+				var pulse: float = 0.6 + 0.4 * sin(_t * 5.0 + x + y)
+				draw_circle(r.get_center(), CELL * 0.28 * pulse + 6, Color(1, 0.9, 0.35, 0.55))
+				draw_circle(r.get_center(), CELL * 0.14, Color(1, 0.97, 0.7))
+			if y == 0:
+				draw_rect(r, Color(1, 0.9, 0.4, 0.12))
+			if _phase == Phase.GROW and _can_grow(c):
+				var a: float = 0.35 + 0.25 * sin(_t * 7.0)
+				draw_rect(r, Color(0.6, 1.0, 0.5, a))
+				draw_rect(r, Color(0.7, 1.0, 0.6), false, 3.0)
+	# The stalk: a thick vine through every cell, with leaves.
+	if _path.size() >= 1:
+		var pts := PackedVector2Array()
+		pts.append(_cell_center(_path[0]) + Vector2(0, CELL * 0.45))
+		for c: Vector2i in _path:
+			pts.append(_cell_center(c))
+		draw_polyline(pts, Color(0.18, 0.42, 0.14), 16.0, true)
+		draw_polyline(pts, Color(0.35, 0.7, 0.25), 10.0, true)
+		for i: int in range(1, pts.size()):
+			var side: float = -1.0 if i % 2 == 0 else 1.0
+			var mid: Vector2 = pts[i - 1].lerp(pts[i], 0.5)
+			var sway: float = sin(_t * 2.5 + i) * 3.0
+			draw_set_transform_matrix(_field_xform() * Transform2D(side * 0.6, Vector2(1.0, 0.55), 0.0, mid + Vector2(side * 14 + sway, 0)))
+			draw_circle(Vector2.ZERO, 11.0, Color(0.45, 0.82, 0.32))
+			draw_set_transform_matrix(_field_xform())
+		var tp: Vector2 = _cell_center(tip)
+		draw_circle(tp, 12.0 + 8.0 * _tip_pop, Color(0.55, 0.95, 0.4))
+		draw_circle(tp + Vector2(-3, -4), 4.0, Color(1, 1, 1, 0.6))
 
 func _draw_overlays() -> void:
 	var font := FelecoUiScript.font("heading")
 	if _msg_t > 0.0:
 		var a: float = clampf(_msg_t, 0.0, 1.0)
-		draw_string(font, Vector2(0, size.y - 92), _msg, HORIZONTAL_ALIGNMENT_CENTER, size.x, 22, Color(1, 0.97, 0.85, a))
-	# A live readout under the pointer while sensing.
-	if not _sense.is_empty():
-		var fp := _to_field(get_local_mouse_position())
-		var txt := "Light %d%%   Water %d%%   Soil %d%%" % [int(_light_at(fp) * 100), int(_ground_water_at(fp) * 100), int(_soil_at(fp) * 100)]
-		draw_string(font, get_local_mouse_position() + Vector2(16, -12), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 1, 1))
-	if not _result.is_empty() and _grow_t >= 1.0:
-		var box := Rect2(size.x * 0.5 - 260, size.y * 0.5 - 150, 520, 260)
-		draw_rect(box, Color(0.06, 0.09, 0.07, 0.94))
+		draw_string_outline(font, Vector2(0, size.y - 86), _msg, HORIZONTAL_ALIGNMENT_CENTER, size.x, 22, 6, Color(0, 0, 0, 0.7 * a))
+		draw_string(font, Vector2(0, size.y - 86), _msg, HORIZONTAL_ALIGNMENT_CENTER, size.x, 22, Color(1, 0.97, 0.85, a))
+	if not _result.is_empty() and _result_t > 0.4:
+		var k: float = clampf((_result_t - 0.4) / 0.35, 0.0, 1.0)
+		var box := Rect2(size.x * 0.5 - 270, size.y * 0.5 - 160, 540, 280)
+		draw_rect(box, Color(0.06, 0.09, 0.07, 0.94 * k))
 		draw_rect(box, FelecoUiScript.GOLD, false, 3.0)
 		var rank: String = _result["rank"]
 		var rc: Color = {"S": Color(1, 0.85, 0.2), "A": Color(0.6, 1, 0.5), "B": Color(0.6, 0.85, 1), "C": Color(0.9, 0.9, 0.9), "D": Color(1, 0.7, 0.4), "F": Color(1, 0.4, 0.4)}[rank]
-		draw_string(font, box.position + Vector2(0, 90), rank, HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 96, rc)
-		draw_string(font, box.position + Vector2(0, 150), "Score %d" % int(_result["score"]), HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 26, Color.WHITE)
-		draw_string(font, box.position + Vector2(0, 195), "Light %d%%   Water %d%%   Soil %d%%   Strokes %d (par %d)" % [int(_result["light"] * 100), int(_result["water"] * 100), int(_result["soil"] * 100), _strokes, _lv["par"]], HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 17, FelecoUiScript.MIST)
-		draw_string(font, box.position + Vector2(0, 230), "The weakest of the three holds a plant back.", HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 15, FelecoUiScript.GOLD)
+		# The grade slams in big and settles.
+		var slam: float = 1.0 + (1.0 - k) * 1.5
+		draw_string(font, box.position + Vector2(0, 104), rank, HORIZONTAL_ALIGNMENT_CENTER, box.size.x, int(100 * slam), rc)
+		draw_string(font, box.position + Vector2(0, 160), "Score %d" % int(_result["score"]), HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 28, Color.WHITE)
+		draw_string(font, box.position + Vector2(0, 205), "Putt %d/32   Water %d/20   Grow %d/50" % [int(_result["putt"]), int(_result["water"]), int(_result["grow"])], HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 19, FelecoUiScript.MIST)
+		draw_string(font, box.position + Vector2(0, 245), "Strokes %d (par %d)   Sunbeams %d/%d   %s" % [_strokes, _lv["par"], _beams, _beams_total, "Reached the sun!" if _reached_sun else "Didn't reach the sun"], HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 16, FelecoUiScript.GOLD)

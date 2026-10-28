@@ -12,7 +12,8 @@ const LOOKS: Dictionary = {
 	"falcon": {"fur": Color(0.38, 0.44, 0.56), "dark": Color(0.22, 0.26, 0.35), "belly": Color(0.96, 0.92, 0.82), "fist": Color(0.98, 0.8, 0.25), "eye": Color(0.15, 0.12, 0.1)},
 }
 
-# pose: idle, walk, jump, light, heavy, special, block, hurt, ko, evolve.
+# pose: idle, walk, jump, light, heavy, special, block, hurt, ko, evolve,
+# taunt, and the combos: sweep, finisher, lunge, rising, slam, whirl.
 # t: seconds in the pose (animates it), chain: which jab of a light chain.
 static func paint(ci: CanvasItem, species: String, pose: String, t: float, u: float, tint: Color = Color.WHITE, chain: int = 1) -> void:
 	var L: Dictionary = LOOKS.get(species, LOOKS["wolf"])
@@ -26,6 +27,8 @@ static func paint(ci: CanvasItem, species: String, pose: String, t: float, u: fl
 	var back_fist := Vector2(1.3, -8.3) * u
 	var step: float = 0.0
 	var crouch: float = 0.0
+	# A kicking front foot (the low sweep), or none.
+	var kick := Vector2.INF
 	match pose:
 		"walk":
 			step = sin(t * 12.0) * 0.8 * u
@@ -72,11 +75,60 @@ static func paint(ci: CanvasItem, species: String, pose: String, t: float, u: fl
 			front_fist = Vector2(2.4, -10.4) * u
 			back_fist = Vector2(-1.6, -10.4) * u
 			bounce = sin(t * 30.0) * 0.2 * u
+		"taunt":
+			# One fist on the hip, the other waving "come on" over its head.
+			front_fist = Vector2(0.9, -5.2) * u
+			back_fist = Vector2(-0.6 + sin(t * 14.0) * 0.9, -11.0) * u
+			lean = -0.12 + sin(t * 7.0) * 0.06
+		"sweep":
+			# Drops low and swings the front leg out along the grass.
+			var k: float = clampf(t / 0.12, 0.0, 1.0) * clampf((0.45 - t) / 0.15, 0.0, 1.0)
+			crouch = 1.8 * u
+			lean = 0.3
+			kick = Vector2(lerpf(1.0, 5.4, k), -0.3) * u
+			front_fist = Vector2(1.4, -6.2) * u
+			back_fist = Vector2(-1.0, -6.0) * u
+		"finisher":
+			# A deep wind-up, then a huge uppercut with the whole body.
+			var k: float = clampf((t - 0.14) / 0.14, 0.0, 1.0)
+			back_fist = Vector2(lerpf(-2.2, 3.4, k), lerpf(-4.8, -12.0, k)) * u
+			front_fist = Vector2(lerpf(1.6, 0.4, k), -7.0) * u
+			lean = lerpf(-0.3, 0.3, k)
+			crouch = (1.0 - k) * 1.1 * u
+		"lunge":
+			# A dash with the front fist driven out ahead.
+			var k: float = clampf(t / 0.08, 0.0, 1.0)
+			front_fist = Vector2(lerpf(2.0, 5.4, k), -7.4) * u
+			back_fist = Vector2(-0.4, -7.8) * u
+			lean = 0.5 * k
+			step = 1.2 * u
+		"rising":
+			# Springs up, fist leading straight overhead.
+			var k: float = clampf(t / 0.12, 0.0, 1.0)
+			front_fist = Vector2(lerpf(2.0, 2.6, k), lerpf(-7.6, -12.4, k)) * u
+			back_fist = Vector2(0.6, -6.8) * u
+			lean = -0.1
+			crouch = -0.8 * u * k
+		"slam":
+			# Both fists raised high, then brought down like a hammer.
+			var k: float = clampf((t - 0.24) / 0.1, 0.0, 1.0)
+			var up := Vector2(0.4, -12.2) * u
+			var down := Vector2(4.0, -4.4) * u
+			front_fist = up.lerp(down, k)
+			back_fist = (up + Vector2(-0.6, 0.2) * u).lerp(down + Vector2(-0.4, -0.4) * u, k)
+			lean = lerpf(-0.35, 0.55, k)
+			crouch = k * 0.5 * u
+		"whirl":
+			# Arms flung wide, spinning on the spot.
+			front_fist = Vector2(4.2, -7.2) * u
+			back_fist = Vector2(-3.6, -7.0) * u
+			lean = sin(t * 40.0) * 0.25
+			bounce = absf(sin(t * 20.0)) * 0.3 * u
 	# Lean pivots about the hips.
 	var hips := Vector2(0, -4.0 * u)
 	var lean_xf := Transform2D(0.0, Vector2(0, -bounce + crouch)) * Transform2D(0.0, hips) * Transform2D(lean, Vector2.ZERO) * Transform2D(0.0, -hips)
 	# Legs and feet stay planted; the body above the hips leans.
-	_legs(ci, species, u, step, crouch, dark, fur)
+	_legs(ci, species, u, step, crouch, dark, fur, kick)
 	var saved := _current_xform(ci)
 	ci.draw_set_transform_matrix(saved * lean_xf)
 	if species != "falcon":
@@ -112,12 +164,14 @@ static func _ellipse(ci: CanvasItem, c: Vector2, r: Vector2, col: Color) -> void
 		pts.append(c + Vector2(cos(a) * r.x, sin(a) * r.y))
 	ci.draw_colored_polygon(pts, col)
 
-static func _legs(ci: CanvasItem, species: String, u: float, step: float, crouch: float, dark: Color, fur: Color) -> void:
+static func _legs(ci: CanvasItem, species: String, u: float, step: float, crouch: float, dark: Color, fur: Color, kick: Vector2 = Vector2.INF) -> void:
 	var hip_y: float = -4.0 * u + crouch
 	var legc: Color = Color(0.95, 0.75, 0.2) if species == "falcon" else fur.darkened(0.1)
 	for side: float in [-1.0, 1.0]:
 		var hip := Vector2(side * 0.7 * u, hip_y)
 		var foot := Vector2(side * 0.9 * u + step * side, 0.0)
+		if side > 0.0 and kick.is_finite():
+			foot = kick
 		var knee := (hip + foot) * 0.5 + Vector2(0.5 * u, crouch * 0.3)
 		var w: float = (0.5 if species == "falcon" else 1.0) * u
 		ci.draw_line(hip, knee, legc, w)
@@ -178,7 +232,7 @@ static func _head(ci: CanvasItem, species: String, u: float, t: float, pose: Str
 		ci.draw_circle(ep, 0.38 * u, Color.WHITE)
 		ci.draw_circle(ep + Vector2(0.12, 0.0) * u, 0.22 * u, eye)
 		ci.draw_circle(ep + Vector2(0.16, 0.0) * u, 0.1 * u, Color.BLACK)
-		var squint: float = 0.15 if pose in ["light", "heavy", "special"] else 0.0
+		var squint: float = 0.15 if pose in ["light", "heavy", "special", "sweep", "finisher", "lunge", "rising", "slam", "whirl"] else 0.0
 		ci.draw_line(ep + Vector2(-0.45, -0.55 + squint) * u, ep + Vector2(0.45, -0.3 + squint) * u, dark.darkened(0.3), 0.18 * u)
 	if pose == "hurt":
 		for k: int in 3:
@@ -204,3 +258,23 @@ static func _tail(ci: CanvasItem, species: String, u: float, t: float, fur: Colo
 static func _tail_feathers(ci: CanvasItem, u: float, dark: Color) -> void:
 	for k: int in 3:
 		ci.draw_line(Vector2(-1.2, -4.2) * u, Vector2(-2.8, -3.0 + k * 0.5) * u, dark, 0.45 * u)
+
+# A motion swoosh for a strike in flight: an arc for punches, a low streak
+# for the sweep, a ring for the whirlwind, a fall line for the slam.
+static func swoosh(ci: CanvasItem, xf: Transform2D, pose: String, t: float, u: float, col: Color) -> void:
+	ci.draw_set_transform_matrix(xf)
+	var c := Color(col.r, col.g, col.b, 0.55)
+	match pose:
+		"sweep":
+			ci.draw_arc(Vector2(1.5, -0.4) * u, 4.2 * u, -0.35, 0.1, 14, c, 0.5 * u)
+		"whirl":
+			ci.draw_arc(Vector2(0, -7.0) * u, 4.4 * u, t * 30.0, t * 30.0 + 4.2, 24, c, 0.45 * u)
+		"slam":
+			ci.draw_arc(Vector2(1.0, -6.0) * u, 6.0 * u, -1.6, 0.3, 16, c, 0.5 * u)
+		"rising", "finisher", "heavy":
+			ci.draw_arc(Vector2(1.0, -8.0) * u, 4.0 * u, -1.9, -0.2, 16, c, 0.45 * u)
+		"lunge":
+			for k: int in 3:
+				ci.draw_line(Vector2(-3.0 - k * 1.2, -7.4 + k * 0.6) * u, Vector2(-0.5 - k * 1.2, -7.4 + k * 0.6) * u, c, 0.25 * u)
+		_:
+			ci.draw_arc(Vector2(2.0, -7.6) * u, 2.6 * u, -0.7, 0.7, 12, c, 0.35 * u)

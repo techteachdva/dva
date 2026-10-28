@@ -78,10 +78,19 @@ var _rival_stumble: Array[float] = [0.0, 0.0, 0.0, 0.0]
 var _paused: bool = false
 var _pause_box: Control
 var _pause_btn: Button
+# The typing cursor glides to the next key (Nitro Type style) instead of
+# jumping; a wrong key shakes it red, a right key pops the letter behind it.
+var _cursor_x: float = -1.0
+var _cursor_goal: float = 0.0
+var _miss: float = 0.0
+var _pop: float = 0.0
+var _jx := Juice.new()
+var _last_count: int = 4
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = FelecoUiScript.theme()
+	_jx.font = FelecoUiScript.font("heading")
 	focus_mode = Control.FOCUS_ALL
 	_build_pause_button()
 	_show_select()
@@ -251,6 +260,7 @@ func _start_race() -> void:
 			_rival_species.append(sp)
 	_t = 0.0
 	_count = 3.0
+	_last_count = 4
 	_mode = "count"
 	_typed = 0
 	_stumble = 0.0
@@ -277,6 +287,7 @@ func _stage() -> int:
 # whole runs of five or six words for the final stretch.
 func _next_prompt() -> void:
 	_typed = 0
+	_cursor_x = -1.0
 	var lines := _dialog()
 	var words: PackedStringArray = lines[randi() % lines.size()].split(" ", false)
 	var want: int = [1, 2, 3, 5][_stage()]
@@ -305,6 +316,8 @@ func _gui_input(event: InputEvent) -> void:
 	if ch == want:
 		_typed += 1
 		_keys_right += 1
+		_pop = 1.0
+		Juice.sfx(self, "key", 1.0 + 0.4 * float(_typed) / maxf(_prompt.length(), 1.0), -12.0)
 		# A stride: words are worth more per key (they're harder).
 		var boost: float = [1.9, 2.1, 2.3, 2.5][_stage()] * float(sheet["stride"])
 		_speed[0] = minf(_speed[0] + boost, float(sheet["top"]))
@@ -312,9 +325,15 @@ func _gui_input(event: InputEvent) -> void:
 			if _prompt.length() > 2:
 				_speed[0] = minf(_speed[0] + 2.0, float(sheet["top"]) * 1.15)
 				_texts.append(["Nice!", 0.8])
+			Juice.sfx(self, "chime", 1.0 + 0.1 * _stage(), -10.0)
+			_jx.burst(Vector2(VIEW.x * 0.5, 210), Color(0.5, 1.0, 0.45), 18, 380.0, 5.0, 300.0)
+			_jx.ring(Vector2(VIEW.x * 0.5, 210), Color(0.6, 1.0, 0.5), 160.0)
 			_next_prompt()
 	else:
 		_keys_wrong += 1
+		_miss = 1.0
+		Juice.sfx(self, "error", 1.0, -8.0)
+		_jx.shake(0.25)
 		_stumble = 0.35 * (0.6 if _species == "goat" else 1.0)
 		_speed[0] *= 0.55
 		_texts.append(["Stumble!", 0.8])
@@ -326,12 +345,26 @@ func _process(delta: float) -> void:
 		return
 	for t: Array in _texts:
 		t[1] -= delta
+	_miss = maxf(_miss - delta * 3.0, 0.0)
+	_jx.update(delta)
+	_pop = maxf(_pop - delta * 6.0, 0.0)
+	if _cursor_x < 0.0:
+		_cursor_x = _cursor_goal
+	else:
+		_cursor_x = lerpf(_cursor_x, _cursor_goal, 1.0 - exp(-delta * 28.0))
 	_texts = _texts.filter(func(t: Array) -> bool: return t[1] > 0.0)
 	queue_redraw()
 	if _mode == "count":
 		_count -= delta
+		var whole: int = int(ceil(_count))
+		if whole != _last_count and whole > 0:
+			_last_count = whole
+			Juice.sfx(self, "countdown")
 		if _count <= 0.0:
 			_mode = "race"
+			Juice.sfx(self, "go")
+			_jx.text(Vector2(VIEW.x * 0.5, 230), "GO!", FelecoUiScript.GOLD, 90)
+			_jx.shake(0.3)
 		return
 	if _mode != "race":
 		return
@@ -382,6 +415,12 @@ func _end_race() -> void:
 	_pause_btn.visible = false
 	var place: int = _place()
 	var medal: String = ["Gold", "Silver", "Bronze", "4th"][place - 1]
+	Juice.sfx(self, "fanfare" if place == 1 else ("chime" if place <= 3 else "lose"))
+	if place == 1:
+		_jx.confetti(Vector2(VIEW.x * 0.5, 120), 120, 600.0)
+		_jx.flash(Color(1, 0.95, 0.6, 0.4))
+	elif place <= 3:
+		_jx.confetti(Vector2(VIEW.x * 0.5, 120), 40, 400.0)
 	var gc: Node = get_node_or_null("/root/GameConfig")
 	if gc != null:
 		var order := ["4th", "Bronze", "Silver", "Gold"]
@@ -425,6 +464,77 @@ func _end_race() -> void:
 	back.pressed.connect(_quit_to_campaign)
 	_end_btns.add_child(back)
 
+# --- The prompt -----------------------------------------------------------
+
+# Each key gets its own slot on a strip: typed keys green, the next key under
+# a gliding gold cursor, the rest white. A space is drawn as a little space
+# bar, so nobody wonders why the word "won't type". Below, a key cap spells
+# out exactly which key comes next.
+func _draw_prompt(font: Font) -> void:
+	var big: int = 64 if _prompt.length() <= 8 else (46 if _prompt.length() <= 20 else 34)
+	var word: String = _prompt.to_upper()
+	var gap: float = big * 0.12
+	var widths: Array[float] = []
+	var total: float = 0.0
+	for i: int in word.length():
+		var ch: String = word[i]
+		var w: float = big * 0.75 if ch == " " else font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, big).x
+		widths.append(w)
+		total += w + gap
+	var x0: float = (VIEW.x - total) * 0.5
+	var base_y: float = 232.0
+	var top: float = base_y - big * 0.95
+	var hgt: float = big * 1.2
+	draw_rect(Rect2(x0 - 22, top - 10, total + 44, hgt + 20), Color(0.04, 0.06, 0.05, 0.82))
+	# The cursor: where the next key sits.
+	var cx: float = x0
+	for i: int in mini(_typed, widths.size()):
+		cx += widths[i] + gap
+	var cw: float = widths[_typed] if _typed < widths.size() else big * 0.5
+	_cursor_goal = cx
+	var shake: float = sin(_miss * 40.0) * 6.0 * _miss
+	var cur := Rect2(_cursor_x - gap * 0.5 + shake, top, cw + gap, hgt)
+	draw_rect(cur, Color(1, 0.35, 0.3, 0.5) if _miss > 0.0 else Color(1, 0.84, 0.3, 0.32))
+	draw_rect(Rect2(cur.position.x, cur.end.y - 6, cur.size.x, 6), Color(1, 0.4, 0.35) if _miss > 0.0 else FelecoUiScript.GOLD)
+	var x: float = x0
+	for i: int in word.length():
+		var ch: String = word[i]
+		var col: Color = Color.WHITE
+		if i < _typed:
+			col = Color(0.5, 1.0, 0.45)
+		elif i == _typed:
+			col = Color(1, 0.55, 0.5) if _miss > 0.0 else Color(1, 0.95, 0.75)
+		else:
+			col = Color(1, 1, 1, 0.82)
+		if ch == " ":
+			# A little space bar: a flat key with raised ends.
+			var bw: float = widths[i] * 0.8
+			var bx: float = x + (widths[i] - bw) * 0.5
+			var by: float = base_y - big * 0.1
+			var bar_col: Color = col if i != _typed else FelecoUiScript.GOLD
+			draw_line(Vector2(bx, by - big * 0.18), Vector2(bx, by), bar_col, 3.0)
+			draw_line(Vector2(bx, by), Vector2(bx + bw, by), bar_col, 3.0)
+			draw_line(Vector2(bx + bw, by), Vector2(bx + bw, by - big * 0.18), bar_col, 3.0)
+		else:
+			var lift: float = 0.0
+			if i == _typed - 1:
+				lift = _pop * big * 0.12
+			draw_string(font, Vector2(x, base_y - lift), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, big, col)
+		x += widths[i] + gap
+	# The next key, spelled out on a key cap.
+	if _typed < word.length():
+		var nxt: String = word[_typed]
+		var is_space: bool = nxt == " "
+		var cap_text: String = "SPACE" if is_space else nxt
+		var cap_w: float = 260.0 if is_space else 64.0
+		var cap := Rect2(VIEW.x * 0.5 - cap_w * 0.5 + 60.0, top + hgt + 22, cap_w, 50)
+		draw_string(font, Vector2(cap.position.x - 150, cap.position.y + 35), "Next key", HORIZONTAL_ALIGNMENT_RIGHT, 140, 22, FelecoUiScript.MIST)
+		var pulse: float = 0.75 + 0.25 * sin(_t * 8.0)
+		draw_rect(Rect2(cap.position + Vector2(0, 5), cap.size), Color(0, 0, 0, 0.45))
+		draw_rect(cap, Color(0.95, 0.9, 0.78) if not is_space else Color(1, 0.86, 0.35, pulse))
+		draw_rect(cap, Color(0.35, 0.28, 0.15), false, 2.0)
+		draw_string(font, Vector2(cap.position.x, cap.position.y + 36), cap_text, HORIZONTAL_ALIGNMENT_CENTER, cap.size.x, 30, FelecoUiScript.INK)
+
 # --- Drawing --------------------------------------------------------------
 
 func _xform() -> Transform2D:
@@ -440,7 +550,7 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.05, 0.06, 0.06))
 	if _select != null or _species.is_empty():
 		return
-	draw_set_transform_matrix(_xform())
+	draw_set_transform_matrix(_xform() * Transform2D(0.0, _jx.offset()))
 	var cam: float = _pos[0] * PX_PER_M - 300.0
 	draw_rect(Rect2(0, 0, VIEW.x, 280), Color(0.5, 0.72, 0.9))
 	# Far hills drift slowly (parallax).
@@ -473,10 +583,20 @@ func _draw() -> void:
 		draw_set_transform_matrix(_xform() * Transform2D(tilt, Vector2(x, y - hop)))
 		draw_texture_rect(tex, Rect2(-w * 0.5, -h, w, h), false)
 		draw_set_transform_matrix(_xform())
+		# Kicked-up dust, and speed lines when flying.
+		if _mode == "race" and _speed[i] > 3.0 and randf() < 0.3:
+			_jx.dust(Vector2(x - w * 0.3, y - 4), Color(0.75, 0.68, 0.5), 1)
+		if i == 0 and _speed[0] > float(RUNNERS[_species]["top"]) * 0.75:
+			for k: int in 4:
+				var ly: float = y - h * (0.2 + 0.2 * k)
+				var lx: float = x - w * 0.6 - fmod(_t * 900.0 + k * 70.0, 160.0)
+				draw_line(Vector2(lx, ly), Vector2(lx - 50, ly), Color(1, 1, 1, 0.5), 3.0)
 		if i == 0:
 			draw_string(FelecoUiScript.font("heading"), Vector2(x - 40, y - h - hop - 12), "YOU", HORIZONTAL_ALIGNMENT_CENTER, 80, 20, FelecoUiScript.GOLD)
 	_draw_hud()
+	_jx.draw(self)
 	draw_set_transform_matrix(Transform2D.IDENTITY)
+	_jx.draw_flash(self, Rect2(Vector2.ZERO, size))
 
 func _draw_hud() -> void:
 	var font := FelecoUiScript.font("heading")
@@ -490,15 +610,7 @@ func _draw_hud() -> void:
 	if _mode == "race" and _finish_time[0] < 0.0:
 		var label: String = ["Type the word!", "Type both words!", "Type the phrase!", "Type the whole line!"][_stage()]
 		draw_string(font, Vector2(0, 150), label, HORIZONTAL_ALIGNMENT_CENTER, VIEW.x, 24, FelecoUiScript.MIST)
-		var big: int = 72 if _prompt.length() <= 8 else (52 if _prompt.length() <= 20 else 38)
-		var word: String = _prompt.to_upper()
-		var full_w: float = font.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, big).x
-		var x0: float = (VIEW.x - full_w) * 0.5
-		var done: String = word.substr(0, _typed)
-		var rest: String = word.substr(_typed)
-		draw_string(font, Vector2(x0, 240), done, HORIZONTAL_ALIGNMENT_LEFT, -1, big, Color(0.5, 1.0, 0.45))
-		var dw: float = font.get_string_size(done, HORIZONTAL_ALIGNMENT_LEFT, -1, big).x
-		draw_string(font, Vector2(x0 + dw, 240), rest, HORIZONTAL_ALIGNMENT_LEFT, -1, big, Color(1, 0.4, 0.35) if _stumble > 0.0 else Color.WHITE)
+		_draw_prompt(font)
 	if _mode == "count":
 		draw_string(font, Vector2(0, 230), str(int(ceil(_count))), HORIZONTAL_ALIGNMENT_CENTER, VIEW.x, 120, FelecoUiScript.GOLD)
 	for k: int in _texts.size():

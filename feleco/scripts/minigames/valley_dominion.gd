@@ -22,8 +22,8 @@ extends Control
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 const Brawl = preload("res://scripts/minigames/predator_brawl.gd")
 
-const W: int = 14
-const H: int = 9
+const W: int = 10
+const H: int = 7
 const TURNS: int = 12
 const MOVES: int = 3
 const WINTER_ROUNDS: int = 2
@@ -46,17 +46,17 @@ const EP_BY_PLACE: Array[int] = [120, 60, 35, 20]
 
 const CLANS: Dictionary = {
 	"human": {"name": "Humans", "color": Color(0.95, 0.75, 0.3), "power": "Build Hut",
-		"about": "Build Hut: the tile you picked gets +3 clan, stores extra food and is twice as hard to take.",
-		"way": "Villagers farm around their huts (+1 food, even in winter). Huts keep the wolves out."},
+		"about": "Power: Build Hut (+3 clan, stores food, hard to take).",
+		"way": "Huts farm +1 food, even in winter, and keep wolves out."},
 	"bear": {"name": "Bears", "color": Color(0.55, 0.36, 0.22), "power": "Maul",
-		"about": "Maul: your next attack this turn hits twice as hard.",
-		"way": "Thick hides make bears hard to drive off. They fish (+2 food by the river) and sleep through winter in the forests, eating nothing."},
+		"about": "Power: Maul (next attack hits twice as hard).",
+		"way": "Tough. Fish by rivers; sleep through winter in forests."},
 	"boar": {"name": "Boars", "color": Color(0.85, 0.35, 0.3), "power": "Stampede",
-		"about": "Stampede: your next move charges two tiles in a straight line.",
-		"way": "Boars dig for roots in autumn, when the grass fails: meadows grow +1 for them then."},
+		"about": "Power: Stampede (next move charges two tiles).",
+		"way": "Dig roots: meadows feed them +1 in autumn."},
 	"robin": {"name": "Robins", "color": Color(0.55, 0.75, 1.0), "power": "Seed Flight",
-		"about": "Seed Flight: two robins claim any empty tile up to 3 away.",
-		"way": "Robins fly two tiles a move and spread fast, but lose fights easily and a tile holds fewer nests."},
+		"about": "Power: Seed Flight (claim an empty tile up to 3 away).",
+		"way": "Fly two tiles a move and spread fast, but fight weakly."},
 }
 const CORNERS: Array = [Vector2i(1, 1), Vector2i(W - 2, H - 2), Vector2i(W - 2, 1), Vector2i(1, H - 2)]
 
@@ -93,10 +93,13 @@ var _banner: String = ""
 var _banner_t: float = 0.0
 var _fx: Array = []
 var _winter_report: Array[String] = []
+var _jx := Juice.new()
+var _t: float = 0.0
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = FelecoUiScript.theme()
+	_jx.font = FelecoUiScript.font("heading")
 	_show_select()
 	# First time here: explain the game before anything else.
 	if not HowToPlay.seen(self, "dominion"):
@@ -142,7 +145,7 @@ func _show_select() -> void:
 		card.add_child(FelecoUiScript.heading(c["name"] + ("  (Ruled!)" if won != null else ""), 22, c["color"]))
 		var about := FelecoUiScript.label("%s\n%s" % [c["about"], c["way"]], 14, FelecoUiScript.MIST)
 		about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		about.custom_minimum_size = Vector2(0, 118)
+		about.custom_minimum_size = Vector2(0, 64)
 		card.add_child(about)
 		var b := Button.new()
 		b.text = "Lead the %s" % c["name"]
@@ -150,7 +153,7 @@ func _show_select() -> void:
 		b.custom_minimum_size = Vector2(0, 48)
 		b.pressed.connect(func() -> void: _start(id))
 		card.add_child(b)
-	var how := FelecoUiScript.label("Click one of your tiles, then a tile next to it: half the clan moves there. Empty tiles are claimed; rival tiles are fought for.\nEvery tile's green bar is its food. Meadows feed best in spring, forests in summer and autumn. A clan eats half its number a turn; eat a tile bare and it starves.", 15, FelecoUiScript.CREAM)
+	var how := FelecoUiScript.label("1. Click your tile, then a yellow tile: half your clan moves there.   2. Green bars are food: keep your clan where food is.   3. Before winter, fill the forests. Biggest clan after winter wins.", 16, FelecoUiScript.CREAM)
 	how.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	how.custom_minimum_size = Vector2(1100, 0)
@@ -228,7 +231,7 @@ func _make_map() -> void:
 	for y: int in H:
 		_terrain[_idx(Vector2i(rx, y))] = T.RIVER
 		if randf() < 0.4:
-			rx = clampi(rx + (1 if randf() < 0.5 else -1), 4, W - 5)
+			rx = clampi(rx + (1 if randf() < 0.5 else -1), 3, W - 4)
 			_terrain[_idx(Vector2i(rx, y))] = T.RIVER
 	for i: int in W * H:
 		_food[i] = int(FOOD_CAP[_terrain[i]] * 0.6)
@@ -415,8 +418,12 @@ func _begin_turn() -> void:
 	if _turn % 4 == 0:
 		_season_event()
 		_say(_season_name().to_upper(), 1.4)
+		Juice.sfx(self, "chime")
+		_jx.confetti(_board_rect().get_center() + Vector2(0, -60), 30, 260.0)
 	if _turn == WOLF_TURN:
 		_wolves_arrive()
+		Juice.sfx(self, "taunt", 0.6)
+		_jx.shake(0.4)
 	_mode = "play"
 	_refresh()
 
@@ -460,6 +467,7 @@ func _near_river(p: Vector2i) -> bool:
 func _end_turn() -> void:
 	if _mode != "play":
 		return
+	Juice.sfx(self, "whoosh")
 	for c: String in _clans:
 		if c != _player:
 			_ai_turn(c)
@@ -681,6 +689,7 @@ func _ai_turn(c: String) -> void:
 func _winter() -> void:
 	_mode = "over"
 	_say("WINTER", 2.0)
+	Juice.sfx(self, "fanfare", 0.8)
 	var before: Dictionary = {}
 	for c: String in _clans:
 		before[c] = _clan_pop(c)
@@ -830,17 +839,10 @@ func _refresh() -> void:
 		bar.add_theme_stylebox_override("fill", fill)
 		row.add_child(bar)
 		row.add_child(FelecoUiScript.label("%d  (%d tiles)" % [_clan_pop(k), _tiles_of(k).size()], 13, FelecoUiScript.CREAM))
-	# Coaching: the first two turns step by step, then the season's lesson.
+	# The season's lesson (the step-by-step coach is drawn over the board).
 	var coach: String = ""
-	if _turn < 2:
-		if _sel.x < 0:
-			coach = "STEP 1: Click one of your tiles (your colour; your home has a hut)."
-		elif _moves == MOVES:
-			coach = "STEP 2: Click a tile with a yellow outline. Half your clan moves there. The green bar under a tile is its food."
-		elif _moves > 0:
-			coach = "Nice! %d moves left. Spread out while the meadows are green, or press End turn." % _moves
-		else:
-			coach = "Out of moves. Press End turn: every tile grows food, your clan eats, and the rivals move."
+	if _turn == 0:
+		coach = "Spring: meadows grow the most food. Spread out!"
 	elif _turn == 4:
 		coach = "Summer: forests grow 3 food a turn now, meadows only 2%s. Start claiming forest." % (" (1 in this drought)" if _drought else "")
 	elif _turn == WOLF_TURN:
@@ -852,12 +854,12 @@ func _refresh() -> void:
 	_coach_lbl.text = coach
 	_coach_lbl.visible = not coach.is_empty()
 	var lost: int = _forecast()
-	_forecast_lbl.text = ("Winter forecast: all %d of your clan would make it." % _clan_pop(_player)) if lost == 0 else ("Winter forecast: %d of your %d would starve if the snow fell today." % [lost, _clan_pop(_player)])
-	_forecast_lbl.visible = _turn >= 4
+	_forecast_lbl.text = ("Winter check: all %d would survive." % _clan_pop(_player)) if lost == 0 else ("Winter check: %d of %d would starve." % [lost, _clan_pop(_player)])
+	_forecast_lbl.visible = _turn >= 2
 	_power_btn.text = "%s%s" % [c["power"], " (used)" if _power_used else ""]
 	_power_btn.tooltip_text = c["about"]
 	_power_btn.disabled = _power_used
-	_log_lbl.text = "\n".join(_log)
+	_log_lbl.text = "\n".join(_log.slice(maxi(_log.size() - 4, 0)))
 	queue_redraw()
 
 func _use_power() -> void:
@@ -890,9 +892,9 @@ func _use_power() -> void:
 	_refresh()
 
 func _board_rect() -> Rect2:
-	var avail := Vector2(size.x - 380, size.y - 60)
+	var avail := Vector2(size.x - 380, size.y - 90)
 	var cell: float = minf(avail.x / W, avail.y / H)
-	return Rect2(Vector2(20, 20 + (avail.y - cell * H) * 0.5), Vector2(cell * W, cell * H))
+	return Rect2(Vector2(20, 50 + (avail.y - 30.0 - cell * H) * 0.5), Vector2(cell * W, cell * H))
 
 func _cell_center(p: Vector2i) -> Vector2:
 	var r := _board_rect()
@@ -945,14 +947,35 @@ func _gui_input(event: InputEvent) -> void:
 				return
 	var legal: Array[Vector2i] = _targets(_sel, _player, _stampede) if _sel.x >= 0 else []
 	if _owner[_idx(p)] == _player and (_sel.x < 0 or not legal.has(p) or p == _sel):
+		Juice.sfx(self, "click")
 		_sel = p
 		_refresh()
 		return
 	if _sel.x >= 0 and legal.has(p) and _moves > 0:
 		var was_rival: bool = _owner[_idx(p)] != "" and _owner[_idx(p)] != _player
 		var charged: bool = _stampede and not _neighbors(_sel).has(p)
+		var owner_before: String = _owner[_idx(p)]
 		if _move(_player, _sel, p, 2.0 if _maul else 1.0):
 			_moves -= 1
+			var at: Vector2 = _cell_center(p)
+			if was_rival and _owner[_idx(p)] == _player:
+				Juice.sfx(self, "capture")
+				Juice.sfx(self, "bighit", 1.0, -10.0)
+				_jx.burst(at, CLANS[_player]["color"], 22, 300.0)
+				_jx.ring(at, Color(1, 0.9, 0.5), 70.0)
+				_jx.text(at + Vector2(0, -30), "CAPTURED!", Color(1, 0.85, 0.3), 26)
+				_jx.shake(0.35)
+			elif was_rival:
+				Juice.sfx(self, "hit")
+				_jx.burst(at, Color(1, 0.4, 0.3), 12, 220.0)
+				_jx.text(at + Vector2(0, -30), "Driven back!", Color(1, 0.5, 0.4), 22)
+				_jx.shake(0.2)
+			elif owner_before == "":
+				Juice.sfx(self, "pop")
+				_jx.dust(at, CLANS[_player]["color"], 8)
+				_jx.ring(at, CLANS[_player]["color"], 45.0)
+			else:
+				Juice.sfx(self, "march")
 			# Maul is spent on the first fight, win or lose; a charge on the move.
 			if _maul and was_rival:
 				_maul = false
@@ -969,7 +992,10 @@ func _gui_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if _mode == "select":
 		return
-	var dirty: bool = _banner_t > 0.0 or not _fx.is_empty() or (_wolf.x >= 0 and _mode == "play")
+	_t += delta
+	_jx.update(delta)
+	# Always redraw while playing: tiles glow and the coach pulses.
+	var dirty: bool = true
 	_banner_t -= delta
 	for f: Array in _fx:
 		f[2] -= delta
@@ -1036,6 +1062,12 @@ func _draw() -> void:
 				var ps: String = str(_pop[i])
 				draw_string_outline(font, rect.position + Vector2(cell * 0.06, cell * 0.36), ps, HORIZONTAL_ALIGNMENT_LEFT, -1, int(cell * 0.34), 5, Color(0, 0, 0, 0.8))
 				draw_string(font, rect.position + Vector2(cell * 0.06, cell * 0.36), ps, HORIZONTAL_ALIGNMENT_LEFT, -1, int(cell * 0.34), Color.WHITE)
+	# Your tiles that can move glow, so it's clear what to click.
+	if _mode == "play" and _sel.x < 0 and _moves > 0:
+		var g: float = 0.35 + 0.3 * sin(_t * 5.0)
+		for mine: Vector2i in _tiles_of(_player):
+			if int(_pop[_idx(mine)]) >= 2:
+				draw_rect(Rect2(r.position + Vector2(mine) * cell, Vector2(cell, cell)).grow(-2), Color(1, 1, 0.7, g), false, 4.0)
 	# The wolf pack.
 	if _wolf.x >= 0 and not winter:
 		var wr := Rect2(r.position + Vector2(_wolf) * cell, Vector2(cell, cell))
@@ -1077,12 +1109,36 @@ func _draw() -> void:
 				who = "   %s %d, eating %d a turn" % [CLANS[_owner[hi]]["name"], _pop[hi], _need(hi, season)]
 			tip = "%s: food %d of %d, grows %d this %s%s%s" % [T_NAME[_terrain[hi]], _food[hi], _food_cap(hi), _grow_at(hi, season, _owner[hi] if _owner[hi] != "" else _player), _season_name().to_lower(), "  (hut)" if _hut[hi] else "", who]
 		draw_string(font, Vector2(r.position.x, r.end.y + 18), tip, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, FelecoUiScript.CREAM)
+	if _mode == "play":
+		_draw_coach(r, font)
+	draw_set_transform_matrix(Transform2D(0.0, _jx.offset()))
+	_jx.draw(self)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
 	if winter:
 		_draw_history(r, font)
 	if _banner_t > 0.0:
 		var a: float = clampf(_banner_t, 0.0, 1.0)
 		draw_string_outline(font, Vector2(r.position.x, r.position.y + r.size.y * 0.5), _banner, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, 84, 14, Color(0, 0, 0, 0.8 * a))
 		draw_string(font, Vector2(r.position.x, r.position.y + r.size.y * 0.5), _banner, HORIZONTAL_ALIGNMENT_CENTER, r.size.x, 84, Color(1, 0.95, 0.75, a))
+
+# One big line over the board saying exactly what to do next.
+func _draw_coach(r: Rect2, font: Font) -> void:
+	var step: String
+	if _seed_flight:
+		step = "Seed Flight: click any empty tile up to 3 away."
+	elif _moves <= 0:
+		step = "Out of moves: press END TURN."
+	elif _sel.x < 0:
+		step = "Click one of your GLOWING tiles."
+	elif int(_pop[_idx(_sel)]) < 2:
+		step = "Only 1 here. Pick a tile with 2 or more."
+	else:
+		step = "Click a YELLOW tile: half your clan moves there. (%d move%s left)" % [_moves, "" if _moves == 1 else "s"]
+	var a: float = 0.85 + 0.15 * sin(_t * 4.0)
+	var box := Rect2(r.position.x, r.position.y - 4, r.size.x, 40)
+	draw_rect(box, Color(0, 0, 0, 0.55))
+	draw_string_outline(font, box.position + Vector2(0, 29), step, HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 24, 6, Color(0, 0, 0, 0.8))
+	draw_string(font, box.position + Vector2(0, 29), step, HORIZONTAL_ALIGNMENT_CENTER, box.size.x, 24, Color(1, 0.92, 0.5, a))
 
 # The year's story: every clan's numbers, turn by turn, over the frozen board.
 func _draw_history(r: Rect2, font: Font) -> void:
