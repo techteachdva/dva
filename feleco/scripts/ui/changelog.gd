@@ -3,9 +3,19 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.4"
+const VERSION: String = "4.5"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.5",
+		"title": "Mycelium Sweep",
+		"notes": [
+			"New Decomposer Mini-Game: Mycelium Sweep, a round minesweeper under the soil. Grow your fungus from the centre to the edge, find corpses, dodge rocks. Six levels, always solvable by logic.",
+			"Valley Dominion: one band marches each turn (for every clan), so turns are clear choices, and each game rolls a valley event.",
+			"Seedling Golf: every attempt has a condition (windy, wet, dry), you pick a rain cloud with its own trade-off, and root snips clear a rock in the grow puzzle.",
+			"Stampede Sprint: pick a safe line or a golden one with your first letter, and earn nitro (Enter) with perfect lines.",
+		],
+	},
 	{
 		"version": "4.4",
 		"title": "The Valley Saga",

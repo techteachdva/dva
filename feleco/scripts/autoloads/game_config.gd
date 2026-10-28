@@ -123,6 +123,11 @@ func link_boons() -> Dictionary:
 		var spd: float = 1.0 + 0.04 * golds
 		var life: float = 1.0 + 0.05 * golds
 		out["herbivore"] = {"speed": spd, "lifespan": life, "text": "Herbivores: +%d%% speed, live %d%% longer" % [int(round((spd - 1.0) * 100.0)), int(round((life - 1.0) * 100.0))]}
+	var swept: int = (records.get("sweep", {}) as Dictionary).size()
+	if swept > 0:
+		var spd: float = 1.0 + 0.05 * swept
+		var life: float = 1.0 + 0.06 * swept
+		out["decomposer"] = {"speed": spd, "lifespan": life, "text": "Decomposers: +%d%% speed, live %d%% longer" % [int(round((spd - 1.0) * 100.0)), int(round((life - 1.0) * 100.0))]}
 	var strong: int = 0
 	for v in (records.get("golf", {}) as Dictionary).values():
 		if String(v) in ["A", "S"]:

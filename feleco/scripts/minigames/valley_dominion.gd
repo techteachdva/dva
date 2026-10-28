@@ -41,6 +41,13 @@ const HUT_CLAN: int = 3
 const SEASON_NAME: Array[String] = ["Spring", "Summer", "Autumn", "Winter"]
 # Wolves come down from the passes late in summer.
 const WOLF_TURN: int = 6
+# One valley event per game: [id, name, what it does].
+const EVENTS: Array = [
+	["glade", "The Golden Glade", "Hold the gold-starred tile at winter: +6 clan."],
+	["bounty", "Bountiful Forests", "Forests grow +1 food all year."],
+	["wolves", "Early Wolves", "The wolf pack comes down on turn 4."],
+]
+const GLADE_BONUS: int = 6
 const WOLF_BITE: int = 2
 const EP_BY_PLACE: Array[int] = [120, 60, 35, 20]
 
@@ -93,6 +100,10 @@ var _banner: String = ""
 var _banner_t: float = 0.0
 var _fx: Array = []
 var _winter_report: Array[String] = []
+# One band moves per turn: the tile it marches from (set by the first move).
+var _band := Vector2i(-1, -1)
+var _event: Array = []
+var _glade := Vector2i(-1, -1)
 var _jx := Juice.new()
 var _t: float = 0.0
 
@@ -183,6 +194,17 @@ func _start(id: String) -> void:
 		if c != id:
 			_clans.append(c)
 	_make_map()
+	_event = EVENTS[randi() % EVENTS.size()]
+	_glade = Vector2i(-1, -1)
+	if _event[0] == "glade":
+		var spots: Array[Vector2i] = []
+		for y: int in range(2, H - 2):
+			for x: int in range(2, W - 2):
+				if _terrain[_idx(Vector2i(x, y))] == T.MEADOW:
+					spots.append(Vector2i(x, y))
+		if not spots.is_empty():
+			_glade = spots[randi() % spots.size()]
+	_note("This year: %s. %s" % [_event[1], _event[2]], _player)
 	_turn = 0
 	_wolf = Vector2i(-1, -1)
 	_drought = false
@@ -277,6 +299,8 @@ func _grow_at(i: int, season: int, clan: String = "") -> int:
 		g -= 1
 	# Boars dig for roots in autumn, when the grass fails (the ground freezes in winter).
 	if clan == "boar" and t == T.MEADOW and season == 2:
+		g += 1
+	if not _event.is_empty() and _event[0] == "bounty" and t == T.FOREST:
 		g += 1
 	if clan == "bear" and t == T.RIVER and season < 3:
 		g += 2
@@ -415,17 +439,21 @@ func _begin_turn() -> void:
 	_seed_flight = false
 	_stampede = false
 	_sel = Vector2i(-1, -1)
+	_band = Vector2i(-1, -1)
 	if _turn % 4 == 0:
 		_season_event()
 		_say(_season_name().to_upper(), 1.4)
 		Juice.sfx(self, "chime")
 		_jx.confetti(_board_rect().get_center() + Vector2(0, -60), 30, 260.0)
-	if _turn == WOLF_TURN:
+	if _turn == _wolf_turn():
 		_wolves_arrive()
 		Juice.sfx(self, "taunt", 0.6)
 		_jx.shake(0.4)
 	_mode = "play"
 	_refresh()
+
+func _wolf_turn() -> int:
+	return 4 if not _event.is_empty() and _event[0] == "wolves" else WOLF_TURN
 
 func _say(text: String, secs: float) -> void:
 	_banner = text
@@ -585,6 +613,11 @@ func _wolves_hunt() -> void:
 # fight is worth it. Then they pick the best, mostly: one move in four they
 # take one of the runners-up, so they can be outplayed.
 func _score_move(c: String, from: Vector2i, to: Vector2i, mult: float) -> float:
+	if to == _glade and _owner[_idx(to)] != c:
+		return _score_move_base(c, from, to, mult) + 4.0
+	return _score_move_base(c, from, to, mult)
+
+func _score_move_base(c: String, from: Vector2i, to: Vector2i, mult: float) -> float:
 	var fi: int = _idx(from)
 	var ti: int = _idx(to)
 	var have: int = int(_pop[fi])
@@ -657,11 +690,12 @@ func _ai_turn(c: String) -> void:
 				_pop[_idx(best_to)] = 2
 				_note("Robins carry seed to a new tile.", c)
 				power_left = false
+	var band := Vector2i(-1, -1)
 	for m: int in MOVES:
 		var options: Array = []
 		var charge: bool = c == "boar" and power_left
 		for p: Vector2i in _tiles_of(c):
-			if int(_pop[_idx(p)]) < 2:
+			if int(_pop[_idx(p)]) < 2 or (band.x >= 0 and p != band):
 				continue
 			for n: Vector2i in _targets(p, c, charge):
 				var s: float = _score_move(c, p, n, 2.0 if (c == "bear" and power_left) else 1.0)
@@ -683,6 +717,7 @@ func _ai_turn(c: String) -> void:
 		if charge and not _neighbors(from).has(to):
 			power_left = false
 		_move(c, from, to, mult)
+		band = to if _owner[_idx(to)] == c else from
 
 # --- Winter ---------------------------------------------------------------
 
@@ -695,6 +730,9 @@ func _winter() -> void:
 		before[c] = _clan_pop(c)
 	for r: int in WINTER_ROUNDS:
 		_feed(3, false)
+	if _glade.x >= 0 and _owner[_idx(_glade)] != "":
+		_pop[_idx(_glade)] = int(_pop[_idx(_glade)]) + GLADE_BONUS
+		_note("The %s hold the Golden Glade: +%d." % [CLANS[_owner[_idx(_glade)]]["name"], GLADE_BONUS], _owner[_idx(_glade)])
 	for c: String in _clans:
 		(_history[c] as Array).append(_clan_pop(c))
 	_wolf = Vector2i(-1, -1)
@@ -845,7 +883,7 @@ func _refresh() -> void:
 		coach = "Spring: meadows grow the most food. Spread out!"
 	elif _turn == 4:
 		coach = "Summer: forests grow 3 food a turn now, meadows only 2%s. Start claiming forest." % (" (1 in this drought)" if _drought else "")
-	elif _turn == WOLF_TURN:
+	elif _turn == _wolf_turn():
 		coach = "Wolves! They bite the smallest group beside them each turn. Gather up, or build where they can't reach."
 	elif _turn == 8:
 		coach = "Autumn: meadows barely grow. Move your clan into forests and fill their food bars before the snow."
@@ -951,6 +989,12 @@ func _gui_input(event: InputEvent) -> void:
 	if _sel.x >= 0:
 		legal = _targets(_sel, _player, _stampede)
 	if _owner[_idx(p)] == _player and (_sel.x < 0 or not legal.has(p) or p == _sel):
+		if _band.x >= 0 and p != _band:
+			Juice.sfx(self, "error", 1.0, -10.0)
+			_say("One band a turn!", 1.0)
+			_note("This turn's band is already marching. End turn to move another.", _player)
+			_refresh()
+			return
 		Juice.sfx(self, "click")
 		_sel = p
 		_refresh()
@@ -986,6 +1030,7 @@ func _gui_input(event: InputEvent) -> void:
 			if charged:
 				_stampede = false
 				_fx.append([_cell_center(p), "Charge!", 1.0, CLANS[_player]["color"]])
+			_band = p if _owner[_idx(p)] == _player else _sel
 			# Follow the clan to its new tile; if the attack failed, stay put.
 			if _owner[_idx(p)] == _player:
 				_sel = p
@@ -1070,10 +1115,18 @@ func _draw() -> void:
 	if _mode == "play" and _sel.x < 0 and _moves > 0:
 		var g: float = 0.5 + 0.5 * sin(_t * 6.0)
 		for mine: Vector2i in _tiles_of(_player):
-			if int(_pop[_idx(mine)]) >= 2:
+			if int(_pop[_idx(mine)]) >= 2 and (_band.x < 0 or mine == _band):
 				var gr := Rect2(r.position + Vector2(mine) * cell, Vector2(cell, cell))
 				draw_rect(gr.grow(-2), Color(1, 1, 0.6, 0.18 * g))
 				draw_rect(gr.grow(-2), Color(1, 0.95, 0.4, 0.55 + 0.45 * g), false, 6.0)
+	if _glade.x >= 0:
+		var gcen: Vector2 = _cell_center(_glade)
+		var spin: float = _t * 1.5
+		var pts := PackedVector2Array()
+		for k: int in 10:
+			var rad: float = cell * (0.3 if k % 2 == 0 else 0.13)
+			pts.append(gcen + Vector2.from_angle(spin + k * TAU / 10.0) * rad)
+		draw_colored_polygon(pts, Color(1, 0.85, 0.25, 0.85))
 	# The wolf pack.
 	if _wolf.x >= 0 and not winter:
 		var wr := Rect2(r.position + Vector2(_wolf) * cell, Vector2(cell, cell))
@@ -1134,8 +1187,10 @@ func _draw_coach(r: Rect2, font: Font) -> void:
 		step = "Seed Flight: click any empty tile up to 3 away."
 	elif _moves <= 0:
 		step = "Out of moves: press END TURN."
+	elif _sel.x < 0 and _band.x >= 0:
+		step = "Your band marches on: click the GLOWING tile."
 	elif _sel.x < 0:
-		step = "Click one of your GLOWING tiles."
+		step = "Pick ONE band for this turn: click a GLOWING tile."
 	elif int(_pop[_idx(_sel)]) < 2:
 		step = "Only 1 here. Pick a tile with 2 or more."
 	else:

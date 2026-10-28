@@ -22,6 +22,21 @@ const MAX_PULL: float = 220.0
 const MAX_SPEED: float = 1000.0
 # Fraction of speed kept per second while rolling.
 const ROLL_DRAG: float = 0.45
+# Hole conditions, rolled each attempt: [name, drag kept per second, wind].
+const CONDITIONS: Array = [
+	["Calm", 0.45, 0.0],
+	["Windy", 0.45, 90.0],
+	["Wet green (slow)", 0.3, 0.0],
+	["Dry green (fast)", 0.6, 0.0],
+]
+# Rain clouds: [name, band low, band high, fill rate, moves in band, dew, thorns].
+const CLOUDS: Array = [
+	["Light rain", 0.5, 0.7, 0.3, 1, 0, 0],
+	["Steady rain", 0.62, 0.82, 0.42, 1, 2, 0],
+	["Storm", 0.76, 0.92, 0.65, 3, 0, 2],
+]
+# Root snips per hole: clear one rock next to the tip (1 move).
+const SNIPS: Array[int] = [1, 1, 2, 2, 2, 2, 2, 2]
 const SINK_SPEED: float = 380.0
 # The grow grid.
 const COLS: int = 9
@@ -133,6 +148,11 @@ var _water: float = 0.0
 var _raining: bool = false
 var _watered: bool = false
 var _water_score: float = 0.0
+var _cloud: int = 1
+var _cond: Array = []
+var _wind := Vector2.ZERO
+var _snips: int = 0
+var _cloud_btns: Array[Button] = []
 # Grow.
 var _grid: Array[String] = []
 var _path: Array[Vector2i] = []
@@ -263,6 +283,21 @@ func _build_ui() -> void:
 	_undo_btn.custom_minimum_size = Vector2(110, 44)
 	_undo_btn.pressed.connect(_undo)
 	_buttons.add_child(_undo_btn)
+	for ci: int in CLOUDS.size():
+		var cb := Button.new()
+		cb.text = CLOUDS[ci][0]
+		cb.toggle_mode = true
+		cb.custom_minimum_size = Vector2(140, 44)
+		cb.tooltip_text = "Band %d-%d%%. In the band: +%d move%s%s%s." % [int(CLOUDS[ci][1] * 100), int(CLOUDS[ci][2] * 100), CLOUDS[ci][4], "" if CLOUDS[ci][4] == 1 else "s", ", %d dew" % CLOUDS[ci][5] if CLOUDS[ci][5] > 0 else "", ", but %d thorns" % CLOUDS[ci][6] if CLOUDS[ci][6] > 0 else ""]
+		var idx := ci
+		cb.pressed.connect(func() -> void:
+			if _raining or _watered:
+				return
+			_cloud = idx
+			Juice.sfx(self, "click")
+			_refresh_ui())
+		_buttons.add_child(cb)
+		_cloud_btns.append(cb)
 	_action_btn = Button.new()
 	_action_btn.theme_type_variation = "PrimaryButton"
 	_action_btn.custom_minimum_size = Vector2(190, 44)
@@ -300,6 +335,10 @@ func _start_level(i: int) -> void:
 	_raining = false
 	_watered = false
 	_water_score = 0.0
+	_cloud = 1
+	_cond = CONDITIONS[0] if i == 0 else CONDITIONS[randi() % CONDITIONS.size()]
+	_wind = Vector2.from_angle(randf() * TAU) * float(_cond[2])
+	_snips = SNIPS[mini(i, SNIPS.size() - 1)]
 	_grid.assign(_lv["grid"])
 	_path.clear()
 	_beams = 0
@@ -320,16 +359,19 @@ func _refresh_ui() -> void:
 	match _phase:
 		Phase.PUTT:
 			_phase_lbl.text = "Hole %d: %s   1. PUTT" % [level_index + 1, _lv["name"]]
-			_hud.text = "Strokes %d   Par %d" % [_strokes, _lv["par"]]
+			_hud.text = "%s   Strokes %d   Par %d" % [_cond[0], _strokes, _lv["par"]]
 		Phase.WATER:
 			_phase_lbl.text = "2. WATER: hold the mouse (or Space), let go in the green"
-			_hud.text = "Water %d%%" % int(_water * 100)
+			_hud.text = "%s   Water %d%%" % [CLOUDS[_cloud][0], int(_water * 100)]
 		Phase.GROW:
 			_phase_lbl.text = "3. GROW to the sun: click a glowing cell (or arrow keys)"
-			_hud.text = "Moves left %d   Sunbeams %d/%d   (thorns cost 2, dew gives 3)" % [_moves_left, _beams, _beams_total]
+			_hud.text = "Moves %d   Snips %d   Sunbeams %d/%d   (thorns -2, dew +3)" % [_moves_left, _snips, _beams, _beams_total]
 		Phase.DONE:
 			_phase_lbl.text = "Grown!"
 			_hud.text = ""
+	for ci: int in _cloud_btns.size():
+		_cloud_btns[ci].visible = _phase == Phase.WATER and not _watered
+		_cloud_btns[ci].set_pressed_no_signal(ci == _cloud)
 	_undo_btn.visible = _phase == Phase.GROW
 	_undo_btn.disabled = _path.size() <= 1
 	_action_btn.visible = _phase in [Phase.GROW, Phase.DONE]
@@ -451,7 +493,7 @@ func _process(delta: float) -> void:
 			_sunk_t = -1.0
 			_begin_water()
 	if _phase == Phase.WATER and _raining and not _watered:
-		_water = minf(_water + WATER_RATE * delta, 1.0)
+		_water = minf(_water + float(CLOUDS[_cloud][3]) * delta, 1.0)
 		if randf() < delta * 30.0:
 			_fx.drops(_lv["cup"] + Vector2(randf_range(-40, 40), -120), Color(0.55, 0.78, 1.0), 1)
 		if fmod(_t, 0.12) < delta:
@@ -473,7 +515,8 @@ func _step(dt: float) -> void:
 		if dl < r and dl > 0.5:
 			var k: float = sin(dl / r * PI)
 			_vel += d / dl * float(h[2]) * k * dt
-	_vel *= pow(ROLL_DRAG, dt)
+	_vel += _wind * dt
+	_vel *= pow(float(_cond[1]) if not _cond.is_empty() else ROLL_DRAG, dt)
 	var next: Vector2 = _seed + _vel * dt
 	# The fairway's curved edge: bounce off whichever segment it touches.
 	var edge: Array = _lv["edge"]
@@ -573,7 +616,7 @@ func _sink() -> void:
 
 func _begin_water() -> void:
 	_phase = Phase.WATER
-	_say("Planted! Hold to rain. Let go when the water is in the GREEN band.", 5.0)
+	_say("Pick a cloud below, then hold to rain. Let go in the GREEN band. Storms give more moves but grow thorns!", 6.0)
 	Juice.sfx(self, "pop")
 	_refresh_ui()
 
@@ -588,16 +631,18 @@ func _set_rain(on: bool) -> void:
 		if _water < 0.05:
 			return
 		_watered = true
-		var mid: float = (WATER_LO + WATER_HI) * 0.5
-		var inside: bool = _water >= WATER_LO and _water <= WATER_HI
-		_water_score = 1.0 if inside else clampf(1.0 - (absf(_water - mid) - (WATER_HI - WATER_LO) * 0.5) * 3.0, 0.0, 1.0)
+		var lo: float = float(CLOUDS[_cloud][1])
+		var hi: float = float(CLOUDS[_cloud][2])
+		var mid: float = (lo + hi) * 0.5
+		var inside: bool = _water >= lo and _water <= hi
+		_water_score = 1.0 if inside else clampf(1.0 - (absf(_water - mid) - (hi - lo) * 0.5) * 3.0, 0.0, 1.0)
 		var cup: Vector2 = _lv["cup"]
 		if inside:
 			_fx.text(cup + Vector2(0, -90), "PERFECT WATERING!", Color(0.5, 1.0, 0.6), 34)
 			_fx.burst(cup, Color(0.5, 0.85, 1.0), 20, 300.0)
 			Juice.sfx(self, "chime")
 		else:
-			_fx.text(cup + Vector2(0, -90), "Too dry..." if _water < WATER_LO else "Soggy!", Color(1, 0.75, 0.4), 30)
+			_fx.text(cup + Vector2(0, -90), "Too dry..." if _water < float(CLOUDS[_cloud][1]) else "Soggy!", Color(1, 0.75, 0.4), 30)
 			Juice.sfx(self, "error")
 		get_tree().create_timer(1.1).timeout.connect(_begin_grow)
 
@@ -619,17 +664,43 @@ func _begin_grow() -> void:
 	var bonus: int = 0
 	if _strokes <= int(_lv["par"]):
 		bonus += 1
+	var cl: Array = CLOUDS[_cloud]
 	if _water_score >= 0.99:
-		bonus += 1
+		bonus += int(cl[4])
+		_sprout("+", int(cl[5]))
+		_sprout("~", int(cl[6]))
+	elif _cloud == 2 and _water > float(cl[2]):
+		_sprout("~", 1)
 	_moves_total = int(_lv["moves"]) + bonus
 	_step_costs.clear()
 	_moves_left = _moves_total
 	var why: String = ""
 	if bonus > 0:
-		why = "  (+%d for %s)" % [bonus, "a great putt and watering" if bonus == 2 else ("a great putt" if _strokes <= int(_lv["par"]) else "great watering")]
-	_say("Grow up to the SUN! %d moves%s. Sunbeams are bonus light." % [_moves_total, why], 6.0)
+		why = "  (+%d from your putt and rain)" % bonus
+	_say("Grow up to the SUN! %d moves%s. %d root snip%s: click a rock next to the tip to clear it." % [_moves_total, why, _snips, "" if _snips == 1 else "s"], 7.0)
 	Juice.sfx(self, "grow")
 	_refresh_ui()
+
+# Rain changes the soil: dew from steady rain, thorns from a storm, on open
+# cells in the middle rows.
+func _sprout(ch: String, n: int) -> void:
+	var spots: Array[Vector2i] = []
+	for y: int in range(2, ROWS - 2):
+		for x: int in COLS:
+			if _grid[y][x] == ".":
+				spots.append(Vector2i(x, y))
+	spots.shuffle()
+	for i: int in mini(n, spots.size()):
+		var c: Vector2i = spots[i]
+		_grid[c.y] = _grid[c.y].substr(0, c.x) + ch + _grid[c.y].substr(c.x + 1)
+
+func _snippable(c: Vector2i) -> bool:
+	if _snips <= 0 or _moves_left <= 0 or _reached_sun or _path.is_empty():
+		return false
+	if c.x < 0 or c.x >= COLS or c.y < 0 or c.y >= ROWS or _grid[c.y][c.x] != "#":
+		return false
+	var d: Vector2i = c - _path[-1]
+	return d == Vector2i(0, -1) or d == Vector2i(-1, 0) or d == Vector2i(1, 0)
 
 func _can_grow(c: Vector2i) -> bool:
 	if _moves_left <= 0 or _reached_sun or _path.is_empty():
@@ -645,6 +716,17 @@ func _cost(c: Vector2i) -> int:
 
 func _grow_to(c: Vector2i) -> void:
 	if _phase != Phase.GROW:
+		return
+	if _snippable(c):
+		_snips -= 1
+		_moves_left -= 1
+		_grid[c.y] = _grid[c.y].substr(0, c.x) + "." + _grid[c.y].substr(c.x + 1)
+		var sa: Vector2 = _cell_center(c)
+		Juice.sfx(self, "bighit", 1.3, -8.0)
+		_fx.burst(sa, Color(0.6, 0.6, 0.62), 16, 260.0)
+		_fx.text(sa + Vector2(0, -36), "SNIP!", Color(0.9, 0.9, 0.95), 24)
+		_fx.shake(0.2)
+		_refresh_ui()
 		return
 	if not _can_grow(c):
 		if _moves_left > 0 and not _reached_sun:
@@ -792,6 +874,13 @@ func _draw_course() -> void:
 		draw_line(c - half, c + half, Color(0.35, 0.22, 0.1), 16.0)
 		draw_line(c - half, c + half, Color(0.85, 0.6, 0.3), 9.0)
 		draw_circle(c, 12.0, Color(0.95, 0.8, 0.4))
+	if _wind != Vector2.ZERO:
+		var wc := Vector2(FIELD.x - 80, 50)
+		var wd: Vector2 = _wind.normalized()
+		draw_circle(wc, 30, Color(0, 0, 0, 0.3))
+		draw_line(wc - wd * 22, wc + wd * 22, Color(1, 1, 1, 0.9), 4.0)
+		draw_line(wc + wd * 22, wc + wd * 10 + wd.orthogonal() * 8, Color(1, 1, 1, 0.9), 4.0)
+		draw_line(wc + wd * 22, wc + wd * 10 - wd.orthogonal() * 8, Color(1, 1, 1, 0.9), 4.0)
 	# The cup and its flag.
 	var cup: Vector2 = _lv["cup"]
 	draw_circle(cup, HOLE_R + 5, Color(0.25, 0.17, 0.08))
@@ -846,12 +935,12 @@ func _draw_water_meter(cup: Vector2) -> void:
 	# The tall meter beside it, with its green band.
 	var m := Rect2(cup + Vector2(110, -200), Vector2(34, 220))
 	draw_rect(m, Color(0, 0, 0, 0.55))
-	var band_lo: float = m.end.y - m.size.y * WATER_LO
-	var band_hi: float = m.end.y - m.size.y * WATER_HI
+	var band_lo: float = m.end.y - m.size.y * float(CLOUDS[_cloud][1])
+	var band_hi: float = m.end.y - m.size.y * float(CLOUDS[_cloud][2])
 	draw_rect(Rect2(m.position.x, band_hi, m.size.x, band_lo - band_hi), Color(0.3, 0.9, 0.35, 0.45))
 	var fill: float = m.size.y * _water
 	var wc := Color(0.4, 0.7, 1.0)
-	if _water > WATER_HI:
+	if _water > float(CLOUDS[_cloud][2]):
 		wc = Color(0.3, 0.45, 0.95)
 	draw_rect(Rect2(m.position.x + 4, m.end.y - fill, m.size.x - 8, fill), wc)
 	draw_rect(m, Color(1, 1, 1, 0.8), false, 2.0)
@@ -885,6 +974,8 @@ func _draw_grow() -> void:
 			draw_rect(r, Color(0.32, 0.22, 0.12, 0.55) if y == ROWS - 1 else Color(1, 1, 1, 0.08))
 			if ch == "#":
 				draw_circle(r.get_center(), CELL * 0.4, Color(0.42, 0.42, 0.46))
+				if _phase == Phase.GROW and _snippable(c):
+					draw_arc(r.get_center(), CELL * 0.44, 0, TAU, 20, Color(1, 0.6, 0.3, 0.6 + 0.4 * sin(_t * 7.0)), 3.0)
 				draw_circle(r.get_center() + Vector2(-8, -8), CELL * 0.18, Color(0.6, 0.6, 0.62))
 			elif ch == "~" and not _path.has(c):
 				var tc: Vector2 = r.get_center()

@@ -28,6 +28,13 @@ const GAMES: Dictionary = {
 		"Wrong keys make you stumble. Accuracy beats speed!",
 		"Top 3 unlocks the next, faster race. Esc pauses.",
 	]],
+	"sweep": ["Mycelium Sweep", "Grow your mycelium from the centre out to the edge.", [
+		"Click a glowing cell next to your mycelium to grow into it.",
+		"A number shows how many ROCKS touch that cell: the cells beside it in its ring, the one inward, and the two outward.",
+		"Small mushroom dots show corpses nearby. Corpses give Nutrient Points (NP).",
+		"Right-click (or Flag mode, F) to mark a rock. Hit 3 rocks and the level fails.",
+		"Reach the outer ring to clear the level. Keep digging for NP, then press Finish.",
+	]],
 	"dominion": ["Valley Dominion", "Have the biggest clan after winter.", [
 		"Click one of your glowing tiles, then a YELLOW tile: half your clan moves there. 3 moves a turn, then End turn.",
 		"Empty tiles become yours. Moving onto a rival starts a fight: the numbers show who's stronger.",

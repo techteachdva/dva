@@ -87,7 +87,7 @@ const TYPES: Array = [
 	["carnivore", "Carnivore", "Predator Brawl", "A fighting game between the valley's hunters. Evolve and RAMPAGE!", "res://scenes/minigames/predator_brawl.tscn", "wolf"],
 	["omnivore", "Omnivore", "Valley Dominion", "A strategy board game: take over the valley before winter.", "res://scenes/minigames/valley_dominion.tscn", "bear"],
 	["producer", "Producer", "Seedling Golf", "Minigolf, watering, then a puzzle to grow your plant up to the sun.", "res://scenes/minigames/seed_golf.tscn", ""],
-	["decomposer", "Decomposer", "Coming next", "The rot, the worms and the fungi get their own game soon.", "", "worm"],
+	["decomposer", "Decomposer", "Mycelium Sweep", "A round minesweeper under the soil: grow your fungus out to the edge, find corpses, dodge rocks.", "res://scenes/minigames/mycelium_sweep.tscn", "worm"],
 ]
 
 func _show_type_picker() -> void:
@@ -147,7 +147,7 @@ func _show_type_picker() -> void:
 		card.add_child(about)
 		# What this link has earned for the valley, or what a win would earn.
 		var boon: Dictionary = boons.get(ty[0], {})
-		var earn: Dictionary = {"herbivore": "Win race golds", "carnivore": "Beat the brawl ladder (harder = bigger)", "omnivore": "Rule the valley with each clan", "producer": "Grade A or S on holes"}
+		var earn: Dictionary = {"decomposer": "Clear Sweep levels", "herbivore": "Win race golds", "carnivore": "Beat the brawl ladder (harder = bigger)", "omnivore": "Rule the valley with each clan", "producer": "Grade A or S on holes"}
 		var tease: String = ("%s to make %s stronger in the Valley." % [earn.get(ty[0], "Win"), String(ty[1]).to_lower() + "s"]) if not String(ty[4]).is_empty() else ""
 		var boon_text: String = ("In the Valley: %s." % boon["text"]) if not boon.is_empty() else tease
 		var bl := FelecoUiScript.label(boon_text, 15, FelecoUiScript.GOLD if not boon.is_empty() else FelecoUiScript.MIST)

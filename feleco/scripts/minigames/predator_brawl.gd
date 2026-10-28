@@ -47,7 +47,7 @@ const FIGHTERS: Dictionary = {
 const DIFFICULTY: Array = [
 	["cub", "Cub", "Rivals are slow to block and gentle. A good first climb.", 0.22, 0.7],
 	["hunter", "Hunter", "Rivals block, punish and evolve.", 0.5, 0.45],
-	["dire", "Dire", "Rivals read you like a book. For champions.", 0.85, 0.28],
+	["dire", "Dire", "Rivals read you like a book. For champions.", 0.78, 0.32],
 ]
 # Three-input combos: the last three inputs (directions relative to facing:
 # D down, F forward, B back; J light, K heavy, L special) within COMBO_WINDOW

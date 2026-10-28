@@ -65,6 +65,16 @@ var _mode: String = "select"
 var _prompt: String = ""
 # The line after this one, shown faintly underneath so you can read ahead.
 var _upcoming: String = ""
+# The fork: until the first key, a longer GOLDEN line is offered too; the
+# first letter you type picks. Golden lines boost more and charge nitro.
+var _golden: String = ""
+var _is_gold: bool = false
+var _clean: bool = true
+# Nitro: perfect lines earn charges; Enter spends one for a burst.
+var _nitro: int = 0
+var _nitro_t: float = 0.0
+const NITRO_MAX: int = 3
+const NITRO_TIME: float = 1.6
 var _typed: int = 0
 var _stumble: float = 0.0
 var _count: float = 0.0
@@ -271,6 +281,8 @@ func _start_race() -> void:
 	_texts.clear()
 	_prompt = ""
 	_upcoming = ""
+	_nitro = 0
+	_nitro_t = 0.0
 	_next_prompt()
 	grab_focus()
 
@@ -295,11 +307,19 @@ func _next_prompt() -> void:
 		_upcoming = _make_prompt()
 	_prompt = _upcoming
 	_upcoming = _make_prompt()
+	_is_gold = false
+	_clean = true
+	_golden = ""
+	for i: int in 12:
+		var g: String = _make_prompt(1)
+		if g.length() > _prompt.length() and g[0] != _prompt[0]:
+			_golden = g
+			break
 
-func _make_prompt() -> String:
+func _make_prompt(extra: int = 0) -> String:
 	var lines := _dialog()
 	var words: PackedStringArray = lines[randi() % lines.size()].split(" ", false)
-	var want: int = [1, 2, 3, 4][_stage()]
+	var want: int = [1, 2, 3, 4][_stage()] + extra
 	if want == 1:
 		# Opening words are short and friendly.
 		var short: Array = Array(words).filter(func(w: String) -> bool: return w.length() >= 3 and w.length() <= 6)
@@ -316,9 +336,26 @@ func _gui_input(event: InputEvent) -> void:
 	accept_event()
 	if _finish_time[0] >= 0.0:
 		return
+	if k.physical_keycode in [KEY_ENTER, KEY_KP_ENTER]:
+		if _nitro > 0 and _nitro_t <= 0.0:
+			_nitro -= 1
+			_nitro_t = NITRO_TIME
+			Juice.sfx(self, "power", 1.3)
+			_jx.flash(Color(0.6, 0.85, 1.0, 0.35))
+			_jx.text(Vector2(VIEW.x * 0.5, 300), "NITRO!", Color(0.5, 0.85, 1.0), 60)
+			_jx.shake(0.3)
+		return
 	var ch: String = char(k.unicode).to_lower() if k.unicode > 0 else ""
 	if ch.is_empty():
 		return
+	# The first key of a line picks: the plain line or the golden one.
+	if _typed == 0 and not _golden.is_empty() and ch == _golden[0] and ch != _prompt[0]:
+		_prompt = _golden
+		_is_gold = true
+		_golden = ""
+		Juice.sfx(self, "coin", 1.0, -8.0)
+	elif _typed == 0:
+		_golden = ""
 	var want: String = _prompt.substr(_typed, 1)
 	var sheet: Dictionary = RUNNERS[_species]
 	if ch == want:
@@ -330,15 +367,23 @@ func _gui_input(event: InputEvent) -> void:
 		var boost: float = [1.9, 2.1, 2.3, 2.5][_stage()] * float(sheet["stride"])
 		_speed[0] = minf(_speed[0] + boost, float(sheet["top"]))
 		if _typed >= _prompt.length():
-			if _prompt.length() > 2:
+			if _is_gold:
+				_speed[0] = minf(_speed[0] + 4.0, float(sheet["top"]) * 1.25)
+				_texts.append(["GOLDEN!", 0.9])
+				_jx.confetti(Vector2(VIEW.x * 0.5, 210), 30, 300.0)
+			elif _prompt.length() > 2:
 				_speed[0] = minf(_speed[0] + 2.0, float(sheet["top"]) * 1.15)
 				_texts.append(["Nice!", 0.8])
+			if _clean and _nitro < NITRO_MAX:
+				_nitro += 1 if not _is_gold else mini(2, NITRO_MAX - _nitro)
+				_texts.append(["+NITRO  (Enter)", 0.9])
 			Juice.sfx(self, "chime", 1.0 + 0.1 * _stage(), -10.0)
 			_jx.burst(Vector2(VIEW.x * 0.5, 210), Color(0.5, 1.0, 0.45), 18, 380.0, 5.0, 300.0)
 			_jx.ring(Vector2(VIEW.x * 0.5, 210), Color(0.6, 1.0, 0.5), 160.0)
 			_next_prompt()
 	else:
 		_keys_wrong += 1
+		_clean = false
 		_miss = 1.0
 		Juice.sfx(self, "error", 1.0, -8.0)
 		_jx.shake(0.25)
@@ -382,6 +427,9 @@ func _process(delta: float) -> void:
 	# speed is set by how many right keys a second you can keep up.
 	var drag: float = 1.0 + _speed[0] * 0.45 + (6.0 if _stumble > 0.0 else 0.0)
 	_speed[0] = maxf(_speed[0] - delta * drag, 0.0)
+	if _nitro_t > 0.0:
+		_nitro_t -= delta
+		_speed[0] = maxf(_speed[0], float(RUNNERS[_species]["top"]) * 1.35)
 	for i: int in range(1, LANES):
 		# Rivals: a steady pace with a little wobble and a late kick.
 		var pace: float = _rival_pace * (0.88 + 0.08 * i) * (1.0 + 0.06 * sin(_t * (0.7 + i * 0.3)))
@@ -529,6 +577,18 @@ func _draw_prompt(font: Font) -> void:
 				lift = _pop * big * 0.12
 			draw_string(font, Vector2(x, base_y - lift), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, big, col)
 		x += widths[i] + gap
+	# The golden fork, until the first key picks.
+	if _typed == 0 and not _golden.is_empty():
+		var gw: String = _golden.to_upper()
+		var gtxt: String = "or GOLDEN:  " + gw + "   (start with " + gw[0] + ")"
+		draw_string_outline(font, Vector2(0, top - 26), gtxt, HORIZONTAL_ALIGNMENT_CENTER, VIEW.x, 26, 6, Color(0.2, 0.12, 0.0, 0.8))
+		draw_string(font, Vector2(0, top - 26), gtxt, HORIZONTAL_ALIGNMENT_CENTER, VIEW.x, 26, Color(1, 0.85, 0.3, 0.75 + 0.25 * sin(_t * 6.0)))
+	# Nitro charges, and the burst.
+	for i: int in NITRO_MAX:
+		var pc := Vector2(VIEW.x - 70 - i * 34, 110)
+		draw_circle(pc, 13, Color(0, 0, 0, 0.4))
+		draw_circle(pc, 10, Color(0.45, 0.8, 1.0) if i < _nitro else Color(1, 1, 1, 0.15))
+	draw_string(font, Vector2(VIEW.x - 330, 117), "NITRO (Enter)", HORIZONTAL_ALIGNMENT_RIGHT, 180, 16, Color(0.6, 0.85, 1.0, 0.8))
 	# The line after this one, faint, so you can read ahead.
 	if not _upcoming.is_empty():
 		draw_string(font, Vector2(0, top + hgt + 104), "Up next:  " + _upcoming.to_upper(), HORIZONTAL_ALIGNMENT_CENTER, VIEW.x, 24, Color(1, 1, 1, 0.38))
