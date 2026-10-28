@@ -19,6 +19,13 @@ func _bet_to_plural(bet: String) -> String:
 
 func show_result(winner: String) -> void:
 	var gc: Node = get_node_or_null("/root/GameConfig")
+	# The game opens up as it's played: a finished year unlocks the next features.
+	if gc != null:
+		gc.set_record("progress", "runs", gc.valley_runs() + 1)
+		gc.unlock("greenhouse")
+		gc.unlock("opening")
+		if gc.current_mode == "challenge" or gc.valley_runs() >= 3:
+			gc.unlock("minigames")
 	var director: SimulationDirector = get_tree().current_scene.get_node_or_null("World") as SimulationDirector
 	if winner.is_empty():
 		%WinnerLabel.text = "THE VALLEY IS EMPTY"

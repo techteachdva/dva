@@ -145,6 +145,7 @@ func _ready() -> void:
 	focus_mode = Control.FOCUS_ALL
 	_build_pause_button()
 	_show_select()
+	_build_pad()
 	# First time here: explain the game before anything else.
 	if not HowToPlay.seen(self, "brawl"):
 		HowToPlay.show(self, "brawl")
@@ -362,22 +363,26 @@ func _pressed(keys: Array) -> bool:
 			return true
 	return false
 
-func _tapped(name: String, keys: Array) -> bool:
-	var now: bool = _pressed(keys)
+# On-screen buttons held down (touch screens): name -> held.
+var _th: Dictionary = {}
+var _pad: Control
+
+func _tapped(name: String, keys: Array, touch: String = "") -> bool:
+	var now: bool = _pressed(keys) or (not touch.is_empty() and bool(_th.get(touch, false)))
 	var was: bool = _keys_prev.get(name, false)
 	_keys_prev[name] = now
 	return now and not was
 
 func _player_input(f: Fighter, delta: float) -> void:
-	var left: bool = _pressed([KEY_A, KEY_LEFT])
-	var right: bool = _pressed([KEY_D, KEY_RIGHT])
-	var down: bool = _pressed([KEY_S, KEY_DOWN])
-	var jump: bool = _tapped("jump", [KEY_W, KEY_UP, KEY_SPACE])
-	var light: bool = _tapped("light", [KEY_J, KEY_Z])
-	var heavy: bool = _tapped("heavy", [KEY_K, KEY_X])
-	var special: bool = _tapped("special", [KEY_L, KEY_C])
+	var left: bool = _pressed([KEY_A, KEY_LEFT]) or bool(_th.get("left", false))
+	var right: bool = _pressed([KEY_D, KEY_RIGHT]) or bool(_th.get("right", false))
+	var down: bool = _pressed([KEY_S, KEY_DOWN]) or bool(_th.get("block", false))
+	var jump: bool = _tapped("jump", [KEY_W, KEY_UP, KEY_SPACE], "jump")
+	var light: bool = _tapped("light", [KEY_J, KEY_Z], "J")
+	var heavy: bool = _tapped("heavy", [KEY_K, KEY_X], "K")
+	var special: bool = _tapped("special", [KEY_L, KEY_C], "L")
 	# EVOLVE is one key: Enter, the moment the meter is gold.
-	if _tapped("evolve", [KEY_ENTER, KEY_KP_ENTER]) and _can_evolve(f):
+	if _tapped("evolve", [KEY_ENTER, KEY_KP_ENTER], "evolve") and _can_evolve(f):
 		_evolve(f)
 		return
 	if f.meter >= 100.0 and f.dire <= 0.0 and not f.get_meta("told", false):
@@ -386,15 +391,53 @@ func _player_input(f: Fighter, delta: float) -> void:
 	elif f.meter < 100.0:
 		f.set_meta("told", false)
 	# Directions for the combos, relative to facing.
-	if _tapped("down", [KEY_S, KEY_DOWN]):
+	if _tapped("down", [KEY_S, KEY_DOWN], "block"):
 		f.inputs.append(["D", 0.0])
 	var fwd_keys: Array = [KEY_D, KEY_RIGHT] if f.facing > 0.0 else [KEY_A, KEY_LEFT]
 	var back_keys: Array = [KEY_A, KEY_LEFT] if f.facing > 0.0 else [KEY_D, KEY_RIGHT]
-	if _tapped("fwd", fwd_keys):
+	if _tapped("fwd", fwd_keys, "right" if f.facing > 0.0 else "left"):
 		f.inputs.append(["F", 0.0])
-	if _tapped("back", back_keys):
+	if _tapped("back", back_keys, "left" if f.facing > 0.0 else "right"):
 		f.inputs.append(["B", 0.0])
 	_control(f, (1.0 if right else 0.0) - (1.0 if left else 0.0), jump, down, light, heavy, special, delta)
+
+static func touch_mode() -> bool:
+	return DisplayServer.is_touchscreen_available() or OS.get_cmdline_user_args().has("--touch")
+
+# Touch screens: a d-pad bottom left, the attack buttons bottom right.
+func _build_pad() -> void:
+	if _pad != null or not touch_mode():
+		return
+	_pad = Control.new()
+	_pad.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_pad)
+	var spots: Array = [
+		["left", "◀", Vector2(24, -170)], ["right", "▶", Vector2(184, -170)],
+		["jump", "▲", Vector2(104, -250)], ["block", "▼", Vector2(104, -90)],
+		["J", "J", Vector2(-330, -110)], ["K", "K", Vector2(-230, -170)],
+		["L", "L", Vector2(-130, -230)], ["evolve", "EVO", Vector2(-130, -110)],
+	]
+	for s: Array in spots:
+		var b := Button.new()
+		b.text = s[1]
+		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_font_size_override("font_size", 28)
+		b.custom_minimum_size = Vector2(84, 74)
+		b.modulate = Color(1, 1, 1, 0.6)
+		var right_side: bool = (s[2] as Vector2).x < 0.0
+		b.anchor_left = 1.0 if right_side else 0.0
+		b.anchor_right = b.anchor_left
+		b.anchor_top = 1.0
+		b.anchor_bottom = 1.0
+		b.offset_left = (s[2] as Vector2).x
+		b.offset_top = (s[2] as Vector2).y
+		b.offset_right = b.offset_left + 84
+		b.offset_bottom = b.offset_top + 74
+		var id: String = s[0]
+		b.button_down.connect(func() -> void: _th[id] = true)
+		b.button_up.connect(func() -> void: _th[id] = false)
+		_pad.add_child(b)
 
 func _can_evolve(f: Fighter) -> bool:
 	return f.meter >= 100.0 and f.dire <= 0.0 and f.state not in ["ko", "down", "evolve"]

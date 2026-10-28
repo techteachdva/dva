@@ -3,9 +3,21 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.5"
+const VERSION: String = "4.6"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.6",
+		"title": "Learn the Valley",
+		"notes": [
+			"The main menu opens up as you play: start with the Rules (a guided tour of the food web), then the Valley Simulation, Greenhouse, Challenge and Mini Games unlock one by one. Already know Feleco? Unlock everything with one button.",
+			"Betting guides you in: first runs show the simple bets and ready-made Plans that place your coins and name the powers that help. More kinds of bet unlock as you play.",
+			"Schemes: every power that helps a bet you hold adds +10% to its payout, and a rampage won by a creature you backed adds +15%. Powers now say which bets they help and glow when they help yours.",
+			"Stronger powers: Stampede heals the herds, Feast heals omnivores, Eclipse feeds the hunters.",
+			"Greenhouse Looks: cool cursors and auras for your creature, some earned in play. Your creature earns titles.",
+			"Touch screens: on-screen controls for Predator Brawl and an on-screen keyboard for Stampede Sprint.",
+		],
+	},
 	{
 		"version": "4.5",
 		"title": "Mycelium Sweep",

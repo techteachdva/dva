@@ -73,6 +73,9 @@ var _clean: bool = true
 # Nitro: perfect lines earn charges; Enter spends one for a burst.
 var _nitro: int = 0
 var _nitro_t: float = 0.0
+# Touch screens: an on-screen keyboard (letters, apostrophe, space, nitro).
+var _keys_pad: Control
+var _synthetic: bool = false
 const NITRO_MAX: int = 3
 const NITRO_TIME: float = 1.6
 var _typed: int = 0
@@ -106,9 +109,53 @@ func _ready() -> void:
 	focus_mode = Control.FOCUS_ALL
 	_build_pause_button()
 	_show_select()
+	_build_keyboard()
 	# First time here: explain the game before anything else.
 	if not HowToPlay.seen(self, "race"):
 		HowToPlay.show(self, "race")
+
+func _build_keyboard() -> void:
+	if not (DisplayServer.is_touchscreen_available() or OS.get_cmdline_user_args().has("--touch")):
+		return
+	_keys_pad = VBoxContainer.new()
+	_keys_pad.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_keys_pad.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_keys_pad.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_keys_pad.offset_bottom = -6
+	_keys_pad.add_theme_constant_override("separation", 4)
+	_keys_pad.visible = false
+	add_child(_keys_pad)
+	for row: String in ["qwertyuiop", "asdfghjkl'", "zxcvbnm"]:
+		var hb := HBoxContainer.new()
+		hb.alignment = BoxContainer.ALIGNMENT_CENTER
+		hb.add_theme_constant_override("separation", 4)
+		_keys_pad.add_child(hb)
+		for ch: String in row:
+			hb.add_child(_key_button(ch.to_upper(), ch, Vector2(62, 58)))
+	var last := HBoxContainer.new()
+	last.alignment = BoxContainer.ALIGNMENT_CENTER
+	last.add_theme_constant_override("separation", 6)
+	_keys_pad.add_child(last)
+	last.add_child(_key_button("SPACE", " ", Vector2(380, 58)))
+	last.add_child(_key_button("NITRO", "\n", Vector2(150, 58)))
+
+func _key_button(label: String, ch: String, sz: Vector2) -> Button:
+	var b := Button.new()
+	b.text = label
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = sz
+	b.add_theme_font_size_override("font_size", 22)
+	b.button_down.connect(func() -> void:
+		var e := InputEventKey.new()
+		e.pressed = true
+		if ch == "\n":
+			e.physical_keycode = KEY_ENTER
+		else:
+			e.unicode = ch.unicode_at(0)
+		_synthetic = true
+		_gui_input(e)
+		_synthetic = false)
+	return b
 
 func _quit_to_campaign() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/campaign_setup.tscn")
@@ -333,7 +380,8 @@ func _gui_input(event: InputEvent) -> void:
 		return
 	if k.physical_keycode == KEY_ESCAPE:
 		return
-	accept_event()
+	if not _synthetic:
+		accept_event()
 	if _finish_time[0] >= 0.0:
 		return
 	if k.physical_keycode in [KEY_ENTER, KEY_KP_ENTER]:
@@ -407,6 +455,8 @@ func _process(delta: float) -> void:
 		_cursor_x = lerpf(_cursor_x, _cursor_goal, 1.0 - exp(-delta * 28.0))
 	_texts = _texts.filter(func(t: Array) -> bool: return t[1] > 0.0)
 	queue_redraw()
+	if _keys_pad != null:
+		_keys_pad.visible = _mode in ["race", "count"] and not _paused
 	if _mode == "count":
 		_count -= delta
 		var whole: int = int(ceil(_count))

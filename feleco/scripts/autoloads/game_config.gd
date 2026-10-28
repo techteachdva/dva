@@ -85,6 +85,25 @@ var records: Dictionary = {}
 func record(game: String, key: String) -> Variant:
 	return (records.get(game, {}) as Dictionary).get(key, null)
 
+# Progress: the game opens up as it's played. Features unlock one by one
+# (see MainMenu.LADDER), and the betting table shows more kinds of bet as
+# runs are played. Players who want it all can unlock everything at once.
+func unlocked(feature: String) -> bool:
+	return all_unlocked() or record("unlock", feature) != null
+
+func unlock(feature: String) -> bool:
+	if unlocked(feature):
+		return false
+	set_record("unlock", feature, true)
+	return true
+
+func all_unlocked() -> bool:
+	return record("unlock", "all") != null
+
+func valley_runs() -> int:
+	var r = record("progress", "runs")
+	return int(r) if r != null else 0
+
 func set_record(game: String, key: String, value: Variant) -> void:
 	if not records.has(game):
 		records[game] = {}

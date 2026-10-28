@@ -21,6 +21,12 @@ const FELT_EDGE := Color(0.33, 0.22, 0.12, 1)
 
 signal closed
 
+# The table opens up as you play (guide first, then reward understanding):
+# tier 0, a first run: only "fullest at year's end", with worked Plans.
+# tier 1: your own ranking and the named starters. tier 2: every long shot.
+const TIER_NEWS: Array[String] = ["", "New bets: rank the whole food web, and bet on named starters!", "New bets: long shots. Back a group to lose a species or double, or bet on droughts, floods and gold."]
+var _tier: int = 2
+
 var live: bool = false
 var tracker: BetTracker = null
 
@@ -64,6 +70,7 @@ func _ready() -> void:
 		_fill_viewport()
 		get_viewport().size_changed.connect(_fill_viewport)
 	_compact = FelecoUiScript.is_compact(self)
+	_tier = 2 if _gc.all_unlocked() else mini(_gc.valley_runs(), 2)
 	_per_view = 1
 	if not live:
 		_ensure_roster()
@@ -77,6 +84,11 @@ func _ready() -> void:
 	else:
 		FelecoUiScript.dress_menu(self)
 	_refresh()
+	var seen = _gc.record("progress", "bet_tier")
+	if _tier > (int(seen) if seen != null else 0):
+		_gc.set_record("progress", "bet_tier", _tier)
+		_flash.call_deferred(TIER_NEWS[_tier])
+		Juice.sfx(self, "fanfare", 1.0, -8.0)
 
 func _fill_viewport() -> void:
 	position = Vector2.ZERO
@@ -228,6 +240,8 @@ func _order_section(col: VBoxContainer, compact_cols: int) -> void:
 	var tops := _grid(col, compact_cols)
 	for g: String in SpeciesDB.GROUPS:
 		_add_box(tops, "top:" + g, BetBox.MINI if not _compact else BetBox.SMALL, "", Vector2(96, 92) if not _compact else Vector2.ZERO)
+	if _tier < 1:
+		return
 	_sublabel(col, "Your order (best first)")
 	_rank_rows = VBoxContainer.new()
 	_rank_rows.add_theme_constant_override("separation", 2)
@@ -240,6 +254,8 @@ func _order_section(col: VBoxContainer, compact_cols: int) -> void:
 	_add_box(orders, "order:exact", BetBox.ZONE, "Exact order")
 
 func _starter_section(col: VBoxContainer) -> void:
+	if _tier < 1:
+		return
 	_sublabel(col, "Starters: still alive on the day shown")
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", 8)
@@ -414,7 +430,10 @@ func _build_board(felt: Control) -> void:
 	var order := _board_panel("The Order", "Which link of the food web ends the year fullest? Each group is scored by how full it is: every species against what the valley can hold of it. Rank all five for the big payouts. Starters: three named creatures with rolled stats; the trait hints at their chances.", 1.2)
 	_order_section(order, 5)
 	_starter_section(order)
-	_longshot_section(_board_panel("Long shots", "A group loses a species, or a group doubles: these pay the moment they happen. Gold to soil: gold from a golden plant passes all the way to a decomposer.", 1.0))
+	if _tier >= 2:
+		_longshot_section(_board_panel("Long shots", "A group loses a species, or a group doubles: these pay the moment they happen. Gold to soil: gold from a golden plant passes all the way to a decomposer.", 1.0))
+	else:
+		_plans_ui(_board_panel("Plans: how to bet", "Pick a plan: it places the coins for you and says which powers make it come true. More kinds of bet open up as you play.", 1.0))
 	_board_holder.resized.connect(_fit_board)
 	_fit_board.call_deferred()
 
@@ -838,6 +857,14 @@ func _build_dock() -> Control:
 	tools.add_theme_constant_override("separation", 6)
 	tools.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(tools)
+	var plans_btn := Button.new()
+	plans_btn.text = "Plans"
+	plans_btn.tooltip_text = "Worked betting strategies: what to back, and which powers make it happen."
+	plans_btn.custom_minimum_size = Vector2(0 if _compact else 90, 56 if _compact else 44)
+	plans_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	plans_btn.add_theme_font_size_override("font_size", 16)
+	plans_btn.pressed.connect(_open_plans)
+	tools.add_child(plans_btn)
 	for spec: Array in [["Undo", _undo], ["Clear", _clear], ["Repeat", _repeat]]:
 		if live and spec[0] == "Repeat":
 			continue
@@ -1081,6 +1108,9 @@ func show_info(box: BetBox) -> void:
 		return
 	if box != null:
 		var line: String = "%s:  %s" % [box._title(), box.details().replace("\n", "  ·  ")]
+		var tip: String = Schemes.tip(box.offer)
+		if not tip.is_empty():
+			line += "  ·  " + tip
 		if box.coins > 0:
 			line += "  ·  %d on it, pays %d" % [box.coins, int(round(box.coins * float(box.offer["mult"])))]
 		_info.text = line
@@ -1090,7 +1120,7 @@ func show_info(box: BetBox) -> void:
 	if _compact:
 		_info.text = "Drag coins onto a box, or tap a box. Swipe for more."
 	else:
-		_info.text = "Drag coins from the pot onto any box. Hover a box to see what it pays."
+		_info.text = "Drag coins onto a box (or pick a plan). Hover a box: what it pays, and how to tip it your way."
 
 func _flash(text: String) -> void:
 	_toast.text = text
@@ -1127,6 +1157,13 @@ func _on_start() -> void:
 				top = id.substr(8)
 		if not top.is_empty():
 			_gc.player_bet = BetBook.label_of(top)
+		else:
+			for id: String in _pending.keys():
+				if id.begins_with("top:") and int(_pending[id]) > top_n:
+					top_n = int(_pending[id])
+					var members: Array = SpeciesDB.members(id.substr(4))
+					if not members.is_empty() and String(members[0]) != "grass":
+						_gc.player_bet = String(members[0])
 	_gc.side_bet_entity = {}
 	for b: Dictionary in _gc.bets:
 		if b["type"] in ["survivor", "doomed", "starter"]:
@@ -1146,6 +1183,82 @@ func _on_back() -> void:
 		"campaign": get_tree().change_scene_to_file("res://scenes/ui/campaign_setup.tscn")
 		"challenge": get_tree().change_scene_to_file("res://scenes/ui/challenge_setup.tscn")
 		_: get_tree().change_scene_to_file("res://scenes/ui/setup_board.tscn")
+
+# --- Plans -------------------------------------------------------------------
+
+func _plans_ui(col: VBoxContainer) -> void:
+	var intro := FelecoUiScript.label("New here? Pick a plan. It places your coins and tells you which powers will push it your way. Every power that helps a bet you hold adds +10% to its payout.", 14, FelecoUiScript.CREAM)
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(intro)
+	var list: Array = Schemes.plans(_offers, coins_free(), _tier >= 2)
+	for plan: Dictionary in list:
+		var card := PanelContainer.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0, 0, 0, 0.22)
+		sb.border_color = Color(FelecoUiScript.GOLD.r, FelecoUiScript.GOLD.g, FelecoUiScript.GOLD.b, 0.5)
+		sb.set_border_width_all(1)
+		sb.set_corner_radius_all(12)
+		sb.set_content_margin_all(10)
+		card.add_theme_stylebox_override("panel", sb)
+		col.add_child(card)
+		var c := VBoxContainer.new()
+		c.add_theme_constant_override("separation", 4)
+		card.add_child(c)
+		c.add_child(FelecoUiScript.heading(plan["title"], 17, FelecoUiScript.GOLD))
+		var why := FelecoUiScript.label(plan["why"], 13, FelecoUiScript.CREAM)
+		why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		c.add_child(why)
+		var pw: Array = plan["powers"]
+		if not pw.is_empty():
+			c.add_child(FelecoUiScript.label("Powers that help: " + ", ".join(pw), 13, Color(0.6, 0.9, 0.55)))
+		var b := Button.new()
+		b.text = "Use this plan"
+		b.theme_type_variation = "PrimaryButton"
+		b.custom_minimum_size = Vector2(0, 40)
+		b.pressed.connect(_use_plan.bind(plan))
+		c.add_child(b)
+
+func _use_plan(plan: Dictionary) -> void:
+	_clear()
+	for pair: Array in plan["bets"]:
+		var id: String = pair[0]
+		if _boxes.has(id):
+			add_coins(_boxes[id], int(pair[1]))
+	Juice.sfx(self, "coin")
+	_flash("Plan placed! Start the run, then use: %s" % ", ".join(plan["powers"]) if not (plan["powers"] as Array).is_empty() else "Plan placed! Start the run.")
+
+func _open_plans() -> void:
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.6)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(shade)
+	var card := PanelContainer.new()
+	card.set_anchors_preset(Control.PRESET_CENTER)
+	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	card.grow_vertical = Control.GROW_DIRECTION_BOTH
+	card.custom_minimum_size = Vector2(560, 0)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.06, 0.09, 0.07, 0.97)
+	sb.border_color = FelecoUiScript.GOLD
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(18)
+	sb.set_content_margin_all(20)
+	card.add_theme_stylebox_override("panel", sb)
+	shade.add_child(card)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	card.add_child(col)
+	col.add_child(FelecoUiScript.heading("Plans: how to bet", 26, FelecoUiScript.GOLD))
+	_plans_ui(col)
+	var close := Button.new()
+	close.text = "Close"
+	close.theme_type_variation = "GhostButton"
+	close.custom_minimum_size = Vector2(0, 40)
+	close.pressed.connect(shade.queue_free)
+	col.add_child(close)
+	for b: Node in col.find_children("*", "Button", true, false):
+		if (b as Button).text == "Use this plan":
+			(b as Button).pressed.connect(shade.queue_free)
 
 func _close() -> void:
 	closed.emit()

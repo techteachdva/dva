@@ -213,8 +213,14 @@ func adopt(agent: MarkovAgent) -> void:
 	if _alive():
 		_c_data.tint = Color.WHITE
 		_c_data.speed_boost = 1.0
+	if _alive() and companion.has_node("Aura"):
+		companion.get_node("Aura").queue_free()
 	companion = agent
 	_c_data = agent._data
+	# The aura from the Greenhouse rides under your creature.
+	var aura := Cosmetics.make_aura(get_node_or_null("/root/GameConfig"))
+	if aura != null:
+		agent.add_child(aura)
 	_adopt_day = director.get_day() if director != null else 0.0
 	xp = 0.0
 	level = 1
@@ -327,6 +333,8 @@ func level_up() -> void:
 	if companion.get("health") != null:
 		companion.health = minf(float(companion.health) + 25.0, 100.0)
 	FXManager.show_dramatic_text(companion.global_position, "%s reached level %d!" % [companion.display_name, level], FelecoUiScript.GOLD)
+	if level >= 5 and Cosmetics.grant(get_node_or_null("/root/GameConfig"), "rainbow"):
+		FXManager.show_dramatic_text(companion.global_position + Vector3.UP * 2.0, "Unlocked: Rainbow aura! (Greenhouse > Looks)", Color(0.9, 0.7, 1.0))
 
 # Won a trial: spend the point and raise that line.
 func train(id: String) -> void:
@@ -357,6 +365,12 @@ func train(id: String) -> void:
 	_refresh_creature()
 
 func _tick_creature(delta: float) -> void:
+	if _alive() and companion.has_node("Aura"):
+		var au := companion.get_node("Aura") as MeshInstance3D
+		au.rotate_y(delta * 0.8)
+		var m := au.material_override as StandardMaterial3D
+		if m != null and m.has_meta("rainbow"):
+			m.albedo_color = Color.from_hsv(fposmod(Time.get_ticks_msec() * 0.0002, 1.0), 0.7, 1.0)
 	if companion == null:
 		return
 	if not _alive():
@@ -384,10 +398,27 @@ func _tick_creature(delta: float) -> void:
 	if tough > 0 and companion.get("health") != null:
 		companion.health = minf(float(companion.health) + 0.6 * float(tough) * delta, 100.0)
 
+# The title your creature has earned: the best one shows on its card.
+func _title() -> String:
+	if not _alive():
+		return ""
+	var days: float = (director.get_day() - _adopt_day) if director != null else 0.0
+	if level >= 8:
+		return "Legend"
+	if companion.golden > 0.05:
+		return "Golden One"
+	if level >= 5:
+		return "Veteran"
+	if days >= 2.0:
+		return "Old Hand"
+	if days >= 1.0:
+		return "Survivor"
+	return ""
+
 func _refresh_creature() -> void:
 	if not _alive():
 		return
-	_c_title.text = "%s  ·  Lv %d" % [companion.display_name, level]
+	_c_title.text = "%s  ·  Lv %d%s" % [companion.display_name, level, ("  ·  " + _title()) if not _title().is_empty() else ""]
 	_c_xp.max_value = _xp_needed()
 	_c_xp.value = xp
 	var hp: float = float(companion.get("health")) if companion.get("health") != null else 0.0
@@ -468,6 +499,8 @@ func try_collect(screen_pos: Vector2) -> bool:
 		gc.award_eco_points(DIAMOND_EP)
 	_diamond.queue_free()
 	_diamond = null
+	if Cosmetics.grant(gc, "diamond"):
+		FXManager.show_dramatic_text(Vector3.ZERO, "Unlocked: Diamond cursor! (Greenhouse > Looks)", Color(0.7, 0.95, 1.0))
 	_complete("diamond")
 	return true
 

@@ -123,10 +123,11 @@ func _judge_all(final: bool) -> void:
 		bet["state"] = "won" if r > 0 else "lost"
 		bet["settled_day"] = director.get_day()
 		if r > 0:
-			bet["payout"] = int(round(float(bet["stake"]) * float(bet["mult"])))
+			bet["payout"] = Schemes.payout(bet)
 			gc.award_eco_points(bet["payout"])
 			if not final:
-				var txt: String = "Bet won: %s pays %d EP!" % [bet["label"], bet["payout"]]
+				var scheme: int = int(round(float(bet.get("scheme", 0.0)) * 100.0))
+				var txt: String = "Bet won: %s pays %d EP!%s" % [bet["label"], bet["payout"], ("  (scheme +%d%%)" % scheme) if scheme > 0 else ""]
 				FXManager.show_dramatic_text(Vector3.ZERO, txt, Color(0.902, 0.765, 0.416))
 				director.chronicle.emit(txt)
 		bet_settled.emit(bet)

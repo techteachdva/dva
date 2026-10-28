@@ -169,6 +169,11 @@ func end_rampage() -> void:
 	if not won:
 		FXManager.show_dramatic_text(global_position + Vector3.UP * 3.0, "Rampage failed: %d of %d" % [rampage_kills, int(gc.RAMPAGE_GOAL) if gc != null else 0], Color(0.95, 0.35, 0.3))
 	if won:
+		if Cosmetics.grant(gc, "claw"):
+			FXManager.show_dramatic_text(global_position + Vector3.UP * 5.0, "Unlocked: Golden Claw cursor!", Color(1.0, 0.8, 0.3))
+		var boosted: Array[String] = Schemes.on_rampage(gc, species_id)
+		if not boosted.is_empty():
+			FXManager.show_dramatic_text(global_position + Vector3.UP * 4.0, "SCHEME! +15%% on %s" % ", ".join(boosted), Color(1.0, 0.85, 0.3))
 		var id: String = gc.unlock_next_upgrade()
 		var what: String = "every upgrade is already yours" if id.is_empty() else "%s unlocked" % id.replace("_", " ").capitalize()
 		FXManager.show_dramatic_text(global_position + Vector3.UP * 3.0, "Rampage won! %s" % what, Color(1.0, 0.85, 0.3))

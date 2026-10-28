@@ -3027,6 +3027,10 @@ func _night_owl_species() -> String:
 
 func trigger_eclipse() -> void:
 	_eclipse_s = Clock.SECONDS_PER_DAY * 0.5
+	# The hunters wake hungry and strong.
+	for data: AgentData in _agent_registry:
+		if SpeciesDB.group_of(data.species) == "carnivore" and data.node != null and is_instance_valid(data.node) and data.node.get("energy") != null:
+			data.node.energy = minf(float(data.node.energy) + 30.0, 100.0)
 	FXManager.show_dramatic_text(Vector3.ZERO, "Eclipse! Night falls at noon.", Color(0.6, 0.65, 0.95))
 	chronicle.emit("The sun goes out like a candle. Every wolf in the valley sits up.")
 
@@ -3512,7 +3516,10 @@ func trigger_stampede() -> void:
 		a._flee_boost_mult = 1.8
 		if a._states.has("Flee"):
 			a.set_state("Flee")
-	FXManager.show_dramatic_text(Vector3.ZERO, "Stampede! The herds bolt.", Color(0.95, 0.8, 0.5))
+		# The rush of the run steadies them: herds heal as they bolt.
+		if a.get("health") != null and a.get("max_health") != null:
+			a.health = minf(float(a.health) + 25.0, float(a.max_health))
+	FXManager.show_dramatic_text(Vector3.ZERO, "Stampede! The herds bolt and rally.", Color(0.95, 0.8, 0.5))
 	chronicle.emit("Something spooks the herds. Hooves thunder across the meadow.")
 
 # Feast: every omnivore eats its fill.
@@ -3520,7 +3527,9 @@ func trigger_feast() -> void:
 	for data: AgentData in _agent_registry:
 		if SpeciesDB.group_of(data.species) == "omnivore" and data.node != null and is_instance_valid(data.node) and data.node.get("energy") != null:
 			data.node.energy = minf(float(data.node.energy) + 40.0, 100.0)
-	FXManager.show_dramatic_text(Vector3.ZERO, "Feast! The omnivores eat their fill.", Color(0.9, 0.6, 0.3))
+			if data.node.get("health") != null and data.node.get("max_health") != null:
+				data.node.health = minf(float(data.node.health) + 25.0, float(data.node.max_health))
+	FXManager.show_dramatic_text(Vector3.ZERO, "Feast! The omnivores eat their fill and heal.", Color(0.9, 0.6, 0.3))
 
 # Rot Rain: the soil teems; mushrooms push up, worms and beetles surface.
 func trigger_rot_rain() -> void:

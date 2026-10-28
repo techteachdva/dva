@@ -67,12 +67,17 @@ var _points_label: Label
 var _feedback: Label
 var _upgrade_box: VBoxContainer
 var _powerup_box: VBoxContainer
+var _looks_box: VBoxContainer
 
 func _ready() -> void:
+	var gcu: Node = get_node_or_null("/root/GameConfig")
+	if gcu != null:
+		gcu.unlock("challenge")
 	_frame = FelecoUiScript.build_screen(self, "The Greenhouse", _on_back)
 	var body: HBoxContainer = _frame["body"]
 	_upgrade_box = FelecoUiScript.card(body, "Upgrades (win a Rampage to earn)", 1.0)
 	_powerup_box = FelecoUiScript.card(body, "Powerups (one use each)", 1.0)
+	_looks_box = FelecoUiScript.card(body, "Looks: cursors and auras", 0.9)
 	var footer: HBoxContainer = _frame["footer"]
 	_points_label = FelecoUiScript.label("", 22, FelecoUiScript.GOLD)
 	footer.add_child(_points_label)
@@ -86,6 +91,7 @@ func _refresh_display() -> void:
 	_points_label.text = "Eco Points: %d" % gc.eco_points
 	_fill(_upgrade_box, UPGRADES, true)
 	_fill(_powerup_box, POWERUPS, false)
+	_fill_looks()
 	FelecoUiScript.dress_menu(self)
 
 # One compact row per item: name and effect on the left, its own buy button
@@ -128,6 +134,67 @@ func _fill(box: VBoxContainer, items: Array[Dictionary], permanent: bool) -> voi
 			row.add_child(FelecoUiScript.label("x%d" % held, 16, FelecoUiScript.GOLD))
 		row.add_child(buy)
 		box.add_child(row)
+
+# Cursors and auras: buy with EP, or earn the best ones in play. Equip any you own.
+func _fill_looks() -> void:
+	var gc: Node = get_node("/root/GameConfig")
+	for i: int in range(_looks_box.get_child_count() - 1, 0, -1):
+		_looks_box.get_child(i).queue_free()
+	for section: Array in [["Cursor", "cursor", Cosmetics.CURSORS], ["Creature aura", "aura", Cosmetics.AURAS]]:
+		_looks_box.add_child(FelecoUiScript.heading(section[0], 16, FelecoUiScript.GOLD))
+		for item: Array in section[2]:
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 8)
+			if section[1] == "cursor":
+				var pic := TextureRect.new()
+				pic.texture = Cosmetics.cursor_texture(item[0])
+				pic.custom_minimum_size = Vector2(32, 32)
+				row.add_child(pic)
+			else:
+				var sw := ColorRect.new()
+				sw.color = item[4] if item[0] != "rainbow" else Color(0.85, 0.6, 1.0)
+				sw.custom_minimum_size = Vector2(28, 28)
+				sw.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+				row.add_child(sw)
+			var text := VBoxContainer.new()
+			text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			text.add_child(FelecoUiScript.label(item[1], 15, FelecoUiScript.CREAM))
+			var d := FelecoUiScript.label(item[3], 12, FelecoUiScript.MIST)
+			d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			text.add_child(d)
+			row.add_child(text)
+			var b := Button.new()
+			b.custom_minimum_size = Vector2(96, 40)
+			b.add_theme_font_size_override("font_size", 14)
+			var id: String = item[0]
+			var slot: String = section[1]
+			if Cosmetics.equipped(gc, slot) == id:
+				b.text = "Wearing"
+				b.disabled = true
+			elif Cosmetics.owns(gc, id):
+				b.text = "Wear"
+				b.theme_type_variation = "PrimaryButton"
+				b.pressed.connect(func() -> void:
+					Cosmetics.equip(gc, slot, id)
+					_feedback.text = "Now wearing %s." % item[1]
+					_fill_looks())
+			elif int(item[2]) < 0:
+				b.text = "Earn it"
+				b.disabled = true
+				b.tooltip_text = item[3]
+			else:
+				b.text = "%d EP" % int(item[2])
+				b.pressed.connect(func() -> void:
+					if not gc.spend_eco_points(int(item[2])):
+						_feedback.text = "Not enough Eco Points. Need %d." % int(item[2])
+						return
+					Cosmetics.grant(gc, id)
+					Cosmetics.equip(gc, slot, id)
+					gc.save_meta()
+					_feedback.text = "Bought and wearing %s!" % item[1]
+					_refresh_display())
+			row.add_child(b)
+			_looks_box.add_child(row)
 
 func _next_locked(gc: Node) -> int:
 	for i: int in gc.UPGRADE_ORDER.size():

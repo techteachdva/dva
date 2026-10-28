@@ -410,6 +410,18 @@ func _update_powerup_buttons() -> void:
 		btn.text = label if free else "%s  %d" % [label, count]
 		btn.disabled = (not free) and count <= 0
 		var tip: String = POWER_TIPS.get(btn_name, "")
+		# Say what it does and which bets it pushes; glow if it helps yours.
+		if Schemes.POWERS.has(pid):
+			tip = "%s\n%s" % [tip, Schemes.POWERS[pid][0]] if not tip.is_empty() else String(Schemes.POWERS[pid][0])
+			var mine: Array[String] = []
+			var champ: String = SpeciesDB.group_of(String(gc.player_bet).to_lower())
+			for bet: Dictionary in gc.bets:
+				if bet.get("state", "") == "open" and Schemes.helps(pid, bet, champ):
+					mine.append(String(bet.get("label", "")))
+			btn.modulate = Color(1.25, 1.1, 0.6) if not mine.is_empty() else Color.WHITE
+			if not mine.is_empty():
+				btn.text = "★ " + btn.text
+				tip += "\nHELPS YOUR BET: %s (+10%% payout each cast)" % ", ".join(mine)
 		if free:
 			btn.tooltip_text = "%s\nFree: this season's one touch. Stock left: %d." % [tip, count]
 		else:
@@ -499,16 +511,29 @@ func _show_welcome() -> void:
 var power_uses: int = 0
 
 func _spend_touch_or_stock(powerup_id: String) -> bool:
+	var used: bool = false
 	if _director != null and _director.touches_left > 0:
 		_director.touches_left -= 1
-		_update_powerup_buttons()
 		_refresh_champion()
-		power_uses += 1
-		return true
-	var used: bool = _consume_powerup(powerup_id)
+		used = true
+	else:
+		used = _consume_powerup(powerup_id)
 	if used:
 		power_uses += 1
+		_scheme(powerup_id)
+		_update_powerup_buttons()
 	return used
+
+# A power cast in favour of an open bet makes that bet pay more.
+func _scheme(powerup_id: String) -> void:
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	var champ: String = SpeciesDB.group_of(String(gc.player_bet).to_lower()) if gc != null else ""
+	var boosted: Array[String] = Schemes.on_power(gc, powerup_id, champ)
+	if not boosted.is_empty():
+		FXManager.show_dramatic_text(Vector3.ZERO, "SCHEME! +10%% on %s" % ", ".join(boosted), Color(1.0, 0.85, 0.3))
+		Juice.sfx(self, "coin")
+		if _director != null:
+			_director.chronicle.emit("Your scheme pays off: %s now pay more." % ", ".join(boosted))
 
 func _consume_powerup(powerup_id: String) -> bool:
 	var gc: Node = get_node_or_null("/root/GameConfig")

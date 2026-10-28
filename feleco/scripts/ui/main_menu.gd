@@ -12,11 +12,27 @@ const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 
 var _rays: ColorRect
 var _ray_target: Control = null
+var _btn_about: Button
+var _btn_intro: Button
+var _next_hint: Label
+
+# The menu is a game too: it opens one feature at a time as the player plays.
+# [feature, button, label, how it unlocks]. Rules is always open.
+const LADDER: Array = [
+	["rules", "Rules", "Rules", ""],
+	["valley", "Sandbox", "Valley Simulation", "Read the Rules (the guided tour) to open the Valley Simulation."],
+	["greenhouse", "Shop", "Greenhouse", "Finish a year in the Valley Simulation to open the Greenhouse."],
+	["challenge", "Challenge", "Challenge", "Visit the Greenhouse to open Challenge."],
+	["minigames", "Campaign", "Mini Games", "Play a Challenge year (or three valley years) to open the Mini Games."],
+	["opening", "Intro", "Watch The Opening Again", "Finish a year in the valley to rewatch the opening."],
+	["changelog", "About", "Changelog & Credits", "Read the Rules to open the Changelog & Credits."],
+]
 
 func _process(delta: float) -> void:
 	if _rays == null:
 		return
-	var target: Control = _ray_target if _ray_target != null and is_instance_valid(_ray_target) and _ray_target.is_visible_in_tree() else _btn_sandbox
+	var fallback: Control = _btn_sandbox if _btn_sandbox.visible else _btn_rules
+	var target: Control = _ray_target if _ray_target != null and is_instance_valid(_ray_target) and _ray_target.is_visible_in_tree() else fallback
 	var r: Rect2 = target.get_global_rect()
 	var grow := Vector2(150.0, 70.0)
 	var goal := Rect2(r.position - grow, r.size + grow * 2.0)
@@ -25,7 +41,7 @@ func _process(delta: float) -> void:
 	_rays.size = _rays.size.lerp(goal.size, k) if _rays.size.x > 1.0 else goal.size
 	var mat := _rays.material as ShaderMaterial
 	mat.set_shader_parameter("inner", (r.size * 0.5) / _rays.size)
-	mat.set_shader_parameter("strength", 1.0 if target == _btn_sandbox else 0.8)
+	mat.set_shader_parameter("strength", 1.0 if target == fallback else 0.8)
 
 func _hook_rays(node: Node) -> void:
 	for child: Node in node.get_children():
@@ -87,6 +103,7 @@ func _ready() -> void:
 	var gc: Node = get_node("/root/GameConfig")
 	gc.load_meta()
 	gc.reset_run_state()
+	Cosmetics.apply_cursor(gc)
 
 	_btn_campaign.pressed.connect(_on_campaign)
 	_btn_challenge.pressed.connect(_on_challenge)
@@ -102,6 +119,7 @@ func _ready() -> void:
 	var about := FelecoChangelog.build_popup(FelecoUiScript.theme())
 	add_child(about)
 	var btn_about := Button.new()
+	_btn_about = btn_about
 	btn_about.text = "Changelog & Credits"
 	btn_about.custom_minimum_size = Vector2(340, 44)
 	FelecoUiScript.mark(btn_about, "GhostButton")
@@ -109,6 +127,7 @@ func _ready() -> void:
 	$CenterContainer/VBoxContainer.add_child(btn_about)
 	$CenterContainer/VBoxContainer.move_child(btn_about, _btn_rules.get_index() + 1)
 	var btn_intro := Button.new()
+	_btn_intro = btn_intro
 	btn_intro.text = "Watch the opening"
 	btn_intro.custom_minimum_size = Vector2(340, 44)
 	FelecoUiScript.mark(btn_intro, "GhostButton")
@@ -152,6 +171,78 @@ func _ready() -> void:
 	_btn_shop.icon = load("res://assets/icons/shop.svg")
 	_btn_rules.icon = load("res://assets/icons/rules.svg")
 	_btn_quit.icon = load("res://assets/icons/quit.svg")
+	_build_ladder(gc)
+
+func _ladder_button(key: String) -> Button:
+	match key:
+		"Intro": return _btn_intro
+		"About": return _btn_about
+	return $CenterContainer/VBoxContainer.get_node(key) as Button
+
+# Reorders and relabels the menu, shows only what's unlocked, and celebrates
+# anything newly unlocked.
+func _build_ladder(gc: Node) -> void:
+	# Players from before the ladder keep everything they already had.
+	if gc.record("unlock", "migrated") == null:
+		var had: bool = int(gc.eco_points) > 0
+		for k: String in ["golf", "race", "brawl", "dominion", "sweep", "saga", "goals", "progress"]:
+			if gc.records.has(k):
+				had = true
+		gc.set_record("unlock", "migrated", true)
+		if had:
+			gc.set_record("unlock", "all", true)
+	var column: VBoxContainer = $CenterContainer/VBoxContainer
+	var first: int = _btn_rules.get_index()
+	for c: Node in column.get_children():
+		if c is Button and c != _btn_quit:
+			first = mini(first, c.get_index())
+	var at: int = first
+	var hint: String = ""
+	for row: Array in LADDER:
+		var b: Button = _ladder_button(row[1])
+		b.text = row[2]
+		column.move_child(b, at)
+		at += 1
+		var open: bool = row[0] == "rules" or gc.unlocked(row[0])
+		b.visible = open
+		if not open and hint.is_empty():
+			hint = row[3]
+		if open and row[0] != "rules" and gc.record("unlock_seen", row[0]) == null:
+			gc.set_record("unlock_seen", row[0], true)
+			_celebrate.call_deferred(b)
+	# Rules is the big button until the valley opens.
+	FelecoUiScript.mark(_btn_rules, "PrimaryButton" if not _btn_sandbox.visible else "")
+	_next_hint = FelecoUiScript.label(hint, 15, FelecoUiScript.GOLD)
+	_next_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_next_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_next_hint.custom_minimum_size = Vector2(340, 0)
+	_next_hint.visible = not hint.is_empty()
+	column.add_child(_next_hint)
+	column.move_child(_next_hint, at)
+	if not gc.all_unlocked() and not hint.is_empty():
+		var skip := Button.new()
+		skip.text = "Already know Feleco? Unlock everything"
+		skip.theme_type_variation = "GhostButton"
+		skip.add_theme_font_size_override("font_size", 13)
+		skip.custom_minimum_size = Vector2(340, 34)
+		skip.pressed.connect(func() -> void:
+			gc.set_record("unlock", "all", true)
+			get_tree().reload_current_scene())
+		column.add_child(skip)
+
+# A newly unlocked button: it pops in with a NEW tag and a chime.
+func _celebrate(b: Button) -> void:
+	var label: String = b.text
+	b.text = "NEW!  " + label
+	b.pivot_offset = b.size * 0.5
+	b.scale = Vector2(0.6, 0.6)
+	var tw := create_tween()
+	tw.tween_interval(0.6)
+	tw.tween_property(b, "scale", Vector2(1.12, 1.12), 0.25).set_trans(Tween.TRANS_BACK)
+	tw.tween_property(b, "scale", Vector2.ONE, 0.2)
+	tw.tween_callback(func() -> void: Juice.sfx(self, "fanfare", 1.0, -8.0))
+	tw.tween_interval(3.0)
+	tw.tween_callback(func() -> void: b.text = label)
 
 func _on_campaign() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/campaign_setup.tscn")
@@ -186,6 +277,20 @@ func _on_rules() -> void:
 	# Both sit in the guide's footer, below the web, at the guide's scale.
 	guide.add_footer(lab)
 	guide.add_footer(close)
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	if gc != null and not gc.unlocked("valley"):
+		lab.visible = false
+		close.visible = false
+		var tour := RulesTour.new()
+		tour.guide = guide
+		guide.add_child(tour)
+		tour.finished.connect(func() -> void:
+			gc.unlock("valley")
+			gc.unlock("changelog")
+			close.visible = true
+			lab.visible = true
+			guide.queue_free()
+			get_tree().reload_current_scene())
 
 func _on_quit() -> void:
 	get_tree().quit()
