@@ -65,9 +65,9 @@
     </a>
   </li>
   <li>
-    <a class="garden-hub__link" href="/diagnostic-writing/">
+    <a class="garden-hub__link" href="/assessments/">
       <img class="garden-hub__icon" src="/img/garden-icons/summer-writing.png" width="48" height="48" alt="" loading="lazy" decoding="async" />
-      <span class="garden-hub__label"><span class="garden-hub__emoji">✏️📄📅</span> Summer Writing Assignment Test</span>
+      <span class="garden-hub__label"><span class="garden-hub__emoji">✏️📄📅</span> Assessments</span>
     </a>
   </li>
 </ul>

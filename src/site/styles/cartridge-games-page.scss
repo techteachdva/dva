@@ -184,7 +184,7 @@ main.content.arcade-page > header .header-tags { display: none; }
   z-index: 1;
   border-radius: 10px 10px 0 0;
   overflow: hidden;
-  transition: height 0.35s ease;
+  transition: height 0.45s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
 .console.is-loaded .console__inserted { height: 62px; }
@@ -601,31 +601,64 @@ main.content.arcade-page > header .header-tags { display: none; }
   filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.7));
 }
 
-/* Tech Escape */
+/* Tech Escape: electric-blue shell, a locked terminal. */
+.cart--tech .cart__shell { --shell: #2f7bff; --shell-dark: #123a9c; --shell-edge: rgba(190, 220, 255, 0.6); }
 .cart--tech .cart__label {
   background:
-    repeating-linear-gradient(0deg, transparent 0 1px, rgba(0, 255, 220, 0.05) 1px 2px, transparent 2px 3px),
-    radial-gradient(ellipse at 50% 20%, rgba(0, 255, 220, 0.12), transparent 55%),
-    linear-gradient(180deg, #050a10 0%, #0a1520 100%);
+    repeating-linear-gradient(0deg, transparent 0 2px, rgba(80, 160, 255, 0.07) 2px 3px),
+    radial-gradient(ellipse at 50% 20%, rgba(80, 160, 255, 0.22), transparent 60%),
+    linear-gradient(180deg, #030814 0%, #07142e 100%);
 }
 .cart--tech .cart__title {
-  color: #b8fff5;
-  background: rgba(0, 40, 50, 0.8);
-  border: 1px solid rgba(0, 255, 220, 0.45);
+  color: #d8e8ff;
+  background: rgba(10, 30, 80, 0.85);
+  border: 1px solid rgba(110, 180, 255, 0.6);
   font-family: ui-monospace, "Cascadia Code", monospace;
-  box-shadow: 0 0 20px rgba(0, 220, 255, 0.25);
+  box-shadow: 0 0 18px rgba(60, 140, 255, 0.35);
 }
 .cart--tech .cart__art::before {
-  content: "function escape() {\a  while (alive) {\a    hack(mainframe);\a  }\a}";
+  content: "> escape --now\a> ACCESS DENIED\a> retry_";
   position: absolute;
   left: 9%;
-  top: 16%;
+  top: 14%;
   font-family: ui-monospace, "Cascadia Code", monospace;
-  font-size: 0.42rem;
-  line-height: 1.35;
-  color: rgba(0, 255, 220, 0.5);
+  font-size: 0.48rem;
+  line-height: 1.5;
+  color: rgba(120, 190, 255, 0.85);
   white-space: pre;
+  text-shadow: 0 0 6px rgba(80, 160, 255, 0.6);
 }
+// A padlock: shackle and body.
+.cart--tech .cart__art::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 30px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  border-radius: 5px;
+  background: linear-gradient(180deg, #ffd34d, #d99a00);
+  box-shadow: 0 -16px 0 -8px transparent, 0 0 12px rgba(255, 200, 60, 0.4);
+  border-top: 0;
+  -webkit-mask: radial-gradient(circle 4px at 50% 45%, transparent 98%, #000 100%);
+          mask: radial-gradient(circle 4px at 50% 45%, transparent 98%, #000 100%);
+  animation: tech-lock 2.4s ease-in-out infinite;
+}
+.cart--tech .cart__label::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(46% - 20px);
+  width: 20px;
+  height: 18px;
+  transform: translateX(-50%);
+  border: 4px solid #e0b030;
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  z-index: 1;
+}
+@keyframes tech-lock { 50% { filter: brightness(1.25); } }
 
 /* Somnia */
 .cart--somnia .cart__label {
@@ -643,43 +676,67 @@ main.content.arcade-page > header .header-tags { display: none; }
   text-transform: uppercase;
 }
 
-/* Dragon Trail */
+/* Dragon Trail: forest-green shell, a parchment trail map with a dragon. */
+.cart--dragon .cart__shell { --shell: #3f8f3a; --shell-dark: #1b4a19; --shell-edge: rgba(200, 255, 190, 0.5); }
 .cart--dragon .cart__label {
   background:
-    repeating-linear-gradient(0deg, rgba(0, 255, 100, 0.04) 0 2px, transparent 2px 4px),
-    radial-gradient(ellipse at 50% 30%, rgba(0, 255, 120, 0.12), transparent 55%),
-    #020804;
+    radial-gradient(ellipse at 30% 25%, rgba(255, 255, 255, 0.35), transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(120, 70, 20, 0.35), transparent 60%),
+    linear-gradient(160deg, #f1dfb0 0%, #dcc28a 60%, #c4a46a 100%);
 }
+.cart--dragon .cart__brand { color: rgba(80, 50, 20, 0.7); }
 .cart--dragon .cart__title {
-  color: #c8ffc0;
-  background: rgba(10, 40, 15, 0.8);
-  border: 1px solid rgba(100, 255, 120, 0.45);
-  font-family: ui-monospace, "Cascadia Code", monospace;
+  color: #fdf3d8;
+  background: #2f6b2c;
+  border: 2px solid #f1dfb0;
+  font-family: Georgia, "Times New Roman", serif;
+  box-shadow: 0 2px 0 #1b4a19;
 }
+// The dragon, a silhouette over the map.
 .cart--dragon .cart__art::before {
-  content: "      /\\  /\\\a     /  \\/  \\\a    / /\\/\\ \\ \\\a   / /    \\ \\ \\\a  /_/      \\_\\_\\";
+  content: "";
   position: absolute;
   left: 50%;
-  top: 38%;
+  top: 34%;
+  width: 92px;
+  height: 58px;
   transform: translate(-50%, -50%);
-  font-family: ui-monospace, "Cascadia Code", monospace;
-  font-size: 0.5rem;
-  line-height: 0.6rem;
-  color: rgba(140, 255, 120, 0.6);
-  white-space: pre;
-  text-shadow: 0 0 6px rgba(100, 220, 80, 0.45);
+  background: #2f6b2c;
+  clip-path: polygon(8% 70%, 22% 52%, 30% 58%, 40% 30%, 46% 46%, 58% 8%, 64% 40%, 74% 34%, 70% 52%, 88% 50%, 96% 40%, 92% 60%, 78% 68%, 64% 70%, 52% 92%, 44% 72%, 30% 78%, 20% 74%);
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.25));
+  animation: dragon-glide 3.4s ease-in-out infinite;
 }
+// The dotted trail winding across the map.
+.cart--dragon .cart__art::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 64%;
+  height: 16px;
+  border-bottom: 3px dashed rgba(120, 60, 20, 0.75);
+  border-radius: 0 0 60% 40%;
+}
+@keyframes dragon-glide { 50% { transform: translate(-50%, -58%) rotate(-3deg); } }
 
-/* Crystal Wizards */
+/* Crystal Wizards: ice-teal shell, a glowing crystal under twinkling stars. */
+.cart--crystal .cart__shell { --shell: #2ec4c0; --shell-dark: #0d6e75; --shell-edge: rgba(210, 255, 252, 0.7); }
 .cart--crystal .cart__label {
   background:
-    radial-gradient(ellipse at 50% 40%, rgba(60, 30, 120, 0.6) 0%, transparent 65%),
-    linear-gradient(180deg, #0c0618 0%, #140a28 40%, #080412 100%);
+    radial-gradient(1.5px 1.5px at 18% 22%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 78% 18%, #fff, transparent),
+    radial-gradient(1px 1px at 64% 40%, #fff, transparent),
+    radial-gradient(1px 1px at 30% 52%, #fff, transparent),
+    radial-gradient(ellipse at 50% 45%, rgba(60, 240, 230, 0.35) 0%, transparent 60%),
+    linear-gradient(180deg, #021a24 0%, #04313a 55%, #021218 100%);
 }
 .cart--crystal .cart__title {
-  color: #fff9fc;
-  background: rgba(40, 20, 60, 0.8);
-  border: 1px solid rgba(200, 160, 255, 0.55);
+  color: #eafffd;
+  background: rgba(4, 60, 70, 0.85);
+  border: 1px solid rgba(120, 255, 245, 0.65);
+  font-family: Georgia, serif;
+  letter-spacing: 0.06em;
+  box-shadow: 0 0 16px rgba(60, 240, 230, 0.35);
 }
 .cart--crystal .cart__art::before {
   content: "";
@@ -687,62 +744,86 @@ main.content.arcade-page > header .header-tags { display: none; }
   left: 50%;
   top: 38%;
   transform: translate(-50%, -50%);
-  width: 52px;
-  height: 64px;
-  background:
-    conic-gradient(from 200deg at 50% 55%, rgba(255, 80, 120, 0.55), rgba(255, 220, 100, 0.45), rgba(80, 255, 160, 0.5), rgba(100, 180, 255, 0.55), rgba(255, 80, 160, 0.45), rgba(255, 80, 120, 0.55)),
-    #1e0f37;
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  animation: crystal-pulse 3s ease-in-out infinite;
+  width: 46px;
+  height: 70px;
+  background: linear-gradient(115deg, #e8fffd 0%, #7af5ee 30%, #19b6b8 55%, #0a6f7a 75%, #b6fff9 100%);
+  clip-path: polygon(50% 0%, 88% 28%, 74% 100%, 26% 100%, 12% 28%);
+  filter: drop-shadow(0 0 10px rgba(90, 255, 245, 0.7));
+  animation: crystal-pulse 2.8s ease-in-out infinite;
 }
-@keyframes crystal-pulse { 50% { filter: brightness(1.3); } }
+.cart--crystal .cart__art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(2px 2px at 24% 34%, #fff, transparent),
+    radial-gradient(2px 2px at 72% 30%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 82% 58%, #fff, transparent);
+  animation: crystal-twinkle 2s ease-in-out infinite;
+}
+@keyframes crystal-pulse { 50% { filter: drop-shadow(0 0 18px rgba(120, 255, 250, 0.95)) brightness(1.2); } }
+@keyframes crystal-twinkle { 50% { opacity: 0.2; } }
 
-/* Dungeon Class */
+/* Dungeon Class: bronze shell, a stone arch door between flickering torches. */
+.cart--dungeon .cart__shell { --shell: #b07a3c; --shell-dark: #5c3a16; --shell-edge: rgba(255, 220, 170, 0.55); }
 .cart--dungeon .cart__label {
-  background: linear-gradient(180deg, #2e2824 0%, #1e1812 50%, #12100c 100%);
+  background:
+    radial-gradient(circle at 18% 34%, rgba(255, 150, 40, 0.45), transparent 22%),
+    radial-gradient(circle at 82% 34%, rgba(255, 150, 40, 0.45), transparent 22%),
+    repeating-linear-gradient(0deg, transparent 0 13px, rgba(0, 0, 0, 0.35) 13px 14px),
+    repeating-linear-gradient(90deg, transparent 0 21px, rgba(0, 0, 0, 0.3) 21px 22px),
+    linear-gradient(180deg, #5b5148 0%, #3a332c 60%, #24201b 100%);
 }
 .cart--dungeon .cart__title {
-  color: #f0e6d4;
-  background: rgba(40, 32, 26, 0.88);
-  border: 1px solid rgba(180, 140, 90, 0.55);
+  color: #ffe9c4;
+  background: rgba(60, 36, 14, 0.9);
+  border: 1px solid rgba(230, 170, 90, 0.7);
   font-family: Georgia, "Times New Roman", serif;
 }
 .cart--dungeon .cart__art::before {
   content: "";
   position: absolute;
   left: 50%;
-  top: 20%;
+  top: 18%;
   transform: translateX(-50%);
-  width: 62px;
+  width: 56px;
   height: 70px;
-  border-radius: 31px 31px 2px 2px;
+  border-radius: 28px 28px 2px 2px;
   background:
-    repeating-linear-gradient(90deg, transparent 0 12px, rgba(0, 0, 0, 0.35) 12px 13px, transparent 13px 20px),
-    linear-gradient(180deg, #4a3528 0%, #2e1e14 100%);
-  border: 2px solid #1e1410;
+    radial-gradient(circle 3px at 70% 58%, #ffd34d 0 100%, transparent 100%),
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(0, 0, 0, 0.4) 11px 12px),
+    linear-gradient(180deg, #6b4425 0%, #3e2512 100%);
+  border: 3px solid #8a8076;
+  box-shadow: 0 0 0 3px #3a332c;
 }
+// Two torch flames, flickering.
 .cart--dungeon .cart__art::after {
   content: "";
   position: absolute;
-  left: 58%;
-  top: 40%;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #ffd700 0%, #b8860b 60%);
-  box-shadow: 0 0 6px rgba(255, 200, 60, 0.6);
+  left: 15%;
+  right: 15%;
+  top: 27%;
+  height: 16px;
+  background:
+    radial-gradient(ellipse 6px 9px at 6% 50%, #fff3a0 0%, #ff9a1f 55%, transparent 70%),
+    radial-gradient(ellipse 6px 9px at 94% 50%, #fff3a0 0%, #ff9a1f 55%, transparent 70%);
+  animation: torch-flicker 0.6s steps(2, end) infinite alternate;
 }
+@keyframes torch-flicker { to { transform: scaleY(1.2) translateY(-1px); filter: brightness(1.25); } }
 
-/* Purple Worm Escape */
+/* Purple Worm Escape: royal-purple shell, the worm's toothed maw. */
+.cart--worm .cart__shell { --shell: #8e3fd4; --shell-dark: #3e0f6e; --shell-edge: rgba(235, 200, 255, 0.55); }
 .cart--worm .cart__label {
   background:
-    radial-gradient(ellipse 85% 80% at 50% 40%, rgba(140, 40, 200, 0.3) 0%, transparent 55%),
-    linear-gradient(180deg, #1a0c24 0%, #0f0618 50%, #080210 100%);
+    radial-gradient(ellipse 85% 80% at 50% 40%, rgba(200, 80, 255, 0.4) 0%, transparent 55%),
+    linear-gradient(180deg, #2a0c3e 0%, #160626 50%, #0a0214 100%);
 }
 .cart--worm .cart__title {
-  color: #f5e0ff;
-  background: rgba(50, 15, 70, 0.88);
-  border: 1px solid rgba(200, 120, 230, 0.55);
+  color: #f9e8ff;
+  background: rgba(70, 15, 100, 0.9);
+  border: 1px solid rgba(225, 150, 255, 0.65);
+  font-family: "Arial Black", "Segoe UI", sans-serif;
+  font-size: 0.86rem;
 }
 .cart--worm .cart__art::before {
   content: "";
@@ -754,9 +835,10 @@ main.content.arcade-page > header .header-tags { display: none; }
   transform: translate(-50%, -50%);
   border-radius: 50% 50% 45% 45% / 55% 55% 45% 45%;
   background:
-    radial-gradient(ellipse 70% 55% at 50% 35%, rgba(200, 100, 255, 0.35) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 45% at 50% 55%, #0a0310 0%, #1a0520 50%, #0f0418 100%);
-  animation: worm-maw 3s ease-in-out infinite;
+    radial-gradient(ellipse 70% 55% at 50% 35%, rgba(230, 120, 255, 0.45) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 45% at 50% 55%, #0a0310 0%, #2a0636 50%, #170422 100%);
+  box-shadow: 0 0 0 5px #b45cf0, 0 0 18px rgba(200, 90, 255, 0.6);
+  animation: worm-maw 2.6s ease-in-out infinite;
 }
 .cart--worm .cart__art::after {
   content: "";
@@ -768,21 +850,26 @@ main.content.arcade-page > header .header-tags { display: none; }
   height: 26px;
   background: linear-gradient(180deg, #f0f0f5 0%, #c8c8d0 40%, transparent 40%, transparent 60%, #c8c8d0 60%, #f0f0f5 100%);
   clip-path: polygon(0 0, 8% 40%, 16% 0, 24% 40%, 32% 0, 40% 40%, 48% 0, 56% 40%, 64% 0, 72% 40%, 80% 0, 88% 40%, 100% 0, 100% 100%, 92% 60%, 84% 100%, 76% 60%, 68% 100%, 60% 60%, 52% 100%, 44% 60%, 36% 100%, 28% 60%, 20% 100%, 12% 60%, 0 100%);
+  animation: worm-chomp 2.6s ease-in-out infinite;
 }
-@keyframes worm-maw { 50% { transform: translate(-50%, -50%) scale(1.05); } }
+@keyframes worm-maw { 50% { transform: translate(-50%, -50%) scale(1.07); } }
+@keyframes worm-chomp { 50% { transform: translateX(-50%) scaleY(0.75); } }
 
-/* Physix */
+/* Physix: orange shell, a graph-paper blueprint with a ball on a ramp. */
+.cart--physix .cart__shell { --shell: #ff8a1f; --shell-dark: #a84300; --shell-edge: rgba(255, 225, 190, 0.7); }
 .cart--physix .cart__label {
   background:
-    linear-gradient(90deg, rgba(0, 200, 255, 0.05) 1px, transparent 1px) 0 0 / 14px 100%,
-    linear-gradient(180deg, rgba(0, 200, 255, 0.05) 1px, transparent 1px) 0 0 / 100% 14px,
-    linear-gradient(180deg, #020508 0%, #061018 50%, #020508 100%);
+    linear-gradient(90deg, rgba(40, 90, 200, 0.18) 1px, transparent 1px) 0 0 / 12px 100%,
+    linear-gradient(180deg, rgba(40, 90, 200, 0.18) 1px, transparent 1px) 0 0 / 100% 12px,
+    linear-gradient(180deg, #fbfaf3 0%, #ecebe0 100%);
 }
+.cart--physix .cart__brand { color: rgba(40, 60, 120, 0.7); }
 .cart--physix .cart__title {
-  color: #b8f5ff;
-  background: rgba(0, 40, 60, 0.8);
-  border: 1px solid rgba(0, 200, 255, 0.45);
+  color: #fff;
+  background: #ff7a0a;
+  border: 2px solid #1d3f8f;
   font-family: ui-monospace, "Cascadia Code", monospace;
+  box-shadow: 3px 3px 0 #1d3f8f;
 }
 .cart--physix .cart__art::before {
   content: "";
@@ -790,25 +877,25 @@ main.content.arcade-page > header .header-tags { display: none; }
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #a8f0ff 0%, #0077b6 70%, #005a8c 100%);
-  box-shadow: 0 0 12px rgba(0, 200, 255, 0.4);
-  animation: physix-roll 3s ease-in-out infinite;
+  background: radial-gradient(circle at 35% 35%, #ffe0b8 0%, #ff7a0a 60%, #b44a00 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  animation: physix-roll 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 .cart--physix .cart__art::after {
   content: "";
   position: absolute;
-  left: 22%;
-  top: 40%;
-  width: 96px;
-  height: 3px;
-  background: #3a5060;
+  left: 18%;
+  top: 30%;
+  width: 104px;
+  height: 4px;
+  background: #1d3f8f;
   border-radius: 2px;
-  transform: rotate(-20deg);
+  transform: rotate(18deg);
   transform-origin: left center;
 }
 @keyframes physix-roll {
-  0%, 100% { left: 26%; top: 22%; transform: rotate(0deg); }
-  50% { left: 64%; top: 36%; transform: rotate(360deg); }
+  0% { left: 20%; top: 20%; transform: rotate(0deg); }
+  80%, 100% { left: 66%; top: 41%; transform: rotate(420deg); }
 }
 
 /* Feleco: the sun rising over its pocket valley, sheep grazing by the river. */
@@ -855,53 +942,32 @@ main.content.arcade-page > header .header-tags { display: none; }
   .cart--feleco .cart__art::after { animation: none; transform: translate(-50%, -50%); }
 }
 
-/* Global Tech Gauntlet */
-.cart--gauntlet .cart__shell { --shell: rgba(255, 90, 60, 0.55); --shell-dark: rgba(120, 0, 20, 0.85); border-color: rgba(255, 215, 0, 0.8); }
-.cart--gauntlet .cart__label { background: linear-gradient(135deg, #8b0000 0%, #c41e3a 45%, #ffd700 100%); }
+/* Global Tech Gauntlet: crimson-and-gold shell, the globe in a spinning orbit. */
+.cart--gauntlet .cart__shell { --shell: #d4202f; --shell-dark: #6e0010; --shell-edge: rgba(255, 220, 120, 0.7); }
+.cart--gauntlet .cart__label { background: radial-gradient(ellipse at 50% 35%, rgba(255, 215, 0, 0.4), transparent 60%), linear-gradient(135deg, #5c0010 0%, #a3172a 50%, #e0a800 100%); }
 .cart--gauntlet .cart__title {
   color: #fff8e7;
-  background: rgba(0, 0, 0, 0.5);
-  border: 2px solid rgba(255, 215, 0, 0.6);
+  background: rgba(0, 0, 0, 0.55);
+  border: 2px solid rgba(255, 215, 0, 0.75);
   font-family: "Arial Narrow", "Arial Black", sans-serif;
   text-transform: uppercase;
   font-size: 0.85rem;
 }
-.cart--gauntlet .cart__art::before { content: "🌐"; position: absolute; left: 50%; top: 32%; transform: translate(-50%, -50%); font-size: 2.2rem; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6)); }
-
-/* ITEM Diagnostic */
-.cart--item .cart__shell { --shell: #0b6b52; --shell-dark: #064e3b; }
-.cart--item .cart__label { background: linear-gradient(180deg, #047857 0%, #064e3b 50%, #022c22 100%); }
-.cart--item .cart__title {
-  color: #ecfdf5;
-  background: rgba(6, 78, 59, 0.88);
-  border: 1px solid rgba(251, 191, 36, 0.55);
-  font-size: 0.85rem;
-}
-.cart--item .cart__art::before { content: "🎯"; position: absolute; left: 50%; top: 32%; transform: translate(-50%, -50%); font-size: 2.1rem; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5)); }
-
-/* Summer Writing Test */
-.cart--writing .cart__shell { --shell: #f2e2bf; --shell-dark: #d9c393; }
-.cart--writing .cart__label { background: linear-gradient(180deg, #1a2a3a 0%, #0f1a24 50%, #1a2a3a 100%); }
-.cart--writing .cart__title {
-  color: #fef3c7;
-  background: rgba(30, 58, 95, 0.85);
-  border: 1px solid rgba(251, 191, 36, 0.5);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.85rem;
-}
-.cart--writing .cart__art::before {
+.cart--gauntlet .cart__art::before { content: "🌐"; position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%); font-size: 2.2rem; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6)); }
+.cart--gauntlet .cart__art::after {
   content: "";
   position: absolute;
   left: 50%;
-  top: 30%;
-  width: 62px;
-  height: 46px;
-  transform: translate(-50%, -50%) rotate(-4deg);
-  background: repeating-linear-gradient(180deg, #fffef8 0 7px, #c9d6ef 7px 8px);
-  border: 1px solid #c4b896;
-  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.35);
+  top: 34%;
+  width: 80px;
+  height: 30px;
+  border: 2px solid rgba(255, 220, 90, 0.9);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-18deg);
+  box-shadow: 0 0 10px rgba(255, 210, 60, 0.6);
+  animation: gauntlet-orbit 3s linear infinite;
 }
-.cart--writing .cart__art::after { content: "✏️"; position: absolute; left: 58%; top: 18%; font-size: 1.3rem; }
+@keyframes gauntlet-orbit { to { transform: translate(-50%, -50%) rotate(342deg); } }
 
 // ── The flying cartridge (cloned by arcade-console.js) ──────────
 
@@ -909,8 +975,8 @@ main.content.arcade-page > header .header-tags { display: none; }
   position: fixed;
   z-index: 9999;
   pointer-events: none;
-  transition: transform 0.55s cubic-bezier(0.3, 0.6, 0.3, 1), opacity 0.3s;
-  transform-origin: 50% 0;
+  will-change: transform, opacity;
+  transform-origin: 50% 50%;
 
   .cart__shell { transform: none; }
 }
@@ -928,6 +994,12 @@ main.content.arcade-page > header .header-tags { display: none; }
   .cart__new,
   .cart--crystal .cart__art::before,
   .cart--worm .cart__art::before,
-  .cart--physix .cart__art::before { animation: none; }
+  .cart--physix .cart__art::before,
+  .cart--dragon .cart__art::before,
+  .cart--crystal .cart__art::after,
+  .cart--dungeon .cart__art::after,
+  .cart--worm .cart__art::after,
+  .cart--tech .cart__art::after,
+  .cart--gauntlet .cart__art::after { animation: none; }
   .cart__shell { transition: none; }
 }
