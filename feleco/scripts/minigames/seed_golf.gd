@@ -515,8 +515,18 @@ func _step(dt: float) -> void:
 		if dl < r and dl > 0.5:
 			var k: float = sin(dl / r * PI)
 			_vel += d / dl * float(h[2]) * k * dt
-	_vel += _wind * dt
-	_vel *= pow(float(_cond[1]) if not _cond.is_empty() else ROLL_DRAG, dt)
+	# Drag keeps a fraction of speed each second, so a steady wind never lets
+	# the seed stop: it coasts at wind / -ln(drag) (about 113 px/s in a
+	# Windy hole). A miss then rolls forever, the out-of-strokes mercy never
+	# runs, and the next putt cannot start. Fade the wind as the seed slows
+	# (below four times that coasting speed) so drag can bring it to rest.
+	var drag: float = float(_cond[1]) if not _cond.is_empty() else ROLL_DRAG
+	if _wind.length_squared() > 0.0 and drag > 0.0 and drag < 1.0:
+		var coast: float = _wind.length() / -log(drag)
+		_vel += _wind * dt * clampf(_vel.length() / (coast * 4.0), 0.0, 1.0)
+	else:
+		_vel += _wind * dt
+	_vel *= pow(drag, dt)
 	var next: Vector2 = _seed + _vel * dt
 	# The fairway's curved edge: bounce off whichever segment it touches.
 	var edge: Array = _lv["edge"]
