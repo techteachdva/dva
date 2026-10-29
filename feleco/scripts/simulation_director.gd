@@ -414,11 +414,14 @@ func _ready() -> void:
 		for gx: int in grass.grid_width:
 			var noise := sin(gx * 0.35) * cos(gz * 0.28) + sin(gx * 0.13 + gz * 0.19) * 0.5
 			var gp := grass.grid_to_world(gx, gz)
-			var biome_cap: float = 0.16 if gp.x * gp.x + gp.z * gp.z > (ValleyTerrain.FLOOR_RADIUS + 2.0) * (ValleyTerrain.FLOOR_RADIUS + 2.0) else 1.0
+			var biome_cap: float = Biomes.grass_cap(gp.x, gp.z)
 			var base: float = cfg_grass_density * grass.max_density * biome_cap * (0.3 + 0.7 * clampf((noise + 1.0) / 2.0, 0.0, 1.0))
 			var idx := gz * grass.grid_width + gx
 			grass._grid[idx] = base
 			grass._nutrients[idx] = clampf(0.25 + randf() * 0.15 + base * 0.2, 0.0, 1.0)
+			# The meadow starts grown, not as bare seed: tall where it's thick,
+			# sprouting where it's thin (4.7.1).
+			grass._cell_stage[idx] = 2.0 if base > grass.max_density * 0.3 else (1.0 if base > grass.max_density * 0.08 else 0.0)
 
 	call_deferred("spawn_entities")
 	call_deferred("spawn_trees")

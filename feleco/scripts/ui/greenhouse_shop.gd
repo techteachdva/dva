@@ -149,7 +149,9 @@ func _fill_looks() -> void:
 			if section[1] == "cursor":
 				var pic := TextureRect.new()
 				pic.texture = Cosmetics.cursor_texture(item[0])
-				pic.custom_minimum_size = Vector2(32, 32)
+				pic.custom_minimum_size = Vector2(40, 40)
+				pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 				row.add_child(pic)
 			else:
 				var sw := ColorRect.new()

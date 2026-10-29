@@ -24,6 +24,16 @@ const POWERUP_BUTTONS: Dictionary = {
 # Scene buttons from before 3.0 that are no longer offered.
 const RETIRED_BUTTONS: Array[String] = ["Heal", "Famine", "Meteor"]
 const POWER_LABELS: Dictionary = {"Call": "Call Kin", "RotRain": "Rot Rain"}
+# Every power has its own icon (assets/icons).
+const POWER_ICONS: Dictionary = {
+	"Bloom": "power_bloom", "Stampede": "power_stampede", "Call": "power_call", "Feast": "power_feast",
+	"RotRain": "power_rot_rain", "Rain": "rain", "Drought": "power_drought", "Flood": "flood",
+	"Eclipse": "power_eclipse", "Gale": "power_gale",
+}
+# Release 10 (4.7.1): what a pack of ten costs. Apex hunters cost double.
+const PACK_SIZE: int = 10
+const PACK_COST: int = 30
+const PACK_APEX: Array[String] = ["lion", "bear", "wolf", "falcon"]
 const POWER_TIPS: Dictionary = {
 	"Gale": "The wind howls for half a day from a random quarter: seeds fly far.",
 	"Bloom": "Bloom (producers): the meadow, the woods and the moss all surge at once.",
@@ -89,11 +99,6 @@ func _ready() -> void:
 	_power_btn("Meteor").pressed.connect(_trigger_meteor)
 	_power_btn("Flood").pressed.connect(_trigger_flood)
 
-	_power_btn("Rain").icon = load("res://assets/icons/rain.svg")
-	_power_btn("Call").icon = load("res://assets/icons/die.svg")
-	_power_btn("Heal").icon = load("res://assets/icons/survive.svg")
-	_power_btn("Famine").icon = load("res://assets/icons/famine.svg")
-	_power_btn("Meteor").icon = load("res://assets/icons/meteor.svg")
 
 	_update_powerup_buttons()
 	_build_goals()
@@ -213,7 +218,7 @@ func _build_power_tray() -> void:
 	_tray.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_tray.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_tray.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_tray.offset_top = -210
+	_tray.offset_top = -260
 	_tray.offset_bottom = -190
 	_tray.offset_left = -360
 	_tray.offset_right = 360
@@ -226,11 +231,15 @@ func _build_power_tray() -> void:
 		sb.set_content_margin(side, 12)
 	_tray.add_theme_stylebox_override("panel", sb)
 	add_child(_tray)
+	var tray_col := VBoxContainer.new()
+	tray_col.add_theme_constant_override("separation", 10)
+	_tray.add_child(tray_col)
 	_tray_flow = HFlowContainer.new()
 	_tray_flow.alignment = FlowContainer.ALIGNMENT_CENTER
 	_tray_flow.add_theme_constant_override("h_separation", 8)
 	_tray_flow.add_theme_constant_override("v_separation", 8)
-	_tray.add_child(_tray_flow)
+	tray_col.add_child(_tray_flow)
+	tray_col.add_child(_build_release_row())
 	var handlers: Dictionary = {
 		"Eclipse": _trigger_eclipse,
 		"Gale": _trigger_simple.bind("gale", "trigger_gale"),
@@ -253,13 +262,21 @@ func _build_power_tray() -> void:
 		else:
 			$BottomBar.remove_child(btn)
 		btn.pressed.connect(func() -> void: _tray.visible = false)
+		if POWER_ICONS.has(btn_name):
+			btn.icon = load("res://assets/icons/%s.svg" % POWER_ICONS[btn_name])
+			btn.expand_icon = false
+			btn.add_theme_constant_override("icon_max_width", 34)
+			btn.add_theme_constant_override("h_separation", 8)
 		_tray_flow.add_child(btn)
 	_tray_button = Button.new()
 	_tray_button.text = "Powers"
 	_tray_button.tooltip_text = "A power for each link of the food web, and the weather. One is free each season."
 	_tray_button.custom_minimum_size = Vector2(130, 52)
 	FelecoUiScript.mark(_tray_button, "TouchButton")
-	_tray_button.pressed.connect(func() -> void: _tray.visible = not _tray.visible)
+	_tray_button.pressed.connect(func() -> void:
+		_tray.visible = not _tray.visible
+		_refresh_pack()
+		_update_powerup_buttons())
 
 # A reminder in the corner when custom tuning is on, so results aren't mistaken for defaults.
 func _refresh_tuned_badge() -> void:
@@ -410,8 +427,12 @@ func _update_powerup_buttons() -> void:
 		var pid: String = POWERUP_BUTTONS[btn_name]
 		var count: int = int(gc.powerup_inventory.get(pid, 0))
 		var label: String = POWER_LABELS.get(btn_name, btn_name)
-		btn.text = label if free else "%s  %d" % [label, count]
-		btn.disabled = (not free) and count <= 0
+		# The UI theme turns expand_icon on for every button, which shrinks an
+		# icon into whatever room the label leaves (most vanished). Keep it off.
+		btn.expand_icon = false
+		var price: int = _power_price(pid)
+		btn.text = label if free else ("%s  %d" % [label, count] if count > 0 else "%s  %d EP" % [label, price])
+		btn.disabled = (not free) and count <= 0 and int(gc.eco_points) < price
 		var tip: String = POWER_TIPS.get(btn_name, "")
 		# Say what it does and which bets it pushes; glow if it helps yours.
 		if Schemes.POWERS.has(pid):
@@ -427,8 +448,10 @@ func _update_powerup_buttons() -> void:
 				tip += "\nHELPS YOUR BET: %s (+10%% payout each cast)" % ", ".join(mine)
 		if free:
 			btn.tooltip_text = "%s\nFree: this season's one touch. Stock left: %d." % [tip, count]
-		else:
+		elif count > 0:
 			btn.tooltip_text = "%s\nUses a Greenhouse charge. Stock: %d." % [tip, count]
+		else:
+			btn.tooltip_text = "%s\nBuy and cast now for %d EP." % [tip, price]
 
 # Goals, the tutorial and My Creature live in one card at the top.
 var _goals: GoalsPanel
@@ -545,11 +568,110 @@ func _consume_powerup(powerup_id: String) -> bool:
 		return false
 	var count: int = gc.powerup_inventory.get(powerup_id, 0)
 	if count <= 0:
-		return false
+		# No stock: buy it on the spot with EP (the Greenhouse price).
+		var price: int = _power_price(powerup_id)
+		if not gc.spend_eco_points(price):
+			return false
+		FXManager.show_dramatic_text(Vector3.ZERO, "-%d EP" % price, FelecoUiScript.GOLD)
+		_update_powerup_buttons()
+		return true
 	gc.powerup_inventory[powerup_id] = count - 1
 	gc.save_meta()
 	_update_powerup_buttons()
 	return true
+
+func _power_price(pid: String) -> int:
+	for row: Dictionary in preload("res://scripts/ui/greenhouse_shop.gd").POWERUPS:
+		if row["id"] == pid:
+			return int(row["cost"])
+	return 20
+
+# --- Release 10 ---------------------------------------------------------------
+# Pick a species, pay EP, then click the valley: ten of them arrive there.
+var _pack_pick: OptionButton
+var _pack_btn: Button
+var _placing: String = ""
+
+func _pack_price(species: String) -> int:
+	return PACK_COST * (2 if PACK_APEX.has(species) else 1)
+
+func _build_release_row() -> Control:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 8)
+	row.add_child(FelecoUiScript.label("Release 10:", 14, FelecoUiScript.GOLD))
+	_pack_pick = OptionButton.new()
+	for sp: String in ["sheep", "rabbit", "deer", "goat", "boar", "bear", "wolf", "lion", "falcon", "robin", "human", "mouse", "beetle", "worm", "fish"]:
+		_pack_pick.add_item(SpeciesDB.label(sp))
+		_pack_pick.set_item_metadata(_pack_pick.item_count - 1, sp)
+	_pack_pick.item_selected.connect(func(_i: int) -> void: _refresh_pack())
+	row.add_child(_pack_pick)
+	_pack_btn = Button.new()
+	_pack_btn.theme_type_variation = "PrimaryButton"
+	_pack_btn.pressed.connect(func() -> void:
+		_placing = String(_pack_pick.get_item_metadata(_pack_pick.selected))
+		_tray.visible = false
+		FXManager.show_dramatic_text(Vector3.ZERO, "Click the valley to release ten %s" % SpeciesDB.plural(_placing), FelecoUiScript.GOLD))
+	row.add_child(_pack_btn)
+	_refresh_pack()
+	return row
+
+func _refresh_pack() -> void:
+	if _pack_btn == null:
+		return
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	var sp: String = String(_pack_pick.get_item_metadata(_pack_pick.selected))
+	var price: int = _pack_price(sp)
+	_pack_btn.text = "Place (%d EP)" % price
+	_pack_btn.disabled = gc == null or int(gc.eco_points) < price
+	_pack_btn.tooltip_text = "Pay %d EP, then click anywhere in the valley to release ten %s there." % [price, SpeciesDB.plural(sp)]
+
+# Where the pointer meets the ground (the plane, then refined on the terrain).
+func _ground_under(screen: Vector2) -> Vector3:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or _director == null:
+		return Vector3.INF
+	var from: Vector3 = cam.project_ray_origin(screen)
+	var dir: Vector3 = cam.project_ray_normal(screen)
+	if dir.y > -0.01:
+		return Vector3.INF
+	var h: float = 0.0
+	var p := Vector3.ZERO
+	for i: int in 4:
+		var t: float = (h - from.y) / dir.y
+		p = from + dir * t
+		h = _director.ground_height(p.x, p.z)
+	return p
+
+func _release_pack(at: Vector3) -> void:
+	var sp: String = _placing
+	_placing = ""
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	if gc == null or _director == null:
+		return
+	var flat := Vector2(at.x, at.z)
+	if flat.length() > ValleyTerrain.WALK_RADIUS - 6.0:
+		flat = flat.normalized() * (ValleyTerrain.WALK_RADIUS - 6.0)
+	at = Vector3(flat.x, 0.0, flat.y)
+	if not gc.spend_eco_points(_pack_price(sp)):
+		FXManager.show_dramatic_text(Vector3.ZERO, "Not enough EP", Color(0.95, 0.4, 0.3))
+		return
+	var made: int = 0
+	for i: int in PACK_SIZE:
+		var p: Vector3 = _director.dry_land(at + Vector3(randf_range(-4.0, 4.0), 0.0, randf_range(-4.0, 4.0)))
+		if sp == "fish" and _director.valley != null and _director.valley.river != null:
+			var c: Vector3 = _director.valley.river.sample(at.x, at.z).closest
+			p = c + Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0))
+		var ag := _director.spawn_scripted(sp, p)
+		if ag != null:
+			ag.scripted = false
+			ag.set_state(ag._current_state)
+			made += 1
+	FXManager.spawn_birth_particles(_director.dry_land(at) + Vector3.UP, FelecoUiScript.GOLD)
+	FXManager.show_dramatic_text(_director.dry_land(at) + Vector3.UP * 2.0, "%d %s released!" % [made, SpeciesDB.plural(sp)], FelecoUiScript.GOLD)
+	_director.chronicle.emit("You release %d %s into the valley." % [made, SpeciesDB.plural(sp)])
+	_refresh_pack()
+	_update_powerup_buttons()
 
 # Rampages go in the History in gold (won) or red (lost), and the History
 # button glows that colour for a few seconds so the player knows to look.
@@ -591,6 +713,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	# A click, not a drag: pick the creature under the pointer.
 	if _press_at.distance_to(mb.position) > 16.0 or has_node("LiveTable") or has_node("Resolution"):
 		return
+	if not _placing.is_empty():
+		var at := _ground_under(mb.position)
+		if at.is_finite():
+			_release_pack(at)
+		return
 	if _goals != null and _goals.try_collect(mb.position):
 		return
 	var agent := _get_hovered_agent() as MarkovAgent
@@ -599,6 +726,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _start_follow(agent: MarkovAgent) -> void:
 	_stop_follow()
+	# Clicking a Gold creature claims its gold (4.7.1).
+	if agent != null and agent.golden > 0.05:
+		agent.claim_gold()
 	var cam: Camera3D = get_tree().current_scene.get_node_or_null("Camera3D") as Camera3D
 	if cam != null and cam.has_method("follow"):
 		cam.follow(agent)

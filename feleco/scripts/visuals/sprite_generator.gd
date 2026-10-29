@@ -162,7 +162,7 @@ static func bake_all(dir: String, only: Array = []) -> void:
 
 # Producer icons and the 3D plant textures (see tree.gd and apple.gd).
 static func bake_plants(dir: String) -> void:
-	for k: String in ["berry", "moss", "apple"]:
+	for k: String in ["berry", "moss", "apple", "pinecone", "pineapple"]:
 		producer_image(k).save_png(dir.path_join(k + ".png"))
 	bark_image().save_png(dir.path_join("bark.png"))
 	fruit_image(Color(0.86, 0.14, 0.1)).save_png(dir.path_join("apple_skin.png"))
@@ -2085,6 +2085,47 @@ static func producer_image(kind: String) -> Image:
 			_ell(46, 66, 9, 6, Color(1.0, 0.6, 0.55), -30.0, 0.0)
 			_line(Vector2(58, 50), Vector2(62, 34), 3.0, Color(0.38, 0.24, 0.12))
 			_ell(72, 38, 12, 6, Color(0.36, 0.62, 0.26), -20.0)
+		"pinecone":
+			# An upright cone of woody scales, rows of them overlapping, a
+			# sprig of needles at the stem.
+			for k: int in 5:
+				var a: float = deg_to_rad(-70.0 + k * 35.0)
+				_line(Vector2(64, 22), Vector2(64, 22) + Vector2(sin(a), -cos(a) * 0.6) * 22.0, 2.0, Color(0.2, 0.42, 0.24), 0.0)
+			var rows: int = 7
+			for r: int in rows:
+				var t: float = float(r) / float(rows - 1)
+				var y: float = 30.0 + t * 84.0
+				# Widest a third of the way down, tapering to a point below.
+				var half: float = (14.0 + 24.0 * sin(clampf(t * 1.25, 0.0, 1.0) * PI)) * (1.0 - t * 0.45)
+				var n: int = 3 + (r % 2)
+				for k: int in n:
+					var x: float = 64.0 - half + (2.0 * half) * (float(k) + 0.5) / float(n)
+					var sc := Color(0.55, 0.36, 0.18).lerp(Color(0.38, 0.24, 0.12), float((k + r) % 2) * 0.6)
+					_poly([Vector2(x - half / float(n) - 2.0, y - 6.0), Vector2(x + half / float(n) + 2.0, y - 6.0), Vector2(x, y + 9.0)], sc, 0.0)
+					_line(Vector2(x - 3.0, y - 2.0), Vector2(x + 3.0, y - 2.0), 1.0, Color(0.7, 0.5, 0.3), 0.0)
+		"pineapple":
+			# Golden-brown body crosshatched into diamonds under a crown of
+			# spiky green leaves.
+			for k: int in 9:
+				var a2: float = deg_to_rad(-60.0 + k * 15.0)
+				var tip := Vector2(64, 48) + Vector2(sin(a2), -cos(a2)) * (30.0 + 8.0 * (1.0 - absf(k - 4.0) / 4.0))
+				_poly([Vector2(60, 50), tip, Vector2(68, 50)], Color(0.28, 0.58, 0.24).lerp(Color(0.2, 0.45, 0.2), float(k % 2)), 0.0)
+			_ell(64, 86, 26, 34, Color(0.86, 0.62, 0.16))
+			# Crosshatch, kept inside the fruit: short steps along each line.
+			var inside := func(q: Vector2) -> bool:
+				return pow((q.x - 64.0) / 24.0, 2.0) + pow((q.y - 86.0) / 32.0, 2.0) <= 1.0
+			for i: int in 9:
+				var o: float = -64.0 + i * 16.0
+				for dir: float in [1.0, -1.0]:
+					var a0 := Vector2(64 + o * dir - 25 * dir, 50)
+					var a1 := Vector2(64 + o * dir + 25 * dir, 122)
+					for k: int in 18:
+						var q0: Vector2 = a0.lerp(a1, float(k) / 18.0)
+						var q1: Vector2 = a0.lerp(a1, float(k + 1) / 18.0)
+						if inside.call(q0) and inside.call(q1):
+							_line(q0, q1, 1.6, Color(0.55, 0.36, 0.1), 0.0)
+			for p: Vector2 in [Vector2(54, 70), Vector2(74, 70), Vector2(64, 86), Vector2(48, 96), Vector2(80, 96), Vector2(64, 108)]:
+				_dot(p.x, p.y, 2.0, Color(0.98, 0.85, 0.4))
 	return _finish(ink, 3)
 
 # Tiling bark: dark furrows running up the trunk over warm brown.

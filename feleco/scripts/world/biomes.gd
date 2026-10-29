@@ -31,8 +31,14 @@ const GRASS_CAP: Dictionary = {RIVERBANK: 0.6, PLAINS: 1.0, MOUNTAIN: 0.16}
 
 static var valley: ValleyTerrain = null
 
+# Where the highlands begin: a ragged line, not a ruled circle. Bays of
+# meadow reach up between the knolls and spurs of hill run down.
+static func mountain_edge(x: float, z: float) -> float:
+	var a: float = atan2(z, x)
+	return ValleyTerrain.FLOOR_RADIUS + 2.0 + 5.0 * sin(a * 3.0 + 1.3) + 3.0 * sin(a * 7.0 + 0.4) + 1.5 * sin(a * 13.0 + 2.2)
+
 static func at(x: float, z: float) -> String:
-	if x * x + z * z > (ValleyTerrain.FLOOR_RADIUS + 2.0) * (ValleyTerrain.FLOOR_RADIUS + 2.0):
+	if sqrt(x * x + z * z) > mountain_edge(x, z):
 		return MOUNTAIN
 	if valley != null and valley.river != null and valley.river._distance_to_bed(x, z) < BANK_REACH:
 		return RIVERBANK
@@ -44,8 +50,15 @@ static func homes(species: String) -> Array:
 static func fits(species: String, x: float, z: float) -> bool:
 	return homes(species).has(at(x, z))
 
+# Grass thins gradually up into the hills (an 8 m blend across the edge,
+# broken up by a little noise) instead of stopping dead at a circle.
 static func grass_cap(x: float, z: float) -> float:
-	return float(GRASS_CAP[at(x, z)])
+	var r: float = sqrt(x * x + z * z)
+	var edge: float = mountain_edge(x, z)
+	var low: float = float(GRASS_CAP[RIVERBANK]) if valley != null and valley.river != null and valley.river.across_distance(x, z) < BANK_REACH else float(GRASS_CAP[PLAINS])
+	var jitter: float = sin(x * 0.7 + z * 1.3) * cos(x * 1.1 - z * 0.6) * 3.0
+	var t: float = smoothstep(edge - 4.0, edge + 4.0, r + jitter)
+	return lerpf(low, float(GRASS_CAP[MOUNTAIN]), t)
 
 # A random spot in one of the species' home biomes (the river kept clear).
 static func random_point(species: String, director: SimulationDirector) -> Vector3:

@@ -525,7 +525,7 @@ func _creature(parent: Control, species: String, center: Vector2, height: float)
 			var tr := TextureRect.new()
 			match species:
 				"grass": tr.texture = load(SpriteGenerator.SPRITE_DIR + "tuft.png")
-				"berry", "moss", "apple": tr.texture = load(SpriteGenerator.SPRITE_DIR + species + ".png")
+				"berry", "moss", "apple", "pinecone", "pineapple": tr.texture = load(SpriteGenerator.SPRITE_DIR + species + ".png")
 				_: tr.texture = load(SpriteGenerator.SPRITE_DIR + "mycelium.png")
 			tr.set_anchors_preset(Control.PRESET_FULL_RECT)
 			tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE

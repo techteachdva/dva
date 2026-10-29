@@ -14,6 +14,7 @@ const GOALS: Array = [
 	["watch", "Tap an animal to watch it", "Tap or click any creature. Drag to move the camera; scroll or pinch to zoom.", 10],
 	["adopt", "Make it your creature", "On the animal's card, press Make Mine.", 15],
 	["power", "Use a power", "Open Powers at the bottom and try one on the valley.", 15],
+	["menagerie", "Keep three kinds of creature", "You can have one of every kind: press Make Mine on a different species, then switch between them.", 30],
 	["skill", "Train your creature", "Press Level Up & Train on your creature and win a trial.", 20],
 	["bet", "Place a bet", "Open Bets and back the species you think will rule the valley.", 15],
 	["survive", "Keep your creature alive a whole day", "Heal it, feed it, keep it away from hunters.", 40],
@@ -55,6 +56,13 @@ var _last_energy: float = -1.0
 var _c_title: Label
 var _c_xp: ProgressBar
 var _c_info: Label
+# The menagerie (4.7.1): one creature of every species can be yours. The
+# fields above are the one in focus; the rest wait here, by species. When
+# one dies its line carries on: the nearest unowned kin of that species
+# inherits the place (and half its XP), so a family can outlive any animal.
+var _roster: Dictionary = {}  # species -> {agent, data, xp, level, points, skills, adopt_day}
+var _chips: HBoxContainer
+var _heir_timer: float = 0.0
 
 # The diamond.
 var _diamond: Node3D = null
@@ -205,16 +213,103 @@ func _alive() -> bool:
 		and companion.is_inside_tree() and companion._data == _c_data
 
 func is_companion(agent: Node) -> bool:
-	return _alive() and agent == companion
+	if _alive() and agent == companion:
+		return true
+	if agent is MarkovAgent:
+		var e: Dictionary = _roster.get((agent as MarkovAgent).species_id, {})
+		return not e.is_empty() and e["agent"] == agent
+	return false
+
+# Park the creature in focus back in the roster.
+func _stash() -> void:
+	if companion == null:
+		return
+	_roster[companion.species_id] = {"agent": companion, "data": _c_data, "xp": xp, "level": level, "points": points, "skills": skills.duplicate(), "adopt_day": _adopt_day}
+
+func _focus(species: String) -> void:
+	var e: Dictionary = _roster.get(species, {})
+	if e.is_empty():
+		return
+	companion = e["agent"]
+	_c_data = e["data"]
+	xp = float(e["xp"])
+	level = int(e["level"])
+	points = int(e["points"])
+	skills = (e["skills"] as Dictionary).duplicate()
+	_adopt_day = float(e["adopt_day"])
+	_last_energy = -1.0
+	_creature_box.visible = true
+	_refresh_creature()
+	_refresh_chips()
+
+static func _entry_alive(e: Dictionary) -> bool:
+	var a: Variant = e.get("agent")
+	return a != null and is_instance_valid(a) and not (a as Node).is_queued_for_deletion() and (a as Node).is_inside_tree() and (a as MarkovAgent)._data == e["data"]
+
+# A lost creature's line carries on in its nearest unowned kin.
+func _find_heir(species: String, near: Vector3) -> MarkovAgent:
+	var best: MarkovAgent = null
+	var best_d: float = INF
+	if director == null and get_tree().current_scene != null:
+		director = get_tree().current_scene.get_node_or_null("World") as SimulationDirector
+	if director == null:
+		return null
+	for d: AgentData in director._agent_registry:
+		if d.species != species or not d.node is MarkovAgent or is_companion(d.node):
+			continue
+		var dd: float = d.pos.distance_squared_to(near)
+		if dd < best_d:
+			best_d = dd
+			best = d.node
+	return best
+
+func _inherit(species: String, heir: MarkovAgent, was_name: String) -> void:
+	var e: Dictionary = _roster[species]
+	e["agent"] = heir
+	e["data"] = heir._data
+	e["xp"] = float(e["xp"]) * 0.5
+	var aura := Cosmetics.make_aura(get_node_or_null("/root/GameConfig"))
+	if aura != null:
+		heir.add_child(aura)
+	FXManager.show_dramatic_text(heir.global_position, "%s carries on %s's line" % [heir.display_name, was_name], FelecoUiScript.GOLD)
+
+func _refresh_chips() -> void:
+	if _chips == null:
+		return
+	for c in _chips.get_children():
+		c.queue_free()
+	if _roster.size() < 2:
+		_chips.visible = false
+		return
+	_chips.visible = true
+	for sp: String in _roster.keys():
+		var b := Button.new()
+		b.text = SpeciesDB.one(sp).capitalize()
+		b.theme_type_variation = "PrimaryButton" if companion != null and companion.species_id == sp else "GhostButton"
+		b.tooltip_text = "Switch to your %s." % b.text.to_lower()
+		b.add_theme_font_size_override("font_size", 11)
+		b.pressed.connect(func() -> void:
+			_stash()
+			_focus(sp)
+			if _alive() and hud != null and hud.has_method("_start_follow"):
+				hud.call("_start_follow", companion))
+		_chips.add_child(b)
 
 func adopt(agent: MarkovAgent) -> void:
 	if agent == null:
 		return
+	# One of each kind: the creature in focus stays yours; only one of the
+	# same species is let go to make room.
 	if _alive():
-		_c_data.tint = Color.WHITE
-		_c_data.speed_boost = 1.0
-	if _alive() and companion.has_node("Aura"):
-		companion.get_node("Aura").queue_free()
+		_stash()
+	var old: Dictionary = _roster.get(agent.species_id, {})
+	if _entry_alive(old):
+		var oa: MarkovAgent = old["agent"]
+		(old["data"] as AgentData).tint = Color.WHITE
+		(old["data"] as AgentData).speed_boost = 1.0
+		if oa.has_node("Aura"):
+			oa.get_node("Aura").queue_free()
+	_roster.erase(agent.species_id)
 	companion = agent
 	_c_data = agent._data
 	# The aura from the Greenhouse rides under your creature.
@@ -229,7 +324,11 @@ func adopt(agent: MarkovAgent) -> void:
 	_last_energy = -1.0
 	_creature_box.visible = true
 	FXManager.show_dramatic_text(agent.global_position, "%s is yours now!" % agent.display_name, FelecoUiScript.GOLD)
+	_stash()
+	if _roster.size() >= 3:
+		_complete("menagerie")
 	_refresh_creature()
+	_refresh_chips()
 
 func _build_creature_box() -> void:
 	_creature_box.add_child(FelecoUiScript.divider())
@@ -239,6 +338,10 @@ func _build_creature_box() -> void:
 	_c_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_c_title.clip_text = true
 	row.add_child(_c_title)
+	_chips = HBoxContainer.new()
+	_chips.add_theme_constant_override("separation", 3)
+	_chips.visible = false
+	_creature_box.add_child(_chips)
 	var find := Button.new()
 	find.text = "Find"
 	find.theme_type_variation = "GhostButton"
@@ -371,12 +474,44 @@ func _tick_creature(delta: float) -> void:
 		var m := au.material_override as StandardMaterial3D
 		if m != null and m.has_meta("rainbow"):
 			m.albedo_color = Color.from_hsv(fposmod(Time.get_ticks_msec() * 0.0002, 1.0), 0.7, 1.0)
+	# Every creature in the roster: the lost pass their line to kin, and the
+	# ones out of focus still grow (more slowly) and keep their trained gifts.
+	_heir_timer -= delta
+	if _heir_timer <= 0.0:
+		_heir_timer = 1.0
+		if _alive():
+			_stash()
+		for sp: String in _roster.keys():
+			var e: Dictionary = _roster[sp]
+			if _entry_alive(e):
+				if e["agent"] != companion:
+					e["xp"] = minf(float(e["xp"]) + 0.8, 30.0 + 25.0 * float(e["level"]))
+					var tg: int = int((e["skills"] as Dictionary).get("tough", 0))
+					var ag: MarkovAgent = e["agent"]
+					if tg > 0 and ag.get("health") != null:
+						ag.health = minf(float(ag.health) + 0.6 * float(tg), 100.0)
+				continue
+			var was: String = (e["data"] as AgentData).node.display_name if e["data"] != null and is_instance_valid((e["data"] as AgentData).node) else SpeciesDB.one(sp).capitalize()
+			var at: Vector3 = (e["data"] as AgentData).pos if e["data"] != null else Vector3.ZERO
+			var heir := _find_heir(sp, at)
+			if heir == null:
+				_roster.erase(sp)
+				FXManager.show_dramatic_text(at, "Your %s's line has ended." % SpeciesDB.one(sp).capitalize().to_lower(), Color(0.85, 0.6, 0.5))
+			else:
+				_inherit(sp, heir, was)
+			if companion != null and companion.species_id == sp:
+				companion = null
+				if _roster.has(sp):
+					_focus(sp)
+			_refresh_chips()
+		if companion == null and not _roster.is_empty():
+			_focus(_roster.keys()[0])
 	if companion == null:
 		return
 	if not _alive():
 		companion = null
-		_c_title.text = "Your creature has died"
-		_c_info.text = "Tap another animal and press Make Mine to start again."
+		_c_title.text = "Your creatures are gone"
+		_c_info.text = "Tap any animal and press Make Mine. You can keep one of every kind."
 		_train_btn.disabled = true
 		return
 	# XP: staying alive, plus every bite it eats.

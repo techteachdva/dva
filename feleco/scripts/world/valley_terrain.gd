@@ -267,9 +267,14 @@ func _color_at(x: float, z: float, h: float, flatness: float) -> Color:
 	var r: float = sqrt(x * x + z * z)
 	var soil := Color(0.32, 0.40, 0.20)
 	var meadow := Color(0.46, 0.52, 0.24)
-	if r <= FLOOR_RADIUS:
-		var n: float = clampf(_noise.get_noise_2d(x * 1.7, z * 1.7) * 0.5 + 0.5, 0.0, 1.0)
-		return soil.lerp(meadow, n)
+	var n: float = clampf(_noise.get_noise_2d(x * 1.7, z * 1.7) * 0.5 + 0.5, 0.0, 1.0)
+	var field: Color = soil.lerp(meadow, n)
+	# The meadow runs up into the hills along the same ragged line as the
+	# biomes (Biomes.mountain_edge), fading over several metres: no circle.
+	var edge: float = Biomes.mountain_edge(x, z)
+	var into_hills: float = smoothstep(edge - 5.0, edge + 7.0, r + _noise.get_noise_2d(x * 0.8, z * 0.8) * 4.0)
+	if into_hills <= 0.0:
+		return field
 	var foothill := Color(0.38, 0.45, 0.24)
 	var rock_light := Color(0.52, 0.49, 0.45)
 	var rock_dark := Color(0.34, 0.32, 0.31)
@@ -281,6 +286,7 @@ func _color_at(x: float, z: float, h: float, flatness: float) -> Color:
 	var grass_line: float = 13.0 if r <= RIM_RADIUS else 7.0
 	var grassy: float = clampf((grass_line - h) / 5.0, 0.0, 1.0) * clampf((flatness - 0.5) / 0.3, 0.0, 1.0)
 	var c: Color = rock.lerp(foothill, grassy)
+	c = field.lerp(c, into_hills)
 	# Snow settles on high, flattish facets; sheer faces stay bare.
 	var snow_line: float = 22.0 + jitter * 3.0
 	var snowy: float = clampf((h - snow_line) / 4.0, 0.0, 1.0) * clampf((flatness - 0.35) / 0.3, 0.0, 1.0)

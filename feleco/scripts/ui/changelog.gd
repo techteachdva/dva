@@ -3,9 +3,21 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.7"
+const VERSION: String = "4.7.1"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.7.1",
+		"title": "Gold Rush",
+		"notes": [
+			"Gold is rare now, and urgent. A creature that eats a golden plant turns Gold for one day: it can't be hurt until you click it. Click it to claim the gold and start a rampage. It flashes when time is nearly up. Miss it and the gold hides inside, passing to whatever eats it next.",
+			"Keep one of every kind: adopt a sheep, a wolf, a bear... and switch between them. When one dies, its nearest relative carries on the family line.",
+			"Spend EP right from the Powers tray: buy any power on the spot, or Release 10 of any species and click where they arrive.",
+			"Cursors are reworked: each one is its own shape now (leaf, paw, feather, toadstool, star...), plus a new worm cursor.",
+			"Every power has an icon. Pinecones get a real model, and pinecones and pineapples get Field Guide pictures.",
+			"The meadow starts green all the way to the hills, and the hills begin along a natural, ragged edge.",
+		],
+	},
 	{
 		"version": "4.7",
 		"title": "The Mountain is Due",

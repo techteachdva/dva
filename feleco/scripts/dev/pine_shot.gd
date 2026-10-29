@@ -37,6 +37,22 @@ func _go() -> void:
 	for i in 120:
 		await get_tree().process_frame
 	get_viewport().get_texture().get_image().save_png(out + "/pine.png")
+	var cones: Array = []
+	for k in 3:
+		var pc: Node3D = load("res://scripts/agents/apple.gd").new()
+		pc.kind = ["pinecone", "apple", "pineapple"][k]
+		pc.set("_landed", true)
+		pc.set("_rolled", true)
+		pc.set("_decay", 999.0)
+		d.add_child(pc)
+		var spot2: Vector3 = at + Vector3(-1.0 + k * 1.0, 0, 7)
+		pc.global_position = Vector3(spot2.x, d.ground_height(spot2.x, spot2.z) + 0.26, spot2.z)
+		cones.append(pc)
+	if not cones.is_empty():
+		cam.set_view((cones[1] as Node3D).global_position, 0.6, -0.3, 2.2, true)
+		for i in 40:
+			await get_tree().process_frame
+		get_viewport().get_texture().get_image().save_png(out + "/cone.png")
 	cam.set_view(Vector3(0, 0, 0), 0.8, -0.9, 165.0, true)
 	for i in 60:
 		await get_tree().process_frame
@@ -79,6 +95,62 @@ func _go() -> void:
 			await get_tree().process_frame
 		print("SHOT rampage %s kills=%d y=%.1f" % [bird_id, bird.rampage_kills, bird.global_position.y])
 		bird.end_rampage()
+	# Gold 4.7.1: unclaimed gold can't die; it times out into quiet gold,
+	# which the eater picks up.
+	var sheep: MarkovAgent = d.spawn_scripted("sheep", d.dry_land(Vector3(5, 0, 5)))
+	sheep.scripted = false
+	sheep.make_golden(1.0, "test")
+	sheep.die()
+	print("SHOT gold shield alive=", not sheep.is_queued_for_deletion(), " golden=", sheep.golden)
+	sheep.gold_left = 0.01
+	for i in 5:
+		await get_tree().physics_frame
+	print("SHOT gold expired golden=", sheep.golden, " latent=", sheep.gold_latent)
+	var wolf: MarkovAgent = d.spawn_scripted("wolf", sheep.global_position)
+	wolf.devour(sheep)
+	print("SHOT wolf took quiet gold golden=", wolf.golden, " sheep dead=", sheep.is_queued_for_deletion())
+	d.get_node("/root").get_node_or_null("x")
+	wolf.claim_gold()
+	print("SHOT claimed=", wolf.gold_claimed, " rampage=", wolf.start_rampage())
+	wolf.end_rampage()
+	# Menagerie: one of each, and a line passes to kin.
+	var goals = get_tree().get_first_node_in_group("goals_panel")
+	var picks: Dictionary = {}
+	for a3 in d._agent_registry:
+		if a3.species in ["sheep", "wolf", "deer"] and not picks.has(a3.species) and a3.node is MarkovAgent and a3.node.golden <= 0.05:
+			picks[a3.species] = a3.node
+	for sp in picks:
+		goals.adopt(picks[sp])
+	print("SHOT roster=", goals._roster.keys(), " focus=", goals.companion.species_id)
+	var lost: MarkovAgent = goals._roster["wolf"]["agent"] if goals._roster.has("wolf") else null
+	if lost != null:
+		lost.die()
+		for i in 120:
+			await get_tree().process_frame
+		var now = goals._roster.get("wolf", {}).get("agent")
+		print("SHOT wolf line: heir=", now != null and now != lost and is_instance_valid(now), " roster=", goals._roster.keys())
+	# Powers tray with icons, and Release 10.
+	var hud = goals.hud if goals.hud != null else get_tree().root.find_child("SimulationHUD", true, false)
+	var gc2 = get_node("/root/GameConfig")
+	gc2.eco_points = 500
+	if hud != null:
+		hud._tray.visible = true
+		for bn in hud.POWERUP_BUTTONS.keys():
+			var bb: Button = hud._power_btn(bn)
+			print("SHOT btn ", bn, " icon=", bb.icon, " size=", bb.size, " min=", bb.get_combined_minimum_size(), " clip=", bb.clip_text, " expand=", bb.expand_icon)
+		hud._refresh_pack()
+		hud._update_powerup_buttons()
+		cam.set_view(Vector3.ZERO, 0.8, -0.8, 60.0, true)
+		for i in 30:
+			await get_tree().process_frame
+		get_viewport().get_texture().get_image().save_png(out + "/tray.png")
+		var before: int = d._agent_registry.size()
+		if hud._director == null:
+			hud._director = d
+		hud._placing = "deer"
+		hud._release_pack(Vector3(10, 0, 10))
+		print("SHOT release added=", d._agent_registry.size() - before, " ep=", gc2.eco_points)
+		hud._tray.visible = false
 	var pine = d.get_tree().get_nodes_in_group("pineapple")
 	print("SHOT pineapples on ground: ", pine.size())
 	for p in pine:

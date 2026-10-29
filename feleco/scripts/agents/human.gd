@@ -928,6 +928,8 @@ func _update_weapon_visibility(show_it: bool) -> void:
 		weapon.visible = show_it
 
 func die() -> void:
+	if gold_shield():
+		return
 	if is_queued_for_deletion():
 		return
 	var sim: SimulationDirector = director

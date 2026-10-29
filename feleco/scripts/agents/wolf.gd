@@ -408,6 +408,8 @@ func _get_pack_multiplier() -> float:
 	return _cached_pack_mult
 
 func die() -> void:
+	if gold_shield():
+		return
 	if is_queued_for_deletion():
 		return
 	var sim: SimulationDirector = director

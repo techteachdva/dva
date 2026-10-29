@@ -99,6 +99,7 @@ const ONE: Dictionary = {
 	"sheep": "sheep", "rabbit": "rabbit", "wolf": "wolf", "falcon": "falcon", "human": "villager",
 	"boar": "boar", "robin": "robin", "worm": "worm", "mushroom": "mushroom", "fish": "fish",
 	"bear": "bear", "lion": "mountain lion", "deer": "deer", "goat": "mountain goat", "beetle": "beetle",
+	"mouse": "mouse",
 }
 
 static func one(id: String) -> String:

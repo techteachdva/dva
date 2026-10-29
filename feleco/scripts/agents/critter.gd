@@ -293,6 +293,8 @@ func _on_tick_sleep(_delta: float) -> void:
 		set_state("Forage")
 
 func die() -> void:
+	if gold_shield():
+		return
 	if is_queued_for_deletion():
 		return
 	var sim := _sim()

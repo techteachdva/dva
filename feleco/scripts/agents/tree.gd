@@ -26,8 +26,8 @@ var _lifespan: float = 180.0
 var moss: float = 0.0
 var star_moss: bool = false
 var _moss_shown: int = -1
-const GOLDEN_APPLE_CHANCE: float = 0.02
-const GOLDEN_BERRY_CHANCE: float = 0.03
+const GOLDEN_APPLE_CHANCE: float = 0.004
+const GOLDEN_BERRY_CHANCE: float = 0.005
 var _dying: bool = false
 var _death_timer: float = 0.0
 var _arboreal: bool = false
@@ -438,10 +438,10 @@ func _setup_visuals() -> void:
 			elif conifer:
 				# One straight trunk; the needles are drawn in tiers (_dress_crown).
 				_branch(Vector3.ZERO, Vector3(lean.x * 0.3, 1.0, lean.z * 0.3).normalized(), 3.4 * _size, 0.3 * _size, 0)
-				star_moss = _rng.randf() < minf(0.04 * _golden_mult(), 0.05)
+				star_moss = _rng.randf() < minf(0.01 * _golden_mult(), 0.02)
 			else:
 				_branch(Vector3.ZERO, lean, 1.9 * _size, 0.34 * _size, 4)
-				star_moss = _rng.randf() < minf(0.04 * _golden_mult(), 0.05)
+				star_moss = _rng.randf() < minf(0.01 * _golden_mult(), 0.02)
 			# All limbs merged into one mesh: one draw per tree.
 			var st := SurfaceTool.new()
 			for seg: Array in _segments:

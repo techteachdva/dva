@@ -39,10 +39,17 @@ var variant: String = ""
 # "", "tough" or "special" (see Roles).
 var role: String = ""
 var species_id: String = ""
-# Gold (0..1): taken in by eating a golden producer, a golden kill or a golden
-# carcass, so it marks how energy moves up and back down the food web. It
-# makes a creature hardier and less hungry, and slowly fades.
+# Gold (4.7.1): rare, urgent, limited time. A creature that eats a golden
+# plant turns Gold for at most one day: invincible, sparkling, and waiting for
+# the player. Click it to claim the gold (the shield drops and a rampage is
+# ready). Near the end it flashes. Unclaimed, the gold goes quiet: hidden in
+# the creature, it passes on to whatever eats it (or its carcass), which
+# turns Gold in turn. So the gold travels up the food web.
 var golden: float = 0.0
+var gold_left: float = 0.0
+var gold_claimed: bool = false
+var gold_latent: bool = false
+const GOLD_FLASH_SHARE: float = 0.3
 # Genome (see Genetics): set once at birth or arrival.
 var genes: Dictionary = {}
 const GOLD_FADE: float = 0.02
@@ -142,6 +149,7 @@ func stage_to(pos: Vector3, state: String = "Walk") -> void:
 func start_rampage() -> bool:
 	if golden <= 0.05 or rampage:
 		return false
+	gold_claimed = true
 	rampage = true
 	rampage_kills = 0
 	_rampage_time = 0.0
@@ -217,15 +225,38 @@ func _rampage_tick(delta: float) -> void:
 	if golden <= 0.02 or _rampage_time >= RAMPAGE_MAX:
 		end_rampage()
 
+# The player clicked this Gold creature: the shield drops, the rampage is ready.
+func claim_gold() -> void:
+	if golden <= 0.05 or gold_claimed:
+		return
+	gold_claimed = true
+	FXManager.show_dramatic_text(global_position + Vector3.UP * 2.2, "Rampage ready!", Color(1.0, 0.85, 0.25))
+
+# Called first in every die(): an unclaimed Gold creature cannot die (true =
+# it lives). A creature carrying quiet gold hands it to its eater as it goes.
+func gold_shield() -> bool:
+	if golden > 0.05 and not gold_claimed and not rampage:
+		if get("health") != null:
+			set("health", 100.0)
+		if get("energy") != null:
+			set("energy", maxf(float(get("energy")), 50.0))
+		FXManager.show_floating_text(global_position + Vector3.UP * 1.4, "Untouchable!", Color(1.0, 0.85, 0.3))
+		return true
+	if gold_latent:
+		gold_latent = false
+		golden = 0.9
+	return false
+
 # Eat a whole creature (a worm, a mushroom, a kill): take on its gold, then it dies.
 func devour(prey: Node) -> void:
 	if prey == null or not is_instance_valid(prey):
 		return
-	var g = prey.get("golden")
-	if g != null and float(g) > 0.0:
-		make_golden(float(g) * 0.7, str(prey.get("species_id")))
+	# Only quiet gold passes on; a shining Gold creature can't be eaten at all.
+	var quiet: bool = prey.get("gold_latent") == true
 	if prey.has_method("die"):
 		prey.die()
+	if quiet:
+		make_golden(1.0, str(prey.get("species_id")))
 
 # Take on gold from a meal. Strength 1 is a golden plant; kills and carcasses
 # pass on a share of what the eaten creature carried.
@@ -233,7 +264,13 @@ func make_golden(strength: float, source: String = "") -> void:
 	if strength <= 0.02:
 		return
 	var was: bool = golden > 0.05
-	golden = clampf(maxf(golden, strength), 0.0, 1.0)
+	if was:
+		return
+	golden = 1.0
+	gold_left = Clock.BIO_PER_DAY
+	gold_claimed = false
+	gold_latent = false
+	FXManager.show_dramatic_text(global_position + Vector3.UP * 2.0, "GOLD!", Color(1.0, 0.85, 0.25))
 	if not was and golden > 0.05:
 		var sim = director
 		if sim != null and sim.has_signal("gold_passed"):
@@ -293,15 +330,20 @@ func _physics_process(delta: float) -> void:
 	var sim: SimulationDirector = director
 	var metab_mult: float = 1.0 if sim == null else sim.season_metabolism(species_id) * sim.tune(species_id, "hunger")
 	metab_mult *= 1.0 - HERD_HUNGER * herd
-	if golden > 0.0:
-		metab_mult *= 1.0 - 0.35 * golden
-		if get("health") != null:
-			set("health", minf(float(get("health")) + 1.5 * golden * life, 100.0))
-		golden = maxf(golden - GOLD_FADE * life, 0.0)
+	if golden > 0.05 and not rampage:
+		gold_left -= life
+		if gold_left <= 0.0:
+			# Unclaimed: the gold goes quiet, waiting for whatever eats this one.
+			golden = 0.0
+			gold_claimed = false
+			gold_latent = true
+			FXManager.show_floating_text(global_position + Vector3.UP * 1.5, "The gold fades...", Color(0.85, 0.75, 0.45))
 		_gold_sparkle -= life
-		if _gold_sparkle <= 0.0 and golden > 0.15:
-			_gold_sparkle = 2.0 + randf() * 2.0
+		if _gold_sparkle <= 0.0 and golden > 0.05:
+			_gold_sparkle = 1.2 + randf()
 			FXManager.spawn_birth_particles(global_position + Vector3.UP * 0.6, Color(1.0, 0.85, 0.3))
+			if not gold_claimed and randf() < 0.3:
+				FXManager.show_floating_text(global_position + Vector3.UP * 1.8, "Click me!" if gold_left > Clock.BIO_PER_DAY * GOLD_FLASH_SHARE else "Hurry!", Color(1.0, 0.85, 0.3))
 	if herd > 0.0 and get("health") != null:
 		set("health", minf(float(get("health")) + HERD_HEAL * herd * life, 100.0))
 	_metabolise(life * metab_mult)
@@ -337,7 +379,9 @@ func _physics_process(delta: float) -> void:
 		cur_energy = get("energy")
 		if cur_energy != null:
 			_data.energy = cur_energy
-		_data.golden = golden
+		# The last stretch of unclaimed gold flashes on and off.
+		var flash: bool = golden > 0.05 and not gold_claimed and not rampage and gold_left < Clock.BIO_PER_DAY * GOLD_FLASH_SHARE and fmod(Time.get_ticks_msec() / 1000.0, 0.5) < 0.22
+		_data.golden = 0.0 if flash else golden
 		_data.age = _age
 
 # Looks at its own kind within HERD_RADIUS: how close it is to their middle

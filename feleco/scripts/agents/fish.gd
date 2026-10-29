@@ -158,10 +158,11 @@ func _eat_river_worm() -> void:
 				break
 	if worm == null:
 		return
-	if float(worm.get("golden")) > 0.0:
-		make_golden(float(worm.golden) * 0.7, worm.get("species_id"))
+	var quiet: bool = worm.get("gold_latent") == true
 	if worm.has_method("die"):
 		worm.die()
+	if quiet:
+		make_golden(1.0, worm.get("species_id"))
 	energy += 16.0
 	energy = clampf(energy, 0.0, 100.0)
 	health += 4.0
@@ -215,6 +216,8 @@ func _try_reproduce(delta: float) -> void:
 		sim.spawn_fish_offspring(self, global_position + Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0)))
 
 func die() -> void:
+	if gold_shield():
+		return
 	if is_queued_for_deletion():
 		return
 	var sim: SimulationDirector = director

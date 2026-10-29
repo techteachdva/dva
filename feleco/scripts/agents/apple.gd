@@ -32,29 +32,18 @@ func _ready() -> void:
 	sphere.height = r * 2.0
 	mesh.mesh = sphere
 	if kind == "pinecone":
-		mesh.scale = Vector3(0.55, 1.3, 0.55)
-		# Overlapping rings of woody scales, widest near the top, a cone
-		# tapering to the tip below (4.7).
-		var scale_mat := StandardMaterial3D.new()
-		scale_mat.albedo_color = Color(0.5, 0.33, 0.17)
-		for ring: int in 4:
-			var sc := MeshInstance3D.new()
-			var cm := CylinderMesh.new()
-			var w: float = [0.17, 0.2, 0.17, 0.11][ring]
-			cm.top_radius = w * 0.45
-			cm.bottom_radius = w
-			cm.height = 0.12
-			cm.radial_segments = 8
-			cm.rings = 1
-			sc.mesh = cm
-			sc.material_override = scale_mat if ring % 2 == 0 else null
-			if ring % 2 == 1:
-				var m2 := StandardMaterial3D.new()
-				m2.albedo_color = Color(0.4, 0.26, 0.13)
-				sc.material_override = m2
-			sc.position = Vector3(0.0, 0.14 - float(ring) * 0.1, 0.0)
-			sc.rotation = Vector3(PI, float(ring) * 0.4, 0.0)
-			add_child(sc)
+		# A real cone of scales (one mesh shared by every pinecone).
+		# A solid brown egg for the core, the scales shingled over it.
+		mesh.scale = Vector3(0.6, 1.5, 0.6)
+		mesh.position.y = 0.12
+		var scales := MeshInstance3D.new()
+		scales.mesh = _pinecone_mesh()
+		scales.scale = Vector3(1.7, 0.75, 1.7) / mesh.scale * Vector3(1.0, 1.0, 1.0)
+		var sm := StandardMaterial3D.new()
+		sm.vertex_color_use_as_albedo = true
+		sm.cull_mode = BaseMaterial3D.CULL_DISABLED
+		scales.material_override = sm
+		mesh.add_child(scales)
 	elif kind == "pineapple":
 		mesh.scale = Vector3(1.0, 1.55, 1.0)
 		# The spiky green crown.
@@ -75,7 +64,7 @@ func _ready() -> void:
 	mat.albedo_color = Color(0.4, 0.15, 0.55) if kind == "berry" else Color(0.95, 0.1, 0.05)
 	var skin: String = SpriteGenerator.SPRITE_DIR + ("berry_skin.png" if kind == "berry" else "apple_skin.png")
 	if kind == "pinecone":
-		mat.albedo_color = Color(0.45, 0.3, 0.16)
+		mat.albedo_color = Color(0.36, 0.23, 0.12)
 	elif kind == "pineapple":
 		mat.albedo_color = Color(0.86, 0.62, 0.16)
 	elif ResourceLoader.exists(skin) and not golden:
@@ -98,6 +87,43 @@ func _ready() -> void:
 	area.collision_layer = 2
 	area.collision_mask = 0
 	add_child(area)
+
+static var _cone_mesh: ArrayMesh
+
+# Rows of pointed woody scales spiralling round a stem, widest a third of the
+# way down and tapering to a point; scales tip outward and down like a pine's.
+static func _pinecone_mesh() -> ArrayMesh:
+	if _cone_mesh != null:
+		return _cone_mesh
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rows: int = 8
+	var per: int = 8
+	var height: float = 0.55
+	for r: int in rows:
+		var t: float = float(r) / float(rows - 1)
+		var y: float = height * 0.5 - t * height
+		var rad: float = (0.07 + 0.13 * sin(clampf(t * 1.3, 0.05, 1.0) * PI)) * (1.0 - t * 0.35)
+		var shade: Color = Color(0.56, 0.37, 0.19).lerp(Color(0.36, 0.22, 0.11), t)
+		for k: int in per:
+			var a: float = (float(k) + (0.5 if r % 2 == 1 else 0.0)) / float(per) * TAU
+			var out := Vector3(cos(a), 0.0, sin(a))
+			var side := Vector3(-sin(a), 0.0, cos(a))
+			var base := Vector3(0.0, y + 0.03, 0.0)
+			var w: float = rad * 0.85
+			var tip: Vector3 = out * (rad + 0.03) + Vector3(0.0, y - 0.04, 0.0)
+			var l: Vector3 = base + out * rad * 0.35 + side * w
+			var rr: Vector3 = base + out * rad * 0.35 - side * w
+			var back: Vector3 = base - out * 0.01
+			var col: Color = shade.lightened(0.12) if k % 2 == 0 else shade
+			for tri: Array in [[l, tip, rr], [l, back, tip], [rr, tip, back]]:
+				var n: Vector3 = ((tri[1] - tri[0]) as Vector3).cross(tri[2] - tri[0]).normalized()
+				for v: Vector3 in tri:
+					st.set_color(col)
+					st.set_normal(n)
+					st.add_vertex(v)
+	_cone_mesh = st.commit()
+	return _cone_mesh
 
 func _process(delta: float) -> void:
 	if not _landed:

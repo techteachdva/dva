@@ -343,6 +343,8 @@ func _on_exit_mate() -> void:
 	pass
 
 func die() -> void:
+	if gold_shield():
+		return
 	if is_queued_for_deletion():
 		return
 	var sim: SimulationDirector = director

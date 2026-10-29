@@ -154,10 +154,10 @@ static func resolve_attack(attacker, target) -> bool:
 
 	if kill:
 		attacker._attack_cooldown = 1.0
-		# A golden kill passes most of its gold up to the hunter.
-		var tg = target.get("golden")
-		if tg != null and float(tg) > 0.0 and attacker.has_method("make_golden"):
-			attacker.make_golden(float(tg) * 0.7, _infer_species(target))
+		# Quiet gold hidden in the kill passes up to the hunter.
+		if target.get("gold_latent") == true and attacker.has_method("make_golden"):
+			target.set("gold_latent", false)
+			attacker.make_golden(1.0, _infer_species(target))
 		var th = target.get("health")
 		if th != null:
 			target.health = 0.0

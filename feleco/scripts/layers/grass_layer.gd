@@ -22,9 +22,9 @@ const KIND_LUSH: Array[Color] = [Color(0.36, 0.64, 0.22), Color(0.22, 0.5, 0.24)
 var _cell_kind: PackedByteArray
 # Golden Year and Green Thumb raise this.
 var golden_mult: float = 1.0
-const GOLDEN_SEED_CHANCE: float = 0.0015
+const GOLDEN_SEED_CHANCE: float = 0.0002
 # Gold stays rare: never more than this share of the meadow is golden.
-const GOLDEN_CAP: float = 0.05
+const GOLDEN_CAP: float = 0.004
 
 func _golden_room() -> bool:
 	return _cell_kind.count(Kind.GOLDEN) < int(_cell_kind.size() * GOLDEN_CAP)

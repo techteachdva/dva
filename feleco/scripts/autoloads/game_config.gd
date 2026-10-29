@@ -3,6 +3,8 @@ extends Node
 func _ready() -> void:
 	# The developer console (unlocked from the Credits) lives on the root.
 	get_tree().root.add_child.call_deferred(DevConsole.new())
+	# The equipped cursor, from the very first screen (after the save loads).
+	Cosmetics.apply_cursor.call_deferred(self)
 	# Phones held upright get a portrait canvas, so menus stay readable
 	# instead of shrinking a 1280-wide landscape layout onto a narrow screen.
 	get_window().size_changed.connect(_fit_orientation)
