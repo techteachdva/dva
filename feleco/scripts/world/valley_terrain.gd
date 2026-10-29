@@ -1,14 +1,18 @@
 class_name ValleyTerrain
 extends Node3D
 
-# Pocket valley. The floor is the living meadow. Slopes and peaks are the
-# rim: visible, walkable only at their feet, and reserved for a later patch
-# where creatures travel up for rare resources. band_at() is that seam.
+# Pocket valley. The floor is the living meadow (plains and riverbank); the
+# highlands ringing it are the Mountain biome, walkable out to WALK_RADIUS;
+# beyond them the big peaks rise as the valley's wall (4.7).
 
 const FLOOR_RADIUS: float = 46.0
+# The highlands: the old rim, lower and fleshed out as a biome to explore.
 const RIM_RADIUS: float = 84.0
-const MESH_SPAN: float = 180.0
-const MESH_RES: int = 88
+const WALK_RADIUS: float = 80.0
+# The big peaks: the new periphery.
+const PEAK_RADIUS: float = 136.0
+const MESH_SPAN: float = 300.0
+const MESH_RES: int = 132
 var _mesh_res: int = MESH_RES
 
 const PASS_NAMES: PackedStringArray = ["North Pass", "East Pass", "South Pass", "West Pass"]
@@ -20,7 +24,7 @@ var river: River
 
 func _ready() -> void:
 	if OS.has_feature("web"):
-		_mesh_res = 72
+		_mesh_res = 104
 	_noise = FastNoiseLite.new()
 	_noise.seed = 14021
 	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
@@ -33,35 +37,59 @@ func _ready() -> void:
 	_crag.fractal_type = FastNoiseLite.FRACTAL_RIDGED
 	_crag.fractal_octaves = 4
 	_crag.fractal_gain = 0.55
-	_build_mesh()
-	_build_far_range()
+	# The river's course comes first: the terrain carves its gorge.
 	river = River.new()
 	river.name = "River"
+	river.plan_course(randi())
+	_build_mesh()
+	_build_far_range()
 	add_child(river)
 	river.generate(self)
 	_plant_copses()
 	_add_sky()
 
 func height_at(x: float, z: float) -> float:
+	var h: float = _height_raw(x, z)
+	if river == null or not river.planned:
+		return h
+	# The river's channel: a shallow dip on the meadow, a gorge in the hills.
+	var r: float = sqrt(x * x + z * z)
+	var d: float = river.across_distance(x, z)
+	var wall: float = River.BASE_HALF_WIDTH * 1.7
+	var flare: float = lerpf(2.5, 14.0, smoothstep(FLOOR_RADIUS - 4.0, RIM_RADIUS, r))
+	if d >= wall + flare:
+		return h
+	var k: float = 1.0 - smoothstep(wall, wall + flare, d)
+	var bed: float = river.bed_height(river.to_course(x, z).x)
+	return lerpf(h, minf(h, bed), k)
+
+func _height_raw(x: float, z: float) -> float:
 	var meadow: float = _noise.get_noise_2d(x, z) * 0.55
 	var r: float = sqrt(x * x + z * z)
 	if r <= FLOOR_RADIUS:
 		return meadow
-	var t: float = clampf((r - FLOOR_RADIUS) / (RIM_RADIUS - FLOOR_RADIUS), 0.0, 1.0)
-	t = t * t * (3.0 - 2.0 * t)
 	# Low saddles on the four passes (the cardinals); full mountains elsewhere.
 	var a: float = fposmod(atan2(z, x), PI * 0.5)
 	var from_pass: float = minf(a, PI * 0.5 - a)
 	var range_mask: float = smoothstep(0.07, 0.42, from_pass)
 	# Ridged noise in 0..1: sharp crests where it peaks, gullies between.
 	var crag: float = clampf(_crag.get_noise_2d(x, z) * 0.5 + 0.5, 0.0, 1.0)
-	var summit: float = 9.0 + crag * crag * 26.0 + _noise.get_noise_2d(x * 0.9, z * 0.9) * 3.0
-	var crest: float = lerpf(4.5 + crag * 2.0, summit, range_mask)
-	var h: float = lerpf(meadow, crest, t)
+	# The highlands: rolling, walkable ground with craggy knolls (the old rim,
+	# smaller), climbing gently from the meadow.
+	var t: float = clampf((r - FLOOR_RADIUS) / (RIM_RADIUS - FLOOR_RADIUS), 0.0, 1.0)
+	t = t * t * (3.0 - 2.0 * t)
+	var knoll: float = 4.0 + crag * crag * 7.0 + _noise.get_noise_2d(x * 0.9, z * 0.9) * 2.0
+	var high: float = lerpf(3.0 + crag * 2.0, knoll, range_mask)
+	var h: float = lerpf(meadow, high, t)
 	if r > RIM_RADIUS:
-		# Behind the rim the range keeps rising so the valley stays enclosed.
-		var beyond: float = clampf((r - RIM_RADIUS) / 18.0, 0.0, 1.0)
-		h = lerpf(h, crest * 1.1 + 5.0, beyond)
+		# The big peaks: the new wall of the valley, far taller than before.
+		var t2: float = clampf((r - RIM_RADIUS) / (PEAK_RADIUS - RIM_RADIUS), 0.0, 1.0)
+		t2 = t2 * t2 * (3.0 - 2.0 * t2)
+		var summit: float = 22.0 + crag * crag * 48.0 + _noise.get_noise_2d(x * 0.6, z * 0.6) * 4.0
+		var peak: float = lerpf(14.0 + crag * 6.0, summit, range_mask)
+		h = lerpf(h, peak, t2)
+		if r > PEAK_RADIUS:
+			h = lerpf(h, peak * 1.1 + 6.0, clampf((r - PEAK_RADIUS) / 20.0, 0.0, 1.0))
 	return h
 
 # Height of the drawn (faceted) surface. height_at() is the smooth field the
@@ -95,7 +123,7 @@ func band_at(x: float, z: float) -> String:
 	var r2: float = x * x + z * z
 	if r2 <= FLOOR_RADIUS * FLOOR_RADIUS:
 		return "floor"
-	if r2 <= RIM_RADIUS * RIM_RADIUS:
+	if r2 <= WALK_RADIUS * WALK_RADIUS:
 		return "slope"
 	return "peak"
 
@@ -106,7 +134,7 @@ func random_pass_mouth() -> Dictionary:
 	var i: int = randi() % PASS_NAMES.size()
 	# North, East, South, West. North is -Z.
 	var ang: float = -PI * 0.5 + float(i) * PI * 0.5
-	var mouth_r: float = FLOOR_RADIUS - 3.0
+	var mouth_r: float = WALK_RADIUS - 6.0
 	var x: float = cos(ang) * mouth_r
 	var z: float = sin(ang) * mouth_r
 	return {
@@ -159,7 +187,7 @@ func _build_mesh() -> void:
 # distance (aerial perspective baked into the mesh, so it works even where
 # the fog pass is off), and the ground curves away like a small planet.
 # ------------------------------------------------------------------
-const FAR_RINGS: Array[float] = [86.0, 92.0, 100.0, 110.0, 122.0, 136.0, 152.0, 170.0, 192.0, 218.0, 250.0, 290.0, 340.0, 400.0, 470.0, 560.0, 670.0, 800.0, 950.0]
+const FAR_RINGS: Array[float] = [146.0, 152.0, 162.0, 176.0, 194.0, 218.0, 250.0, 290.0, 340.0, 400.0, 470.0, 560.0, 670.0, 800.0, 950.0]
 const FAR_SEGMENTS: int = 160
 const PLANET_RADIUS: float = 4000.0
 const HAZE := Color(0.66, 0.75, 0.84)
@@ -174,7 +202,7 @@ func far_height(x: float, z: float) -> float:
 	var ridge: float = clampf(_crag.get_noise_2d(x * 0.18, z * 0.18) * 0.5 + 0.5, 0.0, 1.0)
 	var swell: float = _noise.get_noise_2d(x * 0.05, z * 0.05)
 	var far_h: float = 16.0 + ridge * ridge * 70.0 + swell * 22.0
-	var t: float = clampf((r - 130.0) / 220.0, 0.0, 1.0)
+	var t: float = clampf((r - 150.0) / 240.0, 0.0, 1.0)
 	var h: float = lerpf(near_h, far_h, t * t * (3.0 - 2.0 * t))
 	return h - r * r / (2.0 * PLANET_RADIUS)
 
@@ -221,7 +249,7 @@ func _add_far_tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
 	# washed toward the haze the further away it is.
 	var lift: float = centre.y + r * r / (2.0 * PLANET_RADIUS)
 	var col: Color = _color_at(centre.x, centre.z, lift * (0.75 if r > 200.0 else 1.0), absf(normal.y))
-	var fade: float = clampf((r - 95.0) / 600.0, 0.0, 0.9)
+	var fade: float = clampf((r - 150.0) / 600.0, 0.0, 0.9)
 	st.set_color(col.lerp(HAZE, sqrt(fade)))
 	st.add_vertex(a)
 	st.add_vertex(b)
@@ -249,10 +277,12 @@ func _color_at(x: float, z: float, h: float, flatness: float) -> Color:
 	var jitter: float = _noise.get_noise_2d(x * 3.1, z * 3.1)
 	# Steep faces are dark rock, ledges lighter; grass clings to gentle low slopes.
 	var rock: Color = rock_dark.lerp(rock_light, clampf((flatness - 0.45) / 0.45 + jitter * 0.3, 0.0, 1.0))
-	var grassy: float = clampf((7.0 - h) / 5.0, 0.0, 1.0) * clampf((flatness - 0.55) / 0.3, 0.0, 1.0)
+	# The highlands are alpine pasture between the rocks; the big peaks are bare.
+	var grass_line: float = 13.0 if r <= RIM_RADIUS else 7.0
+	var grassy: float = clampf((grass_line - h) / 5.0, 0.0, 1.0) * clampf((flatness - 0.5) / 0.3, 0.0, 1.0)
 	var c: Color = rock.lerp(foothill, grassy)
 	# Snow settles on high, flattish facets; sheer faces stay bare.
-	var snow_line: float = 16.0 + jitter * 3.0
+	var snow_line: float = 22.0 + jitter * 3.0
 	var snowy: float = clampf((h - snow_line) / 4.0, 0.0, 1.0) * clampf((flatness - 0.35) / 0.3, 0.0, 1.0)
 	return c.lerp(snow, snowy)
 

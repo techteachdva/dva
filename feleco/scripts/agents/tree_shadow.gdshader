@@ -12,10 +12,12 @@ uniform float stretch = 0.6;
 uniform float fade = 1.0;
 
 void vertex() {
-	vec2 d = normalize(sun_dir);
+	// Failsafe: a zero (or bad) sun direction must not normalize to NaN.
+	vec2 d = (length(sun_dir) > 0.0001 && !any(isnan(sun_dir))) ? normalize(sun_dir) : vec2(0.0, 1.0);
 	vec2 side = vec2(-d.y, d.x);
 	// Local quad: x across the shadow, z along it (-0.5 at the trunk end).
-	float along = (VERTEX.z + 0.5) * (1.0 + stretch * 1.6) - 0.5;
+	float st = (isnan(stretch) || isinf(stretch)) ? 0.0 : clamp(stretch, 0.0, 3.0);
+	float along = (VERTEX.z + 0.5) * (1.0 + st * 1.6) - 0.5;
 	vec2 p = side * VERTEX.x * 0.9 + d * along;
 	VERTEX.xz = p;
 }
@@ -23,5 +25,6 @@ void vertex() {
 void fragment() {
 	float a = texture(blob, UV).a;
 	ALBEDO = vec3(0.05, 0.08, 0.04);
-	ALPHA = a * 0.34 * fade / (1.0 + stretch * 0.4);
+	float st2 = (isnan(stretch) || isinf(stretch)) ? 0.0 : clamp(stretch, 0.0, 3.0);
+	ALPHA = a * 0.34 * clamp(fade, 0.0, 1.0) / (1.0 + st2 * 0.4);
 }

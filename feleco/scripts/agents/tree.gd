@@ -14,6 +14,13 @@ var _lifespan: float = 180.0
 # A berry bush is this same plant kept low: a short, wide tangle of branches
 # with berry clusters at the tips instead of apples.
 @export var bush: bool = false
+# Conifers (4.7): mountain pines. A straight trunk under tiers of evergreen
+# needles; they drop pinecones and grow moss like any tree.
+@export var conifer: bool = false
+# Pineapple trees (4.7): born only where a conifer and an apple seedling meet.
+# A tall bare trunk under a starburst of long spiky leaves; the fruit is the
+# richest in the valley, and its seeds spread pineapple trees anywhere.
+@export var pineapple: bool = false
 # Moss on the bark of grown trees (0..1). Grazers and browsers eat it.
 # A rare tree grows star moss: a bright, very rich patch.
 var moss: float = 0.0
@@ -53,9 +60,12 @@ static var _shade_mat: ShaderMaterial
 static func set_sun(dir: Vector2, stretch: float, fade: float) -> void:
 	if _shade_mat == null:
 		return
-	_shade_mat.set_shader_parameter("sun_dir", dir)
-	_shade_mat.set_shader_parameter("stretch", stretch)
-	_shade_mat.set_shader_parameter("fade", fade)
+	# Failsafes: no zero or bad direction, no runaway stretch at the horizon.
+	if not dir.is_finite() or dir.length_squared() < 0.0001:
+		dir = Vector2(0.0, 1.0)
+	_shade_mat.set_shader_parameter("sun_dir", dir.normalized())
+	_shade_mat.set_shader_parameter("stretch", clampf(stretch, 0.0, 3.0) if is_finite(stretch) else 0.0)
+	_shade_mat.set_shader_parameter("fade", clampf(fade, 0.0, 1.0) if is_finite(fade) else 1.0)
 
 var _segments: Array = []  # [from, to, radius] of every branch
 var _tips: Array[Vector3] = []
@@ -236,6 +246,41 @@ func _paint_leaves() -> void:
 
 # Season dressing for a grown tree: leaves (and blossom) at the tips,
 # apples hanging under them, or snow along the bare limbs.
+var _cones: MultiMeshInstance3D
+static var _cone_mesh: CylinderMesh
+static var _cone_mat: StandardMaterial3D
+
+func _build_cones() -> void:
+	if _cone_mesh == null:
+		_cone_mesh = CylinderMesh.new()
+		_cone_mesh.top_radius = 0.0
+		_cone_mesh.bottom_radius = 1.6
+		_cone_mesh.height = 2.4
+		_cone_mesh.radial_segments = 7
+		_cone_mesh.rings = 1
+		_cone_mat = StandardMaterial3D.new()
+		_cone_mat.vertex_color_use_as_albedo = true
+		_cone_mat.roughness = 0.95
+	if _cones == null:
+		_cones = MultiMeshInstance3D.new()
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
+		mm.mesh = _cone_mesh
+		mm.instance_count = 3
+		_cones.multimesh = mm
+		_cones.material_override = _cone_mat
+		add_child(_cones)
+	var k: float = _size
+	var tint := Color(0.2, 0.42, 0.24).lerp(Color(0.3, 0.5, 0.26), _rng.randf())
+	if _season == "Winter":
+		tint = tint.lerp(Color(0.85, 0.9, 0.95), 0.25)
+	for tier: int in 3:
+		var w: float = [1.0, 0.78, 0.55][tier] * k
+		var h: float = [2.3, 3.4, 4.3][tier] * k
+		_cones.multimesh.set_instance_transform(tier, Transform3D(Basis().scaled(Vector3(w, k, w)), Vector3.UP * h))
+		_cones.multimesh.set_instance_color(tier, tint.lightened(0.06 * tier))
+
 func _dress_crown() -> void:
 	if _leaves == null or _tips.is_empty():
 		return
@@ -246,7 +291,10 @@ func _dress_crown() -> void:
 	var keep: float = float(look[0])
 	var xforms: Array[Transform3D] = []
 	var cols: Array[Color] = []
-	for tip: Vector3 in _tips:
+	# Conifers: three stacked cones, like the pines at the passes. Green all year.
+	if conifer:
+		_build_cones()
+	for tip: Vector3 in ([] if conifer or pineapple else _tips):
 		for k: int in per_tip:
 			# Golden-angle spiral around the tip: a little cloud of leaves.
 			var a: float = float(k) * 2.39996 + tip.x
@@ -342,6 +390,7 @@ func _setup_visuals() -> void:
 	_tips.clear()
 	_leaves = null
 	_dress = null
+	_cones = null
 	_fruit_mm = null
 	_fruit.clear()
 	_body = null
@@ -383,6 +432,13 @@ func _setup_visuals() -> void:
 				for s: int in 4:
 					var a: float = float(s) / 4.0 * TAU + _rng.randf_range(-0.4, 0.4)
 					_branch(Vector3.ZERO, Vector3(cos(a) * 0.9, 0.7, sin(a) * 0.9).normalized(), 1.1 * _size, 0.12 * _size, 2)
+			elif pineapple:
+				# A tall, gently leaning bare trunk; the spiky crown sits on top.
+				_branch(Vector3.ZERO, Vector3(lean.x * 0.6, 1.0, lean.z * 0.6).normalized(), 3.8 * _size, 0.24 * _size, 0)
+			elif conifer:
+				# One straight trunk; the needles are drawn in tiers (_dress_crown).
+				_branch(Vector3.ZERO, Vector3(lean.x * 0.3, 1.0, lean.z * 0.3).normalized(), 3.4 * _size, 0.3 * _size, 0)
+				star_moss = _rng.randf() < minf(0.04 * _golden_mult(), 0.05)
 			else:
 				_branch(Vector3.ZERO, lean, 1.9 * _size, 0.34 * _size, 4)
 				star_moss = _rng.randf() < minf(0.04 * _golden_mult(), 0.05)
@@ -562,7 +618,7 @@ func _show_fruit() -> void:
 		var ripe: float = clampf(float(f[1]) / (RIPEN_TICKS - 1.0), 0.0, 1.0)
 		var r: float = lerpf(0.06, 0.19, ripe) * _size * (1.4 if bush else 1.0)
 		mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3(r, r * 0.95, r)), f[0] - Vector3(0, r, 0)))
-		var ripe_col := Color(0.38, 0.16, 0.5) if bush else Color(0.88, 0.12, 0.08)
+		var ripe_col := Color(0.38, 0.16, 0.5) if bush else (Color(0.42, 0.28, 0.15) if conifer else (Color(0.86, 0.62, 0.16) if pineapple else Color(0.88, 0.12, 0.08)))
 		mm.set_instance_color(i, Color(0.55, 0.72, 0.22).lerp(ripe_col, ripe))
 
 # A ripe apple lets go of its branch and falls to the grass right below.
@@ -575,7 +631,7 @@ func _spawn_apple(at: Vector3) -> void:
 	if sim is SimulationDirector:
 		ground = (sim as SimulationDirector).ground_height(global_position.x + at.x, global_position.z + at.z)
 	apple.rest_y = ground - global_position.y + 0.26
-	apple.kind = "berry" if bush else "apple"
+	apple.kind = "berry" if bush else ("pinecone" if conifer else ("pineapple" if pineapple else "apple"))
 	if sim is SimulationDirector:
 		if bush:
 			(sim as SimulationDirector).berries_dropped += 1

@@ -22,10 +22,11 @@ const POWERS: Dictionary = {
 	"drought": ["The meadow bakes for a day and a half.", ["carnivore"], ["producer", "herbivore"], ["drought"]],
 	"flood": ["The river rises; fish left on land die.", ["decomposer"], ["herbivore"], ["flood"]],
 	"eclipse": ["Night falls at once: hunters feast.", ["carnivore"], ["herbivore"], []],
+	"gale": ["A gale carries seeds far: new woods and bushes.", ["producer"], [], []],
 }
 const POWER_NAMES: Dictionary = {
 	"bloom": "Bloom", "stampede": "Stampede", "predator_call": "Call Kin", "feast": "Feast",
-	"rot_rain": "Rot Rain", "rain": "Rain", "drought": "Drought", "flood": "Flood", "eclipse": "Eclipse",
+	"rot_rain": "Rot Rain", "rain": "Rain", "drought": "Drought", "flood": "Flood", "eclipse": "Eclipse", "gale": "Gale",
 }
 
 # The food-web group a bet is about, and whether it wants that group up (1)

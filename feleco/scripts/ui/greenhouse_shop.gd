@@ -60,6 +60,7 @@ const POWERUPS: Array[Dictionary] = [
 	{"id": "drought", "name": "Drought", "cost": 18, "desc": "The meadow bakes and the moss shrivels for a day and a half."},
 	{"id": "flood", "name": "Flood", "cost": 18, "desc": "The river rises for half a day. Fish left on dry land add to the Flood Toll."},
 	{"id": "eclipse", "name": "Eclipse", "cost": 30, "desc": "Night falls at once for half a day."},
+	{"id": "gale", "name": "Gale", "cost": 15, "desc": "Wind: a howling gale for half a day. Seeds of trees and bushes fly far downwind."},
 ]
 
 var _frame: Dictionary = {}

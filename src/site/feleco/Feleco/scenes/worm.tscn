@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/agents/worm.gd" id="1_worm"]
+[ext_resource type="Script" path="res://scripts/sensors/vision_cone.gd" id="2_vision"]
+[ext_resource type="Script" path="res://scripts/sensors/scent_emitter.gd" id="3_scent"]
+
+[node name="Worm" type="Node3D"]
+script = ExtResource("1_worm")
+
+[node name="VisionCone" type="Node3D" parent="."]
+script = ExtResource("2_vision")
+
+[node name="ScentEmitter" type="Node3D" parent="."]
+script = ExtResource("3_scent")

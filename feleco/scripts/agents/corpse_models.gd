@@ -23,6 +23,7 @@ const SPECS: Dictionary = {
 	"robin": {"body": "bird", "ribs": 3, "skull": 1.0},
 	"fish": {"body": "fish", "ribs": 9, "skull": 0.9},
 	"beetle": {"body": "shell"},
+	"mouse": {"body": "quad", "ribs": 3, "snout": 0.06, "tail": 0.4, "leg": 0.14, "skull": 0.6, "thick": 0.5},
 }
 
 const BONE_COLOR := Color(0.93, 0.9, 0.82)

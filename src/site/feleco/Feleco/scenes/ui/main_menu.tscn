@@ -1,0 +1,169 @@
+[gd_scene format=3 uid="uid://c65wh0i1kx8c4"]
+
+[ext_resource type="Script" uid="uid://d7u50yc20dsw" path="res://scripts/ui/main_menu.gd" id="1_mainmenu"]
+[ext_resource type="Texture2D" uid="uid://dxhwvtg30i2he" path="res://assets/title_graphic.svg" id="2_title"]
+
+[node name="MainMenu" type="Control" unique_id=122179215]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mainmenu")
+
+[node name="BG" type="ColorRect" parent="." unique_id=626458145]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.08, 0.05, 1)
+
+[node name="TitleGraphic" type="TextureRect" parent="." unique_id=1402762474]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_title")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=2015295852]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer" unique_id=1294369413]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="CenterContainer/VBoxContainer" unique_id=2123337836]
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "FELECO"
+horizontal_alignment = 1
+
+[node name="Tagline" type="Label" parent="CenterContainer/VBoxContainer" unique_id=2123337837]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.902, 0.765, 0.416, 1)
+theme_override_font_sizes/font_size = 18
+text = "A pocket valley. One champion."
+horizontal_alignment = 1
+
+[node name="Campaign" type="Button" parent="CenterContainer/VBoxContainer" unique_id=103800751]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Campaign"
+
+[node name="Challenge" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1030644719]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Challenge"
+
+[node name="Sandbox" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1493483503]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Enter the Valley"
+
+[node name="Shop" type="Button" parent="CenterContainer/VBoxContainer" unique_id=981650564]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Greenhouse"
+
+[node name="Rules" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1587029711]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Rules"
+
+[node name="Quit" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1851477253]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Quit"
+
+[node name="RulesPopup" type="PopupPanel" parent="." unique_id=627203736]
+oversampling_override = 1.0
+initial_position = 1
+size = Vector2i(700, 500)
+
+[node name="MarginContainer" type="MarginContainer" parent="RulesPopup" unique_id=2003811802]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 696.0
+offset_bottom = 496.0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="RulesPopup/MarginContainer" unique_id=1085109122]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="RulesPopup/MarginContainer/VBox" unique_id=919694181]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Label" type="RichTextLabel" parent="RulesPopup/MarginContainer/VBox/ScrollContainer" unique_id=2029524687]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[b][font_size=20]Feleco Ecology Rules[/font_size][/b]
+
+[b]Goal[/b]
+Champion one species. When time runs out, the species closest to filling its own niche holds the valley. A full wolf pack can beat a larger, hungry flock. You may also stake one named creature to live or die.
+
+[b]Your touch[/b]
+Each season gives you one touch: Rain, Call, Heal, Famine, or Meteor. Spend it or lose it when the season turns. Greenhouse charges are extra. Rain and Famine change the grass for days, not for a single breath.
+
+[b]The valley[/b]
+Life stays on the meadow. A river runs from the north pass to the south pass, and that water is why the valley is full. The peaks wall the pocket in, with mist on the high slopes. A species that truly dies out may later walk back through a pass. Fish return up the river.
+
+[b]The river[/b]
+Worms drift toward the water. Fish eat the worms that reach it. Falcons, robins, boars, wolves, and humans eat the fish. Flood raises the river for 8 days: the banks drown, and fish stranded by the falling water die.
+
+[b]Seasons[/b]
+The year cycles through Spring, Summer, Autumn, and Winter. Spring boosts grass growth; Winter kills tall grass and raises metabolism for everyone.
+
+[b]The World[/b]
+[indent]• [b]Grass[/b] grows in four stages: seed → sprout → tall → dead. Only tall grass is edible. Dead grass rots away and seeds new patches.[/indent]
+[indent]• [b]Rot[/b] spreads from dead grass and corpses. Mushrooms need rot to take root.[/indent]
+[indent]• [b]Trees[/b] grow from seeds to saplings to mature trees. Mature trees drop apples that decay and can spawn new trees.[/indent]
+[indent]• [b]Corpses[/b] decompose quickly into rot, mushrooms, fertile grass, and occasionally a tree seed.[/indent]
+
+[b]Prey (Grazers)[/b]
+[indent]• [b]Sheep[/b] eat grass and apples. They flock together and flee from wolves and boars. Reproduce when well-fed.[/indent]
+[indent]• [b]Rabbits[/b] are fast grazers with a short lifespan. They flee from falcons and humans.[/indent]
+[indent]• [b]Robins[/b] are small flying birds that eat worms and seeds. They circle trees and spread vegetation while flying.[/indent]
+
+[b]Predators[/b]
+[indent]• [b]Wolves[/b] hunt sheep and weak humans. They gain pack bonuses near other wolves and reproduce after successful kills.[/indent]
+[indent]• [b]Falcons[/b] are aerial hunters that dive on small prey from above.[/indent]
+[indent]• [b]Boars[/b] forage mushrooms and apples. In groups they charge threats; alone they flee.[/indent]
+
+[b]Humans[/b]
+[indent]• Omnivorous opportunists: hunt sheep and wolves, eat apples and mushrooms, harvest trees for wood.[/indent]
+[indent]• In groups of three or more they aggressively hunt wolves. In pairs they travel faster.[/indent]
+[indent]• Build [b]shelters[/b] when grouped up. Each shelter belongs to a settlement faction; humans from different settlements may fight each other.[/indent]
+[indent]• Settlement-born offspring inherit their faction and gain bonuses.[/indent]
+
+[b]Neutrals[/b]
+[indent]• [b]Mushroom spores[/b] drift from the sky. When they land on rot they anchor, then feed on nearby corpses to reproduce.[/indent]
+[indent]• [b]Worms[/b] tunnel through soil eating rot and dead matter.[/indent]
+
+[b]Tips[/b]
+[indent]• Every population crashes if it outgrows its food. Watch for boom-and-bust cycles.[/indent]
+[indent]• Grass needs space to grow. Overgrazing destroys patches and slows recovery.[/indent]
+[indent]• Each season you get one touch. Rain feeds the meadow. Famine starves it. Heal mends your champion. Call brings wolves. Meteor breaks whoever currently holds the valley.[/indent]
+[indent]• No species is guaranteed to win. Predators starve without prey, and prey explode without hunters.[/indent]"
+fit_content = true
+
+[node name="Close" type="Button" parent="RulesPopup/MarginContainer/VBox" unique_id=488587708]
+layout_mode = 2
+text = "Close"

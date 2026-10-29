@@ -1,8 +1,10 @@
 class_name River
 extends Node3D
 
-# A meander from the north pass to the south pass. The valley is lived-in
-# because this water is here. Flood only changes the wet width; the bed stays.
+# The valley's river (4.7): born high in the peaks on one side, it runs down
+# its gorge through a pass, meanders across the meadow and leaves by the
+# opposite pass. The course is new every run (which passes, how it bends) but
+# always one clean, readable ribbon. Flood only changes the wet width.
 
 const BASE_HALF_WIDTH: float = 2.7
 const CELL: float = 2.0
@@ -15,6 +17,8 @@ var _wet: PackedByteArray = PackedByteArray()
 var _near: PackedByteArray = PackedByteArray()
 var _grid_w: int = 64
 var _grid_h: int = 64
+var _grid_origin := Vector2(-64.0, -64.0)
+var _grid_cell: float = CELL
 var _mesh_instance: MeshInstance3D
 
 func half_width() -> float:
@@ -22,7 +26,57 @@ func half_width() -> float:
 
 # The bed runs past the meadow through both passes; the stretches beyond
 # COPSE_RADIUS disappear into the boundary copses.
-const REACH: float = 60.0
+const REACH: float = 158.0
+# The course, picked by plan_course() before the terrain is built so the
+# terrain can carve the river's gorge.
+var planned: bool = false
+var _along := Vector2(0.0, 1.0)
+var _across := Vector2(1.0, 0.0)
+var _mean: Array = []  # [amplitude, cycles over the meadow, phase] x3
+
+func plan_course(seed_value: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	# Through the north/south passes or the east/west ones, either way round.
+	var axes: Array[Vector2] = [Vector2(0, 1), Vector2(0, -1), Vector2(1, 0), Vector2(-1, 0)]
+	_along = axes[rng.randi() % 4]
+	_across = Vector2(-_along.y, _along.x)
+	# Two broad bends and a small wobble: always reads as a river, never a zigzag.
+	_mean = [
+		[rng.randf_range(7.0, 11.0), rng.randf_range(1.0, 1.5), rng.randf() * TAU],
+		[rng.randf_range(3.0, 5.0), rng.randf_range(2.3, 3.0), rng.randf() * TAU],
+		[rng.randf_range(0.6, 1.2), rng.randf_range(5.5, 7.0), rng.randf() * TAU],
+	]
+	planned = true
+
+# (along, across) coordinates of a world point.
+func to_course(x: float, z: float) -> Vector2:
+	return Vector2(x * _along.x + z * _along.y, x * _across.x + z * _across.y)
+
+func _bends(u: float) -> float:
+	var t: float = (u + 34.0) / 68.0
+	var w: float = 0.0
+	for m: Array in _mean:
+		w += sin(t * TAU * float(m[1]) + float(m[2])) * float(m[0])
+	return w
+
+# The centre line's sideways offset at a distance along the course: free to
+# wander on the meadow, eased onto the pass line up through the gorges.
+func course_offset(u: float) -> float:
+	var pass_k: float = smoothstep(32.0, 58.0, absf(u))
+	return _bends(u) * (1.0 - pass_k) + sin(u * 0.09) * 1.5 * pass_k
+
+# How far a point is across from the bed (cheap: no path search), for carving.
+func across_distance(x: float, z: float) -> float:
+	var c := to_course(x, z)
+	return absf(c.y - course_offset(c.x))
+
+# The gorge floor along the course: the source end climbs into the peaks,
+# the outflow end keeps falling, cutting a slot out through its pass.
+func bed_height(u: float) -> float:
+	if u < 0.0:
+		return lerpf(-0.35, 11.0, smoothstep(ValleyTerrain.FLOOR_RADIUS, REACH, -u))
+	return lerpf(-0.35, -0.7, smoothstep(ValleyTerrain.FLOOR_RADIUS, REACH, u))
 const COPSE_RADIUS: float = ValleyTerrain.FLOOR_RADIUS
 
 # Smoothed course and running distance along it (fish swim by distance).
@@ -32,15 +86,19 @@ var _dist := PackedFloat32Array()
 var copse_s := Vector2.ZERO
 
 func generate(terrain: ValleyTerrain) -> void:
+	if not planned:
+		plan_course(randi())
 	_points = PackedVector3Array()
-	var steps := 80
+	var steps := 150
+	var last_y: float = INF
 	for i: int in steps + 1:
-		var z: float = lerpf(-REACH, REACH, float(i) / float(steps))
-		var t: float = (z + 34.0) / 68.0
-		# Meander across the meadow, straightening out to run through the passes.
-		var damp: float = 1.0 - smoothstep(30.0, 50.0, absf(z))
-		var x: float = (sin(t * TAU * 1.35) * 9.0 + sin(t * TAU * 2.7 + 1.1) * 4.2) * damp
-		var y: float = terrain.surface_height(x, z) + 0.25
+		var u: float = lerpf(-REACH, REACH, float(i) / float(steps))
+		var w: float = course_offset(u)
+		var x: float = _along.x * u + _across.x * w
+		var z: float = _along.y * u + _across.y * w
+		# Water never runs uphill: each step is at most level with the last.
+		var y: float = minf(terrain.surface_height(x, z) + 0.25, last_y)
+		last_y = y
 		_points.append(Vector3(x, y, z))
 	_build_path()
 	_rebuild_mesh()
@@ -118,6 +176,9 @@ func nearest_s(x: float, z: float) -> float:
 func bake(grass: CALayer) -> void:
 	_grid_w = grass.grid_width
 	_grid_h = grass.grid_height
+	var o: Vector3 = grass.grid_to_world(0, 0)
+	_grid_cell = grass.cell_size
+	_grid_origin = Vector2(o.x, o.z)
 	_wet.resize(_grid_w * _grid_h)
 	_wet.fill(0)
 	_near.resize(_grid_w * _grid_h)
@@ -159,15 +220,15 @@ func bake(grass: CALayer) -> void:
 func covers_world(x: float, z: float) -> bool:
 	if _wet.is_empty():
 		return _distance_to_bed(x, z) <= half_width()
-	var gx: int = clampi(int(floor(x / CELL + float(_grid_w) * 0.5)), 0, _grid_w - 1)
-	var gz: int = clampi(int(floor(z / CELL + float(_grid_h) * 0.5)), 0, _grid_h - 1)
+	var gx: int = clampi(int(round((x - _grid_origin.x) / _grid_cell)), 0, _grid_w - 1)
+	var gz: int = clampi(int(round((z - _grid_origin.y) / _grid_cell)), 0, _grid_h - 1)
 	return _wet[gz * _grid_w + gx] == 1
 
 func is_near(x: float, z: float) -> bool:
 	if _near.is_empty():
 		return true
-	var gx: int = clampi(int(floor(x / CELL + float(_grid_w) * 0.5)), 0, _grid_w - 1)
-	var gz: int = clampi(int(floor(z / CELL + float(_grid_h) * 0.5)), 0, _grid_h - 1)
+	var gx: int = clampi(int(round((x - _grid_origin.x) / _grid_cell)), 0, _grid_w - 1)
+	var gz: int = clampi(int(round((z - _grid_origin.y) / _grid_cell)), 0, _grid_h - 1)
 	return _near[gz * _grid_w + gx] == 1
 
 func sample(x: float, z: float) -> Dictionary:
@@ -253,6 +314,7 @@ func _rebuild_mesh() -> void:
 	var prev_l := Vector3.ZERO
 	var prev_r := Vector3.ZERO
 	var prev_d: float = 0.0
+	var prev_rapid: float = 0.0
 	for i: int in path.size():
 		var a: Vector3 = path[maxi(i - 1, 0)]
 		var b: Vector3 = path[mini(i + 1, path.size() - 1)]
@@ -265,11 +327,16 @@ func _rebuild_mesh() -> void:
 			dist += path[i].distance_to(path[i - 1])
 		var l := p + side
 		var r := p - side
+		# Steeper stretches run faster and break into white water.
+		var drop: float = path[maxi(i - 1, 0)].y - path[mini(i + 1, path.size() - 1)].y
+		var run: float = maxf(Vector2(b.x - a.x, b.z - a.z).length(), 0.01)
+		var rapid: float = clampf(drop / run * 6.0, 0.0, 1.0)
 		if i > 0:
-			_quad(st, prev_l, prev_r, l, r, prev_d, dist)
+			_quad(st, prev_l, prev_r, l, r, prev_d, dist, prev_rapid, rapid)
 		prev_l = l
 		prev_r = r
 		prev_d = dist
+		prev_rapid = rapid
 	_mesh_instance.mesh = st.commit()
 
 # Winter: the river (and any floodwater still out) freezes over.
@@ -282,10 +349,12 @@ func set_flood_tint(level: float) -> void:
 	if _mesh_instance != null:
 		(_mesh_instance.material_override as ShaderMaterial).set_shader_parameter("flood", level)
 
-func _quad(st: SurfaceTool, al: Vector3, ar: Vector3, bl: Vector3, br: Vector3, va: float, vb: float) -> void:
-	st.set_uv(Vector2(0.0, va)); st.add_vertex(al)
-	st.set_uv(Vector2(0.0, vb)); st.add_vertex(bl)
-	st.set_uv(Vector2(1.0, vb)); st.add_vertex(br)
-	st.set_uv(Vector2(0.0, va)); st.add_vertex(al)
-	st.set_uv(Vector2(1.0, vb)); st.add_vertex(br)
-	st.set_uv(Vector2(1.0, va)); st.add_vertex(ar)
+func _quad(st: SurfaceTool, al: Vector3, ar: Vector3, bl: Vector3, br: Vector3, va: float, vb: float, ra: float = 0.0, rb: float = 0.0) -> void:
+	var ca := Color(ra, 0.0, 0.0)
+	var cb := Color(rb, 0.0, 0.0)
+	st.set_color(ca); st.set_uv(Vector2(0.0, va)); st.add_vertex(al)
+	st.set_color(cb); st.set_uv(Vector2(0.0, vb)); st.add_vertex(bl)
+	st.set_color(cb); st.set_uv(Vector2(1.0, vb)); st.add_vertex(br)
+	st.set_color(ca); st.set_uv(Vector2(0.0, va)); st.add_vertex(al)
+	st.set_color(cb); st.set_uv(Vector2(1.0, vb)); st.add_vertex(br)
+	st.set_color(ca); st.set_uv(Vector2(1.0, va)); st.add_vertex(ar)

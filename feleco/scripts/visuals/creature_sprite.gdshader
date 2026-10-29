@@ -34,6 +34,12 @@ varying float v_bet;
 
 void vertex() {
 	vec4 c = INSTANCE_CUSTOM;
+	// Failsafe: bad instance data (NaN, infinity, a cell off the sheet) would
+	// draw as a giant rainbow smear. Such an instance collapses to a point.
+	bool bad = any(isnan(c)) || any(isinf(c)) || any(isnan(COLOR)) || any(isinf(COLOR)) || c.w < 0.0 || c.w >= 32.0 || abs(c.y) > 1000.0 || abs(c.z) > 100.0;
+	if (bad) {
+		c = vec4(1.0, 0.0, 0.0, 0.0);
+	}
 	float cell = floor(c.w);
 	// +16: the camera is following this one. +8: it carries a bet
 	// (see VisualProxyManager.marked).
@@ -62,7 +68,7 @@ void vertex() {
 		uv.x = 1.0 - uv.x;
 	}
 	UV = (vec2(float(frame), cell) + clamp(uv, vec2(0.004), vec2(0.996))) / grid;
-	VERTEX.xy = v;
+	VERTEX.xy = (bad || any(isnan(v)) || any(isinf(v)) || length(v) > quad_height * 4.0 + 8.0) ? vec2(0.0) : v;
 	float sx = length(MODEL_MATRIX[0].xyz);
 	float sy = length(MODEL_MATRIX[1].xyz);
 	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0] * sx, INV_VIEW_MATRIX[1] * sy, INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);

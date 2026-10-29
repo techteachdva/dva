@@ -30,6 +30,9 @@ const INFO: Dictionary = {
 	"goat": ["Mountain Goats", Color(0.9, 0.88, 0.82), "crag climbers", "Herbivores. Come down from the passes; hardy in the cold, they live on tough grass and moss.", "Old Billy (bearded) · Crag Climber (golden horns)"],
 	"bear": ["Bears", Color(0.46, 0.3, 0.2), "big omnivores", "Omnivores. Fish the river, dig out rabbits, eat apples, berries and mushrooms. Sleep through winter.", "Grizzled (silver hump) · Moon Bear (pale crescent)"],
 	"lion": ["Mountain Lions", Color(0.82, 0.62, 0.38), "lone ambushers", "Carnivores. Hunt alone at night: deer, goats, sheep, rabbits, robins, the odd fish. Wary of bears.", "Ghost Cat (pale) · Sun Cat (golden)"],
+	"mouse": ["Mice", Color(0.62, 0.56, 0.5), "everywhere", "Omnivores. In every biome, day and night (busiest at night). Hunt beetles and worms; nibble apples, berries and pinecones. Lions, bears, falcons and wolves all eat them.", "Dormouse (plump) · Snow Mouse (white)"],
+	"pineapple": ["Pineapples", Color(0.86, 0.62, 0.16), "the strange fruit", "Producers. Never planted at the start: when a pinecone and an apple rot side by side, the seedlings can fuse into a pineapple tree (the first only on the plains). The richest food in the valley, and its seeds spread.", ""],
+	"pinecone": ["Pinecones", Color(0.55, 0.38, 0.22), "mountain seeds", "Producers. Conifers on the mountain drop them. Boars, bears, goats and mice eat them.", ""],
 	"beetle": ["Beetles", Color(0.3, 0.45, 0.35), "carrion beetles", "Decomposers. Strip the last scraps from carcasses and work rot into the soil. Fish and robins eat them.", "Stag (big jaws) · Scarab (golden shell)"],
 	"berry": ["Berry bushes", Color(0.55, 0.3, 0.6), "low and tangled", "Producers. Small, branchy bushes heavy with berries; now and then a golden one.", ""],
 	"moss": ["Moss", Color(0.36, 0.6, 0.3), "on the bark", "Producers. Creeps up the trees in spring, autumn and rain; shrivels in drought. A rare tree grows star moss.", ""],
@@ -41,9 +44,9 @@ const INFO: Dictionary = {
 # 3.0: one row per link of the food web, hunters on top, soil at the bottom.
 const NODES: Dictionary = {
 	"falcon": Vector2(0.2, 0.08), "lion": Vector2(0.5, 0.08), "wolf": Vector2(0.8, 0.08),
-	"human": Vector2(0.14, 0.3), "bear": Vector2(0.38, 0.3), "boar": Vector2(0.62, 0.3), "robin": Vector2(0.86, 0.3),
+	"human": Vector2(0.1, 0.3), "bear": Vector2(0.3, 0.3), "boar": Vector2(0.5, 0.3), "robin": Vector2(0.7, 0.3), "mouse": Vector2(0.9, 0.3),
 	"rabbit": Vector2(0.1, 0.52), "deer": Vector2(0.3, 0.52), "goat": Vector2(0.5, 0.52), "sheep": Vector2(0.7, 0.52), "fish": Vector2(0.9, 0.52),
-	"grass": Vector2(0.18, 0.73), "berry": Vector2(0.4, 0.73), "moss": Vector2(0.62, 0.73), "apple": Vector2(0.84, 0.73),
+	"grass": Vector2(0.1, 0.73), "berry": Vector2(0.3, 0.73), "moss": Vector2(0.5, 0.73), "apple": Vector2(0.7, 0.73), "pinecone": Vector2(0.9, 0.73),
 	"worm": Vector2(0.1, 0.93), "beetle": Vector2(0.3, 0.93), "mushroom": Vector2(0.5, 0.93), "rot": Vector2(0.7, 0.93), "mycelium": Vector2(0.9, 0.93),
 }
 const EDGES: Array = [
@@ -62,6 +65,9 @@ const EDGES: Array = [
 	["worm", "fish", "hunt"], ["beetle", "fish", "hunt"], ["worm", "robin", "hunt"], ["beetle", "robin", "hunt"],
 	["rot", "worm", "decay"], ["rot", "beetle", "decay"], ["rot", "mycelium", "decay"], ["rot", "grass", "decay"],
 	["mycelium", "grass", "decay"], ["mycelium", "mushroom", "decay"], ["mycelium", "fish", "decay"],
+	["beetle", "mouse", "hunt"], ["worm", "mouse", "hunt"], ["apple", "mouse", "forage"], ["berry", "mouse", "forage"], ["pinecone", "mouse", "forage"],
+	["mouse", "lion", "hunt"], ["mouse", "bear", "hunt"], ["mouse", "falcon", "hunt"], ["mouse", "wolf", "hunt"],
+	["pinecone", "boar", "forage"], ["pinecone", "bear", "forage"], ["pinecone", "goat", "forage"], ["moss", "mouse", "graze"],
 ]
 const EDGE_COLORS: Dictionary = {
 	"hunt": Color(0.88, 0.4, 0.35), "graze": Color(0.56, 0.82, 0.54),
@@ -69,7 +75,7 @@ const EDGE_COLORS: Dictionary = {
 }
 const DAY_SPECIES: Array[String] = ["sheep", "goat", "human", "falcon", "robin"]
 const TWILIGHT_SPECIES: Array[String] = ["rabbit", "deer", "bear", "fish"]
-const NIGHT_SPECIES: Array[String] = ["wolf", "lion", "boar", "worm", "beetle", "mushroom"]
+const NIGHT_SPECIES: Array[String] = ["wolf", "lion", "boar", "worm", "beetle", "mushroom", "mouse"]
 
 # Each creature's prime season and what it does then (the 3.0 creatures'
 # breeding peaks come from SpeciesDB). Plants count too.

@@ -3,9 +3,22 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.6.1"
+const VERSION: String = "4.7"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.7",
+		"title": "The Mountain is Due",
+		"notes": [
+			"A bigger valley in three biomes: Mountains, Plains and Riverbank. Huge new peaks wall it in, and the old mountains are now walkable highlands. Every creature has home biomes (goats and mountain lions up high, deer on the plains and riverbank, bears, humans and mice everywhere).",
+			"New creature: Mice. They eat beetles, worms, berries, apples and pinecones, and lions, bears, falcons and wolves hunt them.",
+			"New tree: Conifers grow in the mountains, drop pinecones (food for boars, bears, goats and mice) and grow moss. And a strange rumour: where a pinecone and an apple rot side by side, something new may sprout...",
+			"Wind blows through the valley, by season and hour, calm at night and strongest at noon, and you can see it. It carries seeds and rolls fallen fruit, so forests spread, even up and down the mountain. New power: Gale.",
+			"Falcons hunt alone: each holds its own patch of sky and fights rivals for it. Herding is only for the herd animals now.",
+			"A new river every game, running from the high peaks through a gorge, across the meadow and out the far pass, with livelier, more realistic water. Fish arrive from both ends when the river is thin and spawn big broods, and worms and beetles fill the riverbank to feed them.",
+			"Fixes: birds on a rampage can finally swoop down for kills; the bear is redrawn; corpses smell less; extra safety against glitching sprites and shadows.",
+		],
+	},
 	{
 		"version": "4.6.1",
 		"title": "Tidy Tour",

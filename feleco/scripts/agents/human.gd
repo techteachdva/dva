@@ -298,6 +298,9 @@ func _on_tick_sleep(delta: float) -> void:
 func _on_exit_sleep() -> void:
 	if indoors and home != null and is_instance_valid(home):
 		global_position = home.global_position + Vector3(randf_range(-1.0, 1.0), 0, 2.2)
+		var gs: SimulationDirector = director
+		if gs != null:
+			global_position.y = gs.ground_height(global_position.x, global_position.z)
 	indoors = false
 	if _slept_rough:
 		_slept_rough = false

@@ -76,6 +76,8 @@ func _get_transition_modifiers() -> Dictionary:
 	# Deer and goats count as big game alongside rabbits.
 	rabbits.append_array(vision.get_visible_by_tag("deer"))
 	rabbits.append_array(vision.get_visible_by_tag("goat"))
+	# Mice are a snack between bigger meals.
+	rabbits.append_array(vision.get_visible_by_tag("mouse"))
 	if sheep.size() > 0:
 		if true or total_sheep > 0:
 			mods["Chase"] = 1.0  # instant interrupt: hungry wolves pounce immediately

@@ -1,0 +1,20 @@
+In Feleco, we use it to model natural density-dependent effects — like overcrowding mortality — so
+     that changes happen gradually rather than with sudden hard thresholds.
+
+    The mathematical form is:
+
+    f(x) = L / (1 + e^(-k(x - x₀)))
+
+    Where:
+    - e is Euler's constant (~2.71828)
+    - L is the maximum value (e.g., maximum mortality rate)
+    - x₀ is the midpoint where the curve is at 50%
+    - k controls steepness (how sharply the transition happens)
+
+    In ecology, this is the natural shape of population growth limits. A real population doesn't
+    instantly crash the moment it hits a number — instead, the death rate from starvation and crowding
+    rises along this smooth S-curve as resources get scarcer. This is exactly what we replaced the old
+    hard-coded culling thresholds with in _apply_overpopulation().
+
+    Visually, it looks like a stretched "S" lying on its side: flat near zero, then steeply rising near
+     the carrying capacity, then flattening out again at the maximum mortality rate.

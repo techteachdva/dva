@@ -24,7 +24,7 @@ class_name SpriteGenerator
 const SIZE: int = 128
 const SS: int = 2
 const SPRITE_DIR: String = "res://assets/sprites/"
-const SPECIES: Array[String] = ["sheep", "wolf", "boar", "falcon", "robin", "worm", "human", "rabbit", "fish", "mushroom", "deer", "goat", "bear", "lion", "beetle"]
+const SPECIES: Array[String] = ["sheep", "wolf", "boar", "falcon", "robin", "worm", "human", "rabbit", "fish", "mushroom", "deer", "goat", "bear", "lion", "beetle", "mouse"]
 # Columns: normal, tough, special, golden (3.0: a creature that ate gold).
 const COLS: int = 4
 const GOLDEN: int = 3
@@ -135,6 +135,7 @@ static func _paint(species: String, role: int, female: bool) -> void:
 		"worm": _worm(role, female)
 		"human": _human(role, female)
 		"rabbit": _rabbit(role, female)
+		"mouse": _mouse(role, female)
 		"fish": _fish(role, female)
 		"mushroom": _mushroom(role)
 		"deer": _deer(role, female)
@@ -819,13 +820,20 @@ static func _bear(r: int, f: bool) -> void:
 	# Far legs, then the great body with a shaggy fringe all round it.
 	_bear_leg(Vector2(36, 90), 0.5, false, dark, dark, claw)
 	_bear_leg(Vector2(80, 90), 0.0, true, dark, dark, claw)
-	_ell(56, 76, 44 + bulk, 33 + bulk, fur)
-	for i: int in 14:
-		var a: float = PI * (0.95 + float(i) / 13.0 * 1.1)
-		var p := Vector2(56, 76) + Vector2(cos(a) * (42 + bulk), sin(a) * (31 + bulk))
-		_circ(p.x, p.y, 7.0, fur)
-	_ell(52, 70, 30, 18, fur.lightened(0.07), 0.0, 0.6)
-	_ell(58, 100, 30, 9, fur.darkened(0.08))
+	# One heavy body: rump low at the back, the grizzly's shoulder hump up
+	# front, belly fur hanging below. Smooth outline, fur drawn as strokes.
+	_ell(54, 80, 42 + bulk, 29 + bulk, fur)
+	_ell(80, 68, 24 + bulk * 0.5, 22 + bulk * 0.5, fur, -15.0)
+	_ell(34, 76, 22, 22 + bulk * 0.5, fur)
+	_ell(60, 70, 30, 14, fur.lightened(0.07), 0.0, 0.6)
+	for i: int in 11:
+		var x: float = 22.0 + i * 6.5
+		var y: float = 74.0 + sin(float(i) * 1.7) * 6.0
+		_line(Vector2(x, y), Vector2(x - 3.0, y + 5.0), 1.3, dark, 0.0)
+	for i: int in 6:
+		var x2: float = 34.0 + i * 8.0
+		_poly([Vector2(x2 - 4, 102), Vector2(x2, 109), Vector2(x2 + 4, 102)], fur.darkened(0.08), 0.0)
+	_ell(58, 99, 30, 8, fur.darkened(0.08))
 	if r == 1:
 		for i: int in 9:
 			_line(Vector2(30 + i * 6, 50), Vector2(32 + i * 6, 44), 1.6, Color(0.88, 0.85, 0.78), 0.0)
@@ -1707,6 +1715,61 @@ static func _peye_pair(x0: float, y0: float, x1: float, y1: float, r: float) -> 
 			_arc(c.x, c.y - r * 0.2, r * 0.9, 15.0, 165.0, 1.2, Color(0.08, 0.06, 0.06))
 		else:
 			_eye_front(c.x, c.y, r, Color(0.3, 0.2, 0.12))
+
+# Mice: a round body, big round ears, whiskers and a long bare tail.
+# normal: house-grey (doe paler); Dormouse: plump and orange; Snow Mouse: white.
+static func _mouse(r: int, f: bool) -> void:
+	var fur: Color = _pick(r, f, [Color(0.56, 0.52, 0.5), Color(0.66, 0.62, 0.58), Color(0.86, 0.58, 0.3), Color(0.9, 0.66, 0.38), Color(0.95, 0.95, 0.97), Color(0.92, 0.92, 0.96)])
+	var dark: Color = fur.darkened(0.3)
+	var pink := Color(0.95, 0.68, 0.7)
+	var plump: float = 1.18 if r == 1 else 1.0
+	var tail_k: float = _pf("tail")
+	var feet: float = 0.0
+	match _act():
+		"walk":
+			var t: float = _pf("t")
+			_pose["bob"] = -absf(sin(t * TAU)) * 6.0
+			feet = sin(t * TAU) * 30.0
+			tail_k += sin(t * TAU) * 10.0
+		"eat":
+			_pose["head"] = 18.0 - _pose["k"] * 4.0
+		"alarm":
+			_pose["pitch"] = -22.0
+			_pose["head"] = 10.0
+		"windup", "strike":
+			_pose["pitch"] = -8.0
+			_pose["head"] = 8.0
+			feet = -40.0
+		"sleep":
+			_pose["lie"] = 1.0
+			_pose["head"] = 14.0
+	_body_begin(Vector2(64, 121), 6.0)
+	# The tail: a long thin curl behind.
+	_push(Vector2(38, 104), tail_k)
+	_line(Vector2(38, 104), Vector2(22, 110), 3.0, pink.darkened(0.15))
+	_line(Vector2(22, 110), Vector2(12, 100), 2.6, pink.darkened(0.15))
+	_line(Vector2(12, 100), Vector2(10, 88), 2.2, pink.darkened(0.15))
+	_pop()
+	_push(Vector2(56, 110), feet)
+	_ell(54, 118, 8, 3, pink.darkened(0.2))
+	_pop()
+	_ell(62, 102, 26 * plump, 16 * plump, fur)
+	_ell(64, 109, 16 * plump, 7, fur.lightened(0.2))
+	_push(Vector2(80, 110), -feet)
+	_ell(82, 118, 6, 3, pink.darkened(0.2))
+	_pop()
+	_head_begin(Vector2(84, 98))
+	# Ears: big round dishes.
+	_circ(80, 80, 10, dark)
+	_circ(80, 80, 6.5, pink)
+	_circ(92, 82, 9, fur)
+	_circ(92, 82, 5.5, pink, 0.2)
+	_ell(95, 96, 15, 10, fur)
+	_ell(107, 99, 6, 4.5, fur.lightened(0.08))
+	_peye(97, 93, 2.8, Color(0.08, 0.06, 0.06))
+	_dot(112, 99, 2.2, pink.darkened(0.25))
+	for k: int in 3:
+		_line(Vector2(109, 99 + k * 2.0), Vector2(122, 95 + k * 4.0), 0.8, Color(0.25, 0.22, 0.2, 0.7))
 
 static func _rabbit(r: int, f: bool) -> void:
 	# normal: buck brown / doe grey-brown; Hare: tawny, long-legged; Moon Rabbit: white with a crescent.

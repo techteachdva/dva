@@ -10,7 +10,7 @@ var health: float = 18.0
 var energy: float = 30.0
 var _repro_cooldown: float = 0.0
 var _lateral: float = 0.0
-const RIVER_CAPACITY: int = 32
+const RIVER_CAPACITY: int = 48
 # Distance along the river and heading (+1 downriver, -1 upriver).
 var _s: float = -1.0
 var _dir: float = 1.0
@@ -106,8 +106,9 @@ func _swim_tick(delta: float) -> void:
 		var heading_out: bool = (_s < river.copse_s.x and _dir < 0.0) or (_s > river.copse_s.y and _dir > 0.0)
 		if _copse_choice < 0 and heading_out:
 			_dir = -_dir
-		elif _copse_choice > 0 and (_s <= 0.0 or _s >= span):
-			sim.fish_left_valley(self, _s <= 0.0)
+		elif _copse_choice > 0 and (_s <= river.copse_s.x - 18.0 or _s >= river.copse_s.y + 18.0):
+			# Out past the pines and away (the river runs on far into the peaks).
+			sim.fish_left_valley(self, _s < river.copse_s.x)
 			return
 	else:
 		_copse_choice = 0
@@ -193,8 +194,8 @@ func _try_reproduce(delta: float) -> void:
 		return
 	# The river only holds so many; spawning thins out as it fills.
 	var shoal: int = sim._active_fish.size()
-	if shoal >= RIVER_CAPACITY or randf() < float(shoal) / RIVER_CAPACITY:
-		_repro_cooldown = 3.0
+	if shoal >= RIVER_CAPACITY or randf() < float(shoal) / RIVER_CAPACITY * 0.7:
+		_repro_cooldown = 2.0
 		return
 	var mate: Node3D = null
 	for other in sim._active_fish:
@@ -206,8 +207,12 @@ func _try_reproduce(delta: float) -> void:
 	if mate == null:
 		return
 	energy -= repro_cost
-	_repro_cooldown = 7.0
-	sim.spawn_fish_offspring(self, global_position)
+	_repro_cooldown = 3.5
+	# A spawning, not a birth: fish lay far bigger broods than anything else
+	# in the valley, and more when the river is empty (4.7).
+	var brood: int = randi_range(3, 6) + (3 if shoal < RIVER_CAPACITY / 3 else 0)
+	for k: int in mini(brood, RIVER_CAPACITY - shoal):
+		sim.spawn_fish_offspring(self, global_position + Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0)))
 
 func die() -> void:
 	if is_queued_for_deletion():

@@ -14,7 +14,7 @@ func _configure() -> void:
 	damage = 30.0
 	energy = 65.0
 	diet = ["corpse", "fish"]
-	prey = ["deer", "goat", "sheep", "rabbit", "robin"]
+	prey = ["deer", "goat", "sheep", "rabbit", "robin", "mouse"]
 	threats = ["bear"]
 	corpse_energy = 1.4
 	hunt_below = 75.0

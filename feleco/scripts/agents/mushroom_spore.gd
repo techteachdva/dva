@@ -160,7 +160,7 @@ func _on_tick_drift(delta: float) -> void:
 	_airtime -= delta * Clock.LIFE_PACE
 	var push := Vector3.ZERO
 	if sim != null:
-		push = sim.wind()
+		push = sim.wind_at(global_position)
 		# The stink of carrion tilts the ride a little, nothing more.
 		var c := sim.smell_corpse(global_position)
 		if c != null:

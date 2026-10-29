@@ -138,8 +138,8 @@ func _eat_nearby(delta: float) -> bool:
 					if m > 0.0:
 						_feed(m * 30.0 * sim.producer_value("moss"))
 						return true
-			"berry", "apple":
-				var fruit: Node3D = sim.find_nearest_berry(global_position) if food == "berry" else sim.find_nearest_apple(global_position)
+			"berry", "apple", "pinecone":
+				var fruit: Node3D = sim.find_nearest_berry(global_position) if food == "berry" else (sim.find_nearest_pinecone(global_position) if food == "pinecone" else sim.find_nearest_apple(global_position))
 				if fruit != null and fruit.has_method("eat") and global_position.distance_squared_to(fruit.global_position) < 2.5:
 					_feed(fruit.eat(self))
 					return true
@@ -194,6 +194,10 @@ func _find_food() -> Variant:
 				var a := sim.find_nearest_apple(global_position, 14.0)
 				if a != null:
 					return a.global_position
+			"pinecone":
+				var pc := sim.find_nearest_pinecone(global_position, 14.0)
+				if pc != null:
+					return pc.global_position
 			"mushroom":
 				var m := sim.find_nearest_mushroom(global_position, 14.0)
 				if m != null:

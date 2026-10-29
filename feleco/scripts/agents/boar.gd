@@ -160,8 +160,10 @@ func _on_tick_forage(delta: float) -> void:
 		energy = clampf(energy, 0.0, 100.0)
 		velocity = Vector3.ZERO
 		return
-	# Eat apples
+	# Eat apples (and pinecones, fallen under the mountain conifers)
 	var nearest_apple := sim.find_nearest_apple(global_position)
+	if nearest_apple == null:
+		nearest_apple = sim.find_nearest_pinecone(global_position)
 	if nearest_apple != null and global_position.distance_squared_to(nearest_apple.global_position) < 2.0 and nearest_apple.has_method("eat"):
 		energy += nearest_apple.eat(self)
 		energy = clampf(energy, 0.0, 100.0)

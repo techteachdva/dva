@@ -1,0 +1,252 @@
+[gd_scene format=3 uid="uid://c0sbnokhvnodf"]
+
+[ext_resource type="Script" uid="uid://dc5r51r6qw7p5" path="res://scripts/ui/simulation_hud.gd" id="1_simhud"]
+[ext_resource type="Script" uid="uid://c4xktj0pyx7sq" path="res://scripts/ui/tickertape.gd" id="2_tickertape"]
+[ext_resource type="Script" uid="uid://b04j0gy0gs7fh" path="res://scripts/ui/event_history.gd" id="3_eventhist"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0.09, 0.125, 0.102, 0.88)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.345, 0.455, 0.365, 0.55)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+
+[node name="SimulationHUD" type="CanvasLayer" unique_id=1431113925]
+script = ExtResource("1_simhud")
+
+[node name="TopLeft" type="PanelContainer" parent="." unique_id=1832869251]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 280.0
+offset_bottom = 400.0
+
+[node name="VBox" type="VBoxContainer" parent="TopLeft" unique_id=513272869]
+layout_mode = 2
+
+[node name="TimerLabel" type="Label" parent="TopLeft/VBox" unique_id=185173464]
+layout_mode = 2
+text = "Time: 02:00"
+
+[node name="SheepCount" type="Label" parent="TopLeft/VBox" unique_id=425836501]
+layout_mode = 2
+text = "Sheep: 0"
+
+[node name="WolfCount" type="Label" parent="TopLeft/VBox" unique_id=1173553041]
+layout_mode = 2
+text = "Wolves: 0"
+
+[node name="HumanCount" type="Label" parent="TopLeft/VBox" unique_id=1302388068]
+layout_mode = 2
+text = "Humans: 0"
+
+[node name="FalconCount" type="Label" parent="TopLeft/VBox" unique_id=281019157]
+layout_mode = 2
+text = "Falcons: 0"
+
+[node name="RobinCount" type="Label" parent="TopLeft/VBox" unique_id=1190123413]
+layout_mode = 2
+text = "Robins: 0"
+
+[node name="BoarCount" type="Label" parent="TopLeft/VBox" unique_id=1073509218]
+layout_mode = 2
+text = "Boars: 0"
+
+[node name="RabbitCount" type="Label" parent="TopLeft/VBox" unique_id=1101849671]
+layout_mode = 2
+text = "Rabbits: 0"
+
+[node name="WizardCount" type="Label" parent="TopLeft/VBox" unique_id=2101849672]
+layout_mode = 2
+text = "Wizards: 0"
+
+[node name="BuilderCount" type="Label" parent="TopLeft/VBox" unique_id=3101849673]
+layout_mode = 2
+text = "Builders: 0"
+
+[node name="WormCount" type="Label" parent="TopLeft/VBox" unique_id=1536959518]
+layout_mode = 2
+text = "Worms: 0"
+
+[node name="FishCount" type="Label" parent="TopLeft/VBox"]
+layout_mode = 2
+text = "Fish  0"
+
+[node name="TopRight" type="PanelContainer" parent="." unique_id=663116236]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 168.0
+grow_horizontal = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TopRight"]
+layout_mode = 2
+
+[node name="BetLabel" type="Label" parent="TopRight/VBoxContainer"]
+layout_mode = 2
+text = "Champion: Sheep"
+autowrap_mode = 3
+horizontal_alignment = 1
+
+[node name="SideBetLabel" type="Label" parent="TopRight/VBoxContainer"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+
+[node name="BottomBar" type="FlowContainer" parent="." unique_id=1359091904]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -148.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+alignment = 1
+
+[node name="Speed1" type="Button" parent="BottomBar" unique_id=16911695]
+layout_mode = 2
+text = "1x"
+
+[node name="Speed2" type="Button" parent="BottomBar" unique_id=1280983583]
+layout_mode = 2
+text = "2x"
+
+[node name="Speed5" type="Button" parent="BottomBar" unique_id=592529824]
+layout_mode = 2
+text = "5x"
+
+[node name="Pause" type="Button" parent="BottomBar" unique_id=815373179]
+layout_mode = 2
+text = "Pause"
+
+[node name="EndEarly" type="Button" parent="BottomBar" unique_id=323780944]
+layout_mode = 2
+text = "End Early"
+
+[node name="TopDown" type="Button" parent="BottomBar" unique_id=697214206]
+layout_mode = 2
+text = "Top View"
+
+[node name="History" type="Button" parent="BottomBar" unique_id=1983456362]
+layout_mode = 2
+text = "History"
+
+[node name="Rain" type="Button" parent="BottomBar" unique_id=1031370041]
+layout_mode = 2
+text = "Rain"
+
+[node name="Call" type="Button" parent="BottomBar" unique_id=2060360175]
+layout_mode = 2
+text = "Call Wolves"
+
+[node name="Heal" type="Button" parent="BottomBar" unique_id=1698982779]
+layout_mode = 2
+text = "Heal"
+
+[node name="Famine" type="Button" parent="BottomBar" unique_id=139675783]
+layout_mode = 2
+text = "Famine"
+
+[node name="Meteor" type="Button" parent="BottomBar" unique_id=1963586724]
+layout_mode = 2
+text = "Meteor"
+
+[node name="Flood" type="Button" parent="BottomBar"]
+layout_mode = 2
+text = "Flood"
+
+[node name="Tickertape" type="Control" parent="." unique_id=312640167]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_tickertape")
+
+[node name="Panel" type="Panel" parent="Tickertape" unique_id=670844779]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -420.0
+offset_top = -214.0
+offset_right = 420.0
+offset_bottom = -160.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_1")
+
+[node name="Label" type="Label" parent="Tickertape/Panel" unique_id=209515517]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.957, 0.937, 0.894, 1)
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 3
+
+[node name="EventHistory" type="Control" parent="." unique_id=34203917]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_eventhist")
+
+[node name="Panel" type="Panel" parent="EventHistory" unique_id=1276554587]
+visible = false
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="EventHistory/Panel" unique_id=2073600055]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="EventHistory/Panel/MarginContainer" unique_id=545950384]
+layout_mode = 2
+
+[node name="RichTextLabel" type="RichTextLabel" parent="EventHistory/Panel/MarginContainer/VBoxContainer" unique_id=1343420950]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+
+[node name="CloseButton" type="Button" parent="EventHistory/Panel/MarginContainer/VBoxContainer" unique_id=81532902]
+layout_mode = 2
+text = "Close"

@@ -65,6 +65,13 @@ const ROWS: Dictionary = {
 		"dn": {"night": [0.6, 0.7, 0.8]},
 		"size": Vector2(2.6, 2.6), "gait": 11.0, "kind": 0, "shadow": 1.6, "style": 1,
 	},
+	"mouse": {
+		"plural": "mice", "label": "Mice", "group": "omnivore", "color": Color(0.62, 0.56, 0.5),
+		"new": true, "cap": 140, "hold": 26.0, "migrants": 5, "days": 1.5, "start": 12,
+		"season": [[1.0, 1.5], [0.9, 1.4], [0.95, 1.2], [1.15, 0.4]],  # breed fast in the warm months
+		"dn": {"day": [0.85, 1.0, 1.0], "night": [1.15, 1.0, 1.3], "nocturnal": true},
+		"size": Vector2(1.0, 1.0), "gait": 18.0, "kind": 0, "shadow": 0.45, "style": 4,
+	},
 	"beetle": {
 		"plural": "beetles", "label": "Beetles", "group": "decomposer", "color": Color(0.3, 0.45, 0.35),
 		"new": true, "cap": 120, "hold": 24.0, "migrants": 5, "days": 1.75, "start": 10,
@@ -75,9 +82,9 @@ const ROWS: Dictionary = {
 }
 
 # The five 3.0 creatures, in setup order.
-const NEW_SPECIES: Array[String] = ["deer", "goat", "bear", "lion", "beetle"]
+const NEW_SPECIES: Array[String] = ["deer", "goat", "bear", "lion", "beetle", "mouse"]
 # Every creature the census reports, by plural key.
-const CENSUS: Array[String] = ["sheep", "rabbits", "deer", "goats", "wolves", "lions", "falcons", "humans", "bears", "boars", "robins", "worms", "beetles", "mushrooms", "fish"]
+const CENSUS: Array[String] = ["sheep", "rabbits", "deer", "goats", "wolves", "lions", "falcons", "humans", "bears", "boars", "robins", "mice", "worms", "beetles", "mushrooms", "fish"]
 
 static func row(id: String) -> Dictionary:
 	return ROWS.get(id, {})

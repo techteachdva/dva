@@ -15,6 +15,15 @@ var _patrol_target: Vector3 = Vector3.ZERO
 var _local_cache_timer: float = 0.0
 var _cached_local_count: int = 0
 var _eat_timer: float = 0.0
+# Territory (4.7): falcons are lone apex hunters. Each holds a fixed patch of
+# sky (TERRITORY_R around its centre), patrols and perches inside it, and
+# fights any same-sex falcon that trespasses; the winner holds or takes the
+# patch, the loser flies off to claim free ground. Mates may share. Patches
+# never grow, so the falcons settle into spread-out pockets.
+const TERRITORY_R: float = 19.0
+var territory_center: Vector3 = Vector3.ZERO
+var _territory_timer: float = 0.0
+var _fight_cd: float = 0.0
 
 func _ready() -> void:
 	add_to_group("falcon")
@@ -23,6 +32,10 @@ func _ready() -> void:
 	_register_states()
 	super._ready()
 	set_state("Patrol")
+	territory_center = Vector3(global_position.x, 0.0, global_position.z)
+	# Hatchlings and newcomers look for unclaimed sky.
+	_fight_cd = 20.0
+	_claim_free_territory.call_deferred()
 	_pick_patrol_target()
 
 func _register_states() -> void:
@@ -62,6 +75,11 @@ func _physics_process(delta: float) -> void:
 	# Everything below is life, not movement: it runs at Clock.LIFE_PACE.
 	delta *= Clock.LIFE_PACE
 	var sim: SimulationDirector = director
+	_fight_cd = maxf(_fight_cd - delta, 0.0)
+	_territory_timer -= delta
+	if sim != null and _territory_timer <= 0.0:
+		_territory_timer = 1.0
+		_guard_territory(sim)
 	if sim != null:
 		_local_cache_timer -= delta
 		if _local_cache_timer <= 0.0:
@@ -137,11 +155,90 @@ func _try_reproduce(delta: float) -> void:
 			return
 
 func _pick_patrol_target() -> void:
-	_patrol_target = global_position + Vector3((randf() - 0.5) * 20.0, 0.0, (randf() - 0.5) * 20.0)
+	# Patrol inside the territory, never beyond it.
+	var a: float = randf() * TAU
+	_patrol_target = territory_center + Vector3(cos(a), 0.0, sin(a)) * TERRITORY_R * sqrt(randf())
+
+# Any same-sex falcon over our patch is a challenger.
+func _guard_territory(sim: SimulationDirector) -> void:
+	if _fight_cd > 0.0 or health <= 0.0:
+		return
+	for n in sim.get_nearby_agents(territory_center, TERRITORY_R, "falcon"):
+		if n == self or not n is Falcon or not is_instance_valid(n):
+			continue
+		var rival := n as Falcon
+		if rival.sex != sex or rival._fight_cd > 0.0 or rival.health <= 0.0:
+			continue
+		_fight(rival, sim)
+		return
+
+func _fight(rival: Falcon, sim: SimulationDirector) -> void:
+	_fight_cd = 8.0
+	rival._fight_cd = 8.0
+	var mid: Vector3 = (global_position + rival.global_position) * 0.5
+	FXManager.spawn_combat_particles(mid)
+	FXManager.show_floating_text(mid + Vector3.UP, "Talons!", Color(1.0, 0.7, 0.3))
+	# The stronger, better-fed bird usually wins; the holder fights a bit harder.
+	var mine: float = (health + energy * 0.5) * randf_range(0.7, 1.3) * 1.1
+	var theirs: float = (rival.health + rival.energy * 0.5) * randf_range(0.7, 1.3)
+	var winner: Falcon = self if mine >= theirs else rival
+	var loser: Falcon = rival if winner == self else self
+	loser.health -= randf_range(8.0, 18.0)
+	winner.health -= randf_range(2.0, 6.0)
+	if winner == rival:
+		# The challenger takes this patch.
+		rival.territory_center = territory_center
+	if not loser._claim_free_territory():
+		# No free sky anywhere: the loser leaves over the peaks. This is what
+		# holds the falcons at a stable number of territories.
+		loser._emigrate()
+		return
+	loser._patrol_target = loser.territory_center
+	if randf() < 0.25:
+		sim.chronicle.emit("%s drives %s out of its hunting grounds." % [winner.display_name, loser.display_name])
+
+# Move our centre to the best free spot in falcon country: as far as we can
+# find from every other falcon's patch (at least two territories away).
+func _claim_free_territory() -> bool:
+	var sim: SimulationDirector = director
+	if sim == null or not is_inside_tree():
+		return true
+	var others: Array = []
+	for f in get_tree().get_nodes_in_group("falcon"):
+		if f != self and f is Falcon and is_instance_valid(f):
+			others.append((f as Falcon).territory_center)
+	var crowded := func(c: Vector3) -> float:
+		var near: float = INF
+		for o: Vector3 in others:
+			near = minf(near, Vector2(c.x - o.x, c.z - o.z).length())
+		return near
+	if crowded.call(territory_center) >= TERRITORY_R * 2.0:
+		return true
+	var best: Vector3 = territory_center
+	var best_gap: float = crowded.call(territory_center)
+	for i: int in 24:
+		var p: Vector3 = Biomes.random_point("falcon", sim)
+		var gap: float = crowded.call(p)
+		if gap > best_gap:
+			best_gap = gap
+			best = Vector3(p.x, 0.0, p.z)
+		if gap >= TERRITORY_R * 2.0:
+			break
+	territory_center = best
+	return best_gap >= TERRITORY_R
+
+func _emigrate() -> void:
+	var sim: SimulationDirector = director
+	if sim != null and randf() < 0.3:
+		sim.chronicle.emit("%s finds no sky of its own and flies off over the peaks." % display_name)
+	FXManager.show_floating_text(global_position + Vector3.UP, "Leaves", Color(0.85, 0.85, 0.75))
+	if sim != null:
+		sim.agent_died.emit("falcon", global_position)
+	queue_free()
 	# Patrol over the valley, never out over the peaks.
 	var flat := Vector2(_patrol_target.x, _patrol_target.z)
-	if flat.length() > ValleyTerrain.FLOOR_RADIUS - 6.0:
-		flat = flat.normalized() * (ValleyTerrain.FLOOR_RADIUS - 6.0)
+	if flat.length() > ValleyTerrain.WALK_RADIUS - 6.0:
+		flat = flat.normalized() * (ValleyTerrain.WALK_RADIUS - 6.0)
 	_patrol_target.x = flat.x
 	_patrol_target.z = flat.y
 
@@ -207,7 +304,7 @@ func _on_exit_perch() -> void:
 	if _data != null:
 		_data.perch_y = -1.0
 
-const PREY: Array[String] = ["rabbit", "robin", "beetle", "worm"]
+const PREY: Array[String] = ["rabbit", "mouse", "robin", "beetle", "worm"]
 const SPOT_RANGE: float = 20.0
 var _dive_target: Node3D = null
 

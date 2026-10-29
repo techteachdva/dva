@@ -19,7 +19,7 @@ const BODY_TINT := Color(0.78, 0.74, 0.7)
 # How far the smell of a carcass carries to a decomposer's keen nose, from
 # a picked-clean scrap up to a fresh, whole body.
 const STINK_RANGE_MIN: float = 10.0
-const STINK_RANGE_MAX: float = 40.0
+const STINK_RANGE_MAX: float = 26.0
 
 var _energy_remaining: float = 0.0
 var _initial_energy: float = 0.0
@@ -61,8 +61,9 @@ var _wisps: CPUParticles3D
 
 func _build_stink() -> void:
 	_wisps = CPUParticles3D.new()
-	_wisps.amount = 6
-	_wisps.lifetime = 2.4
+	# Toned down: a few faint wisps, not a green fog over every carcass.
+	_wisps.amount = 3
+	_wisps.lifetime = 2.0
 	var q := QuadMesh.new()
 	q.size = Vector2(0.35, 0.35)
 	var m := StandardMaterial3D.new()
@@ -73,7 +74,7 @@ func _build_stink() -> void:
 	# yellow-green across the whole screen (seen at the start of a new run,
 	# when the first carcasses appear).
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	m.albedo_color = Color(0.62, 0.75, 0.3, 0.35)
+	m.albedo_color = Color(0.62, 0.75, 0.3, 0.16)
 	m.albedo_texture = SpriteGenerator.texture_for_shadow()
 	q.material = m
 	_wisps.mesh = q
@@ -125,7 +126,7 @@ func _process(real_delta: float) -> void:
 		_skel.position.y = -lerpf(0.0, 0.08, clampf((BONES_AT - left) / BONES_AT, 0.0, 1.0))
 	_stain.scale = Vector3(_body_size * 0.8, 1.0, _body_size * 0.45) * maxf(lerpf(0.6, 1.0, left), 0.6)
 	if _wisps != null:
-		_wisps.emitting = stink() > 0.25
+		_wisps.emitting = stink() > 0.55
 	if decay_timer <= 0.0:
 		finish()
 

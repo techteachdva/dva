@@ -46,6 +46,8 @@ var golden_mult: float = 1.0
 # Species switched off for the whole run: they never spawn or migrate in.
 var disabled_species: Dictionary = {}
 var golden_finds: int = 0
+# The wind field that carries seeds (see Wind).
+var wind: Wind = null
 # Fruit bookkeeping, to check the orchard is feeding anyone.
 var apples_dropped: int = 0
 var apples_eaten: int = 0
@@ -402,12 +404,18 @@ func _ready() -> void:
 
 	_visual_proxy_manager = VisualProxyManager.new()
 	add_child(_visual_proxy_manager)
+	wind = Wind.new()
+	wind.name = "Wind"
+	wind.director = self
+	add_child(wind)
 
 	# Seed grass with clustered patchiness instead of uniform soup
 	for gz: int in grass.grid_height:
 		for gx: int in grass.grid_width:
 			var noise := sin(gx * 0.35) * cos(gz * 0.28) + sin(gx * 0.13 + gz * 0.19) * 0.5
-			var base: float = cfg_grass_density * grass.max_density * (0.3 + 0.7 * clampf((noise + 1.0) / 2.0, 0.0, 1.0))
+			var gp := grass.grid_to_world(gx, gz)
+			var biome_cap: float = 0.16 if gp.x * gp.x + gp.z * gp.z > (ValleyTerrain.FLOOR_RADIUS + 2.0) * (ValleyTerrain.FLOOR_RADIUS + 2.0) else 1.0
+			var base: float = cfg_grass_density * grass.max_density * biome_cap * (0.3 + 0.7 * clampf((noise + 1.0) / 2.0, 0.0, 1.0))
 			var idx := gz * grass.grid_width + gx
 			grass._grid[idx] = base
 			grass._nutrients[idx] = clampf(0.25 + randf() * 0.15 + base * 0.2, 0.0, 1.0)
@@ -577,7 +585,8 @@ func _add_valley() -> void:
 	add_child(weather)
 	_apply_season_mood.call_deferred(_current_season, true)
 	if grass != null:
-		grass.bind_valley(ValleyTerrain.FLOOR_RADIUS, Callable(valley, "surface_height"))
+		Biomes.valley = valley
+		grass.bind_valley(ValleyTerrain.WALK_RADIUS - 2.0, Callable(valley, "surface_height"))
 		if valley.river != null:
 			valley.river.bake(grass)
 			grass.bind_water(Callable(valley.river, "covers_world"))
@@ -602,14 +611,27 @@ func spawn_trees() -> void:
 		grass.golden_mult = golden_mult
 	if _tree_scene == null:
 		return
-	var world_half: float = 25.0
-	for i: int in range(cfg_trees):
+	# The starting woods by biome: riverbank groves, a few plains trees, and
+	# conifer stands up in the highlands; bushes mostly out on the plains.
+	for i: int in range(cfg_trees + cfg_trees / 2):
+		var biome: String = [Biomes.RIVERBANK, Biomes.RIVERBANK, Biomes.RIVERBANK, Biomes.PLAINS, Biomes.MOUNTAIN, Biomes.MOUNTAIN][i % 6]
 		var t = _tree_scene.instantiate()
+		t.conifer = biome == Biomes.MOUNTAIN
 		$Trees.add_child(t)
-		t.global_position = tree_spot(Vector3((randf() - 0.5) * world_half * 2.0, 0.0, (randf() - 0.5) * world_half * 2.0))
+		t.global_position = tree_spot(_spot_in(biome))
 		_snap_to_ground(t)
 	for i: int in range(cfg_bushes):
-		plant_bush(Vector3((randf() - 0.5) * world_half * 2.0, 0.0, (randf() - 0.5) * world_half * 2.0), true)
+		plant_bush(_spot_in([Biomes.PLAINS, Biomes.PLAINS, Biomes.RIVERBANK][i % 3]), true)
+
+# A random dry spot in a biome.
+func _spot_in(biome: String) -> Vector3:
+	for k: int in 60:
+		var r: float = sqrt(randf()) * (ValleyTerrain.FLOOR_RADIUS - 3.0) if biome != Biomes.MOUNTAIN else randf_range(ValleyTerrain.FLOOR_RADIUS + 4.0, ValleyTerrain.WALK_RADIUS - 6.0)
+		var a: float = randf() * TAU
+		var p := dry_land(Vector3(cos(a) * r, 0.0, sin(a) * r))
+		if Biomes.at(p.x, p.z) == biome:
+			return p
+	return dry_land(Vector3(randf_range(-20, 20), 0, randf_range(-20, 20)))
 
 const MAX_BUSHES: int = 30
 
@@ -618,8 +640,10 @@ const MAX_BUSHES: int = 30
 func plant_bush(pos: Vector3, grown: bool = false) -> void:
 	if _tree_scene == null or $Bushes.get_child_count() >= MAX_BUSHES or (not grown and not tree_planting):
 		return
-	if not grown and randf() > 0.3:
-		return
+	if not grown:
+		pos = wind.seed_drift(pos) if wind != null else pos
+		if randf() > 0.3 * float(BUSH_TAKE.get(Biomes.at(pos.x, pos.z), 1.0)):
+			return
 	var b = _tree_scene.instantiate()
 	b.bush = true
 	b.apple_spawn_interval = 2.5
@@ -673,8 +697,49 @@ const MAX_TREES: int = 48
 # Off while the opening film is staged, so no sapling sprouts mid-shot.
 var tree_planting: bool = true
 
+# Pineapples (4.7): a pinecone and an apple rotting near each other may both
+# sprout, and the meeting of the two seedlings grows a pineapple tree instead.
+# The first one only ever appears on the plains; after that anywhere.
+const SPROUT_MEMORY: float = 240.0
+const SPROUT_MEET: float = 8.0
+const PINEAPPLE_CHANCE: float = 0.35
+var pineapples_born: int = 0
+var _sprouts: Array = []  # [pos, "conifer"/"apple", time]
+
+# What a fallen seed grows into here, or "" if it doesn't take.
+func sprout_kind(fruit: String, at: Vector3) -> String:
+	var biome: String = Biomes.at(at.x, at.z)
+	var grows: String = "pineapple" if fruit == "pineapple" else ("conifer" if fruit == "pinecone" else "apple")
+	if grows == "pineapple":
+		return grows
+	# Off home ground a seed rarely takes: conifers wandering down to the
+	# meadow, apples blown up the mountain.
+	if (grows == "conifer") != (biome == Biomes.MOUNTAIN) and randf() > 0.2:
+		return ""
+	var now: float = _clock_s
+	_sprouts = _sprouts.filter(func(s: Array) -> bool: return now - float(s[2]) < SPROUT_MEMORY)
+	var other: String = "apple" if grows == "conifer" else "conifer"
+	for s: Array in _sprouts:
+		if s[1] == other and (s[0] as Vector3).distance_to(at) < SPROUT_MEET:
+			if (pineapples_born > 0 or biome == Biomes.PLAINS) and randf() < PINEAPPLE_CHANCE:
+				_sprouts.erase(s)
+				pineapples_born += 1
+				if pineapples_born == 1:
+					chronicle.emit("Something strange: where a pinecone and an apple rotted side by side, a PINEAPPLE tree is sprouting!")
+					FXManager.show_floating_text(at + Vector3.UP * 2.0, "A Pineapple tree?!", Color(1.0, 0.85, 0.2))
+				return "pineapple"
+	_sprouts.append([at, grows, now])
+	if _sprouts.size() > 40:
+		_sprouts.pop_front()
+	return grows
+
 func can_plant_tree() -> bool:
 	return tree_planting and $Trees.get_child_count() < MAX_TREES
+
+# How readily a seed takes root in each biome: trees crowd the riverbank,
+# stand sparse on the plains; bushes love the open plains.
+const TREE_TAKE: Dictionary = {"riverbank": 1.6, "plains": 0.55, "mountain": 0.85}
+const BUSH_TAKE: Dictionary = {"riverbank": 1.2, "plains": 1.5, "mountain": 0.25}
 
 func try_plant_tree_seed(pos: Vector3, planter_group: String = "") -> bool:
 	if not can_plant_tree():
@@ -689,13 +754,16 @@ func try_plant_tree_seed(pos: Vector3, planter_group: String = "") -> bool:
 			chance = 0.15
 		_:
 			chance = 0.3
+	var land: Vector3 = wind.seed_drift(pos) if wind != null else pos + Vector3((randf() - 0.5) * 4.0, 0.0, (randf() - 0.5) * 4.0)
+	chance *= float(TREE_TAKE.get(Biomes.at(land.x, land.z), 1.0))
 	if randf() > chance:
 		return false
 	if _tree_scene == null:
 		return false
 	var t = _tree_scene.instantiate()
+	t.conifer = Biomes.at(land.x, land.z) == Biomes.MOUNTAIN
 	$Trees.add_child(t)
-	t.global_position = tree_spot(pos + Vector3((randf() - 0.5) * 4.0, 0.0, (randf() - 0.5) * 4.0))
+	t.global_position = tree_spot(land)
 	_snap_to_ground(t)
 	if t.has_method("set_stage"):
 		t.set_stage(0)
@@ -1106,9 +1174,23 @@ func spawn_entities() -> void:
 				a.display_name = roster_names[id].pop_front()
 	_spawn_fish(cfg_fish)
 	_apply_roster_identities()
+	_settle_biomes()
 
 	# Auto-use powerups for challenge mode
 	_auto_use_powerups()
+
+# Everyone starts in one of its home biomes: goats and lions up in the
+# highlands, deer on the plains and riverbank, and so on (see Biomes).
+func _settle_biomes() -> void:
+	for data: AgentData in _agent_registry:
+		var n := data.node as Node3D
+		if n == null or not is_instance_valid(n) or (n is MarkovAgent and (n as MarkovAgent).scripted):
+			continue
+		if data.species == "fish" or data.species == "mushroom":
+			continue
+		if not Biomes.fits(data.species, n.global_position.x, n.global_position.z):
+			var p := Biomes.random_point(data.species, self)
+			n.global_position = Vector3(p.x, ground_height(p.x, p.z), p.z)
 
 # The betting table names a male and a female of each species, one of them a
 # tough or special kind. Give the spawned creatures those identities so the
@@ -2234,6 +2316,18 @@ func logistic_reproduction_factor(species: String) -> float:
 	var midpoint: float = capacity * 0.7
 	return 1.0 / (1.0 + exp(0.02 * (count - midpoint)))
 
+func find_nearest_pinecone(pos: Vector3, radius: float = 8.0) -> Node3D:
+	var best: Node3D = null
+	var best_dist_sq := radius * radius
+	for node in get_nearby_agents(pos, radius, "pinecone"):
+		if not is_instance_valid(node) or not node is Node3D:
+			continue
+		var d_sq := pos.distance_squared_to(node.global_position)
+		if d_sq < best_dist_sq:
+			best_dist_sq = d_sq
+			best = node
+	return best
+
 func find_nearest_apple(pos: Vector3, radius: float = 8.0) -> Node3D:
 	var best: Node3D = null
 	var best_dist_sq := radius * radius
@@ -2568,7 +2662,7 @@ func _update_spatial_hash() -> void:
 			continue
 		_spatial_add(child)
 		for sub in child.get_children():
-			if sub is Node3D and sub.is_in_group("apple"):
+			if sub is Node3D and (sub.is_in_group("apple") or sub.is_in_group("pinecone")):
 				_spatial_add(sub)
 	for child in $Corpses.get_children():
 		if child is Node3D:
@@ -3169,6 +3263,8 @@ func is_drought() -> bool:
 # A drought: the grass browns and barely grows, moss shrivels, the fungi go
 # quiet and no rain comes. Lasts about a day and a half.
 func trigger_drought() -> void:
+	if wind != null:
+		wind.hot_gusts()
 	if _drought_timer > 0.0:
 		return
 	_drought_timer = Clock.BIO_PER_DAY * 1.5
@@ -3219,8 +3315,32 @@ func fish_left_valley(fish: Node, at_start: bool) -> void:
 		chronicle.emit("%s the %s slips %s through the pines." % [fish.display_name, Roles.display_name("fish", fish.role).to_lower(), way])
 	fish.queue_free()
 
-# The river is fed from the mountains: while it runs open, new fish keep
-# swimming down into the valley from upstream, faster when the shoal is thin.
+# The riverbank's wet soil teems (4.7): worms and beetles keep turning up
+# right at the water's edge, so the fish always have something to snap at.
+const BANK_BUGS_WANTED: int = 14
+
+func _stock_riverbank_bugs() -> void:
+	if valley == null or valley.river == null or river_frozen or not _room_for_birth():
+		return
+	var river: River = valley.river
+	var near: int = 0
+	for d: AgentData in _agent_registry:
+		if (d.species == "worm" or d.species == "beetle") and d.node != null and river.is_near(d.pos.x, d.pos.z):
+			near += 1
+	if near >= BANK_BUGS_WANTED or randf() > 0.6:
+		return
+	for k: int in randi_range(1, 3):
+		var s: float = randf_range(river.copse_s.x, river.copse_s.y)
+		var t := river.tangent_at(s)
+		var side := Vector3(-t.z, 0.0, t.x) * (river.half_width() + randf_range(0.2, 1.4)) * (1.0 if randf() < 0.5 else -1.0)
+		var at: Vector3 = river.point_at(s) + side
+		if randf() < 0.65:
+			spawn_worm_offspring(null, at)
+		elif not disabled_species.has("beetle"):
+			_spawn_extra("beetle", at)
+
+# The river is fed from both ends: while it runs open, new fish keep swimming
+# into the valley up and down the river, in schools when the shoal is thin.
 func _restock_fish_upstream() -> void:
 	if river_frozen or valley == null or valley.river == null or _fish_pool == null:
 		return
@@ -3230,30 +3350,35 @@ func _restock_fish_upstream() -> void:
 	var cap: int = Fish.RIVER_CAPACITY
 	if shoal >= cap:
 		return
-	var chance: float = 0.5 if shoal < cap / 3 else (0.25 if shoal < cap * 2 / 3 else 0.08)
+	var chance: float = 0.85 if shoal < cap / 3 else (0.35 if shoal < cap * 2 / 3 else 0.08)
 	if randf() > chance:
 		return
 	var river: River = valley.river
 	var arrived: int = 0
-	for k: int in randi_range(1, 3):
+	# They arrive just outside the meadow (where the river leaves the pines),
+	# from upstream or downstream, heading in.
+	var from_start: bool = randf() < 0.5
+	var school: int = randi_range(3, 6) if shoal < cap / 3 else randi_range(1, 3)
+	for k: int in school:
 		var fish: Node = _fish_pool.acquire()
 		if fish == null:
 			break
 		$Agents.add_child(fish)
-		var s: float = 0.5 + randf() * 2.0
+		var s: float = maxf(river.copse_s.x - randf_range(2.0, 14.0), 0.5) if from_start else minf(river.copse_s.y + randf_range(2.0, 14.0), river.length() - 0.5)
 		fish.visible = true
 		fish.global_position = river.point_at(s)
 		fish.sex = "female" if randf() < 0.5 else "male"
 		fish._s = s
-		fish._dir = 1.0
+		fish._dir = 1.0 if from_start else -1.0
 		_track_agent(fish, _active_fish)
 		_apply_phenotype_variance(fish, null)
 		arrived += 1
 	if arrived > 0 and shoal < 4:
-		chronicle.emit("Fresh fish come down the river from the mountains.")
+		chronicle.emit("A school of fish swims %s into the valley." % ("down the river" if from_start else "up the river"))
 
 func _return_fish() -> void:
 	_restock_fish_upstream()
+	_stock_riverbank_bugs()
 	if _fish_away.is_empty() or valley == null or valley.river == null or _fish_pool == null:
 		return
 	var river: River = valley.river
@@ -3480,7 +3605,15 @@ func _update_nesting() -> void:
 		chronicle.emit("The woods have grown back. Falcons are nesting again.")
 	_woods_thin = thin
 
+func trigger_gale() -> void:
+	if wind != null:
+		wind.gale()
+	FXManager.show_dramatic_text(Vector3.ZERO, "Gale! Seeds fly across the valley.", Color(0.75, 0.88, 1.0))
+	chronicle.emit("A gale tears across the valley, scattering seeds far and wide.")
+
 func trigger_rain() -> void:
+	if wind != null:
+		wind.calm()
 	_rain_timer = Clock.BIO_PER_DAY
 	_recompute_grass_boost()
 	if weather != null:
@@ -3653,16 +3786,21 @@ func trigger_meteor() -> void:
 
 # A valley-wide ceiling on creatures. Chromebooks run the web build, so the
 # browser gets a smaller valley: the story reads better and nothing lags.
+# A dev override (the limits test and the frenzy finale lift it to 10000).
+var creature_ceiling: int = 0
+
 func max_creatures() -> int:
+	if creature_ceiling > 0:
+		return creature_ceiling
 	return 300 if OS.has_feature("web") else 600
 
 func _room_for_birth() -> bool:
 	return _agent_registry.size() < max_creatures()
 
-# Births at the rim land back on the meadow, never up the slopes.
+# Births stay inside the walkable valley (the highlands included).
 func _in_valley(pos: Vector3) -> Vector3:
 	var flat := Vector2(pos.x, pos.z)
-	var limit: float = ValleyTerrain.FLOOR_RADIUS - 4.0
+	var limit: float = ValleyTerrain.WALK_RADIUS - 4.0
 	if flat.length() > limit:
 		flat = flat.normalized() * limit
 		return Vector3(flat.x, ground_height(flat.x, flat.y), flat.y)
@@ -3716,11 +3854,7 @@ func smell_corpse(pos: Vector3) -> Node3D:
 			best = corpse
 	return best
 
-# The valley's wind: a slowly veering direction with gusts, stronger in the
-# rain. Spores ride it; nothing alive steers by it.
-func wind() -> Vector3:
-	var a: float = _clock_s * 0.011 + sin(_clock_s * 0.003) * 1.7
-	var strength: float = 1.4 + 1.1 * sin(_clock_s * 0.045) + 0.5 * sin(_clock_s * 0.31)
-	if is_raining():
-		strength *= 1.6
-	return Vector3(cos(a), 0.0, sin(a)) * maxf(strength, 0.3)
+# Spores ride the valley's wind field (4.7); never quite still.
+func wind_at(pos: Vector3) -> Vector3:
+	var w: Vector3 = wind.sample(pos) if wind != null else Vector3.ZERO
+	return w if w.length() > 0.3 else Vector3(0.3, 0.0, 0.0) if w.length_squared() < 0.0001 else w.normalized() * 0.3

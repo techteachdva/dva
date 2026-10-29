@@ -217,6 +217,22 @@ func _commands() -> Dictionary:
 		"show": ["show <part|all>: show it again", func(a: Array) -> void: _c_vis(a, true)],
 		"toggle": ["toggle <part>: flip a piece on or off", func(a: Array) -> void: _c_vis(a, null)],
 		"draw": ["draw normal | wire | overdraw | unshaded: how the 3D is drawn", _c_draw],
+		"wind": ["wind: the wind here and now (strength, direction, power)", func(_a: Array) -> void:
+			var d := _need_valley()
+			if d != null and d.wind != null:
+				_ok(d.wind.describe())],
+		"pineapple": ["pineapple: grow a pineapple tree on the plains (normally born only when pinecone and apple seedlings meet)", func(_a: Array) -> void:
+			var d := _need_valley()
+			if d == null:
+				return
+			var at: Vector3 = d._spot_in(Biomes.PLAINS)
+			var t = load("res://scenes/tree.tscn").instantiate()
+			t.pineapple = true
+			d.get_node("Trees").add_child(t)
+			t.global_position = d.tree_spot(at)
+			d._snap_to_ground(t)
+			d.pineapples_born += 1
+			_ok("A pineapple tree stands at (%d, %d)." % [int(at.x), int(at.z)])],
 		"fps": ["fps: toggle an FPS / agent / draw-call counter", func(_a: Array) -> void: _fps.visible = not _fps.visible],
 		"scene": ["scene <menu|valley|bets|shop|minigames|golf|race|brawl|dominion|sweep|rules>: jump to a screen", _c_scene],
 	}
@@ -436,7 +452,7 @@ func _c_cast(a: Array) -> void:
 		if a.is_empty():
 			_err("cast <power>")
 		return
-	var methods: Dictionary = {"bloom": "trigger_bloom", "stampede": "trigger_stampede", "feast": "trigger_feast", "rot_rain": "trigger_rot_rain", "rain": "trigger_rain", "drought": "trigger_drought", "flood": "trigger_flood", "eclipse": "trigger_eclipse", "call": "trigger_predator_call"}
+	var methods: Dictionary = {"bloom": "trigger_bloom", "stampede": "trigger_stampede", "feast": "trigger_feast", "rot_rain": "trigger_rot_rain", "rain": "trigger_rain", "drought": "trigger_drought", "flood": "trigger_flood", "eclipse": "trigger_eclipse", "call": "trigger_predator_call", "gale": "trigger_gale"}
 	if not methods.has(a[0]) or not d.has_method(methods[a[0]]):
 		_err("cast " + "|".join(methods.keys()))
 		return

@@ -9,10 +9,10 @@ extends Camera3D
 @export var mouse_sensitivity: float = 0.005
 
 const MIN_DIST: float = 10.0
-const MAX_DIST: float = 120.0
+const MAX_DIST: float = 170.0
 const MIN_PITCH: float = deg_to_rad(-88.0)
 const MAX_PITCH: float = deg_to_rad(-14.0)
-const BOUND: float = 58.0
+const BOUND: float = 96.0
 const EASE: float = 9.0
 
 var target := Vector3(0.0, 0.0, 2.0)

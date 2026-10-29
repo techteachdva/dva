@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/agents/corpse.gd" id="1_corpse"]
+
+[node name="Corpse" type="Node3D"]
+script = ExtResource("1_corpse")

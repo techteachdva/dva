@@ -37,6 +37,10 @@ const KINDS: Dictionary = {
 		"tough": ["nightcrawler", "Nightcrawler", "Tills the soil so grass grows richer above the colony."],
 		"special": ["glowworm", "Glowworm", "Turns rot into food and lights the tunnels for new worms."],
 	},
+	"mouse": {
+		"tough": ["dormouse", "Dormouse", "Plump and sleepy. Stores fat, and lives through hard winters."],
+		"special": ["snowmouse", "Snow Mouse", "White and quick. Hard for hunters to spot."],
+	},
 	"rabbit": {
 		"tough": ["hare", "Hare", "Long-legged lookout. Thumps the alarm so the warren bolts early."],
 		"special": ["moonrabbit", "Moon Rabbit", "Digs warrens where rabbits heal and breed."],

@@ -1,0 +1,44 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/simulation_director.gd" id="1_director"]
+[ext_resource type="Script" path="res://scripts/layers/grass_layer.gd" id="2_grass"]
+[ext_resource type="Script" path="res://scripts/layers/rot_layer.gd" id="3_rot"]
+[ext_resource type="Script" path="res://scripts/layers/mycelium_layer.gd" id="4_mycelium"]
+[ext_resource type="PackedScene" path="res://scenes/ui/simulation_hud.tscn" id="5_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/loading_screen.tscn" id="6_loading"]
+[ext_resource type="Script" path="res://scripts/camera_controller.gd" id="7_camera"]
+
+[node name="Main" type="Node3D"]
+
+[node name="World" type="Node3D" parent="."]
+script = ExtResource("1_director")
+
+[node name="GrassLayer" type="Node3D" parent="World"]
+script = ExtResource("2_grass")
+
+[node name="RotLayer" type="Node3D" parent="World"]
+script = ExtResource("3_rot")
+
+[node name="MyceliumLayer" type="Node3D" parent="World"]
+script = ExtResource("4_mycelium")
+
+[node name="Agents" type="Node3D" parent="World"]
+
+[node name="Corpses" type="Node3D" parent="World"]
+
+[node name="Spores" type="Node3D" parent="World"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.612372, 0.353553, 0, 0.5, 0.866025, -0.707107, -0.612372, 0.353553, 0, 0, 0)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 40, 60)
+script = ExtResource("7_camera")
+projection = 0
+fov = 60.0
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="SimulationHUD" parent="CanvasLayer" instance=ExtResource("5_hud")]
+
+[node name="LoadingScreen" parent="CanvasLayer" instance=ExtResource("6_loading")]

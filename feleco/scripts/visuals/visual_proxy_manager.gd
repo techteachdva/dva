@@ -26,6 +26,7 @@ const SPECIES_CONFIG: Dictionary = {
 	"bear": {"size": Vector2(3.6, 3.6), "gait": 9.0, "kind": 0, "shadow": 2.6, "style": 3},
 	"lion": {"size": Vector2(3.2, 3.2), "gait": 11.0, "kind": 0, "shadow": 2.0, "style": 2},
 	"beetle": {"size": Vector2(0.9, 0.9), "gait": 16.0, "kind": 0, "shadow": 0.4, "style": 10},
+	"mouse": {"size": Vector2(1.0, 1.0), "gait": 18.0, "kind": 0, "shadow": 0.45, "style": 4},
 	# kind 3: drawn where it is (drifting spores, toadstools on the ground).
 	"mushroom": {"size": Vector2(2.0, 2.0), "gait": 1.0, "kind": 3, "shadow": 0.8, "style": 12},
 }
@@ -234,8 +235,8 @@ var sun_stretch: float = 0.6
 var shadow_fade: float = 1.0
 
 func set_sun(dir: Vector2, stretch: float, fade: float) -> void:
-	sun_dir = dir
-	sun_stretch = stretch
+	sun_dir = dir.normalized() if dir.is_finite() and dir.length_squared() > 0.0001 else Vector2(0.0, 1.0)
+	sun_stretch = clampf(stretch, 0.0, 3.0) if is_finite(stretch) else 0.0
 	shadow_fade = fade
 
 # 0 by day, 1 at midnight: every creature sprite takes a cool moonlit tint.
@@ -484,11 +485,41 @@ func sync(registry: Array[AgentData]) -> void:
 				shadow_floats[so + 15] = alpha * shadow_fade / (1.0 + stretch * 0.35)
 				so += SHADOW_FLOATS
 		_park(floats, o, FLOATS_PER_INSTANCE)
+		_sanitize(floats, FLOATS_PER_INSTANCE)
 		mm.buffer = floats
 	if shadow_cap > 0:
 		_park(shadow_floats, so, SHADOW_FLOATS)
+		_sanitize(shadow_floats, SHADOW_FLOATS)
 		smm.buffer = shadow_floats
 	_draw_zzz(now)
+
+# The last line of defence before the GPU: any non-finite or absurd value in
+# an instance (transform, colour or custom data) parks that whole instance
+# underground at a tiny size. The shader double-checks (creature_sprite).
+static func _sanitize(buf: PackedFloat32Array, stride: int) -> void:
+	var at: int = 0
+	var n: int = buf.size()
+	while at + stride <= n:
+		var bad: bool = false
+		for k: int in stride:
+			var v: float = buf[at + k]
+			if not is_finite(v) or absf(v) > 100000.0:
+				bad = true
+				break
+		# Scale entries (the basis diagonal) must stay positive and sane.
+		if not bad:
+			for k: int in [0, 5, 10]:
+				var s: float = absf(buf[at + k])
+				if s > 0.0 and s < PARK_SCALE * 0.5 or s > 50.0:
+					bad = true
+		if bad:
+			for k: int in stride:
+				buf[at + k] = 0.0
+			buf[at] = PARK_SCALE
+			buf[at + 5] = PARK_SCALE
+			buf[at + 10] = PARK_SCALE
+			buf[at + 7] = PARK_Y
+		at += stride
 
 # Every slot from `from` on is parked: tiny, deep underground, invisible.
 static func _park(buf: PackedFloat32Array, from: int, stride: int) -> void:

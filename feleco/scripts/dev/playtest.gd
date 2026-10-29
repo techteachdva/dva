@@ -52,7 +52,9 @@ func _go() -> void:
 			t += get_process_delta_time()
 			await get_tree().process_frame
 			_check_agents()
-			_check_camera()
+			# The camera eases over to a new creature: judge it once it has arrived.
+			if fmod(t, 6.0) > 1.5:
+				_check_camera()
 			if int(t / 6.0) != follow_i:
 				follow_i = int(t / 6.0)
 				_follow_someone(follow_i)

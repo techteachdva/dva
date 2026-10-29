@@ -72,10 +72,10 @@ var _death_clock: float = 0.0
 var _last_energy: float = -1.0
 var _vision_cone: VisionCone = null
 const _NO_MODS: Dictionary = {"__none__": true}
-# Creatures may roam up the lower slopes (about a third of the way to the
-# rim) but are turned back long before the crags.
-const BOUNDARY_SOFT: float = ValleyTerrain.FLOOR_RADIUS + 6.0
-const BOUNDARY_HARD: float = ValleyTerrain.FLOOR_RADIUS + 14.0
+# Creatures roam the meadow and the highlands (4.7), and are turned back at
+# the foot of the big peaks.
+const BOUNDARY_SOFT: float = ValleyTerrain.WALK_RADIUS - 12.0
+const BOUNDARY_HARD: float = ValleyTerrain.WALK_RADIUS + 2.0
 
 @onready var director: SimulationDirector = _find_director()
 
@@ -184,12 +184,23 @@ func end_rampage() -> void:
 func _rampage_tick(delta: float) -> void:
 	velocity = rampage_steer.limit_length(1.0) * RAMPAGE_SPEED
 	_rampage_time += delta
+	# A rampaging bird flies low and fast, skimming over its prey.
+	if _aerial and director != null:
+		var low: float = director.ground_height(global_position.x, global_position.z) + 2.0
+		global_position.y = lerpf(global_position.y, low, minf(delta * 3.0, 1.0))
 	golden -= (RAMPAGE_DRAIN + RAMPAGE_RAMP * _rampage_time) * delta
 	_rampage_strike -= delta
 	var sim = director
 	if sim != null and _rampage_strike <= 0.0:
-		# A tight bite: the player has to steer right onto the prey.
-		for n in sim.get_nearby_agents(global_position, 1.8):
+		# A tight bite: the player has to steer right onto the prey. Fliers
+		# strike at the ground under them (a 3D reach never touched anything
+		# from the air), with a slightly wider grab for the swoop.
+		var bite_at: Vector3 = global_position
+		var bite_r: float = 1.8
+		if _aerial:
+			bite_at.y = sim.ground_height(bite_at.x, bite_at.z)
+			bite_r = 2.4
+		for n in sim.get_nearby_agents(bite_at, bite_r):
 			if n == self or not n is MarkovAgent or n.is_queued_for_deletion() or (n as MarkovAgent).species_id == species_id:
 				continue
 			_rampage_strike = 0.45
@@ -353,11 +364,35 @@ func _update_corpse_push() -> void:
 	if d > 0.01:
 		_corpse_push = away / d * (1.0 - d / CORPSE_BERTH) * 2.5
 
+# Who keeps company (4.7): only true herds, flocks, packs and shoals pull
+# together. Lone hunters keep their distance from their own kind instead
+# (falcons go further and hold territory; see Falcon).
+const HERDERS: Array[String] = ["sheep", "deer", "goat", "rabbit", "wolf", "boar", "human", "fish", "robin"]
+const SOLITARY: Array[String] = ["lion", "bear", "falcon"]
+const SOLITARY_SPACE: float = 10.0
+const BIOME_PULL: float = 0.9
+
 func _update_herd() -> void:
 	var sim: SimulationDirector = director
 	if sim == null or species_id.is_empty() or species_id == "mushroom":
 		herd = 0.0
 		_herd_pull = Vector3.ZERO
+		return
+	# Every creature drifts back toward its home biomes when it strays.
+	var home: Vector3 = Biomes.pull(species_id, global_position) * BIOME_PULL
+	if not HERDERS.has(species_id):
+		herd = 0.0
+		_herd_pull = home
+		if SOLITARY.has(species_id):
+			var away := Vector3.ZERO
+			for k in sim.get_nearby_agents(global_position, SOLITARY_SPACE, species_id):
+				if k == self:
+					continue
+				var d := Vector3(global_position.x - k.global_position.x, 0.0, global_position.z - k.global_position.z)
+				var l: float = d.length()
+				if l > 0.05:
+					away += d / l * (1.0 - l / SOLITARY_SPACE)
+			_herd_pull += away.limit_length(1.2)
 		return
 	var strength: float = sim.tune(species_id, "herd")
 	var kin := sim.get_nearby_agents(global_position, HERD_RADIUS, species_id)
@@ -373,7 +408,7 @@ func _update_herd() -> void:
 			core += 1
 	if n < 2:
 		herd = 0.0
-		_herd_pull = Vector3.ZERO
+		_herd_pull = home
 		return
 	centre /= float(n)
 	var to_centre := Vector3(centre.x - global_position.x, 0.0, centre.z - global_position.z)
@@ -383,6 +418,7 @@ func _update_herd() -> void:
 	herd = clampf(middle * packed * strength, 0.0, 1.0)
 	# A gentle pull back toward the group, stronger the further out.
 	_herd_pull = to_centre.normalized() * clampf((off - 2.0) * 0.25, 0.0, 1.2) * strength if off > 2.0 else Vector3.ZERO
+	_herd_pull += home
 
 func _metabolise(_delta: float) -> void:
 	pass

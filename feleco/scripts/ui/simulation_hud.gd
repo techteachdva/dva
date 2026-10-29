@@ -19,11 +19,13 @@ const POWERUP_BUTTONS: Dictionary = {
 	"Drought": "drought",
 	"Flood": "flood",
 	"Eclipse": "eclipse",
+	"Gale": "gale",
 }
 # Scene buttons from before 3.0 that are no longer offered.
 const RETIRED_BUTTONS: Array[String] = ["Heal", "Famine", "Meteor"]
 const POWER_LABELS: Dictionary = {"Call": "Call Kin", "RotRain": "Rot Rain"}
 const POWER_TIPS: Dictionary = {
+	"Gale": "The wind howls for half a day from a random quarter: seeds fly far.",
 	"Bloom": "Bloom (producers): the meadow, the woods and the moss all surge at once.",
 	"Stampede": "Stampede (herbivores): the herds panic and scatter across the valley.",
 	"Call": "Call Kin: a few more of your champion's kind arrive.",
@@ -231,6 +233,7 @@ func _build_power_tray() -> void:
 	_tray.add_child(_tray_flow)
 	var handlers: Dictionary = {
 		"Eclipse": _trigger_eclipse,
+		"Gale": _trigger_simple.bind("gale", "trigger_gale"),
 		"Bloom": _trigger_simple.bind("bloom", "trigger_bloom"),
 		"Stampede": _trigger_simple.bind("stampede", "trigger_stampede"),
 		"Feast": _trigger_simple.bind("feast", "trigger_feast"),

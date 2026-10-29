@@ -33,6 +33,8 @@ var _dirty_indices: Array[int] = []
 var _soil_exhaustion: float = 0.0
 var _season_boost: float = 1.0
 var _valley_floor_radius_sq: float = -1.0
+# Per cell: the share of full density the biome lets grass reach.
+var _cap := PackedFloat32Array()
 var _height_at: Callable = Callable()
 var _is_wet: Callable = Callable()
 # Cells the valley mask clears (off the floor or under water), and each cell's
@@ -129,6 +131,9 @@ func _apply_valley_mask() -> void:
 			var edge: float = sqrt(_valley_floor_radius_sq) + 3.0 + 3.5 * sin(float(gx) * 1.7 + float(gz) * 0.6) * cos(float(gz) * 1.3 - float(gx) * 0.4)
 			var outside: bool = pos.x * pos.x + pos.z * pos.z > edge * edge
 			var wet: bool = _is_wet.is_valid() and bool(_is_wet.call(pos.x, pos.z))
+			if _cap.size() != _grid.size():
+				_cap.resize(_grid.size())
+			_cap[idx] = Biomes.grass_cap(pos.x, pos.z)
 			var m: int = 1 if outside or wet else 0
 			if fresh or _masked[idx] != m:
 				_masked[idx] = m
@@ -251,9 +256,10 @@ func propagate_growth(dt: float, grazing_pressure: float = 0.0, season_boost: fl
 			if (_cell_stage[l] == 2.0 and _grid[l] > 0.3) or (_cell_stage[r] == 2.0 and _grid[r] > 0.3) \
 					or (_cell_stage[u] == 2.0 and _grid[u] > 0.3) or (_cell_stage[d] == 2.0 and _grid[d] > 0.3):
 				spring_surge = 2.5
-		var growth_increment: float = dt * growth_rate * factor * old_val * (1.0 - old_val / max_density) * nutrient_factor * pressure_factor * exhaustion_factor * season_boost * spring_surge
+		var cap: float = max_density * (_cap[i] if i < _cap.size() else 1.0)
+		var growth_increment: float = dt * growth_rate * factor * old_val * (1.0 - old_val / maxf(cap, 0.01)) * nutrient_factor * pressure_factor * exhaustion_factor * season_boost * spring_surge
 		if growth_increment > 0.0001:
-			_grid[i] = clampf(old_val + growth_increment, 0.0, max_density)
+			_grid[i] = clampf(old_val + growth_increment, 0.0, cap)
 			_nutrients[i] = maxf(_nutrients[i] - growth_increment * NUTRIENT_GROWTH_COST, 0.0)
 			_mark_dirty(i)
 		elif grazing_pressure > 0.15 and old_val > 0.01:

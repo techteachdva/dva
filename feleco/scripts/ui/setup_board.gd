@@ -23,6 +23,7 @@ const SPECIES_FIELDS: Array = [
 	["fish_count", "Fish", "fish", 8, "fish"],
 	["worm_count", "Worms", "worm", 15, "worm"],
 	["extra:beetle", "Beetles", "beetle", 10, "beetle"],
+	["extra:mouse", "Mice", "mouse", 12, "mouse"],
 	["spore_count", "Mushrooms", "", 5, "mushroom"],
 	["tree_count", "Trees", "", 6, "tree"],
 	["bush_count", "Berry bushes", "", 5, "bush"],
