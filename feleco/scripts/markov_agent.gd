@@ -79,10 +79,13 @@ var _death_clock: float = 0.0
 var _last_energy: float = -1.0
 var _vision_cone: VisionCone = null
 const _NO_MODS: Dictionary = {"__none__": true}
-# Creatures roam the meadow and the highlands (4.7), and are turned back at
-# the foot of the big peaks.
-const BOUNDARY_SOFT: float = ValleyTerrain.WALK_RADIUS - 12.0
-const BOUNDARY_HARD: float = ValleyTerrain.WALK_RADIUS + 2.0
+# Creatures roam the meadow, the highlands and the lower mountain slopes.
+# Only the last few metres turn them back, so the slopes stay lived-in.
+# Past the hard edge they leave only when the valley is emigrating (see
+# SimulationDirector.should_depart); otherwise they step back in, off the
+# exact circle, so a crowd cannot freeze into a ring.
+const BOUNDARY_SOFT: float = ValleyTerrain.WALK_RADIUS - 6.0
+const BOUNDARY_HARD: float = ValleyTerrain.WALK_RADIUS - 0.5
 
 @onready var director: SimulationDirector = _find_director()
 
@@ -486,23 +489,25 @@ func _movement_tick(delta: float) -> void:
 		velocity = Vector3.ZERO
 		return
 	if _aerial:
-		# Birds and drifting spores keep over the valley, not the peaks.
+		# Birds stay over the valley. The turn starts only on the last slope.
 		var ra: float = Vector2(global_position.x, global_position.z).length()
 		if ra > BOUNDARY_SOFT:
-			velocity += Vector3(-global_position.x, 0.0, -global_position.z) / ra * 6.0 * (1.0 + (ra - BOUNDARY_SOFT) * 0.4)
+			var span: float = maxf(BOUNDARY_HARD - BOUNDARY_SOFT, 0.5)
+			var t: float = clampf((ra - BOUNDARY_SOFT) / span, 0.0, 1.0)
+			velocity += Vector3(-global_position.x, 0.0, -global_position.z) / ra * lerpf(0.6, 3.0, t * t)
 	if not _aerial:
 		velocity.y = 0.0
-		# Soft round boundary: past the meadow the slopes are walkable for a
-		# way, with a gentle and then firmer push back down.
+		# The mountain slopes are walkable. Only the last few metres ease
+		# a creature back down, and only after cancelling an outward shove.
 		var r: float = Vector2(global_position.x, global_position.z).length()
 		if r > BOUNDARY_SOFT:
 			var inward := Vector3(-global_position.x, 0.0, -global_position.z) / r
-			# Drop any push outward first, so a crowd at the rim slides back in
-			# instead of pinning itself into a ring against the slopes.
 			var outward: float = -velocity.dot(inward)
 			if outward > 0.0:
 				velocity += inward * outward
-			velocity += inward * 2.0 * (1.0 + (r - BOUNDARY_SOFT) * 0.4)
+			var span: float = maxf(BOUNDARY_HARD - BOUNDARY_SOFT, 0.5)
+			var t: float = clampf((r - BOUNDARY_SOFT) / span, 0.0, 1.0)
+			velocity += inward * lerpf(0.35, 2.2, t * t)
 	# Batch separation via crowding field (no per-agent spatial queries)
 	if velocity.length_squared() > 0.01:
 		var sim: SimulationDirector = director
@@ -525,11 +530,15 @@ func _movement_tick(delta: float) -> void:
 		_move_pace = pace
 		global_position += velocity * delta * pace
 		# However hard they flee (and however long a staggered step), fliers
-		# never pass the hard edge.
+		# either leave for another pasture or step back off the cliff.
 		if _aerial:
 			var fl := Vector2(global_position.x, global_position.z)
 			if fl.length() > BOUNDARY_HARD:
-				fl = fl.normalized() * BOUNDARY_HARD
+				var air_sim: SimulationDirector = director
+				if air_sim != null and air_sim.should_depart(self):
+					air_sim.depart(self)
+					return
+				fl = _step_back_from_edge(fl)
 				global_position.x = fl.x
 				global_position.z = fl.y
 	if not _aerial:
@@ -539,9 +548,13 @@ func _movement_tick(delta: float) -> void:
 			ground_y = ground_sim.ground_height(global_position.x, global_position.z)
 		var flat := Vector2(global_position.x, global_position.z)
 		if flat.length() > BOUNDARY_HARD:
-			flat = flat.normalized() * BOUNDARY_HARD
+			if ground_sim != null and ground_sim.should_depart(self):
+				ground_sim.depart(self)
+				return
+			flat = _step_back_from_edge(flat)
 			global_position.x = flat.x
 			global_position.z = flat.y
+			velocity = Vector3(-global_position.x, 0.0, -global_position.z).normalized() * 1.5
 			if ground_sim != null:
 				ground_y = ground_sim.ground_height(flat.x, flat.y)
 		global_position.y = ground_y
@@ -552,6 +565,16 @@ func _movement_tick(delta: float) -> void:
 				var away := Vector3(global_position.x - bank.x, 0.0, global_position.z - bank.z)
 				if away.length_squared() > 0.01:
 					velocity += away.normalized() * 7.0
+
+# Pull a creature back inside the slopes, a little off the exact radius and
+# a little to one side, so a crowd cannot sit on one perfect circle.
+func _step_back_from_edge(flat: Vector2) -> Vector2:
+	var inward := flat.normalized()
+	var side := Vector2(-inward.y, inward.x) * randf_range(-3.0, 3.0)
+	var back: Vector2 = inward * (BOUNDARY_HARD - randf_range(2.0, 7.0)) + side
+	if back.length() > BOUNDARY_HARD - 1.0:
+		back = back.normalized() * (BOUNDARY_HARD - randf_range(1.5, 4.0))
+	return back
 
 func _get_transition_modifiers() -> Dictionary:
 	return {}

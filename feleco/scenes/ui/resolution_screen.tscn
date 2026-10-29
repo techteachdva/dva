@@ -64,7 +64,7 @@ theme_override_constants/separation = 6
 
 [node name="Graph" type="Control" parent="Margin/VBox/Columns/Left"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 150)
+custom_minimum_size = Vector2(0, 320)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3

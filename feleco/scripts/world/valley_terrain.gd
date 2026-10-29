@@ -2,13 +2,15 @@ class_name ValleyTerrain
 extends Node3D
 
 # Pocket valley. The floor is the living meadow (plains and riverbank); the
-# highlands ringing it are the Mountain biome, walkable out to WALK_RADIUS;
-# beyond them the big peaks rise as the valley's wall (4.7).
+# highlands and the lower slopes of the big peaks are the Mountain biome,
+# walkable out to WALK_RADIUS. The summits beyond that stay the valley's wall.
 
 const FLOOR_RADIUS: float = 46.0
 # The highlands: the old rim, lower and fleshed out as a biome to explore.
 const RIM_RADIUS: float = 84.0
-const WALK_RADIUS: float = 80.0
+# Into the peaks, not just up to their foot. At this radius the ground has
+# already climbed the big-peak blend, so a goat standing here reads as mountain.
+const WALK_RADIUS: float = 118.0
 # The big peaks: the new periphery.
 const PEAK_RADIUS: float = 136.0
 const MESH_SPAN: float = 300.0
@@ -292,10 +294,10 @@ func _color_at(x: float, z: float, h: float, flatness: float) -> Color:
 	var snowy: float = clampf((h - snow_line) / 4.0, 0.0, 1.0) * clampf((flatness - 0.35) / 0.3, 0.0, 1.0)
 	return c.lerp(snow, snowy)
 
-# Dense stands of pines where the river leaves the meadow at both passes.
-# They are the valley's boundary there: the water runs into them and out.
-const COPSE_TREES: int = 60
-var _cone_mat: StandardMaterial3D
+# A short stand of fruitless apple trees where the river leaves the meadow
+# at both passes. Just enough crown to hide the water running off the map.
+const COPSE_TREES: int = 14
+var _crown_mat: StandardMaterial3D
 
 func _plant_copses() -> void:
 	var holder := Node3D.new()
@@ -304,7 +306,7 @@ func _plant_copses() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 991
 	var trunks: Array[Transform3D] = []
-	var cones: Array[Transform3D] = []
+	var crowns: Array[Transform3D] = []
 	var tints: Array[Color] = []
 	var span: float = river.length()
 	for end: int in 2:
@@ -312,44 +314,46 @@ func _plant_copses() -> void:
 		var tries: int = 0
 		while placed < COPSE_TREES and tries < 2000:
 			tries += 1
-			var s: float = rng.randf_range(0.0, river.copse_s.x + 6.0) if end == 0 else rng.randf_range(river.copse_s.y - 6.0, span)
+			var s: float = rng.randf_range(0.0, river.copse_s.x + 4.0) if end == 0 else rng.randf_range(river.copse_s.y - 4.0, span)
 			var p := river.point_at(s)
 			var t := river.tangent_at(s)
 			var side := Vector3(-t.z, 0.0, t.x)
-			var off: float = rng.randf_range(River.BASE_HALF_WIDTH * 1.9, 20.0) * (1.0 if rng.randf() > 0.5 else -1.0)
-			var pos := p + side * off + t * rng.randf_range(-2.0, 2.0)
+			var off: float = rng.randf_range(River.BASE_HALF_WIDTH * 1.8, 9.0) * (1.0 if rng.randf() > 0.5 else -1.0)
+			var pos := p + side * off + t * rng.randf_range(-1.5, 1.5)
+			if river.across_distance(pos.x, pos.z) < River.BASE_HALF_WIDTH * 1.5:
+				continue
 			var r: float = Vector2(pos.x, pos.z).length()
-			if r < FLOOR_RADIUS - 3.0 or r > FLOOR_RADIUS + 22.0:
+			if r < FLOOR_RADIUS - 2.0 or r > FLOOR_RADIUS + 16.0:
 				continue
 			pos.y = surface_height(pos.x, pos.z)
-			var k: float = rng.randf_range(0.85, 1.45)
-			trunks.append(Transform3D(Basis().scaled(Vector3(k, k, k)), pos + Vector3.UP * 0.8 * k))
-			var tint := Color(0.2, 0.42, 0.24).lerp(Color(0.3, 0.5, 0.26), rng.randf())
-			for tier: int in 3:
-				var w: float = [1.0, 0.78, 0.55][tier] * k
-				var h: float = [1.7, 2.9, 3.9][tier] * k
-				cones.append(Transform3D(Basis().scaled(Vector3(w, k, w)), pos + Vector3.UP * h))
-				tints.append(tint.lightened(0.06 * tier))
+			var k: float = rng.randf_range(0.9, 1.35)
+			trunks.append(Transform3D(Basis().scaled(Vector3(k, k * 1.15, k)), pos + Vector3.UP * 0.9 * k))
+			var leaf := Color(0.34, 0.55, 0.22).lerp(Color(0.48, 0.62, 0.24), rng.randf())
+			# A round crown, plus a smaller lump off to one side. No fruit.
+			crowns.append(Transform3D(Basis().scaled(Vector3(1.35, 0.85, 1.35) * k), pos + Vector3.UP * 2.5 * k))
+			tints.append(leaf)
+			var lump := side.normalized() * 0.45 * k
+			crowns.append(Transform3D(Basis().scaled(Vector3(0.85, 0.6, 0.85) * k), pos + lump + Vector3.UP * 2.15 * k))
+			tints.append(leaf.lightened(0.08))
 			placed += 1
 	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.18
-	trunk_mesh.bottom_radius = 0.28
-	trunk_mesh.height = 1.6
+	trunk_mesh.top_radius = 0.16
+	trunk_mesh.bottom_radius = 0.26
+	trunk_mesh.height = 1.7
 	trunk_mesh.radial_segments = 6
 	trunk_mesh.rings = 1
 	var bark := StandardMaterial3D.new()
-	bark.albedo_color = Color(0.36, 0.25, 0.17)
+	bark.albedo_color = Color(0.4, 0.28, 0.18)
 	_copse_multimesh(holder, "CopseTrunks", trunk_mesh, bark, trunks, [])
-	var cone := CylinderMesh.new()
-	cone.top_radius = 0.0
-	cone.bottom_radius = 1.6
-	cone.height = 2.4
-	cone.radial_segments = 7
-	cone.rings = 1
-	_cone_mat = StandardMaterial3D.new()
-	_cone_mat.vertex_color_use_as_albedo = true
-	_cone_mat.roughness = 0.95
-	_copse_multimesh(holder, "CopseNeedles", cone, _cone_mat, cones, tints)
+	var crown := SphereMesh.new()
+	crown.radius = 1.15
+	crown.height = 2.1
+	crown.radial_segments = 8
+	crown.rings = 4
+	_crown_mat = StandardMaterial3D.new()
+	_crown_mat.vertex_color_use_as_albedo = true
+	_crown_mat.roughness = 0.92
+	_copse_multimesh(holder, "CopseCrowns", crown, _crown_mat, crowns, tints)
 
 func _copse_multimesh(holder: Node3D, node_name: String, mesh: Mesh, mat: Material, xforms: Array[Transform3D], tints: Array[Color]) -> void:
 	var mmi := MultiMeshInstance3D.new()
@@ -367,10 +371,10 @@ func _copse_multimesh(holder: Node3D, node_name: String, mesh: Mesh, mat: Materi
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	holder.add_child(mmi)
 
-# Pines stay green; winter frosts them over.
+# Fruitless crowns thin and frost in winter; they never set fruit.
 func set_season(season: String) -> void:
-	if _cone_mat != null:
-		_cone_mat.albedo_color = Color(1.6, 1.65, 1.7) if season == "Winter" else Color.WHITE
+	if _crown_mat != null:
+		_crown_mat.albedo_color = Color(0.72, 0.76, 0.78) if season == "Winter" else Color.WHITE
 
 func _add_sky() -> void:
 	var world_env := WorldEnvironment.new()

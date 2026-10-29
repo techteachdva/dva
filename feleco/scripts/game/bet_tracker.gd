@@ -70,6 +70,7 @@ func refresh() -> void:
 	# 3.0: group fill, a group losing a species, and where gold has been.
 	var gs: Dictionary = director.get_group_scores()
 	stats["group_score"] = gs
+	stats["group_rule"] = director.control_days.duplicate()
 	for g: String in gs.keys():
 		stats["group_peak"][g] = maxf(float(stats["group_peak"].get(g, 0.0)), float(gs[g]))
 	for id: String in SpeciesDB.ROWS.keys():

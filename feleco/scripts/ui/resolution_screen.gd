@@ -35,7 +35,8 @@ func show_result(winner: String) -> void:
 		if director != null:
 			ruled = int(director.control_days.get(winner, 0.0))
 			share = int(round(100.0 * director.control_share(winner)))
-		%WinnerLabel.text = "%s hold the valley  ·  ruled %d days (%d%%)" % [winner.capitalize(), ruled, share]
+		var who: String = SpeciesDB.GROUP_LABEL.get(winner, winner.capitalize())
+		%WinnerLabel.text = "%s hold the valley  ·  ruled %d days (%d%%)" % [who, ruled, share]
 	%WinnerLabel.add_theme_font_override("font", FelecoUiScript.font("heading"))
 	%WinnerLabel.add_theme_color_override("font_color", FelecoUiScript.GOLD)
 	var champ_line: String = "Your champion holds the valley." if (gc != null and _bet_to_plural(gc.player_bet) == winner) else "The valley chose otherwise."
@@ -68,21 +69,22 @@ func show_result(winner: String) -> void:
 
 	# Final counts
 	var counts: Dictionary = director.get_creature_counts()
+	counts["mushrooms"] = director._active_spores.size()
 	var total: int = 0
-	for v: int in counts.values():
-		total += v
+	for sp: String in SpeciesDB.CENSUS:
+		total += int(counts.get(sp, 0))
 	if total <= 0:
 		total = 1
 	var final_text: String = ""
 	if director.control_days.size() > 0:
 		final_text = "Days ruled  "
-		for sp: String in ["sheep", "wolves", "humans", "falcons", "robins", "boars", "rabbits", "worms", "fish"]:
-			final_text += "%s %d   " % [sp.capitalize(), int(director.control_days.get(sp, 0.0))]
+		for g: String in SpeciesDB.GROUPS:
+			final_text += "%s %d   " % [SpeciesDB.GROUP_LABEL[g], int(director.control_days.get(g, 0.0))]
 		final_text += "\n"
-	for sp in ["sheep", "wolves", "humans", "falcons", "robins", "boars", "rabbits", "worms", "fish", "wizards", "builders"]:
-		var count: int = counts.get(sp, 0)
+	for sp: String in SpeciesDB.CENSUS:
+		var count: int = int(counts.get(sp, 0))
 		var pct: int = int(round(float(count) / float(total) * 100.0))
-		final_text += "%s: %d (%d%%)  |  " % [sp.capitalize(), count, pct]
+		final_text += "%s: %d (%d%%)  |  " % [SpeciesDB.label(SpeciesDB.id_for(sp)), count, pct]
 	%FinalCounts.text = final_text.rstrip(" |")
 
 	# Ecosystem Roulette: every bet, won or lost (live wins were paid when they landed).

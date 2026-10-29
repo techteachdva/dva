@@ -17,8 +17,11 @@ uniform vec3 shallow : source_color = vec3(0.24, 0.56, 0.62);
 uniform vec3 sky : source_color = vec3(0.72, 0.86, 0.96);
 uniform vec3 sand : source_color = vec3(0.6, 0.52, 0.36);
 uniform vec3 moss : source_color = vec3(0.4, 0.5, 0.26);
-// Both ends fade out where the river runs off into the peaks.
+// Both ends fade out where the river runs off into the trees.
 uniform float river_length = 100.0;
+// Downstream axis in the ground plane, so ripples are sized in metres
+// instead of being stretched along whatever UV.y a long end-quad carries.
+uniform vec2 flow_dir = vec2(0.0, 1.0);
 // 0..1: flood water is brown with silt and carries more foam.
 uniform float flood = 0.0;
 uniform vec3 silt : source_color = vec3(0.42, 0.38, 0.27);
@@ -47,7 +50,8 @@ void vertex() {
 	v_rapid = COLOR.r;
 	// A gentle swell, stronger in the rapids. Never moves the banks.
 	float mid = 1.0 - abs(UV.x - 0.5) * 2.0;
-	VERTEX.y += sin(UV.y * 0.8 - TIME * 2.2) * 0.03 * mid * (1.0 + v_rapid * 3.0);
+	float along_v = dot((MODEL_MATRIX * vec4(VERTEX, 1.0)).xz, flow_dir);
+	VERTEX.y += sin(along_v * 0.8 - TIME * 2.2) * 0.03 * mid * (1.0 + v_rapid * 3.0);
 	v_world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
@@ -55,10 +59,13 @@ void fragment() {
 	float u = abs(UV.x - 0.5) * 2.0;
 	float across = (UV.x - 0.5) * 6.0;
 	float v = UV.y;
+	// World metres downstream. A long end quad used to smear UV.y across
+	// many metres of bank and turn the ripples into stripes.
+	float along = dot(v_world.xz, flow_dir);
 	// Flow speed: fastest mid-channel, slow by the banks, quicker in rapids.
 	float speed = (1.0 - u * u * 0.7) * (1.0 + v_rapid * 2.5);
-	vec2 p1 = vec2(across * 1.3, v * 0.55 - TIME * 1.6 * speed);
-	vec2 p2 = vec2(across * 2.1 + 3.0, v * 0.9 - TIME * 2.4 * speed);
+	vec2 p1 = vec2(across * 1.3, along * 0.55 - TIME * 1.6 * speed);
+	vec2 p2 = vec2(across * 2.1 + 3.0, along * 0.9 - TIME * 2.4 * speed);
 	float n1 = fbm(p1);
 	float n2 = fbm(p2);
 	float ripple = n1 * 0.6 + n2 * 0.4;
@@ -74,14 +81,14 @@ void fragment() {
 	float sheen = smoothstep(0.45, 0.85, ripple);
 	col = mix(col, sky, clamp(fresnel * (0.6 + sheen * 0.8), 0.0, 0.85));
 	// Long streaks drawn downstream by the current.
-	float streak = smoothstep(0.62, 0.9, fbm(vec2(across * 4.0, v * 0.18 - TIME * 0.9 * speed)));
+	float streak = smoothstep(0.62, 0.9, fbm(vec2(across * 4.0, along * 0.35 - TIME * 0.9 * speed)));
 	col += vec3(0.5, 0.65, 0.7) * streak * 0.18 * (1.0 - u);
 	// Sun sparkle: tiny bright points where two ripple layers peak together.
 	float glint = smoothstep(0.86, 0.95, n1 * n2 * 1.7) * (0.4 + graze);
 	col += vec3(1.0, 0.98, 0.9) * glint * 0.7;
 	// Foam: a broken, fizzing line along each bank, and white water in rapids.
 	float edge_band = smoothstep(water_edge - 0.2, water_edge - 0.02, u) * (1.0 - smoothstep(water_edge - 0.01, water_edge + 0.02, u));
-	float foam_n = fbm(vec2(across * 6.0, v * 1.4 - TIME * 1.1 * speed));
+	float foam_n = fbm(vec2(across * 6.0, along * 1.4 - TIME * 1.1 * speed));
 	float foam = edge_band * smoothstep(0.35, 0.7, foam_n);
 	float white = v_rapid * smoothstep(0.5 - v_rapid * 0.25, 0.85, n2 * 0.6 + foam_n * 0.5);
 	foam = max(foam, white);
@@ -91,7 +98,7 @@ void fragment() {
 	col = mix(col, silt + vec3(streak * 0.25), flood * 0.75);
 	alpha = mix(alpha, 0.95, flood);
 	if (ice > 0.0) {
-		float crack = smoothstep(0.93, 1.0, abs(sin(v * 0.9 + UV.x * 7.0) * sin(v * 0.37 - UV.x * 13.0)));
+		float crack = smoothstep(0.93, 1.0, abs(sin(along * 0.9 + UV.x * 7.0) * sin(along * 0.37 - UV.x * 13.0)));
 		vec3 frost = mix(vec3(0.78, 0.88, 0.95), vec3(0.93, 0.97, 1.0), smoothstep(0.0, water_edge, u));
 		frost = mix(frost, vec3(0.55, 0.68, 0.8), crack * 0.6);
 		frost += vec3(0.06) * fresnel;
@@ -105,7 +112,7 @@ void fragment() {
 		col = mix(wet, moss, smoothstep(0.2, 1.0, b));
 		alpha = 1.0 - smoothstep(0.45, 1.0, b);
 	}
-	alpha *= smoothstep(0.0, 18.0, v) * smoothstep(0.0, 18.0, river_length - v);
+	alpha *= smoothstep(0.0, 10.0, v) * smoothstep(0.0, 10.0, river_length - v);
 	ALBEDO = col;
 	ALPHA = clamp(alpha, 0.0, 1.0);
 }

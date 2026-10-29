@@ -172,14 +172,20 @@ const MIGRATION_CHANCE: float = 0.3
 var _ever_lived: Dictionary = {}
 var _extinct_since: Dictionary = {}
 var _migration_lock_until: Dictionary = {}
+# Set while the valley is sending one species away. Empty means nobody leaves.
+var _emigrant_species: String = ""
+var _emigrate_said: bool = false
 
-# Presence grid: coarse occupancy for O(1) vision queries
+# Presence grid: coarse occupancy for O(1) vision queries.
+# The window has to cover the whole walkable valley. A grid that stopped
+# inside the slopes treated the outside as empty, and crowding then shoved
+# the outer animals further out until the hard edge parked them in a ring.
 const PRESENCE_CELL_SIZE: float = 5.0
+const PRESENCE_HALF: int = int(ceil((ValleyTerrain.WALK_RADIUS + 10.0) / PRESENCE_CELL_SIZE))
+const PRESENCE_N: int = PRESENCE_HALF * 2
 # Per-species counts: slot (from _presence_slots) * PRESENCE_N^2 + cell.
 var _presence_slots: Dictionary = {}
 var _presence_counts: PackedInt32Array = PackedInt32Array()
-const PRESENCE_N: int = 26
-const PRESENCE_HALF: int = 13
 const PRESENCE_EVERY: int = 3
 var _presence_tick: int = 0
 
@@ -932,6 +938,7 @@ func tick(dt: float) -> void:
 	if _overpop_timer >= 2.0:
 		_overpop_timer = 0.0
 		_apply_overpopulation()
+		_apply_emigration()
 		_apply_pass_migration()
 		_check_cloning_vat()
 		_return_fish()
@@ -977,16 +984,17 @@ func tick(dt: float) -> void:
 	if _history_sample_timer >= HISTORY_SAMPLE_INTERVAL:
 		_history_sample_timer = 0.0
 		var h_counts: Dictionary = get_creature_counts()
-		_population_history.append({
-			"time": _elapsed,
-			"sheep": h_counts.get("sheep", 0),
-			"wolves": h_counts.get("wolves", 0),
-			"humans": h_counts.get("humans", 0),
-			"falcons": h_counts.get("falcons", 0),
-			"robins": h_counts.get("robins", 0),
-			"boars": h_counts.get("boars", 0),
-			"rabbits": h_counts.get("rabbits", 0),
-		})
+		var snap := {"time": _elapsed}
+		for k: String in h_counts.keys():
+			if k == "wizards" or k == "builders":
+				continue
+			snap[k] = int(h_counts[k])
+		if not snap.has("mushrooms"):
+			snap["mushrooms"] = _active_spores.size()
+		var ruled := get_group_scores()
+		for g: String in SpeciesDB.GROUPS:
+			snap["rule:" + g] = float(ruled[g])
+		_population_history.append(snap)
 	# The HUD rebuilds its clock and champion line on this signal; four times
 	# a second is plenty and saves that work on most ticks.
 	_time_emit_accum += dt
@@ -2581,10 +2589,21 @@ func get_crowding_vector(pos: Vector3) -> Vector3:
 	var ccx := int(floor(pos.x / PRESENCE_CELL_SIZE))
 	var ccz := int(floor(pos.z / PRESENCE_CELL_SIZE))
 	var steer := Vector3.ZERO
+	var wall_r2: float = ValleyTerrain.WALK_RADIUS * ValleyTerrain.WALK_RADIUS
 	for dx: int in range(-1, 2):
 		for dz: int in range(-1, 2):
-			var i := _presence_index(ccx + dx, ccz + dz)
-			if i < 0:
+			var cx: int = ccx + dx
+			var cz: int = ccz + dz
+			var cell_x: float = (float(cx) + 0.5) * PRESENCE_CELL_SIZE
+			var cell_z: float = (float(cz) + 0.5) * PRESENCE_CELL_SIZE
+			var i := _presence_index(cx, cz)
+			# A cell past the slopes is a wall. Skipping it used to leave only
+			# the inward neighbours, and their repulsion pushed the rim crowd
+			# outward onto the clamp circle.
+			if i < 0 or cell_x * cell_x + cell_z * cell_z > wall_r2:
+				var inward := Vector3(-pos.x, 0.0, -pos.z)
+				if inward.length_squared() > 1.0:
+					steer += inward.normalized() * 1.2
 				continue
 			var count: int = _crowd_grid[i]
 			if count <= 1 and dx == 0 and dz == 0:
@@ -2592,8 +2611,8 @@ func get_crowding_vector(pos: Vector3) -> Vector3:
 			if count <= 0:
 				continue
 			# Repulsion from neighbor cell centers
-			var to_x: float = (ccx + dx + 0.5) * PRESENCE_CELL_SIZE - pos.x
-			var to_z: float = (ccz + dz + 0.5) * PRESENCE_CELL_SIZE - pos.z
+			var to_x: float = cell_x - pos.x
+			var to_z: float = cell_z - pos.z
 			var dist := sqrt(to_x * to_x + to_z * to_z)
 			if dist > 0.01:
 				var k: float = float(count) * (1.0 / maxf(dist, 1.0)) * 2.0 / dist
@@ -2831,26 +2850,32 @@ func _end_simulation() -> void:
 	_simulation_ended = true
 	if bet_tracker != null:
 		bet_tracker.settle_final()
-	last_holds = _compute_holds()
-	# The valley goes to whoever ruled it longest; ties go to the stronger hold now.
+	last_holds = get_group_scores()
+	# The valley goes to the food-web group that ruled it longest. A tie
+	# goes to whichever group is fuller right now. Same test as the old
+	# per-species hill, run on the five categories instead.
+	simulation_ended.emit(ruling_group())
+
+func ruling_group() -> String:
+	var scores: Dictionary = get_group_scores()
 	var winner: String = ""
 	var best: float = 0.0
-	for sp: String in HOLD_ORDER:
-		var d: float = float(control_days.get(sp, 0.0))
-		if d > best or (is_equal_approx(d, best) and d > 0.0 and float(last_holds.get(sp, 0.0)) > float(last_holds.get(winner, 0.0))):
+	for g: String in SpeciesDB.GROUPS:
+		var d: float = float(control_days.get(g, 0.0))
+		if d > best or (is_equal_approx(d, best) and d > 0.0 and float(scores.get(g, 0.0)) > float(scores.get(winner, 0.0))):
 			best = d
-			winner = sp
-	simulation_ended.emit(winner)
+			winner = g
+	return winner
 
 func _sample_control(days: float) -> void:
-	var holds: Dictionary = _compute_holds()
+	var scores: Dictionary = get_group_scores()
 	var leader: String = ""
 	var best: float = 0.0
-	for sp: String in HOLD_ORDER:
-		var h: float = float(holds.get(sp, 0.0))
+	for g: String in SpeciesDB.GROUPS:
+		var h: float = float(scores.get(g, 0.0))
 		if h > best:
 			best = h
-			leader = sp
+			leader = g
 	if leader.is_empty():
 		return
 	control_days[leader] = float(control_days.get(leader, 0.0)) + days
@@ -2880,18 +2905,19 @@ func _compute_holds() -> Dictionary:
 	return holds
 
 func champion_line(champion: String) -> String:
-	var key := _bet_key(champion)
-	var champ_d: int = int(control_days.get(key, 0.0))
+	var grp: String = SpeciesDB.group_of(SpeciesDB.id_for(champion))
+	var grp_name: String = SpeciesDB.GROUP_LABEL.get(grp, grp.capitalize())
+	var champ_d: int = int(control_days.get(grp, 0.0))
 	var lead := ""
 	var lead_d: float = 0.0
-	for sp: String in HOLD_ORDER:
-		var d: float = float(control_days.get(sp, 0.0))
+	for g: String in SpeciesDB.GROUPS:
+		var d: float = float(control_days.get(g, 0.0))
 		if d > lead_d:
 			lead_d = d
-			lead = sp
+			lead = g
 	if lead.is_empty():
-		return "Champion: %s\nNo one rules the valley yet." % champion.capitalize()
-	return "Champion: %s  %d days ruled\nLongest reign: %s  %d days" % [champion.capitalize(), champ_d, lead.capitalize(), int(lead_d)]
+		return "Backing: %s\nNo group rules the valley yet." % grp_name
+	return "Backing: %s  %d days\nLongest reign: %s  %d days" % [grp_name, champ_d, SpeciesDB.GROUP_LABEL.get(lead, lead), int(lead_d)]
 
 func _bet_key(bet: String) -> String:
 	match bet.to_lower():
@@ -3787,15 +3813,111 @@ func trigger_meteor() -> void:
 			killed += 1
 	emit_signal("combat_event", "meteor", target_key, Vector3.ZERO, true)
 
-# A valley-wide ceiling on creatures. Chromebooks run the web build, so the
-# browser gets a smaller valley: the story reads better and nothing lags.
+# Emigration is the population brake, and it has two gates: the valley is
+# already past EMIGRATE_AT living creatures, and the frame rate has already
+# fallen to the slowest sim rate (_struggling). Until both are true, animals
+# stay. When both are true, the most numerous species walks off to other
+# pastures and is removed from the scene. Leaving is not dying: no carcass,
+# and survivor bets do not lose a body to a departure.
+func _fps_tanking() -> bool:
+	if _headless_mode:
+		return false
+	return _struggling()
+
+func _refresh_emigrant() -> void:
+	if _agent_registry.size() <= EMIGRATE_AT or not _fps_tanking():
+		_emigrant_species = ""
+		_emigrate_said = false
+		return
+	_emigrant_species = _most_populous_species()
+
+func _most_populous_species() -> String:
+	var counts: Dictionary = {}
+	for data: AgentData in _agent_registry:
+		if data.species.is_empty() or data.node == null or not is_instance_valid(data.node):
+			continue
+		if data.node.is_queued_for_deletion():
+			continue
+		counts[data.species] = int(counts.get(data.species, 0)) + 1
+	var best := ""
+	var n := 0
+	for sp: String in counts.keys():
+		if int(counts[sp]) > n:
+			n = int(counts[sp])
+			best = sp
+	return best
+
+func _protected_from_emigration(agent: Node) -> bool:
+	if agent.get("scripted") == true or agent.get("rampage") == true:
+		return true
+	if agent.get("golden") != null and float(agent.golden) > 0.05:
+		return true
+	return false
+
+func should_depart(agent: Node) -> bool:
+	if _emigrant_species.is_empty() or agent == null or not is_instance_valid(agent):
+		return false
+	if String(agent.get("species_id")) != _emigrant_species:
+		return false
+	return not _protected_from_emigration(agent)
+
+# Remove a creature that has left for another pasture. Returns false if it
+# was already going or is not allowed to leave.
+func depart(agent: Node) -> bool:
+	if agent == null or not is_instance_valid(agent) or agent.is_queued_for_deletion():
+		return false
+	if not should_depart(agent):
+		return false
+	var sp: String = String(agent.get("species_id"))
+	if agent is Node3D:
+		FXManager.show_floating_text((agent as Node3D).global_position + Vector3.UP, "Leaves", Color(0.85, 0.85, 0.75))
+	if not _emigrate_said:
+		_emigrate_said = true
+		chronicle.emit("The %s head over the peaks to other pastures." % SpeciesDB.label(sp).to_lower())
+	agent.queue_free()
+	return true
+
+func _apply_emigration() -> void:
+	_refresh_emigrant()
+	if _emigrant_species.is_empty():
+		return
+	var excess: int = _agent_registry.size() - EMIGRATE_AT
+	var batch: int = clampi(int(ceil(float(excess) * 0.08)), 12, 48)
+	var leave_r: float = ValleyTerrain.WALK_RADIUS - 8.0
+	var leave_r2: float = leave_r * leave_r
+	var rim: Array[Node] = []
+	var rest: Array[Node] = []
+	for data: AgentData in _agent_registry:
+		if data.species != _emigrant_species or data.node == null or not is_instance_valid(data.node):
+			continue
+		if _protected_from_emigration(data.node):
+			continue
+		if data.pos.x * data.pos.x + data.pos.z * data.pos.z >= leave_r2:
+			rim.append(data.node)
+		else:
+			rest.append(data.node)
+	var left := 0
+	for node in rim:
+		if left >= batch:
+			break
+		if depart(node):
+			left += 1
+	for node in rest:
+		if left >= batch:
+			break
+		if depart(node):
+			left += 1
+
+# A valley-wide ceiling on births. Emigration, above, is what thins a valley
+# that has outgrown the machine. This only stops a runaway past that.
 # A dev override (the limits test and the frenzy finale lift it to 10000).
 var creature_ceiling: int = 0
+const EMIGRATE_AT: int = 2000
 
 func max_creatures() -> int:
 	if creature_ceiling > 0:
 		return creature_ceiling
-	return 300 if OS.has_feature("web") else 600
+	return EMIGRATE_AT + 600
 
 func _room_for_birth() -> bool:
 	return _agent_registry.size() < max_creatures()

@@ -14,8 +14,9 @@ const MOUNTAIN: String = "mountain"
 const ALL: Array[String] = [RIVERBANK, PLAINS, MOUNTAIN]
 # Riverbank: this close to the water's edge.
 const BANK_REACH: float = 9.0
-# Beyond this the highlands climb into the peaks: nobody settles out there.
-const OUTER_BAND: float = ValleyTerrain.WALK_RADIUS - 16.0
+# Mountain homes run up the lower peaks. Past this, the slopes get too steep
+# to settle and creatures drift back toward the saddles.
+const OUTER_BAND: float = ValleyTerrain.WALK_RADIUS - 8.0
 
 # species -> home biomes.
 const HOMES: Dictionary = {

@@ -3,9 +3,20 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.7.1"
+const VERSION: String = "4.7.2"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.7.2",
+		"title": "Into the peaks",
+		"notes": [
+			"The walkable valley climbs the mountain slopes. Goats, lions and anyone who wanders now stand on the peaks, not at their foot.",
+			"Animals are no longer pinned in a ring at the edge. Leaving for another pasture removes them. That only happens when the valley is past 2,000 creatures and the frame rate has already fallen. The most numerous species is the one that goes.",
+			"The betting table says how each bet wins, in words under the picture, and the payout is a plain gold number with a chance word: likely, even, rare or long shot. Hunters pay more than the herds. Bets are on a whole group ruling the most days. You can no longer bet on one named animal.",
+			"King of the Hill tracks the five food-web groups. The end chart shows who ruled, and every species.",
+			"Where the river leaves the meadow, a short stand of fruitless apple trees hides the water. The river no longer smears into stripes at those ends.",
+		],
+	},
 	{
 		"version": "4.7.1",
 		"title": "Gold Rush",

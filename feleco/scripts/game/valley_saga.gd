@@ -15,11 +15,11 @@ const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 const YEARS_TO_WIN: int = 4
 # [title, goal text, kind, amount].
 const YEARS: Array = [
-	["Year 1: Find Your Feet", "Your champion rules the valley at year's end", "champion_end", 0],
+	["Year 1: Find Your Feet", "Your champion's group rules the most days", "champion_end", 0],
 	["Year 2: Balance", "No species dies out this year", "no_extinct", 0],
 	["Year 3: The Hungry Year", "A drought comes. Keep 8 species with 5 or more alive", "diverse", 8],
 	["Year 4: The Golden Year", "Gold is everywhere: make 8 golden finds", "golden", 8],
-	["Year 5: Crown of the Valley", "Your champion rules for 5 days or more", "rule_days", 5],
+	["Year 5: Crown of the Valley", "Your champion's group rules for 5 days or more", "rule_days", 5],
 ]
 const SAGA_WIN_EP: int = 500
 const YEAR_GOAL_EP: int = 120
@@ -84,9 +84,11 @@ func year_progress() -> Array:
 	var counts: Dictionary = director.get_creature_counts()
 	match String(y[2]):
 		"champion_end":
-			var lead: String = BetBook.leader(counts)
-			var ok: bool = lead == _champion_plural()
-			return [1.0 if ok else 0.4, "Leading now: %s" % (lead.capitalize() if not lead.is_empty() else "nobody")]
+			var lead: String = director.ruling_group()
+			var want: String = SpeciesDB.group_of(SpeciesDB.id_for(_champion_plural()))
+			var ok: bool = lead == want and not lead.is_empty()
+			var lead_name: String = SpeciesDB.GROUP_LABEL.get(lead, "nobody")
+			return [1.0 if ok else 0.4, "Ruling now: %s" % lead_name]
 		"no_extinct":
 			return [0.0 if _extinct > 0 else 1.0, "Lost so far: %d species" % _extinct]
 		"diverse":
@@ -98,8 +100,9 @@ func year_progress() -> Array:
 		"golden":
 			return [clampf(float(director.golden_finds) / float(y[3]), 0.0, 1.0), "%d of %d golden finds" % [director.golden_finds, int(y[3])]]
 		"rule_days":
-			var d: float = float(director.control_days.get(_champion_plural(), 0.0))
-			return [clampf(d / float(y[3]), 0.0, 1.0), "%s ruled %.1f of %d days" % [_champion_plural().capitalize(), d, int(y[3])]]
+			var grp: String = SpeciesDB.group_of(SpeciesDB.id_for(_champion_plural()))
+			var d: float = float(director.control_days.get(grp, 0.0))
+			return [clampf(d / float(y[3]), 0.0, 1.0), "%s ruled %.1f of %d days" % [SpeciesDB.GROUP_LABEL.get(grp, grp), d, int(y[3])]]
 	return [0.0, ""]
 
 func year_met() -> bool:

@@ -9,6 +9,16 @@ extends RefCounted
 const EDGE: float = 0.05
 const MIN_MULT: float = 1.05
 const MAX_P: float = 0.9
+
+# A word a new player can read without doing the percentage in their head.
+static func chance_word(p: float) -> String:
+	if p >= 0.4:
+		return "likely"
+	if p >= 0.22:
+		return "even"
+	if p >= 0.1:
+		return "rare"
+	return "long shot"
 const OFFER_ELDER: bool = false
 const MAX_MULT: float = 60.0
 const FLOOD_LINES: Array[int] = [20, 30, 40, 50]
@@ -71,7 +81,9 @@ static func label_of(faction: String) -> String:
 # A bet likelier than MAX_P is not offered at all (see catalogue).
 static func mult_for(p: float) -> float:
 	var m: float = (1.0 - EDGE) / clampf(p, 0.001, MAX_P)
-	var step: float = 0.05 if m < 2.0 else (0.5 if m < 10.0 else 1.0)
+	# Whole coins once the payout is big; halves and quarters only while it is
+	# short, so the felt shows ×2, ×3, ×4 rather than ×2.15.
+	var step: float = 0.25 if m < 2.0 else (0.5 if m < 4.0 else 1.0)
 	return clampf(floorf(m / step + 0.0001) * step, MIN_MULT, MAX_MULT)
 
 # Largest head count wins, mushrooms excluded. "" on a tie or an empty valley.
@@ -324,14 +336,17 @@ static func table_limit(gc: Node) -> int:
 
 # How readily each group fills up over a year, before anything happens.
 # Placeholders until the offline odds runs exist.
+# Spread on purpose: the meadow and the herds are the short prices, the
+# hunters are the long shot. A table where every box pays about the same
+# teaches nothing.
 const GROUP_STRENGTH: Dictionary = {
-	"producer": 1.2, "herbivore": 1.1, "omnivore": 0.9, "carnivore": 0.6, "decomposer": 1.0,
+	"producer": 1.45, "herbivore": 1.3, "omnivore": 0.8, "carnivore": 0.4, "decomposer": 0.9,
 }
 const GROUP_EXTINCT_P: Dictionary = {
-	"producer": 0.05, "herbivore": 0.35, "omnivore": 0.3, "carnivore": 0.6, "decomposer": 0.4,
+	"producer": 0.08, "herbivore": 0.2, "omnivore": 0.28, "carnivore": 0.42, "decomposer": 0.32,
 }
 const GROUP_BOOM_P: Dictionary = {
-	"producer": 0.25, "herbivore": 0.45, "omnivore": 0.3, "carnivore": 0.2, "decomposer": 0.5,
+	"producer": 0.18, "herbivore": 0.38, "omnivore": 0.24, "carnivore": 0.12, "decomposer": 0.3,
 }
 const GROUP_ART: Dictionary = {
 	"producer": "", "herbivore": "deer", "omnivore": "bear", "carnivore": "lion", "decomposer": "beetle",
@@ -410,19 +425,8 @@ static func catalogue3(scores: Dictionary, roster: Array, run_days: float, day: 
 	var rank: Array = ranking if ranking.size() == SpeciesDB.GROUPS.size() else default_ranking(w)
 	out.append(_bet("order:exact", "order", "exact", "Exact order", "", order_p(w, rank, 5), false, {"rank": rank.duplicate(), "depth": 5}))
 	out.append(_bet("order:top3", "order", "top3", "Top three in order", "", order_p(w, rank, 3), false, {"rank": rank.duplicate(), "depth": 3}))
-	var dead: Dictionary = stats.get("named_dead", {})
-	for r: Dictionary in roster:
-		var key: String = "%s|%s" % [r["name"], r["species"]]
-		var who: Dictionary = {"name": r["name"], "species": r["species"], "role": "", "female": r.get("sex", "") == "female", "trait": r.get("trait", {}), "stats": r.get("stats", {})}
-		# Most creatures live a few days, so the line is most of a lifetime away.
-		var life: float = float(Clock.LIFESPAN_DAYS.get(r["species"], SpeciesDB.row(r["species"]).get("days", 4.0)))
-		var span: float = minf(left, maxf(1.0, round(life * 0.8)))
-		who["by_day"] = day + span
-		var ps: float = 0.0 if dead.has(key) else starter_survive_p(r, span, float(r.get("age", -1.0)))
-		var b := _bet("survivor:" + key, "starter", key, r["name"], r["species"], ps, true, who)
-		if dead.has(key):
-			b["reason"] = "Already dead"
-		out.append(b)
+	# Named creatures are not bettable. The roster argument stays so older
+	# callers still match; those animals can still spawn in the valley.
 	# Screen 2: long shots.
 	var gone: Dictionary = stats.get("group_extinct", {})
 	var g_start: Dictionary = stats.get("group_start", scores)
@@ -434,17 +438,17 @@ static func catalogue3(scores: Dictionary, roster: Array, run_days: float, day: 
 		out.append(be)
 		out.append(_bet("gboom:" + g, "gboom", g, "%s double" % SpeciesDB.GROUP_LABEL[g], GROUP_ART[g], clampf(float(GROUP_BOOM_P[g]) * lf, 0.03, 0.85), true, {"from": maxf(0.05, float(g_start.get(g, 0.1)))}))
 	var droughts: bool = bool(stats.get("drought", false))
-	var bd := _bet("drought", "drought", "", "Drought strikes", "", 0.0 if droughts else clampf(0.4 * lf, 0.05, 0.8), true)
+	var bd := _bet("drought", "drought", "", "Drought strikes", "", 0.0 if droughts else clampf(0.28 * lf, 0.05, 0.8), true)
 	if droughts:
 		bd["reason"] = "Already happened"
 	out.append(bd)
 	var toll: int = int(stats.get("flood_toll", 0))
-	var bf := _bet("flood:30", "flood", "30", "30+ fish", "fish", 0.0 if toll >= 30 else 0.25 * lf, true, {"line": 30})
+	var bf := _bet("flood:30", "flood", "30", "30+ fish", "fish", 0.0 if toll >= 30 else 0.16 * lf, true, {"line": 30})
 	if toll >= 30:
 		bf["reason"] = "Already happened"
 	out.append(bf)
-	out.append(_bet("golden", "golden", str(GOLDEN_LINE), "%d golden finds" % GOLDEN_LINE, "", clampf(0.45 * lf, 0.05, 0.85), true, {"line": GOLDEN_LINE}))
-	out.append(_bet("goldloop", "goldloop", "", "Gold reaches the soil", "beetle", clampf(0.3 * lf, 0.05, 0.8), true))
+	out.append(_bet("golden", "golden", str(GOLDEN_LINE), "%d golden finds" % GOLDEN_LINE, "", clampf(0.22 * lf, 0.05, 0.85), true, {"line": GOLDEN_LINE}))
+	out.append(_bet("goldloop", "goldloop", "", "Gold reaches the soil", "beetle", clampf(0.14 * lf, 0.05, 0.8), true))
 	if not scenario_bet.is_empty():
 		out.append(_bet("scenario:" + str(scenario_bet["id"]), "scenario", str(scenario_bet["id"]), str(scenario_bet["label"]), str(scenario_bet.get("sprite", "")), float(scenario_bet.get("p", 0.3)), false, scenario_bet))
 	return out
@@ -456,11 +460,13 @@ static func judge3(bet: Dictionary, stats: Dictionary, final: bool) -> int:
 	match String(bet["type"]):
 		"top":
 			if final:
-				return 1 if top_group(score) == t else -1
+				var ruled: Dictionary = stats.get("group_rule", score)
+				return 1 if top_group(ruled) == t else -1
 		"order":
 			if final:
 				var rank: Array = bet["meta"]["rank"]
-				var actual := ranked_groups(score)
+				var ruled_order: Dictionary = stats.get("group_rule", score)
+				var actual := ranked_groups(ruled_order)
 				for i: int in int(bet["meta"]["depth"]):
 					if actual[i] != rank[i]:
 						return -1

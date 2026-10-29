@@ -24,7 +24,7 @@ signal closed
 # The table opens up as you play (guide first, then reward understanding):
 # tier 0, a first run: only "fullest at year's end", with worked Plans.
 # tier 1: your own ranking and the named starters. tier 2: every long shot.
-const TIER_NEWS: Array[String] = ["", "New bets: rank the whole food web, and bet on named starters!", "New bets: long shots. Back a group to lose a species or double, or bet on droughts, floods and gold."]
+const TIER_NEWS: Array[String] = ["", "New bets: rank all five groups, most days ruled to least.", "New bets: long shots. A group loses a species or doubles, or the year brings a drought, a flood, or gold."]
 var _tier: int = 2
 
 var live: bool = false
@@ -216,10 +216,13 @@ func _fill_rank_rows() -> void:
 		var num := FelecoUiScript.heading("%d." % (i + 1), 16, FelecoUiScript.GOLD)
 		num.custom_minimum_size = Vector2(22, 0)
 		row.add_child(num)
-		var swatch := ColorRect.new()
-		swatch.color = SpeciesDB.GROUP_COLOR[g]
-		swatch.custom_minimum_size = Vector2(12, 12)
+		var swatch := TextureRect.new()
+		swatch.texture = FelecoUiScript.species_texture(BetBook.GROUP_ART[g])
+		swatch.custom_minimum_size = Vector2(28, 28)
+		swatch.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		swatch.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(swatch)
 		var nm := FelecoUiScript.heading(SpeciesDB.GROUP_LABEL[g], 16, FelecoUiScript.CREAM)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -239,10 +242,10 @@ func _order_section(col: VBoxContainer, compact_cols: int) -> void:
 	_sublabel(col, "Fullest at year's end")
 	var tops := _grid(col, compact_cols)
 	for g: String in SpeciesDB.GROUPS:
-		_add_box(tops, "top:" + g, BetBox.MINI if not _compact else BetBox.SMALL, "", Vector2(96, 92) if not _compact else Vector2.ZERO)
+		_add_box(tops, "top:" + g, BetBox.MINI if not _compact else BetBox.SMALL, "", Vector2(112, 128) if not _compact else Vector2.ZERO, null, "Most days ruling")
 	if _tier < 1:
 		return
-	_sublabel(col, "Your order (best first)")
+	_sublabel(col, "Your ranking — most days on top")
 	_rank_rows = VBoxContainer.new()
 	_rank_rows.add_theme_constant_override("separation", 2)
 	col.add_child(_rank_rows)
@@ -250,13 +253,13 @@ func _order_section(col: VBoxContainer, compact_cols: int) -> void:
 	var orders := HBoxContainer.new()
 	orders.add_theme_constant_override("separation", 6)
 	col.add_child(orders)
-	_add_box(orders, "order:top3", BetBox.ZONE, "Top three")
-	_add_box(orders, "order:exact", BetBox.ZONE, "Exact order")
+	_add_box(orders, "order:top3", BetBox.ZONE, "Top three", Vector2.ZERO, null, "Most days, in this order")
+	_add_box(orders, "order:exact", BetBox.ZONE, "Exact order", Vector2.ZERO, null, "All five, by days ruled")
 
 func _starter_section(col: VBoxContainer) -> void:
 	if _tier < 1:
 		return
-	_sublabel(col, "Starters: still alive on the day shown")
+	_sublabel(col, "Named animals — still alive on the day shown")
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", 8)
 	flow.add_theme_constant_override("v_separation", 8)
@@ -298,23 +301,35 @@ func _starter_section(col: VBoxContainer) -> void:
 func _longshot_section(col: VBoxContainer) -> void:
 	var matrix := _grid(col, 3, 4)
 	matrix.add_child(Control.new())
-	for h: String in ["Loses a species", "Doubles"]:
+	for h: String in ["One kind dies out", "Gets twice as full"]:
 		var l := FelecoUiScript.heading(h, 13, FelecoUiScript.MIST)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		l.custom_minimum_size = Vector2(110, 0)
+		l.custom_minimum_size = Vector2(128, 0)
 		matrix.add_child(l)
 	for g: String in SpeciesDB.GROUPS:
+		var who := HBoxContainer.new()
+		who.add_theme_constant_override("separation", 4)
+		var face := TextureRect.new()
+		face.texture = FelecoUiScript.species_texture(BetBook.GROUP_ART[g])
+		face.custom_minimum_size = Vector2(28, 28)
+		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		who.add_child(face)
 		var nm := FelecoUiScript.heading(SpeciesDB.GROUP_LABEL[g], 15, SpeciesDB.GROUP_COLOR[g].lightened(0.2))
-		nm.custom_minimum_size = Vector2(120, 0)
-		matrix.add_child(nm)
-		_add_box(matrix, "gextinct:" + g, BetBox.CELL, "", Vector2(110, 34 if _compact else 30))
-		_add_box(matrix, "gboom:" + g, BetBox.CELL, "", Vector2(110, 34 if _compact else 30))
-	_sublabel(col, "Events")
+		nm.custom_minimum_size = Vector2(108, 0)
+		nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		who.add_child(nm)
+		matrix.add_child(who)
+		var art := FelecoUiScript.species_texture(BetBook.GROUP_ART[g])
+		_add_box(matrix, "gextinct:" + g, BetBox.ZONE, "Dies out", Vector2(128, 44 if _compact else 40), art)
+		_add_box(matrix, "gboom:" + g, BetBox.ZONE, "Doubles", Vector2(128, 44 if _compact else 40), art)
+	_sublabel(col, "Events — you win if this happens this year")
 	var ev := _grid(col, 2, 6)
-	_add_box(ev, "drought", BetBox.ZONE, "Drought", Vector2.ZERO, load("res://assets/icons/famine.svg") if ResourceLoader.exists("res://assets/icons/famine.svg") else null)
-	_add_box(ev, "flood:30", BetBox.ZONE, "Flood: 30+ fish", Vector2.ZERO, FelecoUiScript.species_texture("fish"))
-	_add_box(ev, "golden", BetBox.ZONE, "%d golden finds" % BetBook.GOLDEN_LINE)
-	_add_box(ev, "goldloop", BetBox.ZONE, "Gold to soil", Vector2.ZERO, FelecoUiScript.species_texture("beetle"))
+	_add_box(ev, "drought", BetBox.ZONE, "Drought", Vector2.ZERO, load("res://assets/icons/famine.svg") if ResourceLoader.exists("res://assets/icons/famine.svg") else null, "The meadow dries up")
+	_add_box(ev, "flood:30", BetBox.ZONE, "Flood", Vector2.ZERO, FelecoUiScript.species_texture("fish"), "30 fish die on land")
+	_add_box(ev, "golden", BetBox.ZONE, "Golden finds", Vector2.ZERO, FelecoUiScript.species_texture(""), "%d golden meals" % BetBook.GOLDEN_LINE)
+	_add_box(ev, "goldloop", BetBox.ZONE, "Gold to soil", Vector2.ZERO, FelecoUiScript.species_texture("beetle"), "Gold reaches a beetle")
 	var sc := ChallengeScenarios.featured_bet(_gc.scenario_id) if _gc.current_mode == "challenge" else {}
 	if not sc.is_empty():
 		_sublabel(col, "This year's question")
@@ -323,6 +338,36 @@ func _longshot_section(col: VBoxContainer) -> void:
 # ------------------------------------------------------------------
 # Layout
 # ------------------------------------------------------------------
+# Three pictures, always on screen, so the rules are not a tooltip.
+func _rules_row() -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	var steps: Array = [
+		[load("res://assets/icons/crown.svg"), "1", "Pick a group. It wins by ruling the most days."],
+		[load("res://assets/icons/rail_bets.svg"), "2", "Drag a coin from the pot onto its picture."],
+		[FelecoUiScript.species_texture("deer"), "3", "The gold number is what each coin pays back."],
+	]
+	for step: Array in steps:
+		var chip := HBoxContainer.new()
+		chip.add_theme_constant_override("separation", 6)
+		var icon := TextureRect.new()
+		icon.texture = step[0]
+		icon.custom_minimum_size = Vector2(28, 28)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_child(icon)
+		var words := FelecoUiScript.label("%s  %s" % [step[1], step[2]], 14, FelecoUiScript.CREAM)
+		words.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		words.custom_minimum_size = Vector2(180 if _compact else 240, 0)
+		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		chip.add_child(words)
+		chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(chip)
+	return row
+
 func _build_ui() -> void:
 	var bg := ColorRect.new()
 	bg.name = "BG"
@@ -364,12 +409,17 @@ func _build_ui() -> void:
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	titles.add_child(sub)
+	var how := FelecoUiScript.label("Bet a whole group, not one animal. The group that rules the most days wins. Gold is what each coin pays back.", 15, FelecoUiScript.CREAM)
+	how.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	titles.add_child(how)
 	var guide := Button.new()
 	guide.text = "How to bet"
 	guide.theme_type_variation = "GhostButton"
 	guide.custom_minimum_size = back.custom_minimum_size
 	guide.pressed.connect(_open_guide)
 	header.add_child(guide)
+	column.add_child(_rules_row())
 
 	# The felt: a rounded table edge, wood rail around green baize.
 	var felt := PanelContainer.new()
@@ -427,11 +477,10 @@ func _build_board(felt: Control) -> void:
 	_board.add_theme_constant_override("separation", 12)
 	_board.size = BOARD_SIZE
 	_board_holder.add_child(_board)
-	var order := _board_panel("The Order", "Which link of the food web ends the year fullest? Each group is scored by how full it is: every species against what the valley can hold of it. Rank all five for the big payouts. Starters: three named creatures with rolled stats; the trait hints at their chances.", 1.2)
+	var order := _board_panel("Who rules the year", "Bet the picture of the group you think will rule the most days. One animal is not a bet.", 1.2)
 	_order_section(order, 5)
-	_starter_section(order)
 	if _tier >= 2:
-		_longshot_section(_board_panel("Long shots", "A group loses a species, or a group doubles: these pay the moment they happen. Gold to soil: gold from a golden plant passes all the way to a decomposer.", 1.0))
+		_longshot_section(_board_panel("Long shots", "These pay the moment they happen. Each picture says who, and the words say how you win.", 1.0))
 	else:
 		_plans_ui(_board_panel("Plans: how to bet", "Pick a plan: it places the coins for you and says which powers make it come true. More kinds of bet open up as you play.", 1.0))
 	_board_holder.resized.connect(_fit_board)
@@ -478,6 +527,9 @@ func _board_panel(title: String, hint: String, stretch: float) -> VBoxContainer:
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(spacer)
 	head.add_child(_help_badge(hint))
+	var hint_l := FelecoUiScript.label(hint, 14, FelecoUiScript.MIST)
+	hint_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(hint_l)
 	return col
 
 # A small gold "?" that explains a whole section on hover (or tap).
@@ -661,7 +713,6 @@ func _build_pages(felt: Control) -> void:
 	_pager.add_child(_strip)
 	var p1 := VBoxContainer.new()
 	_order_section(p1, 3)
-	_starter_section(p1)
 	_add_page(p1)
 	var p2 := VBoxContainer.new()
 	_longshot_section(p2)
@@ -806,7 +857,7 @@ func _page_specials() -> Control:
 			_add_box(flow, "%s:%s" % [kind[0], f[0]], BetBox.SMALL)
 	return col
 
-func _add_box(parent: Control, id: String, size_kind: int, caption: String = "", min_size: Vector2 = Vector2.ZERO, icon: Texture2D = null) -> void:
+func _add_box(parent: Control, id: String, size_kind: int, caption: String = "", min_size: Vector2 = Vector2.ZERO, icon: Texture2D = null, blurb: String = "") -> void:
 	var offer := _offer(id)
 	if offer.is_empty():
 		return
@@ -815,6 +866,7 @@ func _add_box(parent: Control, id: String, size_kind: int, caption: String = "",
 	box.offer = offer
 	box.size_kind = size_kind
 	box.caption = caption
+	box.blurb = blurb
 	box.compact = _compact
 	box.min_size = min_size
 	box.icon = icon
@@ -1546,6 +1598,7 @@ class BetBox extends PanelContainer:
 	var offer: Dictionary
 	var size_kind: int = LARGE
 	var caption: String = ""
+	var blurb: String = ""
 	var compact: bool = false
 	var min_size: Vector2 = Vector2.ZERO
 	var icon: Texture2D = null
@@ -1598,7 +1651,7 @@ class BetBox extends PanelContainer:
 				_mult.add_theme_color_override("font_color", FelecoUiScript.MIST)
 				_mult.add_theme_font_size_override("font_size", 12)
 		else:
-			_mult.text = "×%s" % _fmt(float(offer["mult"]))
+			_mult.text = _pay_text()
 		_restyle()
 
 	func _build_card() -> void:
@@ -1617,21 +1670,16 @@ class BetBox extends PanelContainer:
 		var name_lbl := FelecoUiScript.heading(text, 14 if size_kind == MINI else 16, FelecoUiScript.CREAM)
 		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		if size_kind == MINI:
-			# Name and odds share one line under the sprite.
-			var row := HBoxContainer.new()
-			row.alignment = BoxContainer.ALIGNMENT_CENTER
-			row.add_theme_constant_override("separation", 5)
-			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			col.add_child(row)
-			row.add_child(name_lbl)
-			_mult = _odds_label(14)
-			row.add_child(_mult)
-		else:
-			name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			col.add_child(name_lbl)
-			_mult = _odds_label(15)
-			col.add_child(_mult)
+		name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		col.add_child(name_lbl)
+		if not blurb.is_empty():
+			var sub := FelecoUiScript.label(blurb, 12, FelecoUiScript.MIST)
+			sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			col.add_child(sub)
+		_mult = _odds_label(16 if size_kind == MINI else 15)
+		col.add_child(_mult)
 
 	func _build_strip(font_size: int) -> void:
 		var row := HBoxContainer.new()
@@ -1656,6 +1704,10 @@ class BetBox extends PanelContainer:
 			var name_lbl := FelecoUiScript.heading(caption, font_size if not compact else 17, FelecoUiScript.CREAM)
 			name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			row.add_child(name_lbl)
+		if not blurb.is_empty():
+			var sub := FelecoUiScript.label(blurb, 12, FelecoUiScript.MIST)
+			sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			row.add_child(sub)
 		_mult = _odds_label(font_size)
 		row.add_child(_mult)
 
@@ -1665,6 +1717,10 @@ class BetBox extends PanelContainer:
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		return l
+
+	func _pay_text() -> String:
+		var p: float = float(offer.get("p", 0.0))
+		return "×%s  %s" % [_fmt(float(offer["mult"])), BetBook.chance_word(p)]
 
 	func _fmt(m: float) -> String:
 		var r: float = snappedf(m, 0.05)
@@ -1705,12 +1761,12 @@ class BetBox extends PanelContainer:
 			"starter": return "Still alive on day %d. Trait: %s, %s." % [int(offer["meta"].get("by_day", 0.0)), String(offer["meta"].get("trait", {}).get("name", "")), String(offer["meta"].get("trait", {}).get("hint", ""))]
 			"doomed": return "Dies by day %d, the first half of the run." % int(offer["meta"].get("by_day", 0.0))
 			"elder": return "%s the %s lives to %d days old, outliving its kind." % [offer["meta"]["name"], String(offer["meta"]["species"]).capitalize(), int(offer["meta"]["age_needed"])]
-			"top": return "%s end the year as the fullest group in the food web." % SpeciesDB.GROUP_LABEL[t]
+			"top": return "%s rule the valley for the most days. The hill tracks the group, not one animal." % SpeciesDB.GROUP_LABEL[t]
 			"order":
 				var names: PackedStringArray = []
 				for g in offer["meta"]["rank"].slice(0, int(offer["meta"]["depth"])):
 					names.append(SpeciesDB.GROUP_LABEL[g])
-				return "The groups finish in this order: %s." % ", ".join(names)
+				return "Days ruled, in this order: %s." % ", ".join(names)
 			"gextinct": return "Any species among the %s dies out." % SpeciesDB.GROUP_LABEL[t].to_lower()
 			"gboom": return "The %s get twice as full as they started." % SpeciesDB.GROUP_LABEL[t].to_lower()
 			"drought": return "A drought strikes this year."
@@ -1723,7 +1779,7 @@ class BetBox extends PanelContainer:
 		if not offer.get("available", true):
 			_mult.text = "—"
 		else:
-			_mult.text = "×%s" % _fmt(float(offer["mult"]))
+			_mult.text = _pay_text()
 		tooltip_text = details()
 
 	# Hover card: the creature, what wins, how likely, and what a stake returns.

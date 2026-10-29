@@ -57,6 +57,7 @@ func _ready() -> void:
 			_director.time_updated.connect(_on_time_updated)
 			_director.simulation_ended.connect(_on_sim_ended)
 			_director.rampage_result.connect(_on_rampage_result)
+			_director.control_changed.connect(_on_rule_changed)
 
 	var gc: Node = get_node_or_null("/root/GameConfig")
 	if gc != null:
@@ -1027,6 +1028,19 @@ func _on_time_updated(days_remaining: float) -> void:
 		_update_breakdown()
 		_refresh_champion()
 
+var _rule_announce_s: float = -20.0
+
+func _on_rule_changed(leader: String) -> void:
+	var now: float = Time.get_ticks_msec() / 1000.0
+	if now - _rule_announce_s < 8.0:
+		return
+	_rule_announce_s = now
+	var name: String = SpeciesDB.GROUP_LABEL.get(leader, leader.capitalize())
+	var tint: Color = SpeciesDB.GROUP_COLOR.get(leader, Color(0.95, 0.85, 0.45))
+	FXManager.show_dramatic_text(Vector3.ZERO, "%s take the valley" % name, tint)
+	if _director != null:
+		_director.chronicle.emit("%s take the hill." % name)
+
 func _on_sim_ended(winner: String) -> void:
 	Music.play("finale")
 	Engine.time_scale = 1.0
@@ -1041,17 +1055,8 @@ func _on_sim_ended(winner: String) -> void:
 	if res.has_method("show_result"):
 		res.show_result(winner)
 
-# King of the hill: one bar per species, rising with each day it rules the valley.
-const HILL_SPECIES: Array = [
-	["sheep", "Shp", Color(0.93, 0.92, 0.86)], ["wolves", "Wlf", Color(0.6, 0.62, 0.68)],
-	["humans", "Hum", Color(0.9, 0.68, 0.46)], ["falcons", "Fal", Color(0.72, 0.52, 0.32)],
-	["robins", "Rob", Color(0.9, 0.42, 0.3)], ["boars", "Boa", Color(0.5, 0.36, 0.28)],
-	["rabbits", "Rab", Color(0.78, 0.7, 0.58)], ["worms", "Wrm", Color(0.85, 0.52, 0.6)],
-	["fish", "Fsh", Color(0.42, 0.66, 0.86)],
-	["deer", "Der", Color(0.72, 0.5, 0.32)], ["goats", "Got", Color(0.9, 0.88, 0.82)],
-	["bears", "Bea", Color(0.46, 0.3, 0.2)], ["lions", "Lio", Color(0.82, 0.62, 0.38)],
-	["beetles", "Btl", Color(0.4, 0.58, 0.45)],
-]
+# King of the hill: one bar per food-web group. A day goes to whichever
+# group is fullest for its size, the same test the bets pay on.
 const HILL_BAR_H: float = 96.0
 var _hill_bars: Dictionary = {}
 var _hill_crowns: Dictionary = {}
@@ -1063,10 +1068,10 @@ func _build_hill_bars() -> void:
 	panel.name = "HillBars"
 	panel.anchor_left = 1.0
 	panel.anchor_right = 1.0
-	panel.offset_left = -470.0 - RAIL_W
+	panel.offset_left = -420.0 - RAIL_W
 	panel.offset_right = -10.0 - RAIL_W
 	panel.offset_top = 178.0
-	panel.tooltip_text = "Who rules the valley. A bar rises for each day that species is the most dominant population for its kind. Most days ruled at year's end wins."
+	panel.tooltip_text = "Who rules the valley. A bar rises for each day that group is the fullest for its size. Most days ruled wins the bets."
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.09, 0.125, 0.102, 0.78)
 	sb.border_color = Color(0.902, 0.765, 0.416, 0.45)
@@ -1087,22 +1092,31 @@ func _build_hill_bars() -> void:
 	row.add_theme_constant_override("separation", 6)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_child(row)
-	for entry: Array in HILL_SPECIES:
+	for g: String in SpeciesDB.GROUPS:
+		var tint: Color = SpeciesDB.GROUP_COLOR[g]
 		var cell := VBoxContainer.new()
 		cell.add_theme_constant_override("separation", 2)
-		cell.custom_minimum_size = Vector2(26, 0)
-		# An icon, not a glyph: the web build has only the game's own fonts.
+		cell.custom_minimum_size = Vector2(72, 0)
+		var face := TextureRect.new()
+		face.texture = FelecoUiScript.species_texture(BetBook.GROUP_ART[g])
+		face.custom_minimum_size = Vector2(32, 32)
+		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		face.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cell.add_child(face)
 		var crown := TextureRect.new()
 		crown.texture = load("res://assets/icons/crown.svg")
 		crown.custom_minimum_size = Vector2(16, 14)
 		crown.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		crown.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		crown.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		crown.modulate = Color(1.0, 0.84, 0.3, 0.0)
 		cell.add_child(crown)
 		var bar := ProgressBar.new()
 		bar.fill_mode = ProgressBar.FILL_BOTTOM_TO_TOP
 		bar.show_percentage = false
-		bar.custom_minimum_size = Vector2(18, HILL_BAR_H)
+		bar.custom_minimum_size = Vector2(28, HILL_BAR_H)
 		bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		bar.max_value = 1.0
 		bar.step = 0.0
@@ -1110,7 +1124,7 @@ func _build_hill_bars() -> void:
 		bg.bg_color = Color(1, 1, 1, 0.07)
 		bg.set_corner_radius_all(4)
 		var fill := StyleBoxFlat.new()
-		fill.bg_color = entry[2]
+		fill.bg_color = tint
 		fill.set_corner_radius_all(4)
 		bar.add_theme_stylebox_override("background", bg)
 		bar.add_theme_stylebox_override("fill", fill)
@@ -1118,19 +1132,19 @@ func _build_hill_bars() -> void:
 		var days := Label.new()
 		days.text = "0"
 		days.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		days.add_theme_font_size_override("font_size", 11)
+		days.add_theme_font_size_override("font_size", 12)
 		days.modulate = Color(1, 1, 1, 0.7)
 		cell.add_child(days)
 		var tag := Label.new()
-		tag.text = entry[1]
+		tag.text = SpeciesDB.GROUP_LABEL[g]
 		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		tag.add_theme_font_size_override("font_size", 11)
-		tag.modulate = entry[2]
+		tag.add_theme_font_size_override("font_size", 12)
+		tag.modulate = tint
 		cell.add_child(tag)
 		row.add_child(cell)
-		_hill_bars[entry[0]] = bar
-		_hill_crowns[entry[0]] = crown
-		_hill_days[entry[0]] = days
+		_hill_bars[g] = bar
+		_hill_crowns[g] = crown
+		_hill_days[g] = days
 
 func _update_hill_bars() -> void:
 	if _director == null or _hill_bars.is_empty():
@@ -1152,7 +1166,7 @@ func _update_hill_bars() -> void:
 		bar.modulate = Color(1.25, 1.2, 1.05) if ruling else Color(0.85, 0.85, 0.85)
 		(_hill_crowns[sp] as Control).modulate.a = 1.0 if sp == top else (0.45 if ruling else 0.0)
 	if not _director.current_leader.is_empty():
-		_hill_title.text = "%s rule now" % _director.current_leader.capitalize()
+		_hill_title.text = "%s rule now" % SpeciesDB.GROUP_LABEL.get(_director.current_leader, _director.current_leader.capitalize())
 
 var _user_paused: bool = false
 

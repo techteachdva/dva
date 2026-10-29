@@ -305,8 +305,11 @@ func _rebuild_mesh() -> void:
 	# One side vector per vertex along the smoothed course, so neighbouring
 	# segments share their edges (no sawtooth gaps).
 	var path := _path
-	(_mesh_instance.material_override as ShaderMaterial).set_shader_parameter("river_length", length())
+	var mat := _mesh_instance.material_override as ShaderMaterial
+	mat.set_shader_parameter("river_length", length())
+	mat.set_shader_parameter("flow_dir", _along)
 	var width: float = half_width() * BANK_SCALE
+	var total: float = length()
 	var lift: float = 0.08 + (flood_scale - 1.0) * 0.12
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -321,10 +324,13 @@ func _rebuild_mesh() -> void:
 		var tang := Vector3(b.x - a.x, 0.0, b.z - a.z)
 		if tang.length_squared() < 0.0001:
 			tang = Vector3(0, 0, 1)
-		var side := Vector3(-tang.z, 0.0, tang.x).normalized() * width
 		var p: Vector3 = path[i] + Vector3(0.0, lift, 0.0)
 		if i > 0:
 			dist += path[i].distance_to(path[i - 1])
+		# Pinch the ribbon to a point at both mouths so the last quads are not
+		# a wide sheet of stretched water running off the map.
+		var pinch: float = smoothstep(0.0, 28.0, dist) * smoothstep(0.0, 28.0, total - dist)
+		var side := Vector3(-tang.z, 0.0, tang.x).normalized() * width * maxf(pinch, 0.04)
 		var l := p + side
 		var r := p - side
 		# Steeper stretches run faster and break into white water.
