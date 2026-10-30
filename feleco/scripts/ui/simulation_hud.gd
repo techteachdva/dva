@@ -740,9 +740,20 @@ func _lift_in_hand(agent: MarkovAgent) -> void:
 		return
 	_hand_busy = true
 	_stop_follow()
+	var cam: Camera3D = get_tree().current_scene.get_node_or_null("Camera3D") as Camera3D
+	if cam != null and cam.has_method("follow"):
+		cam.follow(agent)
+		# Frame the grab without tipping the valley camera onto its side.
+		if cam.distance > 26.0:
+			cam.set_view(agent.global_position, cam.yaw, cam.pitch, 22.0)
 	var hand := SpectralHand.new()
 	hand.name = "SpectralHand"
-	var world: Node = _director if _director != null else get_tree().current_scene
+	hand.cancelled.connect(func() -> void:
+		_hand_busy = false
+		var old: Node = get_node_or_null("HandChoices")
+		if old != null:
+			old.queue_free())
+	var world: Node = get_tree().current_scene
 	world.add_child(hand)
 	hand.lift(agent, func() -> void: _show_hand_choices(hand, agent))
 
@@ -750,16 +761,34 @@ func _show_hand_choices(hand: SpectralHand, agent: MarkovAgent) -> void:
 	if not is_instance_valid(hand) or not is_instance_valid(agent):
 		_hand_busy = false
 		return
+	var plate := StyleBoxFlat.new()
+	plate.bg_color = Color(0.04, 0.06, 0.08, 0.9)
+	plate.border_color = Color(0.62, 0.8, 0.95, 0.75)
+	plate.set_border_width_all(2)
+	plate.set_corner_radius_all(12)
+	plate.content_margin_left = 18
+	plate.content_margin_right = 18
+	plate.content_margin_top = 10
+	plate.content_margin_bottom = 12
+	# Above the power bar, which fills the bottom 188px.
+	var shell := PanelContainer.new()
+	shell.name = "HandChoices"
+	shell.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	shell.offset_left = -380.0
+	shell.offset_right = 380.0
+	shell.offset_top = -348.0
+	shell.offset_bottom = -200.0
+	shell.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	shell.process_mode = Node.PROCESS_MODE_ALWAYS
+	shell.mouse_filter = Control.MOUSE_FILTER_STOP
+	shell.z_index = 30
+	shell.add_theme_stylebox_override("panel", plate)
+	add_child(shell)
 	var bar := VBoxContainer.new()
-	bar.name = "HandChoices"
-	bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	bar.offset_top = -128.0
-	bar.offset_bottom = -24.0
-	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	bar.add_theme_constant_override("separation", 8)
-	bar.process_mode = Node.PROCESS_MODE_ALWAYS
-	add_child(bar)
+	bar.mouse_filter = Control.MOUSE_FILTER_STOP
+	shell.add_child(bar)
 	var held := Label.new()
 	held.text = "The hand has them."
 	held.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -814,7 +843,7 @@ func _show_hand_choices(hand: SpectralHand, agent: MarkovAgent) -> void:
 	follow.tooltip_text = "The hand sets them down. Then you watch."
 	follow.pressed.connect(func() -> void:
 		follow.disabled = true
-		bar.queue_free()
+		shell.queue_free()
 		hand.put_down(func() -> void:
 			_hand_busy = false
 			if is_instance_valid(agent):
