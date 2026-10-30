@@ -97,137 +97,116 @@ func _ready() -> void:
 	var column := VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_theme_constant_override("separation", 10)
+	column.add_theme_constant_override("separation", 8)
 	frame["body"].add_child(column)
-	var body: Control = column
 	var intro := FelecoUiScript.label(
-		"A plan aligns you with one kind of creature. It gives you a goal, a way to play, and a season to do it. You gain nothing if you miss it." if simple else "Main quests choose who you stand with. Side quests are extra. Accept any you want. Missing one gains nothing.",
+		"Pick who you stand with. The card tells you the goal, the time, and the reward. Missing it gains nothing." if simple else "Main quests choose a side. Side quests are extra. Accept any you want.",
 		16, FelecoUiScript.CREAM)
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.add_child(intro)
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 420)
-	body.add_child(scroll)
+	column.add_child(intro)
 	if simple:
-		var col := VBoxContainer.new()
-		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		col.add_theme_constant_override("separation", 12)
-		scroll.add_child(col)
+		var row := HBoxContainer.new()
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		row.add_theme_constant_override("separation", 8)
+		column.add_child(row)
 		for q: Dictionary in QUESTS:
-			if q["lane"] != "main":
-				continue
-			col.add_child(_card(q, true))
+			if q["lane"] == "main":
+				row.add_child(_choice(q, true))
 	else:
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 16)
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		scroll.add_child(row)
+		row.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		row.add_theme_constant_override("separation", 16)
+		column.add_child(row)
 		row.add_child(_lane("Main Quests", "main"))
 		row.add_child(_lane("Side Quests", "side"))
-	_status = FelecoUiScript.label("", 15, FelecoUiScript.GOLD)
+	_status = FelecoUiScript.label("Choose one to read it.", 15, FelecoUiScript.GOLD)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	frame["footer"].add_child(_status)
+	_status.custom_minimum_size = Vector2(0, 72)
+	column.add_child(_status)
 	if simple:
 		var tune := Button.new()
 		tune.text = "Tune the herds"
 		tune.theme_type_variation = "GhostButton"
-		tune.custom_minimum_size = Vector2(200, 56)
+		tune.custom_minimum_size = Vector2(200, 48)
+		tune.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		tune.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/ui/setup_board.tscn"))
 		frame["footer"].add_child(tune)
 	var go := Button.new()
 	go.text = "Close" if live else ("Enter the Valley" if simple else "Begin the year")
 	go.theme_type_variation = "PrimaryButton"
-	go.custom_minimum_size = Vector2(280, 56)
+	go.custom_minimum_size = Vector2(240, 48)
+	go.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	go.pressed.connect(_on_go if not live else _on_back)
 	frame["footer"].add_child(go)
 	FelecoUiScript.dress_menu(self)
-	_refresh_status()
+	_paint_buttons()
 
 func _lane(title: String, lane: String) -> VBoxContainer:
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	col.add_theme_constant_override("separation", 10)
-	col.add_child(FelecoUiScript.heading(title, 22, FelecoUiScript.GOLD))
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 6)
+	col.add_child(FelecoUiScript.heading(title, 20, FelecoUiScript.GOLD))
 	for q: Dictionary in QUESTS:
 		if q["lane"] == lane:
-			col.add_child(_card(q, false))
+			col.add_child(_choice(q, false))
 	return col
 
-func _card(q: Dictionary, simple: bool) -> PanelContainer:
-	var card := PanelContainer.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.08, 0.06, 0.92)
-	sb.border_color = FelecoUiScript.GOLD
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(14)
-	sb.set_content_margin_all(12)
-	card.add_theme_stylebox_override("panel", sb)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 4)
-	card.add_child(col)
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 10)
-	col.add_child(head)
-	var art := TextureRect.new()
-	art.custom_minimum_size = Vector2(72, 72)
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	art.texture = FelecoUiScript.species_texture(String(q["sprite"]))
-	head.add_child(art)
-	var words := VBoxContainer.new()
-	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(words)
-	words.add_child(FelecoUiScript.heading(q["title"], 18, FelecoUiScript.GOLD))
-	words.add_child(FelecoUiScript.label(q["category"], 13, FelecoUiScript.LEAF))
-	var body := FelecoUiScript.label(q["explanation"], 14, FelecoUiScript.CREAM)
-	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	col.add_child(body)
-	col.add_child(_line("Champion", q["champion"]))
-	col.add_child(_line("Species", q["species"]))
-	col.add_child(_line("Category", q["category"]))
-	col.add_child(_line("Goal", q["goal"]))
-	col.add_child(_line("Time", q["time"]))
-	col.add_child(_line("Reward", q["reward"]))
-	var strategy := "Keep them fed and together. Powers that help this category push the valley their way."
-	if q["category"] == "Carnivores":
-		strategy = "Let the hunters work. A lone human is prey. A full flock is not a meal."
-	elif q["category"] == "Omnivores":
-		strategy = "Humans cook at the fire. Guard the cook. Three together blunt a bear or a lion."
-	elif q["category"] == "Producers":
-		strategy = "Do not strip the meadow. Grazers need the grass and the riverweed."
-	elif q["category"] == "Decomposers":
-		strategy = "Leave the dead to the soil. Worms and mushrooms close the year."
-	col.add_child(_line("Strategy", strategy))
+func _choice(q: Dictionary, simple: bool) -> Button:
 	var b := Button.new()
-	b.theme_type_variation = "PrimaryButton"
-	b.custom_minimum_size = Vector2(0, 44)
-	b.text = "Accept this plan" if simple else ("Accepted" if _gc.has_quest(q["id"]) else "Accept quest")
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	b.custom_minimum_size = Vector2(140, 120 if simple else 68)
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	b.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	b.pressed.connect(_accept.bind(q, b, simple))
-	col.add_child(b)
-	return card
+	_buttons[String(q["id"])] = b
+	return b
 
-func _line(name: String, value: String) -> Label:
-	var lab := FelecoUiScript.label("%s: %s" % [name, value], 13, FelecoUiScript.MIST)
-	lab.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	return lab
+var _buttons: Dictionary = {}
 
-func _accept(q: Dictionary, button: Button, simple: bool) -> void:
+func _paint_buttons() -> void:
+	for q: Dictionary in QUESTS:
+		var b: Button = _buttons.get(q["id"])
+		if b == null:
+			continue
+		var on: bool = _gc.has_quest(String(q["id"]))
+		b.theme_type_variation = "PrimaryButton" if on else "GhostButton"
+		b.text = "%s\n%s" % [q["title"], q["category"]]
+		if on:
+			b.text = "Chosen\n" + b.text
+
+func _detail(q: Dictionary) -> String:
+	return "%s  ·  Champion: %s  ·  Species: %s\nGoal: %s\nTime: %s  ·  Reward: %s\n%s" % [q["category"], q["champion"], q["species"], q["goal"], q["time"], q["reward"], _strategy(q)]
+
+func _strategy(q: Dictionary) -> String:
+	match String(q["category"]):
+		"Carnivores":
+			return "Let the hunters work. A lone human is prey. Three together can drive a lion off."
+		"Omnivores":
+			return "Humans cook at the fire. Guard the cook."
+		"Producers":
+			return "Leave the meadow intact. Grazers need the grass and the riverweed."
+		"Decomposers":
+			return "Leave the dead to the soil."
+		_:
+			return "Keep them fed and together."
+
+func _accept(q: Dictionary, _button: Button, simple: bool) -> void:
 	if simple:
 		_gc.bets.clear()
 		_gc.accept_quest(_offer(q))
 		_gc.player_bet = String(q["species_id"])
-		_status.text = "You stand with the %s. %s" % [q["category"], q["goal"]]
-		return
-	if _gc.has_quest(q["id"]):
-		_gc.drop_quest(q["id"])
-		button.text = "Accept quest"
+	elif _gc.has_quest(String(q["id"])):
+		_gc.drop_quest(String(q["id"]))
 	else:
 		_gc.accept_quest(_offer(q))
 		if q["lane"] == "main":
 			_gc.player_bet = String(q["species_id"])
-		button.text = "Accepted"
-	_refresh_status()
+	_status.text = _detail(q)
+	_paint_buttons()
 
 func _offer(q: Dictionary) -> Dictionary:
 	var o := q.duplicate(true)
@@ -238,11 +217,9 @@ func _offer(q: Dictionary) -> Dictionary:
 	return o
 
 func _refresh_status() -> void:
-	var n: int = 0
-	for b: Dictionary in _gc.bets:
-		if b.get("quest", false) and b.get("state", "") == "open":
-			n += 1
-	_status.text = "Quests accepted: %d. Miss them and you gain nothing." % n
+	var n: int = _accepted_count()
+	if _status.text.is_empty():
+		_status.text = "Quests accepted: %d. Miss them and you gain nothing." % n
 
 func _on_go() -> void:
 	if _accepted_count() == 0:

@@ -481,7 +481,7 @@ func _build_goals() -> void:
 	_goals.anchor_right = 0.5
 	_goals.offset_left = -180.0
 	_goals.offset_right = 180.0
-	_goals.offset_top = 10.0
+	_goals.offset_top = 64.0
 	_goals.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	add_child(_goals)
 	HudWindow.movable(_goals)
@@ -508,8 +508,8 @@ func _show_champion_banner() -> void:
 	note.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	note.offset_left = -280.0
 	note.offset_right = 280.0
-	note.offset_top = 76.0
-	note.offset_bottom = 112.0
+	note.offset_top = 128.0
+	note.offset_bottom = 164.0
 	note.add_theme_font_size_override("font_size", 18)
 	note.add_theme_color_override("font_color", Color(0.96, 0.9, 0.7))
 	note.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1461,12 +1461,12 @@ func _build_rail() -> void:
 	_tray_button.text = "Powers"
 	_bets_button.text = "Quests"
 	_bets_button.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_bets_button.offset_left = -150.0
-	_bets_button.offset_right = 150.0
-	_bets_button.offset_top = 12.0
-	_bets_button.offset_bottom = 68.0
-	_bets_button.custom_minimum_size = Vector2(300, 56)
-	_bets_button.add_theme_font_size_override("font_size", 22)
+	_bets_button.offset_left = -110.0
+	_bets_button.offset_right = 110.0
+	_bets_button.offset_top = 8.0
+	_bets_button.offset_bottom = 52.0
+	_bets_button.custom_minimum_size = Vector2(220, 44)
+	_bets_button.add_theme_font_size_override("font_size", 18)
 	_bets_button.z_index = 5
 	add_child(_bets_button)
 	_rail_buttons["Powers"] = _tray_button

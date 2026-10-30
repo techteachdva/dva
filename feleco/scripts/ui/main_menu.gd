@@ -226,18 +226,40 @@ func _build_ladder(gc: Node) -> void:
 			first = mini(first, c.get_index())
 	var at: int = first
 	var hint: String = ""
+	var grid := GridContainer.new()
+	grid.name = "More"
+	grid.columns = 2
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 6)
 	for row: Array in LADDER:
 		var b: Button = _ladder_button(row[1])
 		b.text = row[2]
-		column.move_child(b, at)
-		at += 1
 		var open: bool = row[0] in ["rules", "main", "valley", "lore"] or gc.unlocked(row[0])
 		b.visible = open
 		if not open and hint.is_empty():
 			hint = row[3]
-		if open and row[0] != "rules" and gc.record("unlock_seen", row[0]) == null:
+		var always: bool = row[0] in ["main", "valley", "lore", "rules"]
+		if open and not always and gc.record("unlock_seen", row[0]) == null:
 			gc.set_record("unlock_seen", row[0], true)
 			_celebrate.call_deferred(b)
+		if row[1] == "MainGame" or row[1] == "Sandbox":
+			b.custom_minimum_size = Vector2(340, 52)
+			b.add_theme_font_size_override("font_size", 24)
+			column.move_child(b, at)
+			at += 1
+		else:
+			b.custom_minimum_size = Vector2(220, 36)
+			b.add_theme_font_size_override("font_size", 15)
+			if b.get_parent() != null:
+				b.get_parent().remove_child(b)
+			grid.add_child(b)
+	column.add_child(grid)
+	column.move_child(grid, at)
+	at += 1
+	column.move_child(_btn_quit, at)
+	_btn_quit.custom_minimum_size = Vector2(340, 40)
+	at += 1
 	# Rules is the big button until the valley opens.
 	FelecoUiScript.mark(_btn_main, "PrimaryButton")
 	FelecoUiScript.mark(_btn_sandbox, "PrimaryButton")
@@ -298,14 +320,15 @@ func _spirit_dialog() -> void:
 	var shade := ColorRect.new()
 	shade.color = Color(0, 0, 0, 0.72)
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	shade.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(shade)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shade.add_child(center)
 	var card := PanelContainer.new()
-	card.set_anchors_preset(Control.PRESET_CENTER)
-	card.offset_left = -280.0
-	card.offset_right = 280.0
-	card.offset_top = -140.0
-	card.offset_bottom = 140.0
+	card.custom_minimum_size = Vector2(560, 0)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.06, 0.09, 0.07, 0.96)
 	sb.border_color = FelecoUiScript.GOLD
@@ -313,13 +336,14 @@ func _spirit_dialog() -> void:
 	sb.set_corner_radius_all(16)
 	sb.set_content_margin_all(22)
 	card.add_theme_stylebox_override("panel", sb)
-	shade.add_child(card)
+	center.add_child(card)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 14)
 	card.add_child(col)
 	var words := FelecoUiScript.label("You are Feleco, the spirit of this Valley. What do the Fates require of you? Time will tell. For now, you must choose your first Champion.", 20, FelecoUiScript.CREAM)
 	words.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	words.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	words.custom_minimum_size = Vector2(520, 0)
 	col.add_child(words)
 	var go := Button.new()
 	go.text = "Continue"
