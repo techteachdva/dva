@@ -2,20 +2,18 @@ extends Control
 
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 
-func _bet_to_plural(bet: String) -> String:
-	match bet.to_lower():
-		"wolf": return "wolves"
-		"human": return "humans"
-		"sheep": return "sheep"
-		"falcon": return "falcons"
-		"robin": return "robins"
-		"boar": return "boars"
-		"worm": return "worms"
-		"rabbit": return "rabbits"
-		"wizard": return "wizards"
-		"builder": return "builders"
-		_:
-			return bet.to_lower()
+# The year is awarded to a food-web group ("herbivore"), while the champion is
+# still stored as a species id ("wolf") or a faction label ("Wolves").
+func _champion_rules(bet: String, winner: String) -> bool:
+	if winner.is_empty():
+		return false
+	var key := bet.strip_edges().to_lower()
+	if key.is_empty():
+		return false
+	if key == winner:
+		return true
+	var group := SpeciesDB.group_of(SpeciesDB.id_for(key))
+	return not group.is_empty() and group == winner
 
 func show_result(winner: String) -> void:
 	var gc: Node = get_node_or_null("/root/GameConfig")
@@ -39,7 +37,7 @@ func show_result(winner: String) -> void:
 		%WinnerLabel.text = "%s hold the valley  ·  ruled %d days (%d%%)" % [who, ruled, share]
 	%WinnerLabel.add_theme_font_override("font", FelecoUiScript.font("heading"))
 	%WinnerLabel.add_theme_color_override("font_color", FelecoUiScript.GOLD)
-	var champ_line: String = "Your champion holds the valley." if (gc != null and _bet_to_plural(gc.player_bet) == winner) else "The valley chose otherwise."
+	var champ_line: String = "Your champion holds the valley." if (gc != null and _champion_rules(str(gc.player_bet), winner)) else "The valley chose otherwise."
 	%ResultLabel.modulate = Color(1, 1, 1)
 	%ResultLabel.add_theme_color_override("font_color", FelecoUiScript.MIST)
 	if director == null:
@@ -125,7 +123,7 @@ func show_result(winner: String) -> void:
 		%EcoPointsLabel.modulate = Color.GOLD if net > 0 else Color(0.85, 0.8, 0.75)
 		var next_btn: Button = %NextLevel
 		if gc.current_mode == "campaign":
-			var won_campaign: bool = _bet_to_plural(gc.player_bet) == winner
+			var won_campaign: bool = _champion_rules(str(gc.player_bet), winner)
 			next_btn.text = "Next Era" if won_campaign else "Restart Campaign"
 			next_btn.show()
 		elif gc.current_mode == "challenge":
@@ -138,7 +136,7 @@ func show_result(winner: String) -> void:
 			next_btn.hide()
 		# Advance campaign / challenge progress
 		if gc.current_mode == "campaign":
-			if _bet_to_plural(gc.player_bet) == winner:
+			if _champion_rules(str(gc.player_bet), winner):
 				gc.campaign_era += 1
 				if gc.campaign_era >= 10:
 					gc.campaign_era = 0
