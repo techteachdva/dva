@@ -176,7 +176,7 @@ func _ready() -> void:
 	column.add_child(slot)
 	column.move_child(slot, $CenterContainer/VBoxContainer/Tagline.get_index() + 1)
 	var ticker := TipTicker.new()
-	ticker.hold = 16.0
+	ticker.hold = 22.0
 	ticker.start_delay = 9.0
 	ticker.anchor_left = 0.5
 	ticker.anchor_right = 0.5

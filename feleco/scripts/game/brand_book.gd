@@ -24,18 +24,24 @@ static func ensure(data: AgentData) -> void:
 	if data.brand_slot <= 0 or data.brand_slot >= 32:
 		data.brand_slot = _next
 		_next = 1 if _next >= 31 else _next + 1
-	paint(data)
+		paint(data)
 
 static func fresh(school: String) -> Dictionary:
 	var light: bool = school != "dark"
 	var parts := {}
-	var colors: Array[Color] = [
-		Color(0.95, 0.9, 0.7), Color(0.7, 0.85, 1.0), Color(1.0, 0.95, 0.8),
-		Color(0.85, 0.9, 1.0), Color(1.0, 0.8, 0.4), Color(0.95, 0.95, 1.0), Color(1.0, 0.95, 0.6),
-	] if light else [
-		Color(0.15, 0.05, 0.12), Color(0.3, 0.05, 0.2), Color(0.08, 0.02, 0.06),
-		Color(0.2, 0.05, 0.08), Color(0.4, 0.05, 0.05), Color(0.55, 0.08, 0.1), Color(0.7, 0.1, 0.05),
-	]
+	# A ternary of two array literals is an untyped Array, and Godot 4.6
+	# refuses to store that in Array[Color]. Branding then never gets a slot.
+	var colors: Array[Color] = []
+	if light:
+		colors = [
+			Color(0.95, 0.9, 0.7), Color(0.7, 0.85, 1.0), Color(1.0, 0.95, 0.8),
+			Color(0.85, 0.9, 1.0), Color(1.0, 0.8, 0.4), Color(0.95, 0.95, 1.0), Color(1.0, 0.95, 0.6),
+		]
+	else:
+		colors = [
+			Color(0.15, 0.05, 0.12), Color(0.3, 0.05, 0.2), Color(0.08, 0.02, 0.06),
+			Color(0.2, 0.05, 0.08), Color(0.4, 0.05, 0.05), Color(0.55, 0.08, 0.1), Color(0.7, 0.1, 0.05),
+		]
 	for i: int in PARTS.size():
 		parts[PARTS[i]] = {
 			"color": colors[i],
@@ -60,7 +66,10 @@ static func paint(data: AgentData) -> void:
 		var shape: float = clampf(float(row.get("shape", 0)) / 6.0, 0.0, 1.0)
 		var tex: float = clampf(float(row.get("texture", 0)) / 7.0, 0.0, 1.0)
 		_image.set_pixel(i * 2 + 1, slot, Color(shape, tex, 0.6, school))
-	_tex.update(_image)
+	# Compatibility / WebGL often ignores ImageTexture.update on a texture the
+	# shader is already sampling. A new texture is what the valley and the
+	# studio both pick up on the next draw.
+	_tex = ImageTexture.create_from_image(_image)
 
 static func _ensure() -> void:
 	if _image != null:

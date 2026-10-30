@@ -3,11 +3,12 @@ extends PanelContainer
 
 # A slim strip that fades through tips, rules, code facts and trivia.
 
-const HOLD: float = 6.5
+const HOLD: float = 20.0
 const FADE: float = 0.45
 
 var hold: float = HOLD
 var start_delay: float = 0.0
+var _floor: float = HOLD
 
 var font_size: int = 16
 var _label: RichTextLabel
@@ -15,6 +16,7 @@ var _order: Array = []
 var _timer: float = 0.0
 
 func _ready() -> void:
+	_floor = maxf(hold, HOLD)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sb := StyleBoxFlat.new()
@@ -62,6 +64,10 @@ func _show_next() -> void:
 		_order.shuffle()
 	var tip: String = _order.pop_front()
 	var cut: int = tip.find(":")
+	var body: String = tip.substr(cut + 1).strip_edges()
+	var words: int = body.split(" ", false).size()
+	# Long rules need more than a fixed glance. Short ones still linger.
+	hold = maxf(_floor, float(words) * 0.85 + 6.0)
 	var tag: String = tip.substr(0, cut)
 	var colors := {"Tip": "#8fd18a", "Rule": "#e6c36a", "Code": "#8ec5ff", "Meta": "#e79bc0"}
-	_label.text = "[center][color=%s][b]%s[/b][/color]  %s[/center]" % [colors.get(tag, "#e6c36a"), tag.to_upper(), tip.substr(cut + 1).strip_edges()]
+	_label.text = "[center][color=%s][b]%s[/b][/color]  %s[/center]" % [colors.get(tag, "#e6c36a"), tag.to_upper(), body]

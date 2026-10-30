@@ -110,5 +110,7 @@ void fragment() {
 	vec4 branded = brand_overlay(col, a, v_body, v_brand, TIME);
 	ALBEDO = branded.rgb;
 	ALPHA = branded.a;
-	ALPHA_SCISSOR_THRESHOLD = 0.5;
+	// Horns, wings and halos are painted into the sprite's empty margin.
+	// The usual cut would throw those pixels away.
+	ALPHA_SCISSOR_THRESHOLD = v_brand > 0.5 ? 0.12 : 0.5;
 }

@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '4.9.0|40229164';
+const CACHE_VERSION = '4.9.0|40231196';
 /** @type {string} */
 const CACHE_PREFIX = 'Feleco-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
@@ -79,9 +79,13 @@ async function fetchAndCache(event, cache, isCacheable) {
 		response = ensureCrossOriginIsolationHeaders(response);
 	}
 
-	if (isCacheable) {
-		// And update the cache
-		cache.put(event.request, response.clone());
+	if (isCacheable && response != null && response.ok) {
+		// A full cache or a dropped body must not reject the page load.
+		try {
+			await cache.put(event.request, response.clone());
+		} catch (err) {
+			console.warn("Feleco cache skipped", err);
+		}
 	}
 
 	return response;

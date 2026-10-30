@@ -16,7 +16,9 @@ void fragment() {
 	vec3 col = skin + vec3(0.28, 0.16, 0.45) * fres;
 	// Half the surface stays smooth. The other half locks to big pixels that
 	// stick to the hand, so the pattern does not swim across the screen.
-	float gate = step(0.48, fract(sin(dot(floor(wpos * 7.0), vec2(19.1, 73.4))) * 43758.5));
+	// WebGL rejects dot(vec3, vec2); the cell is a 3D point on the hand.
+	vec3 cell = floor(wpos * 7.0);
+	float gate = step(0.48, fract(sin(dot(cell, vec3(19.1, 73.4, 41.7))) * 43758.5));
 	vec3 pix = floor(col * 5.0) / 5.0;
 	col = mix(col, pix, gate);
 	float scan = step(0.72, fract(wpos.y * 6.0 - TIME * 0.25));

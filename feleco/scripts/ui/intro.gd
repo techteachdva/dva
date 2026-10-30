@@ -15,6 +15,9 @@ const TITLE: String = "Felicitus Ecologia"
 const KEEP: Array[int] = [0, 1, 2, 10, 11, 12]
 # How long every line stays up, relative to the times written below.
 const READ_PACE: float = 1.6
+# A moderate read: about two words a second, and never a glance.
+const SECONDS_PER_WORD: float = 0.55
+const MIN_READ: float = 4.2
 # The last word, different every time.
 const SIGN_OFFS: Array[String] = ["Nice.", "Sweet.", "Radical.", "Cool.", "Awesome.", "Tuff.", "Fantastic.", "Whoa.", "Wow.", "CoOoOoL!", "OMG.", "Let's cook!", "Didn't have to go so hard..."]
 
@@ -27,6 +30,8 @@ var _bubble: Label
 var _bubble_on: Node3D = null
 var _shade: ColorRect
 var _done: bool = false
+# Seconds the current bottom line still needs to stay up.
+var _line_left: float = 0.0
 var _anchor: Vector3 = Vector3.ZERO
 var _pot: int = 0
 var _pot_label: Label
@@ -76,6 +81,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_finish()
 
 func _process(_delta: float) -> void:
+	_line_left = maxf(_line_left - _delta, 0.0)
 	# The speech bubble rides above whoever is talking.
 	if _bubble_on != null and is_instance_valid(_bubble_on) and _bubble.modulate.a > 0.01:
 		var p: Vector2 = _cam.unproject_position(_bubble_on.global_position + Vector3.UP * 2.6)
@@ -569,8 +575,12 @@ func _hold(a: MarkovAgent, secs: float, state: String) -> void:
 
 # Narration while a creature holds a pose.
 func _hold_say(a: MarkovAgent, text: String, secs: float, state: String) -> void:
-	_say(text, secs)
-	await _hold(a, secs * READ_PACE, state)
+	var stay: float = _stay_for(text, secs)
+	_caption.text = text
+	_caption.modulate.a = 0.0
+	var tw := create_tween()
+	tw.tween_property(_caption, "modulate:a", 1.0, 0.3)
+	await _hold(a, stay, state)
 
 # A creature's own line, in a speech bubble above it.
 func _speak(a: MarkovAgent, text: String, secs: float, state: String) -> void:
@@ -586,12 +596,31 @@ func _speak(a: MarkovAgent, text: String, secs: float, state: String) -> void:
 func _say(text: String, secs: float) -> void:
 	if _done:
 		return
+	if not await _let_read():
+		return
 	_caption.text = text
+	var stay: float = _stay_for(text, secs)
 	var tw := create_tween()
 	tw.tween_property(_caption, "modulate:a", 1.0, 0.35)
-	tw.tween_interval(maxf(secs * READ_PACE - 0.7, 0.2))
+	tw.tween_interval(stay)
 	tw.tween_property(_caption, "modulate:a", 0.0, 0.35)
 	await tw.finished
+
+# Words on screen long enough to read without hurrying, whichever clock is longer.
+func _stay_for(text: String, secs: float) -> float:
+	return maxf(secs * READ_PACE, _read_for(text))
+
+func _read_for(text: String) -> float:
+	var words: int = text.split(" ", false).size()
+	return maxf(MIN_READ, float(words) * SECONDS_PER_WORD + 1.8)
+
+# Keeps the line that is already up until it has been readable.
+func _let_read() -> bool:
+	if _line_left > 0.05:
+		var left: float = _line_left
+		_line_left = 0.0
+		return await _beat(left)
+	return is_inside_tree() and not _done
 
 func _fade(to: float, secs: float) -> void:
 	var tw := create_tween()
@@ -629,7 +658,7 @@ func _finish() -> void:
 func _grass_rampage(rabbit: MarkovAgent) -> void:
 	if rabbit == null or not is_instance_valid(rabbit):
 		return
-	_note("The gold takes hold. The rabbit rampages through the grass.")
+	await _note("The gold takes hold. The rabbit rampages through the grass.")
 	_follow(rabbit, 12.0)
 	var origin: Vector3 = rabbit.global_position
 	for i: int in 5:
@@ -663,14 +692,14 @@ func _gold_fades(rabbit: MarkovAgent) -> void:
 		rabbit.gold_latent = false
 		rabbit.gold_claimed = false
 		rabbit.stage_to(rabbit.global_position, "Idle")
-	_note("The gold runs out. The rabbit is itself again.")
+	await _note("The gold runs out. The rabbit is itself again.")
 	await _beat(1.6)
 
 # Two strikes, and only two: wind up, hit, wind up, hit. Then the lion falls.
 func _two_whacks(wizard: MarkovAgent, lion: MarkovAgent) -> void:
 	if wizard == null or lion == null or not is_instance_valid(wizard) or not is_instance_valid(lion):
 		return
-	_note("The wizard strikes. Twice.")
+	await _note("The wizard strikes. Twice.")
 	var face: float = -1.0 if lion.global_position.x < wizard.global_position.x else 1.0
 	for hit: int in 2:
 		if _done or not is_instance_valid(wizard) or not is_instance_valid(lion):
@@ -681,7 +710,7 @@ func _two_whacks(wizard: MarkovAgent, lion: MarkovAgent) -> void:
 		_pose(wizard, SpriteGenerator.F_STRIKE, face)
 		FXManager.spawn_combat_particles(lion.global_position)
 		FXManager.show_floating_text(lion.global_position + Vector3.UP * 1.8, "Whack!", Color(1.0, 0.92, 0.62))
-		_note("The first blow." if hit == 0 else "The second blow.")
+		await _note("The first blow." if hit == 0 else "The second blow.")
 		if not await _beat(0.55):
 			return
 		_pose(wizard, SpriteGenerator.F_STAND, face)
@@ -706,7 +735,7 @@ func _pose(a: MarkovAgent, frame: int, face_sign: float) -> void:
 
 # A small map of the choices a human actually makes. A token walks the arrows.
 func _human_markov() -> void:
-	_note("This is how a human decides. Each arrow is a real choice in the valley.")
+	await _note("This is how a human decides. Each arrow is a real choice in the valley.")
 	var board := HumanModel.new()
 	board.z_index = 30
 	_root.add_child(board)
@@ -728,7 +757,7 @@ func _human_markov() -> void:
 	for step: Array in steps:
 		if _done or not is_inside_tree():
 			break
-		_note(str(step[1]))
+		await _note(str(step[1]))
 		board.focus(str(step[0]))
 		if not await _beat(2.7):
 			break
@@ -785,7 +814,7 @@ func _doors() -> bool:
 	var sim := _door("Start Simulation", "The valley on its own.\nYou pick one plan first.")
 	row.add_child(main)
 	row.add_child(sim)
-	_note("Main Game is your year as the spirit. Start Simulation is the valley running by itself.")
+	await _note("Main Game is your year as the spirit. Start Simulation is the valley running by itself.")
 	if not await _beat(2.6):
 		return false
 	if not await _press(main):
@@ -835,7 +864,7 @@ func _quests() -> bool:
 	win.add_child(begin)
 	if not await _frames(2):
 		return false
-	_note("Click any quest to take it. Click it again to put it back.")
+	await _note("Click any quest to take it. Click it again to put it back.")
 	if not await _beat(2.8):
 		return false
 	var grazers: Button = buttons["quest:grazers"]
@@ -844,7 +873,7 @@ func _quests() -> bool:
 	_toggle_quest(grazers, status)
 	if not await _beat(1.6):
 		return false
-	_note("Click the same quest again to put it back. You are not stuck with the first one you touch.")
+	await _note("Click the same quest again to put it back. You are not stuck with the first one you touch.")
 	if not await _beat(2.4):
 		return false
 	if not await _press(grazers):
@@ -852,7 +881,7 @@ func _quests() -> bool:
 	_toggle_quest(grazers, status)
 	if not await _beat(1.4):
 		return false
-	_note("Take whichever you want. One quest, or every quest. Main and side, together.")
+	await _note("Take whichever you want. One quest, or every quest. Main and side, together.")
 	if not await _beat(2.4):
 		return false
 	var hunters: Button = buttons["quest:hunters"]
@@ -872,12 +901,12 @@ func _quests() -> bool:
 	_toggle_quest(grazers, status)
 	if not await _beat(1.5):
 		return false
-	_note("Miss a quest you accepted, and you gain nothing. One you never took was never yours.")
+	await _note("Miss a quest you accepted, and you gain nothing. One you never took was never yours.")
 	if not await _beat(2.6):
 		return false
 	if not await _press(begin):
 		return false
-	_note("Begin the year when the list is the one you want. In the valley, Quests opens this board again.")
+	await _note("Begin the year when the list is the one you want. In the valley, Quests opens this board again.")
 	return await _beat(1.2)
 
 func _hand_lesson() -> bool:
@@ -897,7 +926,7 @@ func _hand_lesson() -> bool:
 	var follow := _choice_button("Follow", false)
 	for b: Button in [claim, brand, train, follow]:
 		row.add_child(b)
-	_note("Claim makes them yours.")
+	await _note("Claim makes them yours.")
 	if not await _beat(1.6):
 		return false
 	if not await _press(claim):
@@ -906,13 +935,13 @@ func _hand_lesson() -> bool:
 	claim.disabled = true
 	if not await _beat(0.4):
 		return false
-	_note("Brand changes the body. One look, every part.")
+	await _note("Brand changes the body. One look, every part.")
 	if not await _aim(brand):
 		return false
-	_note("Train is how they grow. Claim them first.")
+	await _note("Train is how they grow. Claim them first.")
 	if not await _aim(train):
 		return false
-	_note("Follow sets them down, and the camera stays with them.")
+	await _note("Follow sets them down, and the camera stays with them.")
 	if not await _aim(follow):
 		return false
 	return await _beat(0.6)
@@ -930,14 +959,14 @@ func _powers_lesson() -> bool:
 	var drought := _choice_button("Drought", false)
 	for b: Button in [call, heal, rain, drought]:
 		row.add_child(b)
-	_note("Call and Heal help only your champion.")
+	await _note("Call and Heal help only your champion.")
 	if not await _beat(1.8):
 		return false
 	if not await _aim(call):
 		return false
 	if not await _aim(heal):
 		return false
-	_note("Rain, drought, flood and the rest move through the whole food web. Some species thrive. Others do not.")
+	await _note("Rain, drought, flood and the rest move through the whole food web. Some species thrive. Others do not.")
 	if not await _beat(2.4):
 		return false
 	if not await _aim(rain):
@@ -1084,11 +1113,15 @@ func _frames(n: int) -> bool:
 		await get_tree().process_frame
 	return is_inside_tree() and not _done
 
-func _note(text: String) -> void:
-	if _done:
-		return
+func _note(text: String) -> bool:
+	if not await _let_read():
+		return false
+	if _done or not is_inside_tree():
+		return false
 	_caption.text = text
 	_caption.modulate.a = 1.0
+	_line_left = _read_for(text)
+	return true
 
 func _beat(secs: float) -> bool:
 	if _done or not is_inside_tree():

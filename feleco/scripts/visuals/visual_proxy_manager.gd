@@ -410,9 +410,13 @@ func sync(registry: Array[AgentData]) -> void:
 			floats[o + 11] = z
 			if data.brand_slot > 0 and not data.brand.is_empty():
 				BrandBook.ensure(data)
+				# Red carries the atlas row. A tint must not scale it, or the
+				# brand slot collapses and the creature draws unmarked.
+				var tint_g: float = 1.0 if data.tint == Color.WHITE else data.tint.g
+				var tint_b: float = 1.0 if data.tint == Color.WHITE else data.tint.b
 				floats[o + 12] = 2.0 + float(data.brand_slot)
-				floats[o + 13] = shade
-				floats[o + 14] = shade
+				floats[o + 13] = shade * tint_g
+				floats[o + 14] = shade * tint_b
 			elif gold > 0.0:
 				var glint: float = 1.0 + 0.25 * gold * maxf(sin(now * 3.0 + data.gait_seed * 5.0), 0.0)
 				floats[o + 12] = shade * lerpf(1.0, 1.35, gold) * glint
@@ -422,7 +426,7 @@ func sync(registry: Array[AgentData]) -> void:
 				floats[o + 12] = shade
 				floats[o + 13] = shade
 				floats[o + 14] = shade
-			if data.tint != Color.WHITE:
+			if data.tint != Color.WHITE and (data.brand_slot <= 0 or data.brand.is_empty()):
 				floats[o + 12] *= data.tint.r
 				floats[o + 13] *= data.tint.g
 				floats[o + 14] *= data.tint.b

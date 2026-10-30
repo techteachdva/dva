@@ -68,7 +68,8 @@ void fragment() {
 			outline = true;
 		}
 	}
-	if (!outline && t.a < 0.5) {
+	float cut = brand_slot > 0.5 ? 0.12 : 0.5;
+	if (!outline && t.a < cut) {
 		discard;
 	}
 	COLOR = vec4(col, 1.0);

@@ -47,6 +47,7 @@ func _build() -> void:
 	title.position = Vector2(24, 16)
 	panel.add_child(title)
 	var schools := HBoxContainer.new()
+	schools.name = "Schools"
 	schools.position = Vector2(24, 58)
 	schools.add_theme_constant_override("separation", 8)
 	panel.add_child(schools)
@@ -67,6 +68,11 @@ func _build() -> void:
 		b.theme_type_variation = "PrimaryButton" if id == _part else "GhostButton"
 		b.pressed.connect(func() -> void:
 			_part = id
+			for other in parts.get_children():
+				if other is Button:
+					var on: bool = (other as Button).text == BrandBook.PART_NAMES[BrandBook.PARTS.find(_part)]
+					(other as Button).button_pressed = on
+					(other as Button).theme_type_variation = "PrimaryButton" if on else "GhostButton"
 			_build_tools(panel))
 		parts.add_child(b)
 	_build_tools(panel)
@@ -187,7 +193,10 @@ func _refresh() -> void:
 	var panel := get_child(1) as Panel
 	if panel != null:
 		_build_tools(panel)
-		for b in panel.get_child(2).get_children():
-			if b is Button:
-				var btn := b as Button
-				btn.theme_type_variation = "PrimaryButton" if str(agent._data.brand.get("school", "")) == ("light" if "Light" in btn.text else "dark") else "GhostButton"
+		var schools := panel.get_node_or_null("Schools")
+		if schools != null:
+			for b in schools.get_children():
+				if b is Button:
+					var btn := b as Button
+					var want: String = "light" if "Light" in btn.text else "dark"
+					btn.theme_type_variation = "PrimaryButton" if str(agent._data.brand.get("school", "")) == want else "GhostButton"
