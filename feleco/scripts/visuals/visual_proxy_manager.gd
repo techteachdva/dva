@@ -294,7 +294,10 @@ func sync(registry: Array[AgentData]) -> void:
 		var mm: MultiMesh = _proxies[species].multimesh
 		var count: int = buffer.size()
 		var cap: int = _fit_capacity(mm, count)
+		# The last of a species just died: drop its quads. Leaving the old
+		# buffer up keeps a eaten creature's sprite on screen.
 		if count == 0:
+			mm.visible_instance_count = 0
 			continue
 		var cfg: Dictionary = SPECIES_CONFIG[species]
 		var size: Vector2 = cfg["size"]

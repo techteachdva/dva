@@ -179,7 +179,9 @@ func _play() -> void:
 	await _walk(lion, _dir.dry_land(_anchor + Vector3(4.5, 0, -0.6)), 2.8, "Chase")
 	if _done: return
 	FXManager.spawn_combat_particles(rabbit.global_position)
-	lion.devour(rabbit)
+	# Shining gold cannot be killed. The film is showing the meal, so the
+	# gold is taken first and the rabbit's sprite is allowed to leave.
+	_scripted_kill(lion, rabbit)
 	_follow(lion, 9.0)
 	await _hold_say(lion, "Now the mountain lion is golden!", 2.8, "Eat")
 	if _done: return
@@ -194,6 +196,7 @@ func _play() -> void:
 	FXManager.show_dramatic_text(lion.global_position + Vector3.UP * 2.0, "Zap!", Color(0.7, 0.6, 1.0))
 	FXManager.spawn_combat_particles(lion.global_position)
 	var lion_gold: float = lion.golden
+	_allow_death(lion)
 	lion.die()
 	wizard.make_golden(lion_gold * 0.9, "lion")
 	await _hold_say(wizard, "Well, I guess wizard beats mountain lion.", 2.8, "Channel")
@@ -211,17 +214,9 @@ func _play() -> void:
 	if _done: return
 	_unleash()
 	_view(Vector3(0, 0, 4), 0.6, -0.75, 62.0)
-	await _say("You are Feleco, the spirit of this valley.", 3.0)
+	await _say("You are Feleco, the spirit of this valley.", 2.8)
 	if _done: return
-	await _say("Main Game is the spirit's year. Start Simulation is the valley on its own.", 3.4)
-	if _done: return
-	await _say("A quest names a champion, a species, a category, a goal, a season, and a reward.", 3.6)
-	if _done: return
-	await _say("Accept the ones you choose. Succeed, and the valley opens looks, cursors and games.", 3.4)
-	if _done: return
-	await _say("Miss a quest, and you gain nothing. The valley simply goes on.", 3.2)
-	if _done: return
-	await _say("Then claim a creature. Brand is their body. Train is how they grow.", 3.2)
+	await _teach()
 	if _done: return
 	await _title_card()
 	if _done: return
@@ -627,6 +622,380 @@ func _finish() -> void:
 	tw.tween_property(_shade, "color:a", 1.0, 0.6)
 	await tw.finished
 	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+
+# The film is allowed to finish a meal the gold shield would refuse.
+func _scripted_kill(eater: MarkovAgent, prey: MarkovAgent) -> void:
+	if prey == null or not is_instance_valid(prey):
+		return
+	var carried: float = prey.golden
+	var source: String = str(prey.species_id)
+	_allow_death(prey)
+	if eater != null and is_instance_valid(eater):
+		eater.devour(prey)
+		if carried > 0.05:
+			eater.make_golden(carried, source)
+	elif is_instance_valid(prey):
+		prey.die()
+
+func _allow_death(a: MarkovAgent) -> void:
+	if a == null or not is_instance_valid(a):
+		return
+	a.golden = 0.0
+	a.gold_claimed = true
+	a.gold_latent = false
+
+# ------------------------------------------------------------------
+# How to play, shown as the windows themselves. A cursor does the clicks.
+# ------------------------------------------------------------------
+var _pointer: Control
+var _ring: Panel
+var _teach_root: Control
+var _taken: Dictionary = {}
+
+func _teach() -> void:
+	if not await _doors():
+		return
+	if not await _quests():
+		return
+	if not await _hand_lesson():
+		return
+	if not await _powers_lesson():
+		return
+	_clear_teach()
+
+func _doors() -> bool:
+	var win := _window("Two ways in")
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 18)
+	win.add_child(row)
+	var main := _door("Main Game", "The spirit's year.\nQuests, then one champion.")
+	var sim := _door("Start Simulation", "The valley on its own.\nYou pick one plan first.")
+	row.add_child(main)
+	row.add_child(sim)
+	_note("Main Game is your year as the spirit. Start Simulation is the valley running by itself.")
+	if not await _beat(2.6):
+		return false
+	if not await _press(main):
+		return false
+	main.theme_type_variation = "PrimaryButton"
+	return await _beat(0.8)
+
+func _quests() -> bool:
+	_clear_teach()
+	var win := _window("Quest Board")
+	var intro := FelecoUiScript.label("Main quests choose a side. Side quests are extra. Accept any you want.", 16, FelecoUiScript.CREAM)
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	win.add_child(intro)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	win.add_child(row)
+	var buttons: Dictionary = {}
+	for lane: String in ["main", "side"]:
+		var col := VBoxContainer.new()
+		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		col.add_theme_constant_override("separation", 6)
+		col.add_child(FelecoUiScript.heading("Main Quests" if lane == "main" else "Side Quests", 18, FelecoUiScript.GOLD))
+		row.add_child(col)
+		for q: Dictionary in QuestBoard.QUESTS:
+			if q["lane"] != lane:
+				continue
+			var b := Button.new()
+			b.custom_minimum_size = Vector2(0, 58)
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			b.set_meta("quest", q)
+			_paint_quest(b)
+			col.add_child(b)
+			buttons[q["id"]] = b
+	var status := FelecoUiScript.label("Choose one to read it.", 15, FelecoUiScript.GOLD)
+	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status.custom_minimum_size = Vector2(0, 64)
+	win.add_child(status)
+	var begin := Button.new()
+	begin.text = "Begin the year"
+	begin.theme_type_variation = "PrimaryButton"
+	begin.custom_minimum_size = Vector2(240, 48)
+	begin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	begin.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	win.add_child(begin)
+	if not await _frames(2):
+		return false
+	_note("This is the Quest Board. Click a quest to take it. The line underneath tells you the goal, the time, and the reward.")
+	if not await _beat(2.8):
+		return false
+	var grazers: Button = buttons["quest:grazers"]
+	if not await _press(grazers):
+		return false
+	_toggle_quest(grazers, status)
+	if not await _beat(1.6):
+		return false
+	_note("Click the same quest again to put it back. You are not stuck with the first one you touch.")
+	if not await _beat(2.4):
+		return false
+	if not await _press(grazers):
+		return false
+	_toggle_quest(grazers, status)
+	if not await _beat(1.4):
+		return false
+	_note("Take whichever you want. One quest, or every quest. Main and side, together.")
+	if not await _beat(2.4):
+		return false
+	var hunters: Button = buttons["quest:hunters"]
+	var rabbits: Button = buttons["quest:rabbits"]
+	if not await _press(hunters):
+		return false
+	_toggle_quest(hunters, status)
+	if not await _beat(0.45):
+		return false
+	if not await _press(rabbits):
+		return false
+	_toggle_quest(rabbits, status)
+	if not await _beat(0.45):
+		return false
+	if not await _press(grazers):
+		return false
+	_toggle_quest(grazers, status)
+	if not await _beat(1.5):
+		return false
+	_note("Miss a quest you accepted, and you gain nothing. One you never took was never yours.")
+	if not await _beat(2.6):
+		return false
+	if not await _press(begin):
+		return false
+	_note("Begin the year when the list is the one you want. In the valley, Quests opens this board again.")
+	return await _beat(1.2)
+
+func _hand_lesson() -> bool:
+	_clear_teach()
+	var win := _window("The hand")
+	var words := FelecoUiScript.label("Click a creature. The hand lifts your champion.", 18, FelecoUiScript.CREAM)
+	words.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	words.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	win.add_child(words)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12)
+	win.add_child(row)
+	var claim := _choice_button("Claim", true)
+	var brand := _choice_button("Brand", false)
+	var train := _choice_button("Train", false)
+	var follow := _choice_button("Follow", false)
+	for b: Button in [claim, brand, train, follow]:
+		row.add_child(b)
+	_note("Claim makes them yours.")
+	if not await _beat(1.6):
+		return false
+	if not await _press(claim):
+		return false
+	claim.text = "Claimed"
+	claim.disabled = true
+	if not await _beat(0.4):
+		return false
+	_note("Brand changes the body. One look, every part.")
+	if not await _aim(brand):
+		return false
+	_note("Train is how they grow. Claim them first.")
+	if not await _aim(train):
+		return false
+	_note("Follow sets them down, and the camera stays with them.")
+	if not await _aim(follow):
+		return false
+	return await _beat(0.6)
+
+func _powers_lesson() -> bool:
+	_clear_teach()
+	var win := _window("Powers")
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	win.add_child(row)
+	var call := _choice_button("Call Kin", true)
+	var heal := _choice_button("Heal", false)
+	var rain := _choice_button("Rain", false)
+	var drought := _choice_button("Drought", false)
+	for b: Button in [call, heal, rain, drought]:
+		row.add_child(b)
+	_note("Call and Heal help only your champion.")
+	if not await _beat(1.8):
+		return false
+	if not await _aim(call):
+		return false
+	if not await _aim(heal):
+		return false
+	_note("Rain, drought, flood and the rest move through the whole food web. Some species thrive. Others do not.")
+	if not await _beat(2.4):
+		return false
+	if not await _aim(rain):
+		return false
+	if not await _aim(drought):
+		return false
+	return await _beat(0.5)
+
+func _window(title: String) -> VBoxContainer:
+	_clear_teach()
+	_teach_root = Control.new()
+	_teach_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_teach_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_teach_root)
+	_root.move_child(_teach_root, _caption.get_index())
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_teach_root.add_child(dim)
+	var frame := PanelContainer.new()
+	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+	frame.offset_left = 48.0
+	frame.offset_top = 78.0
+	frame.offset_right = -48.0
+	frame.offset_bottom = -176.0
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.06, 0.09, 0.07, 0.96)
+	sb.border_color = FelecoUiScript.GOLD
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(18)
+	sb.set_content_margin_all(18)
+	frame.add_theme_stylebox_override("panel", sb)
+	_teach_root.add_child(frame)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(col)
+	col.add_child(FelecoUiScript.heading(title, 28, FelecoUiScript.GOLD))
+	return col
+
+func _door(title: String, blurb: String) -> Button:
+	var b := Button.new()
+	b.text = "%s\n%s" % [title, blurb]
+	b.custom_minimum_size = Vector2(340, 120)
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	b.theme_type_variation = "GhostButton"
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return b
+
+func _choice_button(text: String, primary: bool) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(150, 52)
+	b.theme_type_variation = "PrimaryButton" if primary else "GhostButton"
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return b
+
+func _paint_quest(b: Button) -> void:
+	var q: Dictionary = b.get_meta("quest")
+	var on: bool = bool(_taken.get(q["id"], false))
+	b.theme_type_variation = "PrimaryButton" if on else "GhostButton"
+	b.text = ("Chosen\n" if on else "") + "%s\n%s" % [q["title"], q["category"]]
+
+func _toggle_quest(b: Button, status: Label) -> void:
+	var q: Dictionary = b.get_meta("quest")
+	var on: bool = not bool(_taken.get(q["id"], false))
+	_taken[q["id"]] = on
+	_paint_quest(b)
+	if on:
+		status.text = "%s  ·  Champion: %s  ·  Species: %s\nGoal: %s\nTime: %s  ·  Reward: %s" % [q["category"], q["champion"], q["species"], q["goal"], q["time"], q["reward"]]
+	else:
+		var n: int = 0
+		for id: String in _taken.keys():
+			if _taken[id]:
+				n += 1
+		status.text = "Quests taken: %d. Click any other, or the same one again." % n
+
+func _press(target: Control) -> bool:
+	if not await _aim(target):
+		return false
+	if target is Control:
+		target.pivot_offset = target.size * 0.5
+		var tw := create_tween()
+		tw.tween_property(target, "scale", Vector2(0.96, 0.96), 0.07)
+		tw.tween_property(target, "scale", Vector2.ONE, 0.12)
+	return await _beat(0.28)
+
+func _aim(target: Control) -> bool:
+	if _done or not is_inside_tree() or target == null or not is_instance_valid(target):
+		return false
+	await get_tree().process_frame
+	if _done or not is_inside_tree():
+		return false
+	var gp := target.get_global_rect()
+	var origin := _root.get_global_rect().position
+	var tip := gp.position - origin + Vector2(22.0, clampf(gp.size.y * 0.45, 12.0, 48.0))
+	if _pointer == null or not is_instance_valid(_pointer):
+		_pointer = Pointer.new()
+		_pointer.z_index = 90
+		_root.add_child(_pointer)
+		_pointer.position = tip
+	else:
+		var tw := create_tween()
+		tw.tween_property(_pointer, "position", tip, 0.42).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	_halo(target)
+	return await _beat(0.48)
+
+func _halo(target: Control) -> void:
+	var gp := target.get_global_rect()
+	var origin := _root.get_global_rect().position
+	if _ring == null or not is_instance_valid(_ring):
+		_ring = Panel.new()
+		_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_ring.z_index = 70
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.9, 0.77, 0.42, 0.14)
+		sb.border_color = FelecoUiScript.GOLD
+		sb.set_border_width_all(3)
+		sb.set_corner_radius_all(12)
+		_ring.add_theme_stylebox_override("panel", sb)
+		_root.add_child(_ring)
+	_ring.position = gp.position - origin - Vector2(6, 6)
+	_ring.size = gp.size + Vector2(12, 12)
+	_ring.pivot_offset = _ring.size * 0.5
+	var tw := create_tween()
+	_ring.scale = Vector2(1.06, 1.06)
+	tw.tween_property(_ring, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK)
+
+func _clear_teach() -> void:
+	if _ring != null and is_instance_valid(_ring):
+		_ring.queue_free()
+	_ring = null
+	if _teach_root != null and is_instance_valid(_teach_root):
+		_teach_root.queue_free()
+	_teach_root = null
+
+func _frames(n: int) -> bool:
+	for _i: int in n:
+		if _done or not is_inside_tree():
+			return false
+		await get_tree().process_frame
+	return is_inside_tree() and not _done
+
+func _note(text: String) -> void:
+	if _done:
+		return
+	_caption.text = text
+	_caption.modulate.a = 1.0
+
+func _beat(secs: float) -> bool:
+	if _done or not is_inside_tree():
+		return false
+	await get_tree().create_timer(secs).timeout
+	return is_inside_tree() and not _done
+
+# A gold arrow. Its tip is the control's position.
+class Pointer extends Control:
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		size = Vector2(28, 34)
+	func _draw() -> void:
+		var pts := PackedVector2Array([
+			Vector2(2, 2), Vector2(2, 28), Vector2(10, 20),
+			Vector2(15, 32), Vector2(20, 29), Vector2(14, 18), Vector2(26, 16)])
+		draw_colored_polygon(pts, Color(0.98, 0.91, 0.55))
+		var outline := pts.duplicate()
+		outline.append(pts[0])
+		draw_polyline(outline, Color(0.22, 0.12, 0.02), 1.6, true)
 
 # A golden coin with a rim and a shine.
 class Coin extends Control:

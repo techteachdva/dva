@@ -11,6 +11,7 @@ const CHANGELOG: Array = [
 		"title": "The Quest Board",
 		"notes": [
 			"Main Game and Start Simulation are different doors. Main Game opens with a lesson on how to play as Feleco. The year, and claiming a champion, starts only when you ask.",
+			"The opening plays the Quest Board, the hand and the powers, with a cursor showing each click. Take any quests you want. A golden rabbit the lion eats actually leaves the scene.",
 			"The food web matches the valley: pineapples are on it, falcons take mice, beetles and worms, and the cards say who really eats whom.",
 			"Start Simulation asks you to choose a plan. A plan gives a goal, a strategy, and a category of creature.",
 			"The betting table is now the Quest Board, with Main Quests and Side Quests. Accept any you want. Miss one and you gain nothing. Succeed and the valley unlocks cursors, auras, customization and the Mini Games.",
