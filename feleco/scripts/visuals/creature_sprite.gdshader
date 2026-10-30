@@ -29,8 +29,11 @@ varying float v_shimmer;
 varying float v_shade;
 varying float v_role;
 varying float v_bet;
+varying vec2 v_body;
+varying float v_brand;
 
 #include "res://scripts/visuals/creature_rig.gdshaderinc"
+#include "res://scripts/visuals/brand.gdshaderinc"
 
 void vertex() {
 	vec4 c = INSTANCE_CUSTOM;
@@ -54,11 +57,14 @@ void vertex() {
 	float sh = 0.0;
 	// The instance colour's alpha carries the action (see VisualProxyManager).
 	int action = int(round(COLOR.a * 15.0));
+	float face = c.x < 0.0 ? -1.0 : 1.0;
+	v_body = vec2(face > 0.0 ? UV.x : 1.0 - UV.x, 1.0 - UV.y);
+	v_brand = COLOR.r >= 2.0 ? COLOR.r - 2.0 : 0.0;
 	vec2 v = creature_rig(VERTEX.xy, UV, quad_width, quad_height, style, cell, seed, c.x, c.y, c.z, action, g, sh);
+	v = brand_warp(v, UV, quad_width, quad_height, v_brand, TIME);
 	int frame = creature_frame(style, action, c.y, c.z, c.y / max(gait, 0.01), seed, watched);
 	v_glow = g;
 	v_shimmer = sh;
-	float face = c.x < 0.0 ? -1.0 : 1.0;
 	float up = 1.0 - UV.y;
 	// A soft contact shade: the lowest part of every body sits a touch darker.
 	v_shade = mix(0.86, 1.0, smoothstep(0.0, 0.3, up));
@@ -77,7 +83,8 @@ void vertex() {
 
 void fragment() {
 	vec4 t = texture(sprite, UV);
-	vec3 col = t.rgb * COLOR.rgb * v_shade;
+	vec3 shade = v_brand > 0.5 ? vec3(COLOR.g) : COLOR.rgb;
+	vec3 col = t.rgb * shade * v_shade;
 	float a = t.a;
 	col *= 1.0 + v_shimmer * 0.12;
 	if (v_glow > 0.0 && t.g > 0.75 && t.r < 0.7 && t.b < 0.8) {
@@ -100,7 +107,8 @@ void fragment() {
 	vec3 moon = col * vec3(0.78, 0.84, 1.08);
 	col = mix(col, moon, night * (1.0 - clamp(glows, 0.0, 0.85)));
 	col *= 1.0 + night * clamp(glows, 0.0, 1.0) * 0.9;
-	ALBEDO = col;
-	ALPHA = a;
+	vec4 branded = brand_overlay(col, a, v_body, v_brand, TIME);
+	ALBEDO = branded.rgb;
+	ALPHA = branded.a;
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
 }

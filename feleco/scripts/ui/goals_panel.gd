@@ -265,8 +265,15 @@ func _find_heir(species: String, near: Vector3) -> MarkovAgent:
 
 func _inherit(species: String, heir: MarkovAgent, was_name: String) -> void:
 	var e: Dictionary = _roster[species]
+	var carried: Dictionary = {}
+	if e["data"] is AgentData:
+		carried = (e["data"] as AgentData).brand.duplicate(true)
 	e["agent"] = heir
 	e["data"] = heir._data
+	if not carried.is_empty():
+		heir._data.brand = carried
+		heir._data.brand_slot = 0
+		BrandBook.ensure(heir._data)
 	e["xp"] = float(e["xp"]) * 0.5
 	var aura := Cosmetics.make_aura(get_node_or_null("/root/GameConfig"))
 	if aura != null:
@@ -365,6 +372,18 @@ func _build_creature_box() -> void:
 	_train_btn.tooltip_text = "Win minigames to level up and to train Speed, Toughness, Vitality, Senses and Charm."
 	_train_btn.pressed.connect(open_menu)
 	_creature_box.add_child(_train_btn)
+	var brand := Button.new()
+	brand.text = "Brand with magic"
+	brand.theme_type_variation = "GhostButton"
+	brand.custom_minimum_size = Vector2(0, 36)
+	brand.tooltip_text = "Light or dark magic. Zoom in and change each part of the body."
+	brand.pressed.connect(func() -> void:
+		if not _alive() or hud == null:
+			return
+		var studio := BrandStudio.new()
+		studio.agent = companion
+		hud.add_child(studio))
+	_creature_box.add_child(brand)
 	var custom := HBoxContainer.new()
 	custom.add_theme_constant_override("separation", 4)
 	_creature_box.add_child(custom)

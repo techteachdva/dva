@@ -145,6 +145,14 @@ func _segment(s: float) -> int:
 			hi = mid
 	return lo
 
+const BED_DEPTH: float = 1.45
+
+# A point on the bottom of the channel, under the clear water.
+func bed_point(s: float) -> Vector3:
+	var p := point_at(s)
+	p.y -= BED_DEPTH
+	return p
+
 func point_at(s: float) -> Vector3:
 	if _path.size() < 2:
 		return Vector3.ZERO
@@ -289,9 +297,18 @@ const RiverShader: Shader = preload("res://scripts/world/river.gdshader")
 # The ribbon is wider than the water so its outer band can be the bank.
 const BANK_SCALE: float = 1.3
 const SUBDIV: int = 3
+var _bed_instance: MeshInstance3D
 
 func _rebuild_mesh() -> void:
 	if _mesh_instance == null:
+		_bed_instance = MeshInstance3D.new()
+		_bed_instance.name = "RiverBed"
+		_bed_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var bed_mat := StandardMaterial3D.new()
+		bed_mat.vertex_color_use_as_albedo = true
+		bed_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_bed_instance.material_override = bed_mat
+		add_child(_bed_instance)
 		_mesh_instance = MeshInstance3D.new()
 		_mesh_instance.name = "RiverSurface"
 		_mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -310,7 +327,7 @@ func _rebuild_mesh() -> void:
 	mat.set_shader_parameter("flow_dir", _along)
 	var width: float = half_width() * BANK_SCALE
 	var total: float = length()
-	var lift: float = 0.08 + (flood_scale - 1.0) * 0.12
+	var lift: float = 0.2 + (flood_scale - 1.0) * 0.14
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var dist: float = 0.0
@@ -344,6 +361,51 @@ func _rebuild_mesh() -> void:
 		prev_d = dist
 		prev_rapid = rapid
 	_mesh_instance.mesh = st.commit()
+	_bed_instance.mesh = _bed_mesh()
+
+# A trench under the sheet of water: shallow at the banks, deep in the middle.
+func _bed_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var cuts: Array[float] = [-1.0, -0.4, 0.0, 0.4, 1.0]
+	var bowl: Array[float] = [0.1, 0.55, 1.0, 0.55, 0.1]
+	var width: float = BASE_HALF_WIDTH * 0.92
+	var prev: Array[Vector3] = []
+	var total: float = length()
+	var dist: float = 0.0
+	for i: int in _path.size():
+		var a: Vector3 = _path[maxi(i - 1, 0)]
+		var b: Vector3 = _path[mini(i + 1, _path.size() - 1)]
+		var tang := Vector3(b.x - a.x, 0.0, b.z - a.z)
+		if tang.length_squared() < 0.0001:
+			tang = Vector3(0, 0, 1)
+		if i > 0:
+			dist += _path[i].distance_to(_path[i - 1])
+		var pinch: float = smoothstep(0.0, 28.0, dist) * smoothstep(0.0, 28.0, total - dist)
+		var side := Vector3(-tang.z, 0.0, tang.x).normalized()
+		var row: Array[Vector3] = []
+		for k: int in cuts.size():
+			var p: Vector3 = _path[i] + side * width * cuts[k] * maxf(pinch, 0.04)
+			p.y -= BED_DEPTH * bowl[k]
+			row.append(p)
+		if not prev.is_empty():
+			for k: int in cuts.size() - 1:
+				var mid := 1.0 - absf(cuts[k])
+				var col := Color(0.5, 0.46, 0.32).lerp(Color(0.1, 0.28, 0.26), mid)
+				_bed_quad(st, prev[k], prev[k + 1], row[k + 1], row[k], col)
+		if i % 16 == 0 and pinch > 0.4:
+			var rock: Vector3 = row[2] + Vector3(0, 0.14, 0)
+			_bed_quad(st, rock + Vector3(-0.12, 0, -0.12), rock + Vector3(0.12, 0, -0.12), rock + Vector3(0, 0.16, 0), rock + Vector3(0, 0.16, 0), Color(0.2, 0.26, 0.24))
+		prev = row
+	return st.commit()
+
+func _bed_quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, col: Color) -> void:
+	st.set_color(col); st.add_vertex(a)
+	st.set_color(col); st.add_vertex(b)
+	st.set_color(col); st.add_vertex(c)
+	st.set_color(col); st.add_vertex(a)
+	st.set_color(col); st.add_vertex(c)
+	st.set_color(col); st.add_vertex(d)
 
 # Winter: the river (and any floodwater still out) freezes over.
 func set_ice(level: float) -> void:

@@ -12,7 +12,7 @@ func _configure() -> void:
 	health = 40.0
 	damage = 4.0
 	energy = 40.0
-	diet = ["berry", "moss", "grass", "apple"]
+	diet = ["riverweed", "berry", "moss", "grass", "apple"]
 	threats = ["lion", "wolf", "human", "bear"]
 	grass_gain = 11.0
 	corpse_energy = 1.1

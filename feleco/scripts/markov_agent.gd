@@ -474,11 +474,18 @@ func _try_reproduce(_delta: float) -> void:
 	pass
 
 func get_flee_speed(base: float) -> float:
+	var pace := base
+	var sim: SimulationDirector = director
+	if sim != null and not species_id.is_empty():
+		pace *= sim.tune(species_id, "nerve")
 	if _flee_boost_timer > 0.0:
-		return base * _flee_boost_mult
-	return base
+		return pace * _flee_boost_mult
+	return pace
 
 func _movement_tick(delta: float) -> void:
+	if _data != null and _data.draw_lift > 0.05:
+		velocity = Vector3.ZERO
+		return
 	if _aquatic:
 		if has_method("_swim_tick"):
 			call("_swim_tick", delta)

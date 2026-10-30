@@ -45,6 +45,11 @@ var look_until: float = -1.0
 # The player's own creature: a colour of their choosing and trained speed.
 var tint: Color = Color.WHITE
 var speed_boost: float = 1.0
+# Magic brand. Empty until the player brands this one. slot is the atlas row.
+var brand: Dictionary = {}
+var brand_slot: int = 0
+# Extra height while the spectral hand is holding this creature.
+var draw_lift: float = 0.0
 
 func _init(p_species: String, p_health: float, p_energy: float, p_pos: Vector3, p_lifespan: float, p_node: Node3D = null):
 	species = p_species

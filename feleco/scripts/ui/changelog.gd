@@ -3,9 +3,35 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.7.2"
+const VERSION: String = "4.8.2"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.8.2",
+		"title": "The Hand",
+		"notes": [
+			"Click a creature that carries magic and a spectral hand picks it up first. Then choose Claim, Brand, Train, or Follow. Follow sets them back down and the camera goes with them.",
+			"Rare looks spawn on their own: Starfallen, Nightglass, Halo, Thorn, Moonwing, Embergut. Each is one whole set from the brand, and a child can inherit that same set.",
+		],
+	},
+	{
+		"version": "4.8.1",
+		"title": "Lowkey to Giga",
+		"notes": [
+			"The Tuning Lab, opened from Rules, is a portrait of every species with four strengths: Lowkey (half), Mid, Mega (double) and Giga (four times). Set the whole animal, or Birth, Ageing, Hunger, Speed, Hunting, Crowding, Herding, Size, Nerve and Grit one at a time.",
+			"Brand a claimed creature with light or dark magic. Zoom in and change each part: colour, hide, size and shape. Horns, wings, spikes, tendrils, halos and dripping dark are part of the body, not a flat tint.",
+		],
+	},
+	{
+		"version": "4.8",
+		"title": "The Hearth",
+		"notes": [
+			"Humans cook. They carry raw food to a fire and wait: a mouse is quick, a bear takes most of a day. Cooked meals stack in the hut. They still do not eat kin, corpses, mycelium or moss.",
+			"Mountain lions hunt mice first. A bear or a lion will take a villager who is alone; three together can drive them off, and bringing a bear down is slow and risky.",
+			"Riverweed grows in the channel like freshwater kelp. Fish, goats, deer and sheep eat it raw. The river itself is a deeper green-blue trench you can see into.",
+			"Trees set seed more often, and the wind carries those seeds farther. Villagers never bed down in the river, on its bank, or in the flood.",
+		],
+	},
 	{
 		"version": "4.7.2",
 		"title": "Into the peaks",

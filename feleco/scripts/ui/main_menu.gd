@@ -270,7 +270,7 @@ func _on_rules() -> void:
 	# ageing, hunger and more (within half and double) before a run.
 	var lab := Button.new()
 	lab.text = "Tuning Lab"
-	lab.tooltip_text = "Adjust how each species lives (within half and double), then play."
+	lab.tooltip_text = "Lowkey, Mid, Mega or Giga for each species, stat by stat, then play."
 	lab.theme_type_variation = "GhostButton"
 	lab.custom_minimum_size = Vector2(170, 48)
 	lab.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/ui/tuning_lab.tscn"))

@@ -1,8 +1,8 @@
 class_name MountainLion
 extends CritterAgent
 
-# Mountain lions: lone ambush hunters of the slopes. Rabbits, robins, sheep,
-# deer, goats, and a fish from the shallows when nothing else turns up.
+# Mountain lions: lone ambush hunters. Mice are the staple. Deer, goats,
+# sheep and rabbits are the bigger meals, and a lone villager is dangerous.
 func _configure() -> void:
 	species = "lion"
 	walk_speed = 2.6
@@ -14,8 +14,9 @@ func _configure() -> void:
 	damage = 30.0
 	energy = 65.0
 	diet = ["corpse", "fish"]
-	prey = ["deer", "goat", "sheep", "rabbit", "robin", "mouse"]
+	prey = ["mouse", "rabbit", "deer", "goat", "sheep", "robin"]
 	threats = ["bear"]
+	hunts_humans = true
 	corpse_energy = 1.4
 	hunt_below = 75.0
 	death_color = Color(0.75, 0.55, 0.32)

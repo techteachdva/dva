@@ -122,7 +122,7 @@ func sample(pos: Vector3) -> Vector3:
 # Where a seed dropped at pos lands: carried downwind, further on a windy day.
 func seed_drift(pos: Vector3) -> Vector3:
 	var w := sample(pos)
-	return pos + w * randf_range(0.6, 1.6) + Vector3(randf_range(-1.5, 1.5), 0.0, randf_range(-1.5, 1.5))
+	return pos + w * randf_range(2.6, 6.0) + Vector3(randf_range(-2.5, 2.5), 0.0, randf_range(-2.5, 2.5))
 
 # Powers: Gale (howling, from a random quarter), Rain (still air), Drought (hot gusts).
 func gale() -> void:

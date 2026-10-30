@@ -48,6 +48,7 @@ var disabled_species: Dictionary = {}
 var golden_finds: int = 0
 # The wind field that carries seeds (see Wind).
 var wind: Wind = null
+var riverweeds: Riverweeds = null
 # Fruit bookkeeping, to check the orchard is feeding anyone.
 var apples_dropped: int = 0
 var apples_eaten: int = 0
@@ -580,6 +581,111 @@ func dry_land(pos: Vector3, margin: float = 1.5) -> Vector3:
 	var out := bank + away.normalized() * (keep_out + 0.5)
 	return Vector3(out.x, pos.y, out.z)
 
+# Humans never bed down in the channel, on the bank, or inside the flood's reach.
+func sleep_keep_out() -> float:
+	return River.BASE_HALF_WIDTH * FLOOD_PEAK + 4.0
+
+func too_wet_to_sleep(pos: Vector3) -> bool:
+	if valley == null or valley.river == null:
+		return false
+	return float(valley.river.sample(pos.x, pos.z).distance) < sleep_keep_out()
+
+func dry_sleep_spot(pos: Vector3) -> Vector3:
+	var spot := dry_land(pos, 6.0)
+	spot.y = ground_height(spot.x, spot.z)
+	return spot
+
+func hearth_for(human: Node3D) -> Vector3:
+	var best: Node3D = null
+	var best_d := INF
+	var tid: int = int(human.get("_settlement_id"))
+	for s in _active_shelters:
+		if not is_instance_valid(s):
+			continue
+		var hut := s as Node3D
+		var own: bool = int(hut.get_meta("settlement_id", 0)) == tid
+		var d: float = hut.global_position.distance_to(human.global_position) + (0.0 if own else 18.0)
+		if d < best_d:
+			best_d = d
+			best = hut
+	var at := best.global_position + Vector3(2.2, 0, 2.4) if best != null else human.global_position
+	if too_wet_to_sleep(at):
+		at = dry_sleep_spot(at)
+	return at
+
+func store_cooked(human: Node3D, id: String) -> void:
+	if not Kitchen.can_cook(id):
+		return
+	var meal := Kitchen.nutrition(id)
+	var hut := _nearest_hut(human, 28.0)
+	if hut == null or human.get("energy") != null and float(human.energy) < 38.0:
+		human.energy = minf(float(human.energy) + meal, 100.0)
+		FXManager.show_floating_text(human.global_position + Vector3.UP * 2.0, Kitchen.label(id), Color(0.95, 0.72, 0.35))
+		return
+	var pantry: Dictionary = hut.get_meta("pantry", {})
+	pantry[id] = int(pantry.get(id, 0)) + 1
+	hut.set_meta("pantry", pantry)
+	CookedFoodArt.show_pantry(hut)
+	if float(human.energy) < 52.0:
+		_eat_one(human, hut)
+	else:
+		FXManager.show_floating_text(human.global_position + Vector3.UP * 2.0, "Stored", Color(0.95, 0.8, 0.45))
+
+func nibble_pantry(human: Node3D) -> bool:
+	if float(human.get("energy")) >= 46.0:
+		return false
+	var hut := _nearest_stocked_hut(human)
+	if hut == null:
+		return false
+	if human.global_position.distance_to(hut.global_position) > 2.4:
+		var to := hut.global_position - human.global_position
+		to.y = 0.0
+		human.velocity = to.normalized() * float(human.get("travel_speed"))
+		return true
+	return _eat_one(human, hut)
+
+func _nearest_hut(human: Node3D, limit: float) -> Node3D:
+	var best: Node3D = null
+	var best_d := limit
+	for s in _active_shelters:
+		if not is_instance_valid(s):
+			continue
+		var d: float = (s as Node3D).global_position.distance_to(human.global_position)
+		if d < best_d:
+			best_d = d
+			best = s
+	return best
+
+func _nearest_stocked_hut(human: Node3D) -> Node3D:
+	var best: Node3D = null
+	var best_d := 16.0
+	for s in _active_shelters:
+		if not is_instance_valid(s):
+			continue
+		var pantry: Dictionary = (s as Node3D).get_meta("pantry", {})
+		if pantry.is_empty():
+			continue
+		var d: float = (s as Node3D).global_position.distance_to(human.global_position)
+		if d < best_d:
+			best_d = d
+			best = s
+	return best
+
+func _eat_one(human: Node3D, hut: Node3D) -> bool:
+	var pantry: Dictionary = hut.get_meta("pantry", {})
+	for key: Variant in pantry.keys():
+		if int(pantry[key]) <= 0:
+			continue
+		pantry[key] = int(pantry[key]) - 1
+		if int(pantry[key]) <= 0:
+			pantry.erase(key)
+		hut.set_meta("pantry", pantry)
+		human.energy = minf(float(human.energy) + Kitchen.nutrition(str(key)), 100.0)
+		CookedFoodArt.show_pantry(hut)
+		FXManager.show_floating_text(human.global_position + Vector3.UP * 2.0, Kitchen.label(str(key)), Color(0.95, 0.72, 0.35))
+		return true
+	return false
+
 func ground_height(x: float, z: float) -> float:
 	if valley != null:
 		return valley.surface_height(x, z)
@@ -599,6 +705,9 @@ func _add_valley() -> void:
 		if valley.river != null:
 			valley.river.bake(grass)
 			grass.bind_water(Callable(valley.river, "covers_world"))
+			riverweeds = Riverweeds.new()
+			valley.add_child(riverweeds)
+			riverweeds.plant(valley.river)
 		if mycelium != null:
 			mycelium.heights = grass._heights
 
@@ -756,13 +865,15 @@ func try_plant_tree_seed(pos: Vector3, planter_group: String = "") -> bool:
 	var chance: float = 0.0
 	match planter_group:
 		"human":
-			chance = 0.6
+			chance = 0.85
 		"sheep":
-			chance = 0.25
+			chance = 0.5
 		"boar":
-			chance = 0.15
+			chance = 0.4
+		"tree":
+			chance = 0.72
 		_:
-			chance = 0.3
+			chance = 0.58
 	var land: Vector3 = wind.seed_drift(pos) if wind != null else pos + Vector3((randf() - 0.5) * 4.0, 0.0, (randf() - 0.5) * 4.0)
 	chance *= float(TREE_TAKE.get(Biomes.at(land.x, land.z), 1.0))
 	if randf() > chance:
@@ -934,6 +1045,8 @@ func tick(dt: float) -> void:
 			FXManager.show_dramatic_text(Vector3.ZERO, "The river falls back to its bed.", Color(0.55, 0.75, 0.85))
 	if not river_frozen:
 		_step_flood(dt)
+		if riverweeds != null:
+			riverweeds.tick(dt * Clock.LIFE_PACE)
 	_overpop_timer += bio
 	if _overpop_timer >= 2.0:
 		_overpop_timer = 0.0
@@ -1499,7 +1612,7 @@ func raze_hut_near(pos: Vector3, raider_tid: int) -> bool:
 	return false
 
 func build_shelter(pos: Vector3, tribe: int = 0) -> int:
-	pos = dry_land(pos, 3.0)
+	pos = dry_land(pos, 6.0)
 	var shelter := Node3D.new()
 	shelter.name = "Shelter"
 	var sid: int = tribe
@@ -1512,6 +1625,8 @@ func build_shelter(pos: Vector3, tribe: int = 0) -> int:
 	else:
 		shelter.set_meta("settlement_id", sid)
 	_dress_hut(shelter, sid)
+	CookedFoodArt.add_hearth(shelter)
+	shelter.set_meta("pantry", {})
 	var static_body := StaticBody3D.new()
 	var col := CollisionShape3D.new()
 	var box_shape := BoxShape3D.new()
@@ -2743,6 +2858,8 @@ func _mutate(val: float) -> float:
 
 func _apply_phenotype_variance(agent: Node, parent: Node = null) -> void:
 	_apply_genes(agent, parent)
+	if agent is MarkovAgent and (agent as MarkovAgent)._data != null:
+		RareLooks.roll((agent as MarkovAgent)._data, parent)
 	var base: Dictionary = {}
 	if parent != null:
 		# Inherit from parent
@@ -3940,6 +4057,7 @@ func _in_valley(pos: Vector3) -> Vector3:
 const PRODUCER_VALUE: Dictionary = {
 	"grass": {"Spring": 1.3, "Summer": 1.0, "Autumn": 0.8, "Winter": 0.5},
 	"moss": {"Spring": 0.9, "Summer": 0.6, "Autumn": 1.1, "Winter": 1.5},
+	"riverweed": {"Spring": 1.2, "Summer": 1.0, "Autumn": 0.9, "Winter": 0.45},
 }
 
 func producer_value(kind: String) -> float:

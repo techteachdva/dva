@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, cull_disabled, shadows_disabled;
+render_mode blend_mix, depth_draw_opaque, unshaded, cull_disabled, shadows_disabled;
 
 // UV.x runs bank to bank (0..1); UV.y is distance along the river in world units.
 // COLOR.r is how steep the bed is there (0 calm .. 1 rapids), set per vertex.
@@ -12,8 +12,8 @@ render_mode unshaded, cull_disabled, shadows_disabled;
 // white, and the sun sparkles off the ripples.
 
 uniform float water_edge = 0.78;
-uniform vec3 deep : source_color = vec3(0.07, 0.27, 0.45);
-uniform vec3 shallow : source_color = vec3(0.24, 0.56, 0.62);
+uniform vec3 deep : source_color = vec3(0.03, 0.34, 0.36);
+uniform vec3 shallow : source_color = vec3(0.5, 0.8, 0.7);
 uniform vec3 sky : source_color = vec3(0.72, 0.86, 0.96);
 uniform vec3 sand : source_color = vec3(0.6, 0.52, 0.36);
 uniform vec3 moss : source_color = vec3(0.4, 0.5, 0.26);
@@ -94,7 +94,7 @@ void fragment() {
 	foam = max(foam, white);
 	foam = max(foam, flood * 0.3 * smoothstep(0.6, 0.9, foam_n));
 	col = mix(col, vec3(0.93, 0.97, 0.98), clamp(foam, 0.0, 1.0) * 0.85);
-	float alpha = mix(0.8, 0.93, depth) + foam * 0.1;
+	float alpha = mix(0.34, 0.55, depth) + foam * 0.12;
 	col = mix(col, silt + vec3(streak * 0.25), flood * 0.75);
 	alpha = mix(alpha, 0.95, flood);
 	if (ice > 0.0) {

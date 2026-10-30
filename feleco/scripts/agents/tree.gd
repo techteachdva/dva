@@ -8,6 +8,7 @@ var _growth: float = 0.0
 var _seed_grow_time: float = 15.0
 var _sapling_grow_time: float = 25.0
 var _spawn_timer: float = 0.0
+var _seed_clock: float = 0.0
 var _apple_scene: PackedScene
 
 var _lifespan: float = 180.0
@@ -537,6 +538,13 @@ func _process(real_delta: float) -> void:
 			if _spawn_timer >= apple_spawn_interval:
 				_spawn_timer = 0.0
 				_grow_fruit()
+			_seed_clock += delta
+			if _seed_clock >= 6.0:
+				_seed_clock = 0.0
+				var parent := get_parent()
+				var sim: Node = parent.get_parent() if parent != null else null
+				if sim != null and sim.has_method("try_plant_tree_seed"):
+					sim.try_plant_tree_seed(global_position, "tree")
 				_grow_moss()
 
 # One spawn interval of orchard life: every apple on the branches ages, the

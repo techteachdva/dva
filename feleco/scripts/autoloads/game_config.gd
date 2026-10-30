@@ -192,7 +192,7 @@ var last_bets: Array[Dictionary] = []
 # Tuning Lab: per-species multipliers the player sets by hand (1.0 = the
 # game's default). species -> {birth, death, hunger, speed, capacity}.
 # See scripts/ui/tuning_lab.gd. Saved with the meta save.
-const TUNING_KEYS: Array[String] = ["birth", "death", "hunger", "speed", "hunt", "capacity"]
+const TUNING_KEYS: Array[String] = ["birth", "death", "hunger", "speed", "hunt", "capacity", "herd", "size", "nerve", "grit"]
 var tuning: Dictionary = {}
 
 func tune(species: String, key: String) -> float:

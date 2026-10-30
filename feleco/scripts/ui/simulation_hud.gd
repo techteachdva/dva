@@ -723,7 +723,103 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var agent := _get_hovered_agent() as MarkovAgent
 	if agent != null:
-		_start_follow(agent)
+		if _carries_magic(agent):
+			_lift_in_hand(agent)
+		else:
+			_start_follow(agent)
+
+func _carries_magic(agent: MarkovAgent) -> bool:
+	if agent._data != null and not agent._data.brand.is_empty():
+		return true
+	return _goals != null and _goals.is_companion(agent)
+
+var _hand_busy: bool = false
+
+func _lift_in_hand(agent: MarkovAgent) -> void:
+	if _hand_busy or agent == null or not is_instance_valid(agent):
+		return
+	_hand_busy = true
+	_stop_follow()
+	var hand := SpectralHand.new()
+	hand.name = "SpectralHand"
+	var world: Node = _director if _director != null else get_tree().current_scene
+	world.add_child(hand)
+	hand.lift(agent, func() -> void: _show_hand_choices(hand, agent))
+
+func _show_hand_choices(hand: SpectralHand, agent: MarkovAgent) -> void:
+	if not is_instance_valid(hand) or not is_instance_valid(agent):
+		_hand_busy = false
+		return
+	var bar := VBoxContainer.new()
+	bar.name = "HandChoices"
+	bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	bar.offset_top = -128.0
+	bar.offset_bottom = -24.0
+	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	bar.add_theme_constant_override("separation", 8)
+	bar.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(bar)
+	var held := Label.new()
+	held.text = "The hand has them."
+	held.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	held.add_theme_font_size_override("font_size", 18)
+	held.add_theme_color_override("font_color", Color(0.9, 0.86, 0.72))
+	bar.add_child(held)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	bar.add_child(row)
+	var claim := Button.new()
+	claim.text = "Claimed" if _goals != null and _goals.is_companion(agent) else "Claim"
+	claim.theme_type_variation = "PrimaryButton"
+	claim.custom_minimum_size = Vector2(150, 52)
+	claim.pressed.connect(func() -> void:
+		if _goals == null or not is_instance_valid(agent):
+			return
+		if not _goals.is_companion(agent):
+			_goals.adopt(agent)
+		claim.text = "Claimed"
+		claim.disabled = true)
+	row.add_child(claim)
+	var brand := Button.new()
+	brand.text = "Brand"
+	brand.theme_type_variation = "GhostButton"
+	brand.custom_minimum_size = Vector2(150, 52)
+	brand.tooltip_text = "Tattoo the body. One look, every part."
+	brand.pressed.connect(func() -> void:
+		if not is_instance_valid(agent):
+			return
+		var studio := BrandStudio.new()
+		studio.agent = agent
+		add_child(studio))
+	row.add_child(brand)
+	var train := Button.new()
+	train.text = "Train"
+	train.theme_type_variation = "GhostButton"
+	train.custom_minimum_size = Vector2(150, 52)
+	train.tooltip_text = "Teach them. Claim them first."
+	train.pressed.connect(func() -> void:
+		if _goals == null or not _goals.is_companion(agent):
+			train.tooltip_text = "Claim them first."
+			return
+		var menu := LevelUpMenu.new()
+		menu.goals = _goals
+		add_child(menu))
+	row.add_child(train)
+	var follow := Button.new()
+	follow.text = "Follow"
+	follow.theme_type_variation = "PrimaryButton"
+	follow.custom_minimum_size = Vector2(150, 52)
+	follow.tooltip_text = "The hand sets them down. Then you watch."
+	follow.pressed.connect(func() -> void:
+		follow.disabled = true
+		bar.queue_free()
+		hand.put_down(func() -> void:
+			_hand_busy = false
+			if is_instance_valid(agent):
+				_start_follow(agent)))
+	row.add_child(follow)
 
 func _start_follow(agent: MarkovAgent) -> void:
 	_stop_follow()

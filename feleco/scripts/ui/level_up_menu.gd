@@ -53,7 +53,7 @@ func _build() -> void:
 	card.set_anchors_preset(Control.PRESET_CENTER)
 	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	card.grow_vertical = Control.GROW_DIRECTION_BOTH
-	card.custom_minimum_size = Vector2(820, 0)
+	card.custom_minimum_size = Vector2(1080, 0)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.06, 0.09, 0.07, 0.98)
 	sb.border_color = FelecoUiScript.GOLD
@@ -63,9 +63,14 @@ func _build() -> void:
 		sb.set_content_margin(side, 22)
 	card.add_theme_stylebox_override("panel", sb)
 	_root.add_child(card)
+	var split := HBoxContainer.new()
+	split.add_theme_constant_override("separation", 18)
+	card.add_child(split)
+	split.add_child(_magic_column())
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 10)
-	card.add_child(col)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	split.add_child(col)
 	var c: MarkovAgent = goals.companion
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 16)
@@ -136,6 +141,61 @@ func _build() -> void:
 	close.custom_minimum_size = Vector2(0, 48)
 	close.pressed.connect(_close)
 	col.add_child(close)
+
+func _magic_column() -> Control:
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(340, 0)
+	box.add_theme_constant_override("separation", 8)
+	var c: MarkovAgent = goals.companion
+	var data: AgentData = c._data
+	var look := str(data.brand.get("name", "")) if data != null else ""
+	box.add_child(FelecoUiScript.heading("In the hand" if look.is_empty() else look, 22, FelecoUiScript.GOLD))
+	box.add_child(FelecoUiScript.label("Zoomed from the spectral hand. Shape the body, then train.", 14, FelecoUiScript.MIST))
+	if data != null and not data.brand.is_empty():
+		BrandBook.ensure(data)
+		var holder := Control.new()
+		holder.custom_minimum_size = Vector2(320, 220)
+		box.add_child(holder)
+		var cfg: Dictionary = VisualProxyManager.SPECIES_CONFIG.get(c.species_id, {"size": Vector2(2, 2), "gait": 8.0, "style": 0})
+		var mi := MeshInstance2D.new()
+		mi.mesh = FieldGuide._grid_mesh()
+		var mat := ShaderMaterial.new()
+		mat.shader = preload("res://scripts/visuals/creature_sprite_2d.gdshader")
+		var tex: Texture2D = SpriteGenerator.anim_texture_for(c.species_id)
+		mat.set_shader_parameter("sprite", tex)
+		mat.set_shader_parameter("quad", cfg["size"])
+		mat.set_shader_parameter("style", int(cfg["style"]))
+		mat.set_shader_parameter("gait", float(cfg["gait"]) * 0.35)
+		mat.set_shader_parameter("px", 110.0)
+		mat.set_shader_parameter("texel", Vector2(1.0 / tex.get_width(), 1.0 / tex.get_height()))
+		mat.set_shader_parameter("grid", Vector2(SpriteGenerator.FRAMES, SpriteGenerator.CELLS))
+		mat.set_shader_parameter("motion", 0.1)
+		mat.set_shader_parameter("brand_tex", BrandBook.atlas())
+		mat.set_shader_parameter("brand_slot", float(data.brand_slot))
+		mi.material = mat
+		mi.position = Vector2(160, 120)
+		holder.add_child(mi)
+	var schools := HBoxContainer.new()
+	schools.add_theme_constant_override("separation", 6)
+	box.add_child(schools)
+	for spec: Array in [["Light magic", "light"], ["Dark magic", "dark"]]:
+		var b := Button.new()
+		b.text = spec[0]
+		b.theme_type_variation = "GhostButton"
+		var school: String = spec[1]
+		b.pressed.connect(func() -> void:
+			if not goals.alive():
+				return
+			var fresh := BrandBook.fresh(school)
+			fresh["name"] = "Light brand" if school == "light" else "Dark brand"
+			goals.companion._data.brand = fresh
+			goals.companion._data.brand_slot = 0
+			BrandBook.ensure(goals.companion._data)
+			_build())
+		schools.add_child(b)
+	if data != null and data.brand.has("parts"):
+		box.add_child(FelecoUiScript.label("Every part uses one choice from the brand: colour, hide, size, shape.", 13, FelecoUiScript.MIST))
+	return box
 
 func _trial(mode: String, skill: String) -> void:
 	if not goals.alive():

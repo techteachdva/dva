@@ -34,6 +34,9 @@ var home: Node3D = null
 var indoors: bool = false
 var _slept_rough: bool = false
 var cranky: float = 0.0
+# Raw food in hand. It is not a meal until it has sat on a fire.
+var carried: String = ""
+var _cook_left: float = 0.0
 var _raid_clock: float = 0.0
 
 func _apply_variant(v: String) -> void:
@@ -72,6 +75,7 @@ func _register_states() -> void:
 	_register_state("Build", _on_enter_build, _on_tick_build, _on_exit_build)
 	_register_state("Raid", _on_enter_raid, _on_tick_raid, _on_exit_raid)
 	_register_state("Sleep", _on_enter_sleep, _on_tick_sleep, _on_exit_sleep)
+	_register_state("Cook", _on_enter_cook, _on_tick_cook, _on_exit_cook)
 	_current_state = "Gather"
 
 func _get_transition_modifiers() -> Dictionary:
@@ -82,13 +86,22 @@ func _get_transition_modifiers() -> Dictionary:
 
 	var wolves := vision.get_visible_by_tag("wolf")
 	var boars := vision.get_visible_by_tag("boar")
+	var bears := vision.get_visible_by_tag("bear")
+	var lions := vision.get_visible_by_tag("lion")
 	var sim: SimulationDirector = director
 	var party_size: int = 0
 	if sim != null:
 		party_size = sim.human_party_size_check(self)
 
-	var threatened := wolves.size() > 0 or boars.size() > 0
+	var threatened := wolves.size() > 0 or boars.size() > 0 or bears.size() > 0 or lions.size() > 0
 	var protected := _shelter_protection_timer > 0.0
+	# A raw meal has to reach a fire before bed. Close hunters still break that up.
+	if not carried.is_empty():
+		if threatened and not protected and party_size < 3:
+			mods["Flee"] = 0.9
+		else:
+			mods["Cook"] = 0.95
+		return mods
 	# Night: everyone heads to bed unless something is on their heels.
 	# Once asleep they stay down until morning proper (no waking at dusk).
 	if sim != null and sim.night() > (0.35 if _current_state == "Sleep" else 0.6) and (not threatened or indoors):
@@ -278,6 +291,7 @@ func _on_enter_sleep() -> void:
 	_slept_rough = home == null
 
 func _on_tick_sleep(delta: float) -> void:
+	var sim: SimulationDirector = director
 	if home != null and is_instance_valid(home):
 		var door: Vector3 = home.global_position + Vector3(0, 0, 2.0)
 		var to: Vector3 = door - global_position
@@ -285,15 +299,110 @@ func _on_tick_sleep(delta: float) -> void:
 		if indoors:
 			velocity = Vector3.ZERO
 			health = minf(health + rest_regen * delta * 0.5, 100.0)
-		elif to.length() < 1.2:
+		elif to.length() < 1.2 and (sim == null or not sim.too_wet_to_sleep(global_position)):
 			indoors = true
 			velocity = Vector3.ZERO
+		elif sim != null and sim.too_wet_to_sleep(global_position):
+			var out := sim.dry_sleep_spot(global_position)
+			var away := out - global_position
+			away.y = 0.0
+			velocity = away.normalized() * travel_speed if away.length() > 0.4 else Vector3.ZERO
 		else:
 			velocity = to.normalized() * travel_speed
 		return
-	# No bed: curl up where they are, near the village if they have one.
+	# No bed, and never in the river, on its bank, or in the flood's reach.
+	if sim != null and sim.too_wet_to_sleep(global_position):
+		var out2 := sim.dry_sleep_spot(global_position)
+		var away2 := out2 - global_position
+		away2.y = 0.0
+		if away2.length() > 1.1:
+			velocity = away2.normalized() * travel_speed
+			return
+		global_position = out2
 	_slept_rough = true
 	velocity = Vector3.ZERO
+
+func _on_enter_cook() -> void:
+	pass
+
+func _on_tick_cook(delta: float) -> void:
+	var sim: SimulationDirector = director
+	if sim == null or carried.is_empty():
+		set_state("Gather")
+		return
+	var fire := sim.hearth_for(self)
+	var to := fire - global_position
+	to.y = 0.0
+	if to.length() > 1.5:
+		velocity = to.normalized() * travel_speed
+		return
+	velocity = Vector3.ZERO
+	_cook_left -= delta
+	if _cook_left > 0.0:
+		return
+	var done := carried
+	carried = ""
+	CookedFoodArt.show_carried(self, "")
+	sim.store_cooked(self, done)
+	set_state("Gather")
+
+func _on_exit_cook() -> void:
+	pass
+
+func _forage_cookables(sim: SimulationDirector) -> bool:
+	if carried != "":
+		return false
+	if sim.riverweeds != null and sim.riverweeds.nearby(global_position, 2.3):
+		if sim.riverweeds.bite(global_position, 0.35) > 0.0:
+			_bag("riverweed")
+			velocity = Vector3.ZERO
+			return true
+	if energy < 42.0 and sim.riverweeds != null:
+		var weed := sim.riverweeds.nearest(global_position, 12.0)
+		if weed != Vector3.INF:
+			var to := weed - global_position
+			to.y = 0.0
+			if to.length() > 1.2:
+				velocity = to.normalized() * travel_speed
+				return true
+	var cone := sim.find_nearest_pinecone(global_position, 9.0)
+	if cone != null and cone.has_method("eat") and global_position.distance_squared_to(cone.global_position) < 2.4:
+		cone.eat(self)
+		_bag("pinecone")
+		velocity = Vector3.ZERO
+		return true
+	var berry := sim.find_nearest_berry(global_position, 8.0)
+	if berry != null and berry.has_method("eat") and global_position.distance_squared_to(berry.global_position) < 2.2:
+		berry.eat(self)
+		_bag("berry")
+		velocity = Vector3.ZERO
+		return true
+	if energy > 40.0:
+		return false
+	for kind: String in ["mouse", "beetle", "worm", "deer", "goat", "lion", "bear"]:
+		for n in sim.get_nearby_agents(global_position, 7.0, kind):
+			if not is_instance_valid(n) or not n is MarkovAgent:
+				continue
+			if global_position.distance_to((n as Node3D).global_position) < 1.8:
+				if CombatSystem.resolve_attack(self, n as MarkovAgent):
+					_bag(kind)
+					velocity = Vector3.ZERO
+					return true
+			else:
+				var toward := (n as Node3D).global_position - global_position
+				toward.y = 0.0
+				velocity = toward.normalized() * hunt_speed
+				return true
+	return false
+
+func _bag(food_id: String) -> bool:
+	if carried != "" or not Kitchen.can_cook(food_id):
+		return false
+	carried = food_id
+	_cook_left = Kitchen.cook_time(food_id)
+	CookedFoodArt.show_carried(self, food_id)
+	FXManager.show_floating_text(global_position + Vector3.UP * 2.0, "To the fire", Color(0.95, 0.75, 0.4))
+	return true
 
 func _on_exit_sleep() -> void:
 	if indoors and home != null and is_instance_valid(home):
@@ -373,6 +482,11 @@ func _on_tick_gather(delta: float) -> void:
 	var sim: SimulationDirector = director
 	if sim == null:
 		return
+	if not carried.is_empty():
+		set_state("Cook")
+		return
+	if sim.nibble_pantry(self):
+		return
 	# Single consolidated nearby-agent query: filter by group in one pass
 	var nearby := sim.get_nearby_agents(global_position, 15.0)
 	var nearest_wolf: Node3D = null
@@ -422,14 +536,12 @@ func _on_tick_gather(delta: float) -> void:
 	# Opportunistic defense against wolves and boars (closest threats first)
 	if nearest_wolf != null and best_wolf_dist_sq <= 6.25 and nearest_wolf is MarkovAgent:
 		if CombatSystem.resolve_attack(self, nearest_wolf as MarkovAgent):
-			energy += 15.0
-			energy = clampf(energy, 0.0, 100.0)
+			_bag("wolf")
 			velocity = Vector3.ZERO
 			return
 	if nearest_boar_defense != null and best_boar_def_dist_sq <= 6.25 and nearest_boar_defense is MarkovAgent:
 		if CombatSystem.resolve_attack(self, nearest_boar_defense as MarkovAgent):
-			energy += 15.0
-			energy = clampf(energy, 0.0, 100.0)
+			_bag("boar")
 			velocity = Vector3.ZERO
 			return
 
@@ -444,16 +556,13 @@ func _on_tick_gather(delta: float) -> void:
 			if other_sid != null and other_sid is int and other_sid > 0 and other_sid != _settlement_id:
 				if node is MarkovAgent and global_position.distance_squared_to(node.global_position) < 9.0:
 					if CombatSystem.resolve_attack(self, node as MarkovAgent):
-						energy += 10.0
-						energy = clampf(energy, 0.0, 100.0)
 						velocity = Vector3.ZERO
 						return
 	# Opportunistic mushroom snack
 	var near_mushroom := sim.find_nearest_mushroom(global_position, 2.5)
 	if near_mushroom != null and global_position.distance_squared_to(near_mushroom.global_position) < 2.25:
 		devour(near_mushroom)
-		energy += 20.0
-		energy = clampf(energy, 0.0, 100.0)
+		_bag("mushroom")
 		velocity = Vector3.ZERO
 		# Cultivation: humans spread mushroom spores after eating
 		if randf() < 0.4:
@@ -469,8 +578,7 @@ func _on_tick_gather(delta: float) -> void:
 		if best_sheep_hungry_dist_sq < 4.0:
 			if nearest_sheep_hungry is MarkovAgent and CombatSystem.resolve_attack(self, nearest_sheep_hungry as MarkovAgent):
 				FXManager.spawn_combat_particles(global_position)
-				energy += 15.0
-				energy = clampf(energy, 0.0, 100.0)
+				_bag("sheep")
 				velocity = Vector3.ZERO
 				return
 		else:
@@ -482,14 +590,15 @@ func _on_tick_gather(delta: float) -> void:
 		var fish_dist := global_position.distance_squared_to(nearest_fish.global_position)
 		if fish_dist < 5.8:
 			if sim.try_eat_fish(global_position, 2.4):
-				energy += 16.0
-				energy = clampf(energy, 0.0, 100.0)
+				_bag("fish")
 				velocity = Vector3.ZERO
 				return
 		elif fish_dist < 100.0 and seek_priority < 3.6:
 			seek_dir = (nearest_fish.global_position - global_position).normalized()
 			seek_priority = 3.6
 
+	if _forage_cookables(sim):
+		return
 	# Harvest trees for wood
 	if seek_priority < 3.0:
 		var nearest_tree := sim.find_nearest_tree(global_position)
@@ -520,11 +629,10 @@ func _on_tick_gather(delta: float) -> void:
 		if nearest_apple != null:
 			var best_dist_sq := global_position.distance_squared_to(nearest_apple.global_position)
 			if best_dist_sq < 2.0 and nearest_apple.has_method("eat"):
-				energy += nearest_apple.eat(self) * 0.6
-				energy = clampf(energy, 0.0, 100.0)
+				var fruit_kind := str(nearest_apple.get("kind"))
+				nearest_apple.eat(self)
+				_bag(fruit_kind if Kitchen.can_cook(fruit_kind) else "apple")
 				sim.try_plant_tree_seed(global_position, "human")
-				health += 3.0
-				health = clampf(health, 0.0, 100.0)
 				velocity = Vector3.ZERO
 				return
 			else:
@@ -535,8 +643,7 @@ func _on_tick_gather(delta: float) -> void:
 		if nearest_sheep != null and best_sheep_dist_sq < 6.25:
 			if nearest_sheep is MarkovAgent and CombatSystem.resolve_attack(self, nearest_sheep as MarkovAgent):
 				FXManager.spawn_combat_particles(global_position)
-				energy += 15.0
-				energy = clampf(energy, 0.0, 100.0)
+				_bag("sheep")
 				velocity = Vector3.ZERO
 				return
 		else:
@@ -545,37 +652,26 @@ func _on_tick_gather(delta: float) -> void:
 				seek_priority = 2.5
 		if nearest_robin != null and best_robin_dist_sq < 16.0:
 			if nearest_robin is MarkovAgent and CombatSystem.resolve_attack(self, nearest_robin as MarkovAgent):
-					FXManager.spawn_combat_particles(global_position)
-					energy += 12.0
-					energy = clampf(energy, 0.0, 100.0)
-					velocity = Vector3.ZERO
-					return
-			energy += 12.0
-			energy = clampf(energy, 0.0, 100.0)
-			velocity = Vector3.ZERO
-			return
+				FXManager.spawn_combat_particles(global_position)
+				_bag("robin")
+				velocity = Vector3.ZERO
+				return
 		elif nearest_robin != null and seek_priority < 2.5:
 			seek_dir = (nearest_robin.global_position - global_position).normalized()
 			seek_priority = 2.5
 		if nearest_rabbit != null and best_rabbit_dist_sq < 9.0:
 			if nearest_rabbit is MarkovAgent and CombatSystem.resolve_attack(self, nearest_rabbit as MarkovAgent):
-					FXManager.spawn_combat_particles(global_position)
-					energy += 10.0
-					energy = clampf(energy, 0.0, 100.0)
-					velocity = Vector3.ZERO
-					return
-			energy += 10.0
-			energy = clampf(energy, 0.0, 100.0)
-			velocity = Vector3.ZERO
-			return
+				FXManager.spawn_combat_particles(global_position)
+				_bag("rabbit")
+				velocity = Vector3.ZERO
+				return
 		elif nearest_rabbit != null and seek_priority < 2.5:
 			seek_dir = (nearest_rabbit.global_position - global_position).normalized()
 			seek_priority = 2.5
 		if nearest_boar_hunt != null and best_boar_hunt_dist_sq < 6.25 and seek_priority < 2.5:
 			if CombatSystem.resolve_attack(self, nearest_boar_hunt):
 				FXManager.spawn_combat_particles(global_position)
-				energy += 15.0
-				energy = clampf(energy, 0.0, 100.0)
+				_bag("boar")
 				velocity = Vector3.ZERO
 				return
 		elif nearest_boar_hunt != null and seek_priority < 2.5:
@@ -588,8 +684,7 @@ func _on_tick_gather(delta: float) -> void:
 			var best_dist_sq := global_position.distance_squared_to(nearest_mushroom.global_position)
 			if best_dist_sq < 3.0:
 				devour(nearest_mushroom)
-				energy += 20.0
-				energy = clampf(energy, 0.0, 100.0)
+				_bag("mushroom")
 				velocity = Vector3.ZERO
 				# Cultivation: spread spores after eating
 				if randf() < 0.4:
@@ -602,11 +697,8 @@ func _on_tick_gather(delta: float) -> void:
 	if seek_priority < 1.0:
 		if sim.grass != null:
 			var consumed := sim.grass.consume_density(global_position, delta * 0.4, self)
-			if consumed > 0.0:
-				# Fields near the village are tended crops; wild grass is poor fare.
-				var farmed: bool = golden > 0.05 or (_settlement_center != Vector3.ZERO and global_position.distance_to(_settlement_center) < 12.0)
-				energy += consumed * (12.0 if farmed else 6.0)
-				energy = clampf(energy, 0.0, 100.0)
+			if consumed > 0.02:
+				_bag("greens")
 				velocity = Vector3.ZERO
 				# Cultivation: spread grass seeds to nearby bare patches
 				if randf() < 0.35:

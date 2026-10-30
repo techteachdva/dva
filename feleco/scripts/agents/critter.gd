@@ -4,7 +4,7 @@ extends MarkovAgent
 # Shared body for the 3.0 creatures. Each species script only fills in its
 # numbers and lists in _configure(): what it eats, what it hunts, what it
 # runs from. Diet entries are tried in order, so put the favourite first.
-#   grass, moss, berry, apple, mushroom, fish, corpse, rot
+#   grass, moss, riverweed, berry, apple, mushroom, fish, corpse, rot
 
 var species: String = ""
 @export var walk_speed: float = 2.5
@@ -24,6 +24,8 @@ var corpse_energy: float = 1.0
 var herds: bool = false
 # Bears den up when the snow comes: barely moving, barely eating.
 var winter_sleep: bool = false
+# Hungry bears and lions will take a lone villager. A party of three is too many.
+var hunts_humans: bool = false
 # Hunts only when hungry (below this energy).
 var hunt_below: float = 70.0
 var death_color: Color = Color(0.6, 0.5, 0.4)
@@ -75,6 +77,9 @@ func _get_transition_modifiers() -> Dictionary:
 			if p != "fish" and not vision.get_visible_by_tag(p).is_empty():
 				mods["Chase"] = 0.7
 				return mods
+		if hunts_humans and energy < 52.0 and _lone_human():
+			mods["Chase"] = 0.62
+			return mods
 	if herds and energy > 40.0:
 		mods["Herd"] = 0.3
 	else:
@@ -131,6 +136,10 @@ func _eat_nearby(delta: float) -> bool:
 					if got.x > 0.0:
 						_feed(got.x * grass_gain * got.y * sim.producer_value("grass"))
 						return true
+			"riverweed":
+				if sim.riverweeds != null and sim.riverweeds.bite(global_position, delta * 0.35) > 0.0:
+					_feed(14.0 * sim.producer_value("riverweed"))
+					return true
 			"moss":
 				var tree := sim.find_nearest_tree(global_position)
 				if tree != null and tree.has_method("eat_moss") and global_position.distance_squared_to(tree.global_position) < 9.0:
@@ -182,6 +191,11 @@ func _find_food() -> Variant:
 					var p := sim.grass.grid_to_world(clampi(g.x + randi_range(-3, 3), 0, sim.grass.grid_width - 1), clampi(g.y + randi_range(-3, 3), 0, sim.grass.grid_height - 1))
 					if sim.grass.get_density_at_world(p) > 0.25:
 						return p
+			"riverweed":
+				if sim.riverweeds != null:
+					var weed: Vector3 = sim.riverweeds.nearest(global_position, 16.0)
+					if weed != Vector3.INF:
+						return weed
 			"moss":
 				var t := sim.find_nearest_tree(global_position)
 				if t != null and t.get("moss") != null and float(t.moss) > 0.1:
@@ -257,6 +271,24 @@ func _on_enter_chase() -> void:
 		if t != null:
 			_target = t
 			return
+	if _target == null and hunts_humans:
+		var person := _vision_cone.closest_visible("human")
+		if person != null and person.get("indoors") != true:
+			_target = person
+
+func _lone_human() -> bool:
+	if _vision_cone == null:
+		return false
+	var sim := _sim()
+	for h: Node3D in _vision_cone.get_visible_by_tag("human"):
+		if not is_instance_valid(h) or h.get("indoors") == true:
+			continue
+		var party := 1
+		if sim != null:
+			party = sim.get_nearby_agents(h.global_position, 8.0, "human").size()
+		if party < 3:
+			return true
+	return false
 
 func _on_tick_chase(delta: float) -> void:
 	if _target == null or not is_instance_valid(_target) or not _target.is_inside_tree():

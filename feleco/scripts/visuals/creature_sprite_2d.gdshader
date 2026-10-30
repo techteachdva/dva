@@ -22,14 +22,20 @@ uniform vec2 texel = vec2(0.0078125, 0.0078125);
 
 varying float v_glow;
 varying float v_shimmer;
+varying vec2 v_body;
+
+uniform float brand_slot = 0.0;
 
 #include "res://scripts/visuals/creature_rig.gdshaderinc"
+#include "res://scripts/visuals/brand.gdshaderinc"
 
 void vertex() {
 	float g = 0.0;
 	float sh = 0.0;
 	float p = TIME * gait + creature_seed;
+	v_body = vec2(face_dir < 0.0 ? 1.0 - UV.x : UV.x, 1.0 - UV.y);
 	vec2 v = creature_rig(VERTEX * quad, UV, quad.x, quad.y, style, atlas_cell, creature_seed, face_dir, p, motion, pose_action, g, sh);
+	v = brand_warp(v, UV, quad.x, quad.y, brand_slot, TIME);
 	v_glow = g;
 	v_shimmer = sh;
 	v.y += hover * quad.y * 0.04;
@@ -46,6 +52,9 @@ void vertex() {
 void fragment() {
 	vec4 t = texture(sprite, UV);
 	vec3 col = t.rgb * (1.0 + v_shimmer * 0.12);
+	vec4 branded = brand_overlay(col, t.a, v_body, brand_slot, TIME);
+	col = branded.rgb;
+	t.a = branded.a;
 	if (v_glow > 0.0 && t.g > 0.75 && t.r < 0.7 && t.b < 0.8) {
 		col *= 1.0 + v_glow * 0.6;
 	}

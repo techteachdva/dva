@@ -280,9 +280,22 @@ func _on_tick_graze(delta: float) -> void:
 		_diet_boost = maxf(_diet_boost, 4.0)
 		return
 
+	if sim.riverweeds != null:
+		var weed: float = sim.riverweeds.bite(global_position, delta * 0.3)
+		if weed > 0.0:
+			energy = clampf(energy + weed * 26.0, 0.0, 100.0)
+			_diet_boost = maxf(_diet_boost, 3.0)
+			return
 	if sim.grass != null:
 		var grass_density := sim.grass.edible_at_world(global_position)
 		if grass_density < 0.05:
+			if sim.riverweeds != null and sim.riverweeds.nearby(global_position, 14.0):
+				var at := sim.riverweeds.nearest(global_position, 14.0)
+				if at != Vector3.INF:
+					var to := at - global_position
+					to.y = 0.0
+					velocity = to.normalized() * walk_speed * 0.8
+					return
 			set_state("Walk")
 			return
 		var consumed := sim.grass.consume_density(global_position, delta * graze_rate, self)

@@ -24,11 +24,11 @@ const HUNT: Dictionary = {
 	"human>rabbit": 0.4, "human>boar": 0.35, "human>human": 0.15,
 	"boar>wolf": 0.3, "boar>human": 0.3,
 	# 3.0: mountain lions ambush alone; bears fish and dig out rabbits.
-	"lion>rabbit": 0.55, "lion>robin": 0.4, "lion>sheep": 0.45, "lion>deer": 0.4, "lion>goat": 0.35, "lion>fish": 0.3,
+	"lion>mouse": 0.7, "lion>rabbit": 0.55, "lion>robin": 0.4, "lion>sheep": 0.45, "lion>deer": 0.4, "lion>goat": 0.35, "lion>fish": 0.3,
 	"bear>rabbit": 0.35, "bear>fish": 0.45, "bear>wolf": 0.3, "bear>lion": 0.25,
 	"wolf>deer": 0.35, "wolf>goat": 0.3, "wolf>beetle": 0.6,
 	"falcon>beetle": 0.6, "robin>beetle": 0.7, "robin>fish": 0.2,
-	"human>deer": 0.35, "human>goat": 0.35, "human>bear": 0.2, "human>lion": 0.2,
+	"human>deer": 0.35, "human>goat": 0.35, "human>mouse": 0.6, "bear>mouse": 0.45, "wolf>mouse": 0.4,
 	"fish>beetle": 0.6,
 }
 
@@ -108,6 +108,32 @@ static func resolve_attack(attacker, target) -> bool:
 		var kill_prob: float = clampf(float(party_size) / 3.0, 0.3, 1.0)
 		if randf() <= kill_prob:
 			kill = true
+	elif (attacker.is_in_group("bear") or attacker.is_in_group("lion")) and target_is_human:
+		var folk: int = 1
+		var folk_dir: SimulationDirector = attacker.director
+		if folk_dir != null:
+			folk = folk_dir.get_nearby_agents(target.global_position, 8.0, "human").size()
+		var menace: float = 0.36 if attacker.is_in_group("bear") else 0.3
+		if folk >= 3:
+			menace = 0.08
+		elif folk == 2:
+			menace *= 0.45
+		if randf() <= menace:
+			kill = true
+		else:
+			wound_damage = damage * 0.35
+	elif attacker_is_human and (target.is_in_group("bear") or target.is_in_group("lion")):
+		var band: int = 1
+		var band_dir: SimulationDirector = attacker.director
+		if band_dir != null:
+			band = band_dir.human_party_size_check(attacker)
+		var hunt_p: float = 0.1 + 0.1 * float(maxi(band, 1) - 1)
+		var cap: float = 0.42 if target.is_in_group("bear") else 0.5
+		hunt_p = clampf(hunt_p, 0.1, cap)
+		if randf() <= hunt_p:
+			kill = true
+		else:
+			wound_damage = damage * 0.3
 	elif attacker_is_wolf and target_is_human:
 		var pack_size: int = 1
 		var director: SimulationDirector = attacker.director
@@ -151,6 +177,15 @@ static func resolve_attack(attacker, target) -> bool:
 	var attacker_species: String = _infer_species(attacker)
 	var target_species: String = _infer_species(target)
 	var pos: Vector3 = target.global_position if target is Node3D else Vector3.ZERO
+
+	var grit: float = 1.0
+	if season_dir != null:
+		grit = maxf(season_dir.tune(target_species, "grit"), 0.25)
+	if kill and randf() > clampf(1.0 / grit, 0.2, 1.0):
+		kill = false
+		wound_damage = maxf(wound_damage, damage * 0.3)
+	if wound_damage > 0.0:
+		wound_damage /= grit
 
 	if kill:
 		attacker._attack_cooldown = 1.0

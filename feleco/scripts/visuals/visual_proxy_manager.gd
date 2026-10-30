@@ -40,7 +40,7 @@ const ACTIONS: Dictionary = {
 	"Flee": 3,
 	"Sleep": 4, "Rest": 4, "Stranded": 4, "Anchor": 4,
 	"Mate": 5, "Group": 5,
-	"Build": 6, "Channel": 6,
+	"Build": 6, "Channel": 6, "Cook": 6,
 }
 
 # Feet sit this far above the bottom of the sprite canvas.
@@ -127,6 +127,7 @@ func _setup_proxy(species: String) -> void:
 	mat.set_shader_parameter("quad_width", (cfg["size"] as Vector2).x)
 	mat.set_shader_parameter("style", int(cfg["style"]))
 	mat.set_shader_parameter("texel", Vector2(1.0 / tex.get_width(), 1.0 / tex.get_height()))
+	mat.set_shader_parameter("brand_tex", BrandBook.atlas())
 	mat.set_shader_parameter("grid", Vector2(SpriteGenerator.FRAMES, SpriteGenerator.CELLS))
 	mat.set_shader_parameter("gait", float(cfg["gait"]))
 	var is_champ: bool = species == _champion
@@ -272,6 +273,9 @@ func sync(registry: Array[AgentData]) -> void:
 			if float(SPECIES_CONFIG[data.species]["shadow"]) > 0.0:
 				shadow_count += 1
 
+	var brand_tex := BrandBook.atlas()
+	for mat: ShaderMaterial in _materials.values():
+		mat.set_shader_parameter("brand_tex", brand_tex)
 	var cam := get_viewport().get_camera_3d()
 	var right := Vector3.RIGHT if cam == null else cam.global_transform.basis.x
 	# The followed creature looks up at the camera now and then.
@@ -336,6 +340,8 @@ func sync(registry: Array[AgentData]) -> void:
 				s *= 1.7 if data.species == "bear" else 1.2
 			if kind == 3:
 				s = _mushroom_scale(data)
+			if director != null:
+				s *= director.tune(species, "size")
 			s = clampf(s, MIN_SCALE, MAX_SCALE) if is_finite(s) else 1.0
 			var ground: float = data.pos.y
 			var y: float
@@ -386,6 +392,7 @@ func sync(registry: Array[AgentData]) -> void:
 					y = data.pos.y + lift * s * 0.35
 			else:
 				y = ground + lift * s if kind == 1 else data.pos.y + lift * s
+			y += data.draw_lift
 			data.drawn_mid_y = y
 			var motion: float = clampf((speed - 0.3) / 2.5, 0.0, 1.0) if not flying else 1.0
 			# Only the badly hurt fade toward grey.
@@ -398,7 +405,12 @@ func sync(registry: Array[AgentData]) -> void:
 			floats[o + 7] = y
 			floats[o + 10] = s
 			floats[o + 11] = z
-			if gold > 0.0:
+			if data.brand_slot > 0 and not data.brand.is_empty():
+				BrandBook.ensure(data)
+				floats[o + 12] = 2.0 + float(data.brand_slot)
+				floats[o + 13] = shade
+				floats[o + 14] = shade
+			elif gold > 0.0:
 				var glint: float = 1.0 + 0.25 * gold * maxf(sin(now * 3.0 + data.gait_seed * 5.0), 0.0)
 				floats[o + 12] = shade * lerpf(1.0, 1.35, gold) * glint
 				floats[o + 13] = shade * lerpf(1.0, 1.1, gold) * glint

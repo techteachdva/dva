@@ -62,6 +62,7 @@ func _on_tick_swim(delta: float) -> void:
 	if _frozen():
 		return
 	_eat_river_worm()
+	_eat_riverweed()
 	_eat_drifting_food()
 	if randf() < delta * 0.15:
 		_lateral = randf_range(-0.8, 0.8)
@@ -143,6 +144,14 @@ func _eat_drifting_food() -> void:
 		var m: float = sim.mycelium.consume_density(global_position, 0.04)
 		if m > 0.0:
 			energy = clampf(energy + m * 60.0, 0.0, 100.0)
+
+func _eat_riverweed() -> void:
+	var sim: SimulationDirector = director
+	if sim == null or sim.riverweeds == null:
+		return
+	var bite: float = sim.riverweeds.bite(global_position, 0.18)
+	if bite > 0.0:
+		energy = clampf(energy + bite * 22.0, 0.0, 100.0)
 
 func _eat_river_worm() -> void:
 	var sim: SimulationDirector = director
