@@ -446,8 +446,13 @@ func sync(registry: Array[AgentData]) -> void:
 			floats[o + 15] = float(action) / 15.0
 			floats[o + 16] = data.face
 			floats[o + 17] = fposmod(now * gait + data.gait_seed, PHASE_WRAP)
-			# A cued look at the camera rides in the motion channel as a forced frame.
-			floats[o + 18] = motion if now >= data.look_until else float(SpriteGenerator.F_CAMERA + 2)
+			# A cued look, or a staged frame (the opening's two whacks), rides in the motion channel.
+			var shown_motion: float = motion
+			if data.forced_frame >= 0:
+				shown_motion = float(data.forced_frame + 2)
+			elif now < data.look_until:
+				shown_motion = float(SpriteGenerator.F_CAMERA + 2)
+			floats[o + 18] = shown_motion
 			# Atlas cell (kind column, sex row) plus a per-creature fraction so
 			# idles (grazing, rooting, wingbeats) never sync up.
 			var cell: int = Roles.role_index(data.role) + (SpriteGenerator.COLS if data.female else 0)

@@ -42,6 +42,8 @@ var seen_state: String = ""
 var alarm_time: float = -100.0
 # Until this time the sprite turns to look out at the camera (the opening film cues it).
 var look_until: float = -1.0
+# When set, the sprite holds this painted frame (a staged whack) instead of cycling.
+var forced_frame: int = -1
 # The player's own creature: a colour of their choosing and trained speed.
 var tint: Color = Color.WHITE
 var speed_boost: float = 1.0

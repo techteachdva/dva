@@ -99,14 +99,16 @@ func _build_overlay() -> void:
 		bar.offset_bottom = 64.0 if top else 0.0
 		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_root.add_child(bar)
-	_caption = FelecoUiScript.heading("", 30, FelecoUiScript.CREAM)
+	_caption = FelecoUiScript.heading("", 26, FelecoUiScript.CREAM)
+	_caption.name = "FilmCaption"
 	_caption.anchor_right = 1.0
 	_caption.anchor_top = 1.0
 	_caption.anchor_bottom = 1.0
 	_caption.offset_left = 80.0
 	_caption.offset_right = -80.0
-	_caption.offset_top = -160.0
-	_caption.offset_bottom = -76.0
+	_caption.offset_top = -148.0
+	_caption.offset_bottom = -70.0
+	_caption.clip_contents = true
 	_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_caption.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	_caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -169,48 +171,48 @@ func _play() -> void:
 	FXManager.spawn_birth_particles(rabbit.global_position + Vector3.UP * 0.6, Color(1.0, 0.85, 0.3))
 	await _hold_say(rabbit, "Oh my! The rabbit is golden now!", 2.6, "Graze")
 	_look(rabbit, 2.4)
-	await _hold_say(rabbit, "You are what you eat, I suppose...", 2.8, "Idle")
+	await _hold_say(rabbit, "You are what you eat, I suppose...", 2.4, "Idle")
+	if _done: return
+	await _grass_rampage(rabbit)
+	if _done: return
+	await _gold_fades(rabbit)
 	if _done: return
 
 	var lion := _dir.spawn_scripted("lion", _dir.dry_land(_anchor + Vector3(-11, 0, 4)))
 	_view(_anchor + Vector3(-4, 0, 2), 0.1, -0.5, 13.0)
-	_say("Oh no! Run, rabbit, run! Here comes a mountain lion!", 3.4)
-	_walk(rabbit, _dir.dry_land(_anchor + Vector3(6, 0, -1)), 2.6, "Flee")
-	await _walk(lion, _dir.dry_land(_anchor + Vector3(4.5, 0, -0.6)), 2.8, "Chase")
+	_say("Oh no! Run, rabbit, run! Here comes a mountain lion!", 3.2)
+	_walk(rabbit, _dir.dry_land(_anchor + Vector3(6, 0, -1)), 2.4, "Flee")
+	await _walk(lion, _dir.dry_land(_anchor + Vector3(4.5, 0, -0.6)), 2.6, "Chase")
 	if _done: return
 	FXManager.spawn_combat_particles(rabbit.global_position)
-	# Shining gold cannot be killed. The film is showing the meal, so the
-	# gold is taken first and the rabbit's sprite is allowed to leave.
-	_scripted_kill(lion, rabbit)
+	# The rabbit looks ordinary again. The gold still passes to whoever eats it.
+	_allow_death(rabbit)
+	lion.devour(rabbit)
+	lion.make_golden(1.0, "rabbit")
 	_follow(lion, 9.0)
-	await _hold_say(lion, "Now the mountain lion is golden!", 2.8, "Eat")
+	await _hold_say(lion, "Now the mountain lion is golden!", 2.6, "Eat")
 	if _done: return
 
 	var wizard := _dir.spawn_scripted("human", _dir.dry_land(lion.global_position + Vector3(8, 0, 3)))
 	Roles.apply(wizard, "human", Roles.SPECIAL)
 	_view(lion.global_position + Vector3(3, 0, 1), 0.5, -0.45, 12.0)
-	_say("Oh my goodness, a WIZARD?", 2.4)
-	await _walk(wizard, lion.global_position + Vector3(3.2, 0, 1.0), 2.4, "Walk")
-	await _hold(wizard, 0.8, "Channel")
+	_say("Oh my goodness, a WIZARD?", 2.2)
+	await _walk(wizard, lion.global_position + Vector3(3.2, 0, 1.0), 2.2, "Walk")
 	if _done: return
-	FXManager.show_dramatic_text(lion.global_position + Vector3.UP * 2.0, "Zap!", Color(0.7, 0.6, 1.0))
-	FXManager.spawn_combat_particles(lion.global_position)
-	var lion_gold: float = lion.golden
-	_allow_death(lion)
-	lion.die()
-	wizard.make_golden(lion_gold * 0.9, "lion")
-	await _hold_say(wizard, "Well, I guess wizard beats mountain lion.", 2.8, "Channel")
+	await _two_whacks(wizard, lion)
+	if _done: return
+	await _hold_say(wizard, "Well, I guess wizard beats mountain lion.", 2.4, "Idle")
 	_follow(wizard, 8.0)
-	_look(wizard, 2.6)
-	await _hold_say(wizard, "Now the wizard is golden. Curious...", 2.8, "Idle")
+	_look(wizard, 2.2)
+	await _hold_say(wizard, "Now the wizard is golden. Curious...", 2.4, "Idle")
 	if _done: return
 
-	_view(wizard.global_position, 1.0, -0.6, 22.0)
-	_dir.trigger_bloom()
-	await _hold_say(wizard, "Well, this is fun just watching things, but can I use my powers to...", 3.4, "Channel")
+	_view(wizard.global_position, 1.0, -0.55, 18.0)
+	await _hold_say(wizard, "Your name is Feleco, you are the spirit in charge of this valley", 3.6, "Idle")
 	if _done: return
-
-	await _hold_say(wizard, "A year in the valley is a quest, not a wager.", 3.2, "Idle")
+	await _human_markov()
+	if _done: return
+	await _hold_say(wizard, "A year in the valley is a quest, not a wager.", 2.8, "Idle")
 	if _done: return
 	_unleash()
 	_view(Vector3(0, 0, 4), 0.6, -0.75, 62.0)
@@ -623,6 +625,116 @@ func _finish() -> void:
 	await tw.finished
 	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 
+# The gold rabbit bolts from tuft to tuft and grazes each one.
+func _grass_rampage(rabbit: MarkovAgent) -> void:
+	if rabbit == null or not is_instance_valid(rabbit):
+		return
+	_note("The gold takes hold. The rabbit rampages through the grass.")
+	_follow(rabbit, 12.0)
+	var origin: Vector3 = rabbit.global_position
+	for i: int in 5:
+		if _done or not is_instance_valid(rabbit):
+			return
+		var ang: float = TAU * float(i) / 5.0
+		var spot: Vector3 = _dir.dry_land(origin + Vector3(cos(ang), 0.0, sin(ang)) * 3.4)
+		await _walk(rabbit, spot, 0.5, "Walk")
+		if _done or not is_instance_valid(rabbit):
+			return
+		_dir.grass.consume_density(spot, 0.7)
+		FXManager.spawn_birth_particles(spot + Vector3.UP * 0.35, Color(0.55, 0.95, 0.4))
+		FXManager.show_floating_text(spot + Vector3.UP * 1.2, "munch", Color(0.75, 1.0, 0.5))
+		await _hold(rabbit, 0.42, "Graze")
+	if not await _beat(0.6):
+		return
+
+# The shine leaves. The rabbit stands as an ordinary rabbit again.
+func _gold_fades(rabbit: MarkovAgent) -> void:
+	if rabbit == null or not is_instance_valid(rabbit):
+		return
+	var t: float = 0.0
+	while t < 0.7 and is_instance_valid(rabbit) and not _done and is_inside_tree():
+		t += get_process_delta_time()
+		rabbit.golden = lerpf(1.0, 0.0, clampf(t / 0.55, 0.0, 1.0))
+		rabbit.gold_latent = false
+		rabbit.stage_to(rabbit.global_position, "Idle")
+		await get_tree().process_frame
+	if is_instance_valid(rabbit):
+		rabbit.golden = 0.0
+		rabbit.gold_latent = false
+		rabbit.gold_claimed = false
+		rabbit.stage_to(rabbit.global_position, "Idle")
+	_note("The gold runs out. The rabbit is itself again.")
+	await _beat(1.6)
+
+# Two strikes, and only two: wind up, hit, wind up, hit. Then the lion falls.
+func _two_whacks(wizard: MarkovAgent, lion: MarkovAgent) -> void:
+	if wizard == null or lion == null or not is_instance_valid(wizard) or not is_instance_valid(lion):
+		return
+	_note("The wizard strikes. Twice.")
+	var face: float = -1.0 if lion.global_position.x < wizard.global_position.x else 1.0
+	for hit: int in 2:
+		if _done or not is_instance_valid(wizard) or not is_instance_valid(lion):
+			return
+		_pose(wizard, SpriteGenerator.F_WINDUP, face)
+		if not await _beat(0.34):
+			return
+		_pose(wizard, SpriteGenerator.F_STRIKE, face)
+		FXManager.spawn_combat_particles(lion.global_position)
+		FXManager.show_floating_text(lion.global_position + Vector3.UP * 1.8, "Whack!", Color(1.0, 0.92, 0.62))
+		_note("The first blow." if hit == 0 else "The second blow.")
+		if not await _beat(0.55):
+			return
+		_pose(wizard, SpriteGenerator.F_STAND, face)
+		if hit == 0 and not await _beat(0.38):
+			return
+	var lion_gold: float = lion.golden
+	_allow_death(lion)
+	lion.die()
+	if is_instance_valid(wizard):
+		wizard.make_golden(maxf(lion_gold, 0.9), "lion")
+		if wizard._data != null:
+			wizard._data.forced_frame = -1
+			wizard.stage_to(wizard.global_position, "Idle")
+
+func _pose(a: MarkovAgent, frame: int, face_sign: float) -> void:
+	if a == null or not is_instance_valid(a):
+		return
+	a.stage_to(a.global_position, "Hunt")
+	if a._data != null:
+		a._data.forced_frame = frame
+		a._data.face = face_sign
+
+# A small map of the choices a human actually makes. A token walks the arrows.
+func _human_markov() -> void:
+	_note("This is how a human decides. Each arrow is a real choice in the valley.")
+	var board := HumanModel.new()
+	board.z_index = 30
+	_root.add_child(board)
+	_root.move_child(board, _caption.get_index())
+	if not await _frames(2):
+		board.queue_free()
+		return
+	if not await _beat(1.8):
+		board.queue_free()
+		return
+	var steps: Array[Array] = [
+		["Gather", "Most of the time, a human gathers food."],
+		["Cook", "Food in hand: they carry it to a fire and cook."],
+		["Sleep", "Night falls. They go to sleep."],
+		["Flee", "A hunter is close, and they are alone. They flee."],
+		["Hunt", "Three humans together do not run. They hunt."],
+		["Travel", "Too far from the hut, they travel home."],
+	]
+	for step: Array in steps:
+		if _done or not is_inside_tree():
+			break
+		_note(str(step[1]))
+		board.focus(str(step[0]))
+		if not await _beat(2.7):
+			break
+	if is_instance_valid(board):
+		board.queue_free()
+
 # The film is allowed to finish a meal the gold shield would refuse.
 func _scripted_kill(eater: MarkovAgent, prey: MarkovAgent) -> void:
 	if prey == null or not is_instance_valid(prey):
@@ -702,7 +814,7 @@ func _quests() -> bool:
 			if q["lane"] != lane:
 				continue
 			var b := Button.new()
-			b.custom_minimum_size = Vector2(0, 58)
+			b.custom_minimum_size = Vector2(0, 44)
 			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			b.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -712,7 +824,7 @@ func _quests() -> bool:
 			buttons[q["id"]] = b
 	var status := FelecoUiScript.label("Choose one to read it.", 15, FelecoUiScript.GOLD)
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	status.custom_minimum_size = Vector2(0, 64)
+	status.custom_minimum_size = Vector2(0, 22)
 	win.add_child(status)
 	var begin := Button.new()
 	begin.text = "Begin the year"
@@ -723,7 +835,7 @@ func _quests() -> bool:
 	win.add_child(begin)
 	if not await _frames(2):
 		return false
-	_note("This is the Quest Board. Click a quest to take it. The line underneath tells you the goal, the time, and the reward.")
+	_note("Click any quest to take it. Click it again to put it back.")
 	if not await _beat(2.8):
 		return false
 	var grazers: Button = buttons["quest:grazers"]
@@ -848,11 +960,12 @@ func _window(title: String) -> VBoxContainer:
 	_teach_root.add_child(dim)
 	var frame := PanelContainer.new()
 	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
-	frame.offset_left = 48.0
-	frame.offset_top = 78.0
-	frame.offset_right = -48.0
-	frame.offset_bottom = -176.0
+	frame.offset_left = 36.0
+	frame.offset_top = 28.0
+	frame.offset_right = -36.0
+	frame.offset_bottom = -160.0
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.clip_contents = true
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.06, 0.09, 0.07, 0.96)
 	sb.border_color = FelecoUiScript.GOLD
@@ -862,7 +975,7 @@ func _window(title: String) -> VBoxContainer:
 	frame.add_theme_stylebox_override("panel", sb)
 	_teach_root.add_child(frame)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 10)
+	col.add_theme_constant_override("separation", 6)
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(col)
 	col.add_child(FelecoUiScript.heading(title, 28, FelecoUiScript.GOLD))
@@ -982,6 +1095,126 @@ func _beat(secs: float) -> bool:
 		return false
 	await get_tree().create_timer(secs).timeout
 	return is_inside_tree() and not _done
+
+# The human Markov map: six real choices, and a token that walks them.
+class HumanModel extends Control:
+	const SPOTS: Dictionary = {
+		"Flee": Vector2(0.16, 0.40),
+		"Gather": Vector2(0.48, 0.40),
+		"Cook": Vector2(0.80, 0.40),
+		"Hunt": Vector2(0.16, 0.74),
+		"Travel": Vector2(0.48, 0.74),
+		"Sleep": Vector2(0.80, 0.74),
+	}
+	const LINKS: Array[Array] = [
+		["Gather", "Cook"], ["Cook", "Sleep"], ["Gather", "Flee"],
+		["Flee", "Hunt"], ["Gather", "Travel"],
+	]
+	var _boxes: Dictionary = {}
+	var _token: Control
+	var _hot: String = "Gather"
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		set_anchors_preset(Control.PRESET_FULL_RECT)
+		offset_left = 70.0
+		offset_right = -70.0
+		offset_top = 64.0
+		offset_bottom = -168.0
+
+	func _ready() -> void:
+		var title := FelecoUi.heading("How a human decides", 32, FelecoUi.GOLD)
+		title.position = Vector2(28, 16)
+		title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(title)
+		var sub := FelecoUi.label("The valley weighs these arrows every moment, then picks one.", 18, FelecoUi.CREAM)
+		sub.position = Vector2(28, 58)
+		sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(sub)
+		for id: String in SPOTS.keys():
+			var box := PanelContainer.new()
+			box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			box.custom_minimum_size = Vector2(176, 62)
+			var name := FelecoUi.heading(id, 26, FelecoUi.CREAM)
+			name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			box.add_child(name)
+			add_child(box)
+			_boxes[id] = box
+		_token = TextureRect.new()
+		_token.texture = FelecoUi.species_texture("human")
+		_token.custom_minimum_size = Vector2(52, 52)
+		_token.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_token.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_token.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_token.z_index = 5
+		add_child(_token)
+		resized.connect(_layout)
+		_layout()
+		_paint()
+
+	func _layout() -> void:
+		if size.x < 40.0:
+			return
+		for id: String in _boxes.keys():
+			var box: Control = _boxes[id]
+			box.reset_size()
+			var at: Vector2 = SPOTS[id] * size
+			box.position = at - box.size * 0.5
+		if _hot != "":
+			_token.position = _token_pos(_hot)
+		queue_redraw()
+
+	func focus(id: String) -> void:
+		if not _boxes.has(id):
+			return
+		_hot = id
+		_paint()
+		_layout()
+		var tw := create_tween()
+		tw.tween_property(_token, "position", _token_pos(id), 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		queue_redraw()
+
+	func _center(id: String) -> Vector2:
+		var box: Control = _boxes[id]
+		return box.position + box.size * 0.5
+
+	# Sits on the top-left corner of the box, so the state name stays readable.
+	func _token_pos(id: String) -> Vector2:
+		var box: Control = _boxes[id]
+		return box.position + Vector2(-8.0, -28.0)
+
+	func _paint() -> void:
+		for id: String in _boxes.keys():
+			var box: PanelContainer = _boxes[id]
+			var sb := StyleBoxFlat.new()
+			var on: bool = id == _hot
+			sb.bg_color = Color(0.16, 0.22, 0.14, 1) if on else Color(0.09, 0.12, 0.1, 1)
+			sb.border_color = FelecoUi.GOLD if on else FelecoUi.LINE
+			sb.set_border_width_all(4 if on else 2)
+			sb.set_corner_radius_all(14)
+			sb.set_content_margin_all(8)
+			box.add_theme_stylebox_override("panel", sb)
+
+	func _draw() -> void:
+		var r := Rect2(Vector2.ZERO, size)
+		draw_rect(r, Color(0.05, 0.08, 0.06, 0.94))
+		draw_rect(r, FelecoUi.GOLD, false, 2.0)
+		for link: Array in LINKS:
+			var a: String = link[0]
+			var b: String = link[1]
+			if not _boxes.has(a) or not _boxes.has(b):
+				continue
+			var from: Vector2 = _center(a)
+			var to: Vector2 = _center(b)
+			var hot: bool = a == _hot or b == _hot
+			draw_line(from, to, FelecoUi.GOLD if hot else Color(0.55, 0.62, 0.5, 0.55), 5.0 if hot else 2.5, true)
+			var dir: Vector2 = (to - from).normalized()
+			var tip: Vector2 = to - dir * 46.0
+			draw_colored_polygon(PackedVector2Array([
+				tip + dir * 14.0,
+				tip + Vector2(-dir.y, dir.x) * 8.0,
+				tip + Vector2(dir.y, -dir.x) * 8.0,
+			]), FelecoUi.GOLD if hot else Color(0.55, 0.62, 0.5, 0.7))
 
 # A gold arrow. Its tip is the control's position.
 class Pointer extends Control:
