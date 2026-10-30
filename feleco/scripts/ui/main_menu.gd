@@ -14,17 +14,20 @@ var _rays: ColorRect
 var _ray_target: Control = null
 var _btn_about: Button
 var _btn_intro: Button
+var _btn_main: Button
 var _next_hint: Label
 
 # The menu is a game too: it opens one feature at a time as the player plays.
 # [feature, button, label, how it unlocks]. Rules is always open.
 const LADDER: Array = [
+	["main", "MainGame", "Main Game", ""],
+	["valley", "Sandbox", "Start Simulation", ""],
 	["rules", "Rules", "Rules", ""],
-	["valley", "Sandbox", "Valley Simulation", "Read the Rules (the guided tour) to open the Valley Simulation."],
 	["greenhouse", "Shop", "Greenhouse", "Finish a year in the Valley Simulation to open the Greenhouse."],
 	["challenge", "Challenge", "Challenge", "Visit the Greenhouse to open Challenge."],
 	["minigames", "Campaign", "Mini Games", "Play a Challenge year (or three valley years) to open the Mini Games."],
 	["opening", "Intro", "Watch The Opening Again", "Finish a year in the valley to rewatch the opening."],
+	["lore", "Lore", "Watch the year's beginning", ""],
 	["changelog", "About", "Changelog & Credits", "Read the Rules to open the Changelog & Credits."],
 ]
 
@@ -100,6 +103,16 @@ func _ready() -> void:
 		btn.custom_minimum_size = Vector2(340, 52)
 	FelecoUiScript.mark($CenterContainer/VBoxContainer/Sandbox, "PrimaryButton")
 	FelecoUiScript.mark($CenterContainer/VBoxContainer/Quit, "GhostButton")
+	var btn_main := Button.new()
+	_btn_main = btn_main
+	btn_main.name = "MainGame"
+	btn_main.text = "Main Game"
+	btn_main.custom_minimum_size = Vector2(340, 52)
+	btn_main.add_theme_font_size_override("font_size", 24)
+	FelecoUiScript.mark(btn_main, "PrimaryButton")
+	btn_main.pressed.connect(_on_main_game)
+	$CenterContainer/VBoxContainer.add_child(btn_main)
+	$CenterContainer/VBoxContainer.move_child(btn_main, _btn_sandbox.get_index())
 	var gc: Node = get_node("/root/GameConfig")
 	gc.load_meta()
 	gc.reset_run_state()
@@ -134,6 +147,15 @@ func _ready() -> void:
 	btn_intro.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/ui/intro.tscn"))
 	$CenterContainer/VBoxContainer.add_child(btn_intro)
 	$CenterContainer/VBoxContainer.move_child(btn_intro, btn_about.get_index() + 1)
+	var btn_lore := Button.new()
+	_btn_lore = btn_lore
+	btn_lore.name = "Lore"
+	btn_lore.text = "Watch the year's beginning"
+	btn_lore.custom_minimum_size = Vector2(340, 44)
+	FelecoUiScript.mark(btn_lore, "GhostButton")
+	btn_lore.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/ui/lore_film.tscn"))
+	$CenterContainer/VBoxContainer.add_child(btn_lore)
+	$CenterContainer/VBoxContainer.move_child(btn_lore, btn_intro.get_index() + 1)
 	_hook_rays($CenterContainer)
 	var version := Label.new()
 	version.text = "v%s  ·  M mutes music  ·  F11 fullscreen" % FelecoChangelog.VERSION
@@ -154,6 +176,8 @@ func _ready() -> void:
 	column.add_child(slot)
 	column.move_child(slot, $CenterContainer/VBoxContainer/Tagline.get_index() + 1)
 	var ticker := TipTicker.new()
+	ticker.hold = 16.0
+	ticker.start_delay = 9.0
 	ticker.anchor_left = 0.5
 	ticker.anchor_right = 0.5
 	ticker.anchor_top = 0.0
@@ -177,7 +201,11 @@ func _ladder_button(key: String) -> Button:
 	match key:
 		"Intro": return _btn_intro
 		"About": return _btn_about
+		"MainGame": return _btn_main
+		"Lore": return _btn_lore
 	return $CenterContainer/VBoxContainer.get_node(key) as Button
+
+var _btn_lore: Button
 
 # Reorders and relabels the menu, shows only what's unlocked, and celebrates
 # anything newly unlocked.
@@ -203,7 +231,7 @@ func _build_ladder(gc: Node) -> void:
 		b.text = row[2]
 		column.move_child(b, at)
 		at += 1
-		var open: bool = row[0] == "rules" or gc.unlocked(row[0])
+		var open: bool = row[0] in ["rules", "main", "valley", "lore"] or gc.unlocked(row[0])
 		b.visible = open
 		if not open and hint.is_empty():
 			hint = row[3]
@@ -211,7 +239,9 @@ func _build_ladder(gc: Node) -> void:
 			gc.set_record("unlock_seen", row[0], true)
 			_celebrate.call_deferred(b)
 	# Rules is the big button until the valley opens.
-	FelecoUiScript.mark(_btn_rules, "PrimaryButton" if not _btn_sandbox.visible else "")
+	FelecoUiScript.mark(_btn_main, "PrimaryButton")
+	FelecoUiScript.mark(_btn_sandbox, "PrimaryButton")
+	FelecoUiScript.mark(_btn_rules, "GhostButton")
 	_next_hint = FelecoUiScript.label(hint, 15, FelecoUiScript.GOLD)
 	_next_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_next_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -250,8 +280,74 @@ func _on_campaign() -> void:
 func _on_challenge() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/challenge_setup.tscn")
 
+func _on_main_game() -> void:
+	var gc: Node = get_node("/root/GameConfig")
+	gc.current_mode = "main"
+	gc.main_claim = gc.record("lesson", "champion") == null
+	gc.board_mode = "full"
+	if not gc.lore_seen:
+		get_tree().change_scene_to_file("res://scenes/ui/lore_film.tscn")
+	else:
+		gc.bets.clear()
+		get_tree().change_scene_to_file("res://scenes/world.tscn")
+
 func _on_sandbox() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/setup_board.tscn")
+	_spirit_dialog()
+
+func _spirit_dialog() -> void:
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.72)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(shade)
+	var card := PanelContainer.new()
+	card.set_anchors_preset(Control.PRESET_CENTER)
+	card.offset_left = -280.0
+	card.offset_right = 280.0
+	card.offset_top = -140.0
+	card.offset_bottom = 140.0
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.06, 0.09, 0.07, 0.96)
+	sb.border_color = FelecoUiScript.GOLD
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(16)
+	sb.set_content_margin_all(22)
+	card.add_theme_stylebox_override("panel", sb)
+	shade.add_child(card)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 14)
+	card.add_child(col)
+	var words := FelecoUiScript.label("You are Feleco, the spirit of this Valley. What do the Fates require of you? Time will tell. For now, you must choose your first Champion.", 20, FelecoUiScript.CREAM)
+	words.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	words.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(words)
+	var go := Button.new()
+	go.text = "Continue"
+	go.disabled = true
+	go.theme_type_variation = "PrimaryButton"
+	go.custom_minimum_size = Vector2(0, 52)
+	col.add_child(go)
+	var left: Array = [4]
+	go.text = "Continue (4)"
+	var tick := func() -> void:
+		left[0] -= 1
+		if left[0] <= 0:
+			go.disabled = false
+			go.text = "Continue"
+		else:
+			go.text = "Continue (%d)" % int(left[0])
+	var timer := Timer.new()
+	timer.wait_time = 1.0
+	timer.timeout.connect(tick)
+	shade.add_child(timer)
+	timer.start()
+	go.pressed.connect(func() -> void:
+		var gc: Node = get_node("/root/GameConfig")
+		gc.current_mode = "sandbox"
+		gc.main_claim = false
+		gc.board_mode = "simple"
+		gc.bets.clear()
+		get_tree().change_scene_to_file("res://scenes/ui/quest_board.tscn"))
 
 func _on_shop() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/greenhouse_shop.tscn")

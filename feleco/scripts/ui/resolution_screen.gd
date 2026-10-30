@@ -90,6 +90,17 @@ func show_result(winner: String) -> void:
 	# Ecosystem Roulette: every bet, won or lost (live wins were paid when they landed).
 	if director.bet_tracker != null:
 		director.bet_tracker.settle_final()
+	if gc != null:
+		var quest_notes: PackedStringArray = []
+		for b: Dictionary in gc.bets:
+			if not b.get("quest", false):
+				continue
+			if String(b.get("state", "")) == "won":
+				quest_notes.append("Quest complete: %s. %s" % [b.get("label", ""), QuestBoard.grant(gc, b)])
+			else:
+				quest_notes.append("Quest missed: %s. You gain nothing." % b.get("label", ""))
+		if not quest_notes.is_empty():
+			%ResultLabel.text = "%s\n%s" % ["\n".join(quest_notes), %ResultLabel.text]
 	var bet_label: Label = %SideBetLabel
 	bet_label.hide()
 	var board := _bet_board(gc)

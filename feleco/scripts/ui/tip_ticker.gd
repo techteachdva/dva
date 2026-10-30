@@ -6,6 +6,9 @@ extends PanelContainer
 const HOLD: float = 6.5
 const FADE: float = 0.45
 
+var hold: float = HOLD
+var start_delay: float = 0.0
+
 var font_size: int = 16
 var _label: RichTextLabel
 var _order: Array = []
@@ -34,11 +37,19 @@ func _ready() -> void:
 	add_child(_label)
 	_order = FelecoChangelog.TIPS.duplicate()
 	_order.shuffle()
-	_show_next()
+	_timer = -start_delay
+	if start_delay <= 0.0:
+		_show_next()
+	else:
+		_label.modulate.a = 0.0
 
 func _process(delta: float) -> void:
 	_timer += delta
-	if _timer >= HOLD:
+	if _label.modulate.a <= 0.01 and _label.text.is_empty() and _timer >= 0.0:
+		_show_next()
+		_label.modulate.a = 1.0
+		_timer = 0.0
+	if _timer >= hold:
 		_timer = 0.0
 		var tw := create_tween()
 		tw.tween_property(_label, "modulate:a", 0.0, FADE)

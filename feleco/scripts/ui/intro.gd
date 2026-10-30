@@ -207,28 +207,21 @@ func _play() -> void:
 	await _hold_say(wizard, "Well, this is fun just watching things, but can I use my powers to...", 3.4, "Channel")
 	if _done: return
 
-	await _coins()
+	await _hold_say(wizard, "A year in the valley is a quest, not a wager.", 3.2, "Idle")
 	if _done: return
-	var card: Control = await _bet_on_rampage(wizard)
-	if _done: return
-	var won: bool = await _rampage(wizard)
-	if _done: return
-	if won:
-		await _payout(card, wizard)
-	if _done: return
-
-	_say("So I bet, and my choices change how it plays out. Now let's see what happens if I...", 3.4)
-	await get_tree().create_timer(1.6 * READ_PACE).timeout
 	_unleash()
 	_view(Vector3(0, 0, 4), 0.6, -0.75, 62.0)
-	# The whole valley at its own pace, with the rest of the toolbox.
-	await _say("Bet on who rules the year. Pick a champion and back it.", 3.0)
+	await _say("You are Feleco, the spirit of this valley.", 3.0)
 	if _done: return
-	await _say("Make a creature yours. Use powers to tip the odds.", 3.0)
+	await _say("Main Game is the spirit's year. Start Simulation is the valley on its own.", 3.4)
 	if _done: return
-	await _say("Win rampages and minigames to unlock Greenhouse upgrades.", 3.0)
+	await _say("A quest names a champion, a species, a category, a goal, a season, and a reward.", 3.6)
 	if _done: return
-	await _say("Oh my stars! What is this game? Luck and ecology?", 3.4)
+	await _say("Accept the ones you choose. Succeed, and the valley opens looks, cursors and games.", 3.4)
+	if _done: return
+	await _say("Miss a quest, and you gain nothing. The valley simply goes on.", 3.2)
+	if _done: return
+	await _say("Then claim a creature. Brand is their body. Train is how they grow.", 3.2)
 	if _done: return
 	await _title_card()
 	if _done: return

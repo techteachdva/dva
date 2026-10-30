@@ -55,9 +55,9 @@ func _ready() -> void:
 	_build_rules(FelecoUiScript.card(body, "Season and map", 0.8))
 
 	var start := Button.new()
-	start.text = "To the betting table"
+	start.text = "To the Quest Board"
 	start.icon = load("res://assets/icons/start.svg")
-	start.tooltip_text = "Place your bets, then open the field with these numbers."
+	start.tooltip_text = "Accept quests, then open the valley with these numbers."
 	start.custom_minimum_size = Vector2(420, 60)
 	start.add_theme_font_size_override("font_size", 24)
 	start.theme_type_variation = "PrimaryButton"
@@ -303,6 +303,8 @@ func _on_start() -> void:
 	gc.map_preset = _map.get_item_text(_map.selected)
 	gc.grass_density = 0.5
 	gc.current_mode = "sandbox"
+	gc.board_mode = "full"
+	gc.main_claim = false
 	var producer: Dictionary = gc.link_boons().get("producer", {})
 	gc.tree_count += int(producer.get("trees", 0))
 	gc.grass_density = minf(gc.grass_density + float(producer.get("grass", 0.0)), 0.8)
@@ -312,7 +314,7 @@ func _on_start() -> void:
 	gc.bets.clear()
 	gc.event_log.clear()
 	gc.side_bet_result = ""
-	get_tree().change_scene_to_file("res://scenes/ui/betting_table.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/quest_board.tscn")
 
 func _on_back() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")

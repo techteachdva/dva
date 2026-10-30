@@ -3,9 +3,18 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.8.2"
+const VERSION: String = "4.9.0"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.9.0",
+		"title": "The Quest Board",
+		"notes": [
+			"Main Game and Start Simulation are different doors. Main Game begins the spirit's year: a short film, then you claim a Champion, brand them, and train them.",
+			"Start Simulation asks you to choose a plan. A plan gives a goal, a strategy, and a category of creature.",
+			"The betting table is now the Quest Board, with Main Quests and Side Quests. Accept any you want. Miss one and you gain nothing. Succeed and the valley unlocks cursors, auras, customization and the Mini Games.",
+		],
+	},
 	{
 		"version": "4.8.2",
 		"title": "The Hand",

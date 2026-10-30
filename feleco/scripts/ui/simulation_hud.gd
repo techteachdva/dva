@@ -157,8 +157,8 @@ var _was_paused: bool = false
 func _add_bets_button() -> void:
 	_bets_button = Button.new()
 	_bets_button.name = "Bets"
-	_bets_button.text = "Bets"
-	_bets_button.tooltip_text = "Pause and place bets at today's odds. Late bets pay less."
+	_bets_button.text = "Quests"
+	_bets_button.tooltip_text = "The quest board. Accept a main quest and any side quests. Missing one gains nothing."
 	_bets_button.theme_type_variation = "PrimaryButton"
 	_bets_button.custom_minimum_size = Vector2(120, 56)
 	_bets_button.pressed.connect(_open_bets)
@@ -178,7 +178,7 @@ func _refresh_bet_line() -> void:
 		elif b["state"] == "won":
 			won += int(b["payout"])
 	var line: Label = $TopRight/VBoxContainer/SideBetLabel
-	line.text = "Bets: %d open  ·  %d EP won so far  ·  %d EP in the pot" % [open, won, gc.eco_points]
+	line.text = "Quests: %d open" % open
 	line.modulate = Color(1.0, 0.85, 0.4)
 
 func _open_bets() -> void:
@@ -192,6 +192,19 @@ func _open_bets() -> void:
 	layer.layer = 60
 	layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(layer)
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	if gc != null and gc.current_mode != "challenge" and gc.current_mode != "campaign":
+		gc.board_mode = "full"
+		var board := QuestBoard.new()
+		board.live = true
+		board.set_anchors_preset(Control.PRESET_FULL_RECT)
+		layer.add_child(board)
+		board.tree_exited.connect(func() -> void:
+			if is_instance_valid(layer):
+				get_tree().paused = _was_paused
+				layer.queue_free()
+			_refresh_bet_line())
+		return
 	var table := BettingTable.new()
 	table.live = true
 	table.tracker = _director.bet_tracker
@@ -481,8 +494,26 @@ func _build_goals() -> void:
 		saga.hud = self
 		add_child(saga)
 		_goals.saga = saga
-	if gc != null and not gc.tutorial_done and gc.current_mode == "sandbox":
+	if gc != null and gc.main_claim:
+		_show_champion_banner.call_deferred()
+	elif gc != null and not gc.tutorial_done and gc.current_mode == "sandbox":
 		_show_welcome.call_deferred()
+
+func _show_champion_banner() -> void:
+	while get_tree().paused:
+		await get_tree().create_timer(0.3, true, false, true).timeout
+	var note := Label.new()
+	note.text = "Click any creature. The hand lifts your Champion."
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	note.offset_left = -280.0
+	note.offset_right = 280.0
+	note.offset_top = 76.0
+	note.offset_bottom = 112.0
+	note.add_theme_font_size_override("font_size", 18)
+	note.add_theme_color_override("font_color", Color(0.96, 0.9, 0.7))
+	note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(note)
 
 # First run: say plainly what Feleco is and what to do.
 func _show_welcome() -> void:
@@ -729,6 +760,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_start_follow(agent)
 
 func _carries_magic(agent: MarkovAgent) -> bool:
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	if gc != null and gc.main_claim:
+		return true
 	if agent._data != null and not agent._data.brand.is_empty():
 		return true
 	return _goals != null and _goals.is_companion(agent)
@@ -790,7 +824,8 @@ func _show_hand_choices(hand: SpectralHand, agent: MarkovAgent) -> void:
 	bar.mouse_filter = Control.MOUSE_FILTER_STOP
 	shell.add_child(bar)
 	var held := Label.new()
-	held.text = "The hand has them."
+	var gc_hold: Node = get_node_or_null("/root/GameConfig")
+	held.text = "Claim your Champion. Brand changes the body. Train is how they grow." if gc_hold != null and gc_hold.main_claim else "The hand has them."
 	held.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	held.add_theme_font_size_override("font_size", 18)
 	held.add_theme_color_override("font_color", Color(0.9, 0.86, 0.72))
@@ -809,7 +844,14 @@ func _show_hand_choices(hand: SpectralHand, agent: MarkovAgent) -> void:
 		if not _goals.is_companion(agent):
 			_goals.adopt(agent)
 		claim.text = "Claimed"
-		claim.disabled = true)
+		claim.disabled = true
+		var gc_claim: Node = get_node_or_null("/root/GameConfig")
+		if gc_claim != null and gc_claim.main_claim:
+			gc_claim.main_claim = false
+			gc_claim.set_record("lesson", "champion", true)
+			var studio := BrandStudio.new()
+			studio.agent = agent
+			add_child(studio))
 	row.add_child(claim)
 	var brand := Button.new()
 	brand.text = "Brand"
@@ -1364,7 +1406,7 @@ const RAIL_W: float = 132.0
 const RAIL_ICONS: Dictionary = {
 	"Census": "rail_census", "Goals": "rail_goals", "Hill": "crown", "Bet Slip": "rail_bets",
 	"Creature": "rail_creature", "History": "scroll", "Ticker": "rail_ticker", "Time": "rail_time",
-	"Powers": "rail_powers", "Bets": "rail_bets", "Clear view": "eye",
+	"Powers": "rail_powers", "Quests": "rail_bets", "Clear view": "eye",
 }
 var _rail_buttons: Dictionary = {}
 var _cleared: Array[Control] = []
@@ -1386,7 +1428,7 @@ func _build_rail() -> void:
 	$TopLeft.offset_bottom = $TopLeft.offset_top
 	$TopRight.offset_bottom = $TopRight.offset_top
 	HudWindow.dress($TopLeft, "Census", $TopLeft/VBox)
-	HudWindow.dress($TopRight, "Champion and Bets", $TopRight/VBoxContainer)
+	HudWindow.dress($TopRight, "Champion and Quests", $TopRight/VBoxContainer)
 	HudWindow.dress(get_node("HillBars"), "King of the Hill")
 	# Start with the bars folded: the valley is the show.
 	HudWindow.set_folded(get_node("HillBars"), true)
@@ -1406,7 +1448,7 @@ func _build_rail() -> void:
 	_rail_button(rail, "Census", "Show or hide the count of every species.", func() -> void: _toggle_window($TopLeft))
 	_rail_button(rail, "Goals", "Show or hide your goals and My Creature.", func() -> void: _toggle_window(_goals))
 	_rail_button(rail, "Hill", "Show or hide King of the Hill: who rules the valley.", func() -> void: _toggle_window(get_node("HillBars")))
-	_rail_button(rail, "Bet Slip", "Show or hide your bets.", func() -> void: _toggle_window($TopRight))
+	_rail_button(rail, "Quests", "Show or hide the quests you accepted.", func() -> void: _toggle_window($TopRight))
 	_rail_button(rail, "Creature", "Show or hide the card of the creature you are following.", func() -> void:
 		if _follow_panel != null and is_instance_valid(_follow_panel):
 			_toggle_window(_follow_panel))
@@ -1417,14 +1459,22 @@ func _build_rail() -> void:
 	_rail_button(rail, "Time", "Show or hide the speed and pause buttons.", func() -> void: $BottomBar.visible = not $BottomBar.visible)
 	rail.add_child(HSeparator.new())
 	_tray_button.text = "Powers"
-	_bets_button.text = "Bets"
+	_bets_button.text = "Quests"
+	_bets_button.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_bets_button.offset_left = -150.0
+	_bets_button.offset_right = 150.0
+	_bets_button.offset_top = 12.0
+	_bets_button.offset_bottom = 68.0
+	_bets_button.custom_minimum_size = Vector2(300, 56)
+	_bets_button.add_theme_font_size_override("font_size", 22)
+	_bets_button.z_index = 5
+	add_child(_bets_button)
 	_rail_buttons["Powers"] = _tray_button
-	_rail_buttons["Bets"] = _bets_button
-	for b: Button in [_tray_button, _bets_button]:
-		b.custom_minimum_size = Vector2(0, 44)
-		b.add_theme_font_size_override("font_size", 14)
-		b.focus_mode = Control.FOCUS_NONE
-		rail.add_child(b)
+	_rail_buttons["Quests"] = _bets_button
+	_tray_button.custom_minimum_size = Vector2(0, 44)
+	_tray_button.add_theme_font_size_override("font_size", 14)
+	_tray_button.focus_mode = Control.FOCUS_NONE
+	rail.add_child(_tray_button)
 	rail.add_child(HSeparator.new())
 	_rail_button(rail, "Clear view", "Hide every window to watch the valley. Press again to bring them back.", _toggle_clear_view)
 	for key: String in RAIL_ICONS.keys():

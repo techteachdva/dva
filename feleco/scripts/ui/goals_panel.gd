@@ -16,7 +16,7 @@ const GOALS: Array = [
 	["power", "Use a power", "Open Powers at the bottom and try one on the valley.", 15],
 	["menagerie", "Keep three kinds of creature", "You can have one of every kind: press Make Mine on a different species, then switch between them.", 30],
 	["skill", "Train your creature", "Press Level Up & Train on your creature and win a trial.", 20],
-	["bet", "Place a bet", "Open Bets and back the species you think will rule the valley.", 15],
+	["bet", "Accept a quest", "Open Quests and stand with one kind of creature for the season.", 15],
 	["survive", "Keep your creature alive a whole day", "Heal it, feed it, keep it away from hunters.", 40],
 	["level5", "Raise your creature to level 5", "Eating and surviving earn XP faster as it trains.", 60],
 	["diamond", "Find the rare diamond", "Now and then a diamond glints somewhere in the valley. Tap it!", 100],

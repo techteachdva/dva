@@ -83,6 +83,11 @@ var golden_mult: float = 1.0
 var scenario_id: String = ""
 # The opening film plays once, on first launch.
 var intro_seen: bool = false
+var lore_seen: bool = false
+# Set for the valley that opens from Main Game, until the player claims a champion.
+var main_claim: bool = false
+# "simple" is Start Simulation's one-plan screen. "full" is the quest board.
+var board_mode: String = "full"
 # Campaign game records: {"golf": {"1": "A", ...}, "brawl": {...}}.
 var records: Dictionary = {}
 
@@ -245,6 +250,7 @@ func save_meta() -> void:
 		"challenge_best_streak": challenge_best_streak,
 		"owned_upgrades": owned_upgrades,
 		"intro_seen": intro_seen,
+		"lore_seen": lore_seen,
 		"tutorial_done": tutorial_done,
 		"records": records,
 		"powerup_inventory": powerup_inventory,
@@ -276,6 +282,7 @@ func load_meta() -> void:
 		challenge_best_streak = d.get("challenge_best_streak", 0)
 		owned_upgrades = d.get("owned_upgrades", {}) if d.get("owned_upgrades") is Dictionary else {}
 		intro_seen = bool(d.get("intro_seen", false))
+		lore_seen = bool(d.get("lore_seen", false))
 		tutorial_done = bool(d.get("tutorial_done", false))
 		records = d.get("records", {}) if d.get("records") is Dictionary else {}
 		powerup_inventory = d.get("powerup_inventory", {}) if d.get("powerup_inventory") is Dictionary else {}
@@ -295,10 +302,40 @@ func reset_run_state() -> void:
 	spawn_roster.clear()
 	bets.clear()
 	current_mode = "sandbox"
+	main_claim = false
 
 func award_eco_points(amount: int) -> void:
 	eco_points += amount
 	save_meta()
+
+# A quest is accepted, not staked. Missing it pays nothing.
+func accept_quest(quest: Dictionary) -> void:
+	var id: String = String(quest.get("id", ""))
+	var kept: Array[Dictionary] = []
+	for b: Dictionary in bets:
+		if String(b.get("id", "")) != id:
+			kept.append(b)
+	bets = kept
+	var q := quest.duplicate(true)
+	q["stake"] = 0
+	q["state"] = "open"
+	q["payout"] = 0
+	q["quest"] = true
+	q["mult"] = 1.0
+	bets.append(q)
+
+func drop_quest(id: String) -> void:
+	var kept: Array[Dictionary] = []
+	for b: Dictionary in bets:
+		if String(b.get("id", "")) != id or String(b.get("state", "")) != "open":
+			kept.append(b)
+	bets = kept
+
+func has_quest(id: String) -> bool:
+	for b: Dictionary in bets:
+		if String(b.get("id", "")) == id and String(b.get("state", "")) == "open":
+			return true
+	return false
 
 # Places a bet: the stake leaves the pot now; a win pays stake x mult.
 func place_bet(bet: Dictionary, stake: int) -> bool:
