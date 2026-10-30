@@ -47,7 +47,7 @@ static func fresh(school: String) -> Dictionary:
 			"color": colors[i],
 			"texture": 3 if light else 5,
 			"size": 0.55,
-			"shape": 6 if i == 6 else (3 if i == 3 else 0),
+			"shape": 0,
 		}
 	return {"school": "light" if light else "dark", "parts": parts}
 

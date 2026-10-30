@@ -416,10 +416,12 @@ func _build_creature_box() -> void:
 		sw.add_theme_stylebox_override("normal", st)
 		sw.add_theme_stylebox_override("hover", st)
 		sw.add_theme_stylebox_override("pressed", st)
-		sw.pressed.connect(func() -> void:
-			if _alive():
-				_c_data.tint = c)
+		sw.pressed.connect(_tint_companion.bind(c))
 		custom.add_child(sw)
+
+func _tint_companion(c: Color) -> void:
+	if _alive():
+		_c_data.tint = c
 
 func _xp_needed() -> float:
 	return 30.0 + 25.0 * float(level)

@@ -22,7 +22,9 @@ void brand_read(float slot, int part, out vec3 col, out float size, out float sh
 	vec4 a = texture(brand_tex, vec2((float(part) * 2.0 + 0.5) / 16.0, v));
 	vec4 b = texture(brand_tex, vec2((float(part) * 2.0 + 1.5) / 16.0, v));
 	col = a.rgb;
-	size = mix(0.72, 1.85, a.a);
+	// Small stays under the natural body. Vast grows, but not enough to
+	// swallow the portrait. The old curve made a fresh brand already 1.3x.
+	size = mix(0.55, 1.45, a.a);
 	shape = floor(b.r * 6.99);
 	pat = floor(b.g * 7.99);
 	school = b.a;
@@ -58,8 +60,8 @@ vec2 brand_warp(vec2 v, vec2 uv, float qw, float qh, float slot, float t) {
 		d.x *= 1.35;
 		d.y *= 0.72;
 	} else if (shape > 5.5 && (part == 6 || part == 5)) {
-		d.y += qh * 0.16 * size;
-		d.x += (tx - 0.7) * qw * 0.25;
+		d.y += qh * 0.06 * size;
+		d.x += (tx - 0.72) * qw * 0.08;
 	}
 	return anchor + d;
 }
@@ -108,11 +110,12 @@ vec4 brand_overlay(vec3 base, float sprite_a, vec2 body, float slot, float t) {
 	// Grown-on parts, in the empty margin of the sprite.
 	float tx = body.x;
 	float up = body.y;
-	if (shape > 5.5 && up > 0.7) {
-		float horn = 1.0 - smoothstep(0.0, 0.08 + size * 0.05, abs(tx - 0.78));
-		horn *= smoothstep(0.72, 0.95, up);
+	if (shape > 5.5 && up > 0.8 && (part == 5 || part == 6)) {
+		float horn = 1.0 - smoothstep(0.0, 0.035 + size * 0.02, abs(tx - 0.74));
+		horn *= smoothstep(0.8, 0.9, up);
 		if (horn > 0.2) {
-			col = mix(tint, vec3(0.95, 0.9, 0.7), school);
+			// Keep the colour the player picked. Light horns only get a pale edge.
+			col = school > 0.5 ? mix(tint, vec3(0.98, 0.94, 0.82), 0.22) : tint * 0.8;
 			a = max(a, horn);
 		}
 	}
@@ -132,11 +135,6 @@ vec4 brand_overlay(vec3 base, float sprite_a, vec2 body, float slot, float t) {
 			col = school > 0.5 ? vec3(0.9, 0.95, 1.0) : vec3(0.15, 0.02, 0.05);
 			a = max(a, spike);
 		}
-	}
-	if (school > 0.5 && a < 0.25) {
-		float halo = smoothstep(0.55, 0.15, length(body - vec2(0.55, 0.5)));
-		col = mix(col, vec3(1.0, 0.92, 0.7), halo);
-		a = max(a, halo * 0.62);
 	}
 	if (school < 0.5 && up < 0.4 && a < 0.3) {
 		float drip = smoothstep(0.03, 0.0, abs(fract(tx * 9.0) - 0.5));

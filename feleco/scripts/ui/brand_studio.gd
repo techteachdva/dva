@@ -16,8 +16,17 @@ func _ready() -> void:
 	if agent == null or agent._data == null:
 		queue_free()
 		return
+	# A CanvasLayer child still reports a zero size in _ready. Anchors computed
+	# then pin the whole studio to the top-left corner, off the screen.
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	z_index = 40
+	call_deferred("_open")
+
+func _open() -> void:
+	if agent == null or not is_instance_valid(agent) or agent._data == null:
+		queue_free()
+		return
 	var dim := ColorRect.new()
 	dim.color = Color(0.02, 0.03, 0.04, 0.82)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -31,11 +40,11 @@ func _ready() -> void:
 
 func _build() -> void:
 	var panel := Panel.new()
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.offset_left = -460
-	panel.offset_top = -290
-	panel.offset_right = 460
-	panel.offset_bottom = 290
+	panel.name = "StudioPanel"
+	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	panel.size = Vector2(920, 580)
+	panel.position = (get_viewport_rect().size - panel.size) * 0.5
+	panel.clip_contents = true
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.07, 0.09, 0.08, 0.96)
 	sb.border_color = FelecoUiScript.GOLD
@@ -66,14 +75,7 @@ func _build() -> void:
 		b.toggle_mode = true
 		b.button_pressed = id == _part
 		b.theme_type_variation = "PrimaryButton" if id == _part else "GhostButton"
-		b.pressed.connect(func() -> void:
-			_part = id
-			for other in parts.get_children():
-				if other is Button:
-					var on: bool = (other as Button).text == BrandBook.PART_NAMES[BrandBook.PARTS.find(_part)]
-					(other as Button).button_pressed = on
-					(other as Button).theme_type_variation = "PrimaryButton" if on else "GhostButton"
-			_build_tools(panel))
+		b.pressed.connect(_select_part.bind(id, parts, panel))
 		parts.add_child(b)
 	_build_tools(panel)
 	var close := Button.new()
@@ -100,6 +102,7 @@ func _portrait(panel: Panel) -> void:
 	var holder := Control.new()
 	holder.position = Vector2(24, 110)
 	holder.size = Vector2(300, 360)
+	holder.clip_contents = true
 	panel.add_child(holder)
 	var cfg: Dictionary = VisualProxyManager.SPECIES_CONFIG.get(agent.species_id, {"size": Vector2(2, 2), "gait": 8.0, "style": 0})
 	var mi := MeshInstance2D.new()
@@ -111,7 +114,8 @@ func _portrait(panel: Panel) -> void:
 	_mat.set_shader_parameter("quad", cfg["size"])
 	_mat.set_shader_parameter("style", int(cfg["style"]))
 	_mat.set_shader_parameter("gait", float(cfg["gait"]) * 0.35)
-	_mat.set_shader_parameter("px", 150.0)
+	var q: Vector2 = cfg["size"]
+	_mat.set_shader_parameter("px", 260.0 / maxf(q.x, q.y))
 	_mat.set_shader_parameter("texel", Vector2(1.0 / tex.get_width(), 1.0 / tex.get_height()))
 	_mat.set_shader_parameter("grid", Vector2(SpriteGenerator.FRAMES, SpriteGenerator.CELLS))
 	_mat.set_shader_parameter("motion", 0.15)
@@ -124,7 +128,7 @@ func _portrait(panel: Panel) -> void:
 func _build_tools(panel: Panel) -> void:
 	var old := panel.get_node_or_null("Tools")
 	if old != null:
-		old.queue_free()
+		old.free()
 	var box := VBoxContainer.new()
 	box.name = "Tools"
 	box.position = Vector2(340, 170)
@@ -146,7 +150,7 @@ func _build_tools(panel: Panel) -> void:
 		sw.add_theme_stylebox_override("normal", st)
 		sw.add_theme_stylebox_override("hover", st)
 		sw.add_theme_stylebox_override("pressed", st)
-		sw.pressed.connect(func() -> void: _set_part("color", c))
+		sw.pressed.connect(_set_part.bind("color", c))
 		colors.add_child(sw)
 	box.add_child(FelecoUiScript.label("Hide", 14, FelecoUiScript.MIST))
 	box.add_child(_cycle(BrandBook.TEXTURES, int(part["texture"]), "texture"))
@@ -158,7 +162,7 @@ func _build_tools(panel: Panel) -> void:
 		var b := Button.new()
 		b.text = spec[0]
 		b.theme_type_variation = "PrimaryButton" if is_equal_approx(float(part["size"]), float(spec[1])) else "GhostButton"
-		b.pressed.connect(func() -> void: _set_part("size", float(spec[1])))
+		b.pressed.connect(_set_part.bind("size", float(spec[1])))
 		sizes.add_child(b)
 	box.add_child(FelecoUiScript.label("Shape", 14, FelecoUiScript.MIST))
 	box.add_child(_cycle(BrandBook.SHAPES, int(part["shape"]), "shape"))
@@ -181,6 +185,15 @@ func _cycle(names: Array, index: int, key: String) -> HBoxContainer:
 	row.add_child(next)
 	return row
 
+func _select_part(id: String, parts: HBoxContainer, panel: Panel) -> void:
+	_part = id
+	for other in parts.get_children():
+		if other is Button:
+			var on: bool = (other as Button).text == BrandBook.PART_NAMES[BrandBook.PARTS.find(_part)]
+			(other as Button).button_pressed = on
+			(other as Button).theme_type_variation = "PrimaryButton" if on else "GhostButton"
+	_build_tools(panel)
+
 func _set_part(key: String, value: Variant) -> void:
 	agent._data.brand["parts"][_part][key] = value
 	BrandBook.paint(agent._data)
@@ -190,7 +203,12 @@ func _refresh() -> void:
 	if _mat != null:
 		_mat.set_shader_parameter("brand_tex", BrandBook.atlas())
 		_mat.set_shader_parameter("brand_slot", float(agent._data.brand_slot))
-	var panel := get_child(1) as Panel
+	# The colour button that called this still lives inside Tools. Freeing
+	# that row in the same call would delete the button mid-signal.
+	_rebuild_tools.call_deferred()
+
+func _rebuild_tools() -> void:
+	var panel := get_node_or_null("StudioPanel") as Panel
 	if panel != null:
 		_build_tools(panel)
 		var schools := panel.get_node_or_null("Schools")

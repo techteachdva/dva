@@ -135,20 +135,22 @@ func _hoist() -> float:
 	return clampf(_body_height() * 0.7, 1.2, 2.6)
 
 func _build() -> void:
-	_box(Vector3(1.45, 1.05, 0.22), Vector3(0, 0, 0))
+	_box(Vector3(1.35, 0.92, 0.16), Vector3(0, 0, 0))
+	# Fingers grow toward the camera (-Z) from the top of the palm, then curl
+	# down across the creature. Built the other way, the palm hid them.
 	for i: int in 4:
 		var pivot := Node3D.new()
-		pivot.position = Vector3(-0.5 + float(i) * 0.33, 0.48, 0.08)
+		pivot.position = Vector3(-0.48 + float(i) * 0.32, 0.42, -0.12)
 		add_child(pivot)
 		_fingers.append(pivot)
-		_seg(pivot, Vector3(0.24, 0.18, 0.42), Vector3(0, 0, 0.24))
-		_seg(pivot, Vector3(0.2, 0.15, 0.36), Vector3(0, -0.02, 0.6))
+		_seg(pivot, Vector3(0.22, 0.16, 0.4), Vector3(0, 0.02, -0.22))
+		_seg(pivot, Vector3(0.18, 0.14, 0.34), Vector3(0, 0.0, -0.52))
 	var thumb := Node3D.new()
-	thumb.position = Vector3(0.78, -0.08, 0.06)
-	thumb.rotation.y = -0.7
+	thumb.position = Vector3(-0.72, -0.05, -0.1)
+	thumb.rotation.y = 0.6
 	add_child(thumb)
 	_fingers.append(thumb)
-	_seg(thumb, Vector3(0.22, 0.16, 0.4), Vector3(0, 0, 0.22))
+	_seg(thumb, Vector3(0.2, 0.15, 0.38), Vector3(-0.08, -0.02, -0.2))
 	for i: int in 4:
 		var s: float = 0.34 - float(i) * 0.05
 		_box(Vector3(s, s * 0.72, s * 0.8), Vector3(0.0, -0.02, -0.28 - float(i) * 0.28))
