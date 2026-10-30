@@ -13,32 +13,32 @@ const DESIGN := Vector2(1280, 720)
 
 # name, colour, role line, tooltip facts.
 const INFO: Dictionary = {
-	"human": ["Humans", Color(0.88, 0.68, 0.48), "cooks & tribes", "The widest diet: they cook almost anything at a hearth and store it in the hut. They never eat kin, corpses, mycelium or moss. Cooking takes time, and a bear takes the longest. Bears, wolves and mountain lions can still kill a villager caught alone. They never sleep in the river or its flood.", "Builder (huts, timber) · Wizard (rain, magic mushrooms)"],
-	"wolf": ["Wolves", Color(0.6, 0.63, 0.68), "night hunters", "Night creatures: faster and hungrier after dark. Hunt sheep, rabbits, boars and fish. Boars fight back.", "Alpha (shares kills) · Moon Howler (rallies the pack)"],
-	"falcon": ["Falcons", Color(0.75, 0.54, 0.32), "aerial hunters", "Day hunters that roost at night. Dive on robins, rabbits and fish. Strongest in summer. They nest in grown trees: fell the woods and the falcons dwindle.", "Gyrfalcon (feeds the aerie) · Sky Seer (spots fish)"],
-	"robin": ["Robins", Color(0.88, 0.42, 0.3), "songbirds", "Up with the dawn chorus, roosting at night. Eat worms, grass seed and apples. Never fish.", "Mistle Thrush (mobs falcons) · Bluebird (sows seeds)"],
-	"fish": ["Fish", Color(0.42, 0.66, 0.86), "river shoal", "Most active at dawn and dusk. Eat worms and riverweed in the current. Floods spread them out; when the water falls, stranded fish die (the Flood Toll).", "Sturgeon (cleans the riverbed) · Golden Koi (blesses the shoal)"],
+	"human": ["Humans", Color(0.88, 0.68, 0.48), "cooks & tribes", "The widest diet: they cook fruit, fish, riverweed, mice, beetles, worms and big game at a hearth, then store it in the hut. They never eat kin, corpses, mycelium or moss. A mouse is quick; a bear takes most of a day. Wolves, bears and mountain lions can still kill a villager caught alone. Three together can drive a lion or a bear off. They never sleep in the river or its flood.", "Builder (huts, timber) · Wizard (rain, magic mushrooms)"],
+	"wolf": ["Wolves", Color(0.6, 0.63, 0.68), "night hunters", "Night creatures: faster and hungrier after dark. They hunt sheep, rabbits, deer, goats, boars, mice and fish, and robins on the ground. When the hunt fails they scavenge carcasses and worms. Boars fight back. A villager indoors is safe.", "Alpha (shares kills) · Moon Howler (rallies the pack)"],
+	"falcon": ["Falcons", Color(0.75, 0.54, 0.32), "aerial hunters", "Day hunters that roost at night. Each holds its own patch of sky. They dive on mice, rabbits, robins, beetles and worms, and stoop on fish. Strongest in summer. They nest in grown trees: fell the woods and the falcons dwindle.", "Gyrfalcon (feeds the aerie) · Sky Seer (spots fish)"],
+	"robin": ["Robins", Color(0.88, 0.42, 0.3), "songbirds", "Up with the dawn chorus, roosting at night. They eat worms, berries, apples, mushrooms and grass. A hungry robin will try for a fish in the shallows, and usually miss. Falcons take them in the air. Wolves take them on the ground.", "Mistle Thrush (mobs falcons) · Bluebird (sows seeds)"],
+	"fish": ["Fish", Color(0.42, 0.66, 0.86), "river shoal", "Most active at dawn and dusk. They eat worms, beetles and riverweed. Fruit that falls in the water is fair game, and a flood lets them nibble the mycelium. When the water falls, stranded fish die (the Flood Toll).", "Sturgeon (cleans the riverbed) · Golden Koi (blesses the shoal)"],
 	"rabbit": ["Rabbits", Color(0.79, 0.71, 0.56), "fast grazers", "Busiest at dawn and dusk, hidden in deep night. Breed fast, live short.", "Hare (lookout) · Moon Rabbit (healing warrens)"],
 	"sheep": ["Sheep", Color(0.93, 0.92, 0.87), "flock grazers", "Graze by day, huddle and doze at night. Lambing peaks in spring.", "Highlander (headbutts hunters) · Golden Fleece (sows grass)"],
 	"boar": ["Boars", Color(0.54, 0.38, 0.28), "foragers & brawlers", "Root at night, wallow by day. Eat grass, worms and mushrooms; charge wolves and humans.", "Tusker (gores hunters) · Truffler (feeds the sounder)"],
 	"worm": ["Worms", Color(0.85, 0.53, 0.6), "decomposers", "Surface at night and in the rain. Turn rot into rich soil.", "Nightcrawler (tills soil) · Glowworm (lights the tunnels)"],
 	"mushroom": ["Mushrooms", Color(0.77, 0.48, 0.84), "autumn & rain", "Fruit at night and glow. Sprout where mycelium is thick, feed on corpses.", ""],
 	"grass": ["Grass", Color(0.56, 0.82, 0.54), "the meadow", "Grows fastest in spring and after rain; fed by corpses and the mycelium beneath it.", ""],
-	"rot": ["Corpses & rot", Color(0.61, 0.48, 0.35), "every death", "Every body returns: it feeds the grass, the mycelium, worms and mushrooms.", ""],
+	"rot": ["Corpses & rot", Color(0.61, 0.48, 0.35), "every death", "Every body returns. Worms, beetles and mushrooms take it apart. Hungry wolves, lions and bears scavenge the meat. What is left feeds the grass.", ""],
 	"mycelium": ["Mycelium", Color(0.85, 0.81, 0.72), "fungal threads", "The underground network: carries food to the grass and pushes up mushrooms.", ""],
 	"deer": ["Deer", Color(0.72, 0.5, 0.32), "wary browsers", "Herbivores. Graze, strip moss from the trees and raid berry bushes. Quick to bolt from lions, wolves and bears.", "Twelve-point (great rack) · White Hart (pale and rare)"],
 	"goat": ["Mountain Goats", Color(0.9, 0.88, 0.82), "crag climbers", "Herbivores. Come down from the passes; hardy in the cold, they live on tough grass and moss.", "Old Billy (bearded) · Crag Climber (golden horns)"],
-	"bear": ["Bears", Color(0.46, 0.3, 0.2), "big omnivores", "Omnivores, second only to humans. Fish, fruit, riverweed, mushrooms, corpses, rabbits and mice. They do not cook, and a lone villager is not safe from them. Sleep through winter.", "Grizzled (silver hump) · Moon Bear (pale crescent)"],
-	"lion": ["Mountain Lions", Color(0.82, 0.62, 0.38), "lone ambushers", "Carnivores. Mice are the staple, then rabbits, deer, goats and sheep. A lone villager is prey; three together are not. Wary of bears.", "Ghost Cat (pale) · Sun Cat (golden)"],
-	"mouse": ["Mice", Color(0.62, 0.56, 0.5), "everywhere", "Omnivores. In every biome, day and night (busiest at night). Hunt beetles and worms; nibble apples, berries and pinecones. Lions, bears, falcons and wolves all eat them.", "Dormouse (plump) · Snow Mouse (white)"],
-	"pineapple": ["Pineapples", Color(0.86, 0.62, 0.16), "the strange fruit", "Producers. Never planted at the start: when a pinecone and an apple rot side by side, the seedlings can fuse into a pineapple tree (the first only on the plains). The richest food in the valley, and its seeds spread.", ""],
-	"pinecone": ["Pinecones", Color(0.55, 0.38, 0.22), "mountain seeds", "Producers. Conifers on the mountain drop them. Boars, bears, goats and mice eat them.", ""],
-	"beetle": ["Beetles", Color(0.3, 0.45, 0.35), "carrion beetles", "Decomposers. Strip the last scraps from carcasses and work rot into the soil. Fish and robins eat them.", "Stag (big jaws) · Scarab (golden shell)"],
+	"bear": ["Bears", Color(0.46, 0.3, 0.2), "big omnivores", "Omnivores, second only to humans. Fish, fruit, pinecones, riverweed, grass, mushrooms, corpses, rabbits and mice. They do not cook, and a lone villager is not safe from them. Sleep through winter.", "Grizzled (silver hump) · Moon Bear (pale crescent)"],
+	"lion": ["Mountain Lions", Color(0.82, 0.62, 0.38), "lone ambushers", "Carnivores. Mice are the staple, then rabbits, deer, goats, sheep and robins. They take fish and scavenge carcasses. A lone villager is prey; three together are not. Wary of bears.", "Ghost Cat (pale) · Sun Cat (golden)"],
+	"mouse": ["Mice", Color(0.62, 0.56, 0.5), "everywhere", "Omnivores. In every biome, day and night (busiest at night). They hunt beetles and worms, and nibble apples, berries, pinecones and pineapples. Lions, bears, falcons, wolves and villagers eat them.", "Dormouse (plump) · Snow Mouse (white)"],
+	"pineapple": ["Pineapples", Color(0.86, 0.62, 0.16), "the strange fruit", "Producers. Never planted at the start: when a pinecone and an apple rot side by side, the seedlings can fuse into a pineapple tree (the first only on the plains). The richest food in the valley. Anyone who eats apples will eat one, and its seeds spread.", ""],
+	"pinecone": ["Pinecones", Color(0.55, 0.38, 0.22), "mountain seeds", "Producers. Conifers on the mountain drop them. Boars, bears, goats, mice and villagers eat them.", ""],
+	"beetle": ["Beetles", Color(0.3, 0.45, 0.35), "carrion beetles", "Decomposers. They strip the last scraps from carcasses and work rot into the soil. Mice, falcons, fish and villagers eat them.", "Stag (big jaws) · Scarab (golden shell)"],
 	"berry": ["Berry bushes", Color(0.55, 0.3, 0.6), "low and tangled", "Producers. Small, branchy bushes heavy with berries; now and then a golden one.", ""],
 	"moss": ["Moss", Color(0.36, 0.6, 0.3), "on the bark", "Producers. Creeps up the trees in spring, autumn and rain; shrivels in drought. Herbivores eat it. Humans do not, even cooked.", ""],
 	"riverweed": ["Riverweed", Color(0.28, 0.62, 0.4), "kelp of the river", "Producers. Tangles of vine in the channel, like freshwater kelp. Fish, goats, deer and sheep graze it raw. Humans cook it.", ""],
 	"apple": ["Apple trees", Color(0.85, 0.25, 0.2), "the orchard", "Producers. Apples drop when ripe and seed new trees. One in fifty is golden.", ""],
-	"gold": ["Gold", Color(1.0, 0.82, 0.3), "follow the energy", "Eat a golden plant and you turn golden: hardier and less hungry. Whoever eats you takes the gold on, all the way down to the decomposers and back into the soil. Click a golden creature to Rampage.", ""],
+	"gold": ["Gold", Color(1.0, 0.82, 0.3), "follow the energy", "Eat a golden plant and you turn Gold for a day: nothing can hurt you until the gold is claimed. Click that creature to take the gold and start a rampage. Miss the moment and the gold hides inside, and passes to whoever eats them next, all the way back into the soil.", ""],
 }
 
 # Food web: positions in the web (0..1), edges food -> eater.
@@ -47,28 +47,39 @@ const NODES: Dictionary = {
 	"falcon": Vector2(0.2, 0.08), "lion": Vector2(0.5, 0.08), "wolf": Vector2(0.8, 0.08),
 	"human": Vector2(0.1, 0.3), "bear": Vector2(0.3, 0.3), "boar": Vector2(0.5, 0.3), "robin": Vector2(0.7, 0.3), "mouse": Vector2(0.9, 0.3),
 	"rabbit": Vector2(0.1, 0.52), "deer": Vector2(0.3, 0.52), "goat": Vector2(0.5, 0.52), "sheep": Vector2(0.7, 0.52), "fish": Vector2(0.9, 0.52),
-	"grass": Vector2(0.08, 0.73), "riverweed": Vector2(0.24, 0.73), "berry": Vector2(0.4, 0.73), "moss": Vector2(0.56, 0.73), "apple": Vector2(0.74, 0.73), "pinecone": Vector2(0.9, 0.73),
+	"grass": Vector2(0.04, 0.73), "riverweed": Vector2(0.19, 0.73), "berry": Vector2(0.34, 0.73), "moss": Vector2(0.49, 0.73), "apple": Vector2(0.64, 0.73), "pineapple": Vector2(0.79, 0.73), "pinecone": Vector2(0.94, 0.73),
 	"worm": Vector2(0.1, 0.93), "beetle": Vector2(0.3, 0.93), "mushroom": Vector2(0.5, 0.93), "rot": Vector2(0.7, 0.93), "mycelium": Vector2(0.9, 0.93),
 }
 const EDGES: Array = [
 	["grass", "sheep", "graze"], ["grass", "rabbit", "graze"], ["grass", "deer", "graze"], ["grass", "goat", "graze"], ["grass", "boar", "graze"],
-	["grass", "robin", "graze"],
+	["grass", "robin", "graze"], ["grass", "bear", "graze"], ["grass", "human", "forage"],
 	["moss", "deer", "graze"], ["moss", "goat", "graze"], ["moss", "rabbit", "graze"], ["moss", "sheep", "graze"], ["moss", "boar", "graze"],
 	["berry", "deer", "forage"], ["berry", "bear", "forage"], ["berry", "goat", "forage"], ["berry", "sheep", "forage"], ["berry", "rabbit", "forage"],
-	["berry", "boar", "forage"], ["berry", "robin", "forage"], ["berry", "fish", "forage"],
+	["berry", "boar", "forage"], ["berry", "robin", "forage"], ["berry", "fish", "forage"], ["berry", "human", "forage"],
 	["apple", "sheep", "forage"], ["apple", "bear", "forage"], ["apple", "boar", "forage"], ["apple", "robin", "forage"],
-	["apple", "deer", "forage"], ["apple", "goat", "forage"], ["apple", "rabbit", "forage"], ["apple", "fish", "forage"],
+	["apple", "deer", "forage"], ["apple", "goat", "forage"], ["apple", "rabbit", "forage"], ["apple", "fish", "forage"], ["apple", "human", "forage"],
+	["pineapple", "sheep", "forage"], ["pineapple", "bear", "forage"], ["pineapple", "boar", "forage"], ["pineapple", "robin", "forage"],
+	["pineapple", "deer", "forage"], ["pineapple", "goat", "forage"], ["pineapple", "rabbit", "forage"], ["pineapple", "fish", "forage"],
+	["pineapple", "mouse", "forage"], ["pineapple", "human", "forage"],
 	["mushroom", "bear", "forage"], ["mushroom", "boar", "forage"], ["mushroom", "human", "forage"], ["mushroom", "sheep", "forage"], ["mushroom", "robin", "forage"],
-	["rabbit", "falcon", "hunt"], ["robin", "falcon", "hunt"], ["fish", "falcon", "hunt"],
+	["rabbit", "falcon", "hunt"], ["robin", "falcon", "hunt"], ["fish", "falcon", "hunt"], ["beetle", "falcon", "hunt"], ["worm", "falcon", "hunt"],
 	["sheep", "wolf", "hunt"], ["rabbit", "wolf", "hunt"], ["deer", "wolf", "hunt"], ["goat", "wolf", "hunt"], ["boar", "wolf", "hunt"],
+	["fish", "wolf", "hunt"], ["robin", "wolf", "hunt"], ["worm", "wolf", "hunt"], ["human", "wolf", "hunt"],
 	["deer", "lion", "hunt"], ["goat", "lion", "hunt"], ["sheep", "lion", "hunt"], ["rabbit", "lion", "hunt"], ["robin", "lion", "hunt"],
-	["fish", "bear", "hunt"], ["rabbit", "bear", "hunt"], ["rabbit", "boar", "hunt"], ["fish", "boar", "hunt"], ["fish", "robin", "hunt"], ["worm", "boar", "hunt"], ["fish", "human", "hunt"], ["deer", "human", "hunt"], ["boar", "human", "hunt"],
-	["worm", "fish", "hunt"], ["beetle", "fish", "hunt"], ["worm", "robin", "hunt"], ["beetle", "robin", "hunt"],
+	["fish", "lion", "hunt"], ["human", "lion", "hunt"],
+	["fish", "bear", "hunt"], ["rabbit", "bear", "hunt"], ["human", "bear", "hunt"],
+	["rabbit", "boar", "hunt"], ["fish", "boar", "hunt"], ["fish", "robin", "hunt"], ["worm", "boar", "hunt"],
+	["fish", "human", "hunt"], ["deer", "human", "hunt"], ["goat", "human", "hunt"], ["boar", "human", "hunt"],
+	["lion", "human", "hunt"], ["bear", "human", "hunt"],
+	["mouse", "human", "hunt"], ["beetle", "human", "hunt"], ["worm", "human", "hunt"],
+	["rabbit", "human", "hunt"], ["sheep", "human", "hunt"], ["robin", "human", "hunt"],
+	["worm", "fish", "hunt"], ["beetle", "fish", "hunt"], ["worm", "robin", "hunt"],
 	["rot", "worm", "decay"], ["rot", "beetle", "decay"], ["rot", "mycelium", "decay"], ["rot", "grass", "decay"],
+	["rot", "wolf", "decay"], ["rot", "lion", "decay"], ["rot", "bear", "decay"],
 	["mycelium", "grass", "decay"], ["mycelium", "mushroom", "decay"], ["mycelium", "fish", "decay"],
 	["beetle", "mouse", "hunt"], ["worm", "mouse", "hunt"], ["apple", "mouse", "forage"], ["berry", "mouse", "forage"], ["pinecone", "mouse", "forage"],
 	["mouse", "lion", "hunt"], ["mouse", "bear", "hunt"], ["mouse", "falcon", "hunt"], ["mouse", "wolf", "hunt"],
-	["pinecone", "boar", "forage"], ["pinecone", "bear", "forage"], ["pinecone", "goat", "forage"], ["pinecone", "human", "forage"], ["moss", "mouse", "graze"],
+	["pinecone", "boar", "forage"], ["pinecone", "bear", "forage"], ["pinecone", "goat", "forage"], ["pinecone", "human", "forage"],
 	["riverweed", "fish", "graze"], ["riverweed", "goat", "graze"], ["riverweed", "deer", "graze"], ["riverweed", "sheep", "graze"], ["riverweed", "bear", "forage"], ["riverweed", "human", "forage"],
 ]
 const EDGE_COLORS: Dictionary = {
@@ -414,11 +425,17 @@ func _detail_card(species: String) -> Control:
 		chip.custom_minimum_size = Vector2(176, 0)
 		left.add_child(chip)
 
-	# Right: the rules.
+	# Right: the rules. Diets are long enough now that the card scrolls.
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(440, 400)
+	row.add_child(scroll)
 	var right := VBoxContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.add_theme_constant_override("separation", 6)
-	row.add_child(right)
+	scroll.add_child(right)
 	right.add_child(FelecoUiScript.heading(info[0], 28, FelecoUiScript.GOLD))
 	var grp: Array = _group_of(species)
 	right.add_child(FelecoUiScript.label("%s · %s" % [String(grp[2]).trim_suffix("s"), info[2]], 14, (SpeciesDB.GROUP_COLOR[grp[1]] as Color).lightened(0.15)))

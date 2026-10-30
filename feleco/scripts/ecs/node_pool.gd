@@ -21,6 +21,10 @@ func pre_warm(count: int) -> void:
 		if _scene == null:
 			return
 		var node: Node = _scene.instantiate()
+		# Stored outside the tree. A node left processing there calls get_tree()
+		# with no tree and floods the web build every frame.
+		node.set_process(false)
+		node.set_physics_process(false)
 		_available.append(node)
 
 func acquire() -> Node:
@@ -37,7 +41,10 @@ func release(node: Node) -> void:
 	if _available.size() >= _max_size:
 		node.queue_free()
 		return
-	# Detach from tree and hide
+	# Detach from tree and hide. Stop processing before the node leaves,
+	# so a pooled body cannot keep a callback with a null tree.
+	node.set_process(false)
+	node.set_physics_process(false)
 	if node.get_parent() != null:
 		node.get_parent().remove_child(node)
 	if node is Node3D:
