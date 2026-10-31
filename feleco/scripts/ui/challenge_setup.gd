@@ -21,7 +21,7 @@ func _ready() -> void:
 	gc.current_mode = "challenge"
 
 	_frame = FelecoUiScript.build_screen(self, "Challenge: What If?", _on_back)
-	var body: HBoxContainer = _frame["body"]
+	var body: BoxContainer = _frame["body"]
 
 	var years := FelecoUiScript.card(body, "The years", 0.9)
 	_points_label = FelecoUiScript.label("", 16, FelecoUiScript.GOLD)

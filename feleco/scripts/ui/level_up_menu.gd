@@ -81,7 +81,7 @@ func _build() -> void:
 		sb.set_content_margin(side, 22)
 	card.add_theme_stylebox_override("panel", sb)
 	_root.add_child(card)
-	var split := HBoxContainer.new()
+	var split := BoxContainer.new()
 	split.add_theme_constant_override("separation", 18)
 	var view: Vector2 = _root.get_viewport_rect().size
 	split.vertical = view.y > view.x

@@ -21,7 +21,7 @@ func _ready() -> void:
 	gc.current_mode = "campaign"
 
 	_frame = FelecoUiScript.build_screen(self, "Campaign", _on_back)
-	var body: HBoxContainer = _frame["body"]
+	var body: BoxContainer = _frame["body"]
 	var main := FelecoUiScript.card(body, "", 1.0)
 	_subtitle = FelecoUiScript.label("", 19, FelecoUiScript.MIST)
 	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

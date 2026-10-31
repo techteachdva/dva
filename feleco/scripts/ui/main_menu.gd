@@ -298,12 +298,18 @@ func _celebrate(b: Button) -> void:
 	tw.tween_callback(func() -> void: b.text = label)
 
 func _on_campaign() -> void:
+	if not _look_ready():
+		return
 	get_tree().change_scene_to_file("res://scenes/ui/campaign_setup.tscn")
 
 func _on_challenge() -> void:
+	if not _look_ready():
+		return
 	get_tree().change_scene_to_file("res://scenes/ui/challenge_setup.tscn")
 
 func _on_main_game() -> void:
+	if not _look_ready():
+		return
 	var gc: Node = get_node("/root/GameConfig")
 	gc.current_mode = "main"
 	gc.main_claim = gc.record("lesson", "champion") == null
@@ -367,6 +373,8 @@ func _spirit_dialog() -> void:
 	shade.add_child(timer)
 	timer.start()
 	go.pressed.connect(func() -> void:
+		if not _look_ready():
+			return
 		var gc: Node = get_node("/root/GameConfig")
 		gc.current_mode = "sandbox"
 		gc.main_claim = false
@@ -375,6 +383,8 @@ func _spirit_dialog() -> void:
 		get_tree().change_scene_to_file("res://scenes/ui/quest_board.tscn"))
 
 func _on_shop() -> void:
+	if not _look_ready():
+		return
 	get_tree().change_scene_to_file("res://scenes/ui/greenhouse_shop.tscn")
 
 # Rules opens the living Field Guide over the menu, with a Close button.
@@ -416,6 +426,8 @@ func _on_rules() -> void:
 const _SPRITE_PREVIEW: Array[String] = ["human", "lion", "deer", "falcon", "fish", "sheep"]
 
 var _settings: PopupPanel
+var _settings_button: Button
+var _look_line: Label
 var _era_buttons: Array[Button] = []
 var _preview_icons: Array[TextureRect] = []
 var _preview_names: Array[Label] = []
@@ -426,6 +438,7 @@ func _add_settings(column: VBoxContainer) -> void:
 	b.text = "Settings"
 	b.custom_minimum_size = Vector2(340, 40)
 	FelecoUiScript.mark(b, "GhostButton")
+	_settings_button = b
 	b.pressed.connect(_open_settings)
 	b.mouse_entered.connect(func() -> void: _ray_target = b)
 	b.focus_entered.connect(func() -> void: _ray_target = b)
@@ -436,11 +449,15 @@ func _add_settings(column: VBoxContainer) -> void:
 	column.move_child(b, _btn_quit.get_index())
 	_settings = _build_settings_popup()
 	add_child(_settings)
+	var packs: Node = get_node("/root/EraPacks")
+	packs.connect("look_changed", func(_era: String) -> void: _refresh_settings())
+	packs.connect("look_status", _on_look_status)
+	_on_look_status(str(packs.call("line")))
 
 func _build_settings_popup() -> PopupPanel:
 	var popup := PopupPanel.new()
 	popup.theme = FelecoUiScript.theme()
-	popup.size = Vector2i(760, 460)
+	popup.size = Vector2i(760, 500)
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for side: String in ["left", "right", "top", "bottom"]:
@@ -450,7 +467,7 @@ func _build_settings_popup() -> PopupPanel:
 	col.add_theme_constant_override("separation", 14)
 	margin.add_child(col)
 	col.add_child(FelecoUiScript.heading("Settings", 28, FelecoUiScript.GOLD))
-	var hint := FelecoUiScript.label("Sprites. The valley wears this look, and Lost Valley renames every creature.", 16, FelecoUiScript.MIST)
+	var hint := FelecoUiScript.label("Sprites. The valley wears this look, and Lost Valley renames every creature. Pixel and Lost Valley download the first time you choose them.", 16, FelecoUiScript.MIST)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(hint)
 	var labels: Array = []
@@ -459,6 +476,10 @@ func _build_settings_popup() -> PopupPanel:
 	_era_buttons = FelecoUiScript.choice_row(col, labels, [])
 	for i: int in EraBook.IDS.size():
 		_era_buttons[i].pressed.connect(_choose_era.bind(EraBook.IDS[i]))
+	_look_line = FelecoUiScript.label("", 15, FelecoUiScript.GOLD)
+	_look_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_look_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(_look_line)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
@@ -488,14 +509,28 @@ func _open_settings() -> void:
 	_refresh_settings()
 	_settings.popup_centered()
 
+func _look_ready() -> bool:
+	var packs: Node = get_node_or_null("/root/EraPacks")
+	if packs == null or bool(packs.call("settled")):
+		return true
+	var text := str(packs.line())
+	if text == "":
+		text = "Fetching the look…"
+	_on_look_status(text)
+	return false
+
+func _on_look_status(text: String) -> void:
+	if _look_line != null:
+		_look_line.text = text
+	if _settings_button != null:
+		_settings_button.text = text if text != "" else "Settings"
+
 func _choose_era(era: String) -> void:
-	var gc: Node = get_node("/root/GameConfig")
-	gc.sprite_era = era
-	gc.save_meta()
+	get_node("/root/EraPacks").choose(era)
 	_refresh_settings()
 
 func _refresh_settings() -> void:
-	var which: int = EraBook.IDS.find(EraBook.id())
+	var which: int = EraBook.IDS.find(str(get_node("/root/EraPacks").chosen()))
 	if which < 0:
 		which = 0
 	FelecoUiScript.pick(_era_buttons, _era_buttons[which])

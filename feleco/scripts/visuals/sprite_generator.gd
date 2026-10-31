@@ -69,16 +69,24 @@ static func cell_size(species: String) -> Vector2i:
 	return Vector2i(SIZE, SIZE / 2) if species == "fish" else Vector2i(SIZE, SIZE)
 
 static func texture_for(species: String) -> Texture2D:
-	var loaded := _load_sheet(_sheet_dir() + species + ".png")
+	var loaded := _baked_sheet(species + ".png")
 	if loaded != null:
 		return loaded
 	return ImageTexture.create_from_image(atlas_image(species))
 
 static func anim_texture_for(species: String) -> Texture2D:
-	var loaded := _load_sheet(_sheet_dir() + species + "_anim.png")
+	var loaded := _baked_sheet(species + "_anim.png")
 	if loaded != null:
 		return loaded
 	return ImageTexture.create_from_image(anim_image(species))
+
+# A look that has not been fetched yet uses the valley sheet. Painting the
+# missing era here would freeze the web build.
+static func _baked_sheet(file: String) -> Texture2D:
+	var loaded := _load_sheet(_sheet_dir() + file)
+	if loaded == null and _sheet_dir() != SPRITE_DIR:
+		loaded = _load_sheet(SPRITE_DIR + file)
+	return loaded
 
 static func _sheet_dir() -> String:
 	# A bake paints into the directory it was given. It must not read that

@@ -73,7 +73,13 @@ static func id() -> String:
 	if str(gc.get("current_mode")) == "intro":
 		return "valley"
 	var era := str(gc.get("sprite_era"))
-	return era if IDS.has(era) else "valley"
+	if not IDS.has(era):
+		return "valley"
+	# The web build leaves Pixel and Lost Valley out of the first download.
+	# Until that pack is mounted, keep the valley sheets and names.
+	if era != "valley" and not _sheets_ready(era):
+		return "valley"
+	return era
 
 static func title() -> String:
 	return str(TITLES.get(id(), "Valley"))
@@ -116,6 +122,15 @@ static func rot_tip() -> String:
 static func _table(book: Dictionary) -> Dictionary:
 	var era := "lost" if id() == "lost" else "valley"
 	return book[era]
+
+static func _sheets_ready(era: String) -> bool:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return true
+	var packs := tree.root.get_node_or_null("EraPacks")
+	if packs == null:
+		return true
+	return bool(packs.call("ready", era))
 
 static func _config() -> Node:
 	var tree := Engine.get_main_loop() as SceneTree

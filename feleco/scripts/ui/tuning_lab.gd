@@ -35,7 +35,7 @@ var _status: Label
 func _ready() -> void:
 	_gc = get_node("/root/GameConfig")
 	var frame := FelecoUiScript.build_screen(self, "Tuning Lab", _on_back)
-	var body: HBoxContainer = frame["body"]
+	var body: BoxContainer = frame["body"]
 	var card := FelecoUiScript.card(body, "")
 	var hint := FelecoUiScript.label("Four strengths for every species. Lowkey is half, Mid is the valley as written, Mega is double, Giga is four times. Set the whole animal, or one stat at a time. It applies to the next run.", 15, FelecoUiScript.MIST)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

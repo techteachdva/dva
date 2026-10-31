@@ -10,6 +10,10 @@ func _ready() -> void:
 	get_window().size_changed.connect(_fit_orientation)
 	_fit_orientation()
 	if not OS.has_feature("web"):
+		# Desktop opens exclusive fullscreen. The web build stays windowed:
+		# the canvas already fills the page, and a startup Fullscreen API
+		# call is rejected because it is not a click.
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
 		return
 	var viewport := get_viewport()
 	if viewport == null:
@@ -297,6 +301,9 @@ func load_meta() -> void:
 			for b in d["last_bets"]:
 				if b is Dictionary:
 					last_bets.append(b)
+	var packs := get_node_or_null("/root/EraPacks")
+	if packs != null:
+		packs.boot()
 
 func reset_run_state() -> void:
 	# Called when entering the main menu or starting a new run

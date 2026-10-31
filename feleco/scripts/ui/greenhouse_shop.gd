@@ -76,7 +76,7 @@ func _ready() -> void:
 	if gcu != null:
 		gcu.unlock("challenge")
 	_frame = FelecoUiScript.build_screen(self, "The Greenhouse", _on_back)
-	var body: HBoxContainer = _frame["body"]
+	var body: BoxContainer = _frame["body"]
 	_upgrade_box = FelecoUiScript.card(body, "Upgrades (win a Rampage to earn)", 1.0)
 	_powerup_box = FelecoUiScript.card(body, "Powerups (one use each)", 1.0)
 	_looks_box = FelecoUiScript.card(body, "Looks: cursors and auras", 0.9)

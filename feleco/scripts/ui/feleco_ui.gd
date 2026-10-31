@@ -60,6 +60,9 @@ static func species_texture(species: String, role: int = 0, female: bool = false
 		_species_tex[key] = atlas
 	return _species_tex[key]
 
+static func forget_creatures() -> void:
+	_species_tex.clear()
+
 # Phones and tablets: narrow, portrait or touch. Menus switch to big
 # targets and swipeable pages.
 static func is_compact(node: Control) -> bool:
@@ -142,8 +145,9 @@ static func _fit_targets(node: Node) -> void:
 # One-screen menu frame: a header (Back, title), a row of cards that fills
 # the middle, and a footer for the primary action. The cards scroll when they
 # outgrow the screen, and stack on a tall phone, so Back and the footer always
-# stay in reach. Returns {"body": HBoxContainer, "footer": HBoxContainer,
-# "title": Label}.
+# stay in reach. Returns {"body": BoxContainer, "footer": HBoxContainer,
+# "title": Label}. The body stacks on a tall window. BoxContainer is the one
+# that can change direction; HBoxContainer refuses and prints an error.
 static func build_screen(root: Control, title: String, on_back: Callable) -> Dictionary:
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -186,7 +190,7 @@ static func build_screen(root: Control, title: String, on_back: Callable) -> Dic
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(scroll)
-	var body := HBoxContainer.new()
+	var body := BoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 16)

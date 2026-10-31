@@ -50,15 +50,19 @@ var _map: OptionButton
 var _era_buttons: Array[Button] = []
 var _name_labels: Dictionary = {}
 var _icon_rects: Dictionary = {}
+var _look_status: Label
+var _start: Button
+const _START_TEXT := "To the Quest Board"
 
 func _ready() -> void:
 	var frame := FelecoUiScript.build_screen(self, "Prepare the Valley", _on_back)
-	var body: HBoxContainer = frame["body"]
+	var body: BoxContainer = frame["body"]
 	_build_herds(FelecoUiScript.card(body, "Herds", 1.1))
 	_build_rules(FelecoUiScript.card(body, "Season and map", 0.8))
 
 	var start := Button.new()
-	start.text = "To the Quest Board"
+	_start = start
+	start.text = _START_TEXT
 	start.icon = load("res://assets/icons/start.svg")
 	start.tooltip_text = "Accept quests, then open the valley with these numbers."
 	start.custom_minimum_size = Vector2(420 if get_viewport_rect().size.x >= 900.0 else 300, 60)
@@ -68,10 +72,14 @@ func _ready() -> void:
 	frame["footer"].add_child(start)
 
 	FelecoUiScript.dress_menu(self)
+	var packs: Node = get_node("/root/EraPacks")
+	packs.connect("look_changed", func(_era: String) -> void: _show_era())
+	packs.connect("look_status", _on_look_status)
 	_on_time_setting(1)
 	_read_counts_from_config()
 	_show_era()
 	_update_summary()
+	_on_look_status(str(get_node("/root/EraPacks").call("line")))
 
 func _build_herds(card: VBoxContainer) -> void:
 	var labels: Array = []
@@ -155,13 +163,16 @@ func _build_herds(card: VBoxContainer) -> void:
 	card.add_child(_foresight_label)
 
 func _build_rules(card: VBoxContainer) -> void:
-	card.add_child(_hint("Look. Valley is the living sprites. Pixel is those same frames in big pixels. Lost Valley paints prehistoric creatures on the same rig and renames them."))
+	card.add_child(_hint("Look. Valley is the living sprites. Pixel is those same frames in big pixels. Lost Valley paints prehistoric creatures on the same rig and renames them. Pixel and Lost Valley download when you choose them."))
 	var era_labels: Array = []
 	for era_id: String in EraBook.IDS:
 		era_labels.append(EraBook.TITLES[era_id])
 	_era_buttons = FelecoUiScript.choice_row(card, era_labels, [])
 	for i: int in EraBook.IDS.size():
 		_era_buttons[i].pressed.connect(_on_era.bind(EraBook.IDS[i]))
+	_look_status = FelecoUiScript.label("", 15, FelecoUiScript.GOLD)
+	_look_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	card.add_child(_look_status)
 	card.add_child(_hint("How long the valley runs (a day of sun and moon is 1 minute at 2x)"))
 	var labels: Array = []
 	var icons: Array = []
@@ -298,14 +309,17 @@ func _count(field: String) -> int:
 	return int(_spins[field].value)
 
 func _on_era(era: String) -> void:
-	var gc: Node = get_node("/root/GameConfig")
-	gc.sprite_era = era
-	gc.save_meta()
+	get_node("/root/EraPacks").choose(era)
 	_show_era()
 
+func _on_look_status(text: String) -> void:
+	if _look_status != null:
+		_look_status.text = text
+	if _start != null and _start.text != _START_TEXT:
+		_start.text = text if text != "" else _START_TEXT
+
 func _show_era() -> void:
-	var gc: Node = get_node("/root/GameConfig")
-	var which: int = EraBook.IDS.find(str(gc.sprite_era))
+	var which: int = EraBook.IDS.find(str(get_node("/root/EraPacks").chosen()))
 	if which < 0:
 		which = 0
 	FelecoUiScript.pick(_era_buttons, _era_buttons[which])
@@ -327,6 +341,12 @@ func _on_time_setting(index: int) -> void:
 	FelecoUiScript.pick(_season_buttons, _season_buttons[index])
 
 func _on_start() -> void:
+	var packs: Node = get_node("/root/EraPacks")
+	if not bool(packs.call("settled")):
+		var text := str(packs.line())
+		_start.text = text if text != "" else "Fetching the look…"
+		return
+	_start.text = _START_TEXT
 	var gc: Node = get_node("/root/GameConfig")
 	gc.disabled_species.clear()
 	for entry: Array in SPECIES_FIELDS:
