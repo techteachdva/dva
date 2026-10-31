@@ -1,25 +1,20 @@
 extends Node
 
-# The opening film, played in the real valley. A narrator stumbles on golden
-# grass and follows the gold from rabbit to mountain lion to wizard, whose
-# rampage earns an upgrade. The wizard turns and tells you who you are, shows
-# how a creature chooses, and the whole valley wakes. Then the game teaches
-# itself: the two doors, the Quest Board, the real hand lifting and branding a
-# real creature, and real powers falling on the valley, before "Felicitus
-# Ecologia" folds itself into FelEco. One creature per beat, scripted (see
-# MarkovAgent.stage_to). Plays once on first launch; Skip, or the main menu's
-# "Watch the opening", at any time.
+# The opening film, played in the real valley: about a minute. Gold passes from
+# grass to rabbit to mountain lion to wizard, and the wizard tells you who you
+# are. Each mode teaches itself in its own short film (see lore_film.gd).
+# Plays once on first launch; skip it, or rewatch it from the main menu.
 
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 const WORLD: PackedScene = preload("res://scenes/world.tscn")
 const TITLE: String = "Felicitus Ecologia"
 # Letters of TITLE that stay to spell FelEco.
 const KEEP: Array[int] = [0, 1, 2, 10, 11, 12]
-# How long every line stays up, relative to the times written below.
-const READ_PACE: float = 1.6
-# A moderate read: about two words a second, and never a glance.
-const SECONDS_PER_WORD: float = 0.55
-const MIN_READ: float = 4.2
+# One rule for every line: reading time comes from its words, nothing else.
+const READ_PACE: float = 1.0
+const SECONDS_PER_WORD: float = 0.36
+const MIN_READ: float = 2.2
+
 # The last word, different every time.
 const SIGN_OFFS: Array[String] = ["Nice.", "Sweet.", "Radical.", "Cool.", "Awesome.", "Tuff.", "Fantastic.", "Whoa.", "Wow.", "CoOoOoL!", "OMG.", "Let's cook!", "Didn't have to go so hard..."]
 
@@ -182,10 +177,6 @@ func _play() -> void:
 	_look(rabbit, 2.4)
 	await _hold_say(rabbit, "You are what you eat, I suppose...", 2.4, "Idle")
 	if _done: return
-	await _grass_rampage(rabbit)
-	if _done: return
-	await _gold_fades(rabbit)
-	if _done: return
 
 	var lion := _dir.spawn_scripted("lion", _dir.dry_land(_anchor + Vector3(-11, 0, 4)))
 	_view(_anchor + Vector3(-4, 0, 2), 0.1, -0.5, 13.0)
@@ -195,7 +186,6 @@ func _play() -> void:
 	await _walk(lion, _dir.dry_land(_anchor + Vector3(4.5, 0, -0.6)), 2.6, "Chase")
 	if _done: return
 	FXManager.spawn_combat_particles(rabbit.global_position)
-	# The rabbit looks ordinary again. The gold still passes to whoever eats it.
 	_allow_death(rabbit)
 	lion.devour(rabbit)
 	lion.make_golden(1.0, "rabbit")
@@ -218,24 +208,11 @@ func _play() -> void:
 	await _hold_say(wizard, "Now the wizard is golden. Curious...", 2.4, "Idle")
 	if _done: return
 
-	await _rampage(wizard)
-	if _done: return
-	await _reward(wizard)
-	if _done: return
-
 	_view(wizard.global_position, 1.0, -0.5, 12.0)
 	_look(wizard, 4.0)
 	await _speak(wizard, "Your name is Feleco. You are the spirit of this valley.", 3.6, "Idle")
 	if _done: return
-	await _human_markov()
-	if _done: return
 	await _hold_say(wizard, "Every creature here chooses for itself. You only tip the year.", 2.8, "Idle")
-	if _done: return
-	_unleash()
-	_view(Vector3(0, 0, 4), 0.6, -0.75, 62.0)
-	await _say("Now the whole valley wakes.", 2.4)
-	if _done: return
-	await _teach()
 	if _done: return
 	_view(Vector3(0, 0, 4), 0.95, -0.62, 56.0)
 	await _title_card()
@@ -543,11 +520,11 @@ func _say(text: String, secs: float) -> void:
 
 # Words on screen long enough to read without hurrying, whichever clock is longer.
 func _stay_for(text: String, secs: float) -> float:
-	return maxf(secs * READ_PACE, _read_for(text))
+	return _read_for(text)
 
 func _read_for(text: String) -> float:
 	var words: int = text.split(" ", false).size()
-	return maxf(MIN_READ, float(words) * SECONDS_PER_WORD + 1.8)
+	return maxf(MIN_READ, float(words) * SECONDS_PER_WORD + 1.0)
 
 # Keeps the line that is already up until it has been readable.
 func _let_read() -> bool:
@@ -582,6 +559,7 @@ func _finish() -> void:
 	var gc: Node = get_node("/root/GameConfig")
 	gc.intro_seen = true
 	gc.disabled_species.clear()
+	gc.time_limit = Clock.STANDARD_DAYS
 	gc.current_mode = "sandbox"
 	gc.save_meta()
 	var tw := create_tween()
@@ -634,7 +612,6 @@ func _gold_fades(rabbit: MarkovAgent) -> void:
 func _two_whacks(wizard: MarkovAgent, lion: MarkovAgent) -> void:
 	if wizard == null or lion == null or not is_instance_valid(wizard) or not is_instance_valid(lion):
 		return
-	await _note("The wizard strikes. Twice.")
 	var face: float = -1.0 if lion.global_position.x < wizard.global_position.x else 1.0
 	for hit: int in 2:
 		if _done or not is_instance_valid(wizard) or not is_instance_valid(lion):
@@ -645,7 +622,6 @@ func _two_whacks(wizard: MarkovAgent, lion: MarkovAgent) -> void:
 		_pose(wizard, SpriteGenerator.F_STRIKE, face)
 		FXManager.spawn_combat_particles(lion.global_position)
 		FXManager.show_floating_text(lion.global_position + Vector3.UP * 1.8, "Whack!", Color(1.0, 0.92, 0.62))
-		await _note("The first blow." if hit == 0 else "The second blow.")
 		if not await _beat(0.55):
 			return
 		_pose(wizard, SpriteGenerator.F_STAND, face)

@@ -188,6 +188,13 @@ func start_rampage() -> bool:
 	FXManager.show_dramatic_text(global_position + Vector3.UP * 2.5, "RAMPAGE!", Color(1.0, 0.82, 0.25))
 	return true
 
+# Take Control ticks every frame and leaves the Markov chain idle.
+func set_driven(on: bool) -> void:
+	player_drive = on
+	rampage_steer = Vector3.ZERO
+	velocity = Vector3.ZERO
+	set_physics_process(on)
+
 func end_rampage() -> void:
 	if not rampage:
 		return
@@ -453,11 +460,11 @@ func _physics_process(delta: float) -> void:
 	var entry: Variant = _states.get(_current_state)
 	if rampage:
 		_rampage_tick(delta)
-	elif entry != null:
+	elif entry != null and not player_drive:
 		var on_tick: Callable = entry["on_tick"]
 		if on_tick.is_valid():
 			on_tick.call(life)
-	if not rampage and rainbow_left <= 0.0 and director != null and director.has_starfruit():
+	if not rampage and not player_drive and rainbow_left <= 0.0 and director != null and director.has_starfruit():
 		_seek_starfruit(delta)
 	if rainbow_left > 0.0:
 		rainbow_left -= life
@@ -470,13 +477,15 @@ func _physics_process(delta: float) -> void:
 			_rainbow_tick(delta)
 	if player_drive and not rampage:
 		velocity = rampage_steer.limit_length(1.0) * DRIVE_SPEED
+		_herd_pull = Vector3.ZERO
+		_corpse_push = Vector3.ZERO
 	_herd_timer -= delta
 	if _herd_timer <= 0.0:
 		_herd_timer = 1.0 + randf() * 0.3
 		_update_herd()
 		_update_corpse_push()
 	_movement_tick(delta)
-	if not rampage:
+	if not rampage and not player_drive:
 		_evaluate_transitions(delta)
 	if not role.is_empty():
 		Roles.tick(self, species_id, life)

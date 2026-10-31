@@ -27,6 +27,10 @@ const SPECIES_CONFIG: Dictionary = {
 	"lion": {"size": Vector2(3.2, 3.2), "gait": 11.0, "kind": 0, "shadow": 2.0, "style": 2},
 	"beetle": {"size": Vector2(0.9, 0.9), "gait": 16.0, "kind": 0, "shadow": 0.4, "style": 10},
 	"mouse": {"size": Vector2(1.0, 1.0), "gait": 18.0, "kind": 0, "shadow": 0.45, "style": 4},
+	"fairy": {"size": Vector2(2.0, 2.0), "gait": 12.0, "kind": 0, "shadow": 0.8, "style": 5},
+	"sunfolk": {"size": Vector2(2.6, 2.6), "gait": 9.0, "kind": 0, "shadow": 1.0, "style": 5},
+	"scarecrow": {"size": Vector2(2.8, 2.8), "gait": 8.0, "kind": 0, "shadow": 1.0, "style": 5},
+	"snowman": {"size": Vector2(2.5, 2.5), "gait": 8.0, "kind": 0, "shadow": 1.2, "style": 5},
 	# kind 3: drawn where it is (drifting spores, toadstools on the ground).
 	"mushroom": {"size": Vector2(2.0, 2.0), "gait": 1.0, "kind": 3, "shadow": 0.8, "style": 12},
 }
@@ -127,6 +131,7 @@ func _setup_proxy(species: String) -> void:
 	var mat := ShaderMaterial.new()
 	mat.shader = SpriteShader
 	mat.set_shader_parameter("sprite", tex)
+	mat.set_shader_parameter("sprite_px", tex)
 	mat.set_shader_parameter("quad_height", size.y)
 	mat.set_shader_parameter("quad_width", size.x)
 	mat.set_shader_parameter("pixel_on", 1.0 if era == "pixel" else 0.0)

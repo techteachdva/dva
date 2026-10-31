@@ -208,6 +208,16 @@ func seed_golden(world_pos: Vector3, strength: float) -> void:
 			_cell_kind[idx] = Kind.GOLDEN
 			_mark_dirty(idx)
 
+# Sunflowerfolk: grass rises wherever they step.
+func grow_at(world_pos: Vector3, amount: float) -> void:
+	var g := world_to_grid(world_pos)
+	var idx := g.y * grid_width + g.x
+	if idx < 0 or idx >= _grid.size():
+		return
+	_grid[idx] = minf(_grid[idx] + amount, 1.0)
+	_cell_stage[idx] = maxi(int(_cell_stage[idx]), 2)
+	_mark_dirty(idx)
+
 func consume_density(world_pos: Vector3, amount: float, eater: Node = null) -> float:
 	var g := world_to_grid(world_pos)
 	var idx := g.y * grid_width + g.x

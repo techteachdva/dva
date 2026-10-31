@@ -75,7 +75,7 @@ func _ready() -> void:
 	var packs: Node = get_node("/root/EraPacks")
 	packs.connect("look_changed", func(_era: String) -> void: _show_era())
 	packs.connect("look_status", _on_look_status)
-	_on_time_setting(1)
+	_on_time_setting(Clock.RUNS.size() - 1)
 	_read_counts_from_config()
 	_show_era()
 	_update_summary()

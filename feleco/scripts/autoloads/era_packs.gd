@@ -8,7 +8,7 @@ extends Node
 signal look_changed(era: String)
 signal look_status(text: String)
 
-const REV := "1"
+const REV := "2"
 const _SPLIT: Array[String] = ["pixel", "lost"]
 
 var _http: HTTPRequest

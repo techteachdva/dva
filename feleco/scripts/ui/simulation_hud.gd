@@ -58,6 +58,7 @@ func _ready() -> void:
 			_director.time_updated.connect(_on_time_updated)
 			_director.simulation_ended.connect(_on_sim_ended)
 			_director.rampage_result.connect(_on_rampage_result)
+			_director.season_event.connect(_on_season_event)
 			_director.control_changed.connect(_on_rule_changed)
 
 	var gc: Node = get_node_or_null("/root/GameConfig")
@@ -506,6 +507,19 @@ func _build_goals() -> void:
 	elif gc != null and not gc.tutorial_done and gc.current_mode == "sandbox":
 		_show_welcome.call_deferred()
 
+# Mid-season: a big line across the valley that fades on its own.
+func _on_season_event(text: String, species: String) -> void:
+	var line := FelecoUiScript.heading(text, 44, SeasonBook.color(species))
+	line.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	line.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	line.offset_top = 130.0
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$TopLeft.get_parent().add_child(line)
+	var tw := line.create_tween()
+	tw.tween_interval(3.5)
+	tw.tween_property(line, "modulate:a", 0.0, 1.2)
+	tw.tween_callback(line.queue_free)
+
 func _show_champion_banner() -> void:
 	while get_tree().paused:
 		await get_tree().create_timer(0.3, true, false, true).timeout
@@ -836,8 +850,8 @@ func _show_hand_choices(hand: SpectralHand, agent: MarkovAgent) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "HandChoices"
 	shell.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	shell.offset_left = -345.0
-	shell.offset_right = 345.0
+	shell.offset_left = -430.0
+	shell.offset_right = 430.0
 	# A tall phone wraps the dock onto a second row.
 	var dock_top: float = -176.0 if get_viewport().get_visible_rect().size.x < 900.0 else -122.0
 	shell.offset_top = dock_top
@@ -922,6 +936,16 @@ func _show_hand_choices(hand: SpectralHand, agent: MarkovAgent) -> void:
 			if is_instance_valid(agent):
 				_start_follow(agent)))
 	row.add_child(follow)
+	var drop := Button.new()
+	drop.text = "Drop"
+	drop.theme_type_variation = "GhostButton"
+	drop.custom_minimum_size = Vector2(150, 52)
+	drop.tooltip_text = "Set them gently back on the ground."
+	drop.pressed.connect(func() -> void:
+		drop.disabled = true
+		shell.queue_free()
+		hand.put_down(func() -> void: _hand_busy = false))
+	row.add_child(drop)
 
 func _start_follow(agent: MarkovAgent) -> void:
 	_stop_follow()
@@ -1369,6 +1393,37 @@ func _update_hill_bars() -> void:
 
 var _user_paused: bool = false
 
+# The Field Guide over the paused valley. Closing it resumes as it was.
+func _open_food_web() -> void:
+	if get_node_or_null("FoodWebLayer") != null:
+		return
+	var was: bool = get_tree().paused
+	get_tree().paused = true
+	var layer := CanvasLayer.new()
+	layer.name = "FoodWebLayer"
+	layer.layer = 90
+	layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(layer)
+	var bg := ColorRect.new()
+	bg.color = Color(0.03, 0.05, 0.04)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(bg)
+	var guide: Control = (load("res://scenes/ui/field_guide.tscn") as PackedScene).instantiate()
+	guide.process_mode = Node.PROCESS_MODE_ALWAYS
+	layer.add_child(guide)
+	var close := Button.new()
+	close.text = "Back to the Valley"
+	close.theme_type_variation = "PrimaryButton"
+	close.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	close.offset_left = -240.0
+	close.offset_top = -62.0
+	close.offset_right = -20.0
+	close.offset_bottom = -12.0
+	close.pressed.connect(func() -> void:
+		layer.queue_free()
+		get_tree().paused = was)
+	layer.add_child(close)
+
 func _toggle_pause() -> void:
 	get_tree().paused = not get_tree().paused
 	_user_paused = get_tree().paused
@@ -1475,7 +1530,7 @@ const RAIL_W: float = 132.0
 const RAIL_ICONS: Dictionary = {
 	"Census": "rail_census", "Goals": "rail_goals", "Hill": "crown", "Bet Slip": "rail_bets",
 	"Creature": "rail_creature", "History": "scroll", "Ticker": "rail_ticker", "Time": "rail_time",
-	"Powers": "rail_powers", "Quests": "rail_bets", "Champion": "flag", "Clear view": "eye",
+	"Powers": "rail_powers", "Food Web": "rail_census", "Quests": "rail_bets", "Champion": "flag", "Clear view": "eye",
 }
 var _rail_buttons: Dictionary = {}
 var _cleared: Array[Control] = []
@@ -1514,6 +1569,7 @@ func _build_rail() -> void:
 	add_child(rail)
 	var history: EventHistory = get_node_or_null("EventHistory")
 	var ticker: Control = get_node_or_null("Tickertape")
+	_rail_button(rail, "Food Web", "Pause and open the food web.", _open_food_web)
 	_rail_button(rail, "Census", "Show or hide the count of every species.", func() -> void: _toggle_window($TopLeft))
 	_rail_button(rail, "Goals", "Show or hide your goals and My Creature.", func() -> void: _toggle_window(_goals))
 	_rail_button(rail, "Hill", "Show or hide King of the Hill: who rules the valley.", func() -> void: _toggle_window(get_node("HillBars")))

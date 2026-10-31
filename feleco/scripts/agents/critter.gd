@@ -39,6 +39,7 @@ func _configure() -> void:
 
 func _ready() -> void:
 	_configure()
+	EraBook.adapt(self, species)
 	add_to_group(species)
 	_register_states()
 	super._ready()

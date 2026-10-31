@@ -295,6 +295,9 @@ func _on_web_input(event: InputEvent) -> void:
 
 # Zoom the web onto one creature and open its card ("" zooms back out).
 func focus_species(species: String) -> void:
+	if species == _focus and not species.is_empty() and MarkovGraph.has_model(species):
+		_open_graph(species)
+		return
 	if species == _focus or (not species.is_empty() and not NODES.has(species)):
 		return
 	_focus = species
@@ -329,7 +332,7 @@ func focus_species(species: String) -> void:
 		var ct := _card.create_tween().set_parallel()
 		ct.tween_property(_card, "modulate:a", 1.0, 0.3).set_delay(0.12)
 		ct.tween_property(_card, "position:x", x, 0.35).set_delay(0.12).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_hint.text = "Click the open web or press Esc to zoom out." if not species.is_empty() else "Click a creature to zoom in on its rules."
+	_hint.text = "Click the creature again to see how it decides. Click the open web or press Esc to zoom out." if not species.is_empty() else "Click a creature to zoom in on its rules."
 	if zoom_to >= 0.0:
 		if _zoom_tween != null:
 			_zoom_tween.kill()
@@ -353,7 +356,7 @@ func _apply_zoom(z: float) -> void:
 func _related(a: String, b: String) -> bool:
 	if a == b:
 		return true
-	for e: Array in EDGES:
+	for e: Array in EraBook.web_edges(EDGES):
 		if (e[0] == a and e[1] == b) or (e[1] == a and e[0] == b):
 			return true
 	return false
@@ -436,16 +439,16 @@ func _detail_card(species: String) -> Control:
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.add_theme_constant_override("separation", 6)
 	scroll.add_child(right)
-	right.add_child(FelecoUiScript.heading(info[0], 28, FelecoUiScript.GOLD))
+	right.add_child(FelecoUiScript.heading(_name_of(species), 28, FelecoUiScript.GOLD))
 	var grp: Array = _group_of(species)
 	right.add_child(FelecoUiScript.label("%s · %s" % [String(grp[2]).trim_suffix("s"), info[2]], 14, (SpeciesDB.GROUP_COLOR[grp[1]] as Color).lightened(0.15)))
-	var body := FelecoUiScript.label(info[3], 15, FelecoUiScript.CREAM)
+	var body := FelecoUiScript.label(EraBook.guide_text(species, info[3]), 15, FelecoUiScript.CREAM)
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.custom_minimum_size = Vector2(440, 0)
 	right.add_child(body)
 	var eats: Array = []
 	var eaten: Array = []
-	for e: Array in EDGES:
+	for e: Array in EraBook.web_edges(EDGES):
 		if e[1] == species:
 			eats.append(e[0])
 		if e[0] == species:
@@ -490,7 +493,7 @@ func _chips(list: Array) -> Control:
 		pic.custom_minimum_size = Vector2(88, 38)
 		chip.add_child(pic)
 		_creature(pic, sp, Vector2(44, 19), 38.0)
-		var l := FelecoUiScript.label(String(INFO[sp][0]), 11, FelecoUiScript.CREAM)
+		var l := FelecoUiScript.label(_name_of(sp), 11, FelecoUiScript.CREAM)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		l.custom_minimum_size = Vector2(88, 0)
 		chip.add_child(l)
@@ -520,6 +523,7 @@ func _creature(parent: Control, species: String, center: Vector2, height: float)
 		mat.shader = RIG_2D
 		var tex: Texture2D = SpriteGenerator.anim_texture_for(species)
 		mat.set_shader_parameter("sprite", tex)
+		mat.set_shader_parameter("sprite_px", tex)
 		mat.set_shader_parameter("quad", q)
 		mat.set_shader_parameter("style", int(cfg["style"]))
 		mat.set_shader_parameter("atlas_cell", 1.0 if species == "mushroom" else 0.0)
@@ -573,7 +577,7 @@ func _web_node(key: String, c: Vector2) -> void:
 	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_content.add_child(disc)
 	var holder := _creature(_content, key, c, 46.0)
-	var n := FelecoUiScript.heading(info[0], 13, FelecoUiScript.CREAM)
+	var n := FelecoUiScript.heading(_name_of(key), 13, FelecoUiScript.CREAM)
 	n.position = c + Vector2(-60, 28)
 	n.size = Vector2(120, 18)
 	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -603,7 +607,7 @@ func _draw_web() -> void:
 	# Arrows from food to eater. Faint until you hover or zoom: then that
 	# creature's meals and its hunters light up and everything else fades away.
 	var key: String = _focus if not _focus.is_empty() else _hover_key
-	for e: Array in EDGES:
+	for e: Array in EraBook.web_edges(EDGES):
 		var a: Vector2 = _node_centers[e[0]]
 		var b: Vector2 = _node_centers[e[1]]
 		var col: Color = EDGE_COLORS[e[2]]
@@ -638,7 +642,7 @@ func _make_card(species: String) -> Control:
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 4)
 	panel.add_child(col)
-	col.add_child(FelecoUiScript.heading(info[0], 19, FelecoUiScript.GOLD))
+	col.add_child(FelecoUiScript.heading(_name_of(species), 19, FelecoUiScript.GOLD))
 	col.add_child(FelecoUiScript.label(info[2], 13, FelecoUiScript.MIST))
 	if PRIME.has(species):
 		var sea: Array = SEASONS[int(PRIME[species][0])]
@@ -767,3 +771,15 @@ class RotIcon extends Control:
 			var c := base + Vector2(cos(ph) * w * 0.18 - w * 0.05, -h * 0.42 + sin(ph * 1.7) * h * 0.08)
 			draw_circle(c, 2.2, Color(0.12, 0.12, 0.12))
 			draw_circle(c + Vector2(-2, -2), 1.6, Color(0.85, 0.9, 1.0, 0.6))
+
+func _name_of(key: String) -> String:
+	var named := EraBook.label_for(key)
+	return named if named != "" else String(INFO.get(key, [key])[0])
+
+# Clicking the creature in focus again: its Markov model, full panel.
+func _open_graph(species: String) -> void:
+	var graph := MarkovGraph.new()
+	graph.species = species
+	graph.title = _name_of(species)
+	graph.accent = (INFO[species][1] as Color).lightened(0.15)
+	_web.add_child(graph)

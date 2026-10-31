@@ -1,8 +1,25 @@
 extends Node
 
-# The lesson that opens Main Game. It is a scripted film in the valley, not
-# the game: it shows how to play as Feleco and then waits. The year starts
-# only when the player asks.
+# The short film that opens each mode, the first time it is entered: The Valley
+# or Simulation, by gc.current_mode. Scripted in the valley, not the game; it
+# ends on a card and the year starts only when the player asks.
+
+const VALLEY_LINES: Array[String] = [
+	"This valley is yours to watch over.",
+	"Everything here eats, hunts, breeds and dies without you.",
+	"Pick a champion with your hand. Claim it, train it, take control.",
+	"Pour down powers, and watch the ripples spread through the food web.",
+	"Mid-season, strange Sprites wake. Claim one if you dare.",
+	"Lead your favourites to glory, or watch them fade.",
+]
+const SIM_LINES: Array[String] = [
+	"Simulation is the whole toybox.",
+	"Build any valley: every species, count and season length.",
+	"Take the Fates' bets on who will rule the year.",
+	"Face a Challenge, or play the Mini Games.",
+	"Tune the rules in the Lab, and shop in the Greenhouse.",
+	"Change one thing, and see what happens.",
+]
 
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 const WORLD: PackedScene = preload("res://scenes/world.tscn")
@@ -17,10 +34,11 @@ var _skip: Button
 var _done: bool = false
 var _choosing: bool = false
 var _anchor: Vector3 = Vector3.ZERO
+var _sim: bool = false
 
 func _ready() -> void:
 	var gc: Node = get_node("/root/GameConfig")
-	gc.current_mode = "main"
+	_sim = str(gc.current_mode) == "sandbox"
 	# A quiet valley, so the lesson's cast is the only thing moving.
 	gc.disabled_species.clear()
 	for id: String in SpeciesDB.ROWS.keys():
@@ -115,50 +133,13 @@ func _play() -> void:
 	tw.tween_property(_shade, "color:a", 0.0, 1.2)
 	if not await _wait(1.3):
 		return
-	if not await _line("You are Feleco, the spirit of this valley."):
-		return
-	if not await _line("It lives without you. Every creature eats, sleeps, hunts, breeds and dies on its own."):
-		return
-	_view(_anchor, 0.2, -0.42, 16.0)
-	var sheep := _dir.spawn_scripted("sheep", _dir.dry_land(_anchor + Vector3(-6.0, 0.0, 1.0)))
-	if not await _walk(sheep, _anchor + Vector3(1.2, 0.0, 0.4), 2.4):
-		return
-	if not await _line("The plants come first. Grass, trees, berries, moss and the riverweed feed the flocks."):
-		return
-	var wolf := _dir.spawn_scripted("wolf", _dir.dry_land(_anchor + Vector3(-14.0, 0.0, 6.0)))
-	_view(_anchor + Vector3(-4.0, 0.0, 2.0), 0.15, -0.4, 22.0)
-	if not await _walk(wolf, _anchor + Vector3(-7.0, 0.0, 3.0), 2.6):
-		return
-	if not await _line("Hunters live on the flocks. Wolves, mountain lions and falcons take what they can catch."):
-		return
-	if not await _line("Omnivores take from both sides. Villagers cook. Bears, boars, robins and mice eat whatever they reach."):
-		return
-	if not await _line("When something dies, worms, beetles and mushrooms return it to the soil. The river keeps its own chain."):
-		return
-	_view(Vector3(0.0, 0.0, 4.0), 0.5, -0.72, 70.0)
-	if not await _line("You do not play as one animal. A year with you is four seasons."):
-		return
-	if not await _line("At the start of each season, the Quest Board offers plans."):
-		return
-	_card()
-	if not await _line("A quest names a champion, a species, a goal, how long it takes, and a reward."):
-		return
-	if not await _line("Accept the ones you choose. Succeed, and the valley opens looks, cursors and games."):
-		return
-	if not await _line("Miss a quest, and you gain nothing. The valley simply goes on."):
-		return
-	_view(sheep.global_position if sheep != null else _anchor, 0.4, -0.38, 12.0)
-	if not await _line("Then claim one creature. Click them, and a hand lifts your champion."):
-		return
-	if not await _line("Claim makes them yours. Brand changes the body. Train is how they grow. Follow is how you watch."):
-		return
-	_view(Vector3(0.0, 0.0, 2.0), 0.2, -0.5, 48.0)
-	if not await _line("Drag to look around. Scroll to come closer. Powers move through the whole food web."):
-		return
-	if not await _line("Call and Heal help only your champion. Rain, drought and the rest help some species and hurt others."):
-		return
-	if not await _line("Main Game is this year, with you as the spirit. Start Simulation is the valley on its own."):
-		return
+	var sheep := _dir.spawn_scripted("sheep", _dir.dry_land(_anchor + Vector3(-3.0, 0.0, 1.0)))
+	_view(_anchor, 0.35, -0.5, 16.0)
+	for text: String in (SIM_LINES if _sim else VALLEY_LINES):
+		if not await _line(text):
+			return
+		if is_instance_valid(sheep):
+			sheep.stage_to(_dir.dry_land(_anchor + Vector3(randf_range(-3.0, 3.0), 0.0, randf_range(-1.0, 2.0))), "Walk")
 	_show_choice()
 
 func _card() -> void:
@@ -193,7 +174,7 @@ func _show_choice() -> void:
 	if _choosing or _done or not is_inside_tree():
 		return
 	_choosing = true
-	_caption.text = "The year starts when you say so."
+	_caption.text = ""
 	_caption.modulate.a = 1.0
 	if _skip != null:
 		_skip.hide()
@@ -217,13 +198,13 @@ func _show_choice() -> void:
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 12)
 	card.add_child(col)
-	var words := FelecoUiScript.label("You know the valley. Begin the year when you are ready to claim a champion.", 18, FelecoUiScript.CREAM)
+	var words := FelecoUiScript.label("Open the toybox." if _sim else "Begin the year when you are ready to claim a champion.", 18, FelecoUiScript.CREAM)
 	words.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	words.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	words.custom_minimum_size = Vector2(420, 0)
 	col.add_child(words)
 	var begin := Button.new()
-	begin.text = "Begin the year"
+	begin.text = "Open Simulation" if _sim else "Begin the year"
 	begin.theme_type_variation = "PrimaryButton"
 	begin.custom_minimum_size = Vector2(0, 52)
 	begin.pressed.connect(func() -> void: _leave(true))
@@ -240,14 +221,31 @@ func _leave(to_valley: bool) -> void:
 		return
 	_done = true
 	var gc: Node = get_node("/root/GameConfig")
-	gc.lore_seen = true
+	if _sim:
+		gc.set_record("lesson", "sim_film", true)
+	else:
+		gc.lore_seen = true
 	gc.save_meta()
-	if to_valley:
+	# The film emptied the valley for its cast. The real year starts full.
+	var days: float = gc.time_limit
+	var setting: String = gc.time_setting
+	gc.reset_run_state()
+	gc.disabled_species.clear()
+	gc.time_limit = days
+	gc.time_setting = setting
+	var path := "res://scenes/ui/main_menu.tscn"
+	if to_valley and _sim:
+		gc.current_mode = "sandbox"
+		gc.main_claim = false
+		gc.board_mode = "full"
+		gc.bets.clear()
+		path = "res://scenes/ui/setup_board.tscn"
+	elif to_valley:
 		gc.current_mode = "main"
 		gc.main_claim = gc.record("lesson", "champion") == null
 		gc.bets.clear()
+		path = "res://scenes/world.tscn"
 	_silence(_world)
-	var path := "res://scenes/world.tscn" if to_valley else "res://scenes/ui/main_menu.tscn"
 	get_tree().change_scene_to_file.call_deferred(path)
 
 func _silence(n: Node) -> void:
@@ -263,7 +261,7 @@ func _line(text: String) -> bool:
 	if _done or _choosing or not is_inside_tree():
 		return false
 	_caption.text = text
-	return await _wait(3.6)
+	return await _wait(maxf(2.2, float(text.split(" ", false).size()) * 0.36 + 1.0))
 
 func _wait(secs: float) -> bool:
 	if _done or _choosing or not is_inside_tree():

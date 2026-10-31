@@ -27,7 +27,7 @@ const SPRITE_DIR: String = "res://assets/sprites/"
 # Set while baking a non-valley sheet. Empty means "ask EraBook".
 static var paint_era: String = ""
 static var _lost: bool = false
-const SPECIES: Array[String] = ["sheep", "wolf", "boar", "falcon", "robin", "worm", "human", "rabbit", "fish", "mushroom", "deer", "goat", "bear", "lion", "beetle", "mouse"]
+const SPECIES: Array[String] = ["sheep", "wolf", "boar", "falcon", "robin", "worm", "human", "rabbit", "fish", "mushroom", "deer", "goat", "bear", "lion", "beetle", "mouse", "fairy", "sunfolk", "scarecrow", "snowman"]
 # Columns: normal, tough, special, golden (3.0: a creature that ate gold).
 const COLS: int = 4
 const GOLDEN: int = 3
@@ -116,9 +116,9 @@ static func _era_is_lost() -> bool:
 	return EraBook.id() == "lost"
 
 # Paint one era's full rest atlas and animation sheet (25 frames, 8 cells).
-static func bake_era(era: String, dir: String) -> void:
+static func bake_era(era: String, dir: String, only: Array = []) -> void:
 	paint_era = era
-	bake_all(dir)
+	bake_all(dir, only if not only.is_empty() else SPECIES)
 	paint_era = ""
 
 static func texture_for_shadow() -> Texture2D:
@@ -171,10 +171,14 @@ static func generate_image(species: String, role: int = 0, female: bool = false,
 	return _finish(ink, 3)
 
 static func _paint(species: String, role: int, female: bool) -> void:
-	if _lost:
+	if _lost and not SeasonBook.is_sprite(species):
 		_paint_lost(species, role, female)
 		return
 	match species:
+		"fairy": _fairy(role, female)
+		"sunfolk": _sunfolk(role, female)
+		"scarecrow": _scarecrow(role, female)
+		"snowman": _snowman(role, female)
 		"sheep": _sheep(role, female)
 		"wolf": _wolf(role, female)
 		"boar": _boar(role, female)
@@ -552,10 +556,13 @@ static func _sheep(r: int, f: bool) -> void:
 static func _wolf(r: int, f: bool) -> void:
 	# normal: grey; Alpha: charcoal, scarred; Moon Howler: silver-blue with a moon mark.
 	var fur: Color = _pick(r, f, [Color(0.46, 0.49, 0.56), Color(0.56, 0.55, 0.56), Color(0.28, 0.28, 0.31), Color(0.34, 0.32, 0.34), Color(0.76, 0.82, 0.92), Color(0.84, 0.86, 0.94)])
+	if _lost:
+		# Dire wolves: ash, soot and frost.
+		fur = _pick(r, f, [Color(0.5, 0.42, 0.33), Color(0.56, 0.48, 0.38), Color(0.22, 0.2, 0.2), Color(0.28, 0.26, 0.25), Color(0.78, 0.76, 0.72), Color(0.84, 0.82, 0.78)])
 	var dark: Color = fur.darkened(0.4)
 	var cream: Color = Color(0.96, 0.97, 1.0) if r == 2 else Color(0.86, 0.83, 0.75)
 	var eye: Color = [Color(0.98, 0.78, 0.25), Color(0.98, 0.5, 0.2), Color(0.45, 0.85, 1.0)][r]
-	var bulk: float = (2.0 if r == 1 else 0.0) + (0.0 if f else 1.5)
+	var bulk: float = (2.0 if r == 1 else 0.0) + (0.0 if f else 1.5) + (4.0 if _lost else 0.0)
 	_pose["amp"] = 30.0
 	_pose["lift"] = 55.0
 	match _act():
@@ -602,13 +609,16 @@ static func _wolf(r: int, f: bool) -> void:
 	_poly([Vector2(76, 70), Vector2(94, 50), Vector2(106, 58), Vector2(92, 88)], fur)
 	_quad_leg(Vector2(48, 92), Vector2(48, 122), 0.0, false, 7.0 + bulk * 0.4, fur, dark, Vector2(4.5, 2.5))
 	_quad_leg(Vector2(86, 92), Vector2(90, 122), 0.5, true, 7.0 + bulk * 0.4, fur, dark, Vector2(4.5, 2.5))
-	if r == 2:
+	if r == 2 and not _lost:
 		if f:
 			_star(56, 74, 6.0, Color(0.98, 0.96, 0.75))
 		else:
 			_circ(56, 74, 7, Color(0.98, 0.96, 0.75), 0.0)
 			_circ(59, 72, 6.5, fur, 0.0)
 	_head_begin(Vector2(92, 64))
+	if _lost:
+		_ell(92, 62, 19, 20, fur)  # a neck and skull built to crack bone
+		_ell(102, 66, 16, 13, fur.lightened(0.05))
 	_push(Vector2(100, 48), _pf("ears") * 0.7)
 	_poly([Vector2(91, 48), Vector2(95, 30), Vector2(102, 46)], dark)
 	_poly([Vector2(98, 46), Vector2(104, 32), Vector2(108, 48)], dark.darkened(0.15))
@@ -641,6 +651,9 @@ static func _wolf(r: int, f: bool) -> void:
 static func _boar(r: int, f: bool) -> void:
 	# normal: brown; Tusker: near-black, huge tusks; Truffler: russet with a gold snout ring.
 	var body: Color = _pick(r, f, [Color(0.46, 0.33, 0.23), Color(0.6, 0.46, 0.34), Color(0.24, 0.19, 0.17), Color(0.34, 0.27, 0.22), Color(0.72, 0.42, 0.22), Color(0.82, 0.54, 0.32)])
+	if _lost:
+		# Entelodonts: long-jawed "terminator pigs", dust, char or ember.
+		body = _pick(r, f, [Color(0.55, 0.44, 0.34), Color(0.61, 0.5, 0.39), Color(0.22, 0.18, 0.17), Color(0.29, 0.24, 0.21), Color(0.66, 0.34, 0.2), Color(0.72, 0.41, 0.25)])
 	var bristle: Color = body.darkened(0.42)
 	var snout := Color(0.74, 0.52, 0.46)
 	var ivory := Color(0.96, 0.92, 0.8)
@@ -682,13 +695,21 @@ static func _boar(r: int, f: bool) -> void:
 	if r == 1:
 		_line(Vector2(40, 76), Vector2(54, 84), 1.4, Color(0.55, 0.5, 0.48), 0.0)
 		_line(Vector2(62, 72), Vector2(70, 82), 1.4, Color(0.55, 0.5, 0.48), 0.0)
-	elif r == 2:
+	elif r == 2 and not _lost:
 		_line(Vector2(54, 58), Vector2(54, 64), 3.0, Color(0.95, 0.92, 0.84), 0.0)
 		_ell(54, 56, 8, 4.5, Color(0.86, 0.24, 0.16))
 		_dot(51, 55, 1.2, Color(1, 1, 1))
 		_dot(57, 54, 1.0, Color(1, 1, 1))
 	_head_begin(Vector2(84, 80))
 	_poly([Vector2(82, 66), Vector2(110, 72), Vector2(122, 86), Vector2(118, 98), Vector2(92, 100), Vector2(80, 88)], body.lightened(0.05))
+	if _lost:
+		# A huge skull: bony cheek flange, jaw knobs and a row of crushing teeth.
+		_ell(80, 76, 18, 21, body)
+		_poly([Vector2(82, 60), Vector2(112, 66), Vector2(126, 82), Vector2(124, 100), Vector2(96, 112), Vector2(84, 96)], body.lightened(0.06))
+		_ell(90, 95, 8, 11, bristle)
+		_ell(112, 106, 6, 5, bristle.lightened(0.14))
+		for i: int in 5:
+			_poly([Vector2(98.0 + i * 5.0, 97.0 - i), Vector2(100.0 + i * 5.0, 103.0 - i), Vector2(103.0 + i * 5.0, 96.0 - i)], ivory, 0.0)
 	_push(Vector2(96, 68), _pf("ears"))
 	_poly([Vector2(90, 68), Vector2(95, 52), Vector2(103, 70)], bristle)
 	_pop()
@@ -697,16 +718,16 @@ static func _boar(r: int, f: bool) -> void:
 	_dot(122, 94, 1.2, Color(0.2, 0.1, 0.08))
 	if _pf("mouth") > 0.3:
 		_poly([Vector2(104, 98), Vector2(118, 97), Vector2(112, 102)], Color(0.35, 0.12, 0.1), 0.0)
-	if not f or r == 1:
+	if (not f or r == 1) and not _lost:
 		var t: float = 1.0
 		if r == 1:
 			t = 0.7 if f else 1.6
 		_poly([Vector2(110, 96), Vector2(110 + 9 * t, 96 - 16 * t), Vector2(115, 97)], ivory, 0.3)
-	if _gold:
+	if _gold and not _lost:
 		# Great tusks.
 		_poly([Vector2(108, 96), Vector2(127, 66), Vector2(115, 97)], Color(0.98, 0.94, 0.8), 0.3)
 	_peye(103, 79, 2.4, Color(0.3, 0.18, 0.1))
-	if r == 2:
+	if r == 2 and not _lost:
 		_arc(121, 91, 5.5, -80.0, 80.0, 1.8, Color(0.98, 0.8, 0.3))
 		if f:
 			_circ(96, 56, 3.0, Color(0.98, 0.7, 0.8), 0.0)
@@ -724,6 +745,10 @@ static func _deer(r: int, f: bool) -> void:
 	var belly := Color(0.95, 0.9, 0.8)
 	var hoof := Color(0.14, 0.1, 0.08)
 	var antler: Color = [Color(0.82, 0.72, 0.55), Color(0.7, 0.6, 0.45), Color(0.98, 0.84, 0.4)][r]
+	if _lost:
+		# Giant elk: Megaloceros, a dark mane and the widest rack that ever lived.
+		coat = _pick(r, f, [Color(0.6, 0.41, 0.22), Color(0.66, 0.47, 0.27), Color(0.34, 0.24, 0.17), Color(0.42, 0.3, 0.21), Color(0.8, 0.74, 0.62), Color(0.84, 0.78, 0.66)])
+		belly = coat.lightened(0.34)
 	_pose["amp"] = 28.0
 	_pose["lift"] = 60.0
 	_pose["tuck"] = true
@@ -751,10 +776,15 @@ static func _deer(r: int, f: bool) -> void:
 	_ell(28, 72, 6, 4, belly, -30.0)
 	_pop()
 	_ell(60, 78, 32, 16, coat)
+	if _lost:
+		_ell(76, 72, 21, 20, coat.darkened(0.24))  # the shoulder hump and mane
+		_ell(42, 78, 17, 15, coat)
 	_ell(60, 88, 24, 6, belly)
 	_quad_leg(Vector2(50, 90), Vector2(50, 122), 0.0, false, 4.5, coat, hoof, Vector2(3.0, 2.0))
 	_quad_leg(Vector2(84, 88), Vector2(86, 122), 0.5, true, 4.5, coat, hoof, Vector2(3.0, 2.0))
-	if r == 0 and f:
+	if _lost:
+		pass
+	elif r == 0 and f:
 		# Does keep a few fawn spots.
 		for p: Vector2 in [Vector2(48, 72), Vector2(58, 68), Vector2(68, 72), Vector2(56, 78)]:
 			_dot(p.x, p.y, 1.8, belly)
@@ -762,6 +792,8 @@ static func _deer(r: int, f: bool) -> void:
 		_star(60, 70, 3.4, Color(1.0, 0.92, 0.6))
 	_head_begin(Vector2(86, 74))
 	_poly([Vector2(82, 70), Vector2(94, 44), Vector2(102, 48), Vector2(92, 80)], coat)
+	if _lost:
+		_poly([Vector2(74, 74), Vector2(92, 40), Vector2(104, 50), Vector2(100, 92), Vector2(90, 86)], coat.darkened(0.24))
 	_ell(102, 46, 9, 7, coat, 20.0)
 	_poly([Vector2(104, 42), Vector2(120, 50), Vector2(118, 56), Vector2(104, 54)], coat.lightened(0.05))
 	_dot(119, 51, 2.0, Color(0.08, 0.07, 0.07))
@@ -771,13 +803,25 @@ static func _deer(r: int, f: bool) -> void:
 	_ell(96, 36, 3, 7, coat.darkened(0.1), -30.0)
 	_pop()
 	_peye(104, 44, 2.4, Color(0.25, 0.15, 0.08))
-	if not f or _gold:
+	if _lost:
+		if not f or _gold:
+			# Each palm grows from the skull and fans out into tines.
+			var wide: float = 1.15 if r == 1 else 1.0
+			for side: float in [-1.0, 1.0]:
+				var col: Color = antler if side > 0.0 else antler.darkened(0.18)
+				_line(Vector2(99, 38), Vector2(99 + side * 13 * wide, 26), 5.0, col, 0.3)
+				var o := Vector2(99 + side * 13 * wide, 27)
+				_poly([o + Vector2(0, 4), o + Vector2(side * 5, -18), o + Vector2(side * 22 * wide, -22), o + Vector2(side * 16 * wide, -3)], col, 0.4)
+				for k: int in 5:
+					var t: Vector2 = o + Vector2(side * (5.0 + k * 4.2) * wide, -18.0 - float(k))
+					_poly([t + Vector2(-2.5, 3), t + Vector2(side * 2.0, -9.0), t + Vector2(3, 3)], col, 0.2)
+	elif not f or _gold:
 		var big: float = 1.4 if r == 1 else 1.0
 		_line(Vector2(100, 38), Vector2(96, 38 - 22 * big), 2.4, antler, 0.3)
 		_line(Vector2(97, 38 - 10 * big), Vector2(88, 38 - 18 * big), 2.0, antler, 0.3)
 		_line(Vector2(96, 38 - 18 * big), Vector2(104, 38 - 28 * big), 2.0, antler, 0.3)
 		_line(Vector2(96, 38 - 20 * big), Vector2(86, 38 - 30 * big), 1.8, antler, 0.3)
-	if _gold:
+	if _gold and not _lost:
 		# A regal stag: a towering rack of antlers.
 		var a := Color(0.98, 0.85, 0.4)
 		_line(Vector2(98, 38), Vector2(84, 2), 3.0, a, 0.3)
@@ -846,9 +890,12 @@ static func _bear(r: int, f: bool) -> void:
 	# A big round ball of fur on thick legs. normal: brown; Grizzled: silver-tipped
 	# coat; Moon Bear: black with a pale crescent.
 	var fur: Color = _pick(r, f, [Color(0.42, 0.28, 0.17), Color(0.48, 0.33, 0.21), Color(0.5, 0.42, 0.34), Color(0.56, 0.47, 0.38), Color(0.14, 0.12, 0.12), Color(0.18, 0.16, 0.16)])
+	if _lost:
+		# Cave bears: heavier, ochre to smoke to pale.
+		fur = _pick(r, f, [Color(0.5, 0.31, 0.15), Color(0.57, 0.37, 0.19), Color(0.3, 0.24, 0.21), Color(0.36, 0.29, 0.25), Color(0.76, 0.66, 0.5), Color(0.8, 0.71, 0.55)])
 	var dark: Color = fur.darkened(0.3)
 	var claw := Color(0.9, 0.86, 0.76)
-	var bulk: float = 0.0 if f else 3.0
+	var bulk: float = (0.0 if f else 3.0) + (3.0 if _lost else 0.0)
 	_pose["amp"] = 18.0
 	_pose["lift"] = 0.0
 	match _act():
@@ -893,13 +940,15 @@ static func _bear(r: int, f: bool) -> void:
 	# Near legs: thick pillars with big paws.
 	_bear_leg(Vector2(48, 92), 0.0, false, fur, dark, claw)
 	_bear_leg(Vector2(88, 92), 0.5, true, fur, dark, claw)
-	if r == 2:
+	if r == 2 and not _lost:
 		_arc(86, 88, 11.0, 200.0, 340.0, 3.5, Color(0.95, 0.92, 0.82))
-	if r != 0 and f:
+	if r != 0 and f and not _lost:
 		_circ(66, 72, 2.5, Color(0.98, 0.7, 0.8), 0.0)
 	# Head: broad and round, small ears, a long snout.
 	_head_begin(Vector2(90, 72))
 	_circ(100, 66, 17, fur)
+	if _lost:
+		_ell(97, 54, 18, 13, fur.lightened(0.05))  # the great domed brow
 	_push(Vector2(92, 54), _pf("ears") * 0.5)
 	_circ(91, 49, 6, fur)
 	_circ(91, 49, 3, dark)
@@ -939,6 +988,9 @@ static func _bear_leg(hip: Vector2, off: float, front: bool, col: Color, paw: Co
 static func _lion(r: int, f: bool) -> void:
 	# normal: tawny; Ghost Cat: pale grey; Sun Cat: golden with dark tail tip.
 	var fur: Color = _pick(r, f, [Color(0.78, 0.58, 0.36), Color(0.84, 0.64, 0.42), Color(0.7, 0.68, 0.64), Color(0.76, 0.74, 0.7), Color(0.95, 0.72, 0.3), Color(0.98, 0.78, 0.38)])
+	if _lost:
+		# Smilodon: tawny, smoke-dark, or snow.
+		fur = _pick(r, f, [Color(0.74, 0.5, 0.25), Color(0.8, 0.56, 0.3), Color(0.32, 0.27, 0.25), Color(0.38, 0.32, 0.29), Color(0.88, 0.85, 0.78), Color(0.9, 0.87, 0.8)])
 	var dark: Color = fur.darkened(0.4)
 	var cream := Color(0.95, 0.9, 0.8)
 	_pose["amp"] = 30.0
@@ -972,22 +1024,36 @@ static func _lion(r: int, f: bool) -> void:
 	_body_begin(Vector2(64, 121), 18.0)
 	# Long low tail curling up at the tip.
 	_push(Vector2(28, 80), _pf("tail") * 0.8)
-	_line(Vector2(26, 82), Vector2(10, 98), 4.0, fur)
-	_line(Vector2(10, 98), Vector2(8, 86), 4.0, fur)
-	_circ(8, 85, 3.5, dark if r != 1 else fur.darkened(0.2))
+	if _lost:
+		_line(Vector2(30, 78), Vector2(18, 84), 6.5, fur)  # the bobtail
+		_circ(17, 85, 4.0, dark)
+	else:
+		_line(Vector2(26, 82), Vector2(10, 98), 4.0, fur)
+		_line(Vector2(10, 98), Vector2(8, 86), 4.0, fur)
+		_circ(8, 85, 3.5, dark if r != 1 else fur.darkened(0.2))
 	_pop()
 	_quad_leg(Vector2(40, 88), Vector2(37, 121), 0.5, false, 6.0, dark, dark, Vector2(4.0, 2.2))
 	_quad_leg(Vector2(78, 88), Vector2(81, 121), 0.0, true, 6.0, dark, dark, Vector2(4.0, 2.2))
 	_ell(58, 80, 34, 14 + (0.0 if f else 1.5), fur)
+	if _lost:
+		# Massive forequarters over a sloping back.
+		_ell(40, 80, 20, 15, fur)
+		_ell(78, 76, 23, 21, fur)
+		_ell(74, 62, 17, 7, dark, -8.0, 0.0)
 	_ell(60, 90, 24, 5, cream)
-	_quad_leg(Vector2(48, 90), Vector2(48, 122), 0.0, false, 7.0, fur, dark, Vector2(5.0, 2.5))
-	_quad_leg(Vector2(86, 90), Vector2(90, 122), 0.5, true, 7.0, fur, dark, Vector2(5.0, 2.5))
-	if r == 1:
+	_quad_leg(Vector2(48, 90), Vector2(48, 122), 0.0, false, 8.0 if _lost else 7.0, fur, dark, Vector2(5.0, 2.5))
+	_quad_leg(Vector2(86, 90), Vector2(90, 122), 0.5, true, 11.0 if _lost else 7.0, fur, dark, Vector2(6.0, 2.8) if _lost else Vector2(5.0, 2.5))
+	if _lost:
+		for p: Vector2 in [Vector2(36, 76), Vector2(48, 72), Vector2(60, 78), Vector2(70, 72), Vector2(46, 84)]:
+			_dot(p.x, p.y, 2.0, fur.darkened(0.2))
+	elif r == 1:
 		for p: Vector2 in [Vector2(46, 74), Vector2(56, 70), Vector2(66, 74), Vector2(52, 82)]:
 			_dot(p.x, p.y, 2.0, fur.darkened(0.15))
 	elif r == 2:
 		_star(60, 72, 3.4, Color(1.0, 0.95, 0.65))
 	_head_begin(Vector2(88, 72))
+	if _lost:
+		_ell(90, 68, 16, 17, fur)
 	_ell(98, 64, 13, 12, fur)
 	_push(Vector2(96, 54), _pf("ears") * 0.7)
 	_poly([Vector2(92, 52), Vector2(94, 44), Vector2(100, 52)], dark)
@@ -1003,6 +1069,11 @@ static func _lion(r: int, f: bool) -> void:
 	_dot(117, 67, 2.0, Color(0.25, 0.12, 0.1))
 	if m <= 0.05:
 		_line(Vector2(108, 72), Vector2(116, 73), 1.0, Color(0.2, 0.12, 0.1), 0.0)
+	if _lost:
+		# The sabers: two curved blades rooted under the lip.
+		var ivory := Color(0.98, 0.95, 0.84)
+		_poly([Vector2(108, 67), Vector2(112, 76), Vector2(110, 91), Vector2(115, 78), Vector2(115, 67)], ivory.darkened(0.12), 0.0)
+		_poly([Vector2(103, 67), Vector2(106, 78), Vector2(103, 95), Vector2(110, 80), Vector2(111, 67)], ivory, 0.0)
 	_peye(104, 60, 2.6, Color(0.7, 0.85, 0.35) if r != 2 else Color(0.98, 0.7, 0.2))
 	_alarm_at(Vector2(100, 60), 15.0)
 	_pop()
@@ -1817,6 +1888,9 @@ static func _peye_pair(x0: float, y0: float, x1: float, y1: float, r: float) -> 
 # normal: house-grey (doe paler); Dormouse: plump and orange; Snow Mouse: white.
 static func _mouse(r: int, f: bool) -> void:
 	var fur: Color = _pick(r, f, [Color(0.56, 0.52, 0.5), Color(0.66, 0.62, 0.58), Color(0.86, 0.58, 0.3), Color(0.9, 0.66, 0.38), Color(0.95, 0.95, 0.97), Color(0.92, 0.92, 0.96)])
+	if _lost:
+		# Alphadon: an early marsupial, grizzled like a tiny opossum.
+		fur = _pick(r, f, [Color(0.48, 0.42, 0.38), Color(0.56, 0.5, 0.45), Color(0.3, 0.24, 0.22), Color(0.37, 0.3, 0.27), Color(0.8, 0.72, 0.6), Color(0.84, 0.76, 0.64)])
 	var dark: Color = fur.darkened(0.3)
 	var pink := Color(0.95, 0.68, 0.7)
 	var plump: float = 1.18 if r == 1 else 1.0
@@ -1863,8 +1937,10 @@ static func _mouse(r: int, f: bool) -> void:
 	_circ(92, 82, 5.5, pink, 0.2)
 	_ell(95, 96, 15, 10, fur)
 	_ell(107, 99, 6, 4.5, fur.lightened(0.08))
+	if _lost:
+		_poly([Vector2(100, 92), Vector2(122, 100), Vector2(101, 106)], Color(0.9, 0.85, 0.76))
 	_peye(97, 93, 2.8, Color(0.08, 0.06, 0.06))
-	_dot(112, 99, 2.2, pink.darkened(0.25))
+	_dot(120 if _lost else 112, 100 if _lost else 99, 2.2, pink.darkened(0.25))
 	for k: int in 3:
 		_line(Vector2(109, 99 + k * 2.0), Vector2(122, 95 + k * 4.0), 0.8, Color(0.25, 0.22, 0.2, 0.7))
 
@@ -2183,23 +2259,25 @@ static func producer_image(kind: String) -> Image:
 			_line(Vector2(58, 50), Vector2(62, 34), 3.0, Color(0.38, 0.24, 0.12))
 			_ell(72, 38, 12, 6, Color(0.36, 0.62, 0.26), -20.0)
 		"pinecone":
-			# An upright cone of woody scales, rows of them overlapping, a
-			# sprig of needles at the stem.
+			# A plump cone. Rows paint from the tip up so each row of woody
+			# scales overlaps the one below, with a pale lip on every scale.
+			_line(Vector2(64, 20), Vector2(64, 8), 6.0, Color(0.34, 0.22, 0.12))
 			for k: int in 5:
-				var a: float = deg_to_rad(-70.0 + k * 35.0)
-				_line(Vector2(64, 22), Vector2(64, 22) + Vector2(sin(a), -cos(a) * 0.6) * 22.0, 2.0, Color(0.2, 0.42, 0.24), 0.0)
+				var a: float = deg_to_rad(-64.0 + k * 32.0)
+				_line(Vector2(64, 12), Vector2(64, 12) + Vector2(sin(a), -cos(a) * 0.5) * 24.0, 3.0, Color(0.24, 0.52, 0.28), 0.3)
 			var rows: int = 7
-			for r: int in rows:
+			for r: int in range(rows - 1, -1, -1):
 				var t: float = float(r) / float(rows - 1)
-				var y: float = 30.0 + t * 84.0
-				# Widest a third of the way down, tapering to a point below.
-				var half: float = (14.0 + 24.0 * sin(clampf(t * 1.25, 0.0, 1.0) * PI)) * (1.0 - t * 0.45)
-				var n: int = 3 + (r % 2)
+				var y: float = 28.0 + t * 80.0
+				var half: float = 42.0 * pow(sin(lerpf(0.5, 2.85, t)), 0.8)
+				var n: int = 3 if r % 2 == 0 else 2
+				var side: float = half * 2.0 / 3.0
 				for k: int in n:
-					var x: float = 64.0 - half + (2.0 * half) * (float(k) + 0.5) / float(n)
-					var sc := Color(0.55, 0.36, 0.18).lerp(Color(0.38, 0.24, 0.12), float((k + r) % 2) * 0.6)
-					_poly([Vector2(x - half / float(n) - 2.0, y - 6.0), Vector2(x + half / float(n) + 2.0, y - 6.0), Vector2(x, y + 9.0)], sc, 0.0)
-					_line(Vector2(x - 3.0, y - 2.0), Vector2(x + 3.0, y - 2.0), 1.0, Color(0.7, 0.5, 0.3), 0.0)
+					var x: float = 64.0 + (float(k) - float(n - 1) * 0.5) * side
+					var bark: Color = Color(0.58, 0.35, 0.16).lerp(Color(0.44, 0.25, 0.11), absf(x - 64.0) / 44.0)
+					_ell(x, y + 3.0, side * 0.62, 12.0, Color(0.2, 0.11, 0.06), 0.0, 0.0)
+					_ell(x, y, side * 0.56, 10.5, bark, 0.0, 0.8)
+					_ell(x, y + 7.0, side * 0.34, 2.6, Color(0.9, 0.7, 0.42), 0.0, 0.0)
 		"pineapple":
 			# Golden-brown body crosshatched into diamonds under a crown of
 			# spiky green leaves.
@@ -2396,155 +2474,242 @@ static func _dot(cx: float, cy: float, r: float, col: Color) -> void:
 
 # Lost Valley bodies. They read the same pose the valley painter reads, so
 # every frame of the animation sheet (walk, eat, strike, sleep) still moves.
+# ------------------------------------------------------------------
+# Lost Valley. Every body is one connected mass: necks, thighs and tails
+# overlap the torso, and joints follow the same pose rig as the valley.
+# The wolf, bear, lion, boar, deer, mouse and human painters carry their
+# own Lost Valley branches; the rest are new anatomy, painted here.
+# ------------------------------------------------------------------
 static func _paint_lost(species: String, role: int, female: bool) -> void:
 	match species:
 		"human": _human(role, female)
-		"lion": _lost_quad(role, female, Color(0.76, 0.52, 0.28), {"fangs": true, "claws": true, "ears": "point", "snout": 4.0, "tail": 6.0, "fore": 8.5})
-		"wolf": _lost_quad(role, female, Color(0.45, 0.48, 0.52), {"teeth": true, "ears": "point", "snout": 10.0, "tail": 18.0})
-		"bear": _lost_quad(role, female, Color(0.42, 0.3, 0.22), {"hump": true, "claws": true, "ears": "round", "snout": 6.0, "tail": 4.0, "face": Color(0.72, 0.6, 0.48)})
+		"lion": _lion(role, female)
+		"wolf": _wolf(role, female)
+		"bear": _bear(role, female)
 		"deer": _lost_mammoth(role, female)
-		"sheep": _lost_quad(role, female, Color(0.36, 0.26, 0.18), {"hump": true, "bison": true, "beard": true, "ears": "round", "snout": 3.0, "tail": 8.0, "tuft": true})
-		"goat": _lost_quad(role, female, Color(0.62, 0.46, 0.28), {"palm": true, "ears": "point", "snout": 5.0, "tail": 8.0})
-		"boar": _lost_quad(role, female, Color(0.55, 0.48, 0.4), {"tusks": true, "flange": true, "ears": "round", "snout": 12.0, "tail": 8.0})
+		"sheep": _lost_bison(role, female)
+		"goat": _deer(role, female)
+		"boar": _boar(role, female)
 		"rabbit": _lost_dryosaur(role, female)
-		"mouse": _lost_quad(role, female, Color(0.72, 0.6, 0.5), {"ears": "round", "snout": 12.0, "tail": 22.0})
+		"mouse": _mouse(role, female)
 		"falcon": _lost_ptero(role, female)
 		"robin": _lost_micro(role, female)
 		"fish": _lost_piranha(role, female)
 		"beetle": _lost_roach(role, female)
 		"worm": _lost_velvet(role, female)
 		"mushroom": _lost_shelf(role)
-		_: _lost_quad(role, female, Color(0.6, 0.45, 0.3), {})
 
-static func _lost_coat(role: int, female: bool, base: Color) -> Color:
-	return _pick(role, female, [base, base.lightened(0.08), base.darkened(0.18), base.darkened(0.08), Color(0.9, 0.78, 0.42), Color(0.95, 0.84, 0.5)])
-
-static func _lost_quad(role: int, female: bool, base: Color, opts: Dictionary) -> void:
-	var coat := _lost_coat(role, female, base)
-	var belly: Color = opts.get("belly", coat.lightened(0.35)) as Color
-	var dark := coat.darkened(0.35)
-	var face: Color = opts.get("face", coat) as Color
-	_pose["amp"] = float(opts.get("amp", 26.0))
-	_pose["lift"] = float(opts.get("lift", 52.0))
-	_body_begin(Vector2(64, 121), float(opts.get("drop", 16.0)))
-	var hoof: Color = dark.darkened(0.2)
-	_quad_leg(Vector2(40, 88), Vector2(36, 121), 0.5, false, 5.5, dark, hoof, Vector2(4.2, 2.2))
-	_quad_leg(Vector2(78, 88), Vector2(82, 121), 0.0, true, 5.5, dark, hoof, Vector2(4.2, 2.2))
-	var tail_n: float = float(opts.get("tail", 12.0))
-	if tail_n > 0.0:
-		_push(Vector2(34, 78), _pf("tail") * 0.8)
-		_line(Vector2(34, 78), Vector2(34.0 - tail_n, 90.0), 4.0, coat)
-		if bool(opts.get("tuft", false)):
-			_circ(34.0 - tail_n, 92.0, 4.0, dark)
-		_pop()
-	_ell(52, 80, 18, 13, coat)
-	_ell(74, 78, 20, 14, coat)
-	if bool(opts.get("hump", false)):
-		_ell(84, 64, 14, 10, coat.darkened(0.05))
-	_ell(64, 88, 16, 6, belly)
-	var fore: float = float(opts.get("fore", 6.0))
-	_quad_leg(Vector2(48, 90), Vector2(46, 122), 0.0, false, 6.0, coat, hoof, Vector2(4.6, 2.4))
-	_quad_leg(Vector2(86, 88), Vector2(90, 122), 0.5, true, fore, coat, hoof, Vector2(5.2, 2.6))
-	if bool(opts.get("claws", false)):
-		var ivory := Color(0.95, 0.92, 0.84)
-		_line(Vector2(94, 118), Vector2(104, 112), 1.7, ivory, 0.0)
-		_line(Vector2(96, 122), Vector2(108, 118), 1.7, ivory, 0.0)
-	if bool(opts.get("flange", false)):
-		_ell(100, 78, 7, 9, dark)
-	_head_begin(Vector2(96, 70))
-	_ell(104, 62, 12, 11, face)
-	_push(Vector2(98, 54), _pf("ears"))
-	match str(opts.get("ears", "point")):
-		"round":
-			_circ(98, 50, 4.5, face)
-			_circ(98, 50, 2.2, belly)
-		"long":
-			_ell(96, 36, 3.2, 14, face)
-			_ell(102, 38, 2.4, 12, belly)
-		"none":
-			pass
-		_:
-			_poly([Vector2(94, 54), Vector2(98, 36), Vector2(106, 54)], dark)
+static func _lost_mammoth(r: int, f: bool) -> void:
+	# normal: russet wool; Old Tusker: near-black; White Mammoth: pale steppe wool.
+	var wool: Color = _pick(r, f, [Color(0.5, 0.29, 0.16), Color(0.58, 0.36, 0.21), Color(0.25, 0.17, 0.13), Color(0.32, 0.23, 0.17), Color(0.86, 0.8, 0.68), Color(0.9, 0.85, 0.75)])
+	var dark: Color = wool.darkened(0.32)
+	var skin: Color = wool.lerp(Color(0.32, 0.25, 0.22), 0.45)
+	var ivory := Color(0.97, 0.92, 0.78)
+	var tusk_k: float = 0.65 if f else (1.25 if r == 1 else 1.0)
+	var trunk: float = 0.0
+	_pose["amp"] = 15.0
+	_pose["lift"] = 28.0
+	_pose["tuck"] = true
+	match _act():
+		"walk":
+			_pose["bob"] = _pf("bob") * 0.45
+			trunk = sin(_pf("t") * TAU) * 10.0
+		"eat":
+			_pose["head"] = 14.0
+			trunk = -24.0 + _pose["k"] * 34.0
+		"alarm", "work":
+			_pose["head"] = -10.0
+			trunk = -64.0 - (0.0 if _act() == "alarm" else _pose["k"] * 18.0)
+			_pose["bob"] = minf(_pf("bob"), -2.0)
+		"windup":
+			_pose["pitch"] = -10.0
+			_pose["legs"] = "rear"
+			trunk = -40.0
+		"strike":
+			_pose["pitch"] = 6.0
+			_pose["head"] = 18.0
+			trunk = 18.0
+	_body_begin(Vector2(62, 122), 18.0)
+	_mammoth_leg(Vector2(36, 88), 0.5, false, dark, skin)
+	_mammoth_leg(Vector2(68, 88), 0.0, true, dark, skin)
+	_push(Vector2(16, 70), _pf("tail") * 0.5)
+	_line(Vector2(17, 68), Vector2(9, 92), 3.2, dark)
+	_ell(8, 96, 3.8, 6.0, dark.darkened(0.15))
 	_pop()
-	var snout: float = float(opts.get("snout", 5.0))
-	_ell(114.0 + snout * 0.15, 66, 6.0 + snout * 0.35, 4.4, belly)
-	var ivory := Color(0.96, 0.94, 0.88)
-	if bool(opts.get("fangs", false)):
-		_poly([Vector2(110, 68), Vector2(113, 86), Vector2(117, 68)], ivory, 0.0)
-		_poly([Vector2(117, 68), Vector2(119, 78), Vector2(122, 68)], ivory, 0.0)
-	if bool(opts.get("tusks", false)):
-		_poly([Vector2(116, 64), Vector2(124, 80), Vector2(128, 64)], ivory, 0.0)
-	if bool(opts.get("teeth", false)) and _pf("mouth") > 0.2:
-		_poly([Vector2(112, 68), Vector2(115, 74), Vector2(118, 68)], ivory, 0.0)
-	if bool(opts.get("beard", false)):
-		_line(Vector2(108, 70), Vector2(114, 86), 3.2, dark, 0.0)
-	if bool(opts.get("palm", false)):
-		_poly([Vector2(96, 52), Vector2(114, 18), Vector2(128, 34), Vector2(110, 38), Vector2(122, 50), Vector2(100, 56)], Color(0.7, 0.52, 0.3), 0.3)
-	if bool(opts.get("bison", false)):
-		_arc(96, 58, 12, 200, 280, 3.2, dark)
-		_arc(110, 56, 10, 250, 340, 3.2, dark)
-	_peye(106, 60, 2.2, Color(0.15, 0.1, 0.08))
-	_alarm_at(Vector2(108, 56), 16.0)
+	# Sloping back: the high shoulder dome falls away to a low rump.
+	_ell(39, 76, 28, 30, wool)
+	_ell(66, 62, 33, 36, wool)
+	_ell(52, 80, 36, 25, wool)
+	_ell(62, 46, 24, 14, wool.lightened(0.09), -8.0, 0.5)
+	for i: int in 14:
+		var x: float = 16.0 + i * 6.0
+		var y: float = 92.0 + sin(float(i) * 2.2) * 3.0
+		_poly([Vector2(x - 5, y), Vector2(x + 1, y + 13 + (i % 3) * 3.0), Vector2(x + 5, y)], wool.darkened(0.1), 0.2)
+	for i: int in 16:
+		var a: float = float(i) * 2.4
+		var x2: float = 32.0 + fmod(float(i) * 11.0, 52.0)
+		var y2: float = 52.0 + fmod(float(i) * 17.0, 34.0)
+		_line(Vector2(x2, y2), Vector2(x2 - 2.0 + sin(a), y2 + 8.0), 1.5, dark, 0.0)
+	_mammoth_leg(Vector2(44, 92), 0.0, false, wool.darkened(0.08), skin)
+	_mammoth_leg(Vector2(78, 90), 0.5, true, wool.darkened(0.08), skin)
+	_head_begin(Vector2(88, 62))
+	_ell(86, 34, 15, 13, wool.lightened(0.05))  # the tall skull dome
+	_ell(95, 56, 20, 25, wool)
+	_push(Vector2(86, 50), _pf("ears") * 0.4)
+	_ell(80, 54, 7.5, 12, dark)
 	_pop()
+	# Far tusk, trunk, near tusk: both roots sit inside the face.
+	_mammoth_tusk(tusk_k, ivory.darkened(0.14), -4.0)
+	_push(Vector2(108, 62), trunk)
+	var w: float = 11.0
+	var prev := Vector2(108, 60)
+	for i: int in 7:
+		var q := Vector2(112.0 + sin(float(i) * 0.5) * 7.0, 66.0 + i * 8.0)
+		_line(prev, q, w, skin.lerp(wool, 0.35))
+		_line(q + Vector2(-w * 0.4, 0), q + Vector2(w * 0.4, -1), 1.0, dark, 0.0)
+		prev = q
+		w -= 1.0
 	_pop()
-
-static func _lost_mammoth(role: int, female: bool) -> void:
-	var coat := _lost_coat(role, female, Color(0.45, 0.34, 0.26))
-	var belly := Color(0.7, 0.58, 0.46)
-	var dark := coat.darkened(0.28)
-	_pose["amp"] = 18.0
-	_pose["lift"] = 36.0
-	_body_begin(Vector2(64, 121), 20.0)
-	_quad_leg(Vector2(40, 86), Vector2(38, 121), 0.5, false, 7.0, dark, dark, Vector2(5.5, 2.6))
-	_quad_leg(Vector2(78, 84), Vector2(84, 121), 0.0, true, 7.0, dark, dark, Vector2(5.5, 2.6))
-	_push(Vector2(28, 78), _pf("tail") * 0.5)
-	_line(Vector2(30, 78), Vector2(16, 70), 4.0, coat)
-	_circ(14, 68, 3.5, dark)
-	_pop()
-	_ell(58, 78, 30, 18, coat)
-	_circ(42, 64, 7, dark)
-	_circ(56, 56, 8, dark)
-	_circ(72, 60, 7, dark)
-	_ell(60, 90, 18, 6, belly)
-	_quad_leg(Vector2(48, 90), Vector2(46, 122), 0.0, false, 7.5, coat, dark, Vector2(6.0, 2.8))
-	_quad_leg(Vector2(82, 86), Vector2(90, 122), 0.5, true, 7.5, coat, dark, Vector2(6.0, 2.8))
-	_head_begin(Vector2(96, 62))
-	_ell(100, 48, 16, 14, coat.lightened(0.05))
-	_ell(90, 36, 4, 5, dark)
-	var reach: float = 18.0 + _pf("head") * 0.15
-	_push(Vector2(108, 58), _pf("head") * 0.4)
-	_line(Vector2(108, 56), Vector2(118, 56 + reach), 5.0, belly)
-	_line(Vector2(118, 56 + reach), Vector2(110, 64 + reach), 4.0, belly.darkened(0.05))
-	_pop()
-	var tusk := Color(0.95, 0.9, 0.78)
-	var big: float = 1.35 if role == 1 else 1.0
-	_arc(104, 60, 16 * big, 20, 150, 3.4, tusk)
-	_peye(106, 44, 2.0, Color(0.12, 0.1, 0.08))
-	_alarm_at(Vector2(104, 40), 18.0)
+	_mammoth_tusk(tusk_k, ivory, 0.0)
+	_peye(100, 46, 2.5, Color(0.2, 0.12, 0.08))
+	_alarm_at(Vector2(94, 34), 20.0)
 	_pop()
 	_pop()
 
-static func _lost_dryosaur(role: int, _female: bool) -> void:
-	var coat := _lost_coat(role, _female, Color(0.48, 0.58, 0.32))
-	var belly := Color(0.82, 0.86, 0.62)
-	var dark := coat.darkened(0.25)
-	_pose["amp"] = 34.0
-	_pose["lift"] = 64.0
-	_body_begin(Vector2(78, 121), 10.0)
-	_push(Vector2(70, 78), _pf("tail") * 0.6)
-	_line(Vector2(70, 76), Vector2(28, 84), 5.0, coat)
+static func _mammoth_leg(hip: Vector2, off: float, front: bool, col: Color, foot: Color) -> void:
+	var a := _leg_angles(off, front)
+	_push(hip, a.x * 0.8)
+	_ell(hip.x, hip.y + 14.0, 11.5, 20.0, col)
+	_ell(hip.x, hip.y + 26.0, 10.5, 9.0, col)
+	_ell(hip.x, hip.y + 30.0, 10.5, 3.6, foot)
+	for k: int in 3:
+		_dot(hip.x - 5.0 + k * 5.0, hip.y + 32.0, 1.2, Color(0.9, 0.85, 0.72))
 	_pop()
-	_ell(78, 74, 16, 10, coat)
-	_ell(78, 80, 8, 4, belly)
-	_quad_leg(Vector2(70, 82), Vector2(62, 122), 0.0, false, 5.0, dark, dark, Vector2(6.0, 2.4))
-	_quad_leg(Vector2(86, 80), Vector2(100, 122), 0.5, true, 5.0, coat, dark, Vector2(6.5, 2.4))
-	_line(Vector2(90, 70), Vector2(100, 78), 2.2, coat, 0.4)
-	_head_begin(Vector2(96, 64))
-	_line(Vector2(96, 66), Vector2(112, 52), 4.0, coat)
-	_ell(116, 50, 8, 5, coat)
-	_poly([Vector2(118, 48), Vector2(128, 52), Vector2(118, 56)], belly, 0.0)
-	_peye(114, 48, 1.6, Color(0.2, 0.15, 0.08))
-	_alarm_at(Vector2(116, 46), 12.0)
+
+static func _mammoth_tusk(k: float, col: Color, nudge: float) -> void:
+	_arc(122.0 + nudge, 76.0, 18.0 * k, 182.0, 56.0, 5.2, col)
+
+static func _lost_bison(r: int, f: bool) -> void:
+	# normal: steppe bison; Ironhide: black; Pale Bison: cream cape on a dun body.
+	var coat: Color = _pick(r, f, [Color(0.5, 0.33, 0.19), Color(0.57, 0.39, 0.24), Color(0.2, 0.15, 0.13), Color(0.27, 0.2, 0.17), Color(0.76, 0.62, 0.42), Color(0.8, 0.68, 0.48)])
+	var cape: Color = _pick(r, f, [Color(0.27, 0.16, 0.1), Color(0.33, 0.21, 0.13), Color(0.09, 0.08, 0.08), Color(0.13, 0.11, 0.1), Color(0.94, 0.88, 0.74), Color(0.96, 0.9, 0.78)])
+	var horn := Color(0.86, 0.78, 0.6)
+	var hoof := Color(0.11, 0.09, 0.08)
+	_pose["amp"] = 21.0
+	_pose["lift"] = 44.0
+	_pose["tuck"] = true
+	match _act():
+		"eat": _pose["head"] = 40.0 - _pose["k"] * 6.0
+		"strike": _pose["head"] = 26.0
+		"windup": _pose["head"] = 18.0
+		"work": _pose["head"] = 18.0 if _pose["k"] == 0 else -4.0
+	_body_begin(Vector2(62, 122), 18.0)
+	_quad_leg(Vector2(36, 94), Vector2(35, 121), 0.5, false, 6.5, coat.darkened(0.3), hoof, Vector2(4.2, 2.3))
+	_quad_leg(Vector2(74, 92), Vector2(76, 121), 0.0, true, 6.5, cape.darkened(0.15), hoof, Vector2(4.2, 2.3))
+	_push(Vector2(16, 78), _pf("tail") * 1.2)
+	_line(Vector2(17, 76), Vector2(10, 96), 2.8, coat.darkened(0.2))
+	_ell(9, 100, 3.2, 6.0, cape)
+	_pop()
+	_ell(38, 82, 26, 22, coat)
+	_ell(54, 86, 26, 16, coat.darkened(0.03))
+	# The hump and cape: the bison's whole front end is one dark shaggy mass.
+	_ell(72, 66, 26, 34, cape)
+	_ell(82, 84, 18, 21, cape)
+	_ell(70, 44, 18, 14, cape.lightened(0.1), 0.0, 0.5)
+	for i: int in 9:
+		var x: float = 52.0 + i * 6.0
+		_poly([Vector2(x - 4, 95), Vector2(x + 1, 108 + (i % 3) * 3.0), Vector2(x + 4, 95)], cape, 0.2)
+	for i: int in 9:
+		_line(Vector2(56.0 + i * 5.0, 58.0 + (i % 3) * 10.0), Vector2(53.0 + i * 5.0, 65.0 + (i % 3) * 10.0), 1.3, cape.lightened(0.16), 0.0)
+	_quad_leg(Vector2(42, 96), Vector2(42, 122), 0.0, false, 7.5, coat.darkened(0.08), hoof, Vector2(4.8, 2.5))
+	_quad_leg(Vector2(84, 96), Vector2(86, 122), 0.5, true, 8.0, cape.lightened(0.05), hoof, Vector2(4.8, 2.5))
+	_head_begin(Vector2(92, 76))
+	_ell(98, 76, 16, 19, cape.lightened(0.04))
+	_ell(109, 91, 10, 9, coat.darkened(0.25))
+	_dot(116, 93, 1.8, Color(0.05, 0.04, 0.04))
+	_poly([Vector2(99, 96), Vector2(105, 118), Vector2(112, 97)], cape, 0.2)  # the beard
+	# Horns root in the skull and hook up and forward.
+	var sweep: float = 1.3 if r == 1 else (1.0 if not f else 0.8)
+	_arc(92, 56, 14.0 * sweep, 150.0, 330.0, 5.0, horn)
+	_dot(92 + 14.0 * sweep, 53, 2.0, Color(0.16, 0.13, 0.11))
+	_push(Vector2(89, 70), _pf("ears") * 0.7)
+	_ell(84, 72, 7, 3.6, cape.lightened(0.14), -12.0)
+	_pop()
+	_peye(104, 75, 2.6, Color(0.42, 0.22, 0.1))
+	_alarm_at(Vector2(98, 58), 18.0)
+	_pop()
+	_pop()
+
+static func _lost_dryosaur(r: int, f: bool) -> void:
+	# A quick plant-eater on two legs. normal: fern green; Scout: banded rust; Moon Dryosaur: blue dusk.
+	var hide: Color = _pick(r, f, [Color(0.42, 0.56, 0.27), Color(0.5, 0.62, 0.31), Color(0.68, 0.38, 0.2), Color(0.74, 0.46, 0.26), Color(0.28, 0.48, 0.6), Color(0.36, 0.56, 0.66)])
+	var back: Color = hide.darkened(0.3)
+	var belly := Color(0.92, 0.88, 0.66)
+	var a: float = _pf("t") * TAU
+	var near: float = sin(a) * 42.0 if _act() == "walk" else 0.0
+	var far: float = -near
+	var tail: float = _pf("tail") * 0.45
+	match _act():
+		"eat":
+			_pose["pitch"] = 30.0
+			_pose["head"] = 18.0 - _pose["k"] * 8.0
+		"alarm":
+			_pose["pitch"] = -16.0
+			near = -18.0
+			far = 18.0
+		"windup": _pose["pitch"] = 12.0
+		"strike":
+			_pose["pitch"] = -8.0
+			near = -46.0
+			far = 34.0
+		"sleep":
+			_pose["lie"] = 1.0
+			near = -66.0
+			far = -66.0
+		"work":
+			_pose["bob"] = -10.0 * _pose["k"]
+			far = 26.0 * _pose["k"]
+			near = -26.0 * _pose["k"]
+	_body_begin(Vector2(62, 122), 20.0)
+	_saur_leg(Vector2(54, 80), far, hide.darkened(0.3), back.darkened(0.15))
+	# Tail: overlapping segments tapering out of the hips, so it never detaches.
+	_push(Vector2(46, 74), tail)
+	var w: float = 21.0
+	var at := Vector2(50, 74)
+	for i: int in 9:
+		var nx := Vector2(44.0 - i * 5.0, 74.0 - sin(float(i) / 8.0 * PI) * 7.0 + i * 0.5)
+		_line(at, nx, w, hide)
+		_line(at + Vector2(0, -w * 0.3), nx + Vector2(0, -w * 0.3), w * 0.35, back, 0.0)
+		at = nx
+		w -= 2.2
+	_pop()
+	_ell(62, 72, 26, 19, hide)
+	_ell(68, 80, 21, 10, belly)
+	_ell(58, 62, 20, 7, back, 0.0, 0.3)
+	if r == 1:
+		for i: int in 4:
+			_line(Vector2(46.0 + i * 11.0, 56), Vector2(43.0 + i * 11.0, 74), 3.5, back.darkened(0.2), 0.0)
+	_saur_leg(Vector2(58, 80), near, hide, back)
+	_ell(82, 76, 4, 8, hide.darkened(0.08), -30.0)  # small forearm
+	_ell(77, 83, 3, 2.4, back)
+	_head_begin(Vector2(82, 64))
+	_poly([Vector2(72, 72), Vector2(84, 40), Vector2(98, 42), Vector2(90, 80)], hide)
+	_poly([Vector2(84, 74), Vector2(94, 46), Vector2(98, 48), Vector2(90, 78)], belly)
+	_ell(99, 38, 13, 10, hide)
+	_poly([Vector2(100, 31), Vector2(122, 40), Vector2(120, 47), Vector2(100, 47)], hide.lightened(0.08))
+	_poly([Vector2(116, 40), Vector2(125, 44), Vector2(117, 48)], Color(0.93, 0.82, 0.5), 0.0)
+	_line(Vector2(104, 46), Vector2(120, 46), 1.0 + _pf("mouth"), Color(0.2, 0.12, 0.08), 0.0)
+	_peye(101, 35, 3.0, Color(0.95, 0.72, 0.2))
+	_alarm_at(Vector2(104, 34), 14.0)
+	_pop()
+	_pop()
+
+static func _saur_leg(hip: Vector2, deg: float, col: Color, foot: Color) -> void:
+	_push(hip, deg)
+	_ell(hip.x, hip.y + 12.0, 12.0, 18.0, col)
+	_push(hip + Vector2(0, 26), -deg * 0.65 - 12.0)
+	_line(hip + Vector2(0, 24), hip + Vector2(4, 40), 6.0, col.darkened(0.08))
+	_ell(hip.x + 9.0, hip.y + 41.0, 9.0, 2.8, foot)
 	_pop()
 	_pop()
 
@@ -2572,55 +2737,98 @@ static func _wing_angles() -> Vector2:
 			wing = -44.0 if _pose["k"] == 0 else 54.0
 	return Vector2(wing, flap)
 
-static func _lost_ptero(role: int, female: bool) -> void:
-	var hide := _lost_coat(role, female, Color(0.72, 0.64, 0.5))
-	var membrane := Color(0.82, 0.74, 0.6)
-	var beak := Color(0.9, 0.72, 0.28)
+static func _lost_ptero(r: int, f: bool) -> void:
+	# normal: dun hide, red crest; Crag Ptero: slate; Sun Ptero: amber with a great crest.
+	var hide: Color = _pick(r, f, [Color(0.62, 0.48, 0.34), Color(0.68, 0.54, 0.38), Color(0.38, 0.4, 0.46), Color(0.44, 0.46, 0.52), Color(0.82, 0.58, 0.26), Color(0.86, 0.64, 0.32)])
+	var skin: Color = hide.lerp(Color(0.86, 0.46, 0.3), 0.42)
+	var crest: Color = [Color(0.82, 0.24, 0.14), Color(0.92, 0.62, 0.2), Color(0.95, 0.3, 0.18)][r]
 	var ang := _wing_angles()
-	_body_begin(Vector2(64, 96), 8.0)
-	_push(Vector2(70, 70), ang.x, Vector2.ZERO, Vector2(1.0, ang.y))
-	_poly([Vector2(72, 68), Vector2(118, 40), Vector2(40, 88), Vector2(64, 78)], membrane)
-	_line(Vector2(72, 66), Vector2(116, 42), 2.2, hide.darkened(0.2), 0.0)
+	var folded: bool = absf(ang.x) > 56.0
+	_body_begin(Vector2(62, 118), 2.0)
+	# The far wing sits behind the body; the near wing grows from the shoulder.
+	_ptero_wing(ang, skin.darkened(0.22), hide.darkened(0.3), 0.86)
+	_line(Vector2(44, 68), Vector2(33, 72), 3.0, hide.darkened(0.15))
+	_ell(30, 73, 5, 2.4, crest, 0.0, 0.3)  # tail vane
+	_ell(58, 66, 22, 11, hide, -6.0)
+	_ell(62, 71, 14, 5, hide.lightened(0.25))
+	var legs: float = 10.0 if not folded else 28.0
+	_line(Vector2(52, 74), Vector2(46, 76 + legs), 3.2, hide.darkened(0.25))
+	_line(Vector2(60, 74), Vector2(56, 76 + legs), 3.2, hide.darkened(0.25))
+	_head_begin(Vector2(76, 60))
+	_line(Vector2(72, 62), Vector2(90, 46), 7.0, hide)
+	_ell(94, 43, 10, 8, hide)
+	# The crest sweeps back off the skull; the bill is long and toothy.
+	var sweep: float = 1.25 if r == 2 else (1.0 if not f else 0.65)
+	_poly([Vector2(96, 37), Vector2(90 - 28 * sweep, 21), Vector2(84, 43)], crest, 0.5)
+	var m: float = _pf("mouth")
+	_poly([Vector2(98, 38), Vector2(127, 45), Vector2(100, 47)], Color(0.93, 0.76, 0.34), 0.4)
+	_push(Vector2(100, 47), m * 22.0)
+	_poly([Vector2(99, 47), Vector2(122, 47), Vector2(100, 52)], Color(0.82, 0.62, 0.28), 0.3)
 	_pop()
-	_ell(62, 78, 12, 8, hide)
-	_head_begin(Vector2(78, 70))
-	_line(Vector2(78, 72), Vector2(100, 52), 4.5, hide)
-	_line(Vector2(96, 50), Vector2(84, 40), 3.0, hide.darkened(0.15), 0.0)
-	_ell(106, 50, 8, 4.2, membrane)
-	_poly([Vector2(110, 48), Vector2(126, 52), Vector2(110, 56)], beak, 0.0)
-	if _pf("mouth") > 0.3:
-		_poly([Vector2(114, 54), Vector2(118, 58), Vector2(116, 54)], Color(0.96, 0.94, 0.88), 0.0)
-	_peye(104, 48, 1.5, Color(0.15, 0.12, 0.08))
-	_alarm_at(Vector2(106, 46), 12.0)
+	for i: int in 4:
+		_poly([Vector2(106 + i * 4, 46), Vector2(107 + i * 4, 49), Vector2(108 + i * 4, 46)], Color(0.98, 0.96, 0.9), 0.0)
+	_peye(96, 41, 2.6, Color(0.95, 0.6, 0.15))
+	_alarm_at(Vector2(94, 38), 13.0)
 	_pop()
-	_line(Vector2(58, 84), Vector2(54, 100), 1.8, hide.darkened(0.2), 0.0)
-	_line(Vector2(70, 84), Vector2(76, 100), 1.8, hide.darkened(0.2), 0.0)
+	_ptero_wing(ang, skin, hide.darkened(0.12), 1.0)
 	_pop()
 
-static func _lost_micro(role: int, female: bool) -> void:
-	var coat := _lost_coat(role, female, Color(0.28, 0.32, 0.26))
+static func _ptero_wing(ang: Vector2, film: Color, bone: Color, k: float) -> void:
+	_push(Vector2(68, 60), ang.x, Vector2.ZERO, Vector2(1.0, ang.y * k))
+	# Membrane from the long fourth finger back to the hip.
+	var pts: Array = [Vector2(70, 58), Vector2(96, 26), Vector2(124, 4), Vector2(112, 44), Vector2(90, 70), Vector2(62, 84), Vector2(42, 70), Vector2(58, 70)]
+	_poly(pts, film, 0.7)
+	_line(Vector2(84, 42), Vector2(66, 66), 1.0, film.darkened(0.22), 0.0)
+	_line(Vector2(102, 26), Vector2(70, 64), 1.0, film.darkened(0.22), 0.0)
+	_line(Vector2(68, 60), Vector2(96, 26), 4.5, bone)
+	_line(Vector2(96, 26), Vector2(124, 4), 2.6, bone)
+	_poly([Vector2(95, 24), Vector2(103, 21), Vector2(98, 28)], Color(0.95, 0.92, 0.82), 0.0)
+	_pop()
+
+static func _lost_micro(r: int, f: bool) -> void:
+	# normal: iridescent blue-black; Ember: russet; Jade: green sheen.
+	var coat: Color = _pick(r, f, [Color(0.16, 0.2, 0.34), Color(0.22, 0.26, 0.38), Color(0.5, 0.22, 0.13), Color(0.58, 0.3, 0.17), Color(0.12, 0.38, 0.3), Color(0.18, 0.44, 0.34)])
+	var sheen: Color = _pick(r, f, [Color(0.3, 0.55, 0.9), Color(0.36, 0.6, 0.86), Color(0.98, 0.58, 0.2), Color(0.96, 0.66, 0.3), Color(0.4, 0.92, 0.58), Color(0.5, 0.92, 0.66)])
 	var ang := _wing_angles()
-	_body_begin(Vector2(70, 100), 6.0)
-	_push(Vector2(64, 72), _pf("tail") * 0.4)
-	_line(Vector2(64, 74), Vector2(24, 80), 3.0, coat)
+	_body_begin(Vector2(64, 118), 2.0)
+	_push(Vector2(50, 70), _pf("tail") * 0.35)
+	_line(Vector2(52, 70), Vector2(8, 80), 4.0, coat)
+	for i: int in 5:
+		var x: float = 12.0 + i * 8.0
+		_poly([Vector2(x + 7, 76 - i * 1.5), Vector2(x - 8, 92 - i), Vector2(x - 3, 74 - i)], sheen.lerp(coat, 0.15 + i * 0.12), 0.3)
 	_pop()
-	_push(Vector2(72, 68), ang.x * 0.7, Vector2.ZERO, Vector2(0.7, ang.y))
-	_poly([Vector2(70, 66), Vector2(100, 48), Vector2(78, 74)], coat.lightened(0.08))
+	# Hind wings: long feathers on the legs, the microraptor's signature.
+	_push(Vector2(58, 78), ang.x * 0.45, Vector2.ZERO, Vector2(1.0, maxf(absf(ang.y), 0.4)))
+	for i: int in 4:
+		_poly([Vector2(56, 76), Vector2(26.0 + i * 8.0, 100.0 + i * 3.0), Vector2(38.0 + i * 8.0, 96.0 + i * 3.0), Vector2(62, 80)], coat.lerp(sheen, 0.2 + i * 0.1), 0.4)
 	_pop()
-	_poly([Vector2(68, 78), Vector2(90, 92), Vector2(74, 84)], coat.darkened(0.1))
-	_ell(72, 72, 11, 7, coat)
-	_head_begin(Vector2(82, 66))
-	_ell(90, 60, 6, 4, Color(0.8, 0.72, 0.58))
+	_ell(64, 70, 19, 13, coat)
+	_ell(70, 75, 12, 6, coat.lerp(sheen, 0.3))
+	_line(Vector2(62, 80), Vector2(66, 112), 3.0, Color(0.32, 0.24, 0.16))
+	_poly([Vector2(62, 113), Vector2(76, 114), Vector2(66, 110)], Color(0.32, 0.24, 0.16), 0.0)
+	_head_begin(Vector2(80, 62))
+	_line(Vector2(76, 66), Vector2(88, 52), 8.0, coat)
+	_ell(95, 47, 11, 8.5, coat)
+	_poly([Vector2(84, 42), Vector2(70, 32), Vector2(88, 38)], sheen, 0.3)
+	_poly([Vector2(101, 43), Vector2(120, 49), Vector2(102, 54)], Color(0.86, 0.74, 0.52), 0.3)
 	if _pf("mouth") > 0.2:
-		_poly([Vector2(92, 62), Vector2(96, 66), Vector2(94, 62)], Color(0.95, 0.94, 0.9), 0.0)
-	_peye(88, 58, 1.3, Color(0.9, 0.7, 0.2))
-	_alarm_at(Vector2(90, 56), 10.0)
+		_poly([Vector2(104, 52), Vector2(116, 50), Vector2(107, 58)], Color(0.45, 0.14, 0.12), 0.0)
+	for i: int in 3:
+		_dot(106.0 + i * 4.0, 52.0, 0.9, Color(0.98, 0.96, 0.9))
+	_peye(97, 45, 2.7, Color(0.98, 0.76, 0.2))
+	_alarm_at(Vector2(95, 42), 12.0)
+	_pop()
+	_push(Vector2(70, 62), ang.x * 0.8, Vector2.ZERO, Vector2(1.0, ang.y))
+	for i: int in 5:
+		_poly([Vector2(68, 62), Vector2(112.0 - i * 9.0, 18.0 + i * 4.0), Vector2(100.0 - i * 9.0, 22.0 + i * 5.0), Vector2(64, 66)], sheen.lerp(coat, 0.2 + i * 0.13), 0.4)
 	_pop()
 	_pop()
 
-static func _lost_piranha(role: int, female: bool) -> void:
-	var body := _lost_coat(role, female, Color(0.72, 0.7, 0.64))
-	var fin := Color(0.55, 0.28, 0.24)
+static func _lost_piranha(r: int, f: bool) -> void:
+	# normal: steel and blood; Black Piranha; Gilded Piranha.
+	var body: Color = _pick(r, f, [Color(0.56, 0.6, 0.6), Color(0.62, 0.66, 0.64), Color(0.2, 0.22, 0.26), Color(0.26, 0.28, 0.32), Color(0.82, 0.66, 0.34), Color(0.86, 0.72, 0.42)])
+	var flame: Color = [Color(0.82, 0.2, 0.14), Color(0.62, 0.14, 0.12), Color(0.95, 0.42, 0.14)][r]
+	var fin: Color = body.darkened(0.3)
 	var tail: float = _pf("tail")
 	var sway := 0.0
 	match _act():
@@ -2636,82 +2844,282 @@ static func _lost_piranha(role: int, female: bool) -> void:
 			_pose["mouth"] = 1.0
 			tail = -18.0
 	_push(Vector2(64, 32), sway)
-	_push(Vector2(40, 32), tail * 0.5)
-	_poly([Vector2(36, 32), Vector2(10, 16), Vector2(18, 32), Vector2(10, 50)], fin)
+	_push(Vector2(30, 32), tail * 0.6)
+	_poly([Vector2(36, 31), Vector2(6, 11), Vector2(14, 31), Vector2(6, 53)], fin, 0.5)
+	_poly([Vector2(12, 21), Vector2(9, 31), Vector2(12, 42), Vector2(5, 53), Vector2(14, 31), Vector2(5, 11)], flame, 0.2)
 	_pop()
-	_ell(66, 30, 28, 18, body)
-	_ell(66, 40, 18, 8, Color(0.75, 0.28, 0.24))
-	_poly([Vector2(78, 42), Vector2(100, 52), Vector2(90, 40)], body.darkened(0.08))
+	_poly([Vector2(42, 12), Vector2(60, 1), Vector2(76, 9), Vector2(72, 18), Vector2(46, 18)], fin, 0.4)
+	_poly([Vector2(52, 50), Vector2(44, 62), Vector2(68, 54)], flame.darkened(0.15), 0.3)
+	_ell(66, 31, 40, 23, body)
+	_ell(70, 44, 31, 10, flame)
+	_ell(68, 22, 30, 8, body.lightened(0.16), 0.0, 0.2)
+	for i: int in 16:
+		_arc(40.0 + (i % 6) * 9.0, 22.0 + floorf(i / 6.0) * 8.0, 3.2, -60.0, 60.0, 0.9, body.darkened(0.16))
+	_poly([Vector2(70, 34), Vector2(84, 44), Vector2(84, 32)], fin, 0.3)
+	_arc(84, 30, 19, -68.0, 76.0, 1.5, body.darkened(0.34))
 	var m: float = _pf("mouth")
-	if m > 0.15:
-		for i: int in 3:
-			_poly([Vector2(92 + i * 4, 44), Vector2(94 + i * 4, 44 + 6.0 * m), Vector2(96 + i * 4, 44)], Color(0.96, 0.94, 0.9), 0.0)
-	_poly([Vector2(52, 16), Vector2(70, 8), Vector2(84, 18)], fin)
-	_peye(86, 26, 2.6, Color(0.15, 0.12, 0.08))
-	_alarm_at(Vector2(90, 24), 12.0)
+	# The underbite: a heavy lower jaw with interlocking teeth.
+	_poly([Vector2(92, 42), Vector2(112, 37 + 8 * m), Vector2(108, 50 + 9 * m), Vector2(90, 52)], body.darkened(0.12), 0.3)
+	if m > 0.1:
+		_poly([Vector2(92, 36), Vector2(109, 33), Vector2(110, 38 + 8 * m), Vector2(92, 43)], Color(0.34, 0.08, 0.1), 0.0)
+	for i: int in 4:
+		_poly([Vector2(95 + i * 4, 35), Vector2(97 + i * 4, 40), Vector2(99 + i * 4, 35)], Color(0.98, 0.96, 0.9), 0.0)
+		_poly([Vector2(95 + i * 4, 41 + 8 * m), Vector2(97 + i * 4, 36 + 8 * m), Vector2(99 + i * 4, 41 + 8 * m)], Color(0.98, 0.96, 0.9), 0.0)
+	_peye(92, 24, 4.2, Color(0.98, 0.42, 0.14))
+	_alarm_at(Vector2(92, 22), 14.0)
 	_pop()
 
-static func _lost_roach(role: int, female: bool) -> void:
-	var shell := _lost_coat(role, female, Color(0.48, 0.3, 0.2))
-	var leg := Color(0.12, 0.1, 0.08)
+static func _lost_roach(r: int, f: bool) -> void:
+	# normal: chestnut; Tar Roach: black; Amber Roach.
+	var shell: Color = _pick(r, f, [Color(0.5, 0.26, 0.13), Color(0.56, 0.31, 0.16), Color(0.2, 0.15, 0.13), Color(0.27, 0.2, 0.16), Color(0.8, 0.52, 0.18), Color(0.84, 0.58, 0.24)])
+	var leg: Color = shell.darkened(0.5)
 	var feelers: float = _pf("ears")
-	if _act() == "walk":
-		_pose["bob"] = -absf(sin(_pf("t") * TAU * 2.0)) * 1.5
-		feelers = sin(_pf("t") * TAU * 2.0) * 14.0
-	elif _act() == "alarm":
-		feelers = -34.0
-	_body_begin(Vector2(64, 121))
+	var tuck: float = 0.0
+	match _act():
+		"walk":
+			_pose["bob"] = -absf(sin(_pf("t") * TAU * 2.0)) * 1.5
+			feelers = sin(_pf("t") * TAU * 2.0) * 14.0
+		"alarm": feelers = -34.0
+		"sleep": tuck = 1.0
+		"windup": _pose["pitch"] = -8.0
+		"strike": _pose["pitch"] = 6.0
+		"work": _pose["pitch"] = 6.0 * _pose["k"]
+	_body_begin(Vector2(64, 122))
 	for i: int in 3:
-		var x: float = 46.0 + i * 14.0
+		var x: float = 42.0 + i * 20.0
 		var a: float = sin(_pf("t") * TAU + (PI if i % 2 == 0 else 0.0)) * 18.0 if _act() == "walk" else 0.0
-		_push(Vector2(x, 108), a)
-		_line(Vector2(x, 108), Vector2(x - 10, 122), 2.4, leg, 0.0)
+		_push(Vector2(x, 100), a + tuck * 40.0)
+		_line(Vector2(x, 100), Vector2(x - 12, 109), 3.4, leg)
+		_line(Vector2(x - 12, 109), Vector2(x - 19, 122), 2.4, leg)
+		_dot(x - 14, 113, 1.0, leg.lightened(0.3))
 		_pop()
-		_push(Vector2(x + 4, 108), -a)
-		_line(Vector2(x + 4, 108), Vector2(x + 12, 122), 2.4, leg, 0.0)
-		_pop()
-	_ell(64, 100, 32, 10, shell)
-	_line(Vector2(40, 100), Vector2(90, 100), 1.2, shell.darkened(0.35), 0.0)
-	_circ(96, 96, 5.5, shell.darkened(0.15))
-	_push(Vector2(98, 94), feelers)
-	_line(Vector2(98, 94), Vector2(120, 78), 1.2, leg, 0.0)
-	_line(Vector2(98, 96), Vector2(122, 102), 1.2, leg, 0.0)
+	_push(Vector2(24, 92), -6.0)
+	_line(Vector2(22, 92), Vector2(8, 88), 2.0, leg, 0.0)
+	_line(Vector2(22, 96), Vector2(8, 100), 2.0, leg, 0.0)
 	_pop()
-	_peye(98, 95, 1.2, Color(0.1, 0.08, 0.06))
-	_alarm_at(Vector2(100, 92), 10.0)
+	_ell(58, 90, 39, 16, shell)
+	_ell(54, 83, 29, 6, shell.lightened(0.3), -2.0, 0.0)
+	_line(Vector2(21, 90), Vector2(86, 87), 1.6, shell.darkened(0.45), 0.0)
+	for i: int in 4:
+		_arc(36.0 + i * 11.0, 112, 26, 248.0, 292.0, 1.0, shell.darkened(0.2))
+	_ell(92, 90, 14, 13, shell.lerp(Color(0.93, 0.75, 0.42), 0.45))
+	_ell(94, 88, 8, 8, shell.darkened(0.42))
+	_head_begin(Vector2(102, 96))
+	_ell(106, 99, 8, 7.5, shell.darkened(0.22))
+	_peye(109, 97, 2.2, Color(0.08, 0.06, 0.05))
+	_push(Vector2(110, 92), feelers)
+	_arc(126, 86, 18, 170.0, 280.0, 1.6, leg)
+	_arc(84, 56, 32, 42.0, -6.0, 1.3, leg)
+	_pop()
+	_alarm_at(Vector2(108, 94), 10.0)
+	_pop()
 	_pop()
 
-static func _lost_velvet(role: int, female: bool) -> void:
-	var skin := _lost_coat(role, female, Color(0.72, 0.42, 0.52))
-	var wave: float = _pf("tail")
-	if _act() == "walk":
-		wave = sin(_pf("t") * TAU) * 10.0
-	_body_begin(Vector2(64, 100))
-	for i: int in 5:
-		var x: float = 28.0 + i * 16.0
-		var y: float = 96.0 + sin(float(i) + wave * 0.05) * 3.0
-		_circ(x, y, 9.0, skin if i % 2 == 0 else skin.darkened(0.08))
-		var step: float = sin(_pf("t") * TAU + float(i)) * 6.0 if _act() == "walk" else 0.0
-		_line(Vector2(x - 4, y + 6), Vector2(x - 6, y + 16 + step), 1.6, skin.darkened(0.3), 0.0)
-		_line(Vector2(x + 4, y + 6), Vector2(x + 6, y + 16 - step), 1.6, skin.darkened(0.3), 0.0)
-	_push(Vector2(100, 94), _pf("ears"))
-	_line(Vector2(100, 92), Vector2(114, 82), 1.3, skin.darkened(0.3), 0.0)
-	_line(Vector2(102, 96), Vector2(116, 100), 1.3, skin.darkened(0.3), 0.0)
+static func _lost_velvet(r: int, f: bool) -> void:
+	# normal: plum velvet; Ember Velvet; Glow Velvet.
+	var skin: Color = _pick(r, f, [Color(0.5, 0.24, 0.42), Color(0.58, 0.3, 0.48), Color(0.68, 0.24, 0.16), Color(0.76, 0.32, 0.2), Color(0.2, 0.56, 0.54), Color(0.28, 0.64, 0.58)])
+	var dark: Color = skin.darkened(0.42)
+	var step_t: float = _pf("t") * TAU
+	var sway: float = 0.0
+	var rear: float = 0.0
+	match _act():
+		"walk": sway = 1.0
+		"alarm": rear = 20.0
+		"windup": rear = 12.0
+		"strike": rear = -6.0
+		"work": rear = 10.0 * _pose["k"]
+	_body_begin(Vector2(64, 122))
+	var n: int = 11
+	var pos: Array = []
+	for i: int in n:
+		var x: float = 16.0 + i * 9.0
+		var y: float = 96.0 + sin(float(i) * 0.75 - step_t) * 3.0 * sway
+		pos.append(Vector2(x, y - rear * pow(float(i) / (n - 1), 3.0)))
+	for i: int in range(0, n, 2):
+		var p: Vector2 = pos[i]
+		var lift: float = maxf(0.0, sin(step_t + float(i) * 1.3)) * 4.0 * sway
+		_ell(p.x - 2.0, 114.0 - lift * 0.5, 2.8, 9.0 - lift * 0.3, dark)
+		_ell(p.x - 2.0, 122.0 - lift, 3.6, 1.6, dark.darkened(0.2))
+	for i: int in n:
+		var p2: Vector2 = pos[i]
+		var rad: float = 14.0 - absf(float(i) - 5.0) * 0.6 - (3.0 if i == 0 else 0.0)
+		_circ(p2.x, p2.y, rad, skin if i % 2 == 0 else skin.darkened(0.09))
+		_line(p2 + Vector2(-1, -rad + 2.0), p2 + Vector2(-1, rad - 2.0), 1.0, dark, 0.0)
+		_dot(p2.x + 2.0, p2.y - rad * 0.55, 1.1, skin.lightened(0.45))
+	var head: Vector2 = pos[n - 1]
+	_circ(head.x + 6.0, head.y - 1.0, 11.0, skin.lightened(0.05))
+	_push(head + Vector2(10, -6), _pf("ears") - sin(step_t * 2.0) * 8.0 * sway)
+	_arc(head.x + 8.0, head.y - 22.0, 14.0, 110.0, -30.0, 2.8, dark)
+	_arc(head.x + 11.0, head.y - 14.0, 10.0, 80.0, -30.0, 2.3, dark.lightened(0.1))
 	_pop()
-	_peye(96, 94, 1.4, Color(0.15, 0.08, 0.1))
-	_alarm_at(Vector2(100, 90), 10.0)
+	_peye(head.x + 9.0, head.y - 3.0, 2.3, Color(0.08, 0.05, 0.07))
+	_alarm_at(head + Vector2(8, -6), 13.0)
 	_pop()
 
-static func _lost_shelf(role: int) -> void:
-	var wood := Color(0.48, 0.34, 0.22)
-	var cap := Color(0.72, 0.46, 0.24) if role != 2 else Color(0.9, 0.72, 0.3)
-	if role == 1:
-		cap = cap.darkened(0.12)
-	_body_begin(Vector2(64, 121))
-	_poly([Vector2(52, 121), Vector2(58, 48), Vector2(74, 48), Vector2(80, 121)], wood)
-	_ell(78, 56, 22, 7, cap)
-	_ell(74, 74, 18, 6, cap.darkened(0.08))
-	_ell(70, 92, 14, 5, cap.darkened(0.16))
+static func _lost_shelf(r: int) -> void:
+	# Bracket fungi climbing a mossy stump, every shelf rooted in the bark.
+	var wood := Color(0.36, 0.25, 0.17)
+	var cap: Color = [Color(0.76, 0.4, 0.16), Color(0.58, 0.22, 0.16), Color(0.26, 0.56, 0.5), Color(0.9, 0.72, 0.3)][clampi(r, 0, 3)]
+	var lip := Color(0.97, 0.9, 0.72)
+	_body_begin(Vector2(64, 122))
+	_poly([Vector2(28, 123), Vector2(36, 112), Vector2(40, 26), Vector2(50, 18), Vector2(68, 22), Vector2(78, 18), Vector2(84, 28), Vector2(86, 112), Vector2(98, 123)], wood)
+	_ell(62, 24, 22, 7, wood.lightened(0.28))
+	_ell(62, 24, 12, 3.5, wood.lightened(0.1))
+	for x: float in [48.0, 58.0, 70.0, 78.0]:
+		_line(Vector2(x, 34), Vector2(x - 2.0, 114), 1.6, wood.darkened(0.3), 0.0)
+	_ell(44, 116, 14, 6, Color(0.34, 0.5, 0.22), 0.0, 0.5)
+	for s: Vector3 in [Vector3(80, 44, 30), Vector3(82, 70, 34), Vector3(40, 60, 22), Vector3(80, 98, 26)]:
+		var cx: float = s.x + (-s.z * 0.45 if s.x < 60.0 else s.z * 0.45)
+		_ell(cx, s.y + 3.0, s.z * 0.72, 8.0, lip.darkened(0.08))
+		_ell(cx, s.y, s.z * 0.72, 8.5, cap)
+		_ell(cx, s.y - 1.0, s.z * 0.48, 5.0, cap.darkened(0.2), 0.0, 0.2)
+		_ell(cx, s.y - 2.0, s.z * 0.26, 2.6, cap.lightened(0.2), 0.0, 0.0)
+	_pop()
+
+# ------------------------------------------------------------------
+# Seasonal Sprites. Little two-legged spirits on the human rig; every Valley
+# look shares these sheets, and Pixel redraws them.
+# ------------------------------------------------------------------
+static func _sprite_stride() -> float:
+	return sin(_pf("t") * TAU) * 30.0 if _act() == "walk" else 0.0
+
+static func _sprite_leg(hip: Vector2, deg: float, col: Color, foot: Color) -> void:
+	_push(hip, deg)
+	_line(hip, hip + Vector2(0, 30), 7.0, col)
+	_ell(hip.x + 3.0, hip.y + 31.0, 7.0, 3.5, foot)
+	_pop()
+
+static func _face(cx: float, cy: float, r: float) -> void:
+	_peye(cx - r, cy, 3.0, Color(0.1, 0.08, 0.07))
+	_peye(cx + r, cy, 3.0, Color(0.1, 0.08, 0.07))
+
+static func _fairy(r: int, f: bool) -> void:
+	# Petal-dressed, with beating glass wings.
+	var petal: Color = _pick(r, f, [Color(0.98, 0.58, 0.8), Color(1.0, 0.68, 0.85), Color(0.72, 0.56, 0.98), Color(0.8, 0.64, 1.0), Color(1.0, 0.82, 0.4), Color(1.0, 0.86, 0.5)])
+	var skin := Color(0.72, 0.92, 0.62)
+	var s: float = _sprite_stride()
+	var beat: float = sin(_pf("t") * TAU * 3.0) * 26.0
+	_pose["bob"] = _pf("bob") - 7.0
+	_body_begin(Vector2(64, 122), 0.0)
+	for side: float in [-1.0, 1.0]:
+		_push(Vector2(60, 66), side * (22.0 + beat))
+		_ell(38, 46, 25, 12, Color(0.8, 0.96, 1.0), 34.0, 0.3)
+		_ell(40, 80, 18, 9, Color(0.86, 0.9, 1.0), -24.0, 0.3)
+		_pop()
+	_sprite_leg(Vector2(58, 88), -s, skin.darkened(0.12), petal.darkened(0.25))
+	_sprite_leg(Vector2(68, 88), s, skin, petal.darkened(0.2))
+	for i: int in 6:
+		var x: float = 42.0 + i * 8.0
+		_poly([Vector2(x - 7, 70), Vector2(x, 100 + (i % 2) * 5.0), Vector2(x + 7, 70)], petal if i % 2 == 0 else petal.darkened(0.12), 0.4)
+	_ell(63, 68, 12, 15, petal)
+	_line(Vector2(74, 66), Vector2(88, 56 + s * 0.2), 4.5, skin)
+	_star(90, 54, 6.0, Color(1.0, 0.95, 0.5))
+	_head_begin(Vector2(64, 54))
+	_circ(65, 40, 17, skin)
+	_ell(60, 26, 18, 8, petal.darkened(0.2))
+	_star(74, 24, 8.0, Color(1.0, 0.9, 0.3))
+	_star(50, 27, 6.0, Color(1.0, 1.0, 0.9))
+	_face(71, 41, 5.0)
+	_arc(71, 46, 4.0, 20.0, 160.0, 1.4, Color(0.3, 0.14, 0.14))
+	_alarm_at(Vector2(66, 34), 18.0)
+	_pop()
+	_pop()
+
+static func _sunfolk(r: int, f: bool) -> void:
+	# A walking sunflower with roots for feet.
+	var ray: Color = _pick(r, f, [Color(0.99, 0.8, 0.14), Color(1.0, 0.86, 0.26), Color(0.97, 0.56, 0.14), Color(0.98, 0.64, 0.2), Color(1.0, 0.94, 0.5), Color(1.0, 0.96, 0.6)])
+	var stem := Color(0.32, 0.6, 0.24)
+	var s: float = _sprite_stride()
+	_body_begin(Vector2(64, 122), 0.0)
+	_sprite_leg(Vector2(58, 88), -s, stem.darkened(0.25), Color(0.4, 0.27, 0.15))
+	_sprite_leg(Vector2(68, 88), s, stem.darkened(0.1), Color(0.46, 0.3, 0.17))
+	_line(Vector2(63, 92), Vector2(63, 44), 12.0, stem)
+	_push(Vector2(58, 72), -18.0 + s * 0.4)
+	_ell(38, 70, 22, 9, stem.lightened(0.08), 16.0)
+	_line(Vector2(58, 72), Vector2(20, 66), 1.3, stem.darkened(0.3), 0.0)
+	_pop()
+	_push(Vector2(68, 72), 18.0 - s * 0.4)
+	_ell(90, 70, 22, 9, stem.lightened(0.08), -16.0)
+	_line(Vector2(68, 72), Vector2(108, 66), 1.3, stem.darkened(0.3), 0.0)
+	_pop()
+	_head_begin(Vector2(63, 48))
+	for i: int in 16:
+		var a: float = TAU * i / 16.0
+		var d := Vector2.from_angle(a)
+		var o := Vector2(65, 32)
+		_poly([o + d.orthogonal() * 7.0 + d * 14.0, o + d * 33.0, o - d.orthogonal() * 7.0 + d * 14.0], ray if i % 2 == 0 else ray.darkened(0.1), 0.4)
+	_circ(65, 32, 19, Color(0.42, 0.25, 0.12))
+	for i: int in 10:
+		_dot(65.0 + cos(i * 2.4) * (4.0 + i * 1.3), 32.0 + sin(i * 2.4) * (4.0 + i * 1.3), 1.2, Color(0.26, 0.15, 0.08))
+	_face(72, 31, 6.0)
+	_arc(72, 37, 6.0, 20.0, 160.0, 1.8, Color(0.98, 0.9, 0.7))
+	_alarm_at(Vector2(66, 18), 30.0)
+	_pop()
+	_pop()
+
+static func _scarecrow(r: int, f: bool) -> void:
+	# A ragged coat on crossed poles, under a lit jack-o'-lantern.
+	var coat: Color = _pick(r, f, [Color(0.36, 0.26, 0.34), Color(0.42, 0.3, 0.38), Color(0.24, 0.33, 0.26), Color(0.3, 0.38, 0.3), Color(0.5, 0.26, 0.17), Color(0.56, 0.3, 0.2)])
+	var straw := Color(0.9, 0.74, 0.34)
+	var wood := Color(0.42, 0.29, 0.17)
+	var fire := Color(1.0, 0.84, 0.25)
+	var s: float = _sprite_stride()
+	_body_begin(Vector2(64, 122), 0.0)
+	_sprite_leg(Vector2(60, 92), -s * 0.8, wood.darkened(0.2), wood.darkened(0.3))
+	_sprite_leg(Vector2(68, 92), s * 0.8, wood, wood.darkened(0.3))
+	_push(Vector2(64, 60), s * 0.1)
+	_line(Vector2(20, 60), Vector2(108, 60), 6.0, wood)
+	for x: float in [18.0, 110.0]:
+		for k: int in 4:
+			_line(Vector2(x, 58 + k * 2.0), Vector2(x + (x - 64.0) * 0.16, 68 + k * 3.0), 2.0, straw, 0.0)
+	_pop()
+	_poly([Vector2(40, 54), Vector2(88, 54), Vector2(84, 96), Vector2(76, 88), Vector2(68, 98), Vector2(58, 88), Vector2(50, 98), Vector2(42, 90)], coat)
+	_line(Vector2(50, 64), Vector2(56, 72), 2.0, straw, 0.0)
+	_line(Vector2(56, 64), Vector2(50, 72), 2.0, straw, 0.0)
+	_head_begin(Vector2(64, 52))
+	_line(Vector2(66, 14), Vector2(70, 5), 7.0, Color(0.34, 0.5, 0.2))
+	for x: Vector2 in [Vector2(48, 13), Vector2(82, 13), Vector2(65, 15)]:
+		_ell(x.x, 33, x.y, 23, Color(0.95, 0.5, 0.1))
+	_poly([Vector2(62, 28), Vector2(70, 18), Vector2(76, 28)], fire, 0.0)
+	_poly([Vector2(80, 28), Vector2(88, 18), Vector2(93, 28)], fire, 0.0)
+	_poly([Vector2(58, 42), Vector2(66, 48), Vector2(72, 42), Vector2(79, 48), Vector2(85, 42), Vector2(92, 40), Vector2(84, 52), Vector2(64, 52)], fire, 0.0)
+	_alarm_at(Vector2(66, 20), 26.0)
+	_pop()
+	_pop()
+
+static func _snowman(r: int, f: bool) -> void:
+	# Three snowballs that hop, with a carrot nose and a stolen scarf.
+	var scarf: Color = _pick(r, f, [Color(0.86, 0.2, 0.18), Color(0.2, 0.46, 0.86), Color(0.22, 0.62, 0.36), Color(0.62, 0.3, 0.8), Color(0.98, 0.72, 0.2), Color(0.95, 0.45, 0.6)])
+	var snow := Color(0.95, 0.98, 1.0)
+	var hop: float = -absf(sin(_pf("t") * TAU * 2.0)) * 9.0 if _act() == "walk" else 0.0
+	_pose["bob"] = hop
+	var wave: float = -40.0 if _act() == "strike" else (-16.0 if _act() == "windup" else sin(_pf("t") * TAU) * 12.0)
+	_body_begin(Vector2(64, 122), 0.0)
+	_push(Vector2(46, 66), -wave * 0.3)
+	_line(Vector2(46, 66), Vector2(20, 52), 3.0, Color(0.34, 0.22, 0.13))
+	_line(Vector2(30, 58), Vector2(22, 66), 2.2, Color(0.34, 0.22, 0.13))
+	_pop()
+	_circ(62, 96, 27, snow)
+	_circ(63, 62, 21, snow)
+	_push(Vector2(82, 64), wave)
+	_line(Vector2(82, 64), Vector2(108, 52), 3.0, Color(0.34, 0.22, 0.13))
+	_line(Vector2(98, 56), Vector2(106, 64), 2.2, Color(0.34, 0.22, 0.13))
+	if _act() == "windup":
+		_circ(110, 50, 6, snow)
+	_pop()
+	for y: float in [54.0, 66.0, 90.0, 104.0]:
+		_dot(77 if y < 80.0 else 82, y, 2.6, Color(0.1, 0.1, 0.12))
+	_ell(62, 46, 21, 6, scarf)
+	_line(Vector2(50, 48), Vector2(44, 70), 7.0, scarf)
+	_head_begin(Vector2(64, 44))
+	_circ(65, 28, 16, snow)
+	_ell(64, 13, 19, 3.5, Color(0.12, 0.12, 0.15))
+	_poly([Vector2(50, 12), Vector2(52, -6), Vector2(78, -6), Vector2(78, 12)], Color(0.14, 0.14, 0.18))
+	_line(Vector2(50, 9), Vector2(78, 9), 3.5, scarf, 0.0)
+	_face(70, 25, 5.0)
+	_poly([Vector2(75, 28), Vector2(95, 33), Vector2(75, 34)], Color(0.98, 0.5, 0.1))
+	_alarm_at(Vector2(66, 20), 18.0)
+	_pop()
 	_pop()
 
 static func _poly(pts: Array, col: Color, shade: float = 1.0) -> void:

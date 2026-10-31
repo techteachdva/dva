@@ -319,7 +319,7 @@ func _spot_prey() -> Node3D:
 	for n in sim.get_nearby_agents(global_position, SPOT_RANGE):
 		if n == self or not is_instance_valid(n) or not n is MarkovAgent:
 			continue
-		if not PREY.has((n as MarkovAgent).species_id) or n.get("indoors") == true:
+		if not EraBook.falcon_prey(PREY).has((n as MarkovAgent).species_id) or n.get("indoors") == true:
 			continue
 		var d: float = Vector2(n.global_position.x - global_position.x, n.global_position.z - global_position.z).length_squared()
 		if (n as MarkovAgent).species_id == "rabbit":

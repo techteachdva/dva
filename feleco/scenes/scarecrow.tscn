@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/agents/seasonal_sprite.gd" id="1_sprite"]
+[ext_resource type="Script" path="res://scripts/sensors/vision_cone.gd" id="2_vision"]
+[ext_resource type="Script" path="res://scripts/sensors/scent_emitter.gd" id="3_scent"]
+
+[node name="Scarecrow" type="Node3D"]
+script = ExtResource("1_sprite")
+sprite_kind = "scarecrow"
+
+[node name="VisionCone" type="Node3D" parent="."]
+script = ExtResource("2_vision")
+
+[node name="ScentEmitter" type="Node3D" parent="."]
+script = ExtResource("3_scent")

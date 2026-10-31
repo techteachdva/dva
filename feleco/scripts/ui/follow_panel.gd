@@ -284,6 +284,7 @@ var _mine_btn: Button
 var _rampage_btn: Button
 var _control_btn: Button
 var driving: bool = false
+var _space_held: bool = false
 var _drive_bar: PanelContainer
 var _hidden_windows: Array[Node] = []
 var _rampage_bar: ProgressBar
@@ -364,7 +365,7 @@ func _toggle_control() -> void:
 	if agent == null or not is_instance_valid(agent):
 		return
 	driving = true
-	agent.player_drive = true
+	agent.set_driven(true)
 	_control_btn.text = "Let Go"
 	var cam := _camera()
 	if cam != null:
@@ -407,8 +408,7 @@ func _release_control() -> void:
 		return
 	driving = false
 	if agent != null and is_instance_valid(agent):
-		agent.player_drive = false
-		agent.rampage_steer = Vector3.ZERO
+		agent.set_driven(false)
 	_control_btn.text = "Take Control"
 	var cam := _camera()
 	if cam != null:
@@ -464,6 +464,10 @@ func _process(delta: float) -> void:
 	if driving:
 		if agent != null and is_instance_valid(agent) and not agent.is_queued_for_deletion():
 			_steer_rampage()
+			var space: bool = Input.is_key_pressed(KEY_SPACE)
+			if space and not _space_held and agent is SeasonalSprite:
+				(agent as SeasonalSprite).signature_power()
+			_space_held = space
 		else:
 			_release_control()
 	if _rampaging and agent != null and is_instance_valid(agent) and not agent.is_queued_for_deletion():

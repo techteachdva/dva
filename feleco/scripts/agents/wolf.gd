@@ -74,7 +74,8 @@ func _get_transition_modifiers() -> Dictionary:
 
 	var rabbits := vision.get_visible_by_tag("rabbit")
 	# Deer and goats count as big game alongside rabbits.
-	rabbits.append_array(vision.get_visible_by_tag("deer"))
+	if not EraBook.lost():
+		rabbits.append_array(vision.get_visible_by_tag("deer"))
 	rabbits.append_array(vision.get_visible_by_tag("goat"))
 	# Mice are a snack between bigger meals.
 	rabbits.append_array(vision.get_visible_by_tag("mouse"))
@@ -221,7 +222,8 @@ func _on_tick_chase(delta: float) -> void:
 	if vision != null:
 		var sheep_list := vision.get_visible_by_tag("sheep")
 		var rabbit_list := vision.get_visible_by_tag("rabbit")
-		rabbit_list.append_array(vision.get_visible_by_tag("deer"))
+		if not EraBook.lost():
+			rabbit_list.append_array(vision.get_visible_by_tag("deer"))
 		rabbit_list.append_array(vision.get_visible_by_tag("goat"))
 		if sheep_list.size() > 0 and is_instance_valid(sheep_list[0]):
 			target = sheep_list[0]

@@ -18,6 +18,10 @@ const CURSORS: Array = [
 	["wand", "Wizard's Star", 60, "A golden star, for the wizards.", Color(1, 0.85, 0.3)],
 	["claw", "Golden Claw", -1, "Earned: win a golden Rampage.", Color(1, 0.75, 0.2)],
 	["diamond", "Diamond", -1, "Earned: find the rare diamond.", Color(0.6, 0.95, 1.0)],
+	["fairy", "Fairy Bloom", -1, "Earned: claim a Flower Fairy.", Color(0.98, 0.55, 0.8)],
+	["sunflower", "Sunflower", -1, "Earned: claim a Sunflowerfolk.", Color(0.98, 0.8, 0.2)],
+	["pumpkin", "Jack-o'-Lantern", -1, "Earned: claim a Jack-o'-Scarecrow.", Color(0.95, 0.5, 0.12)],
+	["snowflake", "Snowball", -1, "Earned: claim a Snowperson.", Color(0.85, 0.95, 1.0)],
 ]
 # [id, name, cost, how / what, colour].
 const AURAS: Array = [
@@ -128,6 +132,10 @@ static func cursor_texture(id: String) -> ImageTexture:
 			else:
 				for k: int in 9:
 					_disc(img, c + Vector2(-14 + k * 3.5, sin(k * 0.9) * 5.0), 4.0, col)
+		"fairy", "sunflower", "pumpkin", "snowflake":
+			_disc(img, c, 16.0, col.darkened(0.5))
+			_disc(img, c, 14.5, col)
+			_disc(img, c, 6.0, Color(0.35, 0.2, 0.1) if id == "sunflower" else col.lightened(0.6))
 		"wand", "claw", "diamond":
 			var pts := PackedVector2Array()
 			var spikes: int = 5 if id == "wand" else (3 if id == "claw" else 4)

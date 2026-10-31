@@ -9,6 +9,7 @@ render_mode unshaded, cull_disabled, shadows_disabled;
 // z motion 0..1 (or a forced frame + 2), w atlas cell + fract(per-creature seed).
 
 uniform sampler2D sprite : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D sprite_px : source_color, filter_nearest, repeat_disable;
 uniform float quad_height = 2.0;
 uniform float quad_width = 2.0;
 uniform int style = 0;
@@ -82,8 +83,6 @@ void vertex() {
 	}
 	if (pixel_on > 0.5) {
 		v = VERTEX.xy;
-		float steps = max((1.0 / grid.x) / texel.x / 8.0, 4.0);
-		uv = (floor(clamp(uv, vec2(0.0), vec2(1.0)) * steps) + 0.5) / steps;
 	}
 	UV = (vec2(float(frame), cell) + clamp(uv, vec2(0.004), vec2(0.996))) / grid;
 	VERTEX.xy = (bad || any(isnan(v)) || any(isinf(v)) || length(v) > quad_height * 4.0 + 8.0) ? vec2(0.0) : v;
@@ -94,7 +93,7 @@ void vertex() {
 }
 
 void fragment() {
-	vec4 t = texture(sprite, UV);
+	vec4 t = pixel_on > 0.5 ? texture(sprite_px, UV) : texture(sprite, UV);
 	vec3 shade = v_brand > 0.5 ? vec3(COLOR.g) : COLOR.rgb;
 	vec3 col = t.rgb * shade * v_shade;
 	float a = t.a;

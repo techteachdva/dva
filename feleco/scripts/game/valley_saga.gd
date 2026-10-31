@@ -74,6 +74,8 @@ func _champion() -> String:
 
 func _champion_plural() -> String:
 	var c := _champion()
+	if EraBook.spoken_for(c) != "":
+		return EraBook.spoken_for(c)
 	return {"wolf": "wolves", "human": "humans", "falcon": "falcons", "robin": "robins", "boar": "boars", "worm": "worms", "rabbit": "rabbits"}.get(c, SpeciesDB.plural(c))
 
 # --- The year goal ------------------------------------------------------------

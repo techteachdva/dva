@@ -6,6 +6,7 @@ shader_type canvas_item;
 // shader animates it and scales it into pixels.
 
 uniform sampler2D sprite : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D sprite_px : source_color, filter_nearest, repeat_disable;
 uniform vec2 quad = vec2(2.0, 2.0);
 uniform int style = 0;
 uniform float atlas_cell = 0.0;
@@ -59,15 +60,11 @@ void vertex() {
 	if (face_dir < 0.0) {
 		uv.x = 1.0 - uv.x;
 	}
-	if (pixel_on > 0.5) {
-		float steps = max((1.0 / grid.x) / texel.x / 8.0, 4.0);
-		uv = (floor(clamp(uv, vec2(0.0), vec2(1.0)) * steps) + 0.5) / steps;
-	}
 	UV = (vec2(float(frame), atlas_cell) + clamp(uv, vec2(0.004), vec2(0.996))) / grid;
 }
 
 void fragment() {
-	vec4 t = texture(sprite, UV);
+	vec4 t = pixel_on > 0.5 ? texture(sprite_px, UV) : texture(sprite, UV);
 	vec3 col = t.rgb * (1.0 + v_shimmer * 0.12);
 	vec4 branded = brand_overlay(col, t.a, v_body, brand_slot, TIME);
 	col = branded.rgb;

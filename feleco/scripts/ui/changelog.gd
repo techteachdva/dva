@@ -3,16 +3,29 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "5.0"
+const VERSION: String = "6.0"
 
 const CHANGELOG: Array = [
+	{
+		"version": "6.0",
+		"title": "Seasonal Sprites",
+		"notes": [
+			"A year is now 12 days, 3 to a season. Fast (8 days) and Sprint (4 days) are there for quicker play.",
+			"Mid-season, Seasonal Sprites wake: Flower Fairies, Sunflowerfolk, Jack-o'-Scarecrows and Snowpeople. They attack everything and spread fast, then turn into ordinary creatures as the season ends.",
+			"Claim one with Make Mine for an achievement and a cursor, then Take Control and press Space for its power.",
+			"New Food Web button on the right pauses the game and opens the web. Click a creature twice to see its Markov model.",
+			"One main game, The Valley, in three lengths: you are its god. Everything else lives in Simulation.",
+			"The God Hand now pinches, thumb to forefinger, very gently. Press Drop to set a creature down.",
+			"Fixed Take Control: WASD and the arrow keys now really steer, and the creature stops following its own plans.",
+		],
+	},
 	{
 		"version": "5.0",
 		"title": "Three Valleys",
 		"notes": [
 			"Prepare the Valley, and Settings on the main menu, ask which look the year wears: Valley, Pixel, or Lost Valley.",
-			"Pixel is the same creatures and the same walks, cut into big pixels.",
-			"Lost Valley keeps the food web and renames it: cavemen, saber-tooths, cave bears, woolly mammoths, pterodactyls, megapiranhas, and the rest. Every one has a full animation sheet.",
+			"Pixel is redrawn as crisp retro sprites with clean outlines: the same creatures on the same walks.",
+			"Lost Valley is an Ice Age with its own food web: mammoths shrug off dire wolves, saber-tooths hunt only big game, cave bears live on plants, and winter punishes the small. Every creature is repainted with a full animation sheet.",
 			"Brand parts grow on the body instead of stretching it. A fang stays a fang. Tail, legs, belly, back, neck, head, and crown each grow their own shape.",
 		],
 	},

@@ -20,8 +20,9 @@ const LIFE_PACE: float = 0.2
 const BIO_PER_DAY: float = SECONDS_PER_DAY * LIFE_PACE
 
 # [label, days]. A run is one compressed year: each season is a quarter of it.
-const RUNS: Array = [["Short", 5.0], ["Standard", 10.0], ["Long", 15.0]]
-const STANDARD_DAYS: float = 10.0
+# Three days a season by default; the faster years are for quicker play.
+const RUNS: Array = [["Sprint", 4.0], ["Fast", 8.0], ["Standard", 12.0]]
+const STANDARD_DAYS: float = 12.0
 const SPEEDS: Array[float] = [1.0, 2.0, 4.0]
 const DEFAULT_SPEED: float = 1.0
 

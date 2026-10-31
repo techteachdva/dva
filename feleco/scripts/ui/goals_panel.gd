@@ -324,6 +324,9 @@ func adopt(agent: MarkovAgent) -> void:
 	if aura != null:
 		agent.add_child(aura)
 	_adopt_day = director.get_day() if director != null else 0.0
+	if agent is SeasonalSprite:
+		(agent as SeasonalSprite).claimed()
+		SeasonBook.on_claim(get_node_or_null("/root/GameConfig"), agent.species_id, agent.global_position)
 	xp = 0.0
 	level = 1
 	points = 1

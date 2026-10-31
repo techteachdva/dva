@@ -20,14 +20,14 @@ var _next_hint: Label
 # The menu is a game too: it opens one feature at a time as the player plays.
 # [feature, button, label, how it unlocks]. Rules is always open.
 const LADDER: Array = [
-	["main", "MainGame", "Main Game", ""],
-	["valley", "Sandbox", "Start Simulation", ""],
+	["main", "MainGame", "The Valley", ""],
+	["valley", "Sandbox", "Simulation", ""],
 	["rules", "Rules", "Rules", ""],
 	["greenhouse", "Shop", "Greenhouse", "Finish a year in the Valley Simulation to open the Greenhouse."],
 	["challenge", "Challenge", "Challenge", "Visit the Greenhouse to open Challenge."],
 	["minigames", "Campaign", "Mini Games", "Play a Challenge year (or three valley years) to open the Mini Games."],
 	["opening", "Intro", "Watch The Opening Again", "Finish a year in the valley to rewatch the opening."],
-	["lore", "Lore", "Watch the year's beginning", ""],
+	["lore", "Lore", "Watch the Valley Film", ""],
 	["changelog", "About", "Changelog & Credits", "Read the Rules to open the Changelog & Credits."],
 ]
 
@@ -150,10 +150,10 @@ func _ready() -> void:
 	var btn_lore := Button.new()
 	_btn_lore = btn_lore
 	btn_lore.name = "Lore"
-	btn_lore.text = "Watch the year's beginning"
+	btn_lore.text = "Watch the Valley Film"
 	btn_lore.custom_minimum_size = Vector2(340, 44)
 	FelecoUiScript.mark(btn_lore, "GhostButton")
-	btn_lore.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/ui/lore_film.tscn"))
+	btn_lore.pressed.connect(_watch_film.bind("main"))
 	$CenterContainer/VBoxContainer.add_child(btn_lore)
 	$CenterContainer/VBoxContainer.move_child(btn_lore, btn_intro.get_index() + 1)
 	_hook_rays($CenterContainer)
@@ -236,7 +236,7 @@ func _build_ladder(gc: Node) -> void:
 		var b: Button = _ladder_button(row[1])
 		b.text = row[2]
 		var open: bool = row[0] in ["rules", "main", "valley", "lore"] or gc.unlocked(row[0])
-		b.visible = open
+		b.visible = open and not row[0] in ["challenge", "minigames"]
 		if not open and hint.is_empty():
 			hint = row[3]
 		var always: bool = row[0] in ["main", "valley", "lore", "rules"]
@@ -307,10 +307,77 @@ func _on_challenge() -> void:
 		return
 	get_tree().change_scene_to_file("res://scenes/ui/challenge_setup.tscn")
 
+# The Valley: one adventure, in three lengths.
 func _on_main_game() -> void:
+	var options: Array = []
+	for i: int in range(Clock.RUNS.size() - 1, -1, -1):
+		var run: Array = Clock.RUNS[i]
+		options.append(["%s: %d days to a year" % [run[0], int(run[1])], _begin_valley.bind(run)])
+	_mode_dialog("You are the god of this Valley. Raise your favoured creatures to glory, or watch them fall to decay.", options)
+
+# Simulation: every option and every other way to play.
+func _on_sandbox() -> void:
+	_mode_dialog("Simulation: the whole toybox.", [
+		["Build a Valley", _begin_simulation],
+		["The Fates' Bets", _spirit_dialog],
+		["Challenge", _on_challenge],
+		["Mini Games", _on_campaign],
+		["Watch the Toybox Film", _watch_film.bind("sandbox")],
+	])
+
+func _watch_film(mode: String) -> void:
+	get_node("/root/GameConfig").current_mode = mode
+	get_tree().change_scene_to_file("res://scenes/ui/lore_film.tscn")
+
+func _begin_simulation() -> void:
 	if not _look_ready():
 		return
 	var gc: Node = get_node("/root/GameConfig")
+	gc.current_mode = "sandbox"
+	gc.main_claim = false
+	gc.board_mode = "full"
+	gc.bets.clear()
+	var film: bool = gc.record("lesson", "sim_film") == null
+	get_tree().change_scene_to_file("res://scenes/ui/lore_film.tscn" if film else "res://scenes/ui/setup_board.tscn")
+
+func _mode_dialog(words: String, options: Array) -> void:
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.72)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(shade)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.add_child(center)
+	var col := VBoxContainer.new()
+	col.custom_minimum_size = Vector2(520, 0)
+	col.add_theme_constant_override("separation", 12)
+	center.add_child(col)
+	var line := FelecoUiScript.label(words, 20, FelecoUiScript.CREAM)
+	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(line)
+	for opt: Array in options:
+		var b := Button.new()
+		b.text = opt[0]
+		b.theme_type_variation = "PrimaryButton"
+		b.custom_minimum_size = Vector2(0, 52)
+		b.pressed.connect(func() -> void:
+			shade.queue_free()
+			(opt[1] as Callable).call())
+		col.add_child(b)
+	var back := Button.new()
+	back.text = "Back"
+	back.theme_type_variation = "GhostButton"
+	back.custom_minimum_size = Vector2(0, 44)
+	back.pressed.connect(shade.queue_free)
+	col.add_child(back)
+
+func _begin_valley(run: Array) -> void:
+	if not _look_ready():
+		return
+	var gc: Node = get_node("/root/GameConfig")
+	gc.time_setting = run[0]
+	gc.time_limit = run[1]
 	gc.current_mode = "main"
 	gc.main_claim = gc.record("lesson", "champion") == null
 	gc.board_mode = "full"
@@ -319,9 +386,6 @@ func _on_main_game() -> void:
 	else:
 		gc.bets.clear()
 		get_tree().change_scene_to_file("res://scenes/world.tscn")
-
-func _on_sandbox() -> void:
-	_spirit_dialog()
 
 func _spirit_dialog() -> void:
 	var shade := ColorRect.new()

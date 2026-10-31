@@ -27,6 +27,10 @@ const GROUP_COLOR: Dictionary = {
 # cap: carrying capacity; hold: hold divisor; migrants: founders through a pass;
 # days: lifespan; season: [metabolism, breeding] per season; dn: day/night row.
 const ROWS: Dictionary = {
+	"fairy": {"plural": "fairies", "label": "Flower Fairies", "group": "omnivore", "color": Color(0.98, 0.55, 0.8), "new": true, "cap": 30, "days": 0.75},
+	"sunfolk": {"plural": "sunfolk", "label": "Sunflowerfolk", "group": "omnivore", "color": Color(0.98, 0.8, 0.2), "new": true, "cap": 30, "days": 0.75},
+	"scarecrow": {"plural": "scarecrows", "label": "Jack-o'-Scarecrows", "group": "omnivore", "color": Color(0.95, 0.5, 0.12), "new": true, "cap": 30, "days": 0.75},
+	"snowman": {"plural": "snowpeople", "label": "Snowpeople", "group": "omnivore", "color": Color(0.8, 0.92, 1.0), "new": true, "cap": 30, "days": 0.75},
 	"sheep": {"plural": "sheep", "label": "Sheep", "group": "herbivore", "color": Color(0.95, 0.95, 0.9)},
 	"rabbit": {"plural": "rabbits", "label": "Rabbits", "group": "herbivore", "color": Color(0.8, 0.65, 0.5)},
 	"wolf": {"plural": "wolves", "label": "Wolves", "group": "carnivore", "color": Color(0.55, 0.55, 0.6)},
@@ -81,6 +85,9 @@ const ROWS: Dictionary = {
 	},
 }
 
+# Seasonal Sprites: never in setup or the census; they arrive mid-season.
+const SEASONAL: Array[String] = ["fairy", "sunfolk", "scarecrow", "snowman"]
+
 # The five 3.0 creatures, in setup order.
 const NEW_SPECIES: Array[String] = ["deer", "goat", "bear", "lion", "beetle", "mouse"]
 # Every creature the census reports, by plural key.
@@ -99,7 +106,7 @@ const ONE: Dictionary = {
 	"sheep": "sheep", "rabbit": "rabbit", "wolf": "wolf", "falcon": "falcon", "human": "villager",
 	"boar": "boar", "robin": "robin", "worm": "worm", "mushroom": "mushroom", "fish": "fish",
 	"bear": "bear", "lion": "mountain lion", "deer": "deer", "goat": "mountain goat", "beetle": "beetle",
-	"mouse": "mouse",
+	"mouse": "mouse", "fairy": "flower fairy", "sunfolk": "sunflowerfolk", "scarecrow": "jack-o'-scarecrow", "snowman": "snowperson",
 }
 
 static func one(id: String) -> String:

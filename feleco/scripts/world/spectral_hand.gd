@@ -2,8 +2,9 @@ class_name SpectralHand
 extends Node3D
 
 # A god's hand reaching into the valley, made of blue light. An arm that thins
-# away into drifting motes comes down, opens, and pinches the creature: four
-# fingers behind it, the thumb in front, so you still see who was picked up.
+# away into drifting motes comes down and, with absurd delicacy for its size,
+# pinches the creature by the scruff between thumb and forefinger. The other
+# three fingers tuck into the palm.
 # It holds them until told to set them down. Local axes: +Y runs up the arm, -Z faces the camera, and the
 # origin is the grip, on the creature.
 
@@ -12,6 +13,10 @@ signal cancelled
 const SkinShader: Shader = preload("res://scripts/visuals/hand_skin.gdshader")
 const InkShader: Shader = preload("res://scripts/visuals/hand_outline.gdshader")
 const MOTES: int = 14
+# A massive hand moves slowly around small things.
+const GENTLE: float = 0.6
+# Where the fingertips meet, in the hand's own space.
+const PINCH := Vector3(0.48, -0.31, 0.02)
 const MOTE_RISE: float = 3.6
 # How far above the grip the open hand waits, in hand sizes.
 const REACH_HEIGHT: float = 7.0
@@ -62,7 +67,7 @@ func _process(delta: float) -> void:
 		cancelled.emit()
 		queue_free()
 		return
-	_t += delta
+	_t += delta * GENTLE
 	var rise := 0.0
 	var curl := 0.0
 	var away := 0.0
@@ -107,16 +112,19 @@ func _process(delta: float) -> void:
 
 # Fingers roll in from the knuckle out, the little finger last, as real ones do.
 func _pose(curl: float, away: float) -> void:
+	# little, ring, middle, index: knuckle, middle and end joints when pinching.
+	var shut: Array[Vector3] = [Vector3(1.25, 1.4, 1.2), Vector3(1.35, 1.4, 1.2), Vector3(1.3, 1.4, 1.2), Vector3(-0.3, 0.7, 0.8)]
 	for i: int in _fingers.size():
 		var f: Array = _fingers[i]
-		var c: float = clampf(curl * 1.25 - float(3 - i) * 0.08, 0.0, 1.1)
+		var c: float = clampf(curl * 1.25 - float(3 - i) * 0.08, 0.0, 1.0)
 		var wiggle: float = sin(_t * 9.0 + float(i) * 1.3) * away * 0.08
-		(f[0] as Node3D).rotation = Vector3(lerpf(-0.42, 0.34, c) + wiggle, 0.0, float(f[3]) * lerpf(1.0, 0.3, c))
-		(f[1] as Node3D).rotation.x = lerpf(0.16, 0.82, c)
-		(f[2] as Node3D).rotation.x = lerpf(0.1, 0.62, c)
-	_thumb[0].rotation = Vector3(lerpf(0.5, 0.2, curl), 0.0, lerpf(0.75, 0.2, curl))
-	_thumb[1].rotation.z = lerpf(0.05, -0.32, curl)
-	_thumb[2].rotation.z = lerpf(0.05, -0.42, curl)
+		var aim: Vector3 = shut[i]
+		(f[0] as Node3D).rotation = Vector3(lerpf(-0.42, aim.x, c) + wiggle, 0.0, lerpf(float(f[3]), float(f[3]) * 0.3, c))
+		(f[1] as Node3D).rotation.x = lerpf(0.16, aim.y, c)
+		(f[2] as Node3D).rotation.x = lerpf(0.1, aim.z, c)
+	_thumb[0].rotation = Vector3(lerpf(0.5, 0.3, curl), 0.0, lerpf(0.75, 0.04, curl))
+	_thumb[1].rotation = Vector3(lerpf(0.0, -0.7, curl), 0.0, lerpf(0.05, -0.05, curl))
+	_thumb[2].rotation = Vector3(lerpf(0.0, -0.6, curl), 0.0, lerpf(0.05, -0.08, curl))
 
 func _place(away: float) -> void:
 	var data: AgentData = _agent._data
@@ -148,6 +156,10 @@ func _place(away: float) -> void:
 	global_position = mid + drawn_up * (_body_height() * grip_up + REACH_HEIGHT * fit * ease_in)
 	look_at(global_position + to_cam, up)
 	rotate_object_local(Vector3.FORWARD, sin(_t * 1.3) * 0.03 + away * 0.18)
+	# Side on: thumb and forefinger pinch across the picture, palm edge to us.
+	rotate_object_local(Vector3.UP, PI * 0.5)
+	# Put the fingertips, not the palm, on the scruff of the neck.
+	global_position += drawn_up * _body_height() * 0.04 - global_basis * PINCH
 
 func _agent_lift() -> float:
 	return _agent._data.draw_lift if _agent._data != null else 0.0

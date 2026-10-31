@@ -14,6 +14,7 @@ signal extinction_event(species: String)
 signal overpopulation_event(species: String)
 signal season_changed(season: String)
 signal chronicle(text: String)
+signal season_event(text: String, species: String)
 # A golden tuft, berry or apple, or star moss was eaten (3.0).
 signal golden_found(kind: String, eater: String, pos: Vector3)
 signal drought_started()
@@ -122,7 +123,8 @@ var _last_overpop_state: Dictionary = {}
 var _season_day: float = 0.0
 var _current_season: String = "Spring"
 # A run is one compressed year: each season is a quarter of it (in days).
-var SEASON_LENGTH: float = 2.5
+var SEASON_LENGTH: float = 3.0
+var _season_event_done: bool = false
 const SEASONS: Array[String] = ["Spring", "Summer", "Autumn", "Winter"]
 var _season_index: int = 0
 var _season_grass: float = 1.5
@@ -318,6 +320,9 @@ func _ready() -> void:
 	for id: String in SpeciesDB.NEW_SPECIES:
 		var sc: PackedScene = load("res://scenes/%s.tscn" % id)
 		_extra[id] = {"scene": sc, "pool": NodePool.new(sc, id, POOL_SIZE), "active": []}
+	for id: String in SpeciesDB.SEASONAL:
+		var sc: PackedScene = load("res://scenes/%s.tscn" % id)
+		_extra[id] = {"scene": sc, "pool": NodePool.new(sc, id, SeasonalSprite.MAX_ALIVE + 6), "active": []}
 
 	var gc: Node = get_node_or_null("/root/GameConfig")
 	if gc != null and not _headless_mode:
@@ -755,13 +760,13 @@ const MAX_BUSHES: int = 30
 
 # Berry bushes: a low tree kept in $Bushes so it never counts as woodland
 # (no nests, no timber). Berries that rot where they fall plant new ones.
-func plant_bush(pos: Vector3, grown: bool = false) -> void:
+func plant_bush(pos: Vector3, grown: bool = false) -> Node:
 	if _tree_scene == null or $Bushes.get_child_count() >= MAX_BUSHES or (not grown and not tree_planting):
-		return
+		return null
 	if not grown:
 		pos = wind.seed_drift(pos) if wind != null else pos
 		if randf() > 0.3 * float(BUSH_TAKE.get(Biomes.at(pos.x, pos.z), 1.0)):
-			return
+			return null
 	var b = _tree_scene.instantiate()
 	b.bush = true
 	b.apple_spawn_interval = 2.5
@@ -770,6 +775,7 @@ func plant_bush(pos: Vector3, grown: bool = false) -> void:
 	_snap_to_ground(b)
 	if not grown:
 		b.set_stage(0)
+	return b
 
 func find_nearest_berry(pos: Vector3, radius: float = 8.0) -> Node3D:
 	var best: Node3D = null
@@ -876,6 +882,8 @@ func try_plant_tree_seed(pos: Vector3, planter_group: String = "") -> bool:
 			chance = 0.58
 	var land: Vector3 = wind.seed_drift(pos) if wind != null else pos + Vector3((randf() - 0.5) * 4.0, 0.0, (randf() - 0.5) * 4.0)
 	chance *= float(TREE_TAKE.get(Biomes.at(land.x, land.z), 1.0))
+	if planter_group == "sprite":
+		chance = 1.0
 	if randf() > chance:
 		return false
 	if _tree_scene == null:
@@ -1144,7 +1152,7 @@ func _tick_agents(dt: float) -> void:
 		var node := data.node
 		if node == null or not is_instance_valid(node) or not node.is_inside_tree():
 			_agent_registry.remove_at(idx)
-		elif node.get_instance_id() % stagger == phase and data.species != "mushroom" and not node.rampage and not node.scripted:
+		elif node.get_instance_id() % stagger == phase and data.species != "mushroom" and not node.rampage and not node.player_drive and not node.scripted:
 			node._physics_process(dt * stagger)
 		idx -= 1
 	for child in spores.get_children():
@@ -3059,6 +3067,16 @@ func _bet_key(bet: String) -> String:
 			var id := SpeciesDB.id_for(bet)
 			return SpeciesDB.plural(id) if SpeciesDB.is_new(id) else "sheep"
 
+# Mid-season: the notification, and a band of this season's Sprites.
+func _seasonal_sprites_wake() -> void:
+	var row: Array = SeasonBook.EVENTS[_current_season]
+	var id: String = row[0]
+	season_event.emit(row[1], id)
+	chronicle.emit(row[1])
+	var at: Vector3 = Biomes.random_point("sheep", self)
+	for i: int in SeasonBook.SPAWN_COUNT:
+		_spawn_extra(id, at + Vector3(randf_range(-4.0, 4.0), 0.0, randf_range(-4.0, 4.0)))
+
 func _update_season(dt: float) -> void:
 	SEASON_LENGTH = maxf(0.5, cfg_time_limit / 4.0)
 	_season_day += dt * DAYS_PER_SECOND
@@ -3067,9 +3085,13 @@ func _update_season(dt: float) -> void:
 		_season_index = (_season_index + 1) % SEASONS.size()
 		_current_season = SEASONS[_season_index]
 		touches_left = 1
+		_season_event_done = false
 		_apply_season_mood(_current_season, false)
 		_river_season_turn(_current_season)
 		season_changed.emit(_current_season)
+	if not _season_event_done and _season_day >= SEASON_LENGTH * 0.5:
+		_season_event_done = true
+		_seasonal_sprites_wake()
 	match _current_season:
 		"Spring":
 			_season_grass = 1.5
@@ -3376,6 +3398,8 @@ func _power_mult(species: String, idx: int) -> float:
 func season_metabolism(species: String) -> float:
 	var row: Array = SEASON_TABLE.get(species, SpeciesDB.row(species).get("season", []))
 	var m: float = 1.0 if row.is_empty() else float(row[_season_index][0])
+	if _season_index == 3:
+		m *= EraBook.winter_metabolism(species)
 	return m * _power_mult(species, 0) * daynight_mult(species, 1)
 
 func season_breeding(species: String) -> float:
@@ -3385,6 +3409,8 @@ func season_breeding(species: String) -> float:
 	var b: float = 1.0 if row.is_empty() else float(row[_season_index][1])
 	if species == "falcon":
 		b *= nest_factor
+	if _season_index == 3:
+		b *= EraBook.winter_breeding(species)
 	return b * _power_mult(species, 1) * daynight_mult(species, 2)
 
 # Mushrooms and mycelium flourish in autumn and in rain; otherwise they are rare.
