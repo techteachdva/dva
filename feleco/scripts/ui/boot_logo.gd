@@ -36,7 +36,7 @@ func _draw() -> void:
 		# Each tree lives its own short life; loading wakes more of them.
 		var life: float = fmod(clock + i * 0.37, 1.0)
 		var grow: float = sin(life * PI) * minf(1.0, p * 2.0 + 0.2)
-		_tree(root, a + PI, r * 0.3, 4, grow, Color.from_hsv(0.2 + i * 0.03, 0.4, 1.0, grow * 0.65))
+		_tree(root, a + PI, r * 0.3, 3, grow, Color.from_hsv(0.2 + i * 0.03, 0.4, 1.0, grow * 0.65))
 		# A link to the next tree: states feeding one another.
 		var next: Vector2 = c + Vector2.from_angle(a + TAU / TREES) * r * 0.74
 		draw_line(c + Vector2.from_angle(a) * r * 0.74, next, Color(gold, 0.25 * grow), 1.5, true)
@@ -48,8 +48,7 @@ func _tree(from: Vector2, ang: float, length: float, depth: int, grow: float, co
 	if depth <= 0 or grow <= 0.02:
 		return
 	var to: Vector2 = from + Vector2.from_angle(ang) * length * grow
-	draw_line(from, to, col, 0.5 + depth * 0.4, true)
-	draw_circle(to, 1.0 + depth * 0.4, col)
+	draw_line(from, to, col, 0.5 + depth * 0.4)
 	_tree(to, ang - 0.55, length * 0.66, depth - 1, grow, col)
 	_tree(to, ang + 0.55, length * 0.66, depth - 1, grow, col)
 
@@ -82,7 +81,7 @@ func _word(c: Vector2, r: float, turn: float, p: float) -> void:
 			draw_line(from, from.lerp(to, a), Color(gold, a * 0.3), 9.0, true)
 			draw_line(from, from.lerp(to, a), col, 3.5, true)
 			var along: float = (to - from).angle()
-			for n: int in 6:
-				var at: Vector2 = from.lerp(to, (n + 0.5) / 6.0 * a)
+			for n: int in 3:
+				var at: Vector2 = from.lerp(to, (n + 0.5) / 3.0 * a)
 				var side: float = 1.0 if n % 2 == 0 else -1.0
-				_tree(at, along + side * 0.8, cell * 0.13, 2, a, Color(0.75, 1.0, 0.6, a * 0.9))
+				_tree(at, along + side * 0.8, cell * 0.13, 1, a, Color(0.75, 1.0, 0.6, a * 0.9))

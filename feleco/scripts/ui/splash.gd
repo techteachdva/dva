@@ -46,23 +46,16 @@ func _ready() -> void:
 	credit.add_child(mark)
 	credit.add_child(FelecoUiScript.label("Godot Game Engine", 15, Color(0.79, 0.78, 0.7)))
 	add_child(credit)
-	ResourceLoader.load_threaded_request(MENU)
 
 func _process(delta: float) -> void:
 	# A hitching frame must never skip the build: it always plays in full.
 	_t = minf(_t + minf(delta, MAX_STEP) / MIN_TIME, 1.0)
-	var got: Array = []
-	var status := ResourceLoader.load_threaded_get_status(MENU, got)
-	var loaded: float = 1.0 if status == ResourceLoader.THREAD_LOAD_LOADED or status == ResourceLoader.THREAD_LOAD_FAILED else float(got[0]) if not got.is_empty() else 0.0
-	var shown: float = minf(loaded, _t)
+	var shown: float = _t
 	_logo.progress = shown
 	_vine.progress = shown
 
 # Nothing moves on until the player says so.
 func _enter() -> void:
 	set_process(false)
-	var scene: PackedScene = ResourceLoader.load_threaded_get(MENU) as PackedScene
-	if scene != null:
-		get_tree().change_scene_to_packed(scene)
-	else:
-		get_tree().change_scene_to_file(MENU)
+	# Loaded here, not during the logo, so nothing competes with its frames.
+	get_tree().change_scene_to_file(MENU)
