@@ -125,6 +125,8 @@ var _current_season: String = "Spring"
 # A run is one compressed year: each season is a quarter of it (in days).
 var SEASON_LENGTH: float = 3.0
 var _season_event_done: bool = false
+const RESCUE_BELOW: int = 3
+const RESCUE_COUNT: int = 4
 const SEASONS: Array[String] = ["Spring", "Summer", "Autumn", "Winter"]
 var _season_index: int = 0
 var _season_grass: float = 1.5
@@ -1901,6 +1903,8 @@ func _spawn_extra(id: String, pos: Vector3, parent: Node = null) -> Node:
 		a.visible = true
 		a.global_position = _in_valley(pos)
 	_track_agent(a, e["active"])
+	if a is MarkovAgent:
+		a.species_id = id
 	_apply_phenotype_variance(a, parent)
 	_apply_campaign_traits(a, id)
 	return a
@@ -3067,8 +3071,23 @@ func _bet_key(bet: String) -> String:
 			var id := SpeciesDB.id_for(bet)
 			return SpeciesDB.plural(id) if SpeciesDB.is_new(id) else "sheep"
 
+# The Valley never ends in an empty stage: when a species all but vanishes,
+# a few travellers wander in over the passes. Simulation and Challenge stay raw.
+func _rescue_migrants() -> void:
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	if gc == null or str(gc.current_mode) != "main":
+		return
+	for key: String in SpeciesDB.CENSUS:
+		var id: String = SpeciesDB.id_for(key)
+		if id == "mushroom" or id == "" or disabled_species.has(id) or get_species_count(id) >= RESCUE_BELOW:
+			continue
+		var at: Vector3 = Biomes.random_point(id, self)
+		for i: int in RESCUE_COUNT:
+			spawn_offspring(id, null, at + Vector3(randf_range(-3.0, 3.0), 0.0, randf_range(-3.0, 3.0)))
+
 # Mid-season: the notification, and a band of this season's Sprites.
 func _seasonal_sprites_wake() -> void:
+	_rescue_migrants()
 	var row: Array = SeasonBook.EVENTS[_current_season]
 	var id: String = row[0]
 	season_event.emit(row[1], id)
@@ -3086,6 +3105,7 @@ func _update_season(dt: float) -> void:
 		_current_season = SEASONS[_season_index]
 		touches_left = 1
 		_season_event_done = false
+		_rescue_migrants()
 		_apply_season_mood(_current_season, false)
 		_river_season_turn(_current_season)
 		season_changed.emit(_current_season)

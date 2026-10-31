@@ -332,7 +332,7 @@ func focus_species(species: String) -> void:
 		var ct := _card.create_tween().set_parallel()
 		ct.tween_property(_card, "modulate:a", 1.0, 0.3).set_delay(0.12)
 		ct.tween_property(_card, "position:x", x, 0.35).set_delay(0.12).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_hint.text = "Click the creature again to see how it decides. Click the open web or press Esc to zoom out." if not species.is_empty() else "Click a creature to zoom in on its rules."
+	_hint.text = "Click it again to see how it decides." if not species.is_empty() else "Click a creature to zoom in on its rules."
 	if zoom_to >= 0.0:
 		if _zoom_tween != null:
 			_zoom_tween.kill()
@@ -782,4 +782,5 @@ func _open_graph(species: String) -> void:
 	graph.species = species
 	graph.title = _name_of(species)
 	graph.accent = (INFO[species][1] as Color).lightened(0.15)
-	_web.add_child(graph)
+	graph.z_index = 50
+	add_child(graph)

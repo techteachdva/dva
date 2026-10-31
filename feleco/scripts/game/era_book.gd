@@ -103,6 +103,8 @@ static func draw_size(species: String, valley: Vector2) -> Vector2:
 
 # Lost Valley cannot fill up with sixty mammoths.
 static func capacity(species: String, valley: int) -> int:
+	if species == "falcon":
+		return mini(valley, 24)
 	if id() == "lost" and species == "deer":
 		return 12
 	return valley

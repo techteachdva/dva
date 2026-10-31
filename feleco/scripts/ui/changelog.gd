@@ -3,9 +3,18 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "6.0"
+const VERSION: String = "6.1"
 
 const CHANGELOG: Array = [
+	{
+		"version": "6.1",
+		"title": "Sprites, Claimed",
+		"notes": [
+			"Claiming a Seasonal Sprite now earns its achievement and cursor.",
+			"The Markov diagram in the Food Web opens properly, in full view.",
+			"In The Valley, travellers arrive when a species nearly vanishes.",
+		],
+	},
 	{
 		"version": "6.0",
 		"title": "Seasonal Sprites",

@@ -35,6 +35,7 @@ var _born_in: String = ""
 
 func _configure() -> void:
 	species = sprite_kind
+	species_id = sprite_kind
 	walk_speed = 3.2
 	run_speed = 4.6
 	metabolism_rate = 0.0
