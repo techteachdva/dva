@@ -5,7 +5,8 @@ extends Control
 
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 const MENU: String = "res://scenes/ui/main_menu.tscn"
-const MIN_TIME: float = 12.0
+const MIN_TIME: float = 10.0
+const MAX_STEP: float = 1.0 / 30.0
 
 var _t: float = 0.0
 var _logo: BootLogo
@@ -48,11 +49,12 @@ func _ready() -> void:
 	ResourceLoader.load_threaded_request(MENU)
 
 func _process(delta: float) -> void:
-	_t += delta
+	# A hitching frame must never skip the build: it always plays in full.
+	_t = minf(_t + minf(delta, MAX_STEP) / MIN_TIME, 1.0)
 	var got: Array = []
 	var status := ResourceLoader.load_threaded_get_status(MENU, got)
 	var loaded: float = 1.0 if status == ResourceLoader.THREAD_LOAD_LOADED or status == ResourceLoader.THREAD_LOAD_FAILED else float(got[0]) if not got.is_empty() else 0.0
-	var shown: float = minf(loaded, _t / MIN_TIME)
+	var shown: float = minf(loaded, _t)
 	_logo.progress = shown
 	_vine.progress = shown
 
