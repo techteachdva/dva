@@ -9,9 +9,28 @@ const SHAPES: Array[String] = ["Natural", "Spikes", "Bulb", "Wing", "Tendril", "
 const TEXTURES: Array[String] = ["Hide", "Scales", "Cracks", "Stars", "Veins", "Eyes", "Ember", "Ridges"]
 const PART_NAMES: Array[String] = ["Legs", "Tail", "Belly", "Back", "Neck", "Head", "Crown"]
 
+# Stored size to name. 0.5 is the creature's own natural size (see brand_read).
+const SIZES: Array = [["Small", 0.15], ["Natural", 0.5], ["Grand", 0.75], ["Vast", 1.0]]
+
 static var _image: Image
 static var _tex: ImageTexture
 static var _next: int = 1
+# Rows the player has made their own (slot -> weakref to the creature): rare
+# coats wrapping round the atlas must not take them.
+static var _kept: Dictionary = {}
+
+# Free painting. One small tile per slot in a shared sheet, so a valley full of
+# branded creatures costs one texture. A tile covers the sprite's quad, the
+# same body space the parts use, so a drawing stays on the body on every frame
+# (a limb can slide a little under it mid-stride). Stored as bytes in
+# brand["paint"] so it travels with the brand to an heir.
+const PAINT_TILE: int = 96
+const PAINT_COLS: int = 8
+const PAINT_ROWS: int = 4
+const BLANK := Color(0.5, 0.5, 0.5, 0.0)
+static var _paint_image: Image
+static var _paint_tex: ImageTexture
+static var _painted: Dictionary = {}
 
 static func atlas() -> ImageTexture:
 	_ensure()
@@ -22,9 +41,24 @@ static func ensure(data: AgentData) -> void:
 		data.brand_slot = 0
 		return
 	if data.brand_slot <= 0 or data.brand_slot >= 32:
-		data.brand_slot = _next
-		_next = 1 if _next >= 31 else _next + 1
+		data.brand_slot = _take_slot()
 		paint(data)
+		_show_paint(data)
+
+static func _take_slot() -> int:
+	var slot: int = _next
+	for _i: int in 31:
+		slot = _next
+		_next = 1 if _next >= 31 else _next + 1
+		var owner: WeakRef = _kept.get(slot)
+		if owner == null or owner.get_ref() == null:
+			break
+	return slot
+
+# This creature's look is the player's work: its row is never handed on.
+static func keep(data: AgentData) -> void:
+	if data != null and data.brand_slot > 0:
+		_kept[data.brand_slot] = weakref(data)
 
 static func fresh(school: String) -> Dictionary:
 	var light: bool = school != "dark"
@@ -45,8 +79,8 @@ static func fresh(school: String) -> Dictionary:
 	for i: int in PARTS.size():
 		parts[PARTS[i]] = {
 			"color": colors[i],
-			"texture": 3 if light else 5,
-			"size": 0.55,
+			"texture": 0,
+			"size": 0.5,
 			"shape": 0,
 		}
 	return {"school": "light" if light else "dark", "parts": parts}
@@ -70,6 +104,63 @@ static func paint(data: AgentData) -> void:
 	# shader is already sampling. A new texture is what the valley and the
 	# studio both pick up on the next draw.
 	_tex = ImageTexture.create_from_image(_image)
+
+# Which part a point of the body belongs to (brand_part in brand.gdshaderinc).
+static func part_at(tx: float, up: float) -> int:
+	if up > 0.76 and tx > 0.58:
+		return 6
+	if tx > 0.76 and up > 0.32:
+		return 5
+	if tx > 0.60 and up > 0.38:
+		return 4
+	if up < 0.30:
+		return 0
+	if tx < 0.30:
+		return 1
+	if up > 0.52:
+		return 3
+	return 2
+
+static func paint_atlas() -> ImageTexture:
+	_ensure_paint()
+	return _paint_tex
+
+static func _ensure_paint() -> void:
+	if _paint_image != null:
+		return
+	_paint_image = Image.create(PAINT_TILE * PAINT_COLS, PAINT_TILE * PAINT_ROWS, false, Image.FORMAT_RGBA8)
+	_paint_image.fill(BLANK)
+	_paint_tex = ImageTexture.create_from_image(_paint_image)
+
+static func _tile(slot: int) -> Vector2i:
+	return Vector2i(slot % PAINT_COLS, slot / PAINT_COLS) * PAINT_TILE
+
+# The creature's drawing as an image to paint on.
+static func canvas(data: AgentData) -> Image:
+	var bytes: Variant = data.brand.get("paint")
+	if bytes is PackedByteArray:
+		return Image.create_from_data(PAINT_TILE, PAINT_TILE, false, Image.FORMAT_RGBA8, bytes)
+	var img := Image.create(PAINT_TILE, PAINT_TILE, false, Image.FORMAT_RGBA8)
+	img.fill(BLANK)
+	return img
+
+static func set_canvas(data: AgentData, img: Image) -> void:
+	data.brand["paint"] = img.get_data()
+	_show_paint(data)
+
+static func _show_paint(data: AgentData) -> void:
+	var slot: int = data.brand_slot
+	var has_paint: bool = data.brand.get("paint") is PackedByteArray
+	if slot <= 0 or (not has_paint and not _painted.has(slot)):
+		return
+	_ensure_paint()
+	_paint_image.blit_rect(canvas(data), Rect2i(0, 0, PAINT_TILE, PAINT_TILE), _tile(slot))
+	if has_paint:
+		_painted[slot] = true
+	else:
+		_painted.erase(slot)
+	# A new texture, for the same WebGL reason as paint() above.
+	_paint_tex = ImageTexture.create_from_image(_paint_image)
 
 static func _ensure() -> void:
 	if _image != null:

@@ -21,7 +21,8 @@ const POOL_SIZE: int = 20
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	layer = 10
+	# Beneath the HUD (layer 1): world labels must not draw over open windows.
+	layer = 0
 	# Flash overlay - must NOT block mouse input
 	var flash := ColorRect.new()
 	flash.name = "FlashOverlay"
@@ -203,6 +204,8 @@ func spawn_graze_particles(pos: Vector3) -> void:
 	})
 
 func show_floating_text(world_pos: Vector3, text: String, color: Color, is_crit: bool = false) -> void:
+	if text == "+0":
+		return
 	if not _has_budget():
 		return
 	# Births are constant; a few labels say so without burying the valley.

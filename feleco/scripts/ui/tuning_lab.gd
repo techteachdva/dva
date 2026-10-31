@@ -54,12 +54,17 @@ func _ready() -> void:
 	var footer: HBoxContainer = frame["footer"]
 	_status = FelecoUiScript.label("", 15, FelecoUiScript.GOLD)
 	_status.custom_minimum_size = Vector2(380, 0)
-	footer.add_child(_status)
+	# No room beside the buttons on a tall phone: it reads under the hint.
+	if get_viewport_rect().size.x < 900.0:
+		card.add_child(_status)
+		card.move_child(_status, hint.get_index() + 1)
+	else:
+		footer.add_child(_status)
 	for spec: Array in [["Reset all", _reset_all, "GhostButton"], ["Copy settings", _copy, "TouchButton"], ["Play Sandbox", _play, "PrimaryButton"]]:
 		var b := Button.new()
 		b.text = spec[0]
 		b.theme_type_variation = spec[2]
-		b.custom_minimum_size = Vector2(190, 52)
+		b.custom_minimum_size = Vector2(190 if get_viewport_rect().size.x >= 900.0 else 150, 52)
 		b.pressed.connect(spec[1])
 		footer.add_child(b)
 	FelecoUiScript.dress_menu(self)

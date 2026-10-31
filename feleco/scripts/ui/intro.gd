@@ -1,12 +1,14 @@
 extends Node
 
 # The opening film, played in the real valley. A narrator stumbles on golden
-# grass and follows the gold from rabbit to mountain lion to wizard, finds
-# some golden coins for the Coin Pot, bets on the wizard's rampage, watches
-# it win and the payout fly home, then sets the whole valley running:
-# "Felicitus Ecologia", which folds itself into FelEco. One creature per beat,
-# scripted (see MarkovAgent.stage_to). Plays once on first launch; Skip, or
-# the main menu's "Watch the opening", at any time.
+# grass and follows the gold from rabbit to mountain lion to wizard, whose
+# rampage earns an upgrade. The wizard turns and tells you who you are, shows
+# how a creature chooses, and the whole valley wakes. Then the game teaches
+# itself: the two doors, the Quest Board, the real hand lifting and branding a
+# real creature, and real powers falling on the valley, before "Felicitus
+# Ecologia" folds itself into FelEco. One creature per beat, scripted (see
+# MarkovAgent.stage_to). Plays once on first launch; Skip, or the main menu's
+# "Watch the opening", at any time.
 
 const FelecoUiScript = preload("res://scripts/ui/feleco_ui.gd")
 const WORLD: PackedScene = preload("res://scenes/world.tscn")
@@ -168,6 +170,7 @@ func _play() -> void:
 
 	var rabbit := _dir.spawn_scripted("rabbit", _dir.dry_land(_anchor + Vector3(-9, 0, 1)))
 	_follow(rabbit, 9.0)
+	if not await _let_read(): return
 	_say("Well, here comes a rabbit!", 2.6)
 	await _walk(rabbit, _anchor + Vector3(-0.8, 0, 0.2), 2.6, "Walk")
 	await _speak(rabbit, "Yummy yummy golden grass.", 2.2, "Graze")
@@ -186,6 +189,7 @@ func _play() -> void:
 
 	var lion := _dir.spawn_scripted("lion", _dir.dry_land(_anchor + Vector3(-11, 0, 4)))
 	_view(_anchor + Vector3(-4, 0, 2), 0.1, -0.5, 13.0)
+	if not await _let_read(): return
 	_say("Oh no! Run, rabbit, run! Here comes a mountain lion!", 3.2)
 	_walk(rabbit, _dir.dry_land(_anchor + Vector3(6, 0, -1)), 2.4, "Flee")
 	await _walk(lion, _dir.dry_land(_anchor + Vector3(4.5, 0, -0.6)), 2.6, "Chase")
@@ -202,6 +206,7 @@ func _play() -> void:
 	var wizard := _dir.spawn_scripted("human", _dir.dry_land(lion.global_position + Vector3(8, 0, 3)))
 	Roles.apply(wizard, "human", Roles.SPECIAL)
 	_view(lion.global_position + Vector3(3, 0, 1), 0.5, -0.45, 12.0)
+	if not await _let_read(): return
 	_say("Oh my goodness, a WIZARD?", 2.2)
 	await _walk(wizard, lion.global_position + Vector3(3.2, 0, 1.0), 2.2, "Walk")
 	if _done: return
@@ -213,19 +218,26 @@ func _play() -> void:
 	await _hold_say(wizard, "Now the wizard is golden. Curious...", 2.4, "Idle")
 	if _done: return
 
-	_view(wizard.global_position, 1.0, -0.55, 18.0)
-	await _hold_say(wizard, "Your name is Feleco, you are the spirit in charge of this valley", 3.6, "Idle")
+	await _rampage(wizard)
+	if _done: return
+	await _reward(wizard)
+	if _done: return
+
+	_view(wizard.global_position, 1.0, -0.5, 12.0)
+	_look(wizard, 4.0)
+	await _speak(wizard, "Your name is Feleco. You are the spirit of this valley.", 3.6, "Idle")
 	if _done: return
 	await _human_markov()
 	if _done: return
-	await _hold_say(wizard, "A year in the valley is a quest, not a wager.", 2.8, "Idle")
+	await _hold_say(wizard, "Every creature here chooses for itself. You only tip the year.", 2.8, "Idle")
 	if _done: return
 	_unleash()
 	_view(Vector3(0, 0, 4), 0.6, -0.75, 62.0)
-	await _say("You are Feleco, the spirit of this valley.", 2.8)
+	await _say("Now the whole valley wakes.", 2.4)
 	if _done: return
 	await _teach()
 	if _done: return
+	_view(Vector3(0, 0, 4), 0.95, -0.62, 56.0)
 	await _title_card()
 	if _done: return
 	await _say(SIGN_OFFS.pick_random(), 1.8)
@@ -237,6 +249,7 @@ func _play() -> void:
 # nothing new takes root until the finale.
 func _clear_stage() -> void:
 	_dir.tree_planting = false
+	_dir.hold_daylight = true
 	var stage := Rect2(_anchor.x - 18.0, _anchor.z - 8.0, 48.0, 40.0)
 	var back_z: float = _anchor.z - 10.0
 	for t: Node in _dir.get_node("Trees").get_children() + _dir.get_node("Bushes").get_children():
@@ -270,26 +283,7 @@ func _grow_gold(at: Vector3, radius: int) -> void:
 			g._mark_dirty(i)
 	g.flush_visuals()
 
-# Golden coins tumble down into the Coin Pot, the purse every bet comes from.
-func _coins() -> void:
-	_build_pot()
-	_say("Oh, what's this? Golden coins? Into the Coin Pot they go. Let's play a game of chance...", 3.6)
-	var vp: Vector2 = _root.get_viewport_rect().size
-	var home: Vector2 = _pot_box.position + Vector2(14, 10)
-	for i: int in 20:
-		var coin := Coin.new()
-		coin.position = Vector2(randf_range(vp.x * 0.3, vp.x * 0.7), -40.0)
-		_root.add_child(coin)
-		var tw := create_tween()
-		tw.tween_interval(i * 0.08)
-		tw.tween_property(coin, "position", Vector2(vp.x * 0.5 + randf_range(-60, 60), vp.y * 0.45), 0.45).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-		tw.tween_property(coin, "position", home, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		tw.tween_callback(func() -> void:
-			coin.queue_free()
-			_add_pot(5))
-	await get_tree().create_timer(3.6 * READ_PACE).timeout
-
-# The Coin Pot, bottom left above the letterbox: what the player has to bet.
+# The tally, bottom left above the letterbox.
 func _build_pot() -> void:
 	var vp: Vector2 = _root.get_viewport_rect().size
 	_pot_box = PanelContainer.new()
@@ -306,7 +300,7 @@ func _build_pot() -> void:
 	var icon := Coin.new()
 	icon.custom_minimum_size = Vector2(36, 36)
 	row.add_child(icon)
-	_pot_label = FelecoUiScript.heading("Coin Pot  0", 26, FelecoUiScript.GOLD)
+	_pot_label = FelecoUiScript.heading("Upgrades earned  0", 26, FelecoUiScript.GOLD)
 	row.add_child(_pot_label)
 	_pot_box.position = Vector2(28, vp.y - 64.0 - 76.0)
 	_pot_box.modulate.a = 0.0
@@ -315,71 +309,11 @@ func _build_pot() -> void:
 
 func _add_pot(n: int) -> void:
 	_pot += n
-	_pot_label.text = "Coin Pot  %d" % _pot
+	_pot_label.text = "Upgrades earned  %d" % _pot
 	_pot_box.pivot_offset = _pot_box.size * 0.5
 	var tw := create_tween()
 	tw.tween_property(_pot_box, "scale", Vector2(1.08, 1.08), 0.06)
 	tw.tween_property(_pot_box, "scale", Vector2.ONE, 0.12)
-
-# A bet card in the style of the Bet Slip.
-func _bet_card(sprite: String, title: String, line: String, odds: String) -> PanelContainer:
-	var card := PanelContainer.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.12, 0.27, 0.17, 0.95)
-	sb.border_color = FelecoUiScript.GOLD
-	sb.set_border_width_all(3)
-	sb.set_corner_radius_all(16)
-	sb.set_content_margin_all(12)
-	card.add_theme_stylebox_override("panel", sb)
-	var col := VBoxContainer.new()
-	card.add_child(col)
-	var art := TextureRect.new()
-	art.texture = FelecoUiScript.species_texture(sprite)
-	art.custom_minimum_size = Vector2(150, 100)
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	col.add_child(art)
-	for t: Array in [[title, 24, FelecoUiScript.CREAM], [line, 16, FelecoUiScript.CREAM], [odds, 22, FelecoUiScript.GOLD]]:
-		var l := FelecoUiScript.heading(t[0], t[1], t[2])
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		col.add_child(l)
-	card.custom_minimum_size = Vector2(220, 0)
-	card.modulate.a = 0.0
-	_root.add_child(card)
-	return card
-
-# Two bets on the wizard; the rampage bet gets the stake. Returns its card.
-func _bet_on_rampage(wizard: MarkovAgent) -> Control:
-	var vp: Vector2 = _root.get_viewport_rect().size
-	_view(wizard.global_position + Vector3(-2, 0, 0), 0.4, -0.5, 13.0)
-	var safe := _bet_card("human", "Wizard survives", "Lives to the end of the year", "x1.4")
-	var bold := _bet_card("human", "Successful Rampage", "12 kills before the gold runs out", "x3")
-	safe.position = Vector2(vp.x * 0.56, vp.y * 0.16)
-	bold.position = Vector2(vp.x * 0.56 + 250.0, vp.y * 0.16)
-	for c: Control in [safe, bold]:
-		create_tween().tween_property(c, "modulate:a", 1.0, 0.4)
-	await _say("Golden creatures can be bet on. Safe and small, or bold and big...", 3.2)
-	if _done: return bold
-	_say("A golden wizard? I'm betting on a Successful Rampage!", 3.0)
-	create_tween().tween_property(safe, "modulate:a", 0.35, 0.4)
-	bold.pivot_offset = bold.size * 0.5
-	var pick := create_tween()
-	pick.tween_property(bold, "scale", Vector2(1.1, 1.1), 0.15)
-	pick.tween_property(bold, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK)
-	# The stake, ten coins, hops out of the pot onto the slip.
-	for i: int in 2:
-		var coin := Coin.new()
-		coin.position = _pot_box.position + Vector2(14, 10)
-		_root.add_child(coin)
-		_add_pot(-5)
-		var hop := create_tween()
-		hop.tween_interval(i * 0.15)
-		hop.tween_property(coin, "position", bold.position + Vector2(90 + i * 14, bold.size.y - 30), 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		coin.add_to_group("stake")
-	await get_tree().create_timer(2.6 * READ_PACE).timeout
-	var out := create_tween()
-	out.tween_property(safe, "modulate:a", 0.0, 0.4)
-	return bold
 
 # The wizard's golden rampage, played for the viewer: it dashes from prey to
 # prey while the gold drains. Twelve kills wins, as in the game (RAMPAGE_GOAL).
@@ -396,7 +330,7 @@ func _rampage(wizard: MarkovAgent) -> bool:
 		if a != null:
 			prey.append(a)
 	_follow(wizard, 14.0)
-	await _say("Make it yours, press Rampage, and the gold turns to fury!", 2.8)
+	await _say("Gold can turn to fury. Twelve kills before it runs out wins a Rampage!", 3.0)
 	if _done: return false
 	# The rampage HUD: gold left and kills toward the goal.
 	var vp: Vector2 = _root.get_viewport_rect().size
@@ -421,7 +355,6 @@ func _rampage(wizard: MarkovAgent) -> bool:
 	_root.add_child(hud)
 	wizard.golden = 1.0
 	FXManager.show_dramatic_text(wizard.global_position + Vector3.UP * 2.5, "RAMPAGE!", Color(1.0, 0.82, 0.25))
-	Engine.time_scale = 1.0
 	var kills: int = 0
 	var gold: float = 1.0
 	while kills < goal and not _done and is_instance_valid(wizard):
@@ -460,21 +393,17 @@ func _rampage(wizard: MarkovAgent) -> bool:
 			a.queue_free()
 	return kills >= goal
 
-# The bet pays: stake times three flies from the slip back into the pot.
-func _payout(card: Control, wizard: MarkovAgent) -> void:
-	var stamp := FelecoUiScript.heading("BET WON  x3", 30, FelecoUiScript.GOLD)
-	stamp.add_theme_color_override("font_outline_color", Color(0.25, 0.15, 0.02, 0.95))
-	stamp.add_theme_constant_override("outline_size", 10)
-	stamp.position = card.position + Vector2(10, -48)
-	_root.add_child(stamp)
-	_say("The bet pays three to one. Into the pot!", 3.0)
-	for c: Node in get_tree().get_nodes_in_group("stake"):
-		(c as Control).queue_free()
+# A won rampage pays out: gold flies from the wizard into the tally.
+func _reward(wizard: MarkovAgent) -> void:
+	_build_pot()
+	if not await _let_read():
+		return
+	_say("A rampage won earns a new upgrade in the Greenhouse.", 3.0)
 	var home: Vector2 = _pot_box.position + Vector2(14, 10)
-	var from: Vector2 = card.position + card.size * 0.5
+	var from: Vector2 = home
 	if is_instance_valid(wizard):
 		from = _cam.unproject_position(wizard.global_position + Vector3.UP * 1.5)
-	for i: int in 6:
+	for i: int in 8:
 		var coin := Coin.new()
 		coin.position = from + Vector2(randf_range(-30, 30), randf_range(-30, 30))
 		_root.add_child(coin)
@@ -485,11 +414,10 @@ func _payout(card: Control, wizard: MarkovAgent) -> void:
 		tw.tween_property(coin, "position", home, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		tw.tween_callback(func() -> void:
 			coin.queue_free()
-			_add_pot(5))
+			_add_pot(1 if i == 7 else 0))
 	await get_tree().create_timer(3.0 * READ_PACE).timeout
-	var out := create_tween().set_parallel(true)
-	out.tween_property(card, "modulate:a", 0.0, 0.5)
-	out.tween_property(stamp, "modulate:a", 0.0, 0.5)
+	var out := create_tween()
+	out.tween_property(_pot_box, "modulate:a", 0.0, 0.5)
 	await out.finished
 
 # The whole valley at once: every species, running on its own.
@@ -510,6 +438,13 @@ func _unleash() -> void:
 
 # "FELICITUS ECOLOGIA" in gold, then the extra letters fall away into FelEco.
 func _title_card() -> void:
+	var veil := ColorRect.new()
+	veil.color = Color(0, 0, 0, 0.0)
+	veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(veil)
+	_root.move_child(veil, _caption.get_index())
+	create_tween().tween_property(veil, "color:a", 0.35, 0.8)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 0)
@@ -805,7 +740,7 @@ func _teach() -> void:
 	_clear_teach()
 
 func _doors() -> bool:
-	var win := _window("Two ways in")
+	var win := _window("Two ways in", Vector2(760, 250))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 18)
@@ -909,17 +844,63 @@ func _quests() -> bool:
 	await _note("Begin the year when the list is the one you want. In the valley, Quests opens this board again.")
 	return await _beat(1.2)
 
-func _hand_lesson() -> bool:
+# A row of buttons low in the picture, with the valley left in full view.
+func _bar() -> HBoxContainer:
 	_clear_teach()
-	var win := _window("The hand")
-	var words := FelecoUiScript.label("Click a creature. The hand lifts your champion.", 18, FelecoUiScript.CREAM)
-	words.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	words.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	win.add_child(words)
+	_teach_root = Control.new()
+	_teach_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_teach_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_teach_root)
+	_root.move_child(_teach_root, _caption.get_index())
+	var shell := PanelContainer.new()
+	shell.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	shell.offset_left = -370.0
+	shell.offset_right = 370.0
+	shell.offset_top = -248.0
+	shell.offset_bottom = -168.0
+	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.04, 0.06, 0.08, 0.9)
+	sb.border_color = Color(0.62, 0.8, 0.95, 0.75)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(12)
+	sb.set_content_margin_all(12)
+	shell.add_theme_stylebox_override("panel", sb)
+	_teach_root.add_child(shell)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
-	win.add_child(row)
+	shell.add_child(row)
+	return row
+
+# The real hand comes down, and the choices it offers do what they say.
+func _hand_lesson() -> bool:
+	_clear_teach()
+	var star := _dir.spawn_scripted("sheep", _dir.dry_land(Vector3(2.0, 0.0, 6.0)))
+	if star == null:
+		return true
+	_follow(star, 11.0)
+	await _note("Click a creature and the hand comes down.")
+	if not await _beat(1.8):
+		return false
+	var spot := Control.new()
+	spot.size = Vector2(70, 70)
+	spot.position = _cam.unproject_position(star.global_position + Vector3.UP) - spot.size * 0.5
+	spot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(spot)
+	var clicked: bool = await _press(spot)
+	spot.queue_free()
+	if not clicked:
+		return false
+	var hand := SpectralHand.new()
+	hand.name = "SpectralHand"
+	_world.add_child(hand)
+	var state: Dictionary = {"held": false, "down": false}
+	hand.lift(star, func() -> void: state["held"] = true)
+	while not state["held"]:
+		if not await _frames(1):
+			return false
+	var row := _bar()
 	var claim := _choice_button("Claim", true)
 	var brand := _choice_button("Brand", false)
 	var train := _choice_button("Train", false)
@@ -927,55 +908,65 @@ func _hand_lesson() -> bool:
 	for b: Button in [claim, brand, train, follow]:
 		row.add_child(b)
 	await _note("Claim makes them yours.")
-	if not await _beat(1.6):
-		return false
 	if not await _press(claim):
 		return false
 	claim.text = "Claimed"
-	claim.disabled = true
-	if not await _beat(0.4):
+	FXManager.show_floating_text(star.global_position + Vector3.UP * 2.0, "Claimed!", Color(1.0, 0.85, 0.3), true)
+	await _note("Brand changes the body: colour, hide and shape.")
+	if not await _press(brand):
 		return false
-	await _note("Brand changes the body. One look, every part.")
-	if not await _aim(brand):
-		return false
-	await _note("Train is how they grow. Claim them first.")
+	if star._data != null:
+		var look: Dictionary = BrandBook.fresh("light")
+		for part: String in BrandBook.PARTS:
+			look["parts"][part]["color"] = Color(0.55, 0.85, 1.0) if part in ["back", "belly"] else Color(1.0, 0.85, 0.3)
+		star._data.brand = look
+		BrandBook.ensure(star._data)
+		BrandBook.paint(star._data)
+	FXManager.spawn_birth_particles(star.global_position + Vector3.UP, Color(0.6, 0.85, 1.0))
+	await _note("Train is how they grow.")
 	if not await _aim(train):
 		return false
 	await _note("Follow sets them down, and the camera stays with them.")
-	if not await _aim(follow):
+	if not await _press(follow):
 		return false
-	return await _beat(0.6)
-
-func _powers_lesson() -> bool:
-	_clear_teach()
-	var win := _window("Powers")
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 14)
-	win.add_child(row)
-	var call := _choice_button("Call Kin", true)
-	var heal := _choice_button("Heal", false)
-	var rain := _choice_button("Rain", false)
-	var drought := _choice_button("Drought", false)
-	for b: Button in [call, heal, rain, drought]:
-		row.add_child(b)
-	await _note("Call and Heal help only your champion.")
-	if not await _beat(1.8):
-		return false
-	if not await _aim(call):
-		return false
-	if not await _aim(heal):
-		return false
-	await _note("Rain, drought, flood and the rest move through the whole food web. Some species thrive. Others do not.")
-	if not await _beat(2.4):
-		return false
-	if not await _aim(rain):
-		return false
-	if not await _aim(drought):
-		return false
+	hand.put_down(func() -> void: state["down"] = true)
+	while not state["down"]:
+		if not await _frames(1):
+			return false
 	return await _beat(0.5)
 
-func _window(title: String) -> VBoxContainer:
+func _powers_lesson() -> bool:
+	_view(Vector3(0, 0, 4), 0.5, -0.7, 46.0)
+	var row := _bar()
+	var call := _choice_button("Call Kin", true)
+	var feast := _choice_button("Feast", false)
+	var rain := _choice_button("Rain", false)
+	var meteor := _choice_button("Meteor", false)
+	for b: Button in [call, feast, rain, meteor]:
+		row.add_child(b)
+	await _note("Each power moves through the whole food web. Some species thrive. Others do not.")
+	if not await _aim(call):
+		return false
+	if not await _aim(feast):
+		return false
+	if not await _press(rain):
+		return false
+	_dir.trigger_rain()
+	if not await _beat(2.6):
+		return false
+	if not await _press(meteor):
+		return false
+	var land: Vector3 = _dir.trigger_meteor()
+	_view(land, 0.5, -0.55, 24.0)
+	await _note("A meteor breaks open into Starfruit. Whatever eats one turns Rainbow.")
+	if not await _beat(7.0):
+		return false
+	_clear_teach()
+	if _pointer != null and is_instance_valid(_pointer):
+		_pointer.queue_free()
+	return await _let_read()
+
+func _window(title: String, box: Vector2 = Vector2.ZERO) -> VBoxContainer:
 	_clear_teach()
 	_teach_root = Control.new()
 	_teach_root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -983,16 +974,22 @@ func _window(title: String) -> VBoxContainer:
 	_root.add_child(_teach_root)
 	_root.move_child(_teach_root, _caption.get_index())
 	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.55)
+	dim.color = Color(0, 0, 0, 0.4)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_teach_root.add_child(dim)
 	var frame := PanelContainer.new()
 	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
-	frame.offset_left = 36.0
-	frame.offset_top = 28.0
-	frame.offset_right = -36.0
-	frame.offset_bottom = -160.0
+	frame.offset_left = 110.0
+	frame.offset_top = 66.0
+	frame.offset_right = -110.0
+	frame.offset_bottom = -122.0
+	if box != Vector2.ZERO:
+		frame.set_anchors_preset(Control.PRESET_CENTER)
+		frame.offset_left = -box.x * 0.5
+		frame.offset_right = box.x * 0.5
+		frame.offset_top = -box.y * 0.5 - 40.0
+		frame.offset_bottom = box.y * 0.5 - 40.0
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.clip_contents = true
 	var sb := StyleBoxFlat.new()
@@ -1031,7 +1028,7 @@ func _paint_quest(b: Button) -> void:
 	var q: Dictionary = b.get_meta("quest")
 	var on: bool = bool(_taken.get(q["id"], false))
 	b.theme_type_variation = "PrimaryButton" if on else "GhostButton"
-	b.text = ("Chosen\n" if on else "") + "%s\n%s" % [q["title"], q["category"]]
+	b.text = ("Chosen: " if on else "") + "%s  ·  %s" % [q["title"], q["category"]]
 
 func _toggle_quest(b: Button, status: Label) -> void:
 	var q: Dictionary = b.get_meta("quest")

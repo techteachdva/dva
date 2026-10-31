@@ -58,7 +58,7 @@ func _ready() -> void:
 	start.text = "To the Quest Board"
 	start.icon = load("res://assets/icons/start.svg")
 	start.tooltip_text = "Accept quests, then open the valley with these numbers."
-	start.custom_minimum_size = Vector2(420, 60)
+	start.custom_minimum_size = Vector2(420 if get_viewport_rect().size.x >= 900.0 else 300, 60)
 	start.add_theme_font_size_override("font_size", 24)
 	start.theme_type_variation = "PrimaryButton"
 	start.pressed.connect(_on_start)

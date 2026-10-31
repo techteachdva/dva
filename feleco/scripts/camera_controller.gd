@@ -204,6 +204,12 @@ func _ground(x: float, z: float) -> float:
 		_director = scene.get_node_or_null("World") as SimulationDirector if scene != null else null
 	return 0.0 if _director == null else _director.ground_height(x, z)
 
+# A knock to the view that dies away (a meteor, say).
+var _shake: float = 0.0
+
+func shake(amount: float) -> void:
+	_shake = maxf(_shake, amount)
+
 func _apply() -> void:
 	_lift_now = lerpf(_lift_now, _focus_lift, 0.1)
 	var focus := Vector3(target.x, _ground(target.x, target.z) + _lift_now, target.z)
@@ -227,3 +233,7 @@ func _apply() -> void:
 		look_at(focus, Vector3.UP)
 	else:
 		rotation = Vector3(pitch, yaw, 0.0)
+	if _shake > 0.01:
+		global_position += Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * _shake * 1.6
+		rotation.z += (randf() - 0.5) * _shake * 0.05
+		_shake *= 0.91

@@ -3121,6 +3121,8 @@ var _mood_light: Color = Color(1.0, 0.97, 0.9)
 var _mood_energy: float = 1.0
 var _mood_ambient: Color = Color(0.76, 0.82, 0.84)
 var daylight: float = 1.0
+# The opening film keeps the sun up so its story stays in view.
+var hold_daylight: bool = false
 var _was_night: bool = false
 var _light_node: DirectionalLight3D
 var _env: Environment
@@ -3165,6 +3167,8 @@ func _step_daylight(dt: float) -> void:
 		_midnight_sun_s -= dt
 		d = maxf(d, 0.85)
 	# Ease toward the target so powers fade the light instead of snapping it.
+	if hold_daylight:
+		d = 1.0
 	daylight = move_toward(daylight, d, dt * 0.6)
 	var night_now: bool = is_night()
 	if night_now != _was_night:
@@ -3901,8 +3905,12 @@ func _group_for_bet(bet: String) -> String:
 		_:
 			return SpeciesDB.id_for(bet)
 
-func trigger_meteor() -> void:
-	# Cull a fifth of whoever currently holds the valley, not whoever has the most bodies.
+# Returns where it will land: where the player aimed it, or else among the
+# creatures it culls, a fifth of whoever holds the valley. Anything in the blast
+# goes too. Then the rock opens on a crater of Rainbow Starfruit.
+const METEOR_BLAST: float = 3.5
+
+func trigger_meteor(aim: Vector3 = Vector3.INF) -> Vector3:
 	var holds: Dictionary = _compute_holds()
 	var counts: Dictionary = get_creature_counts()
 	var target_key: String = ""
@@ -3912,23 +3920,80 @@ func trigger_meteor() -> void:
 		if h > best:
 			best = h
 			target_key = sp
-	if target_key.is_empty() or best <= 0.0:
-		return
-	var agent_species: String = _group_for_bet(target_key)
-	var max_count: int = int(counts.get(target_key, 0))
-	var kill_target: int = maxi(1, int(max_count * 0.2))
-	var killed: int = 0
+	var victims: Array[Node3D] = []
+	if not target_key.is_empty():
+		var agent_species: String = _group_for_bet(target_key)
+		for data: AgentData in _agent_registry:
+			if data.species == agent_species and data.node != null and is_instance_valid(data.node):
+				victims.append(data.node)
+	# An empty valley still gets a rock.
+	var land: Vector3 = dry_land(Vector3(randf_range(-16.0, 16.0), 0.0, randf_range(-16.0, 16.0)))
+	if aim.is_finite():
+		land = dry_land(aim)
+	elif not victims.is_empty():
+		land = dry_land(victims.pick_random().global_position)
+	land.y = ground_height(land.x, land.z)
+	victims.sort_custom(func(a: Node3D, b: Node3D) -> bool: return a.global_position.distance_squared_to(land) < b.global_position.distance_squared_to(land))
+	var kill_target: int = maxi(1, int(int(counts.get(target_key, 0)) * 0.2))
+	# Aimed by hand, it takes only what stands in the blast.
+	var doomed: Array[Node3D] = []
+	if not aim.is_finite():
+		doomed = victims.slice(0, kill_target)
+	var hit := func() -> void:
+		var dead: Array[Node3D] = doomed.duplicate()
+		for data: AgentData in _agent_registry:
+			if data.node != null and is_instance_valid(data.node) and data.pos.distance_to(land) < METEOR_BLAST and not dead.has(data.node):
+				dead.append(data.node)
+		for n: Node3D in dead:
+			if is_instance_valid(n):
+				n.set("health", 0.0)
+				if n.has_method("die"):
+					n.die()
+		if grass != null:
+			grass.consume_density(land, 1.0)
+		if not target_key.is_empty():
+			emit_signal("combat_event", "meteor", target_key, land, true)
+	if _headless_mode:
+		hit.call()
+		return land
+	var strike := MeteorStrike.new()
+	strike.land = land
+	strike.sim = self
+	strike.struck.connect(hit)
+	add_child(strike)
+	return land
+
+func has_starfruit() -> bool:
+	return not get_tree().get_nodes_in_group("starfruit").is_empty()
+
+func find_nearest_starfruit(pos: Vector3, radius: float) -> Node3D:
+	var best: Node3D = null
+	var best_sq: float = radius * radius
+	for n: Node in get_tree().get_nodes_in_group("starfruit"):
+		var f := n as Node3D
+		var d: float = f.global_position.distance_squared_to(pos)
+		if d < best_sq:
+			best_sq = d
+			best = f
+	return best
+
+# The nearest thing a Rainbow hunter can go for: anything alive but its own
+# kind and the villagers safe indoors.
+func rainbow_prey_for(hunter: MarkovAgent, radius: float) -> Node3D:
+	var best: Node3D = null
+	var best_sq: float = radius * radius
+	var from: Vector3 = hunter.global_position
 	for data: AgentData in _agent_registry:
-		if killed >= kill_target:
-			break
-		if data.node == null or not is_instance_valid(data.node):
+		if data.species == hunter.species_id or data.species == "mushroom":
 			continue
-		if data.species == agent_species:
-			data.node.health = 0.0
-			if data.node.has_method("_die"):
-				data.node._die()
-			killed += 1
-	emit_signal("combat_event", "meteor", target_key, Vector3.ZERO, true)
+		var n: Node3D = data.node
+		if n == null or not is_instance_valid(n) or n.get("indoors") == true:
+			continue
+		var d: float = data.pos.distance_squared_to(from)
+		if d < best_sq:
+			best_sq = d
+			best = n
+	return best
 
 # Emigration is the population brake, and it has two gates: the valley is
 # already past EMIGRATE_AT living creatures, and the frame rate has already

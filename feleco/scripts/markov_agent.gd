@@ -50,6 +50,33 @@ var gold_left: float = 0.0
 var gold_claimed: bool = false
 var gold_latent: bool = false
 const GOLD_FLASH_SHARE: float = 0.3
+# Rainbow: eat a Starfruit (only a meteor brings them) and for half a day a
+# creature sparkles, moves at 3x and strikes at 3x, and every Starfruit leaves
+# it permanently hardier. The hunters among them turn on everything nearby:
+# worms swarm and chew the health off much bigger animals, falcons and humans
+# devour what they reach at a touch, and humans strip the land as they go.
+const RAINBOW_SHARE: float = 0.5
+const RAINBOW_MULT: float = 3.0
+const RAINBOW_HEALTH: float = 50.0
+const RAINBOW_HEALTH_MAX: float = 200.0
+const RAINBOW_HUNTERS: Array[String] = ["wolf", "lion", "falcon", "human", "bear", "boar", "worm"]
+const RAINBOW_INSTANT: Array[String] = ["falcon", "human"]
+const RAINBOW_SIGHT: float = 18.0
+const STARFRUIT_SMELL: float = 26.0
+const RAINBOW_REACH: float = 2.0
+const RAINBOW_STRIKE: float = 0.35
+var rainbow_left: float = 0.0
+# Permanent: how far above the normal cap health may go, from fruit eaten.
+var rainbow_health: float = 0.0
+var _rainbow_sparkle: float = 0.0
+var _rainbow_strike: float = 0.0
+var _rainbow_look: float = 0.0
+var _rainbow_prey: Node3D = null
+var _starfruit: Node3D = null
+var _rainbow_aura: MeshInstance3D = null
+# Take Control: the player drives this creature (rampage_steer is the stick).
+var player_drive: bool = false
+const DRIVE_SPEED: float = 6.0
 # Genome (see Genetics): set once at birth or arrival.
 var genes: Dictionary = {}
 const GOLD_FADE: float = 0.02
@@ -261,6 +288,118 @@ func devour(prey: Node) -> void:
 	if quiet:
 		make_golden(1.0, str(prey.get("species_id")))
 
+func is_rainbow() -> bool:
+	return rainbow_left > 0.0
+
+# Eating a Starfruit: the richest meal there is, and the Rainbow condition.
+func eat_starfruit() -> void:
+	rainbow_left = Clock.BIO_PER_DAY * RAINBOW_SHARE
+	rainbow_health = minf(rainbow_health + RAINBOW_HEALTH, RAINBOW_HEALTH_MAX)
+	if get("health") != null:
+		set("health", float(get("health")) + RAINBOW_HEALTH)
+	if get("energy") != null:
+		set("energy", maxf(float(get("energy")), 0.0) + Starfruit.NUTRITION)
+	_starfruit = null
+	if _rainbow_aura == null:
+		var cfg: Dictionary = VisualProxyManager.SPECIES_CONFIG.get(species_id, {})
+		var body: Vector2 = cfg.get("size", Vector2(2.2, 2.2))
+		_rainbow_aura = Starfruit.glow_quad(maxf(body.x, body.y) * 2.1, 0.62)
+		_rainbow_aura.top_level = true
+		add_child(_rainbow_aura)
+		_place_rainbow_aura()
+	FXManager.show_dramatic_text(global_position + Vector3.UP * 2.2, "RAINBOW!", Color.from_hsv(randf(), 0.7, 1.0))
+	var sim: SimulationDirector = director
+	if sim != null:
+		sim.chronicle.emit("%s eats a Starfruit and turns Rainbow." % display_name)
+
+# Every creature smells Starfruit and drops everything for it.
+func _seek_starfruit(delta: float) -> void:
+	var sim: SimulationDirector = director
+	if sim == null or scripted or species_id == "mushroom" or get("indoors") == true:
+		return
+	_rainbow_look -= delta
+	if _rainbow_look <= 0.0:
+		_rainbow_look = 0.4 + randf() * 0.2
+		_starfruit = sim.find_nearest_starfruit(global_position, STARFRUIT_SMELL)
+	if _starfruit == null or not is_instance_valid(_starfruit):
+		_starfruit = null
+		return
+	var to: Vector3 = _starfruit.global_position - global_position
+	to.y = 0.0
+	var d: float = to.length()
+	if d < 1.5:
+		var fruit := _starfruit as Starfruit
+		if fruit != null and fruit.claim():
+			eat_starfruit()
+		return
+	# Fish can only take what falls within reach of the water.
+	if _aquatic:
+		return
+	velocity = to / d * 4.5
+
+# The glow follows the sprite, which fliers draw high above their node.
+func _place_rainbow_aura() -> void:
+	if _rainbow_aura == null:
+		return
+	var at: Vector3 = _data.shown if _data != null and _data.has_shown else global_position
+	if _data != null and _data.drawn_mid_y > 0.2:
+		at.y = _data.drawn_mid_y
+	else:
+		at.y += 1.0
+	_rainbow_aura.global_position = at
+
+func _rainbow_tick(delta: float) -> void:
+	_place_rainbow_aura()
+	_rainbow_sparkle -= delta
+	if _rainbow_sparkle <= 0.0:
+		_rainbow_sparkle = 0.28
+		FXManager.spawn_birth_particles(global_position + Vector3.UP * 0.8, Color.from_hsv(randf(), 0.75, 1.0))
+	if scripted or not RAINBOW_HUNTERS.has(species_id):
+		return
+	var sim: SimulationDirector = director
+	if sim == null:
+		return
+	if species_id == "human":
+		sim.grass.consume_density(global_position, delta * 2.0)
+	_rainbow_strike -= delta
+	if _rainbow_prey == null or not is_instance_valid(_rainbow_prey) or _rainbow_strike <= 0.0:
+		_rainbow_prey = sim.rainbow_prey_for(self, RAINBOW_SIGHT)
+	if _rainbow_prey == null or not is_instance_valid(_rainbow_prey):
+		return
+	var to: Vector3 = _rainbow_prey.global_position - global_position
+	to.y = 0.0
+	var d: float = to.length()
+	if d > RAINBOW_REACH:
+		if not _aquatic and d > 0.01 and not player_drive:
+			velocity = to / d * 5.0
+		return
+	if _rainbow_strike > 0.0:
+		return
+	_rainbow_strike = RAINBOW_STRIKE
+	_rainbow_hit(_rainbow_prey)
+
+func _rainbow_hit(prey: Node3D) -> void:
+	var at: Vector3 = prey.global_position + Vector3.UP
+	var armoured: bool = prey.has_method("is_rainbow") and prey.is_rainbow()
+	if RAINBOW_INSTANT.has(species_id) and not armoured:
+		FXManager.spawn_combat_particles(at)
+		devour(prey)
+		if get("energy") != null:
+			set("energy", float(get("energy")) + 30.0)
+		return
+	var bite: float = float(get("damage")) if get("damage") != null else 8.0
+	bite = maxf(bite, 7.0) * RAINBOW_MULT
+	if prey.get("health") == null:
+		return
+	var left: float = float(prey.get("health")) - bite
+	prey.set("health", left)
+	FXManager.show_floating_text(at, "-%d" % int(bite), Color.from_hsv(randf(), 0.7, 1.0))
+	# It takes for itself what it tears away.
+	if get("health") != null:
+		set("health", float(get("health")) + bite * 0.25)
+	if left <= 0.0 and prey.has_method("die"):
+		devour(prey)
+
 # Take on gold from a meal. Strength 1 is a golden plant; kills and carcasses
 # pass on a share of what the eaten creature carried.
 func make_golden(strength: float, source: String = "") -> void:
@@ -318,6 +457,19 @@ func _physics_process(delta: float) -> void:
 		var on_tick: Callable = entry["on_tick"]
 		if on_tick.is_valid():
 			on_tick.call(life)
+	if not rampage and rainbow_left <= 0.0 and director != null and director.has_starfruit():
+		_seek_starfruit(delta)
+	if rainbow_left > 0.0:
+		rainbow_left -= life
+		if rainbow_left <= 0.0:
+			FXManager.show_floating_text(global_position + Vector3.UP * 1.5, "The rainbow fades...", Color(0.8, 0.8, 0.95))
+			if _rainbow_aura != null:
+				_rainbow_aura.queue_free()
+				_rainbow_aura = null
+		elif not rampage:
+			_rainbow_tick(delta)
+	if player_drive and not rampage:
+		velocity = rampage_steer.limit_length(1.0) * DRIVE_SPEED
 	_herd_timer -= delta
 	if _herd_timer <= 0.0:
 		_herd_timer = 1.0 + randf() * 0.3
@@ -348,7 +500,10 @@ func _physics_process(delta: float) -> void:
 			if not gold_claimed and randf() < 0.3:
 				FXManager.show_floating_text(global_position + Vector3.UP * 1.8, "Click me!" if gold_left > Clock.BIO_PER_DAY * GOLD_FLASH_SHARE else "Hurry!", Color(1.0, 0.85, 0.3))
 	if herd > 0.0 and get("health") != null:
-		set("health", minf(float(get("health")) + HERD_HEAL * herd * life, 100.0))
+		var cap: float = 100.0 + rainbow_health
+		var now_health: float = float(get("health"))
+		if now_health < cap:
+			set("health", minf(now_health + HERD_HEAL * herd * life, cap))
 	_metabolise(life * metab_mult)
 	# Out of season, breeding stalls; in season it comes round faster.
 	var breed: float = 1.0 if sim == null else sim.season_breeding(species_id) * sim.tune(species_id, "birth")
@@ -385,6 +540,7 @@ func _physics_process(delta: float) -> void:
 		# The last stretch of unclaimed gold flashes on and off.
 		var flash: bool = golden > 0.05 and not gold_claimed and not rampage and gold_left < Clock.BIO_PER_DAY * GOLD_FLASH_SHARE and fmod(Time.get_ticks_msec() / 1000.0, 0.5) < 0.22
 		_data.golden = 0.0 if flash else golden
+		_data.rainbow = rainbow_left > 0.0
 		_data.age = _age
 
 # Looks at its own kind within HERD_RADIUS: how close it is to their middle
@@ -488,7 +644,7 @@ func _movement_tick(delta: float) -> void:
 		return
 	if _aquatic:
 		if has_method("_swim_tick"):
-			call("_swim_tick", delta)
+			call("_swim_tick", delta * (RAINBOW_MULT if rainbow_left > 0.0 else 1.0))
 		return
 	# Asleep (or resting) and not walking anywhere: lie perfectly still. No
 	# crowd, herd, rim or riverbank shove may nudge a sleeper along the ground.
@@ -534,6 +690,8 @@ func _movement_tick(delta: float) -> void:
 				pace *= 1.0 + HERD_FLEE * herd
 		if _data != null:
 			pace *= _data.speed_boost
+		if rainbow_left > 0.0:
+			pace *= RAINBOW_MULT
 		_move_pace = pace
 		global_position += velocity * delta * pace
 		# However hard they flee (and however long a staggered step), fliers

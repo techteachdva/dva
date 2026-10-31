@@ -31,19 +31,24 @@ varying float v_role;
 varying float v_bet;
 varying vec2 v_body;
 varying float v_brand;
+varying float v_rainbow;
 
 #include "res://scripts/visuals/creature_rig.gdshaderinc"
 #include "res://scripts/visuals/brand.gdshaderinc"
+#include "res://scripts/visuals/radiant.gdshaderinc"
 
 void vertex() {
 	vec4 c = INSTANCE_CUSTOM;
 	// Failsafe: bad instance data (NaN, infinity, a cell off the sheet) would
 	// draw as a giant rainbow smear. Such an instance collapses to a point.
-	bool bad = any(isnan(c)) || any(isinf(c)) || any(isnan(COLOR)) || any(isinf(COLOR)) || c.w < 0.0 || c.w >= 32.0 || abs(c.y) > 1000.0 || abs(c.z) > 100.0;
+	bool bad = any(isnan(c)) || any(isinf(c)) || any(isnan(COLOR)) || any(isinf(COLOR)) || c.w < 0.0 || c.w >= 64.0 || abs(c.y) > 1000.0 || abs(c.z) > 100.0;
 	if (bad) {
 		c = vec4(1.0, 0.0, 0.0, 0.0);
 	}
 	float cell = floor(c.w);
+	// +32: it has eaten a Starfruit.
+	v_rainbow = cell >= 32.0 ? 1.0 : 0.0;
+	cell -= v_rainbow * 32.0;
 	// +16: the camera is following this one. +8: it carries a bet
 	// (see VisualProxyManager.marked).
 	bool watched = cell >= 16.0;
@@ -61,7 +66,7 @@ void vertex() {
 	v_body = vec2(face > 0.0 ? UV.x : 1.0 - UV.x, 1.0 - UV.y);
 	v_brand = COLOR.r >= 2.0 ? COLOR.r - 2.0 : 0.0;
 	vec2 v = creature_rig(VERTEX.xy, UV, quad_width, quad_height, style, cell, seed, c.x, c.y, c.z, action, g, sh);
-	v = brand_warp(v, UV, quad_width, quad_height, v_brand, TIME);
+	v = brand_warp(v, v_body, face, quad_width, quad_height, v_brand, TIME);
 	int frame = creature_frame(style, action, c.y, c.z, c.y / max(gait, 0.01), seed, watched);
 	v_glow = g;
 	v_shimmer = sh;
@@ -108,6 +113,16 @@ void fragment() {
 	col = mix(col, moon, night * (1.0 - clamp(glows, 0.0, 0.85)));
 	col *= 1.0 + night * clamp(glows, 0.0, 1.0) * 0.9;
 	vec4 branded = brand_overlay(col, a, v_body, v_brand, TIME);
+	if (v_rainbow > 0.5) {
+		// Neon light radiates out from the middle of the body. The sprite keeps
+		// its shading and features, so it is still plainly the same animal.
+		vec2 from_heart = (v_body - vec2(0.5, 0.42)) * 2.4;
+		vec3 hue = radiant_flow(from_heart, TIME * 1.6);
+		float lum = dot(branded.rgb, vec3(0.3, 0.59, 0.11));
+		branded.rgb = mix(branded.rgb, hue * (0.42 + lum * 1.05), smoothstep(0.1, 0.22, lum) * 0.72);
+		float star = radiant_stars(v_body, 9.0, TIME) * smoothstep(0.1, 0.22, lum);
+		branded.rgb += vec3(star);
+	}
 	ALBEDO = branded.rgb;
 	ALPHA = branded.a;
 	// Horns, wings and halos are painted into the sprite's empty margin.

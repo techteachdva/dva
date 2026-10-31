@@ -35,6 +35,24 @@ func _ready() -> void:
 	get_tree().paused = true
 	_build()
 
+# However wide the trials make it, the whole card stays on the screen.
+func _fit_card(card: Control) -> void:
+	if not is_instance_valid(card):
+		return
+	var view: Vector2 = card.get_viewport_rect().size
+	card.custom_minimum_size.x = minf(1080.0, view.x - 16.0)
+	card.size = Vector2(card.custom_minimum_size.x, 0.0)
+	# Wrapped text only knows its height once the width has been laid out.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_instance_valid(card):
+		return
+	var need: Vector2 = card.get_combined_minimum_size()
+	card.size = need
+	var k: float = minf(1.0, minf((view.x - 16.0) / need.x, (view.y - 16.0) / need.y))
+	card.scale = Vector2(k, k)
+	card.position = ((view - need * k) * 0.5).floor()
+
 func _close() -> void:
 	get_tree().paused = _was_paused
 	Engine.time_scale = _was_speed
@@ -65,7 +83,10 @@ func _build() -> void:
 	_root.add_child(card)
 	var split := HBoxContainer.new()
 	split.add_theme_constant_override("separation", 18)
+	var view: Vector2 = _root.get_viewport_rect().size
+	split.vertical = view.y > view.x
 	card.add_child(split)
+	_fit_card.call_deferred(card)
 	split.add_child(_magic_column())
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 10)

@@ -57,8 +57,8 @@ func height_at(x: float, z: float) -> float:
 	# The river's channel: a shallow dip on the meadow, a gorge in the hills.
 	var r: float = sqrt(x * x + z * z)
 	var d: float = river.across_distance(x, z)
-	var wall: float = River.BASE_HALF_WIDTH * 1.7
-	var flare: float = lerpf(2.5, 14.0, smoothstep(FLOOR_RADIUS - 4.0, RIM_RADIUS, r))
+	var wall: float = River.BASE_HALF_WIDTH * 1.26
+	var flare: float = lerpf(3.2, 14.0, smoothstep(FLOOR_RADIUS - 4.0, RIM_RADIUS, r))
 	if d >= wall + flare:
 		return h
 	var k: float = 1.0 - smoothstep(wall, wall + flare, d)

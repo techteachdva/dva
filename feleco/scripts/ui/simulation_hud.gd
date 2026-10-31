@@ -20,15 +20,16 @@ const POWERUP_BUTTONS: Dictionary = {
 	"Flood": "flood",
 	"Eclipse": "eclipse",
 	"Gale": "gale",
+	"Meteor": "meteor",
 }
 # Scene buttons from before 3.0 that are no longer offered.
-const RETIRED_BUTTONS: Array[String] = ["Heal", "Famine", "Meteor"]
+const RETIRED_BUTTONS: Array[String] = ["Heal", "Famine"]
 const POWER_LABELS: Dictionary = {"Call": "Call Kin", "RotRain": "Rot Rain"}
 # Every power has its own icon (assets/icons).
 const POWER_ICONS: Dictionary = {
 	"Bloom": "power_bloom", "Stampede": "power_stampede", "Call": "power_call", "Feast": "power_feast",
 	"RotRain": "power_rot_rain", "Rain": "rain", "Drought": "power_drought", "Flood": "flood",
-	"Eclipse": "power_eclipse", "Gale": "power_gale",
+	"Eclipse": "power_eclipse", "Gale": "power_gale", "Meteor": "meteor",
 }
 # Release 10 (4.7.1): what a pack of ten costs. Apex hunters cost double.
 const PACK_SIZE: int = 10
@@ -92,7 +93,7 @@ func _ready() -> void:
 	_power_btn("Call").tooltip_text = "Call wolves toward the herds."
 	_power_btn("Heal").tooltip_text = "Mend the creature you are watching."
 	_power_btn("Famine").tooltip_text = "Starve the grass for a stretch."
-	_power_btn("Meteor").tooltip_text = "Drop a meteor on the field."
+	_power_btn("Meteor").tooltip_text = "Pick a spot and call down a meteor. It cracks open into a crater of Rainbow Starfruit."
 	_power_btn("Rain").pressed.connect(_trigger_rain)
 	_power_btn("Call").pressed.connect(_trigger_predator_call)
 	_power_btn("Heal").pressed.connect(_trigger_heal)
@@ -200,7 +201,8 @@ func _open_bets() -> void:
 		board.set_anchors_preset(Control.PRESET_FULL_RECT)
 		layer.add_child(board)
 		board.tree_exited.connect(func() -> void:
-			if is_instance_valid(layer):
+			# Null when the whole scene is changing, not just the board closing.
+			if is_instance_valid(layer) and is_inside_tree():
 				get_tree().paused = _was_paused
 				layer.queue_free()
 			_refresh_bet_line())
@@ -730,12 +732,25 @@ func _open_history() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and get_tree().paused:
 		_update_tooltip()
+	if _aiming and event is InputEventMouseMotion and _aim_mark != null:
+		var at := _ground_under((event as InputEventMouseMotion).position)
+		_aim_mark.visible = at.is_finite()
+		if at.is_finite():
+			_aim_mark.global_position = at + Vector3.UP * 0.25
 
 # Follow mode: click a creature in the valley to ride along with it.
 var _follow_panel: FollowPanel
 var _press_at: Vector2 = Vector2(-1, -1)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _follow_panel != null and is_instance_valid(_follow_panel) and _follow_panel.driving and event.is_action_pressed("ui_cancel"):
+		_follow_panel._release_control()
+		get_viewport().set_input_as_handled()
+		return
+	if _aiming and event.is_action_pressed("ui_cancel"):
+		_cancel_aim()
+		get_viewport().set_input_as_handled()
+		return
 	var mb := event as InputEventMouseButton
 	if mb == null or mb.button_index != MOUSE_BUTTON_LEFT:
 		return
@@ -745,10 +760,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	# A click, not a drag: pick the creature under the pointer.
 	if _press_at.distance_to(mb.position) > 16.0 or has_node("LiveTable") or has_node("Resolution"):
 		return
+	if _aiming:
+		var aim := _ground_under(mb.position)
+		if aim.is_finite():
+			_fire_meteor(aim)
+		return
 	if not _placing.is_empty():
 		var at := _ground_under(mb.position)
 		if at.is_finite():
 			_release_pack(at)
+		return
+	# Driving: the mouse is the stick, not a pointer.
+	if _follow_panel != null and is_instance_valid(_follow_panel) and _follow_panel.driving:
 		return
 	if _goals != null and _goals.try_collect(mb.position):
 		return
@@ -802,17 +825,20 @@ func _show_hand_choices(hand: SpectralHand, agent: MarkovAgent) -> void:
 	plate.set_corner_radius_all(12)
 	plate.content_margin_left = 18
 	plate.content_margin_right = 18
-	plate.content_margin_top = 10
-	plate.content_margin_bottom = 12
-	# Above the power bar, which fills the bottom 188px.
+	plate.content_margin_top = 6
+	plate.content_margin_bottom = 8
+	# Slim, and just above the dock: the creature in the hand stays in view.
 	var shell := PanelContainer.new()
 	shell.name = "HandChoices"
 	shell.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	shell.offset_left = -380.0
-	shell.offset_right = 380.0
-	shell.offset_top = -348.0
-	shell.offset_bottom = -200.0
+	shell.offset_left = -345.0
+	shell.offset_right = 345.0
+	# A tall phone wraps the dock onto a second row.
+	var dock_top: float = -176.0 if get_viewport().get_visible_rect().size.x < 900.0 else -122.0
+	shell.offset_top = dock_top
+	shell.offset_bottom = dock_top
 	shell.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	shell.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	shell.process_mode = Node.PROCESS_MODE_ALWAYS
 	shell.mouse_filter = Control.MOUSE_FILTER_STOP
 	shell.z_index = 30
@@ -820,7 +846,7 @@ func _show_hand_choices(hand: SpectralHand, agent: MarkovAgent) -> void:
 	add_child(shell)
 	var bar := VBoxContainer.new()
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	bar.add_theme_constant_override("separation", 8)
+	bar.add_theme_constant_override("separation", 4)
 	bar.mouse_filter = Control.MOUSE_FILTER_STOP
 	shell.add_child(bar)
 	var held := Label.new()
@@ -935,6 +961,7 @@ func _process(_delta: float) -> void:
 	if _rail_clock <= 0.0 and not _rail_buttons.is_empty():
 		_rail_clock = 0.25
 		_refresh_rail()
+		_tidy_windows()
 	# Bet creatures: a pulsing ring on the ground at their feet, following the
 	# drawn (smoothed) position so it never slides out from under the sprite.
 	if not _bet_rings.is_empty():
@@ -1386,12 +1413,49 @@ func _trigger_flood() -> void:
 	if _director != null:
 		_director.trigger_flood()
 
+# The button only takes aim. The power is spent when you pick the spot.
+var _aiming: bool = false
+var _aim_mark: MeshInstance3D
+
 func _trigger_meteor() -> void:
-	if not _spend_touch_or_stock("meteor"):
+	if _director == null:
 		return
-	if _director != null:
-		_director.trigger_meteor()
-		FXManager.show_dramatic_text(Vector3.ZERO, "A meteor breaks whoever holds the valley.", Color(0.9, 0.45, 0.35))
+	if _aiming:
+		_cancel_aim()
+		return
+	var gc: Node = get_node_or_null("/root/GameConfig")
+	var stock: int = int(gc.powerup_inventory.get("meteor", 0)) if gc != null else 0
+	var points: int = int(gc.eco_points) if gc != null else 0
+	if _director.touches_left <= 0 and stock <= 0 and points < _power_price("meteor"):
+		# Says why it can't be done.
+		_spend_touch_or_stock("meteor")
+		return
+	_aiming = true
+	var ring := TorusMesh.new()
+	ring.inner_radius = 0.93
+	ring.outer_radius = 1.0
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1.0, 0.45, 0.2)
+	_aim_mark = MeshInstance3D.new()
+	_aim_mark.mesh = ring
+	_aim_mark.material_override = mat
+	_aim_mark.scale = Vector3(SimulationDirector.METEOR_BLAST, 0.3, SimulationDirector.METEOR_BLAST)
+	_aim_mark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_aim_mark.visible = false
+	_director.add_child(_aim_mark)
+	FXManager.show_dramatic_text(Vector3.ZERO, "Click where the meteor should fall. Esc cancels.", Color(1.0, 0.6, 0.3))
+
+func _cancel_aim() -> void:
+	_aiming = false
+	if _aim_mark != null and is_instance_valid(_aim_mark):
+		_aim_mark.queue_free()
+	_aim_mark = null
+
+func _fire_meteor(at: Vector3) -> void:
+	_cancel_aim()
+	if _spend_touch_or_stock("meteor"):
+		_director.trigger_meteor(at)
 
 
 # ---------------------------------------------------------------------------
@@ -1406,7 +1470,7 @@ const RAIL_W: float = 132.0
 const RAIL_ICONS: Dictionary = {
 	"Census": "rail_census", "Goals": "rail_goals", "Hill": "crown", "Bet Slip": "rail_bets",
 	"Creature": "rail_creature", "History": "scroll", "Ticker": "rail_ticker", "Time": "rail_time",
-	"Powers": "rail_powers", "Quests": "rail_bets", "Clear view": "eye",
+	"Powers": "rail_powers", "Quests": "rail_bets", "Champion": "flag", "Clear view": "eye",
 }
 var _rail_buttons: Dictionary = {}
 var _cleared: Array[Control] = []
@@ -1448,7 +1512,7 @@ func _build_rail() -> void:
 	_rail_button(rail, "Census", "Show or hide the count of every species.", func() -> void: _toggle_window($TopLeft))
 	_rail_button(rail, "Goals", "Show or hide your goals and My Creature.", func() -> void: _toggle_window(_goals))
 	_rail_button(rail, "Hill", "Show or hide King of the Hill: who rules the valley.", func() -> void: _toggle_window(get_node("HillBars")))
-	_rail_button(rail, "Quests", "Show or hide the quests you accepted.", func() -> void: _toggle_window($TopRight))
+	_rail_button(rail, "Champion", "Show or hide your champion and the quests you accepted.", func() -> void: _toggle_window($TopRight))
 	_rail_button(rail, "Creature", "Show or hide the card of the creature you are following.", func() -> void:
 		if _follow_panel != null and is_instance_valid(_follow_panel):
 			_toggle_window(_follow_panel))
@@ -1504,6 +1568,43 @@ func _rail_button(rail: Control, text: String, tip: String, action: Callable) ->
 	_rail_buttons[text] = b
 	return b
 
+# The windows keep out of each other's way, until the player drags one: then
+# that one stays where they put it. Beside the rail on a wide screen, one
+# column under the Quests button on a tall phone.
+func _tidy_windows() -> void:
+	var view: Vector2 = get_viewport().get_visible_rect().size
+	var hill: Control = get_node_or_null("HillBars")
+	var column: Array[Control] = [$TopRight, hill, _follow_panel]
+	if view.x < 900.0:
+		var wide: float = view.x - RAIL_W - 16.0
+		column = [$TopRight, _goals, hill, _follow_panel, $TopLeft]
+		var y: float = 60.0
+		if not _narrow_tidied:
+			# The census is a long list; on a phone it opens from the rail.
+			_narrow_tidied = true
+			$TopLeft.visible = false
+		for win: Control in column:
+			if _free_window(win):
+				win.position = Vector2(8.0, y)
+				win.size.x = wide
+				y += win.size.y + 8.0
+		return
+	var left: float = view.x - RAIL_W
+	var y2: float = 10.0
+	for win: Control in column:
+		if _free_window(win):
+			if win != $TopRight:
+				win.position.y = y2
+			y2 = win.position.y + win.size.y + 8.0
+			left = minf(left, win.position.x)
+	if _free_window(_goals):
+		_goals.position.x = clampf((view.x - _goals.size.x) * 0.5, 288.0, maxf(288.0, left - _goals.size.x - 8.0))
+
+var _narrow_tidied: bool = false
+
+func _free_window(win: Control) -> bool:
+	return win != null and is_instance_valid(win) and win.visible and not win.has_meta("hud_moved")
+
 func _toggle_window(win: Control) -> void:
 	if win == null:
 		return
@@ -1554,7 +1655,7 @@ func _refresh_rail() -> void:
 		"Census": $TopLeft.visible,
 		"Goals": _goals != null and _goals.visible,
 		"Hill": get_node("HillBars").visible,
-		"Bet Slip": $TopRight.visible,
+		"Champion": $TopRight.visible,
 		"Creature": _follow_panel != null and is_instance_valid(_follow_panel) and _follow_panel.visible,
 		"Ticker": get_node_or_null("Tickertape") != null and get_node("Tickertape").visible,
 		"Time": $BottomBar.visible,

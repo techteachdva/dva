@@ -37,6 +37,8 @@ var golden: float = 0.0
 # Sprite facing relative to the camera (+1 right, -1 left) and gait offset.
 var face: float = 1.0
 var gait_seed: float = 0.0
+# Starfruit: draws the creature in moving rainbow colours.
+var rainbow: bool = false
 # The state the sprite last saw, and when it last turned to flee (the startle).
 var seen_state: String = ""
 var alarm_time: float = -100.0

@@ -3,9 +3,22 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.9.0"
+const VERSION: String = "4.10.0"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.10.0",
+		"title": "Rainbow Road",
+		"notes": [
+			"Meteor is back: pick the spot and call it down. The rock cracks open like a walnut, in a crater of Rainbow Starfruit.",
+			"Every creature races for Starfruit. Eat one to turn Rainbow for half a day: 3x speed, 3x power and a permanent health boost. Rainbow worms swarm giants; Rainbow falcons and humans devour at a touch.",
+			"Take Control: steer your claimed creature yourself, right into the crater if you dare.",
+			"The river is rebuilt: broad meanders, real banks, deep channels on the bends, sand bars inside them, and water that flows round the curve.",
+			"The hand is a god's hand of blue light. Brand your creature by painting on it directly, and no more red dots.",
+			"The opening is complete, with the wizard's rampage, a live lesson with the real hand and powers, and the title over the waking valley.",
+			"Menus fit the screen, scroll when they must, and work upright on a phone.",
+		],
+	},
 	{
 		"version": "4.9.0",
 		"title": "The Quest Board",

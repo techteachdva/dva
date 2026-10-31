@@ -128,6 +128,7 @@ func _setup_proxy(species: String) -> void:
 	mat.set_shader_parameter("style", int(cfg["style"]))
 	mat.set_shader_parameter("texel", Vector2(1.0 / tex.get_width(), 1.0 / tex.get_height()))
 	mat.set_shader_parameter("brand_tex", BrandBook.atlas())
+	mat.set_shader_parameter("paint_tex", BrandBook.paint_atlas())
 	mat.set_shader_parameter("grid", Vector2(SpriteGenerator.FRAMES, SpriteGenerator.CELLS))
 	mat.set_shader_parameter("gait", float(cfg["gait"]))
 	var is_champ: bool = species == _champion
@@ -274,8 +275,10 @@ func sync(registry: Array[AgentData]) -> void:
 				shadow_count += 1
 
 	var brand_tex := BrandBook.atlas()
+	var paint_tex := BrandBook.paint_atlas()
 	for mat: ShaderMaterial in _materials.values():
 		mat.set_shader_parameter("brand_tex", brand_tex)
+		mat.set_shader_parameter("paint_tex", paint_tex)
 	var cam := get_viewport().get_camera_3d()
 	var right := Vector3.RIGHT if cam == null else cam.global_transform.basis.x
 	# The followed creature looks up at the camera now and then.
@@ -472,6 +475,8 @@ func sync(registry: Array[AgentData]) -> void:
 				cell += 8
 			if followed != null and data.node == followed:
 				cell += 16
+			if data.rainbow:
+				cell += 32
 			floats[o + 19] = float(cell) + fposmod(data.gait_seed / TAU, 1.0) * 0.95
 			if not is_finite(y):
 				floats[o + 7] = data.pos.y

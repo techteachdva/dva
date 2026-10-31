@@ -27,7 +27,7 @@ func _ready() -> void:
 	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main.add_child(_subtitle)
 	_faction_grid = GridContainer.new()
-	_faction_grid.columns = 3
+	_faction_grid.columns = 2 if get_viewport_rect().size.x < 900.0 else 3
 	_faction_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_faction_grid.add_theme_constant_override("h_separation", 14)
 	_faction_grid.add_theme_constant_override("v_separation", 14)
@@ -95,7 +95,7 @@ func _show_type_picker() -> void:
 	cover.name = "TypePicker"
 	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.05, 0.07, 0.06, 0.97)
+	bg.bg_color = Color(0.05, 0.07, 0.06)
 	cover.add_theme_stylebox_override("panel", bg)
 	add_child(cover)
 	var scroll := ScrollContainer.new()

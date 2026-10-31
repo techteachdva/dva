@@ -68,6 +68,13 @@ static func resolve_attack(attacker, target) -> bool:
 	var base_damage = attacker.get("damage")
 	if base_damage == null:
 		base_damage = 0.0
+	# Rainbow: three times the power, and too quick for most things to catch.
+	var a_rainbow: bool = attacker.get("rainbow_left") != null and float(attacker.get("rainbow_left")) > 0.0
+	var t_rainbow: bool = target.get("rainbow_left") != null and float(target.get("rainbow_left")) > 0.0
+	if t_rainbow and not a_rainbow and randf() < 0.75:
+		return false
+	if a_rainbow:
+		base_damage = float(base_damage) * MarkovAgent.RAINBOW_MULT
 	var damage: float = base_damage * (1.0 + randf() * 0.2) * maxf(hunt_mult, 1.0)
 	var attacker_is_wolf: bool = attacker.is_in_group("wolf")
 	var attacker_is_human: bool = attacker.is_in_group("human")

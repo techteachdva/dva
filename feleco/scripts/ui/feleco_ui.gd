@@ -140,8 +140,9 @@ static func _fit_targets(node: Node) -> void:
 		_fit_targets(child)
 
 # One-screen menu frame: a header (Back, title), a row of cards that fills
-# the middle, and a footer for the primary action. Everything fits 1280x720
-# with no scrolling. Returns {"body": HBoxContainer, "footer": HBoxContainer,
+# the middle, and a footer for the primary action. The cards scroll when they
+# outgrow the screen, and stack on a tall phone, so Back and the footer always
+# stay in reach. Returns {"body": HBoxContainer, "footer": HBoxContainer,
 # "title": Label}.
 static func build_screen(root: Control, title: String, on_back: Callable) -> Dictionary:
 	var margin := MarginContainer.new()
@@ -181,10 +182,17 @@ static func build_screen(root: Control, title: String, on_back: Callable) -> Dic
 	balance.custom_minimum_size = Vector2(150, 0)
 	header.add_child(balance)
 
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
 	var body := HBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 16)
-	column.add_child(body)
+	var view: Vector2 = root.get_viewport_rect().size
+	body.vertical = view.y > view.x
+	scroll.add_child(body)
 	var footer := HBoxContainer.new()
 	footer.alignment = BoxContainer.ALIGNMENT_CENTER
 	footer.add_theme_constant_override("separation", 14)

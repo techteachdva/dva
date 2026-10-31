@@ -102,6 +102,7 @@ static func movable(win: Control) -> void:
 			pos.x = clampf(pos.x, 40.0 - win.size.x, screen.x - 40.0)
 			pos.y = clampf(pos.y, 0.0, screen.y - 40.0)
 			win.position = pos
+			win.set_meta("hud_moved", true)
 			win.accept_event()
 		elif event is InputEventMouseButton:
 			win.accept_event())

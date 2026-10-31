@@ -25,6 +25,9 @@ varying float v_shimmer;
 varying vec2 v_body;
 
 uniform float brand_slot = 0.0;
+// The brand studio's paint view: one still frame, exactly on the canvas.
+uniform int force_frame = -1;
+uniform float flat_body = 0.0;
 
 #include "res://scripts/visuals/creature_rig.gdshaderinc"
 #include "res://scripts/visuals/brand.gdshaderinc"
@@ -35,13 +38,18 @@ void vertex() {
 	float p = TIME * gait + creature_seed;
 	v_body = vec2(face_dir < 0.0 ? 1.0 - UV.x : UV.x, 1.0 - UV.y);
 	vec2 v = creature_rig(VERTEX * quad, UV, quad.x, quad.y, style, atlas_cell, creature_seed, face_dir, p, motion, pose_action, g, sh);
-	v = brand_warp(v, UV, quad.x, quad.y, brand_slot, TIME);
+	if (flat_body < 0.5) {
+		v = brand_warp(v, v_body, face_dir < 0.0 ? -1.0 : 1.0, quad.x, quad.y, brand_slot, TIME);
+	}
 	v_glow = g;
 	v_shimmer = sh;
 	v.y += hover * quad.y * 0.04;
 	VERTEX = vec2(v.x, -v.y) * px;
 	// Hovered, it looks up at you.
 	int frame = hover > 0.5 && style != 12 ? F_CAMERA : creature_frame(style, pose_action, p, motion, p / max(gait, 0.01), creature_seed, false);
+	if (force_frame >= 0) {
+		frame = force_frame;
+	}
 	vec2 uv = UV;
 	if (face_dir < 0.0) {
 		uv.x = 1.0 - uv.x;

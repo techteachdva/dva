@@ -1176,7 +1176,16 @@ func show_info(box: BetBox) -> void:
 
 func _flash(text: String) -> void:
 	_toast.text = text
+	_toast.name = "Toast"
+	# A long message wraps instead of running off a tall phone screen.
+	var room: float = size.x - 32.0
+	_toast.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_toast.custom_minimum_size.x = 0.0
 	_toast.reset_size()
+	if _toast.size.x > room:
+		_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_toast.custom_minimum_size.x = room
+		_toast.reset_size()
 	_toast.position.x = (size.x - _toast.size.x) * 0.5
 	var tw := create_tween()
 	_toast.modulate.a = 1.0

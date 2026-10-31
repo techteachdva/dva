@@ -7,6 +7,8 @@ extends Node3D
 # always one clean, readable ribbon. Flood only changes the wet width.
 
 const BASE_HALF_WIDTH: float = 2.7
+# How far the channel sits below the meadow, so it has real banks.
+const BED_LEVEL: float = -0.95
 const CELL: float = 2.0
 
 var flood_scale: float = 1.0
@@ -41,11 +43,12 @@ func plan_course(seed_value: int) -> void:
 	var axes: Array[Vector2] = [Vector2(0, 1), Vector2(0, -1), Vector2(1, 0), Vector2(-1, 0)]
 	_along = axes[rng.randi() % 4]
 	_across = Vector2(-_along.y, _along.x)
-	# Two broad bends and a small wobble: always reads as a river, never a zigzag.
+	# Long sweeping meanders and a slight wander. Tighter curves than this would
+	# fold the channel over itself.
 	_mean = [
-		[rng.randf_range(7.0, 11.0), rng.randf_range(1.0, 1.5), rng.randf() * TAU],
-		[rng.randf_range(3.0, 5.0), rng.randf_range(2.3, 3.0), rng.randf() * TAU],
-		[rng.randf_range(0.6, 1.2), rng.randf_range(5.5, 7.0), rng.randf() * TAU],
+		[rng.randf_range(6.5, 9.0), rng.randf_range(1.0, 1.2), rng.randf() * TAU],
+		[rng.randf_range(1.5, 2.5), rng.randf_range(1.8, 2.2), rng.randf() * TAU],
+		[rng.randf_range(0.2, 0.4), rng.randf_range(3.2, 3.8), rng.randf() * TAU],
 	]
 	planned = true
 
@@ -69,14 +72,16 @@ func course_offset(u: float) -> float:
 # How far a point is across from the bed (cheap: no path search), for carving.
 func across_distance(x: float, z: float) -> float:
 	var c := to_course(x, z)
-	return absf(c.y - course_offset(c.x))
+	# Measured square to the channel, or the banks pinch in on the bends.
+	var slope: float = course_offset(c.x + 0.5) - course_offset(c.x - 0.5)
+	return absf(c.y - course_offset(c.x)) / sqrt(1.0 + slope * slope)
 
 # The gorge floor along the course: the source end climbs into the peaks,
 # the outflow end keeps falling, cutting a slot out through its pass.
 func bed_height(u: float) -> float:
 	if u < 0.0:
-		return lerpf(-0.35, 11.0, smoothstep(ValleyTerrain.FLOOR_RADIUS, REACH, -u))
-	return lerpf(-0.35, -0.7, smoothstep(ValleyTerrain.FLOOR_RADIUS, REACH, u))
+		return lerpf(BED_LEVEL, 11.0, smoothstep(ValleyTerrain.FLOOR_RADIUS, REACH, -u))
+	return lerpf(BED_LEVEL, BED_LEVEL - 0.35, smoothstep(ValleyTerrain.FLOOR_RADIUS, REACH, u))
 const COPSE_RADIUS: float = ValleyTerrain.FLOOR_RADIUS
 
 # Smoothed course and running distance along it (fish swim by distance).
@@ -319,49 +324,98 @@ func _rebuild_mesh() -> void:
 		add_child(_mesh_instance)
 	if _path.size() < 2:
 		return
-	# One side vector per vertex along the smoothed course, so neighbouring
-	# segments share their edges (no sawtooth gaps).
-	var path := _path
 	var mat := _mesh_instance.material_override as ShaderMaterial
 	mat.set_shader_parameter("river_length", length())
-	mat.set_shader_parameter("flow_dir", _along)
 	var width: float = half_width() * BANK_SCALE
+	mat.set_shader_parameter("half_width", width)
+	_mesh_instance.mesh = _surface_mesh(width, 0.2 + (flood_scale - 1.0) * 0.8)
+	_bed_instance.mesh = _bed_mesh()
+
+# Columns across the water: enough for the surface to bank round a bend.
+const ACROSS: int = 8
+
+# The surface, one row of columns per step along the smoothed course, so
+# neighbouring rows share their edges (no sawtooth gaps).
+func _surface_mesh(width: float, lift: float) -> ArrayMesh:
+	var path := _path
+	var n: int = path.size()
 	var total: float = length()
-	var lift: float = 0.2 + (flood_scale - 1.0) * 0.14
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var dist: float = 0.0
-	var prev_l := Vector3.ZERO
-	var prev_r := Vector3.ZERO
-	var prev_d: float = 0.0
-	var prev_rapid: float = 0.0
-	for i: int in path.size():
-		var a: Vector3 = path[maxi(i - 1, 0)]
-		var b: Vector3 = path[mini(i + 1, path.size() - 1)]
-		var tang := Vector3(b.x - a.x, 0.0, b.z - a.z)
-		if tang.length_squared() < 0.0001:
-			tang = Vector3(0, 0, 1)
+	var tangents := PackedVector3Array()
+	tangents.resize(n)
+	for i: int in n:
+		var t: Vector3 = path[mini(i + 3, n - 1)] - path[maxi(i - 3, 0)]
+		t.y = 0.0
+		tangents[i] = t.normalized() if t.length_squared() > 0.0001 else Vector3(0, 0, 1)
+	# Curvature toward the +side of the course, a little smoothed.
+	var raw := PackedFloat32Array()
+	raw.resize(n)
+	for i: int in n:
+		var i0: int = maxi(i - 3, 0)
+		var i1: int = mini(i + 3, n - 1)
+		var span: float = maxf(_dist[i1] - _dist[i0], 0.01)
+		var side := Vector3(-tangents[i].z, 0.0, tangents[i].x)
+		raw[i] = side.dot(tangents[i1] - tangents[i0]) / span
+	var verts := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var cols := PackedColorArray()
+	var norms := PackedVector3Array()
+	var idx := PackedInt32Array()
+	var stride: int = ACROSS + 1
+	for i: int in n:
+		var k: float = 0.0
+		var hits: int = 0
+		for j: int in range(maxi(i - 6, 0), mini(i + 7, n)):
+			k += raw[j]
+			hits += 1
+		k /= float(hits)
+		var d: float = _dist[i]
 		var p: Vector3 = path[i] + Vector3(0.0, lift, 0.0)
-		if i > 0:
-			dist += path[i].distance_to(path[i - 1])
 		# Pinch the ribbon to a point at both mouths so the last quads are not
 		# a wide sheet of stretched water running off the map.
-		var pinch: float = smoothstep(0.0, 28.0, dist) * smoothstep(0.0, 28.0, total - dist)
-		var side := Vector3(-tang.z, 0.0, tang.x).normalized() * width * maxf(pinch, 0.04)
-		var l := p + side
-		var r := p - side
+		var pinch: float = maxf(smoothstep(0.0, 28.0, d) * smoothstep(0.0, 28.0, total - d), 0.04)
+		var side := Vector3(-tangents[i].z, 0.0, tangents[i].x)
+		# The inside of a bend stops short of the bend's centre, so it can never fold.
+		var w_l: float = width * pinch
+		var w_r: float = width * pinch
+		if absf(k) > 0.001:
+			var limit: float = 0.85 / absf(k)
+			if k > 0.0:
+				w_l = minf(w_l, limit)
+			else:
+				w_r = minf(w_r, limit)
+		var l: Vector3 = p + side * w_l
+		var r: Vector3 = p - side * w_r
 		# Steeper stretches run faster and break into white water.
-		var drop: float = path[maxi(i - 1, 0)].y - path[mini(i + 1, path.size() - 1)].y
-		var run: float = maxf(Vector2(b.x - a.x, b.z - a.z).length(), 0.01)
-		var rapid: float = clampf(drop / run * 6.0, 0.0, 1.0)
+		var a2: Vector3 = path[maxi(i - 1, 0)]
+		var b2: Vector3 = path[mini(i + 1, n - 1)]
+		var run: float = maxf(Vector2(b2.x - a2.x, b2.z - a2.z).length(), 0.01)
+		var rapid: float = clampf((a2.y - b2.y) / run * 6.0, 0.0, 1.0)
+		var bend: float = clampf(k * 4.0, -1.0, 1.0)
+		var col := Color(rapid, bend * 0.5 + 0.5, tangents[i].x * 0.5 + 0.5, tangents[i].z * 0.5 + 0.5)
+		for c: int in stride:
+			var f: float = float(c) / float(ACROSS)
+			var q: Vector3 = l.lerp(r, f)
+			# Water piles up against the outside of a bend.
+			q.y += (f * 2.0 - 1.0) * bend * 0.07 * (1.0 - absf(f * 2.0 - 1.0) * 0.5)
+			verts.append(q)
+			uvs.append(Vector2(f, d))
+			cols.append(col)
+			norms.append(Vector3.UP)
 		if i > 0:
-			_quad(st, prev_l, prev_r, l, r, prev_d, dist, prev_rapid, rapid)
-		prev_l = l
-		prev_r = r
-		prev_d = dist
-		prev_rapid = rapid
-	_mesh_instance.mesh = st.commit()
-	_bed_instance.mesh = _bed_mesh()
+			for c: int in ACROSS:
+				var a3: int = (i - 1) * stride + c
+				var b3: int = i * stride + c
+				idx.append_array([a3, b3, b3 + 1, a3, b3 + 1, a3 + 1])
+	var arr: Array = []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = verts
+	arr[Mesh.ARRAY_TEX_UV] = uvs
+	arr[Mesh.ARRAY_COLOR] = cols
+	arr[Mesh.ARRAY_NORMAL] = norms
+	arr[Mesh.ARRAY_INDEX] = idx
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	return mesh
 
 # A trench under the sheet of water: shallow at the banks, deep in the middle.
 func _bed_mesh() -> ArrayMesh:
@@ -416,13 +470,3 @@ func set_ice(level: float) -> void:
 func set_flood_tint(level: float) -> void:
 	if _mesh_instance != null:
 		(_mesh_instance.material_override as ShaderMaterial).set_shader_parameter("flood", level)
-
-func _quad(st: SurfaceTool, al: Vector3, ar: Vector3, bl: Vector3, br: Vector3, va: float, vb: float, ra: float = 0.0, rb: float = 0.0) -> void:
-	var ca := Color(ra, 0.0, 0.0)
-	var cb := Color(rb, 0.0, 0.0)
-	st.set_color(ca); st.set_uv(Vector2(0.0, va)); st.add_vertex(al)
-	st.set_color(cb); st.set_uv(Vector2(0.0, vb)); st.add_vertex(bl)
-	st.set_color(cb); st.set_uv(Vector2(1.0, vb)); st.add_vertex(br)
-	st.set_color(ca); st.set_uv(Vector2(0.0, va)); st.add_vertex(al)
-	st.set_color(cb); st.set_uv(Vector2(1.0, vb)); st.add_vertex(br)
-	st.set_color(ca); st.set_uv(Vector2(1.0, va)); st.add_vertex(ar)

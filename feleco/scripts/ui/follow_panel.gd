@@ -128,6 +128,15 @@ func _ready() -> void:
 	_rampage_btn.pressed.connect(_on_rampage)
 	_rampage_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(_rampage_btn)
+	_control_btn = Button.new()
+	_control_btn.text = "Take Control"
+	_control_btn.theme_type_variation = "PrimaryButton"
+	_control_btn.custom_minimum_size = Vector2(110, 40)
+	_control_btn.tooltip_text = "Drive your creature yourself: WASD or arrows, or hold a finger where it should go. Run it to a Starfruit and it goes Rainbow."
+	_control_btn.visible = false
+	_control_btn.pressed.connect(_toggle_control)
+	_control_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(_control_btn)
 	_mine_btn = Button.new()
 	_mine_btn.text = "Make Mine"
 	_mine_btn.theme_type_variation = "PrimaryButton"
@@ -273,6 +282,10 @@ func _on_fight_nearby(attacker: String, target: String, pos: Vector3, killed: bo
 
 var _mine_btn: Button
 var _rampage_btn: Button
+var _control_btn: Button
+var driving: bool = false
+var _drive_bar: PanelContainer
+var _hidden_windows: Array[Node] = []
 var _rampage_bar: ProgressBar
 var _rampaging: bool = false
 
@@ -321,6 +334,7 @@ func _on_rampage() -> void:
 	go.custom_minimum_size = Vector2(0, 50)
 	col.add_child(go)
 	go.grab_focus()
+	_release_control()
 	await go.pressed
 	layer.queue_free()
 	get_tree().paused = was_paused
@@ -341,6 +355,74 @@ func _on_rampage() -> void:
 		_doing.get_parent().move_child(_rampage_bar, _doing.get_index())
 	_rampage_bar.visible = true
 	agent.rampage_ended.connect(_on_rampage_ended, CONNECT_ONE_SHOT)
+
+# Take Control: the same steering as a rampage, for as long as you like.
+func _toggle_control() -> void:
+	if driving:
+		_release_control()
+		return
+	if agent == null or not is_instance_valid(agent):
+		return
+	driving = true
+	agent.player_drive = true
+	_control_btn.text = "Let Go"
+	var cam := _camera()
+	if cam != null:
+		cam.set("locked", true)
+	_clear_view_for_driving()
+
+# Every window steps aside so you can see where you are going. A slim bar
+# holds the way back.
+func _clear_view_for_driving() -> void:
+	var hud: Node = get_parent()
+	if hud == null:
+		return
+	_hidden_windows.clear()
+	for c: Node in hud.get_children():
+		if c is PanelContainer or c is Panel or c.name in ["TopLeft", "TopRight", "HillBars"] or c == self:
+			if (c as CanvasItem).visible:
+				_hidden_windows.append(c)
+				(c as CanvasItem).visible = false
+	_drive_bar = PanelContainer.new()
+	_drive_bar.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_drive_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_drive_bar.offset_top = 72.0
+	_drive_bar.theme = FelecoUiScript.theme()
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	_drive_bar.add_child(row)
+	var hint := FelecoUiScript.label("Driving %s: WASD, arrows, or hold where to go" % agent.display_name, 18, FelecoUiScript.CREAM)
+	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(hint)
+	var back := Button.new()
+	back.text = "Let Go"
+	back.theme_type_variation = "PrimaryButton"
+	back.custom_minimum_size = Vector2(110, 44)
+	back.pressed.connect(_release_control)
+	row.add_child(back)
+	hud.add_child(_drive_bar)
+
+func _release_control() -> void:
+	if not driving:
+		return
+	driving = false
+	if agent != null and is_instance_valid(agent):
+		agent.player_drive = false
+		agent.rampage_steer = Vector3.ZERO
+	_control_btn.text = "Take Control"
+	var cam := _camera()
+	if cam != null:
+		cam.set("locked", false)
+	if _drive_bar != null and is_instance_valid(_drive_bar):
+		_drive_bar.queue_free()
+	_drive_bar = null
+	for c: Node in _hidden_windows:
+		if is_instance_valid(c):
+			(c as CanvasItem).visible = true
+	_hidden_windows.clear()
+
+func _exit_tree() -> void:
+	_release_control()
 
 func _on_rampage_ended(kills: int) -> void:
 	_rampaging = false
@@ -379,6 +461,11 @@ func _steer_rampage() -> void:
 func _process(delta: float) -> void:
 	if _gone:
 		return
+	if driving:
+		if agent != null and is_instance_valid(agent) and not agent.is_queued_for_deletion():
+			_steer_rampage()
+		else:
+			_release_control()
 	if _rampaging and agent != null and is_instance_valid(agent) and not agent.is_queued_for_deletion():
 		_steer_rampage()
 		_rampage_bar.value = agent.golden
@@ -396,6 +483,8 @@ func _process(delta: float) -> void:
 	if _accum >= 0.4:
 		_accum = 0.0
 		_rampage_btn.visible = not _rampaging and agent.golden > 0.05
+		var pets: Node = get_tree().get_first_node_in_group("goals_panel")
+		_control_btn.visible = not _rampaging and pets != null and pets.call("is_companion", agent)
 		var goals: Node = get_tree().get_first_node_in_group("goals_panel")
 		# Animals only: a drifting spore is no pet.
 		_mine_btn.visible = not _rampaging and agent.species_id != "mushroom" and goals != null and not goals.call("is_companion", agent)
