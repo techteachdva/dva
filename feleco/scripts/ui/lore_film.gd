@@ -17,17 +17,15 @@ var _skip: Button
 var _done: bool = false
 var _choosing: bool = false
 var _anchor: Vector3 = Vector3.ZERO
+# Cast settings from before the lesson quieted the valley. They live on the
+# shared config, so leaving must put them back or the year starts empty.
+var _cast: Dictionary = {}
 
 func _ready() -> void:
 	var gc: Node = get_node("/root/GameConfig")
 	gc.current_mode = "main"
 	# A quiet valley, so the lesson's cast is the only thing moving.
-	gc.disabled_species.clear()
-	for id: String in SpeciesDB.ROWS.keys():
-		gc.disabled_species.append(id)
-	gc.tree_count = 8
-	gc.bush_count = 4
-	gc.grass_density = 0.6
+	_cast = quiet_valley(gc)
 	gc.spawn_roster.clear()
 	gc.bets.clear()
 	_world = WORLD.instantiate()
@@ -242,6 +240,10 @@ func _leave(to_valley: bool) -> void:
 	var gc: Node = get_node("/root/GameConfig")
 	gc.lore_seen = true
 	gc.save_meta()
+	# The lesson switched every species off. That list is the next valley's
+	# cast: leave it, and Begin the year spawns nobody, and the setup board
+	# shows every species switched off.
+	restore_valley(gc, _cast)
 	if to_valley:
 		gc.current_mode = "main"
 		gc.main_claim = gc.record("lesson", "champion") == null
@@ -249,6 +251,28 @@ func _leave(to_valley: bool) -> void:
 	_silence(_world)
 	var path := "res://scenes/world.tscn" if to_valley else "res://scenes/ui/main_menu.tscn"
 	get_tree().change_scene_to_file.call_deferred(path)
+
+# Empty the shared cast for the film's own valley, and remember what to put back.
+static func quiet_valley(gc: Node) -> Dictionary:
+	var saved := {
+		"disabled": gc.disabled_species.duplicate(),
+		"trees": gc.tree_count,
+		"bushes": gc.bush_count,
+		"grass": gc.grass_density,
+	}
+	gc.disabled_species.clear()
+	for id: String in SpeciesDB.ROWS.keys():
+		gc.disabled_species.append(id)
+	gc.tree_count = 8
+	gc.bush_count = 4
+	gc.grass_density = 0.6
+	return saved
+
+static func restore_valley(gc: Node, saved: Dictionary) -> void:
+	gc.disabled_species = (saved["disabled"] as Array).duplicate()
+	gc.tree_count = int(saved["trees"])
+	gc.bush_count = int(saved["bushes"])
+	gc.grass_density = float(saved["grass"])
 
 func _silence(n: Node) -> void:
 	if n == null or not is_instance_valid(n):
