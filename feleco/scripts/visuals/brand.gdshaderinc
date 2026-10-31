@@ -43,55 +43,60 @@ vec2 _brand_centre(int part) {
 	return vec2(0.8, 0.88);
 }
 
-// How far one part's size and shape move this vertex.
-vec2 _brand_move(vec2 v, vec2 body, int part, float face, float qw, float qh, float slot, float t) {
-	float tx = body.x;
-	float up = body.y;
-	vec3 col;
-	float size;
-	float shape;
-	float pat;
-	float school;
-	brand_read(slot, part, col, size, shape, pat, school);
-	vec2 c = _brand_centre(part);
-	vec2 anchor = vec2((c.x - 0.5) * qw * face, (c.y - 0.5) * qh);
-	vec2 d = v - anchor;
-	d *= size;
-	float n = sin(tx * 18.0 + up * 9.0 + t * 2.0);
-	if (shape > 0.5 && shape < 1.5) {
-		d += normalize(d + vec2(0.001, 0.2)) * abs(n) * qh * 0.08 * (school < 0.5 ? 1.4 : 0.7);
-	} else if (shape > 1.5 && shape < 2.5) {
-		d *= vec2(1.15, 1.25);
-	} else if (shape > 2.5 && shape < 3.5 && up > 0.4) {
-		d.x += (tx - 0.5) * qw * 0.55 * face;
-		d.y += qh * 0.12;
-	} else if (shape > 3.5 && shape < 4.5) {
-		d.x += sin(up * 16.0 - t * 3.0) * qw * 0.06;
-		d.y += cos(tx * 10.0 + t) * qh * 0.04;
-	} else if (shape > 4.5 && shape < 5.5) {
-		d.x *= 1.35;
-		d.y *= 0.72;
-	} else if (shape > 5.5 && (part == 6 || part == 5)) {
-		d.y += qh * 0.06 * size;
-		d.x += (tx - 0.72) * qw * 0.08 * face;
-	}
-	return anchor + d - v;
+// Painted pixels stay put. A fang, a tusk, or a tail in the sprite is not
+// pulled by the mesh. The chosen shape is drawn on afterwards, per part.
+vec2 brand_warp(vec2 v, vec2 body, float face, float qw, float qh, float slot, float t) {
+	// Shapes are drawn in brand_overlay. Stretching the mesh smeared fangs
+	// and never reached a tail that sits in the margin.
+	return v + vec2(0.0) * (body.x + face + qw + qh + slot + t);
 }
 
-// body: (tail 0 -> head 1, feet 0 -> top 1) whichever way the sprite faces.
-// Moves are averaged across nearby parts so the body stretches, never tears.
-vec2 brand_warp(vec2 v, vec2 body, float face, float qw, float qh, float slot, float t) {
-	if (slot < 0.5) return v;
-	vec2 sum = vec2(0.0);
-	for (int i = 0; i < 5; i++) {
-		vec2 s = body;
-		if (i == 1) s.x += 0.07;
-		if (i == 2) s.x -= 0.07;
-		if (i == 3) s.y += 0.07;
-		if (i == 4) s.y -= 0.07;
-		sum += _brand_move(v, body, brand_part(s), face, qw, qh, slot, t);
+// Outward from the part, in body space: tail back, head forward, crown up.
+vec2 _brand_out(int part) {
+	if (part == 0) return vec2(0.0, -1.0);
+	if (part == 1) return vec2(-1.0, 0.2);
+	if (part == 2) return vec2(0.15, -1.0);
+	if (part == 3) return vec2(-0.15, 1.0);
+	if (part == 4) return vec2(0.45, 0.9);
+	if (part == 5) return vec2(1.0, -0.05);
+	return vec2(0.0, 1.0);
+}
+
+// 1 inside the attachment, 0 outside. Grows from the part into the empty margin.
+float _brand_attach(int part, float shape, float size, vec2 body, float t) {
+	if (shape < 0.5) return 0.0;
+	vec2 o = normalize(_brand_out(part));
+	vec2 side = vec2(-o.y, o.x);
+	vec2 rel = body - _brand_centre(part);
+	float along = dot(rel, o);
+	float across = dot(rel, side);
+	float reach = 0.07 + size * 0.16;
+	float w = 0.012 + size * 0.012;
+	if (along < -0.01 || along > reach) return 0.0;
+	float u = along / reach;
+	if (shape < 1.5) {
+		float band = abs(fract(across * 10.0 + 0.5) - 0.5);
+		return (1.0 - smoothstep(0.0, w * 0.55, band)) * (1.0 - smoothstep(0.15, 1.0, u));
 	}
-	return v + sum / 5.0;
+	if (shape < 2.5) {
+		vec2 b = vec2(along - reach * 0.55, across);
+		return 1.0 - smoothstep(reach * 0.22, reach * 0.38, length(b));
+	}
+	if (shape < 3.5) {
+		float half = mix(0.015, 0.07 + size * 0.05, u);
+		return 1.0 - smoothstep(half * 0.8, half, abs(across));
+	}
+	if (shape < 4.5) {
+		float wave = across - sin(along * 36.0 + t * 3.0) * 0.025;
+		return 1.0 - smoothstep(0.0, w * 0.85, abs(wave));
+	}
+	if (shape < 5.5) {
+		if (u > 0.62) return 0.0;
+		float half = 0.035 + size * 0.04;
+		return 1.0 - smoothstep(half * 0.85, half, abs(across));
+	}
+	float half = w * 1.6 * (1.0 - u);
+	return 1.0 - smoothstep(half * 0.7, max(half, 0.004), abs(across));
 }
 
 float _hash(vec2 p) {
@@ -156,34 +161,12 @@ vec4 brand_overlay(vec3 base, float sprite_a, vec2 body, float slot, float t) {
 	vec4 drawn = texture(paint_tex, (tile + cell_uv) / vec2(8.0, 4.0));
 	col = mix(col, drawn.rgb * (0.55 + 0.6 * lum), drawn.a * smoothstep(0.08, 0.16, lum));
 	float a = sprite_a;
-	// Grown-on parts, in the empty margin of the sprite.
-	float tx = body.x;
-	float up = body.y;
-	if (shape > 5.5 && up > 0.8 && (part == 5 || part == 6)) {
-		float horn = 1.0 - smoothstep(0.0, 0.035 + size * 0.02, abs(tx - 0.74));
-		horn *= smoothstep(0.8, 0.9, up);
-		if (horn > 0.2) {
-			// Keep the colour the player picked. Light horns only get a pale edge.
-			col = school > 0.5 ? mix(tint, vec3(0.98, 0.94, 0.82), 0.22) : tint * 0.8;
-			a = max(a, horn);
-		}
-	}
-	if (shape > 2.5 && shape < 3.5 && up > 0.45 && up < 0.85) {
-		float wing = smoothstep(0.15, 0.0, abs(up - 0.66) - 0.12);
-		wing *= smoothstep(0.15, 0.55, abs(tx - 0.5));
-		if (wing > 0.15 && a < 0.4) {
-			vec3 membrane = school > 0.5 ? vec3(0.75, 0.9, 1.0) : vec3(0.25, 0.05, 0.2);
-			col = membrane * (0.6 + 0.4 * sin(t * 4.0 + tx * 8.0));
-			a = max(a, wing * 0.85);
-		}
-	}
-	if (shape > 0.5 && shape < 1.5 && a < 0.35 && up > 0.35) {
-		float spike = smoothstep(0.04, 0.0, abs(fract(tx * 7.0) - 0.5));
-		spike *= smoothstep(0.4, 0.85, up);
-		if (spike > 0.4) {
-			col = school > 0.5 ? vec3(0.9, 0.95, 1.0) : vec3(0.15, 0.02, 0.05);
-			a = max(a, spike);
-		}
+	// One attachment per part, in the empty margin, in that part's own colour.
+	// Head grows a fang forward. Crown grows a horn up. Tail grows backward.
+	float grown = _brand_attach(part, shape, size, body, t);
+	if (grown > 0.2 && sprite_a < 0.4) {
+		col = school > 0.5 ? mix(tint, vec3(0.98, 0.94, 0.82), 0.22) : tint * 0.85;
+		a = max(a, grown);
 	}
 	return vec4(col, a);
 }

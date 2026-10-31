@@ -2423,6 +2423,7 @@ func tune(species: String, key: String) -> float:
 
 func capacity_of(species: String) -> int:
 	var cap: float = float(CARRYING_CAPACITY.get(species, SpeciesDB.row(species).get("cap", 300)))
+	cap = float(EraBook.capacity(species, int(cap)))
 	return maxi(2, int(cap * tune(species, "capacity")))
 
 func logistic_reproduction_factor(species: String) -> float:

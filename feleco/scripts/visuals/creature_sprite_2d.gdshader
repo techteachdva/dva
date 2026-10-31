@@ -19,6 +19,8 @@ uniform vec2 grid = vec2(25.0, 8.0);
 uniform float hover = 0.0;
 uniform int pose_action = 0;
 uniform vec2 texel = vec2(0.0078125, 0.0078125);
+// Pixel era snaps each frame onto the baked blocks.
+uniform float pixel_on = 0.0;
 
 varying float v_glow;
 varying float v_shimmer;
@@ -38,6 +40,9 @@ void vertex() {
 	float p = TIME * gait + creature_seed;
 	v_body = vec2(face_dir < 0.0 ? 1.0 - UV.x : UV.x, 1.0 - UV.y);
 	vec2 v = creature_rig(VERTEX * quad, UV, quad.x, quad.y, style, atlas_cell, creature_seed, face_dir, p, motion, pose_action, g, sh);
+	if (pixel_on > 0.5) {
+		v = VERTEX * quad;
+	}
 	if (flat_body < 0.5) {
 		v = brand_warp(v, v_body, face_dir < 0.0 ? -1.0 : 1.0, quad.x, quad.y, brand_slot, TIME);
 	}
@@ -53,6 +58,10 @@ void vertex() {
 	vec2 uv = UV;
 	if (face_dir < 0.0) {
 		uv.x = 1.0 - uv.x;
+	}
+	if (pixel_on > 0.5) {
+		float steps = max((1.0 / grid.x) / texel.x / 8.0, 4.0);
+		uv = (floor(clamp(uv, vec2(0.0), vec2(1.0)) * steps) + 0.5) / steps;
 	}
 	UV = (vec2(float(frame), atlas_cell) + clamp(uv, vec2(0.004), vec2(0.996))) / grid;
 }

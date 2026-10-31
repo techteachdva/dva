@@ -109,7 +109,10 @@ func _fill(box: VBoxContainer, items: Array[Dictionary], permanent: bool) -> voi
 		text.add_theme_constant_override("separation", 0)
 		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text.add_child(FelecoUiScript.label(item["name"], 17, FelecoUiScript.CREAM))
-		var desc := FelecoUiScript.label(item["desc"], 13, FelecoUiScript.MIST)
+		var desc_text: String = item["desc"]
+		if item["id"] == "feast":
+			desc_text = EraBook.feast_tip()
+		var desc := FelecoUiScript.label(desc_text, 13, FelecoUiScript.MIST)
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		text.add_child(desc)
 		row.add_child(text)

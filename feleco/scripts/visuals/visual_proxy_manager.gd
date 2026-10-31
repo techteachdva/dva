@@ -110,11 +110,15 @@ func _setup_proxy(species: String) -> void:
 	mm.use_colors = true
 	mm.use_custom_data = true
 	var quad := QuadMesh.new()
-	quad.size = cfg["size"]
-	# A small grid so heads, tails, ears and wings can move independently.
-	# Fine enough that legs, necks and tails bend at their joints.
-	quad.subdivide_width = 14
-	quad.subdivide_depth = 14
+	var era := EraBook.id()
+	var size: Vector2 = cfg["size"]
+	if era == "lost":
+		size = EraBook.draw_size(species, size)
+	quad.size = size
+	# Pixel sheets are already blocks. A bend mesh smears them.
+	var slices: int = 0 if era == "pixel" else 14
+	quad.subdivide_width = slices
+	quad.subdivide_depth = slices
 	mm.mesh = quad
 	mm.instance_count = 0
 	proxy.multimesh = mm
@@ -123,8 +127,9 @@ func _setup_proxy(species: String) -> void:
 	var mat := ShaderMaterial.new()
 	mat.shader = SpriteShader
 	mat.set_shader_parameter("sprite", tex)
-	mat.set_shader_parameter("quad_height", (cfg["size"] as Vector2).y)
-	mat.set_shader_parameter("quad_width", (cfg["size"] as Vector2).x)
+	mat.set_shader_parameter("quad_height", size.y)
+	mat.set_shader_parameter("quad_width", size.x)
+	mat.set_shader_parameter("pixel_on", 1.0 if era == "pixel" else 0.0)
 	mat.set_shader_parameter("style", int(cfg["style"]))
 	mat.set_shader_parameter("texel", Vector2(1.0 / tex.get_width(), 1.0 / tex.get_height()))
 	mat.set_shader_parameter("brand_tex", BrandBook.atlas())

@@ -47,6 +47,9 @@ var _setting_counts: bool = false
 var _total_label: Label
 var _foresight_label: Label
 var _map: OptionButton
+var _era_buttons: Array[Button] = []
+var _name_labels: Dictionary = {}
+var _icon_rects: Dictionary = {}
 
 func _ready() -> void:
 	var frame := FelecoUiScript.build_screen(self, "Prepare the Valley", _on_back)
@@ -67,6 +70,7 @@ func _ready() -> void:
 	FelecoUiScript.dress_menu(self)
 	_on_time_setting(1)
 	_read_counts_from_config()
+	_show_era()
 	_update_summary()
 
 func _build_herds(card: VBoxContainer) -> void:
@@ -131,6 +135,9 @@ func _build_herds(card: VBoxContainer) -> void:
 		var name_label := FelecoUiScript.label(entry[1], 17, FelecoUiScript.CREAM)
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(name_label)
+		_name_labels[entry[0]] = name_label
+		if not str(entry[2]).is_empty():
+			_icon_rects[entry[0]] = icon
 		var spin := SpinBox.new()
 		spin.min_value = 1
 		spin.max_value = 40
@@ -148,6 +155,13 @@ func _build_herds(card: VBoxContainer) -> void:
 	card.add_child(_foresight_label)
 
 func _build_rules(card: VBoxContainer) -> void:
+	card.add_child(_hint("Look. Valley is the living sprites. Pixel is those same frames in big pixels. Lost Valley paints prehistoric creatures on the same rig and renames them."))
+	var era_labels: Array = []
+	for era_id: String in EraBook.IDS:
+		era_labels.append(EraBook.TITLES[era_id])
+	_era_buttons = FelecoUiScript.choice_row(card, era_labels, [])
+	for i: int in EraBook.IDS.size():
+		_era_buttons[i].pressed.connect(_on_era.bind(EraBook.IDS[i]))
 	card.add_child(_hint("How long the valley runs (a day of sun and moon is 1 minute at 2x)"))
 	var labels: Array = []
 	var icons: Array = []
@@ -282,6 +296,29 @@ func _count(field: String) -> int:
 	if _toggles.has(field) and not _toggles[field].button_pressed:
 		return 0
 	return int(_spins[field].value)
+
+func _on_era(era: String) -> void:
+	var gc: Node = get_node("/root/GameConfig")
+	gc.sprite_era = era
+	gc.save_meta()
+	_show_era()
+
+func _show_era() -> void:
+	var gc: Node = get_node("/root/GameConfig")
+	var which: int = EraBook.IDS.find(str(gc.sprite_era))
+	if which < 0:
+		which = 0
+	FelecoUiScript.pick(_era_buttons, _era_buttons[which])
+	for entry: Array in SPECIES_FIELDS:
+		var named := EraBook.label_for(entry[4])
+		_name_labels[entry[0]].text = named if named != "" else entry[1]
+		if _icon_rects.has(entry[0]):
+			(_icon_rects[entry[0]] as TextureRect).texture = FelecoUiScript.species_texture(entry[4])
+	var deer: SpinBox = _spins["extra:deer"]
+	deer.max_value = EraBook.herd_max("deer")
+	if EraBook.id() == "lost":
+		if int(deer.value) == 6 or int(deer.value) > 12:
+			deer.value = mini(int(deer.value), 3 if int(deer.value) == 6 else 12)
 
 func _on_time_setting(index: int) -> void:
 	var gc: Node = get_node("/root/GameConfig")

@@ -271,6 +271,7 @@ func _build_ladder(gc: Node) -> void:
 	_next_hint.visible = not hint.is_empty()
 	column.add_child(_next_hint)
 	column.move_child(_next_hint, at)
+	_add_settings(column)
 	if not gc.all_unlocked() and not hint.is_empty():
 		var skip := Button.new()
 		skip.text = "Already know Feleco? Unlock everything"
@@ -411,6 +412,100 @@ func _on_rules() -> void:
 			lab.visible = true
 			guide.queue_free()
 			get_tree().reload_current_scene())
+
+const _SPRITE_PREVIEW: Array[String] = ["human", "lion", "deer", "falcon", "fish", "sheep"]
+
+var _settings: PopupPanel
+var _era_buttons: Array[Button] = []
+var _preview_icons: Array[TextureRect] = []
+var _preview_names: Array[Label] = []
+
+func _add_settings(column: VBoxContainer) -> void:
+	var b := Button.new()
+	b.name = "Settings"
+	b.text = "Settings"
+	b.custom_minimum_size = Vector2(340, 40)
+	FelecoUiScript.mark(b, "GhostButton")
+	b.pressed.connect(_open_settings)
+	b.mouse_entered.connect(func() -> void: _ray_target = b)
+	b.focus_entered.connect(func() -> void: _ray_target = b)
+	b.mouse_exited.connect(func() -> void:
+		if _ray_target == b:
+			_ray_target = null)
+	column.add_child(b)
+	column.move_child(b, _btn_quit.get_index())
+	_settings = _build_settings_popup()
+	add_child(_settings)
+
+func _build_settings_popup() -> PopupPanel:
+	var popup := PopupPanel.new()
+	popup.theme = FelecoUiScript.theme()
+	popup.size = Vector2i(760, 460)
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	for side: String in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 18)
+	popup.add_child(margin)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 14)
+	margin.add_child(col)
+	col.add_child(FelecoUiScript.heading("Settings", 28, FelecoUiScript.GOLD))
+	var hint := FelecoUiScript.label("Sprites. The valley wears this look, and Lost Valley renames every creature.", 16, FelecoUiScript.MIST)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(hint)
+	var labels: Array = []
+	for era_id: String in EraBook.IDS:
+		labels.append(EraBook.TITLES[era_id])
+	_era_buttons = FelecoUiScript.choice_row(col, labels, [])
+	for i: int in EraBook.IDS.size():
+		_era_buttons[i].pressed.connect(_choose_era.bind(EraBook.IDS[i]))
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12)
+	col.add_child(row)
+	for id: String in _SPRITE_PREVIEW:
+		var cell := VBoxContainer.new()
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(96, 96)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		cell.add_child(icon)
+		var name := FelecoUiScript.label(id, 14, FelecoUiScript.CREAM)
+		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cell.add_child(name)
+		row.add_child(cell)
+		_preview_icons.append(icon)
+		_preview_names.append(name)
+	var done := Button.new()
+	done.text = "Done"
+	done.theme_type_variation = "PrimaryButton"
+	done.custom_minimum_size = Vector2(160, 48)
+	done.pressed.connect(func() -> void: popup.hide())
+	col.add_child(done)
+	return popup
+
+func _open_settings() -> void:
+	_refresh_settings()
+	_settings.popup_centered()
+
+func _choose_era(era: String) -> void:
+	var gc: Node = get_node("/root/GameConfig")
+	gc.sprite_era = era
+	gc.save_meta()
+	_refresh_settings()
+
+func _refresh_settings() -> void:
+	var which: int = EraBook.IDS.find(EraBook.id())
+	if which < 0:
+		which = 0
+	FelecoUiScript.pick(_era_buttons, _era_buttons[which])
+	var nearest: bool = EraBook.id() == "pixel"
+	for i: int in _SPRITE_PREVIEW.size():
+		var id: String = _SPRITE_PREVIEW[i]
+		var icon := _preview_icons[i]
+		icon.texture = FelecoUiScript.species_texture(id)
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if nearest else CanvasItem.TEXTURE_FILTER_LINEAR
+		_preview_names[i].text = SpeciesDB.label(id)
 
 func _on_quit() -> void:
 	get_tree().quit()

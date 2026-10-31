@@ -3,9 +3,19 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.10.0"
+const VERSION: String = "4.11.0"
 
 const CHANGELOG: Array = [
+	{
+		"version": "4.11.0",
+		"title": "Three Valleys",
+		"notes": [
+			"Prepare the Valley, and Settings on the main menu, ask which look the year wears: Valley, Pixel, or Lost Valley.",
+			"Pixel is the same creatures and the same walks, cut into big pixels.",
+			"Lost Valley keeps the food web and renames it: cavemen, saber-tooths, cave bears, woolly mammoths, pterodactyls, megapiranhas, and the rest. Every one has a full animation sheet.",
+			"Brand parts grow on the body instead of stretching it. A fang stays a fang. Tail, legs, belly, back, neck, head, and crown each grow their own shape.",
+		],
+	},
 	{
 		"version": "4.10.0",
 		"title": "Rainbow Road",

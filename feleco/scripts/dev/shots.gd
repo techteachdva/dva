@@ -39,6 +39,9 @@ var guide: bool = false
 var focus_sp: String = ""
 var live_table: float = 0.0
 var lineup: bool = false
+var parade: bool = false
+var settings: bool = false
+var era: String = ""
 var follow_at: float = 0.0
 var lineup_at: float = 1.6
 
@@ -96,6 +99,12 @@ func _ready() -> void:
 		elif arg.begins_with("--lineup="):
 			lineup = true
 			lineup_at = float(arg.substr(9))
+		elif arg == "--parade":
+			parade = true
+		elif arg == "--settings":
+			settings = true
+		elif arg.begins_with("--era="):
+			era = arg.substr(6)
 		elif arg.begins_with("--follow="):
 			follow_at = float(arg.substr(9))
 		elif arg.begins_with("--focus="):
@@ -147,6 +156,10 @@ func _ready() -> void:
 	gc.load_meta()
 	gc.reset_run_state()
 	gc.player_bet = "Sheep"
+	if era in ["valley", "pixel", "lost"]:
+		gc.sprite_era = era
+	if settings:
+		gc.intro_seen = true
 	if OS.get_cmdline_user_args().has("--bets"):
 		# A spread of bets so the tracker, live wins and results can be seen.
 		gc.eco_points = maxi(gc.eco_points, 40)
@@ -179,6 +192,9 @@ func _ready() -> void:
 	keeper.focus_sp = focus_sp
 	keeper.live_table = live_table
 	keeper.lineup = lineup
+	keeper.parade = parade
+	keeper.settings = settings
+	keeper.era = era
 	keeper.follow_at = follow_at
 	keeper.lineup_at = lineup_at
 	keeper.sim_powers = sim_powers
@@ -264,6 +280,21 @@ func _process(delta: float) -> void:
 				GameConfig.bets.append({"type": "survivor", "meta": {"name": (d.node as MarkovAgent).display_name, "species": d.species}})
 			hud._setup_side_bet_marker()
 			GameConfig.bets.clear()
+	if settings and _elapsed > 1.2:
+		settings = false
+		var menu := get_tree().current_scene
+		if menu != null and menu.has_method("_open_settings"):
+			menu.call("_open_settings")
+	if parade and _elapsed > lineup_at:
+		parade = false
+		var w := get_tree().current_scene.get_node_or_null("World") as SimulationDirector
+		if w != null:
+			var ids: Array[String] = SpriteGenerator.SPECIES
+			for i: int in ids.size():
+				var col: int = i % 8
+				var row: int = i / 8
+				w.spawn_scripted(ids[i], Vector3(-7.0 + col * 2.2, 0.0, 9.2 + row * 2.6))
+			print("PARADE era=", EraBook.id(), " n=", ids.size())
 	if lineup and _elapsed > lineup_at:
 		lineup = false
 		# A row of carcasses (one per species) and mushrooms in every stage,

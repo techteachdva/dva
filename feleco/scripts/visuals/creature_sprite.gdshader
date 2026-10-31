@@ -17,6 +17,8 @@ uniform vec2 grid = vec2(25.0, 8.0);
 // Gait phase per second, to turn the phase back into the creature's clock.
 uniform float gait = 9.0;
 uniform vec2 texel = vec2(0.0078125, 0.0078125);
+// Pixel era: snap each frame to the baked blocks and skip the bend mesh.
+uniform float pixel_on = 0.0;
 uniform vec4 rim_color : source_color = vec4(1.0, 0.82, 0.3, 1.0);
 uniform float rim = 0.0;
 // Creatures the player has money on: a bright outline that beats the champion gold.
@@ -77,6 +79,11 @@ void vertex() {
 	vec2 uv = UV;
 	if (face < 0.0) {
 		uv.x = 1.0 - uv.x;
+	}
+	if (pixel_on > 0.5) {
+		v = VERTEX.xy;
+		float steps = max((1.0 / grid.x) / texel.x / 8.0, 4.0);
+		uv = (floor(clamp(uv, vec2(0.0), vec2(1.0)) * steps) + 0.5) / steps;
 	}
 	UV = (vec2(float(frame), cell) + clamp(uv, vec2(0.004), vec2(0.996))) / grid;
 	VERTEX.xy = (bad || any(isnan(v)) || any(isinf(v)) || length(v) > quad_height * 4.0 + 8.0) ? vec2(0.0) : v;

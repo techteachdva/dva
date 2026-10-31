@@ -86,6 +86,8 @@ var intro_seen: bool = false
 var lore_seen: bool = false
 # Set for the valley that opens from Main Game, until the player claims a champion.
 var main_claim: bool = false
+# "valley", "pixel", or "lost". See EraBook. Saved with the meta file.
+var sprite_era: String = "valley"
 # "simple" is Start Simulation's one-plan screen. "full" is the quest board.
 var board_mode: String = "full"
 # Campaign game records: {"golf": {"1": "A", ...}, "brawl": {...}}.
@@ -256,6 +258,7 @@ func save_meta() -> void:
 		"powerup_inventory": powerup_inventory,
 		"last_bets": last_bets,
 		"tuning": tuning,
+		"sprite_era": sprite_era,
 	}
 	var json := JSON.stringify(data)
 	var file := FileAccess.open("user://feleco_meta.save", FileAccess.WRITE)
@@ -287,6 +290,8 @@ func load_meta() -> void:
 		records = d.get("records", {}) if d.get("records") is Dictionary else {}
 		powerup_inventory = d.get("powerup_inventory", {}) if d.get("powerup_inventory") is Dictionary else {}
 		tuning = d.get("tuning", {}) if d.get("tuning") is Dictionary else {}
+		var era := str(d.get("sprite_era", "valley"))
+		sprite_era = era if era in ["valley", "pixel", "lost"] else "valley"
 		last_bets.clear()
 		if d.get("last_bets") is Array:
 			for b in d["last_bets"]:

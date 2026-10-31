@@ -506,7 +506,7 @@ func _creature(parent: Control, species: String, center: Vector2, height: float)
 	holder.size = Vector2(height, height)
 	holder.mouse_filter = Control.MOUSE_FILTER_STOP
 	holder.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	holder.tooltip_text = species
+	holder.tooltip_text = SpeciesDB.label(species)
 	holder.set_meta("species", species)
 	parent.add_child(holder)
 	var key: String = "%s@%d" % [species, holder.get_instance_id()]
@@ -527,6 +527,7 @@ func _creature(parent: Control, species: String, center: Vector2, height: float)
 		mat.set_shader_parameter("face_dir", 1.0 if randf() < 0.6 else -1.0)
 		mat.set_shader_parameter("motion", 0.5 + randf() * 0.5)
 		mat.set_shader_parameter("gait", float(cfg["gait"]) * 0.5)
+		mat.set_shader_parameter("pixel_on", 1.0 if EraBook.id() == "pixel" else 0.0)
 		mat.set_shader_parameter("px", height / maxf(q.x, q.y))
 		mat.set_shader_parameter("texel", Vector2(1.0 / tex.get_width(), 1.0 / tex.get_height()))
 		mat.set_shader_parameter("grid", Vector2(SpriteGenerator.FRAMES, SpriteGenerator.CELLS))

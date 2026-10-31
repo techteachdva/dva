@@ -103,10 +103,23 @@ const ONE: Dictionary = {
 }
 
 static func one(id: String) -> String:
+	var named := EraBook.one_for(id)
+	if named != "":
+		return named
 	return str(ONE.get(id, id))
 
 static func label(id: String) -> String:
+	var named := EraBook.label_for(id)
+	if named != "":
+		return named
 	return str(row(id).get("label", id.capitalize()))
+
+# Player-facing plural. plural() stays the census key and must not change with the era.
+static func spoken(id: String) -> String:
+	var named := EraBook.spoken_for(id)
+	if named != "":
+		return named
+	return plural(id)
 
 static func group_of(id: String) -> String:
 	return str(row(id).get("group", ""))

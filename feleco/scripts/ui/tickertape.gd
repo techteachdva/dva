@@ -556,6 +556,9 @@ func _flavor_wound(attacker: String, target: String, pos: Vector3 = Vector3.ZERO
 const SPECIES_WORDS: Dictionary = {"lion": "mountain lion", "goat": "mountain goat", "spore": "mushroom"}
 
 func _species_word(species: String) -> String:
+	var named := EraBook.one_for(species if species != "spore" else "mushroom")
+	if named != "":
+		return named
 	return SPECIES_WORDS.get(species, species)
 
 func _flavor_settlement() -> String:

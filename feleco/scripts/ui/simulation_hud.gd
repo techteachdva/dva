@@ -77,6 +77,7 @@ func _ready() -> void:
 	$BottomBar/Speed5.pressed.connect(func() -> void: Engine.time_scale = Clock.SPEEDS[2])
 	$BottomBar/Speed5.text = "%dx" % int(Clock.SPEEDS[2])
 	_build_power_tray()
+	$TopLeft/VBox/WizardCount.text = "%s  0" % ["Shamans" if EraBook.id() == "lost" else "Wizards"]
 	Engine.time_scale = Clock.DEFAULT_SPEED
 	$BottomBar/Pause.pressed.connect(_toggle_pause)
 	$BottomBar/EndEarly.pressed.connect(_end_early)
@@ -450,6 +451,10 @@ func _update_powerup_buttons() -> void:
 		btn.text = label if free else ("%s  %d" % [label, count] if count > 0 else "%s  %d EP" % [label, price])
 		btn.disabled = (not free) and count <= 0 and int(gc.eco_points) < price
 		var tip: String = POWER_TIPS.get(btn_name, "")
+		if btn_name == "Feast":
+			tip = EraBook.feast_tip()
+		elif btn_name == "RotRain":
+			tip = EraBook.rot_tip()
 		# Say what it does and which bets it pushes; glow if it helps yours.
 		if Schemes.POWERS.has(pid):
 			tip = "%s\n%s" % [tip, Schemes.POWERS[pid][0]] if not tip.is_empty() else String(Schemes.POWERS[pid][0])
@@ -645,7 +650,7 @@ func _build_release_row() -> Control:
 	_pack_btn.pressed.connect(func() -> void:
 		_placing = String(_pack_pick.get_item_metadata(_pack_pick.selected))
 		_tray.visible = false
-		FXManager.show_dramatic_text(Vector3.ZERO, "Click the valley to release ten %s" % SpeciesDB.plural(_placing), FelecoUiScript.GOLD))
+		FXManager.show_dramatic_text(Vector3.ZERO, "Click the valley to release ten %s" % SpeciesDB.spoken(_placing), FelecoUiScript.GOLD))
 	row.add_child(_pack_btn)
 	_refresh_pack()
 	return row
@@ -658,7 +663,7 @@ func _refresh_pack() -> void:
 	var price: int = _pack_price(sp)
 	_pack_btn.text = "Place (%d EP)" % price
 	_pack_btn.disabled = gc == null or int(gc.eco_points) < price
-	_pack_btn.tooltip_text = "Pay %d EP, then click anywhere in the valley to release ten %s there." % [price, SpeciesDB.plural(sp)]
+	_pack_btn.tooltip_text = "Pay %d EP, then click anywhere in the valley to release ten %s there." % [price, SpeciesDB.spoken(sp)]
 
 # Where the pointer meets the ground (the plane, then refined on the terrain).
 func _ground_under(screen: Vector2) -> Vector3:
@@ -702,8 +707,8 @@ func _release_pack(at: Vector3) -> void:
 			ag.set_state(ag._current_state)
 			made += 1
 	FXManager.spawn_birth_particles(_director.dry_land(at) + Vector3.UP, FelecoUiScript.GOLD)
-	FXManager.show_dramatic_text(_director.dry_land(at) + Vector3.UP * 2.0, "%d %s released!" % [made, SpeciesDB.plural(sp)], FelecoUiScript.GOLD)
-	_director.chronicle.emit("You release %d %s into the valley." % [made, SpeciesDB.plural(sp)])
+	FXManager.show_dramatic_text(_director.dry_land(at) + Vector3.UP * 2.0, "%d %s released!" % [made, SpeciesDB.spoken(sp)], FelecoUiScript.GOLD)
+	_director.chronicle.emit("You release %d %s into the valley." % [made, SpeciesDB.spoken(sp)])
 	_refresh_pack()
 	_update_powerup_buttons()
 
@@ -1174,24 +1179,24 @@ func _species_rules(species: String) -> String:
 func _on_pop_changed(faction: String, count: int) -> void:
 	match faction:
 		"sheep":
-			$TopLeft/VBox/SheepCount.text = "Sheep  %d" % count
+			$TopLeft/VBox/SheepCount.text = "%s  %d" % [SpeciesDB.label("sheep"), count]
 		"wolves":
-			$TopLeft/VBox/WolfCount.text = "Wolves  %d" % count
+			$TopLeft/VBox/WolfCount.text = "%s  %d" % [SpeciesDB.label("wolf"), count]
 		"humans":
 			var tribes: int = _director.tribe_count() if _director != null else 0
-			$TopLeft/VBox/HumanCount.text = "Humans  %d   · %d tribe%s" % [count, tribes, "" if tribes == 1 else "s"]
+			$TopLeft/VBox/HumanCount.text = "%s  %d   · %d tribe%s" % [SpeciesDB.label("human"), count, tribes, "" if tribes == 1 else "s"]
 		"mushrooms":
 			pass
 		"falcons":
-			$TopLeft/VBox/FalconCount.text = "Falcons  %d" % count
+			$TopLeft/VBox/FalconCount.text = "%s  %d" % [SpeciesDB.label("falcon"), count]
 		"robins":
-			$TopLeft/VBox/RobinCount.text = "Robins  %d" % count
+			$TopLeft/VBox/RobinCount.text = "%s  %d" % [SpeciesDB.label("robin"), count]
 		"boars":
-			$TopLeft/VBox/BoarCount.text = "Boars  %d" % count
+			$TopLeft/VBox/BoarCount.text = "%s  %d" % [SpeciesDB.label("boar"), count]
 		"rabbits":
-			$TopLeft/VBox/RabbitCount.text = "Rabbits  %d" % count
+			$TopLeft/VBox/RabbitCount.text = "%s  %d" % [SpeciesDB.label("rabbit"), count]
 		"wizards":
-			$TopLeft/VBox/WizardCount.text = "Wizards  %d" % count
+			$TopLeft/VBox/WizardCount.text = "%s  %d" % ["Shamans" if EraBook.id() == "lost" else "Wizards", count]
 		"builders":
 			$TopLeft/VBox/BuilderCount.text = "Builders  %d" % count
 
@@ -1215,8 +1220,8 @@ func _on_time_updated(days_remaining: float) -> void:
 			part = "Dusk" if into > 0.25 and into < 0.75 else "Dawn"
 	$TopLeft/VBox/TimerLabel.text = "Day %d of %d  ·  %s  ·  %s" % [mini(day_n, of_n), of_n, season, part]
 	if _director != null:
-		$TopLeft/VBox/WormCount.text = "Worms  %d" % _director._active_worms.size()
-		$TopLeft/VBox/FishCount.text = "Fish  %d" % _director._active_fish.size()
+		$TopLeft/VBox/WormCount.text = "%s  %d" % [SpeciesDB.label("worm"), _director._active_worms.size()]
+		$TopLeft/VBox/FishCount.text = "%s  %d" % [SpeciesDB.label("fish"), _director._active_fish.size()]
 		for id: String in _extra_counts.keys():
 			(_extra_counts[id] as Label).text = "%s  %d" % [SpeciesDB.label(id), _director.get_species_count(id)]
 		_update_breakdown()

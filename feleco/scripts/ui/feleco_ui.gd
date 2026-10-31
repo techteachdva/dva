@@ -51,7 +51,7 @@ static func species_texture(species: String, role: int = 0, female: bool = false
 		return _species_tex["tuft"]
 	if species == "mushroom" and role == 0:
 		role = 1  # cell 0 is the drifting spore; menus show the cap
-	var key := "%s:%d:%s" % [species, role, female]
+	var key := "%s:%d:%s:%s" % [species, role, female, EraBook.id()]
 	if not _species_tex.has(key):
 		var atlas := AtlasTexture.new()
 		atlas.atlas = SpriteGenerator.texture_for(species)
