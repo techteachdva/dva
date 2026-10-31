@@ -130,6 +130,8 @@ var _footer: HBoxContainer
 # The creature the web is zoomed in on ("" = the whole web), and the one the
 # zoom is anchored on while it eases back out.
 var _focus: String = ""
+var _mind_btn: Button
+var _mind: MindPage = null
 var _anchor: String = ""
 var _zoom: float = 0.0
 var _zoom_tween: Tween
@@ -270,6 +272,13 @@ func _build() -> void:
 	note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_footer.add_child(note)
 
+	_mind_btn = Button.new()
+	_mind_btn.text = "How Traits, Memories, and Dreams work"
+	_mind_btn.theme_type_variation = "PrimaryButton"
+	_mind_btn.size = Vector2(380, 46)
+	_mind_btn.position = Vector2(DESIGN.x * 0.5 - 190.0, DESIGN.y + 2.0)
+	_mind_btn.pressed.connect(open_mind_page)
+	_board.add_child(_mind_btn)
 	if show_play:
 		var play := Button.new()
 		play.text = "Enter the valley"
@@ -775,6 +784,21 @@ class RotIcon extends Control:
 func _name_of(key: String) -> String:
 	var named := EraBook.label_for(key)
 	return named if named != "" else String(INFO.get(key, [key])[0])
+
+func open_mind_page() -> void:
+	if _mind == null or not is_instance_valid(_mind):
+		_mind = MindPage.new()
+		add_child(_mind)
+
+func close_mind_page() -> void:
+	if _mind != null and is_instance_valid(_mind):
+		Glass.close(_mind, true)
+
+func mind_button_spot() -> Vector2:
+	return _mind_btn.get_global_rect().get_center()
+
+func screen_spot(species: String) -> Vector2:
+	return _content.get_global_transform() * (_node_centers[species] as Vector2)
 
 # Clicking the creature in focus again: its Markov model, full panel.
 func _open_graph(species: String) -> void:

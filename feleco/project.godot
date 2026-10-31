@@ -15,8 +15,10 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Feleco"
-config/version="6.1"
-run/main_scene="res://scenes/ui/main_menu.tscn"
+config/version="7.0"
+run/main_scene="res://scenes/ui/splash.tscn"
+boot_splash/show_image=false
+boot_splash/bg_color=Color(0.071, 0.098, 0.082, 1)
 config/features=PackedStringArray("4.6", "Mobile")
 
 [autoload]
@@ -25,6 +27,9 @@ GameConfig="*res://scripts/autoloads/game_config.gd"
 EraPacks="*res://scripts/autoloads/era_packs.gd"
 FXManager="*res://scripts/effects/fx_manager.gd"
 Music="*res://scripts/autoloads/music.gd"
+Sfx="*res://scripts/autoloads/sfx.gd"
+Sparkle="*res://scripts/autoloads/sparkle.gd"
+Glass="*res://scripts/autoloads/glass.gd"
 
 [display]
 

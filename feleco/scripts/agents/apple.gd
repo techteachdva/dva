@@ -221,6 +221,8 @@ func _spawn_seed() -> void:
 
 func eat(eater: Variant = null) -> float:
 	queue_free()
+	if eater is MarkovAgent:
+		(eater as MarkovAgent).mind().note("eat_pineapple" if kind == "pineapple" else "full")
 	var counter := get_parent()
 	while counter != null and not counter is SimulationDirector:
 		counter = counter.get_parent()

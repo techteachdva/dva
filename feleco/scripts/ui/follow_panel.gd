@@ -137,6 +137,14 @@ func _ready() -> void:
 	_control_btn.pressed.connect(_toggle_control)
 	_control_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(_control_btn)
+	var vault := Button.new()
+	vault.text = "Vault"
+	vault.theme_type_variation = "GhostButton"
+	vault.custom_minimum_size = Vector2(76, 40)
+	vault.tooltip_text = "Read its tags, dream and memories."
+	vault.pressed.connect(_show_vault)
+	vault.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(vault)
 	_mine_btn = Button.new()
 	_mine_btn.text = "Make Mine"
 	_mine_btn.theme_type_variation = "PrimaryButton"
@@ -357,6 +365,22 @@ func _on_rampage() -> void:
 	_rampage_bar.visible = true
 	agent.rampage_ended.connect(_on_rampage_ended, CONNECT_ONE_SHOT)
 
+func _show_vault() -> void:
+	if agent == null or not is_instance_valid(agent):
+		return
+	var pop := AcceptDialog.new()
+	pop.title = "%s's Vault" % agent.display_name
+	pop.theme = FelecoUiScript.theme()
+	var text := RichTextLabel.new()
+	text.bbcode_enabled = true
+	text.custom_minimum_size = Vector2(640, 420)
+	text.text = agent.mind().report()
+	pop.add_child(text)
+	add_child(pop)
+	pop.confirmed.connect(pop.queue_free)
+	pop.canceled.connect(pop.queue_free)
+	pop.popup_centered()
+
 # Take Control: the same steering as a rampage, for as long as you like.
 func _toggle_control() -> void:
 	if driving:
@@ -370,6 +394,8 @@ func _toggle_control() -> void:
 	var cam := _camera()
 	if cam != null:
 		cam.set("locked", true)
+		# The camera rides along for as long as you hold the reins.
+		cam.call("follow", agent)
 	_clear_view_for_driving()
 
 # Every window steps aside so you can see where you are going. A slim bar
@@ -464,6 +490,9 @@ func _process(delta: float) -> void:
 	if driving:
 		if agent != null and is_instance_valid(agent) and not agent.is_queued_for_deletion():
 			_steer_rampage()
+			var c := _camera()
+			if c != null and c.call("following") != agent:
+				c.call("follow", agent)
 			var space: bool = Input.is_key_pressed(KEY_SPACE)
 			if space and not _space_held and agent is SeasonalSprite:
 				(agent as SeasonalSprite).signature_power()

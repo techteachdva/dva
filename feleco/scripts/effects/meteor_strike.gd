@@ -42,6 +42,7 @@ var _pool: MeshInstance3D
 var _aura: MeshInstance3D
 
 func _ready() -> void:
+	Sfx.play("whistle", -6.0)
 	top_level = true
 	global_position = Vector3.ZERO
 	_start = land + Vector3(15.0, 34.0, -11.0)
@@ -212,6 +213,7 @@ func _after(a: float, delta: float) -> void:
 
 func _impact() -> void:
 	_hit = true
+	Sfx.play("crash", -2.0)
 	_rock.rotation = Vector3.ZERO
 	_rock.position = _rest()
 	# Hinge across the view, so the rock opens to left and right of the camera.
@@ -276,6 +278,8 @@ func _spill() -> void:
 		var r: float = randf_range(2.8, CRATER_RADIUS - 1.0)
 		var to := land + Vector3(cos(ang) * r, 0.0, sin(ang) * r)
 		to.y = sim.ground_height(to.x, to.z) + 0.1
+		if i == 0:
+			Sfx.play("chime", -4.0)
 		var fruit := Starfruit.new()
 		fruit.launch(land + Vector3.UP * 1.6, to)
 		sim.add_child(fruit)

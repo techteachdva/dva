@@ -45,9 +45,9 @@ const FIGHTERS: Dictionary = {
 # How hard the computer fights. level scales how often it blocks, punishes
 # and evolves; react is its thinking time in seconds.
 const DIFFICULTY: Array = [
-	["cub", "Cub", "Rivals are slow to block and gentle. A good first climb.", 0.22, 0.7],
-	["hunter", "Hunter", "Rivals block, punish and evolve.", 0.5, 0.45],
-	["dire", "Dire", "Rivals read you like a book. For champions.", 0.78, 0.32],
+	["cub", "Easy", "Rivals are slow to block and gentle. A good first climb.", 0.16, 0.8],
+	["hunter", "Regular", "Rivals block, punish and evolve.", 0.7, 0.34],
+	["dire", "Dire", "Rivals read you like a book. For champions.", 1.1, 0.14],
 ]
 # Three-input combos: the last three inputs (directions relative to facing:
 # D down, F forward, B back; J light, K heavy, L special) within COMBO_WINDOW
@@ -99,12 +99,28 @@ class Fighter:
 	var plan: String = ""
 	var plan_t: float = 0.0
 	var reacted: bool = false
+	var rotation: float = 0.0
+	# Springy motion: squash on landings and hits, recoil away from a blow.
+	var squash: float = 0.0
+	var recoil: float = 0.0
 	func dmg_mult() -> float:
 		return 1.5 if dire > 0.0 else 1.0
 	func scale() -> float:
 		return 1.35 if dire > 0.0 else 1.0
 
 var _p1: Fighter
+# The level: plains, riverbank (rising, falling water) or mountains.
+var _biome: String = "plains"
+var _plats: Array = []
+var _water_y: float = 640.0
+var _fruits: Array = []
+var _fruit_t: float = 3.0
+const WATER_X := Vector2(380, 900)
+const LEVELS: Dictionary = {
+	"plains": [Rect2(190, 545, 130, 16), Rect2(960, 545, 130, 16), Rect2(30, 410, 210, 18), Rect2(1040, 410, 210, 18)],
+	"riverbank": [Rect2(90, 500, 180, 18), Rect2(1010, 500, 180, 18), Rect2(545, 455, 190, 18)],
+	"mountains": [Rect2(70, 445, 170, 16), Rect2(1040, 445, 170, 16), Rect2(120, 285, 150, 16), Rect2(1010, 285, 150, 16), Rect2(290, 365, 700, 16), Rect2(545, 190, 190, 16)],
+}
 var _p2: Fighter
 # Each rung: [species, kind] where kind is 0 rival, 1 Dire rival, 2 champion.
 var _ladder: Array = []
@@ -131,6 +147,9 @@ var _select: Control
 var _keys_prev: Dictionary = {}
 var _portraits: Array[Control] = []
 var _difficulty: int = 1
+# -1 follows the ladder through all three levels.
+var _level_pick: int = -1
+var _level_btns: Array[Button] = []
 var _diff_btns: Array[Button] = []
 # This climb's tally.
 var _stats: Dictionary = {}
@@ -227,6 +246,24 @@ func _show_select() -> void:
 		b.custom_minimum_size = Vector2(0, 50)
 		b.pressed.connect(func() -> void: _start_ladder(sp))
 		card.add_child(b)
+	var lrow := HBoxContainer.new()
+	lrow.alignment = BoxContainer.ALIGNMENT_CENTER
+	lrow.add_theme_constant_override("separation", 10)
+	col.add_child(lrow)
+	lrow.add_child(FelecoUiScript.label("Level:", 17, FelecoUiScript.CREAM))
+	_level_btns.clear()
+	for i: int in 4:
+		var lb := Button.new()
+		lb.text = (["All three", "Plains", "Riverbank", "Mountains"] as Array)[i]
+		lb.custom_minimum_size = Vector2(130, 44)
+		lb.theme_type_variation = "PrimaryButton" if i - 1 == _level_pick else "TouchButton"
+		var which: int = i - 1
+		lb.pressed.connect(func() -> void:
+			_level_pick = which
+			for k: int in _level_btns.size():
+				_level_btns[k].theme_type_variation = "PrimaryButton" if k - 1 == which else "TouchButton")
+		lrow.add_child(lb)
+		_level_btns.append(lb)
 	# Difficulty: how sharp the rivals are.
 	var drow := HBoxContainer.new()
 	drow.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -325,8 +362,12 @@ func _start_match() -> void:
 	_start_round()
 
 func _start_round() -> void:
+	_biome = (["plains", "riverbank", "mountains"] as Array)[_stage % 3 if _level_pick < 0 else _level_pick]
+	_plats = LEVELS[_biome]
+	_fruits.clear()
 	for f: Fighter in [_p1, _p2]:
 		f.hp = 100.0
+		f.rotation = 0.0
 		f.vel = Vector2.ZERO
 		f.state = "idle"
 		f.dire = 0.0
@@ -562,7 +603,7 @@ func _evolve(f: Fighter) -> void:
 # falcons hop about and stoop from above.
 func _cpu_input(f: Fighter, foe: Fighter, delta: float) -> void:
 	var d: Array = _diff()
-	var level: float = float(d[3]) + 0.08 * _stage + (0.1 if _rival_kind() == 2 else 0.0)
+	var level: float = float(f.get_meta("level", float(d[3]) + 0.08 * _stage + (0.1 if _rival_kind() == 2 else 0.0)))
 	var react: float = float(d[4])
 	f.think -= delta
 	f.plan_t -= delta
@@ -581,6 +622,10 @@ func _cpu_input(f: Fighter, foe: Fighter, delta: float) -> void:
 	var special := false
 	if f.state in ["hurt", "ko", "evolve", "down", "taunt"]:
 		_control(f, 0.0, false, false, false, false, false, delta)
+		return
+	# Up after a rival who has climbed to a platform.
+	if f.on_ground and foe.pos.y < f.pos.y - 90.0 and adist < 300.0 and randf() < level * delta * 4.0:
+		_control(f, toward, true, false, false, false, false, delta)
 		return
 	# The comeback: when the player is clearly losing, the rival eases off,
 	# fights sloppier, and now and then stops to show off (a taunt that
@@ -730,6 +775,9 @@ func _dominating(player: Fighter, cpu: Fighter) -> bool:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	var k := event as InputEventKey
+	# A touch laptop with a keyboard in use doesn't need the on-screen pad.
+	if k != null and k.pressed and _pad != null:
+		_pad.visible = false
 	if k == null or not k.pressed or k.echo or k.physical_keycode != KEY_ESCAPE:
 		return
 	match _mode:
@@ -845,6 +893,7 @@ func _process(real_delta: float) -> void:
 	if _mode != "fight":
 		return
 	_timer -= delta
+	_level_tick(delta)
 	for f: Fighter in [_p1, _p2]:
 		for i in f.inputs:
 			i[1] += delta
@@ -878,14 +927,79 @@ func _process(real_delta: float) -> void:
 	if _p1.hp <= 0.0 or _p2.hp <= 0.0 or _timer <= 0.0:
 		_end_round()
 
-func _physics(f: Fighter, delta: float) -> void:
+# Rising and falling river; fruit from the plains trees, eaten for health.
+func _level_tick(delta: float) -> void:
+	if _biome == "riverbank":
+		var was: float = _water_y
+		_water_y = 575.0 + 65.0 * sin(Time.get_ticks_msec() * 0.00035)
+		if was > 560.0 and _water_y <= 560.0:
+			_word(Vector2(640, 200), "FLOOD!", Color(0.5, 0.8, 1.0))
+			Sfx.play("splash", -8.0)
+		elif was < 630.0 and _water_y >= 630.0:
+			_word(Vector2(640, 200), "DROUGHT!", Color(1.0, 0.7, 0.3))
+	elif _biome == "plains":
+		_fruit_t -= delta
+		if _fruit_t <= 0.0 and _fruits.size() < 4:
+			_fruit_t = randf_range(4.0, 7.0)
+			var x: float = [randf_range(60, 220), randf_range(1060, 1220), 255.0, 1025.0].pick_random()
+			_fruits.append([Vector2(x, 400.0 if x < 240.0 or x > 1040.0 else 535.0), 0.0, x == 255.0 or x == 1025.0])
+	for fr: Array in _fruits.duplicate():
+		fr[1] = float(fr[1]) + GRAVITY * 0.4 * delta
+		var at: Vector2 = fr[0]
+		at.y = minf(at.y + float(fr[1]) * delta, GROUND - 10.0)
+		fr[0] = at
+		for f: Fighter in [_p1, _p2]:
+			if f.hp > 0.0 and f.pos.distance_to(at + Vector2(0, 30)) < 70.0:
+				f.hp = minf(f.hp + 8.0, 100.0)
+				_word(at + Vector2(0, -40), "+8", Color(0.6, 1.0, 0.5))
+				Juice.sfx(self, "power", 1.5, -10.0)
+				_fruits.erase(fr)
+				break
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch and _pad != null:
+		_pad.visible = true
+
+func _in_water(f: Fighter) -> bool:
+	return _biome == "riverbank" and f.pos.x > WATER_X.x and f.pos.x < WATER_X.y and f.pos.y > _water_y
+
+# Knocked out: a limp ball on strings, rebounding off every wall of the window.
+func _ragdoll(f: Fighter, delta: float) -> void:
 	f.state_t += delta
+	f.vel.y += GRAVITY * 0.8 * delta
+	f.pos += f.vel * delta
+	f.rotation += f.vel.x * delta * 0.012
+	if f.pos.x < 50.0 or f.pos.x > ARENA.x - 50.0:
+		f.pos.x = clampf(f.pos.x, 50.0, ARENA.x - 50.0)
+		f.vel.x *= -0.88
+		Sfx.play("fall", -14.0, randf_range(1.0, 1.5))
+	if f.pos.y < 110.0:
+		f.pos.y = 110.0
+		f.vel.y = absf(f.vel.y) * 0.85
+	if f.pos.y > GROUND:
+		f.pos.y = GROUND
+		f.vel.y = -absf(f.vel.y) * 0.78
+		f.vel.x *= 0.96
+		if absf(f.vel.y) > 120.0:
+			Sfx.play("fall", -14.0, randf_range(0.9, 1.4))
+
+func _physics(f: Fighter, delta: float) -> void:
+	if f.state == "ko":
+		_ragdoll(f, delta)
+		return
+	f.state_t += delta
+	f.squash = move_toward(f.squash, 0.0, delta * 4.0)
+	f.recoil = move_toward(f.recoil, 0.0, delta * 5.0)
+	var airborne: bool = not f.on_ground
 	f.vel.y += GRAVITY * delta
 	# The falcon floats down; the Dive Bomb comes down hard.
 	if f.species == "falcon" and f.vel.y > 0.0 and f.state != "special":
 		f.vel.y = minf(f.vel.y, 520.0)
 	var prev_y: float = f.pos.y
-	f.pos += f.vel * delta
+	var wet: bool = _in_water(f)
+	if wet:
+		f.vel.y = maxf(f.vel.y, -560.0)
+	f.pos += f.vel * delta * (0.55 if wet else 1.0)
 	f.on_ground = false
 	if f.pos.y >= GROUND:
 		f.pos.y = GROUND
@@ -893,11 +1007,14 @@ func _physics(f: Fighter, delta: float) -> void:
 		f.on_ground = true
 	elif f.vel.y >= 0.0:
 		# One-way log platforms: land on them from above.
-		for p: Rect2 in PLATFORMS:
+		for p: Rect2 in _plats:
 			if prev_y <= p.position.y and f.pos.y >= p.position.y and f.pos.x > p.position.x and f.pos.x < p.end.x:
 				f.pos.y = p.position.y
 				f.vel.y = 0.0
 				f.on_ground = true
+	if airborne and f.on_ground:
+		f.squash = 0.5
+		_dust(f.pos)
 	f.pos.x = clampf(f.pos.x, 60.0, ARENA.x - 60.0)
 	if f.on_ground and f.state not in ATTACKS:
 		f.vel.x = move_toward(f.vel.x, 0.0, 3000.0 * delta) if f.state in ["hurt", "ko", "down"] else f.vel.x
@@ -975,6 +1092,10 @@ func _hit(f: Fighter, foe: Fighter, dmg: float, knock: float) -> void:
 	var blocked: bool = foe.blocking and signf(f.pos.x - foe.pos.x) == foe.facing and f.state != "sweep"
 	if blocked:
 		Juice.sfx(self, "block")
+		Sfx.play("fall", -12.0, 1.6)
+		_jx.ring(foe.pos + Vector2(foe.facing * 50.0, -90), Color(0.6, 0.85, 1.0), 95.0, 0.3)
+		foe.squash = 0.35
+		foe.recoil = 0.5
 		dmg *= 0.2
 		knock *= 0.4
 		_word(foe.pos + Vector2(0, -150), "BLOCK!", Color(0.7, 0.85, 1.0))
@@ -985,7 +1106,11 @@ func _hit(f: Fighter, foe: Fighter, dmg: float, knock: float) -> void:
 	else:
 		foe.state = "hurt"
 		foe.state_t = 0.0
+		Sfx.play(["punch1", "punch2", "punch3"].pick_random(), -5.0)
 		foe.flash = 0.15
+		foe.recoil = 1.0
+		foe.squash = 0.7
+		_jx.ring(foe.pos + Vector2(0, -90), Color(1.0, 0.85, 0.4), 70.0 + dmg * 4.0, 0.28)
 		Juice.sfx(self, "bighit" if dmg >= 14.0 or f.state in ["slam", "finisher", "rising", "sweep"] else "hit", randf_range(0.9, 1.15), -6.0)
 		f.combo += 1
 		foe.combo = 0
@@ -1008,6 +1133,8 @@ func _hit(f: Fighter, foe: Fighter, dmg: float, knock: float) -> void:
 			f.combo = 0
 			_word(foe.pos + Vector2(0, -250), "KNOCKDOWN!", Color(1.0, 0.75, 0.3))
 			_shake = maxf(_shake, 0.4)
+	if f == _p2:
+		dmg *= ([0.7, 1.1, 1.5] as Array)[_difficulty]
 	foe.hp = maxf(foe.hp - dmg, 0.0)
 	foe.vel = Vector2(f.facing * knock, -knock * 0.45)
 	if f.state == "rising" and not blocked:
@@ -1024,7 +1151,10 @@ func _hit(f: Fighter, foe: Fighter, dmg: float, knock: float) -> void:
 		Juice.sfx(self, "bighit", 0.7)
 		_jx.flash(Color(1, 1, 1, 0.55))
 		foe.state = "ko"
+		foe.state_t = 0.0
 		foe.stagger = 0.0
+		foe.vel = Vector2(f.facing * 1500.0, -1250.0)
+		Sfx.play("bell", -6.0)
 		_slowmo = 1.2
 
 func _dust(at: Vector2) -> void:
@@ -1033,6 +1163,22 @@ func _dust(at: Vector2) -> void:
 
 func _word(at: Vector2, text: String, col: Color) -> void:
 	_words.append([at, text, 0.9, col])
+
+# Limbs flail on strings round a spinning body, never twice the same.
+func _draw_ragdoll(f: Fighter, u: float) -> void:
+	var t: float = f.state_t * 30.0
+	var at := Vector2(f.pos.x, f.pos.y - 3.0 * u)
+	draw_set_transform_matrix(_xform() * Transform2D(f.rotation, at))
+	FighterArt.set_base(self, _xform() * Transform2D(f.rotation, Vector2(f.scale(), f.scale()), 0.0, at + Vector2(0, 4.0 * u)))
+	FighterArt.paint(self, f.species, "hurt", f.state_t, u, Color.WHITE)
+	draw_set_transform_matrix(_xform() * Transform2D(f.rotation, at))
+	for i: int in 4:
+		var a: float = TAU * i / 4.0 + sin(t * (0.7 + i * 0.23)) * 1.4
+		var knee: Vector2 = Vector2.from_angle(a) * u * (2.0 + sin(t + i))
+		var foot: Vector2 = knee + Vector2.from_angle(a + cos(t * 1.3 + i) * 2.0) * u * 2.2
+		draw_polyline(PackedVector2Array([Vector2.ZERO, knee, foot]), Color(0.2, 0.15, 0.12), u * 0.45, true)
+		draw_circle(foot, u * 0.4, Color(0.2, 0.15, 0.12))
+	draw_set_transform_matrix(_xform())
 
 func _end_round() -> void:
 	_mode = "roundover"
@@ -1167,33 +1313,106 @@ func _draw() -> void:
 		return
 	var xf := _xform()
 	draw_set_transform_matrix(xf)
-	# Sky, mountains, meadow.
-	draw_rect(Rect2(0, 0, ARENA.x, GROUND), Color(0.45, 0.66, 0.85))
-	draw_rect(Rect2(0, GROUND * 0.55, ARENA.x, GROUND * 0.45), Color(0.6, 0.76, 0.88))
-	draw_colored_polygon(PackedVector2Array([Vector2(0, 470), Vector2(180, 250), Vector2(330, 400), Vector2(520, 200), Vector2(720, 420), Vector2(900, 260), Vector2(1100, 380), Vector2(1280, 230), Vector2(1280, 520), Vector2(0, 520)]), Color(0.42, 0.45, 0.52))
-	draw_colored_polygon(PackedVector2Array([Vector2(520, 200), Vector2(560, 240), Vector2(490, 240)]), Color(0.95, 0.96, 1.0))
-	draw_rect(Rect2(0, 520, ARENA.x, 200), Color(0.36, 0.58, 0.27))
-	draw_rect(Rect2(0, GROUND, ARENA.x, ARENA.y - GROUND), Color(0.28, 0.46, 0.2))
-	for p: Rect2 in PLATFORMS:
-		draw_rect(p, Color(0.45, 0.3, 0.17))
-		draw_rect(Rect2(p.position, Vector2(p.size.x, 6)), Color(0.58, 0.4, 0.24))
+	_draw_level()
 	for f: Fighter in [_p1, _p2]:
 		_draw_fighter(f)
 	for s: Array in _sparks:
 		draw_circle(s[0], 5.0 * float(s[2]) / 0.4 + 1.0, s[3])
 	_jx.draw(self)
-	var font := FelecoUiScript.font("heading")
+	var hfont := FelecoUiScript.font("heading")
 	for w: Array in _words:
-		draw_string_outline(font, (w[0] as Vector2) - Vector2(120, 0), w[1], HORIZONTAL_ALIGNMENT_CENTER, 240, 34, 8, Color(0, 0, 0, clampf(w[2], 0, 1)))
-		draw_string(font, (w[0] as Vector2) - Vector2(120, 0), w[1], HORIZONTAL_ALIGNMENT_CENTER, 240, 34, Color(w[3], clampf(w[2], 0, 1)))
-	_draw_hud(font)
+		draw_string_outline(hfont, (w[0] as Vector2) - Vector2(120, 0), w[1], HORIZONTAL_ALIGNMENT_CENTER, 240, 34, 8, Color(0.1, 0.08, 0.06, clampf(float(w[2]) * 2.0, 0.0, 1.0)))
+		draw_string(hfont, (w[0] as Vector2) - Vector2(120, 0), w[1], HORIZONTAL_ALIGNMENT_CENTER, 240, 34, w[3])
+	_draw_hud(hfont)
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 	_jx.draw_flash(self, Rect2(Vector2.ZERO, size))
+
+func _pine(x: float, base: float, tall: float) -> void:
+	draw_rect(Rect2(x - 14, base - tall, 28, tall), Color(0.3, 0.2, 0.12))
+	for i: int in 5:
+		var y: float = base - tall * (0.35 + i * 0.16)
+		var w: float = 130.0 - i * 20.0
+		draw_colored_polygon(PackedVector2Array([Vector2(x - w, y + 70), Vector2(x, y - 60), Vector2(x + w, y + 70)]), Color(0.13, 0.34 + i * 0.03, 0.2))
+
+func _leaf_tree(x: float) -> void:
+	draw_rect(Rect2(x - 20, 410, 40, GROUND - 410), Color(0.36, 0.23, 0.13))
+	for o: Vector3 in [Vector3(-70, 380, 80), Vector3(0, 340, 100), Vector3(70, 380, 80)]:
+		draw_circle(Vector2(x + o.x, o.y), o.z, Color(0.24, 0.5, 0.2))
+	for o: Vector2 in [Vector2(-50, 360), Vector2(20, 320), Vector2(60, 390)]:
+		draw_circle(Vector2(x, 0) + o, 9.0, Color(0.85, 0.15, 0.1))
+
+# Dressing: drifting clouds behind, rocks and grass catching the light in front.
+func _dress() -> void:
+	var t: float = Time.get_ticks_msec() * 0.001
+	for i: int in 5:
+		var x: float = fposmod(i * 310.0 + t * (10.0 + i * 3.0), ARENA.x + 300.0) - 150.0
+		var y: float = 60.0 + i * 34.0
+		for o: Vector3 in [Vector3(-46, 8, 30), Vector3(0, 0, 42), Vector3(50, 10, 28)]:
+			draw_circle(Vector2(x + o.x, y + o.y), o.z, Color(1, 1, 1, 0.75))
+	for i: int in 9:
+		var x2: float = 40.0 + i * 150.0
+		if _biome == "riverbank" and x2 > WATER_X.x and x2 < WATER_X.y:
+			continue
+		var r: float = 16.0 + (i * 7 % 13)
+		draw_circle(Vector2(x2, GROUND + 26.0), r, Color(0.3, 0.29, 0.28))
+		draw_circle(Vector2(x2 - r * 0.25, GROUND + 26.0 - r * 0.3), r * 0.6, Color(0.5, 0.49, 0.46))
+		for k: int in 5:
+			var sway: float = sin(t * 2.0 + i + k) * 5.0
+			draw_line(Vector2(x2 + 34.0 + k * 7.0, GROUND + 8.0), Vector2(x2 + 34.0 + k * 7.0 + sway, GROUND - 16.0), Color(0.2, 0.42, 0.18), 3.0)
+
+func _draw_level() -> void:
+	match _biome:
+		"mountains":
+			draw_rect(Rect2(0, 0, ARENA.x, ARENA.y), Color(0.56, 0.68, 0.84))
+			for m: Vector3 in [Vector3(200, 60, 360), Vector3(640, -20, 460), Vector3(1090, 70, 360)]:
+				draw_colored_polygon(PackedVector2Array([Vector2(m.x - m.z, GROUND), Vector2(m.x, m.y), Vector2(m.x + m.z, GROUND)]), Color(0.42, 0.45, 0.54))
+				draw_colored_polygon(PackedVector2Array([Vector2(m.x - 70, m.y + 90), Vector2(m.x, m.y), Vector2(m.x + 70, m.y + 90)]), Color(0.95, 0.96, 1.0))
+			draw_rect(Rect2(0, GROUND, ARENA.x, ARENA.y - GROUND), Color(0.36, 0.36, 0.4))
+			_pine(170.0, GROUND, 520.0)
+			_pine(1110.0, GROUND, 520.0)
+		"riverbank":
+			draw_rect(Rect2(0, 0, ARENA.x, ARENA.y), Color(0.55, 0.78, 0.9))
+			draw_rect(Rect2(0, GROUND, ARENA.x, ARENA.y - GROUND), Color(0.52, 0.42, 0.27))
+			draw_rect(Rect2(0, 500, WATER_X.x, GROUND - 500), Color(0.36, 0.58, 0.27))
+			draw_rect(Rect2(WATER_X.y, 500, ARENA.x - WATER_X.y, GROUND - 500), Color(0.36, 0.58, 0.27))
+			var t: float = Time.get_ticks_msec() * 0.003
+			var top := PackedVector2Array()
+			for i: int in 33:
+				var x: float = WATER_X.x - 40.0 + (WATER_X.y - WATER_X.x + 80.0) * i / 32.0
+				top.append(Vector2(x, _water_y + sin(t + i * 0.8) * 6.0))
+			top.append(Vector2(WATER_X.y + 40.0, ARENA.y))
+			top.append(Vector2(WATER_X.x - 40.0, ARENA.y))
+			draw_colored_polygon(top, Color(0.2, 0.5, 0.8, 0.72))
+		_:
+			draw_rect(Rect2(0, 0, ARENA.x, ARENA.y), Color(0.56, 0.8, 0.95))
+			draw_circle(Vector2(1020, 110), 54.0, Color(1.0, 0.92, 0.6))
+			draw_rect(Rect2(0, 500, ARENA.x, 120), Color(0.45, 0.68, 0.32))
+			draw_rect(Rect2(0, GROUND, ARENA.x, ARENA.y - GROUND), Color(0.3, 0.5, 0.2))
+			_leaf_tree(135.0)
+			_leaf_tree(1145.0)
+			for x: float in [255.0, 1025.0]:
+				draw_circle(Vector2(x, 575), 62.0, Color(0.2, 0.46, 0.22))
+				for o: Vector2 in [Vector2(-28, -24), Vector2(22, -30), Vector2(4, 8)]:
+					draw_circle(Vector2(x, 575) + o, 6.0, Color(0.5, 0.18, 0.62))
+	_dress()
+	for p: Rect2 in _plats:
+		var col: Color = Color(0.45, 0.3, 0.17) if _biome != "plains" else Color(0.25, 0.42, 0.2)
+		draw_rect(p, col)
+		draw_rect(Rect2(p.position, Vector2(p.size.x, 5)), col.lightened(0.2))
+	if _biome == "mountains":
+		for x: float in range(300, 985, 44):
+			draw_line(Vector2(x, 365), Vector2(x, 335), Color(0.5, 0.36, 0.2), 3.0)
+		draw_line(Vector2(290, 335), Vector2(990, 335), Color(0.6, 0.45, 0.28), 4.0)
+	for fr: Array in _fruits:
+		draw_circle(fr[0], 12.0, Color(0.5, 0.18, 0.62) if bool(fr[2]) else Color(0.88, 0.16, 0.1))
 
 func _draw_fighter(f: Fighter) -> void:
 	# Upright cartoon brawlers (FighterArt), all the same height.
 	var u: float = 23.0 * f.scale()
 	var w: float = 4.0 * u
+	if f.state == "ko":
+		_draw_ragdoll(f, u)
+		return
 	# A flat oval shadow on the ground under the fighter.
 	draw_set_transform_matrix(_xform() * Transform2D(0.0, Vector2(1.0, 0.18), 0.0, Vector2(f.pos.x, GROUND if f.pos.y > GROUND - 200.0 else f.pos.y)))
 	draw_circle(Vector2.ZERO, w * 0.6, Color(0, 0, 0, 0.25))
@@ -1220,6 +1439,12 @@ func _draw_fighter(f: Fighter) -> void:
 	if pose == "down":
 		pose = "ko"
 	var at: Vector2 = f.pos
+	# Anticipation and follow-through: draw back, drive in, settle.
+	var strike: Array = _attack_frame(f)
+	if not strike.is_empty():
+		var k: float = clampf(f.state_t / float(strike[2]), 0.0, 1.0)
+		at.x += f.facing * u * (sin(k * PI) * 2.2 - sin(minf(k * 4.0, 1.0) * PI) * 0.8)
+	at.x -= f.facing * f.recoil * u * 1.4
 	if pose == "taunt":
 		# Showing off: hops on the spot.
 		at.y -= absf(sin(f.state_t * 9.0)) * 22.0
@@ -1227,7 +1452,10 @@ func _draw_fighter(f: Fighter) -> void:
 	var a: Array = _attack_frame(f)
 	if not a.is_empty() and f.state_t >= float(a[0]) - 0.04 and f.state_t <= float(a[1]) + 0.06:
 		FighterArt.swoosh(self, _xform() * Transform2D(0.0, Vector2(f.facing, 1.0), 0.0, at), f.state, f.state_t, u, Color(1, 0.85, 0.3) if f.dire > 0.0 else Color(1, 1, 1))
-	FighterArt.set_base(self, _xform() * Transform2D(0.0, Vector2(f.facing, 1.0), 0.0, at))
+	var stretch: float = clampf(-f.vel.y / 3000.0, -0.12, 0.14) if not f.on_ground else 0.0
+	var squish: Vector2 = Vector2(1.0 + f.squash * 0.28 - stretch, 1.0 - f.squash * 0.3 + stretch)
+	var tilt: float = clampf(f.vel.x / 5000.0, -0.14, 0.14) - f.facing * f.recoil * 0.2
+	FighterArt.set_base(self, _xform() * Transform2D(tilt, Vector2(f.facing, 1.0) * squish, 0.0, at))
 	FighterArt.paint(self, f.species, pose, f.state_t if pose != "idle" else Time.get_ticks_msec() / 1000.0, u, tint, f.chain)
 	if f.blocking:
 		draw_arc(Vector2(2.2 * u, -8.0 * u), 2.4 * u, -1.3, 1.3, 16, Color(0.6, 0.85, 1.0, 0.8), 0.3 * u)

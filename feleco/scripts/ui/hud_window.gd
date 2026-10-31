@@ -33,7 +33,7 @@ static func dress(win: Control, title: String, col: Container = null, on_close: 
 		if on_close.is_valid():
 			on_close.call()
 		else:
-			win.visible = false)
+			win.get_node("/root/Glass").close(win))
 	bar.add_child(close)
 	col.add_child(bar)
 	col.move_child(bar, 0)
@@ -50,8 +50,10 @@ static func _bar_button(text: String, tip: String) -> Button:
 # Small square title-bar buttons; the theme's touch-size margins would make
 # every title bar as tall as a dock button.
 static func style_bar_button(b: Button) -> void:
-	b.custom_minimum_size = Vector2(28, 24)
-	b.add_theme_font_size_override("font_size", 14)
+	b.custom_minimum_size = Vector2(38, 32)
+	b.add_theme_font_size_override("font_size", 24)
+	# Keeps its own compact look; the Glass layer would pinch the glyph.
+	b.set_meta("glass", true)
 	b.focus_mode = Control.FOCUS_NONE
 	for state: String in ["normal", "hover", "pressed", "focus"]:
 		var sb := StyleBoxFlat.new()

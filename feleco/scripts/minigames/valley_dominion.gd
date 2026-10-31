@@ -1103,7 +1103,8 @@ func _draw() -> void:
 				var h: float = cell * lerpf(0.4, 0.72, clampf(float(_pop[i]) / 9.0, 0.0, 1.0))
 				var w: float = h * float(tex.get_width()) / float(tex.get_height())
 				var at := rect.position + Vector2(cell * 0.46, cell * 0.5)
-				draw_texture_rect(tex, Rect2(at - Vector2(w * 0.5, h * 0.5), Vector2(w, h)), false)
+				var bob: float = sin(Time.get_ticks_msec() * 0.005 + at.x) * h * 0.04
+				draw_texture_rect(tex, Rect2(at - Vector2(w * 0.5, h * 0.5 + bob), Vector2(w, h)), false)
 				if _hut[i]:
 					var hc := rect.position + Vector2(0.8, 0.26) * cell
 					draw_colored_polygon(PackedVector2Array([hc + Vector2(-0.14, 0) * cell, hc + Vector2(0, -0.14) * cell, hc + Vector2(0.14, 0) * cell]), Color(0.45, 0.3, 0.15))

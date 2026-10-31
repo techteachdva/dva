@@ -46,6 +46,8 @@ var _accum: float = 0.0
 # My Creature.
 var companion: MarkovAgent = null
 var _c_data: AgentData = null
+# Survives the creature: a freed companion can no longer say what it was.
+var _focus_sp: String = ""
 var _adopt_day: float = 0.0
 var xp: float = 0.0
 var level: int = 1
@@ -222,7 +224,7 @@ func is_companion(agent: Node) -> bool:
 
 # Park the creature in focus back in the roster.
 func _stash() -> void:
-	if companion == null:
+	if companion == null or not is_instance_valid(companion):
 		return
 	_roster[companion.species_id] = {"agent": companion, "data": _c_data, "xp": xp, "level": level, "points": points, "skills": skills.duplicate(), "adopt_day": _adopt_day}
 
@@ -231,6 +233,7 @@ func _focus(species: String) -> void:
 	if e.is_empty():
 		return
 	companion = e["agent"]
+	_focus_sp = species
 	_c_data = e["data"]
 	xp = float(e["xp"])
 	level = int(e["level"])
@@ -280,6 +283,15 @@ func _inherit(species: String, heir: MarkovAgent, was_name: String) -> void:
 		heir.add_child(aura)
 	FXManager.show_dramatic_text(heir.global_position, "%s carries on %s's line" % [heir.display_name, was_name], FelecoUiScript.GOLD)
 
+func _hud() -> Node:
+	if hud != null:
+		return hud
+	return get_tree().current_scene.find_child("SimulationHUD", true, false) if get_tree().current_scene != null else null
+
+func find_companion() -> void:
+	if _alive() and _hud() != null:
+		_hud().call("_start_follow", companion)
+
 func _refresh_chips() -> void:
 	if _chips == null:
 		return
@@ -318,6 +330,7 @@ func adopt(agent: MarkovAgent) -> void:
 			oa.get_node("Aura").queue_free()
 	_roster.erase(agent.species_id)
 	companion = agent
+	_focus_sp = agent.species_id
 	_c_data = agent._data
 	# The aura from the Greenhouse rides under your creature.
 	var aura := Cosmetics.make_aura(get_node_or_null("/root/GameConfig"))
@@ -375,6 +388,11 @@ func _build_creature_box() -> void:
 	_train_btn.tooltip_text = "Win minigames to level up and to train Speed, Toughness, Vitality, Senses and Charm."
 	_train_btn.pressed.connect(open_menu)
 	_creature_box.add_child(_train_btn)
+	var find_btn := Button.new()
+	find_btn.text = "Find"
+	find_btn.tooltip_text = "Fly to your creature."
+	find_btn.pressed.connect(find_companion)
+	_creature_box.add_child(find_btn)
 	var brand := Button.new()
 	brand.text = "Brand with magic"
 	brand.theme_type_variation = "GhostButton"
@@ -523,12 +541,16 @@ func _tick_creature(delta: float) -> void:
 				FXManager.show_dramatic_text(at, "Your %s's line has ended." % SpeciesDB.one(sp).capitalize().to_lower(), Color(0.85, 0.6, 0.5))
 			else:
 				_inherit(sp, heir, was)
-			if companion != null and companion.species_id == sp:
+			if _focus_sp == sp:
+				var watching: bool = _hud() != null and _hud().get("_follow_panel") != null
 				companion = null
 				if _roster.has(sp):
 					_focus(sp)
+					# The heir is yours now: take the player straight to it.
+					if watching and _alive():
+						find_companion()
 			_refresh_chips()
-		if companion == null and not _roster.is_empty():
+		if (companion == null or not is_instance_valid(companion)) and not _roster.is_empty():
 			_focus(_roster.keys()[0])
 	if companion == null:
 		return

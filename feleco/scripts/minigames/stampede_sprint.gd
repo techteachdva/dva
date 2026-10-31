@@ -702,7 +702,8 @@ func _draw() -> void:
 		draw_set_transform_matrix(_xform())
 		var tilt: float = 0.3 if (i == 0 and _stumble > 0.0) or (i > 0 and _rival_stumble[i] > 0.0) else 0.0
 		draw_set_transform_matrix(_xform() * Transform2D(tilt, Vector2(x, y - hop)))
-		draw_texture_rect(tex, Rect2(-w * 0.5, -h, w, h), false)
+		var gallop: float = 1.0 + sin(Time.get_ticks_msec() * 0.018 + w) * 0.05
+		draw_texture_rect(tex, Rect2(-w * 0.5 * (2.0 - gallop), -h * gallop, w * (2.0 - gallop), h * gallop), false)
 		draw_set_transform_matrix(_xform())
 		# Kicked-up dust, and speed lines when flying.
 		if _mode == "race" and _speed[i] > 3.0 and randf() < 0.3:

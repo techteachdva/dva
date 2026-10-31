@@ -499,7 +499,11 @@ func _dance_press(k: int) -> void:
 
 func _sprite(tex: Texture2D, at: Vector2, h: float, flip: bool, col: Color = Color.WHITE) -> void:
 	var w: float = h * float(tex.get_width()) / float(tex.get_height())
-	draw_set_transform_matrix(_xform() * Transform2D(0.0, Vector2(-1.0 if flip else 1.0, 1.0), 0.0, at))
+	# Alive on the spot: a little hop, squash and sway, each sprite in its own time.
+	var t: float = Time.get_ticks_msec() * 0.006 + at.x * 0.01
+	var hop: float = absf(sin(t)) * h * 0.06
+	var sq: float = 1.0 + cos(t * 2.0) * 0.04
+	draw_set_transform_matrix(_xform() * Transform2D(sin(t) * 0.05, Vector2((-1.0 if flip else 1.0) * sq, 2.0 - sq), 0.0, at - Vector2(0, hop)))
 	draw_texture_rect(tex, Rect2(-w * 0.5, -h * 0.5, w, h), false, col)
 	draw_set_transform_matrix(_xform())
 

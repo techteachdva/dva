@@ -541,51 +541,19 @@ func _show_welcome() -> void:
 	# Wait out the loading screen, which pauses the tree.
 	while get_tree().paused:
 		await get_tree().create_timer(0.3, true, false, true).timeout
-	var shade := ColorRect.new()
-	shade.name = "Welcome"
-	shade.color = Color(0, 0, 0, 0.55)
-	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(shade)
-	var card := PanelContainer.new()
-	card.set_anchors_preset(Control.PRESET_CENTER)
-	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	card.grow_vertical = Control.GROW_DIRECTION_BOTH
-	card.custom_minimum_size = Vector2(520, 0)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.06, 0.09, 0.07, 0.97)
-	sb.border_color = FelecoUiScript.GOLD
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(18)
-	for side in [SIDE_LEFT, SIDE_RIGHT, SIDE_TOP, SIDE_BOTTOM]:
-		sb.set_content_margin(side, 24)
-	card.add_theme_stylebox_override("panel", sb)
-	shade.add_child(card)
-	HudWindow.movable(card)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 10)
-	card.add_child(col)
-	col.add_child(FelecoUiScript.heading("Welcome to Feleco!", 30, FelecoUiScript.GOLD))
-	for line: String in [
-		"This valley is alive. Every animal eats, sleeps, hunts, has babies and grows old on its own.",
-		"Your job: pick an animal to raise, help it survive, and bet on which species will rule the valley.",
-		"Tap any animal to watch it. Press Make Mine to adopt it, then level it up and train it.",
-		"Drag to move the camera. Use Powers to change the weather and help (or hurt) the valley.",
-		"Follow the Goals card at the top to earn EP. Watch for a rare diamond!",
-	]:
-		var l := FelecoUiScript.label(line, 17, FelecoUiScript.CREAM)
-		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		col.add_child(l)
-	var go := Button.new()
-	go.text = "Let's go!"
-	go.theme_type_variation = "PrimaryButton"
-	go.custom_minimum_size = Vector2(0, 48)
-	go.pressed.connect(func() -> void:
+	# The guided Food Web film, on the real page, in place of a box of text.
+	_open_food_web()
+	var layer: Node = get_node("FoodWebLayer")
+	await get_tree().process_frame
+	var tour := GuideTour.new()
+	tour.guide = layer.find_child("FieldGuide", true, false)
+	tour.process_mode = Node.PROCESS_MODE_ALWAYS
+	tour.done.connect(func() -> void:
 		var gc: Node = get_node_or_null("/root/GameConfig")
 		if gc != null:
 			gc.tutorial_done = true
-			gc.save_meta()
-		shade.queue_free())
-	col.add_child(go)
+			gc.save_meta())
+	layer.add_child(tour)
 
 # Powers used this run (the goals panel counts them).
 var power_uses: int = 0
@@ -1669,9 +1637,11 @@ func _free_window(win: Control) -> bool:
 func _toggle_window(win: Control) -> void:
 	if win == null:
 		return
-	win.visible = not win.visible
 	if win.visible:
-		HudWindow.set_folded(win, false)
+		Glass.close(win)
+		return
+	Glass.open(win)
+	HudWindow.set_folded(win, false)
 
 func _dress_history() -> void:
 	var history: EventHistory = get_node_or_null("EventHistory")

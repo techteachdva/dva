@@ -4,12 +4,14 @@ extends Node
 # or Simulation, by gc.current_mode. Scripted in the valley, not the game; it
 # ends on a card and the year starts only when the player asks.
 
+const METEOR_FALL: float = 1.8
 const VALLEY_LINES: Array[String] = [
 	"This valley is yours to watch over.",
 	"Everything here eats, hunts, breeds and dies without you.",
 	"Pick a champion with your hand. Claim it, train it, take control.",
 	"Pour down powers, and watch the ripples spread through the food web.",
 	"Mid-season, strange Sprites wake. Claim one if you dare.",
+	"Quests set goals. Golden food lets a creature Rampage: take it in hand.",
 	"Lead your favourites to glory, or watch them fade.",
 ]
 const SIM_LINES: Array[String] = [
@@ -18,6 +20,7 @@ const SIM_LINES: Array[String] = [
 	"Take the Fates' bets on who will rule the year.",
 	"Face a Challenge, or play the Mini Games.",
 	"Tune the rules in the Lab, and shop in the Greenhouse.",
+	"Settings changes the look: Valley, Pixel or Lost Valley.",
 	"Change one thing, and see what happens.",
 ]
 
@@ -35,6 +38,10 @@ var _done: bool = false
 var _choosing: bool = false
 var _anchor: Vector3 = Vector3.ZERO
 var _sim: bool = false
+var _prey: MarkovAgent = null
+var _crew: Array[MarkovAgent] = []
+var _mock_bar: HBoxContainer = null
+var _hand: SpectralHand = null
 
 func _ready() -> void:
 	var gc: Node = get_node("/root/GameConfig")
@@ -126,21 +133,170 @@ func _play() -> void:
 	if _dir == null or _cam == null:
 		_show_choice()
 		return
-	_anchor = _dir.dry_land(Vector3(-4.0, 0.0, 6.0))
+	# The toybox needs a wide dry stage, well away from the river.
+	_anchor = _dir.dry_land(Vector3(-24.0, 0.0, 16.0) if _sim else Vector3(-4.0, 0.0, 6.0))
 	_anchor.y = _dir.ground_height(_anchor.x, _anchor.z)
+	_clear_stage()
 	_view(_anchor, 0.35, -0.55, 58.0, true)
 	var tw := create_tween()
 	tw.tween_property(_shade, "color:a", 0.0, 1.2)
 	if not await _wait(1.3):
 		return
-	var sheep := _dir.spawn_scripted("sheep", _dir.dry_land(_anchor + Vector3(-3.0, 0.0, 1.0)))
-	_view(_anchor, 0.35, -0.5, 16.0)
-	for text: String in (SIM_LINES if _sim else VALLEY_LINES):
-		if not await _line(text):
+	var lines: Array[String] = SIM_LINES if _sim else VALLEY_LINES
+	for i: int in lines.size():
+		if _sim:
+			_stage_sim(i)
+		else:
+			_stage_valley(i)
+		if not await _line(lines[i]):
 			return
-		if is_instance_valid(sheep):
-			sheep.stage_to(_dir.dry_land(_anchor + Vector3(randf_range(-3.0, 3.0), 0.0, randf_range(-1.0, 2.0))), "Walk")
+	if not await _meteor_finale():
+		return
 	_show_choice()
+
+func _clear_stage() -> void:
+	_dir.tree_planting = false
+	_dir.hold_daylight = true
+	var stage := Rect2(_anchor.x - 18.0, _anchor.z - 8.0, 48.0, 40.0)
+	var back_z: float = _anchor.z - 10.0
+	for t: Node in _dir.get_node("Trees").get_children() + _dir.get_node("Bushes").get_children():
+		var n := t as Node3D
+		if n == null or not stage.has_point(Vector2(n.global_position.x, n.global_position.z)):
+			continue
+		for a: Node in n.find_children("*", "", true, false):
+			if a.is_in_group("apple"):
+				a.queue_free()
+		n.global_position = _dir.dry_land(Vector3(randf_range(-24.0, 24.0), 0.0, randf_range(-25.0, back_z)))
+		_dir._snap_to_ground(n)
+	for a: Node in get_tree().get_nodes_in_group("apple"):
+		var an := a as Node3D
+		if an != null and stage.has_point(Vector2(an.global_position.x, an.global_position.z)):
+			an.queue_free()
+
+# Golden grass, tall and ripe, around a spot.
+
+# Everything can change in a moment: a meteor takes nearly all of them.
+func _meteor_finale() -> bool:
+	_mock([])
+	_caption.text = ""
+	_view(_anchor, 0.35, -0.5, 22.0)
+	var row: Array[String] = ["sheep", "wolf", "rabbit", "boar", "deer"]
+	for k: int in row.size():
+		var a := _cast(row[k], cos(k * 1.3) * 3.5, sin(k * 1.3) * 3.0)
+		a.scripted = true
+	if not await _wait(1.0):
+		return false
+	_dir.trigger_meteor(_anchor)
+	if not await _wait(METEOR_FALL):
+		return false
+	for a: MarkovAgent in _crew:
+		if is_instance_valid(a) and randf() < 0.85:
+			a.golden = 0.0
+			a.gold_claimed = true
+			a.set("health", 0.0)
+			a.call("die")
+	return await _wait(3.0)
+
+# The game's real buttons, shown as they will look, pulsing like a hint.
+func _mock(labels: Array) -> void:
+	if _mock_bar != null:
+		_mock_bar.queue_free()
+		_mock_bar = null
+	if labels.is_empty():
+		return
+	_mock_bar = HBoxContainer.new()
+	_mock_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_mock_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_mock_bar.offset_top = -170.0
+	_mock_bar.offset_bottom = -116.0
+	_mock_bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	_mock_bar.add_theme_constant_override("separation", 10)
+	_mock_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_mock_bar)
+	for text: Variant in labels:
+		var b := Button.new()
+		b.text = str(text)
+		b.theme_type_variation = "PrimaryButton"
+		b.custom_minimum_size = Vector2(130, 50)
+		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_mock_bar.add_child(b)
+	var tw := _mock_bar.create_tween().set_loops(4)
+	tw.tween_property(_mock_bar, "modulate", Color(1.3, 1.3, 1.1), 0.4)
+	tw.tween_property(_mock_bar, "modulate", Color.WHITE, 0.4)
+
+func _at(x: float, z: float) -> Vector3:
+	return _dir.dry_land(_anchor + Vector3(x, 0.0, z))
+
+func _cast(id: String, x: float, z: float) -> MarkovAgent:
+	var a := _dir.spawn_scripted(id, _at(x, z))
+	_crew.append(a)
+	return a
+
+func _close(z: float = 16.0) -> void:
+	_view(_anchor, 0.35, -0.5, z)
+
+# Each line gets the shot it describes.
+func _stage_valley(i: int) -> void:
+	_mock([[], [], ["Claim", "Brand", "Train", "Follow", "Drop"], ["Rain", "Drought", "Flood", "Meteor"], ["Make Mine", "Take Control", "WASD: steer", "Space: power"], ["Quests", "Rampage"], ["Vault", "Food Web"]][i])
+	match i:
+		0:
+			pass  # the whole valley, from above
+		1:
+			_close()
+			_prey = _cast("sheep", -9.0, 1.0)
+			var wolf := _cast("wolf", -17.0, 2.0)
+			_walk(_prey, _at(-5.0, 1.0), 2.6)
+			_walk(wolf, _at(-8.0, 1.0), 2.6)
+		2:
+			if is_instance_valid(_prey):
+				_close(12.0)
+				_hand = SpectralHand.new()
+				_world.add_child(_hand)
+				_hand.lift(_prey, func() -> void: pass)
+		3:
+			if is_instance_valid(_hand):
+				_hand.put_down(func() -> void: pass)
+			_view(_anchor, 0.35, -0.55, 26.0)
+			_dir.trigger_rain()
+			_dir.trigger_flood()
+		4:
+			_close()
+			for k: int in 3:
+				var fairy := _cast("fairy", -3.0 + k * 3.0, 3.0)
+				_walk(fairy, _at(-2.0 + k * 3.0, 0.5), 3.0)
+		6:
+			pass
+		5:
+			if is_instance_valid(_prey):
+				_prey.make_golden(1.0, "grass")
+				if _prey._data != null:
+					_prey._data.golden = 1.0
+				_close(10.0)
+
+func _stage_sim(i: int) -> void:
+	_mock([[], ["Sheep 10", "Wolves 8", "Bears 3", "Trees 6", "12 days"], ["Accept Quest"], ["Challenge", "Mini Games"], ["Tuning Lab", "Greenhouse"], ["Valley", "Pixel", "Lost Valley"], ["Rain", "Drought", "Meteor"]][i])
+	match i:
+		1:
+			_close(22.0)
+			var row: Array[String] = ["sheep", "wolf", "bear", "deer", "boar", "rabbit"]
+			for k: int in row.size():
+				_cast(row[k], -10.0 + k * 4.0, 1.0)
+		2:
+			_card()
+		3:
+			var sample: Node = _root.get_node_or_null("QuestSample")
+			if sample != null:
+				sample.queue_free()
+			_close(12.0)
+			for n: Node in _dir.get_node("Agents").get_children():
+				n.queue_free()
+			_cast("wolf", -2.5, 2.0)
+			_cast("lion", 2.5, 2.0)
+		4:
+			_view(_anchor, 0.35, -0.6, 40.0)
+			_dir.trigger_bloom()
+		6:
+			_dir.trigger_drought()
 
 func _card() -> void:
 	var card := PanelContainer.new()

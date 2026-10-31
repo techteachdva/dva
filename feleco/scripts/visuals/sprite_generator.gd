@@ -2306,18 +2306,23 @@ static func producer_image(kind: String) -> Image:
 # Tiling bark: dark furrows running up the trunk over warm brown.
 # Tiling bark: dark furrows running up the trunk over warm brown.
 static func bark_image() -> Image:
-	var img := Image.create(128, 128, false, Image.FORMAT_RGBA8)
-	var base := Color(0.42, 0.29, 0.18)
-	for y: int in 128:
-		for x: int in 128:
-			var u: float = float(x) / 128.0 * TAU
-			# Wavy vertical furrows that wrap left to right without a seam.
-			var w: float = sin(u * 6.0 + sin(float(y) / 128.0 * TAU * 2.0 + u) * 1.2)
-			var n: float = sin(u * 17.0 + float(y) * 0.31) * 0.5 + sin(float(y) * 0.9 + u * 3.0) * 0.3
-			var shade: float = clampf(0.82 + 0.22 * w + 0.08 * n, 0.45, 1.15)
-			if w < -0.75:
-				shade *= 0.55
-			img.set_pixel(x, y, Color(base.r * shade, base.g * shade, base.b * shade))
+	var img := Image.create(256, 256, false, Image.FORMAT_RGBA8)
+	var noise := FastNoiseLite.new()
+	noise.seed = 7
+	noise.frequency = 0.06
+	noise.fractal_octaves = 4
+	var light := Color(0.5, 0.36, 0.24)
+	var deep := Color(0.17, 0.11, 0.07)
+	for y: int in 256:
+		for x: int in 256:
+			var u: float = float(x) / 256.0 * TAU
+			var v: float = float(y) / 256.0 * TAU
+			# Plates of bark split by deep furrows, tiling on a torus of noise.
+			var warp: float = noise.get_noise_3d(cos(v) * 22.0, sin(v) * 22.0, cos(u) * 8.0) * 2.2
+			var ridge: float = absf(sin(u * 5.0 + warp * 2.0))
+			var grain: float = noise.get_noise_3d(cos(u) * 60.0, sin(u) * 60.0, sin(v) * 16.0)
+			var c: Color = deep.lerp(light, clampf(pow(ridge, 0.55) + grain * 0.7, 0.0, 1.0))
+			img.set_pixel(x, y, c)
 	img.generate_mipmaps()
 	return img
 

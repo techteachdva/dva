@@ -18,6 +18,8 @@ var _root: Control
 var _poster: TextureRect
 var _guide: FieldGuide
 var _status: Label
+var _ring: LoadRing
+var _wake: float = 0.0
 var _play: Button
 var _ticker: TipTicker
 var _ready_to_play: bool = false
@@ -69,6 +71,7 @@ func _ready() -> void:
 	_status.add_theme_color_override("font_outline_color", BG)
 	_status.add_theme_constant_override("outline_size", 6)
 	_root.add_child(_status)
+	_ring = LoadRing.corner(_root)
 
 	_play = Button.new()
 	_play.text = "Play"
@@ -140,6 +143,9 @@ func _build_mask() -> ImageTexture:
 var _mask_img: Image
 
 func _process(delta: float) -> void:
+	if _ring != null and not _ready_to_play:
+		_wake += delta
+		_ring.progress = 1.0 - exp(-_wake * 0.6)
 	if _gone:
 		return
 	if not _ready_to_play:
@@ -147,6 +153,7 @@ func _process(delta: float) -> void:
 		_status.text = "The valley is waking" + ".".repeat(1 + int(_dots * 2.0) % 3)
 		if _sim != null and _sim._agent_registry.size() > 5:
 			_ready_to_play = true
+			_ring.progress = 1.0
 			get_tree().paused = true
 			_status.visible = false
 			_ticker.visible = false

@@ -341,8 +341,15 @@ func sync(registry: Array[AgentData]) -> void:
 				gp = data.pos
 			var x: float = gp.x
 			var z: float = gp.z
+			# Ease toward the path, so a late think never shows as a small jump.
+			if data.has_shown and data.shown.distance_squared_to(gp) < reach * reach:
+				gp = data.shown.lerp(gp, 1.0 - exp(-24.0 * get_process_delta_time()))
+				x = gp.x
+				z = gp.z
 			data.shown = gp
 			data.has_shown = true
+			if is_instance_valid(data.node) and data.node.get("_rainbow_aura") != null:
+				data.node.call("_place_rainbow_aura")
 			var speed: float = Vector2(data.vel.x, data.vel.z).length()
 			var side: float = data.vel.x * right.x + data.vel.z * right.z
 			if side > 0.25:

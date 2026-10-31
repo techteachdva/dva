@@ -362,14 +362,14 @@ func _mode_dialog(words: String, options: Array) -> void:
 		b.theme_type_variation = "PrimaryButton"
 		b.custom_minimum_size = Vector2(0, 52)
 		b.pressed.connect(func() -> void:
-			shade.queue_free()
+			Glass.close(shade, true)
 			(opt[1] as Callable).call())
 		col.add_child(b)
 	var back := Button.new()
 	back.text = "Back"
 	back.theme_type_variation = "GhostButton"
 	back.custom_minimum_size = Vector2(0, 44)
-	back.pressed.connect(shade.queue_free)
+	back.pressed.connect(func() -> void: Glass.close(shade, true))
 	col.add_child(back)
 
 func _begin_valley(run: Array) -> void:
@@ -583,7 +583,19 @@ func _look_ready() -> bool:
 	_on_look_status(text)
 	return false
 
+var _fetch_ring: LoadRing = null
+
 func _on_look_status(text: String) -> void:
+	# The look's download fills the same fractal ring as every other load.
+	if text.begins_with("Fetching") and _fetch_ring == null:
+		_fetch_ring = LoadRing.corner(self)
+	if _fetch_ring != null:
+		if text.begins_with("Fetching"):
+			var cut: PackedStringArray = text.trim_suffix("%").rsplit(" ", true, 1)
+			_fetch_ring.progress = float(cut[1]) / 100.0 if cut.size() > 1 and cut[1].is_valid_int() else 0.02
+		else:
+			_fetch_ring.queue_free()
+			_fetch_ring = null
 	if _look_line != null:
 		_look_line.text = text
 	if _settings_button != null:

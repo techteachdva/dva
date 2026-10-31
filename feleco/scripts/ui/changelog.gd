@@ -3,9 +3,23 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "6.1"
+const VERSION: String = "7.0"
 
 const CHANGELOG: Array = [
+	{
+		"version": "7.0",
+		"title": "A Valley You Can Hear",
+		"notes": [
+			"Sound: rain, floods, drought, meteors, wind, crickets, frogs, owls, howls and more, fading with the camera.",
+			"Predator Brawl has three levels: Plains, Riverbank and Mountains, with Easy, Regular and Dire rivals.",
+			"Knockouts now ragdoll around the arena.",
+			"Your touch sparkles, the buttons grow leaves, and the valley opens on a living fractal logo.",
+			"A guided Food Web tour replaces the old welcome box, with a new page on how Traits, Memories and Dreams shape each creature.",
+			"Every creature now has Tags, a Vault of up to 100 memories, and a Dream. Read them on its card; fulfil a dream and it levels up and lives longer.",
+			"A FelEco splash and a fractal loading ring.",
+			"The rainbow glow now stays on its creature.",
+		],
+	},
 	{
 		"version": "6.1",
 		"title": "Sprites, Claimed",
@@ -369,6 +383,7 @@ const CREDITS: String = """[center][font_size=22][color=#e6c36a]Feleco[/color][/
 Game Design and Prompt Engineering by [url=zemo][b]DM Zemo[/b][/url]
 Code and Graphics by [b]Claude[/b]
 Music by [b]Kevin MacLeod[/b]
+Sound effects from [b]BigSoundBank.com[/b] by Joseph Sardin (CC0)
 
 [font_size=15][color=#bbc8b9]"Ancient Mystery Waltz" (Allegro, Vivace, Presto)
 Kevin MacLeod (incompetech.com)

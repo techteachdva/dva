@@ -264,9 +264,15 @@ static func _build() -> Theme:
 	glass.border_width_top = 2
 	glass.shadow_color = Color(0, 0, 0, 0.45)
 	glass.shadow_size = 14
+	# Frosted: the valley shows through every window.
+	glass.bg_color.a = 0.66
+	glass.border_color = Color(1, 1, 1, 0.22)
+	glass.set_border_width_all(1)
+	glass.border_width_top = 2
 	glass.shadow_offset = Vector2(0, 4)
-	var button := _box(MOSS, LINE, 16, 1)
-	var button_hover := _box(Color(0.2, 0.26, 0.21, 1), GOLD, 16, 1)
+	# Spirit-of-nature buttons: leaf-shaped, deep forest, edged in living gold.
+	var button := _leaf(Color(0.11, 0.2, 0.15, 1), Color(0.45, 0.62, 0.36, 1))
+	var button_hover := _leaf(Color(0.17, 0.3, 0.2, 1), GOLD)
 	var button_down := _box(Color(0.11, 0.15, 0.12, 1), GOLD_DEEP, 16, 1)
 	var button_off := _box(Color(0.12, 0.14, 0.12, 0.55), Color(LINE.r, LINE.g, LINE.b, 0.25), 16, 1)
 
@@ -287,9 +293,9 @@ static func _build() -> Theme:
 	th.set_color("icon_pressed_color", "Button", GOLD)
 	th.set_color("icon_focus_color", "Button", GOLD)
 
-	var primary := _box(GOLD, GOLD, 16, 0)
-	var primary_hover := _box(Color(0.96, 0.86, 0.55, 1), GOLD, 16, 0)
-	var primary_down := _box(GOLD_DEEP, GOLD_DEEP, 16, 0)
+	var primary := _leaf(Color(0.14, 0.34, 0.22, 1), GOLD)
+	var primary_hover := _leaf(Color(0.2, 0.46, 0.28, 1), Color(1.0, 0.93, 0.62, 1))
+	var primary_down := _leaf(Color(0.09, 0.22, 0.14, 1), GOLD_DEEP)
 	var primary_off := _box(Color(GOLD.r, GOLD.g, GOLD.b, 0.35), Color(0, 0, 0, 0), 16, 0)
 	th.set_type_variation("PrimaryButton", "Button")
 	th.set_stylebox("normal", "PrimaryButton", primary)
@@ -297,11 +303,11 @@ static func _build() -> Theme:
 	th.set_stylebox("pressed", "PrimaryButton", primary_down)
 	th.set_stylebox("disabled", "PrimaryButton", primary_off)
 	th.set_stylebox("focus", "PrimaryButton", primary_hover)
-	_font(th, "PrimaryButton", INK, Color(0.2, 0.16, 0.08, 0.55))
-	th.set_color("icon_normal_color", "PrimaryButton", INK)
-	th.set_color("icon_hover_color", "PrimaryButton", INK)
-	th.set_color("icon_pressed_color", "PrimaryButton", INK)
-	th.set_color("icon_focus_color", "PrimaryButton", INK)
+	_font(th, "PrimaryButton", Color(1.0, 0.96, 0.82), Color(0.8, 0.8, 0.7, 0.55))
+	th.set_color("icon_normal_color", "PrimaryButton", GOLD)
+	th.set_color("icon_hover_color", "PrimaryButton", GOLD)
+	th.set_color("icon_pressed_color", "PrimaryButton", GOLD)
+	th.set_color("icon_focus_color", "PrimaryButton", GOLD)
 	th.set_color("icon_disabled_color", "PrimaryButton", Color(0.2, 0.16, 0.08, 0.4))
 	th.set_constant("icon_max_width", "PrimaryButton", 48)
 
@@ -412,6 +418,14 @@ static func _font(th: Theme, kind: String, enabled: Color, disabled: Color) -> v
 	th.set_color("font_pressed_color", kind, enabled)
 	th.set_color("font_focus_color", kind, enabled)
 	th.set_color("font_disabled_color", kind, disabled)
+
+static func _leaf(bg: Color, edge: Color) -> StyleBoxFlat:
+	var box := _box(bg, edge, 6, 2)
+	box.corner_radius_top_left = 24
+	box.corner_radius_bottom_right = 24
+	box.shadow_color = Color(edge.r, edge.g, edge.b, 0.28)
+	box.shadow_size = 6
+	return box
 
 static func _box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()

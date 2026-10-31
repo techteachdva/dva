@@ -71,6 +71,14 @@ func _ready() -> void:
 		s.set_driven(true)
 		s.signature_power()
 		s.set_driven(false)
+	var pet: MarkovAgent = tree.get_first_node_in_group("sheep")
+	goals.adopt(pet)
+	hud._start_follow(pet)
+	pet.health = 0.0
+	pet.die()
+	await tree.create_timer(2.5).timeout
+	print("DBG comp ", goals.companion, " sp ", goals.companion.species_id if goals.companion else "", " panel ", hud._follow_panel, " agent ", hud._follow_panel.agent if hud._follow_panel else null)
+	print("HEIR new ", goals.companion != null and goals.companion != pet, " followed ", hud._follow_panel != null and hud._follow_panel.agent == goals.companion)
 	var bush: Node = sim.plant_bush(Vector3(3, 0, 8), true)
 	var sb := StarBush.new()
 	bush.add_child(sb)

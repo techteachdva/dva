@@ -35,6 +35,8 @@ func _ready() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SETTINGS_PATH) == OK:
 		muted = bool(cfg.get_value("audio", "muted", false))
+	# Right away, under the Godot logo's heels. (A browser holds it to the first click.)
+	play("menu")
 
 # Picks the menu or valley track whenever the scene changes.
 func _process(delta: float) -> void:

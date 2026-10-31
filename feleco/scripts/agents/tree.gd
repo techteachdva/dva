@@ -25,6 +25,10 @@ var _lifespan: float = 180.0
 # Moss on the bark of grown trees (0..1). Grazers and browsers eat it.
 # A rare tree grows star moss: a bright, very rich patch.
 var moss: float = 0.0
+# About three trees in ten are mossy; the rest stay bare for life.
+const MOSSY_SHARE: float = 0.3
+var mossy: bool = randf() < MOSSY_SHARE
+var _moss_started: bool = false
 var star_moss: bool = false
 var _moss_shown: int = -1
 const GOLDEN_APPLE_CHANCE: float = 0.004
@@ -344,9 +348,14 @@ func _dress_crown() -> void:
 			var seg: Array = _segments[k % mini(_segments.size(), 6)]
 			var q: Vector3 = (seg[0] as Vector3).lerp(seg[1], _rng.randf_range(0.1, 0.7))
 			var side := Vector3(_rng.randf_range(-1, 1), 0.0, _rng.randf_range(-1, 1)).normalized() * float(seg[2]) * 0.9
-			var w: float = float(seg[2]) * 0.9 + 0.08
-			d_x.append(Transform3D(Basis().scaled(Vector3(w, w * 0.7, w)), q + side))
-			d_c.append(Color(0.98, 0.85, 0.3) if star_moss and k % 3 == 0 else Color(0.3, 0.55, 0.22) * _rng.randf_range(0.85, 1.1))
+			# A creeping colony: many thin flecks hugging the bark, never one lump.
+			var r: float = float(seg[2])
+			for f: int in 9:
+				var a: float = _rng.randf() * TAU
+				var at: Vector3 = q + Vector3(cos(a), _rng.randf_range(-1.2, 1.2), sin(a)) * r * 1.02
+				var w: float = _rng.randf_range(0.05, 0.11)
+				d_x.append(Transform3D(Basis(Vector3.UP, a).scaled(Vector3(w, w * 0.45, w * 1.7)), at))
+				d_c.append(Color(0.98, 0.85, 0.3) if star_moss and f % 3 == 0 else Color(0.3, 0.46, 0.17).lerp(Color(0.52, 0.64, 0.26), _rng.randf()))
 	var dm: MultiMesh = _dress.multimesh
 	dm.instance_count = d_x.size()
 	for i: int in d_x.size():
@@ -356,7 +365,8 @@ func _dress_crown() -> void:
 # One limb and its children: each fork splits into two or three, shorter,
 # thinner and spreading, the trunk's lean carried up into the crown.
 func _branch(from: Vector3, dir: Vector3, length: float, radius: float, depth: int) -> void:
-	var to: Vector3 = from + dir * length
+	# Trees reach higher than they spread.
+	var to: Vector3 = from + Vector3(dir.x, dir.y * (1.0 if bush else 1.28), dir.z) * length
 	_segments.append([from, to, radius])
 	if depth == 0:
 		_tips.append(to)
@@ -585,17 +595,19 @@ func _golden_mult() -> float:
 # Moss is the rarest producer. It creeps over the bark in the damp and is
 # thickest (and ripest) in winter; it dies back in summer heat and drought.
 func _grow_moss() -> void:
-	if bush:
+	if bush or not mossy:
 		return
 	var sim = get_parent().get_parent() if get_parent() != null else null
 	var wet: bool = sim is SimulationDirector and (sim as SimulationDirector).is_raining()
 	var dry: bool = sim is SimulationDirector and (sim as SimulationDirector).is_drought()
-	var rate: float = {"Spring": 0.02, "Summer": 0.005, "Autumn": 0.04, "Winter": 0.06}.get(_season, 0.03)
+	var rate: float = {"Spring": 0.05, "Summer": 0.015, "Autumn": 0.08, "Winter": 0.12}.get(_season, 0.03)
 	if wet:
 		rate *= 2.5
 	if dry:
 		rate = -0.05
-	moss = clampf(moss + rate, 0.0, 1.0)
+	# A mossy tree shows it from the first, not after days of creeping.
+	moss = clampf((0.4 if not _moss_started else moss) + rate, 0.0, 1.0)
+	_moss_started = true
 	if int(round(moss * 10.0)) != _moss_shown:
 		_dress_crown()
 

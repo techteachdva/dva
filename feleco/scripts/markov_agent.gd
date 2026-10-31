@@ -20,6 +20,12 @@ const HERD_FLEE: float = 0.2      # prey run up to 20% faster from the middle
 const HERD_HUNGER: float = 0.1    # everyone in the middle gets hungry 10% slower
 const HERD_HEAL: float = 0.4      # and mends a little
 const URGENT_STATES: Array[String] = ["Flee", "Chase", "Dive", "Charge", "Raid", "Stranded", "Sleep"]
+# Humans and wolves keep their own hours; Sprites never sleep.
+const OWN_SLEEP: Array[String] = ["human", "wolf", "mushroom", "fairy", "sunfolk", "scarecrow", "snowman"]
+const NIGHT_CREATURES: Array[String] = ["boar", "worm", "lion", "mouse", "beetle"]
+const SLEEP_HEAL: float = 3.0
+const GOOD_SLEEP_SECS: float = 25.0
+const GOOD_SLEEP_DAYS: float = 0.1
 const RESTING_STATES: Array[String] = ["Sleep", "Rest"]
 
 var _states: Dictionary = {}
@@ -76,6 +82,10 @@ var _starfruit: Node3D = null
 var _rainbow_aura: MeshInstance3D = null
 # Take Control: the player drives this creature (rampage_steer is the stick).
 var player_drive: bool = false
+var _wake_state: String = ""
+var _hp_top: float = 0.0
+# Tags, the Vault and dreams (see Psyche). Built the first time it is needed.
+var psyche: Psyche = null
 const DRIVE_SPEED: float = 6.0
 # Genome (see Genetics): set once at birth or arrival.
 var genes: Dictionary = {}
@@ -126,6 +136,9 @@ func _find_director() -> SimulationDirector:
 
 func _ready() -> void:
 	_register_states()
+	_wake_state = _current_state
+	if not _states.has("Sleep"):
+		_register_state("Sleep", func() -> void: velocity = Vector3.ZERO, _on_tick_nap, func() -> void: pass)
 	assert(not _current_state.is_empty(), "MarkovAgent: initial state must be set in _register_states")
 	set_physics_process(false)
 	_vision_cone = get_node_or_null("VisionCone") as VisionCone
@@ -192,6 +205,7 @@ func start_rampage() -> bool:
 func set_driven(on: bool) -> void:
 	player_drive = on
 	rampage_steer = Vector3.ZERO
+	psyche = null
 	velocity = Vector3.ZERO
 	set_physics_process(on)
 
@@ -286,6 +300,8 @@ func gold_shield() -> bool:
 
 # Eat a whole creature (a worm, a mushroom, a kill): take on its gold, then it dies.
 func devour(prey: Node) -> void:
+	if str(prey.get("species_id")) in ["lion", "bear", "wolf"]:
+		mind().note("kill_apex")
 	if prey == null or not is_instance_valid(prey):
 		return
 	# Only quiet gold passes on; a shining Gold creature can't be eaten at all.
@@ -300,6 +316,7 @@ func is_rainbow() -> bool:
 
 # Eating a Starfruit: the richest meal there is, and the Rainbow condition.
 func eat_starfruit() -> void:
+	mind().note("eat_starfruit")
 	rainbow_left = Clock.BIO_PER_DAY * RAINBOW_SHARE
 	rainbow_health = minf(rainbow_health + RAINBOW_HEALTH, RAINBOW_HEALTH_MAX)
 	if get("health") != null:
@@ -432,6 +449,42 @@ func _register_state(state_name: String, on_enter: Callable, on_tick: Callable, 
 		"on_exit": on_exit,
 	}
 
+# Everything sleeps: by night, or by day for the night creatures. Danger wakes
+# it, and about one in five sits each night out as a lookout, in turn.
+func _sleep_cycle(mods: Dictionary) -> bool:
+	if species_id in OWN_SLEEP or scripted or director == null or species_id.is_empty():
+		return false
+	for k: String in mods:
+		if float(mods[k]) >= 0.8 and k != "Sleep":
+			return false
+	var sim: SimulationDirector = director
+	var rest_time: bool = sim.is_night() != (species_id in NIGHT_CREATURES)
+	var watch: bool = (get_instance_id() + int(sim.get_day())) % 5 == 0
+	var hungry: bool = get("energy") != null and float(get("energy")) < 20.0
+	if rest_time and not watch and not hungry:
+		if _current_state != "Sleep":
+			set_state("Sleep")
+		return true
+	if _current_state == "Sleep" and not _winter_den():
+		set_state(_wake_state)
+		return true
+	return false
+
+func _winter_den() -> bool:
+	return has_method("_sleeping_season") and bool(call("_sleeping_season"))
+
+func _on_tick_nap(delta: float) -> void:
+	velocity = Vector3.ZERO
+	# A bird settles to the ground to sleep.
+	if _aerial and director != null:
+		var ground: float = director.ground_height(global_position.x, global_position.z) + 0.3
+		global_position.y = move_toward(global_position.y, ground, delta * 30.0)
+
+func mind() -> Psyche:
+	if psyche == null:
+		psyche = Psyche.new(self)
+	return psyche
+
 func set_state(next: String) -> void:
 	assert(_states.has(next), "MarkovAgent: invalid state name '%s'" % next)
 	if next == _current_state:
@@ -439,8 +492,16 @@ func set_state(next: String) -> void:
 	if _current_state != "" and _states[_current_state]["on_exit"].is_valid():
 		_states[_current_state]["on_exit"].call()
 	var old := _current_state
+	# A full belly and a night unbroken: good sleep adds to a life.
+	if old == "Sleep" and next == _wake_state and _state_time > GOOD_SLEEP_SECS and get("energy") != null and float(get("energy")) > 55.0:
+		_lifespan += Clock.BIO_PER_DAY * GOOD_SLEEP_DAYS
 	_current_state = next
 	_state_time = 0.0
+	if not species_id.is_empty() and director != null:
+		if next in ["Sleep", "Rest", "Roost"]:
+			mind().on_sleep()
+		elif old == "Flee" and get("health") != null and float(get("health")) > 0.0:
+			mind().note("survived")
 	if _states[_current_state]["on_enter"].is_valid():
 		_states[_current_state]["on_enter"].call()
 	state_changed.emit(old, _current_state)
@@ -484,11 +545,24 @@ func _physics_process(delta: float) -> void:
 		_herd_timer = 1.0 + randf() * 0.3
 		_update_herd()
 		_update_corpse_push()
+		mind().check_place()
+	# Fleeing, it heads for the spot where it once got away.
+	if _current_state == "Flee" and psyche != null and psyche.safe_spot != Vector3.INF and not rampage and not player_drive:
+		var home: Vector3 = psyche.safe_spot - global_position
+		home.y = 0.0
+		if home.length() > 3.0:
+			velocity = (velocity.normalized() * 0.6 + home.normalized() * 0.4).normalized() * velocity.length()
 	_movement_tick(delta)
 	if not rampage and not player_drive:
 		_evaluate_transitions(delta)
 	if not role.is_empty():
 		Roles.tick(self, species_id, life)
+	# Sleep mends wounds, up to the best health this creature has known.
+	var hp_now: Variant = get("health")
+	if hp_now != null:
+		_hp_top = maxf(_hp_top, float(hp_now))
+		if _current_state == "Sleep" and float(hp_now) > 0.0:
+			set("health", minf(float(hp_now) + SLEEP_HEAL * life, _hp_top))
 	# Unified lifecycle: subclasses override these methods. Life (hunger,
 	# breeding, ageing) runs at Clock.LIFE_PACE; movement above stays real-time.
 	var sim: SimulationDirector = director
@@ -777,6 +851,9 @@ func _pick_next_state(mods: Dictionary = _NO_MODS) -> String:
 
 func _evaluate_transitions(_delta: float) -> void:
 	var mods := _get_transition_modifiers()
+	mind().sway(mods)
+	if _sleep_cycle(mods):
+		return
 	var emergent: String = ""
 	var em_prob: float = 0.0
 	for k: String in mods.keys():

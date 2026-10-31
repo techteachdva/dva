@@ -262,6 +262,7 @@ var _history_sample_timer: float = 0.0
 const HISTORY_SAMPLE_INTERVAL: float = 2.0
 
 func _ready() -> void:
+	agent_died.connect(_witness_death)
 	# The dev sim harness runs headless with the real game config (--sim).
 	_headless_mode = DisplayServer.get_name() == "headless" and not OS.get_cmdline_user_args().has("--sim")
 	if _headless_mode:
@@ -1909,7 +1910,15 @@ func _spawn_extra(id: String, pos: Vector3, parent: Node = null) -> Node:
 	_apply_campaign_traits(a, id)
 	return a
 
+# Those nearby see one of their own go.
+func _witness_death(species: String, pos: Vector3) -> void:
+	for n: Node3D in get_nearby_agents(pos, 8.0, species):
+		if n is MarkovAgent and not n.is_queued_for_deletion():
+			(n as MarkovAgent).mind().note("kin_died")
+
 func spawn_offspring(id: String, parent: Node, pos: Vector3) -> void:
+	if parent is MarkovAgent:
+		(parent as MarkovAgent).mind().note("birth")
 	if not _room_for_birth():
 		return
 	var a := _spawn_extra(id, _in_valley(pos), parent)
@@ -3313,6 +3322,10 @@ func _night_owl_species() -> String:
 	return _champion_species() if _owns("night_owl") else ""
 
 func trigger_eclipse() -> void:
+	for d: AgentData in _agent_registry:
+		if d.node is MarkovAgent and is_instance_valid(d.node):
+			(d.node as MarkovAgent).mind().note("eclipse")
+	Sfx.play("gong")
 	_eclipse_s = Clock.SECONDS_PER_DAY * 0.5
 	# The hunters wake hungry and strong.
 	for data: AgentData in _agent_registry:
@@ -3327,6 +3340,7 @@ func trigger_midnight_sun() -> void:
 	chronicle.emit("The sun refuses to set. The sheep are thrilled. The wolves are furious.")
 
 func trigger_full_moon() -> void:
+	Sfx.play("chime")
 	full_moon_tonight = true
 	FXManager.show_dramatic_text(Vector3.ZERO, "A full moon rises. The night hunters stir.", Color(0.75, 0.8, 1.0))
 	chronicle.emit("A huge moon rolls up over the hills. Something howls back at it.")
@@ -3460,6 +3474,7 @@ func is_drought() -> bool:
 # A drought: the grass browns and barely grows, moss shrivels, the fungi go
 # quiet and no rain comes. Lasts about a day and a half.
 func trigger_drought() -> void:
+	Sfx.play("gong")
 	if wind != null:
 		wind.hot_gusts()
 	if _drought_timer > 0.0:
@@ -3741,6 +3756,7 @@ func _river_season_turn(season: String) -> void:
 		FXManager.show_dramatic_text(Vector3.ZERO, "The thaw! The river runs high.", Color(0.55, 0.75, 0.85))
 
 func trigger_flood() -> void:
+	Sfx.play("splash")
 	if river_frozen:
 		FXManager.show_dramatic_text(Vector3.ZERO, "The river is frozen solid.", Color(0.75, 0.88, 1.0))
 		return
@@ -3803,12 +3819,14 @@ func _update_nesting() -> void:
 	_woods_thin = thin
 
 func trigger_gale() -> void:
+	Sfx.play("gong")
 	if wind != null:
 		wind.gale()
 	FXManager.show_dramatic_text(Vector3.ZERO, "Gale! Seeds fly across the valley.", Color(0.75, 0.88, 1.0))
 	chronicle.emit("A gale tears across the valley, scattering seeds far and wide.")
 
 func trigger_rain() -> void:
+	Sfx.play("storm")
 	if wind != null:
 		wind.calm()
 	_rain_timer = Clock.BIO_PER_DAY
@@ -3819,6 +3837,7 @@ func trigger_rain() -> void:
 # 3.0 powers: one for each link of the food web.
 # Bloom: the meadow, the woods and the moss all surge at once.
 func trigger_bloom() -> void:
+	Sfx.play("chime")
 	if grass != null:
 		for i: int in grass._grid.size():
 			if grass._masked.size() == grass._grid.size() and grass._masked[i] == 1:
@@ -3830,13 +3849,15 @@ func trigger_bloom() -> void:
 	for t in get_tree().get_nodes_in_group("tree") + get_tree().get_nodes_in_group("bush"):
 		if t.has_method("_grow_fruit"):
 			t._grow_fruit()
-		if t.get("moss") != null and not t.bush:
+		if t.get("moss") != null and not t.bush and t.mossy:
 			t.moss = minf(float(t.moss) + 0.3, 1.0)
+			t._dress_crown()
 	FXManager.show_dramatic_text(Vector3.ZERO, "Bloom! The valley bursts into leaf.", Color(0.5, 0.9, 0.4))
 	chronicle.emit("Every stem and branch in the valley swells at once.")
 
 # Stampede: the herbivores panic and scatter across the whole valley.
 func trigger_stampede() -> void:
+	Sfx.play("fall")
 	for data: AgentData in _agent_registry:
 		if SpeciesDB.group_of(data.species) != "herbivore" or data.node == null or not is_instance_valid(data.node):
 			continue
@@ -3854,6 +3875,7 @@ func trigger_stampede() -> void:
 
 # Feast: every omnivore eats its fill.
 func trigger_feast() -> void:
+	Sfx.play("chime")
 	for data: AgentData in _agent_registry:
 		if SpeciesDB.group_of(data.species) == "omnivore" and data.node != null and is_instance_valid(data.node) and data.node.get("energy") != null:
 			data.node.energy = minf(float(data.node.energy) + 40.0, 100.0)
@@ -3863,6 +3885,7 @@ func trigger_feast() -> void:
 
 # Rot Rain: the soil teems; mushrooms push up, worms and beetles surface.
 func trigger_rot_rain() -> void:
+	Sfx.play("gong")
 	if rot != null:
 		for i: int in rot._grid.size():
 			rot._grid[i] = minf(rot._grid[i] + 0.4, rot.max_density)
@@ -3876,6 +3899,7 @@ func trigger_rot_rain() -> void:
 	FXManager.show_dramatic_text(Vector3.ZERO, "Rot Rain: the soil comes alive.", Color(0.7, 0.55, 0.8))
 
 func trigger_famine() -> void:
+	Sfx.play("gong")
 	# Halve the season's grass for 10 days. Stacks with rain by multiplying.
 	_famine_timer = Clock.BIO_PER_DAY
 	_recompute_grass_boost()
@@ -3892,6 +3916,7 @@ func _champion_species() -> String:
 
 # Summons kin of the champion near its strongest member (or the valley centre).
 func trigger_predator_call() -> int:
+	Sfx.play("howl")
 	var sp: String = _champion_species()
 	if sp.is_empty() or not (has_method("spawn_%s_offspring" % sp) or _extra.has(sp)):
 		return 0
