@@ -3,11 +3,11 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "4.11.0"
+const VERSION: String = "5.0"
 
 const CHANGELOG: Array = [
 	{
-		"version": "4.11.0",
+		"version": "5.0",
 		"title": "Three Valleys",
 		"notes": [
 			"Prepare the Valley, and Settings on the main menu, ask which look the year wears: Valley, Pixel, or Lost Valley.",
