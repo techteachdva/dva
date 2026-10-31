@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Feleco"
-config/version="7.0"
+config/version="7.2"
 run/main_scene="res://scenes/ui/splash.tscn"
 boot_splash/show_image=false
 boot_splash/bg_color=Color(0.071, 0.098, 0.082, 1)

@@ -214,6 +214,7 @@ func _after(a: float, delta: float) -> void:
 func _impact() -> void:
 	_hit = true
 	Sfx.play("crash", -2.0)
+	sim.meteor_blast(land, CRATER_RADIUS + 2.0)
 	_rock.rotation = Vector3.ZERO
 	_rock.position = _rest()
 	# Hinge across the view, so the rock opens to left and right of the camera.

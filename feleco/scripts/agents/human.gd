@@ -308,7 +308,11 @@ func _on_tick_sleep(delta: float) -> void:
 			away.y = 0.0
 			velocity = away.normalized() * travel_speed if away.length() > 0.4 else Vector3.ZERO
 		else:
-			velocity = to.normalized() * travel_speed
+			# Home by the worn path, when one is near and leads that way.
+			var via: Vector3 = sim.paths.next_toward(global_position, door) if sim != null and sim.paths != null else door
+			var step: Vector3 = via - global_position
+			step.y = 0.0
+			velocity = (step if step.length_squared() > 0.25 else to).normalized() * travel_speed
 		return
 	# No bed, and never in the river, on its bank, or in the flood's reach.
 	if sim != null and sim.too_wet_to_sleep(global_position):
@@ -810,6 +814,20 @@ func _on_enter_flee() -> void:
 	velocity = Vector3(randf() - 0.5, 0.0, randf() - 0.5).normalized() * get_flee_speed(flee_speed)
 
 func _on_tick_flee(_delta: float) -> void:
+	# Home is the safest place: run for the door and bar it behind you.
+	if indoors:
+		velocity = Vector3.ZERO
+		return
+	if home != null and is_instance_valid(home) and global_position.distance_to(home.global_position) < 18.0:
+		var door: Vector3 = home.global_position + Vector3(0, 0, 2.0)
+		var run: Vector3 = door - global_position
+		run.y = 0.0
+		if run.length() < 1.2:
+			indoors = true
+			velocity = Vector3.ZERO
+		else:
+			velocity = run.normalized() * travel_speed * 1.2
+		return
 	var vision: VisionCone = _vision_cone
 	var threat: Node3D = null
 	if vision != null:
@@ -828,7 +846,7 @@ func _on_tick_flee(_delta: float) -> void:
 		velocity = to_shelter * get_flee_speed(flee_speed)
 
 func _on_exit_flee() -> void:
-	pass
+	indoors = false
 
 func _on_enter_rest() -> void:
 	velocity = Vector3.ZERO
@@ -943,6 +961,9 @@ func _on_tick_build(_delta: float) -> void:
 		if _settlement_id > 0 and sim.homeless_in_tribe(_settlement_id) > 0:
 			var ang: float = randf() * TAU
 			var spot := sim.dry_land(_settlement_center + Vector3(cos(ang), 0.0, sin(ang)) * randf_range(4.0, 9.0), 3.0)
+			# Most new homes strike out along the ley lines, not huddle.
+			if randf() < 0.7:
+				spot = sim.ley_site(_settlement_center)
 			if not sim.is_position_in_shelter(spot, 3.0):
 				wood -= 1
 				sim.build_shelter(spot, _settlement_id)

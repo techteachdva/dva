@@ -39,12 +39,12 @@ const SPECIES_CONFIG: Dictionary = {
 # 1 eat, 2 fight, 3 flee, 4 sleep/rest, 5 court, 6 work (0 = move or stand
 # about). 7 (surprise) is set for a moment when a creature starts to flee.
 const ACTIONS: Dictionary = {
-	"Eat": 1, "Graze": 1, "Forage": 1, "Gather": 1, "Scavenge": 1,
+	"Eat": 1, "Graze": 1, "Forage": 1, "Gather": 1, "Scavenge": 1, "Cook": 1,
 	"Hunt": 2, "Chase": 2, "Charge": 2, "Defend": 2, "Raid": 2, "Dive": 2, "Perch": 0,
 	"Flee": 3,
 	"Sleep": 4, "Rest": 4, "Stranded": 4, "Anchor": 4,
 	"Mate": 5, "Group": 5,
-	"Build": 6, "Channel": 6, "Cook": 6,
+	"Build": 6, "Channel": 6,
 }
 
 # Feet sit this far above the bottom of the sprite canvas.

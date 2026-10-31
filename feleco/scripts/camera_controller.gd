@@ -90,7 +90,67 @@ func _corpse_near(at: Vector3) -> Node3D:
 			best = c
 	return best
 
+# Tablet: one finger pans and flicks with momentum; two fingers pinch to zoom,
+# twist to turn, and slide up or down together to tilt.
+const TOUCH_PAN: float = 0.0019
+const TILT_RATE: float = 0.004
+const FLICK_DECAY: float = 6.0
+const FLICK_MIN: float = 40.0
+const FLICK_MAX: float = 700.0
+const DOUBLE_TAP_MS: int = 300
+var _fingers: Dictionary = {}
+var _flick := Vector2.ZERO
+var _last_tap: int = 0
+
+func _touch(event: InputEvent) -> bool:
+	if event is InputEventScreenTouch:
+		var t := event as InputEventScreenTouch
+		if t.pressed:
+			_fingers[t.index] = t.position
+			_flick = Vector2.ZERO
+			var now: int = Time.get_ticks_msec()
+			if _fingers.size() == 1 and now - _last_tap < DOUBLE_TAP_MS:
+				_goal_distance = clampf(_goal_distance * 0.6, MIN_DIST, MAX_DIST)
+			_last_tap = now
+		else:
+			_fingers.erase(t.index)
+		return true
+	if event is InputEventScreenDrag:
+		var d := event as InputEventScreenDrag
+		if not _fingers.has(d.index):
+			_fingers[d.index] = d.position
+		if _fingers.size() >= 2:
+			_two_fingers(d)
+		elif _follow == null:
+			_pan_by(d.relative)
+			_flick = d.velocity.limit_length(FLICK_MAX)
+		_fingers[d.index] = d.position
+		return true
+	return false
+
+func _pan_by(move: Vector2) -> void:
+	var k: float = _goal_distance * TOUCH_PAN
+	_goal_target += (_flat_right() * -move.x + _flat_forward() * move.y) * k
+
+func _two_fingers(d: InputEventScreenDrag) -> void:
+	var keys: Array = _fingers.keys()
+	var other: Vector2 = _fingers[keys[1] if keys[0] == d.index else keys[0]]
+	var was: Vector2 = _fingers[d.index]
+	var old_span: Vector2 = was - other
+	var new_span: Vector2 = d.position - other
+	if old_span.length() > 1.0 and new_span.length() > 1.0:
+		_goal_distance = clampf(_goal_distance * old_span.length() / new_span.length(), MIN_DIST, MAX_DIST)
+		_goal_yaw += old_span.angle_to(new_span)
+	_goal_pitch = clampf(_goal_pitch - d.relative.y * 0.5 * TILT_RATE, MIN_PITCH, MAX_PITCH)
+	if _follow == null:
+		_pan_by(d.relative * 0.5)
+
 func _unhandled_input(event: InputEvent) -> void:
+	if _touch(event):
+		return
+	# Finger drags also arrive as mouse moves; the touch code has them.
+	if not _fingers.is_empty() and (event is InputEventMouseButton or event is InputEventMouseMotion):
+		return
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		match mb.button_index:
@@ -164,6 +224,10 @@ func _process(_delta: float) -> void:
 			_goal_yaw += 1.6 * dt
 		if Input.is_key_pressed(KEY_E):
 			_goal_yaw -= 1.6 * dt
+	# The flick glides on after the finger lifts.
+	if _fingers.is_empty() and _flick.length() > FLICK_MIN and _follow == null:
+		_pan_by(_flick * dt)
+		_flick = _flick.lerp(Vector2.ZERO, 1.0 - exp(-FLICK_DECAY * dt))
 	if dir != Vector3.ZERO:
 		_follow = null
 		_goal_target += dir.normalized() * pan_speed * dt * clampf(_goal_distance / 60.0, 0.4, 1.6)

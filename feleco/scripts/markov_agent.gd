@@ -26,6 +26,16 @@ const NIGHT_CREATURES: Array[String] = ["boar", "worm", "lion", "mouse", "beetle
 const SLEEP_HEAL: float = 3.0
 const GOOD_SLEEP_SECS: float = 25.0
 const GOOD_SLEEP_DAYS: float = 0.1
+const LEY_CLOSE: float = 9.0
+const LEY_PULL: float = 1.3
+const SAP_HEAL: float = 3.0
+const SAP_FEED: float = 2.0
+const SAP_HUNGRY: float = 45.0
+const WANDER_SECS: float = 40.0
+const WANDER_CHANCE: float = 0.03
+const NO_WANDER: Array[String] = ["mushroom", "fish", "fairy", "sunfolk", "scarecrow", "snowman"]
+const LEY_PULL_BRAVE: float = 2.4
+const LEY_DAYS: float = 2.0
 const RESTING_STATES: Array[String] = ["Sleep", "Rest"]
 
 var _states: Dictionary = {}
@@ -84,6 +94,13 @@ var _rainbow_aura: MeshInstance3D = null
 var player_drive: bool = false
 var _wake_state: String = ""
 var _hp_top: float = 0.0
+# Struck by lightning and lived: no old age, ever stronger, killed only by a
+# meteor or by combat that outpaces its mending.
+var demigod: bool = false
+const DEMI_HEAL: float = 2.0
+const DEMI_GROW: float = 1.5
+const FIRE_RUN: float = 6.5
+var _wander_to: Vector3 = Vector3.ZERO
 # Tags, the Vault and dreams (see Psyche). Built the first time it is needed.
 var psyche: Psyche = null
 const DRIVE_SPEED: float = 6.0
@@ -139,6 +156,7 @@ func _ready() -> void:
 	_wake_state = _current_state
 	if not _states.has("Sleep"):
 		_register_state("Sleep", func() -> void: velocity = Vector3.ZERO, _on_tick_nap, func() -> void: pass)
+	_register_state("Wanderlust", func() -> void: pass, _on_tick_wander, func() -> void: pass)
 	assert(not _current_state.is_empty(), "MarkovAgent: initial state must be set in _register_states")
 	set_physics_process(false)
 	_vision_cone = get_node_or_null("VisionCone") as VisionCone
@@ -470,6 +488,52 @@ func _sleep_cycle(mods: Dictionary) -> bool:
 		return true
 	return false
 
+# Wanderlust: now and then anything sets off to see what is out there, most
+# often with a partner, sometimes a pack. Falcons mostly go alone.
+func _wander_cycle(mods: Dictionary) -> bool:
+	if species_id in NO_WANDER or scripted or director == null or species_id.is_empty():
+		return false
+	var hungry: bool = get("energy") != null and float(get("energy")) < 25.0
+	var danger: bool = false
+	for k: String in mods:
+		danger = danger or (float(mods[k]) >= 0.8 and k != "Wanderlust")
+	if _current_state == "Wanderlust":
+		if danger or hungry or _state_time > WANDER_SECS:
+			set_state(_wake_state)
+			return danger
+		return true
+	if danger or hungry or randf() > WANDER_CHANCE:
+		return false
+	var sim: SimulationDirector = director
+	var spot: Vector3 = sim.ley_far(randi())
+	_wander_to = spot
+	set_state("Wanderlust")
+	var company: int = 0
+	var roll: float = randf()
+	if species_id == "falcon":
+		company = 1 if roll < 0.1 else 0
+	elif roll < 0.15:
+		company = 3
+	elif roll < 0.8:
+		company = 1
+	for n: Node3D in sim.get_nearby_agents(global_position, 14.0, species_id):
+		if company <= 0:
+			break
+		if n != self and n is MarkovAgent and not (n as MarkovAgent).player_drive and (n as MarkovAgent).current_state() != "Wanderlust":
+			(n as MarkovAgent)._wander_to = spot
+			(n as MarkovAgent).set_state("Wanderlust")
+			company -= 1
+	return true
+
+func _on_tick_wander(_delta: float) -> void:
+	var to: Vector3 = _wander_to - global_position
+	to.y = 0.0
+	if to.length() < 3.0:
+		_wander_to = (director as SimulationDirector).ley_point(randi())
+		return
+	var speed: float = float(get("walk_speed")) if get("walk_speed") != null else 3.0
+	velocity = to.normalized() * speed
+
 func _winter_den() -> bool:
 	return has_method("_sleeping_season") and bool(call("_sleeping_season"))
 
@@ -479,6 +543,15 @@ func _on_tick_nap(delta: float) -> void:
 	if _aerial and director != null:
 		var ground: float = director.ground_height(global_position.x, global_position.z) + 0.3
 		global_position.y = move_toward(global_position.y, ground, delta * 30.0)
+
+func ascend() -> void:
+	demigod = true
+	display_name = "%s the Demi-God" % display_name
+	_lifespan = 1.0e12
+	add_child(Starfruit.glow_quad(5.0, 0.5))
+	FXManager.show_dramatic_text(global_position + Vector3.UP * 4.0, "%s rises!" % display_name, Color(1.0, 0.9, 0.5))
+	if director != null:
+		(director as SimulationDirector).chronicle.emit("Lightning could not end %s." % display_name)
 
 func mind() -> Psyche:
 	if psyche == null:
@@ -544,8 +617,14 @@ func _physics_process(delta: float) -> void:
 	if _herd_timer <= 0.0:
 		_herd_timer = 1.0 + randf() * 0.3
 		_update_herd()
+		_herd_pull += _ley_pull()
 		_update_corpse_push()
 		mind().check_place()
+	# Nothing stays near a fire.
+	if not rampage and not player_drive and not _aquatic and director != null and director.fire != null:
+		var run: Vector3 = director.fire.away_from(global_position)
+		if run != Vector3.ZERO:
+			velocity = run * FIRE_RUN
 	# Fleeing, it heads for the spot where it once got away.
 	if _current_state == "Flee" and psyche != null and psyche.safe_spot != Vector3.INF and not rampage and not player_drive:
 		var home: Vector3 = psyche.safe_spot - global_position
@@ -657,6 +736,41 @@ const HERDERS: Array[String] = ["sheep", "deer", "goat", "rabbit", "wolf", "boar
 const SOLITARY: Array[String] = ["lion", "bear", "falcon"]
 const SOLITARY_SPACE: float = 10.0
 const BIOME_PULL: float = 0.9
+
+# Everything drifts toward its own point on the valley's ley lines, so kinds
+# spread out and hold ground instead of pooling in the middle.
+func _ley_pull() -> Vector3:
+	var sim: SimulationDirector = director
+	if sim == null or _aquatic or scripted or species_id.is_empty() or species_id == "mushroom":
+		return Vector3.ZERO
+	if sim.paths != null:
+		sim.paths.step(global_position)
+		var sap: float = sim.paths.sip(global_position)
+		if sap > 0.0:
+			if get("health") != null:
+				set("health", minf(float(get("health")) + sap * SAP_HEAL, maxf(_hp_top, 1.0)))
+			if get("energy") != null:
+				set("energy", minf(float(get("energy")) + sap * SAP_FEED, 100.0))
+		# The hungry head for the tunnels, if they know of one with sap.
+		if get("energy") != null and float(get("energy")) < SAP_HUNGRY:
+			var spot: Vector3 = sim.paths.tunnel_near(global_position)
+			if spot != Vector3.INF:
+				var way: Vector3 = spot - global_position
+				way.y = 0.0
+				return way.normalized() * LEY_PULL_BRAVE
+	# Every creature moves on in time. The brave head for the far rim, a new
+	# corner each day, well beyond the comfort of their own kind.
+	if species_id == "bear" and get("energy") != null and float(get("energy")) < 50.0 and randf() < 0.03:
+		var den: Node3D = sim.hut_near(global_position, 4.5)
+		if den != null:
+			sim.destroy_hut(den)
+	var brave: bool = mind().tags.has("brave")
+	var key: int = get_instance_id() + int(sim.get_day() / (1.0 if brave else LEY_DAYS))
+	var to: Vector3 = (sim.ley_far(key) if brave else sim.ley_point(key)) - global_position
+	to.y = 0.0
+	if to.length() < LEY_CLOSE:
+		return Vector3.ZERO
+	return to.normalized() * (LEY_PULL_BRAVE if brave else LEY_PULL)
 
 func _update_herd() -> void:
 	var sim: SimulationDirector = director
@@ -775,6 +889,8 @@ func _movement_tick(delta: float) -> void:
 			pace *= _data.speed_boost
 		if rainbow_left > 0.0:
 			pace *= RAINBOW_MULT
+		if dn_sim != null and dn_sim.paths != null and not _aerial and dn_sim.paths.on_path(global_position):
+			pace *= DesirePaths.SPEED
 		_move_pace = pace
 		global_position += velocity * delta * pace
 		# However hard they flee (and however long a staggered step), fliers
@@ -805,6 +921,16 @@ func _movement_tick(delta: float) -> void:
 			velocity = Vector3(-global_position.x, 0.0, -global_position.z).normalized() * 1.5
 			if ground_sim != null:
 				ground_y = ground_sim.ground_height(flat.x, flat.y)
+		# Only humans go inside; everything else is shouldered out of a house.
+		if ground_sim != null and species_id != "human" and ground_sim.in_hut(global_position):
+			var hut: Node3D = ground_sim.hut_near(global_position, 5.0)
+			if hut != null:
+				var out: Vector3 = global_position - hut.global_position
+				out.y = 0.0
+				global_position += out.normalized() * 0.6
+		var over: float = ground_sim.paths.deck_height(global_position) if ground_sim != null and ground_sim.paths != null else NAN
+		if not is_nan(over):
+			ground_y = over
 		global_position.y = ground_y
 		if ground_sim != null and ground_sim.valley != null and ground_sim.valley.river != null and ground_sim.valley.river.is_near(global_position.x, global_position.z):
 			var wet: Dictionary = ground_sim.valley.river.sample(global_position.x, global_position.z)
@@ -854,6 +980,8 @@ func _evaluate_transitions(_delta: float) -> void:
 	mind().sway(mods)
 	if _sleep_cycle(mods):
 		return
+	if _wander_cycle(mods):
+		return
 	var emergent: String = ""
 	var em_prob: float = 0.0
 	for k: String in mods.keys():
@@ -898,6 +1026,18 @@ func _bind_agent_data(data: AgentData) -> void:
 # Eating extends lifespan bonus. Health/energy modulate death clock speed.
 func _age_and_die(delta: float) -> void:
 	_age += delta
+	if demigod:
+		# The longer it lives, the harder it mends, so the harder it is to kill.
+		var hp: float = float(get("health"))
+		if hp <= 0.0:
+			if has_method("die"):
+				call("die")
+			return
+		_hp_top += DEMI_GROW * delta
+		set("health", minf(hp + DEMI_HEAL * (1.0 + _hp_top * 0.02) * delta, _hp_top))
+		if get("damage") != null:
+			set("damage", float(get("damage")) + 0.02 * delta)
+		return
 	# Starvation and wounds kill at any age (young animals used to linger
 	# at negative health because the check sat behind the juvenile grace).
 	var hp: Variant = get("health")

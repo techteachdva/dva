@@ -61,6 +61,7 @@ const POWERUPS: Array[Dictionary] = [
 	{"id": "flood", "name": "Flood", "cost": 18, "desc": "The river rises for half a day. Fish left on dry land add to the Flood Toll."},
 	{"id": "eclipse", "name": "Eclipse", "cost": 30, "desc": "Night falls at once for half a day."},
 	{"id": "meteor", "name": "Meteor", "cost": 40, "desc": "Choose where it falls. It opens into a crater of Rainbow Starfruit: whatever eats one turns Rainbow."},
+	{"id": "lightning", "name": "Lightning", "cost": 30, "desc": "Strike one creature and set a ring of fire. A struck human may rise a Demi-God."},
 	{"id": "gale", "name": "Gale", "cost": 15, "desc": "Wind: a howling gale for half a day. Seeds of trees and bushes fly far downwind."},
 ]
 

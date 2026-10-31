@@ -3,16 +3,20 @@ extends RefCounted
 
 # Version history (newest first) and credits, shown from the main menu.
 
-const VERSION: String = "7.0"
+const VERSION: String = "7.2"
 
 const CHANGELOG: Array = [
 	{
-		"version": "7.0",
+		"version": "7.2",
 		"title": "A Valley You Can Hear",
 		"notes": [
 			"Sound: rain, floods, drought, meteors, wind, crickets, frogs, owls, howls and more, fading with the camera.",
 			"Predator Brawl has three levels: Plains, Riverbank and Mountains, with Easy, Regular and Dire rivals.",
 			"Knockouts now ragdoll around the arena.",
+			"New power, Lightning: strike a creature, set a spreading ring of fire, and maybe raise a Demi-God. Rain and floods douse fire. Only a meteor can truly stop a Demi-God.",
+			"Tablets: pinch to zoom, twist to turn, two fingers to tilt, flick to glide, double tap to dive in.",
+			"Click a home to see its store and cook for the family. Creatures now spread along the valley's ley lines.",
+			"Homes now have firepits and earthen coolers, joined by worn paths that speed every walker. Villagers take them home at night.",
 			"Your touch sparkles, the buttons grow leaves, and the valley opens on a living fractal logo.",
 			"A guided Food Web tour replaces the old welcome box, with a new page on how Traits, Memories and Dreams shape each creature.",
 			"Every creature now has Tags, a Vault of up to 100 memories, and a Dream. Read them on its card; fulfil a dream and it levels up and lives longer.",

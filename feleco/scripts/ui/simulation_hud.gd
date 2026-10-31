@@ -101,6 +101,13 @@ func _ready() -> void:
 	_power_btn("Heal").pressed.connect(_trigger_heal)
 	_power_btn("Famine").pressed.connect(_trigger_famine)
 	_power_btn("Meteor").pressed.connect(_trigger_meteor)
+	var meteor_btn: Button = _power_btn("Meteor")
+	var bolt: Button = meteor_btn.duplicate(6)
+	bolt.name = "Lightning"
+	bolt.text = "Lightning"
+	bolt.tooltip_text = "Strike one creature and set a ring of fire. A struck human may, rarely, rise a Demi-God."
+	bolt.pressed.connect(_trigger_bolt)
+	meteor_btn.get_parent().add_child(bolt)
 	_power_btn("Flood").pressed.connect(_trigger_flood)
 
 
@@ -763,6 +770,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _goals != null and _goals.try_collect(mb.position):
 		return
 	var agent := _get_hovered_agent() as MarkovAgent
+	if agent == null and _director != null:
+		var ground := _ground_under(mb.position)
+		var hut: Node3D = _director.hut_near(ground) if ground.is_finite() else null
+		if hut != null:
+			_open_house(hut)
+			return
 	if agent != null:
 		if _carries_magic(agent):
 			_lift_in_hand(agent)
@@ -1361,6 +1374,56 @@ func _update_hill_bars() -> void:
 
 var _user_paused: bool = false
 
+# A home: who lives there, what is stored, and a turn at the fire.
+func _open_house(hut: Node3D) -> void:
+	if has_node("HouseCard"):
+		return
+	var was: bool = get_tree().paused
+	get_tree().paused = true
+	var layer := CanvasLayer.new()
+	layer.name = "HouseCard"
+	layer.layer = 90
+	layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(layer)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(440, 0)
+	center.add_child(card)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	card.add_child(col)
+	var total: int = 0
+	var stores: Array[String] = []
+	var pantry: Dictionary = hut.get_meta("pantry", {})
+	for id: Variant in pantry:
+		total += int(pantry[id])
+		stores.append("%s x%d" % [Kitchen.label(str(id)), int(pantry[id])])
+	col.add_child(FelecoUiScript.heading("A Valley Home", 28, FelecoUiScript.GOLD))
+	col.add_child(FelecoUiScript.label("Residents: %d of %d" % [_director.hut_residents(hut).size(), SimulationDirector.HUT_BEDS], 18, FelecoUiScript.CREAM))
+	col.add_child(FelecoUiScript.label("In the cooler: %s" % (", ".join(stores) if total > 0 else "nothing yet"), 18, FelecoUiScript.CREAM))
+	var close := func() -> void:
+		layer.queue_free()
+		get_tree().paused = was
+	var cook := Button.new()
+	cook.text = "Cook for the family"
+	cook.custom_minimum_size = Vector2(0, 52)
+	cook.pressed.connect(func() -> void:
+		center.visible = false
+		var game := HearthCook.new()
+		game.finished.connect(func(meals: int) -> void:
+			if is_instance_valid(hut):
+				_director.add_meals(hut, meals)
+			close.call())
+		layer.add_child(game))
+	col.add_child(cook)
+	var back := Button.new()
+	back.text = "Back"
+	back.custom_minimum_size = Vector2(0, 44)
+	back.pressed.connect(close)
+	col.add_child(back)
+
 # The Field Guide over the paused valley. Closing it resumes as it was.
 func _open_food_web() -> void:
 	if get_node_or_null("FoodWebLayer") != null:
@@ -1445,6 +1508,19 @@ func _trigger_flood() -> void:
 var _aiming: bool = false
 var _aim_mark: MeshInstance3D
 
+func _trigger_bolt() -> void:
+	if _director == null:
+		return
+	if _aiming:
+		_cancel_aim()
+		return
+	_aim_bolt = true
+	_trigger_meteor()
+	if not _aiming:
+		_aim_bolt = false
+		return
+	FXManager.show_dramatic_text(Vector3.ZERO, "Click a creature to strike. Esc cancels.", Color(0.8, 0.9, 1.0))
+
 func _trigger_meteor() -> void:
 	if _director == null:
 		return
@@ -1474,6 +1550,8 @@ func _trigger_meteor() -> void:
 	_director.add_child(_aim_mark)
 	FXManager.show_dramatic_text(Vector3.ZERO, "Click where the meteor should fall. Esc cancels.", Color(1.0, 0.6, 0.3))
 
+var _aim_bolt: bool = false
+
 func _cancel_aim() -> void:
 	_aiming = false
 	if _aim_mark != null and is_instance_valid(_aim_mark):
@@ -1481,9 +1559,14 @@ func _cancel_aim() -> void:
 	_aim_mark = null
 
 func _fire_meteor(at: Vector3) -> void:
+	var bolt: bool = _aim_bolt
+	_aim_bolt = false
 	_cancel_aim()
-	if _spend_touch_or_stock("meteor"):
-		_director.trigger_meteor(at)
+	if _spend_touch_or_stock("lightning" if bolt else "meteor"):
+		if bolt:
+			_director.strike_lightning(at)
+		else:
+			_director.trigger_meteor(at)
 
 
 # ---------------------------------------------------------------------------

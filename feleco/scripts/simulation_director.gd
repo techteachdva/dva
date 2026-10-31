@@ -634,6 +634,7 @@ func store_cooked(human: Node3D, id: String) -> void:
 	pantry[id] = int(pantry.get(id, 0)) + 1
 	hut.set_meta("pantry", pantry)
 	CookedFoodArt.show_pantry(hut)
+	_swell_cooler(hut)
 	if float(human.energy) < 52.0:
 		_eat_one(human, hut)
 	else:
@@ -731,6 +732,7 @@ func _snap_to_ground(node: Node) -> void:
 
 func _deferred_spawn_entities() -> void:
 	spawn_entities()
+	_seed_human_roles()
 
 func spawn_trees() -> void:
 	if grass != null:
@@ -1316,6 +1318,13 @@ func spawn_entities() -> void:
 
 # Everyone starts in one of its home biomes: goats and lions up in the
 # highlands, deer on the plains and riverbank, and so on (see Biomes).
+# Any game with humans opens with one wizard and one builder among them.
+func _seed_human_roles() -> void:
+	var folk: Array = _active_humans.filter(func(h: Variant) -> bool: return is_instance_valid(h) and str(h.get("role")).is_empty())
+	if folk.size() >= 2:
+		Roles.apply(folk[0], "human", Roles.SPECIAL)
+		Roles.apply(folk[1], "human", Roles.TOUGH)
+
 func _settle_biomes() -> void:
 	for data: AgentData in _agent_registry:
 		var n := data.node as Node3D
@@ -1613,6 +1622,8 @@ func raze_hut_near(pos: Vector3, raider_tid: int) -> bool:
 			if int(h.get("_settlement_id")) == owner_tid:
 				return false
 		_active_shelters.erase(hut)
+		if paths != null:
+			paths.remove_home(hut.global_position)
 		for h in hut_residents(hut):
 			h.set("home", null)
 		FXManager.spawn_death_particles(hut.global_position + Vector3.UP * 2.0, Color(0.95, 0.5, 0.2))
@@ -1623,7 +1634,7 @@ func raze_hut_near(pos: Vector3, raider_tid: int) -> bool:
 	return false
 
 func build_shelter(pos: Vector3, tribe: int = 0) -> int:
-	pos = dry_land(pos, 6.0)
+	pos = clear_of_paths(dry_land(pos, 6.0))
 	var shelter := Node3D.new()
 	shelter.name = "Shelter"
 	var sid: int = tribe
@@ -1636,6 +1647,7 @@ func build_shelter(pos: Vector3, tribe: int = 0) -> int:
 	else:
 		shelter.set_meta("settlement_id", sid)
 	_dress_hut(shelter, sid)
+	_settle_yard.call_deferred(shelter)
 	CookedFoodArt.add_hearth(shelter)
 	shelter.set_meta("pantry", {})
 	var static_body := StaticBody3D.new()
@@ -1717,6 +1729,275 @@ func homeless_in_tribe(tid: int) -> int:
 	return n
 
 # Timber walls, a thatched roof, a door and a banner in the settlement's colour.
+# Invisible ley lines: rings of points reaching across the whole valley.
+const FLOOD_HOME_REACH: float = 7.0
+const VILLAGE_BURST: int = 3
+const LEY_RINGS: Array[Vector2] = [Vector2(14.0, 4), Vector2(28.0, 7), Vector2(42.0, 11)]
+var _ley: Array[Vector3] = []
+
+func ley_point(key: int) -> Vector3:
+	if _ley.is_empty():
+		for ring: Vector2 in LEY_RINGS:
+			for i: int in int(ring.y):
+				# Different every run.
+				var a: float = TAU * i / ring.y + randf_range(-0.3, 0.3) + ring.x
+				var r: float = ring.x + randf_range(-5.0, 5.0)
+				_ley.append(dry_land(Vector3(cos(a) * r, 0.0, sin(a) * r)))
+	return _ley[key % _ley.size()]
+
+# Only the outermost ring: where the brave go.
+func ley_far(key: int) -> Vector3:
+	ley_point(0)
+	var n: int = int(LEY_RINGS[LEY_RINGS.size() - 1].y)
+	return _ley[_ley.size() - 1 - key % n]
+
+# A new home a good walk out from its tribe, toward the nearest open ley point.
+func ley_site(center: Vector3) -> Vector3:
+	var to: Vector3 = ley_point(randi()) - center
+	to.y = 0.0
+	if to.length() < 1.0:
+		return center
+	return clear_of_paths(dry_land(center + to.normalized() * minf(to.length(), randf_range(14.0, 24.0)), 3.0))
+
+# Homes stand beside the tracks, never on them.
+func clear_of_paths(spot: Vector3) -> Vector3:
+	if paths == null:
+		return spot
+	for i: int in 10:
+		var near: bool = false
+		for x: float in [-3.0, 0.0, 3.0]:
+			for z: float in [-3.0, 0.0, 3.0]:
+				near = near or paths.on_path(spot + Vector3(x, 0, z))
+		if not near:
+			return spot
+		spot = dry_land(spot + Vector3(randf_range(-5, 5), 0, randf_range(-5, 5)), 3.0)
+	return spot
+
+# --- Lightning ---------------------------------------------------------------
+var fire: Wildfire = null
+const BOLT_REACH: float = 7.0
+const RING_RADIUS: float = 4.0
+const DEMI_CHANCE: float = 0.05
+
+func nearest_creature(at: Vector3, reach: float) -> MarkovAgent:
+	var best: MarkovAgent = null
+	var best_d: float = reach * reach
+	for d: AgentData in _agent_registry:
+		if d.node is MarkovAgent and d.species != "mushroom" and is_instance_valid(d.node):
+			var dist: float = Vector2(d.node.global_position.x - at.x, d.node.global_position.z - at.z).length_squared()
+			if dist < best_d:
+				best_d = dist
+				best = d.node
+	return best
+
+# Strikes a creature, or the ground, and sets a ring of fire round it.
+func strike_lightning(at: Vector3) -> void:
+	var who: MarkovAgent = nearest_creature(at, BOLT_REACH)
+	var spot: Vector3 = who.global_position if who != null else at
+	_draw_bolt(spot)
+	Sfx.play("crash", -3.0, 1.5)
+	if fire == null:
+		fire = Wildfire.new()
+		fire.sim = self
+		add_child(fire)
+	fire.ring(spot, RING_RADIUS)
+	if who == null:
+		return
+	if who.species_id == "human" and not who.demigod and randf() < DEMI_CHANCE:
+		who.ascend()
+		return
+	SeasonBook.hurt(who, 40.0 if who.demigod else 9999.0)
+
+func _draw_bolt(at: Vector3) -> void:
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(0.86, 0.92, 1.0)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var low: Vector3 = at
+	for i: int in 7:
+		var high: Vector3 = low + Vector3(randf_range(-2.5, 2.5), 6.0, randf_range(-2.5, 2.5))
+		var seg := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(0.28, 0.28, low.distance_to(high))
+		seg.mesh = box
+		seg.material_override = mat
+		add_child(seg)
+		seg.global_position = (low + high) * 0.5
+		seg.look_at(high, Vector3.RIGHT)
+		var tw := seg.create_tween()
+		tw.tween_interval(0.25)
+		tw.tween_callback(seg.queue_free)
+		low = high
+
+# It breaks apart: shards fly out and fade, and the thing itself is gone.
+func splinter(thing: Node3D, col: Color) -> void:
+	var at: Vector3 = thing.global_position
+	for i: int in 14:
+		var shard := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(randf_range(0.1, 0.3), randf_range(0.4, 1.2), randf_range(0.1, 0.3))
+		shard.mesh = box
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = col.darkened(randf() * 0.3)
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		shard.material_override = mat
+		add_child(shard)
+		shard.global_position = at + Vector3(0, randf_range(0.5, 3.0), 0)
+		var away: Vector3 = Vector3(randf_range(-7, 7), randf_range(2, 7), randf_range(-7, 7))
+		var tw := shard.create_tween().set_parallel().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(shard, "global_position", at + away, 1.4)
+		tw.tween_property(shard, "rotation", Vector3(randf() * 9.0, randf() * 9.0, randf() * 9.0), 1.4)
+		tw.tween_property(mat, "albedo_color:a", 0.0, 3.0)
+		tw.chain().tween_callback(shard.queue_free)
+	thing.queue_free()
+
+func destroy_hut(hut: Node3D) -> void:
+	_active_shelters.erase(hut)
+	if paths != null:
+		paths.remove_home(hut.global_position)
+	for h in hut_residents(hut):
+		h.set("home", null)
+	splinter(hut, Color(0.62, 0.46, 0.3))
+
+# Everything built or grown inside a meteor's blast goes.
+func meteor_blast(at: Vector3, reach: float) -> void:
+	for s in _active_shelters.duplicate():
+		if is_instance_valid(s) and (s as Node3D).global_position.distance_to(at) < reach:
+			destroy_hut(s)
+	for tag: String in ["tree", "bush"]:
+		for n: Node in get_tree().get_nodes_in_group(tag):
+			if n is Node3D and (n as Node3D).global_position.distance_to(at) < reach:
+				splinter(n, Color(0.42, 0.3, 0.18))
+	# The one thing that can end a Demi-God for good.
+	for d: AgentData in _agent_registry.duplicate():
+		if d.node is MarkovAgent and is_instance_valid(d.node) and d.node.demigod and d.node.global_position.distance_to(at) < reach:
+			d.node.demigod = false
+			SeasonBook.hurt(d.node, 99999.0)
+
+# Homes too near the river go with the water. Bridges may too.
+func _flood_damage() -> void:
+	if valley == null or valley.river == null:
+		return
+	for s in _active_shelters.duplicate():
+		var hut := s as Node3D
+		if is_instance_valid(hut) and float(valley.river.sample(hut.global_position.x, hut.global_position.z).distance) < FLOOD_HOME_REACH:
+			chronicle.emit("The flood takes a home.")
+			destroy_hut(hut)
+	if paths != null:
+		paths.flood()
+
+# Humans outgrow their homes: one more, out along a ley line, each time it turns.
+func _grow_villages() -> void:
+	var people: int = int(get_creature_counts().get("humans", 0))
+	# Roofless survivors raise a first home where they stand.
+	if _active_shelters.is_empty():
+		var who: Array = get_tree().get_nodes_in_group("human")
+		if people >= 2 and not who.is_empty():
+			build_shelter((who.pick_random() as Node3D).global_position)
+		return
+	# Humans dot the landscape: a home for every two, up to three new at a turn.
+	for i: int in VILLAGE_BURST:
+		if people / 2 <= _active_shelters.size():
+			return
+		var from: Node3D = _active_shelters.pick_random()
+		if is_instance_valid(from):
+			build_shelter(ley_site(from.global_position), int(from.get_meta("settlement_id", 0)))
+
+func hut_near(at: Vector3, reach: float = 3.5) -> Node3D:
+	for s in _active_shelters:
+		if is_instance_valid(s) and Vector2((s as Node3D).global_position.x - at.x, (s as Node3D).global_position.z - at.z).length() < reach:
+			return s
+	return null
+
+func add_meals(hut: Node3D, meals: int) -> void:
+	var pantry: Dictionary = hut.get_meta("pantry", {})
+	pantry["apple"] = int(pantry.get("apple", 0)) + meals
+	hut.set_meta("pantry", pantry)
+	CookedFoodArt.show_pantry(hut)
+	_swell_cooler(hut)
+
+# Outside each home: a firepit, an earthen cooler sunk in the ground, and a
+# worn path to its neighbours.
+var paths: DesirePaths = null
+
+func _settle_yard(hut: Node3D) -> void:
+	if not is_instance_valid(hut):
+		return
+	if paths == null:
+		paths = DesirePaths.new()
+		paths.sim = self
+		add_child(paths)
+	var at: Vector3 = hut.global_position
+	paths.add_home(at)
+	var fire := Node3D.new()
+	fire.top_level = true
+	hut.add_child(fire)
+	fire.global_position = at + Vector3(2.2, 0, 2.4)
+	fire.global_position.y = ground_height(at.x + 2.2, at.z + 2.4)
+	var stone := StandardMaterial3D.new()
+	stone.albedo_color = Color(0.42, 0.41, 0.4)
+	var rock := SphereMesh.new()
+	rock.radius = 0.16
+	rock.height = 0.24
+	for i: int in 9:
+		var r := MeshInstance3D.new()
+		r.mesh = rock
+		r.material_override = stone
+		r.position = Vector3(cos(i * TAU / 9.0) * 0.55, 0.08, sin(i * TAU / 9.0) * 0.55)
+		fire.add_child(r)
+	var flame := MeshInstance3D.new()
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.0
+	cone.bottom_radius = 0.3
+	cone.height = 0.85
+	cone.radial_segments = 6
+	flame.mesh = cone
+	var hot := StandardMaterial3D.new()
+	hot.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	hot.albedo_color = Color(1.0, 0.56, 0.14)
+	flame.material_override = hot
+	flame.position.y = 0.45
+	fire.add_child(flame)
+	var tw := flame.create_tween().set_loops()
+	tw.tween_property(flame, "scale", Vector3(0.82, 1.3, 0.82), 0.22)
+	tw.tween_property(flame, "scale", Vector3(1.1, 0.85, 1.1), 0.27)
+	var cooler := MeshInstance3D.new()
+	cooler.name = "Cooler"
+	cooler.top_level = true
+	var mound := SphereMesh.new()
+	mound.radius = 0.9
+	mound.height = 1.0
+	cooler.mesh = mound
+	var earth := StandardMaterial3D.new()
+	earth.albedo_color = Color(0.4, 0.3, 0.19)
+	cooler.material_override = earth
+	hut.add_child(cooler)
+	cooler.global_position = at + Vector3(-2.4, 0, 2.2)
+	cooler.global_position.y = ground_height(at.x - 2.4, at.z + 2.2)
+	cooler.scale = Vector3(1.0, 0.45, 1.0)
+	var lid := MeshInstance3D.new()
+	var lid_mesh := CylinderMesh.new()
+	lid_mesh.top_radius = 0.34
+	lid_mesh.bottom_radius = 0.4
+	lid_mesh.height = 0.12
+	lid.mesh = lid_mesh
+	var dark := StandardMaterial3D.new()
+	dark.albedo_color = Color(0.3, 0.2, 0.12)
+	lid.material_override = dark
+	lid.position.y = 0.5
+	cooler.add_child(lid)
+
+# The fuller the store, the higher the mound.
+func _swell_cooler(hut: Node3D) -> void:
+	var cooler: Node3D = hut.get_node_or_null("Cooler")
+	if cooler == null:
+		return
+	var n: int = 0
+	for k: Variant in (hut.get_meta("pantry", {}) as Dictionary).values():
+		n += int(k)
+	var tw := cooler.create_tween()
+	tw.tween_property(cooler, "scale", Vector3(1.0 + n * 0.05, 0.45 + minf(n * 0.1, 0.9), 1.0 + n * 0.05), 0.5)
+
 func _dress_hut(shelter: Node3D, sid: int) -> void:
 	if _hut_parts.is_empty():
 		var walls := BoxMesh.new()
@@ -3097,6 +3378,7 @@ func _rescue_migrants() -> void:
 # Mid-season: the notification, and a band of this season's Sprites.
 func _seasonal_sprites_wake() -> void:
 	_rescue_migrants()
+	_grow_villages()
 	var row: Array = SeasonBook.EVENTS[_current_season]
 	var id: String = row[0]
 	season_event.emit(row[1], id)
@@ -3115,6 +3397,7 @@ func _update_season(dt: float) -> void:
 		touches_left = 1
 		_season_event_done = false
 		_rescue_migrants()
+		_grow_villages()
 		_apply_season_mood(_current_season, false)
 		_river_season_turn(_current_season)
 		season_changed.emit(_current_season)
@@ -3756,6 +4039,7 @@ func _river_season_turn(season: String) -> void:
 		FXManager.show_dramatic_text(Vector3.ZERO, "The thaw! The river runs high.", Color(0.55, 0.75, 0.85))
 
 func trigger_flood() -> void:
+	_flood_damage()
 	Sfx.play("splash")
 	if river_frozen:
 		FXManager.show_dramatic_text(Vector3.ZERO, "The river is frozen solid.", Color(0.75, 0.88, 1.0))

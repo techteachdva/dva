@@ -16,7 +16,7 @@ const CATEGORIES: Array = [
 ]
 # Words -> an icon of their own, in assets/ui/buttons/icons/. First match wins.
 const ICONS: Array = [
-	["food web", "web"], ["census", "bars"], ["goals", "target"], ["hill", "crown"], ["champion", "flag"], ["creature", "paw"],
+	["lightning", "bolt"], ["food web", "web"], ["census", "bars"], ["goals", "target"], ["hill", "crown"], ["champion", "flag"], ["creature", "paw"],
 	["history", "book"], ["ticker", "scroll"], ["time", "clock"], ["power", "bolt"], ["clear view", "eye"], ["top view", "eye"],
 	["vault", "eye"], ["quest", "scroll"], ["rules", "book"], ["film", "play"], ["how", "book"], ["settings", "gear"], ["lab", "gear"],
 	["simulation", "gear"], ["greenhouse", "tree"], ["mini", "sword"], ["challenge", "sword"], ["fight", "sword"], ["valley", "tree"],
